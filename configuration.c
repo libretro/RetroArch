@@ -2601,6 +2601,11 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("netplay_request_device_p16",    &settings->bools.netplay_request_devices[15], true, false, false);
 #endif
 
+#ifdef ANDROID
+   SETTING_BOOL("input_stylus_enable", &settings->bools.input_stylus_enable, true, true, false);
+   SETTING_BOOL("input_stylus_require_contact_for_click", &settings->bools.input_stylus_require_contact_for_click, true, true, false);
+   SETTING_BOOL("input_stylus_hover_moves_pointer", &settings->bools.input_stylus_hover_moves_pointer, true, false, false);
+#endif
 
 #ifdef _3DS
    SETTING_BOOL("new3ds_speedup_enable",         &settings->bools.new3ds_speedup_enable, true, DEFAULT_NEW_3DS_SPEEDUP_ENABLE,      false);
@@ -3896,6 +3901,9 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("streaming_mode",                &settings->uints.streaming_mode, true, STREAMING_MODE_TWITCH, false);
 #endif
 
+#ifdef ANDROID
+   SETTING_UINT("input_stylus_pressure_sensitivity", &settings->uints.input_stylus_pressure_sensitivity, true, 70, false);
+#endif
 #ifdef ANDROID
    SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 0, false);
 #else

@@ -1371,6 +1371,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD_STR
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_STYLUS_ENABLE,
+   "input_stylus_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+   "input_stylus_require_contact_for_click"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
+   "input_stylus_hover_moves_pointer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
+   "input_stylus_pressure_sensitivity"
+   )
 #endif
 #ifdef ANDROID
 MSG_HASH(
