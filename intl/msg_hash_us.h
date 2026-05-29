@@ -3251,6 +3251,38 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "If RetroArch identifies a hardware keyboard as some kind of gamepad, this setting can be used to force RetroArch to treat the misidentified device as a keyboard.\nThis can be useful if you are trying to emulate a computer in some Android TV device and also own a physical keyboard that can be attached to the box."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
+   "Stylus Support"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_STYLUS_ENABLE,
+   "Enable stylus devices. Provides precise input for drawing and pointing games. Disable if experiencing input conflicts."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+   "Stylus Requires Screen Contact"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+   "ON: Stylus must physically touch screen to register as a click. OFF: Stylus can click by touching screen OR by hovering and pressing the side button."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HOVER_MOVES_POINTER,
+   "Stylus Hover Moves Cursor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
+   "Allow stylus hover (without touching screen) to move the cursor. Essential for drawing and painting games or lightgun games. Turn OFF if cursor moves unexpectedly."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
+   "Stylus Pressure Sensitivity"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
+   "Stylus touch sensitivity. Higher values = more sensitive (lighter touch). Default 70 works for most devices. Lower if using a screen protector (40-50)."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,

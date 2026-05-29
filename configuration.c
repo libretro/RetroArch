@@ -2321,6 +2321,9 @@ static struct config_bool_setting *populate_settings_bool(
 
 #ifdef ANDROID
    SETTING_BOOL("android_input_disconnect_workaround", &settings->bools.android_input_disconnect_workaround, true, false, false);
+   SETTING_BOOL("input_stylus_enable", &settings->bools.input_stylus_enable, true, true, false);
+   SETTING_BOOL("input_stylus_require_contact_for_click", &settings->bools.input_stylus_require_contact_for_click, true, true, false);
+   SETTING_BOOL("input_stylus_hover_moves_pointer", &settings->bools.input_stylus_hover_moves_pointer, true, false, false);
 #endif
 
 #ifdef _3DS
@@ -2637,6 +2640,9 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_touch_scale",             &settings->uints.input_touch_scale, true, DEFAULT_TOUCH_SCALE, false);
    SETTING_UINT("input_rumble_gain",             &settings->uints.input_rumble_gain, true, DEFAULT_RUMBLE_GAIN, false);
    SETTING_UINT("input_auto_game_focus",         &settings->uints.input_auto_game_focus, true, DEFAULT_INPUT_AUTO_GAME_FOCUS, false);
+#ifdef ANDROID
+   SETTING_UINT("input_stylus_pressure_sensitivity", &settings->uints.input_stylus_pressure_sensitivity, true, 70, false);
+#endif
 #ifdef ANDROID
    SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 0, false);
 #else
