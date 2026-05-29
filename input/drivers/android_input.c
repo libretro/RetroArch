@@ -65,6 +65,7 @@ enum {
     AMOTION_EVENT_BUTTON_STYLUS_PRIMARY = 1 << 5,
     AMOTION_EVENT_BUTTON_STYLUS_SECONDARY = 1 << 6,
     AMOTION_EVENT_AXIS_VSCROLL = 9,
+    AMOTION_EVENT_AXIS_DISTANCE = 24,
     AMOTION_EVENT_ACTION_HOVER_MOVE = 7,
     AMOTION_EVENT_ACTION_HOVER_ENTER = 9,
     AMOTION_EVENT_ACTION_HOVER_EXIT = 10,
@@ -957,7 +958,8 @@ static INLINE void android_input_poll_event_type_motion(
    bool is_stylus, is_finger, is_hover_action;
    settings_t *settings;
    bool require_contact, tip_down, side_primary, side_secondary, stylus_pressed;
-   float pressure, distance;
+   bool side_pressed, tip_touching;
+   float pressure, distance, pressure_threshold;
    int buttons;
    bool keyup;
    
@@ -1065,7 +1067,7 @@ static INLINE void android_input_poll_event_type_motion(
                   AMotionEvent_getButtonState(event) : 0;
                side_primary   = (buttons & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY)   != 0;
                side_secondary = (buttons & AMOTION_EVENT_BUTTON_STYLUS_SECONDARY) != 0;
-               bool side_pressed = side_primary || side_secondary;
+               side_pressed = side_primary || side_secondary;
             
 #ifdef DEBUG_ANDROID_INPUT
             if (buttons != 0)
@@ -1185,13 +1187,13 @@ static INLINE void android_input_poll_event_type_motion(
              * - Click (tip_down): Pressure-based, configurable threshold for button presses */
 
             /* Physical contact detection - instant, no pressure needed */
-            bool tip_touching = (action != AMOTION_EVENT_ACTION_UP) && (distance <= 0.0f);
+            tip_touching = (action != AMOTION_EVENT_ACTION_UP) && (distance <= 0.0f);
 
             /* Click/press detection - requires sufficient pressure */
             /* Calculate pressure threshold from user setting (1-100 -> 0.0248-0.0000) */
             /* Higher sensitivity value = lower threshold = more sensitive */
             /* At max sensitivity (100), threshold is 0 = instant click on contact */
-            float pressure_threshold = 0.0f + ((100 - settings->uints.input_stylus_pressure_sensitivity) * 0.00025f);
+            pressure_threshold = 0.0f + ((100 - settings->uints.input_stylus_pressure_sensitivity) * 0.00025f);
             tip_down = tip_touching && (pressure > pressure_threshold);
 
             /* Get button state */

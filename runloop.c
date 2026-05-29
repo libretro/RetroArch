@@ -5853,15 +5853,26 @@ static enum runloop_state_enum runloop_check_state(
          static bool last_stylus_hidden = false;
          bool stylus_hidden             = android_input_stylus_recently_active();
 
-         if (stylus_hidden != last_stylus_hidden)
+         /* When pointer input is enabled, soft-hide instead of unloading so
+          * the stylus (which drives the overlay as a pointer surface) keeps
+          * working. Level-triggered: enforce flag state every frame. */
+         if (   settings->bools.input_overlay_pointer_enable
+             && input_st->overlay_ptr)
+         {
+            if (stylus_hidden)
+               input_st->overlay_ptr->flags |=  INPUT_OVERLAY_GAMEPAD_HIDDEN;
+            else
+               input_st->overlay_ptr->flags &= ~INPUT_OVERLAY_GAMEPAD_HIDDEN;
+         }
+         else if (stylus_hidden != last_stylus_hidden)
          {
             if (stylus_hidden)
                input_overlay_unload();
             else
                input_overlay_init();
-
-            last_stylus_hidden = stylus_hidden;
          }
+
+         last_stylus_hidden = stylus_hidden;
       }
 #endif
 
