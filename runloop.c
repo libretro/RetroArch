@@ -6,6 +6,7 @@
  *  Copyright (C) 2016-2019 - Brad Parker
  *  Copyright (C) 2016-2019 - Andr�s Su�rez (input mapper code)
  *  Copyright (C) 2016-2017 - Gregor Richards (network code)
+ *  Copyright (C) 2026 - M00NR00ST3R (conditional overlay profiles)
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -5808,36 +5809,76 @@ static enum runloop_state_enum runloop_check_state(
       unsigned video_driver_width                    = video_st->width;
       unsigned video_driver_height                   = video_st->height;
       bool check_next_rotation                       = true;
-      bool input_overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
       bool input_overlay_auto_rotate                 = settings->bools.input_overlay_auto_rotate;
 
-      /* Check whether overlay should be hidden
-       * when a gamepad is connected */
-      if (input_overlay_hide_when_gamepad_connected)
+      /* Conditional overlay profiles (FR #18178).
+       * Resolve the target profile each frame; when it changes, debounce by
+       * input_overlay_switch_delay_ms before committing.  Committing reloads
+       * the resolver-selected preset (init) or hides the overlay (unload).
+       * With pointer input enabled we soft-hide via a flag instead of
+       * unloading, so mouse/lightgun input keeps working. */
       {
-         static bool last_controller_connected = false;
-         bool controller_connected             = (input_config_get_device_name(0) != NULL);
+         static bool         profile_initialized = false;
+         static unsigned     last_profile        = 0;
+         static unsigned     pending_profile     = 0;
+         static retro_time_t pending_since       = 0;
+         static uint64_t     last_frame_count    = 0;
+         unsigned behavior          = settings->uints.input_overlay_behavior;
+         bool     controller_active = (input_config_get_device_name(0) != NULL);
+         unsigned cur_profile       = (unsigned)overlay_resolve_profile(
+               behavior, controller_active);
 
-         /* When pointer input is enabled, soft-hide instead of
-          * unloading so mouse/lightgun input remains functional.
-          * Level-triggered: enforce flag state every frame. */
-         if (   settings->bools.input_overlay_pointer_enable
-             && input_st->overlay_ptr)
+         /* Reset cross-content stale state: if the core's frame counter
+          * regressed (content unload / new content load) the debounce
+          * timestamp from the previous session would otherwise spuriously
+          * satisfy the elapsed check on the next transition. */
+         if (frame_count < last_frame_count)
+            profile_initialized = false;
+         last_frame_count = frame_count;
+
+         /* First frame (this content session): sync to current state
+          * without acting, so a stale timestamp cannot trigger a spurious
+          * switch at startup. */
+         if (!profile_initialized)
          {
-            if (controller_connected)
+            last_profile        = cur_profile;
+            pending_profile     = cur_profile;
+            pending_since       = current_time;
+            profile_initialized = true;
+         }
+
+         if (     settings->bools.input_overlay_pointer_enable
+               && input_st->overlay_ptr)
+         {
+            /* Pointer mode: keep the overlay loaded and soft-hide via flag.
+             * Level-triggered every frame. */
+            if (cur_profile == (unsigned)OVERLAY_PROFILE_HIDDEN)
                input_st->overlay_ptr->flags |=  INPUT_OVERLAY_GAMEPAD_HIDDEN;
             else
                input_st->overlay_ptr->flags &= ~INPUT_OVERLAY_GAMEPAD_HIDDEN;
+            last_profile    = cur_profile;
+            pending_profile = cur_profile;
          }
-         else if (controller_connected != last_controller_connected)
+         else if (cur_profile != pending_profile)
          {
-            if (controller_connected)
-               input_overlay_unload();
-            else
-               input_overlay_init();
+            /* Target changed: (re)start the debounce window. */
+            pending_profile = cur_profile;
+            pending_since   = current_time;
          }
-
-         last_controller_connected = controller_connected;
+         else if (cur_profile != last_profile)
+         {
+            /* Stable target awaiting commit: switch once the delay elapses. */
+            retro_time_t delay_us = (retro_time_t)
+                  settings->uints.input_overlay_switch_delay_ms * 1000;
+            if ((current_time - pending_since) >= delay_us)
+            {
+               if (cur_profile == (unsigned)OVERLAY_PROFILE_HIDDEN)
+                  input_overlay_unload();
+               else
+                  input_overlay_init();
+               last_profile = cur_profile;
+            }
+         }
       }
 
       /* Check next overlay hotkey */

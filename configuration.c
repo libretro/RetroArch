@@ -1741,6 +1741,7 @@ static struct config_path_setting *populate_settings_path(
 
 #ifdef HAVE_OVERLAY
    SETTING_PATH("input_overlay",                 settings->paths.path_overlay, false, NULL, true);
+   SETTING_PATH("input_overlay_minimal",         settings->paths.path_overlay_minimal, false, NULL, true);
    SETTING_PATH("input_osk_overlay",             settings->paths.path_osk_overlay, false, NULL, true);
    SETTING_PATH("overlay_directory",             settings->paths.directory_overlay, true, NULL, true);
    SETTING_PATH("osk_overlay_directory",         settings->paths.directory_osk_overlay, true, NULL, true);
@@ -2653,6 +2654,8 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_overlay_dpad_diagonal_sensitivity", &settings->uints.input_overlay_dpad_diagonal_sensitivity, true, DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY, false);
    SETTING_UINT("input_overlay_abxy_diagonal_sensitivity", &settings->uints.input_overlay_abxy_diagonal_sensitivity, true, DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY, false);
    SETTING_UINT("input_overlay_analog_recenter_zone",      &settings->uints.input_overlay_analog_recenter_zone, true, DEFAULT_INPUT_OVERLAY_ANALOG_RECENTER_ZONE, false);
+   SETTING_UINT("input_overlay_behavior",                  &settings->uints.input_overlay_behavior, true, DEFAULT_OVERLAY_BEHAVIOR, false);
+   SETTING_UINT("input_overlay_switch_delay_ms",           &settings->uints.input_overlay_switch_delay_ms, true, DEFAULT_OVERLAY_SWITCH_DELAY_MS, false);
 #endif
 
 #ifdef HAVE_LIBNX
@@ -4058,6 +4061,26 @@ static bool config_load_file(global_t *global,
       if (tmp)
          retroarch_ctl(RARCH_CTL_SET_PERFCNT_ENABLE, NULL);
    }
+
+#ifdef HAVE_OVERLAY
+   /* Migrate the legacy "input_overlay_hide_when_gamepad_connected" bool to
+    * the new "input_overlay_behavior" enum (FR #18178).  Only applies when
+    * the new key is absent from the config (older installs): a true legacy
+    * bool becomes HIDE_WHEN_GAMEPAD; otherwise the loaded enum value is kept.
+    * The legacy key is left in the config for downgrade safety. */
+   {
+      unsigned beh_tmp = 0;
+      if (!config_get_uint(conf, "input_overlay_behavior", &beh_tmp))
+      {
+         bool hide_tmp = false;
+         config_get_bool(conf, "input_overlay_hide_when_gamepad_connected",
+               &hide_tmp);
+         if (hide_tmp)
+            settings->uints.input_overlay_behavior =
+                  OVERLAY_BEHAVIOR_HIDE_WHEN_GAMEPAD;
+      }
+   }
+#endif
 
    /* Overrides */
 

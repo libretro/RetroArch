@@ -355,6 +355,8 @@ typedef struct settings
       unsigned input_overlay_dpad_diagonal_sensitivity;
       unsigned input_overlay_abxy_diagonal_sensitivity;
       unsigned input_overlay_analog_recenter_zone;
+      unsigned input_overlay_behavior;
+      unsigned input_overlay_switch_delay_ms;
       unsigned input_overlay_lightgun_trigger_delay;
       unsigned input_overlay_lightgun_two_touch_input;
       unsigned input_overlay_lightgun_three_touch_input;
@@ -641,6 +643,7 @@ typedef struct settings
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
+      char path_overlay_minimal[PATH_MAX_LENGTH];
       char path_osk_overlay[PATH_MAX_LENGTH];
       char path_record_config[PATH_MAX_LENGTH];
       char path_stream_config[PATH_MAX_LENGTH];

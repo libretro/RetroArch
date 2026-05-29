@@ -1140,6 +1140,11 @@ void input_overlay_unload(void);
 
 void input_overlay_init(void);
 
+/* Conditional overlay profiles (FR #18178): pure resolver mapping the
+ * behaviour mode + controller state to the overlay profile to show. */
+enum overlay_profile overlay_resolve_profile(
+      unsigned behavior, bool controller_connected);
+
 void input_overlay_check_mouse_cursor(void);
 #endif
 
