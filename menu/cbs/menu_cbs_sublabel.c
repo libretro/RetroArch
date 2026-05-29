@@ -747,6 +747,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_hide_when_gamepad_conn
 #else
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_hide_when_gamepad_connected, MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED)
 #endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_behavior,        MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHAVIOR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_minimal_preset,  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MINIMAL_PRESET)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_switch_delay,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SWITCH_DELAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_show_mouse_cursor,       MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_auto_rotate,     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_auto_scale,      MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE)
@@ -4395,6 +4398,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #else
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_hide_when_gamepad_connected);
 #endif
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_BEHAVIOR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_behavior);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_MINIMAL_PRESET:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_minimal_preset);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_SWITCH_DELAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_switch_delay);
             break;
          case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_show_inputs);
