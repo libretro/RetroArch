@@ -14167,6 +14167,10 @@ MSG_HASH(
    "El antiguo guardado rápido ha sido restaurado."
    )
 MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Shaders: restaurando el preajuste predeterminado en"
+   )
+MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
    "Revirtiendo el directorio de archivos de guardado a"
    )
@@ -14709,6 +14713,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Introduciendo disco en bandeja"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Error al asignar disco"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

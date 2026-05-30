@@ -2057,6 +2057,10 @@ MSG_HASH(
    "Freqüència d'actualització vertical"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "Freqüència d'actualització vertical de la pantalla. S'usa per a calcular una freqüència d'àudio adient. S'ignorarà si s'activa «Vídeo multifil»."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Freqüència d'actualització estimada"
    )
@@ -5013,6 +5017,10 @@ MSG_HASH(
    "Comptador de duració dels fotogrames"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+   "Canvia les opcions del comptador de duració de fotogrames.Només en funcionament quan estigui desactivat el vídeo multifil."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "Taxa d'avançament ràpid"
    )
@@ -7288,6 +7296,10 @@ MSG_HASH(
    "Resum d'inici"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "Mostra informació sobre el joc que s'està carregat i del progrés de l'usuari. 'Tots els jocs identificats' mostrarà el resum d'aquells jocs que no tenen assoliments publicats."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Tots els jocs identificats"
    )
@@ -7761,6 +7773,10 @@ MSG_HASH(
    "Mostra els nuclis associats a les llistes de reproducció"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   "Especifica si cal associar elements de la llista de reproducció amb el nucli actual (si existeix). Aquesta opció s'ignorarà si les subetiquetes a les llistes estan actives."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Mostra subetiquetes de les llistes"
    )
@@ -7863,6 +7879,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Etiqueta de temps de joc a les llistes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   "Escull quin tipus de registre del temps de joc es mostra a la llista de reproducció. Cal activar el registre dins de la configuració."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8044,6 +8064,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Presència enriquida de Discord"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
+   "Permet que l'app Discord mostri més informació sobre el contingut que s'està executant. Només funcionarà amb el client d'escriptori de Discord."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8439,8 +8463,16 @@ MSG_HASH(
    "Afegir a la mescla"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
+   "Afegeix aquesta pista d'àudio a un espai de seqüències d'àudio. Si no hi ha espai disponible, s'ignorarà."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Afegir a la mescla i reproduir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
+   "Afegeix aquesta pista d'àudio a un espai de seqüències d'àudio i reprodueix-la. Si no hi ha espai disponible, s'ignorarà."
    )
 
 /* Netplay */
@@ -9529,6 +9561,10 @@ MSG_HASH(
    "Clica esquerra o dreta per canviar la mida en bits."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
+   "Big Endian: 258 = 0x0102\nLittle Endian: 258 = 0x0201"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "Cerca valors en la memòria"
    )
@@ -9799,6 +9835,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Carrega un nou disc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Selecciona un nou disc del sistema de fitxers i afegeix-lo a la llista."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
+   "Selecciona un nou disc del sistema de fitxers i adjunta-ho a la llista d'índexs.\nNOTA: Aquesta és una opció heretada. Es recomana fer servir llistes M3U per títols que fan servir varis discs."
    )
 
 /* Quick Menu > Shaders */
@@ -14051,6 +14095,10 @@ MSG_HASH(
    "Restaurant un estat desat anterior."
    )
 MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Shaders: Restaurant l'ajust predeterminat a"
+   )
+MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
    "Revertint la carpeta de fitxers de desat a"
    )
@@ -14593,6 +14641,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Introduint disc a la safata"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Error en seleccionar el disc"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

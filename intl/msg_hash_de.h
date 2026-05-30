@@ -13835,6 +13835,10 @@ MSG_HASH(
    "Alter Spielstand wiederhergestellt"
    )
 MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Shader: Standardshadervoreinstellung wiederherstellen zu"
+   )
+MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
    "Setze Speicherdaten-Verzeichnis zurück auf"
    )
@@ -14377,6 +14381,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Lege Disc ins Laufwerk ein"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Fehler beim Einsetzen der Disc"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

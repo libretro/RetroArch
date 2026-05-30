@@ -1436,6 +1436,10 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   "Aký ovládač videa použiť. (Vyžaduje reštart)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x ovládač. Minimálna požadovaná verzia: OpenGL 1,1. Nepodporuje shadery. Ak je to možné, použite novšie OpenGL ovládače."
    )
@@ -1532,6 +1536,10 @@ MSG_HASH(
    "Zvuk"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+   "Aký ovládač zvuku použiť. (Vyžaduje reštart)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "Ovládač RSound pre sieťové zvukové systémy."
    )
@@ -1589,6 +1597,10 @@ MSG_HASH(
    "Mikrofón"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Aký ovládač mikrofónu použiť. (Vyžaduje reštart)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Resamplovač mikrofónu"
    )
@@ -1626,8 +1638,24 @@ MSG_HASH(
    "Kamera"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   "Aký ovládač kamery použiť. (Vyžaduje reštart)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Aký ovládač bluetooth použiť. (Vyžaduje reštart)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+   "Aký ovládač Wi-Fi použiť. (Vyžaduje reštart)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Poloha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "Aký ovládač polohy použiť. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -1652,6 +1680,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Nahrávanie"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "Aký ovládač nahrávania použiť. (Vyžaduje reštart)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Aký ovládač MIDI použiť. (Vyžaduje reštart)"
    )
 
 /* Settings > Video */
@@ -1983,6 +2019,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Vertikálna Obnovovacia Frekvencia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "Vertikálna obnovovacia frekvencia obrazovky. Použije sa na výpočet vhodného vzorkovania vstupu audia. Ignorované, ak je povolené 'Vláknové video'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2461,6 +2501,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Pokúsi sa udržať požadovaný cieľ 'Frame Delay' a minimalizovať vynechané snímky. Východiskový bod je 3/4 času snímky, keď je 'Frame Delay' 0 (Auto)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Vzorkovať frame time len v stabilnom stave"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Obmedzí vzorkovanie 'Odhadovanej Miery Obnovenia Obrazovky' len na snímky, kde obsah beží čisto (nie menu, nie pozastavené, nie rýchly posun vpred, frame time v rozumných medziach). Diagnostický údaj sa tak stane reálnym signálom za cenu pomalšej konvergencie po načítaní obsahu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -2983,6 +3031,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Maximum užívateľov"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   "Maximálny počet používateľov podporovaných RetroArchom. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4572,6 +4624,18 @@ MSG_HASH(
    "Automaticky uloží non-volatile SRAM v pravidelnom intervale. V predvolenom nastavení je vypnuté, ak nie je nastavené inak. Interval sa meria v sekundách. Hodnota 0 vypne automatické ukladanie."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Save State: Automatický interval"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Automaticky uloží stav v pravidelnom intervale (v sekundách). Nastav na 0 pre vypnutie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Automaticky ukladá stav v pravidelnom intervale meranom v sekundách. Je to užitočné na vytváranie pravidelných záloh tvojho herného postupu, najmä na zariadeniach, ktoré sa môžu nečakane vypnúť kvôli batérii alebo iným problémom. Hodnota 0 túto funkciu vypne."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
    "Replay: interval kontrolných bodov"
    )
@@ -4877,6 +4941,10 @@ MSG_HASH(
    "Počítadlo času snímky"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+   "Zmení nastavenia ovplyvňujúce počítadlo času snímky. Aktívne iba pri vypnutom vláknovom videu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "Frekvencia rýchleho posunu vpred"
    )
@@ -4950,6 +5018,14 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Automatické vynulovanie po rušivých udalostiach"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Vymaže vyrovnávaciu pamäť vzoriek 'Odhadovanej Miery Obnovenia Obrazovky' po rýchlom posune vpred, uložení alebo načítaní stavu. Tieto operácie zavádzajú časové vzorky, ktoré neodrážajú normálnu kadenciu snímok a skreslili by meranie odchýlky. Čistenie podľa najlepších možností; nemá účinok, keď je zapnuté 'Vzorkovať frame time len v stabilnom stave' (čo zabráni kontaminácii priamo pri zdroji)."
+   )
 
 /* Settings > Recording */
 
@@ -6376,6 +6452,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Zobraziť dodatočné informácie pre položky menu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Zobraziť potvrdzovacie okná"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Pýtať si potvrdenie pred ukončením, resetovaním alebo zatvorením obsahu. Keď je vypnuté, tieto akcie sa vykonajú okamžite."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Zobraziť štartovaciu obrazovku"
@@ -7148,6 +7232,10 @@ MSG_HASH(
    "Súhrn pri štarte"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "Zobrazuje informácie o načítavanej hre a aktuálnom postupe používateľa. 'Všetky identifikované hry' zobrazí súhrn aj pre hry bez zverejnených úspechov."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Všetky identifikované hry"
    )
@@ -7621,6 +7709,10 @@ MSG_HASH(
    "Zobraziť priradené cores v zoznamoch skladieb"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   "Určiť, kedy označiť položky zoznamu skladieb aktuálne priradeným core (ak nejaký). Toto nastavenie sa ignoruje pri zapnutých pod-popisoch zoznamu skladieb."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Zobraziť pod-popisy zoznamu skladieb"
    )
@@ -7723,6 +7815,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Čas behu pod-popisu zoznamu skladieb"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   "Vyberte, aký typ záznamu logu času behu sa má zobraziť v pod-popisoch zoznamu skladieb. Zodpovedajúci log času behu musí byť povolený cez menu možností 'Ukladanie'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7902,6 +7998,10 @@ MSG_HASH(
    "Povoliť cores prístup ku kamere."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
+   "Umožní aplikácii Discord zobrazovať údaje o prehrávanom obsahu. Dostupné iba s natívnym desktop klientom."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
    "Povoliť polohu"
    )
@@ -7967,6 +8067,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > Kick */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Kľúč streamu Kick"
+   )
 
 /* Settings > Directory */
 
@@ -8295,8 +8399,16 @@ MSG_HASH(
    "Pridať do zmiešavača"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
+   "Pridá túto zvukovú stopu do dostupného slotu zvukového streamu. Ak momentálne nie sú dostupné žiadne sloty, ignoruje sa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Pridať do mixéra a prehrať"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
+   "Pridá túto zvukovú stopu do voľného slotu zvukového streamu a prehrá ju. Ak momentálne nie je k dispozícii žiadny slot, bude ignorovaná."
    )
 
 /* Netplay */
@@ -9389,6 +9501,10 @@ MSG_HASH(
    "Endianita vyššieho bitu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
+   "Big Endian: 258 = 0x0102\nLittle Endian: 258 = 0x0201"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "Hľadať hodnoty v pamäti"
    )
@@ -9659,6 +9775,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Načítať nový disk"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Vyber nový disk zo súborového systému a pridaj ho do zoznamu indexov."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
+   "Vyberte nový disk zo systému súborov a pridajte ho do zoznamu indexov.\nPOZNÁMKA: Toto je staršia funkcia. Pre tituly s viacerými diskami sa odporúča použiť M3U zoznamy skladieb."
    )
 
 /* Quick Menu > Shaders */
@@ -13703,6 +13827,10 @@ MSG_HASH(
    "Starý uložený stav obnovený."
    )
 MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Shadery: Obnovuje sa predvolená predvoľba shaderu na"
+   )
+MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
    "Vracia sa adresár uložených súborov na"
    )
@@ -14245,6 +14373,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Vkladanie disku do mechaniky"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Nepodarilo sa nastaviť disk"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

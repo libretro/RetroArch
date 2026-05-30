@@ -14251,6 +14251,10 @@ MSG_HASH(
    "Sean-stádas sábhála athchóirithe."
    )
 MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Scáthlóirí: Ag athchóiriú réamhshocraithe an scáthlóra go"
+   )
+MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
    "Ag filleadh ar an eolaire comhad sábhála"
    )
@@ -14797,6 +14801,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Ag socrú diosca sa tráidire"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Theip ar an diosca a shocrú"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
