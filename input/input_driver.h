@@ -1141,9 +1141,13 @@ void input_overlay_unload(void);
 void input_overlay_init(void);
 
 /* Conditional overlay profiles (FR #18178): pure resolver mapping the
- * behaviour mode + controller state to the overlay profile to show. */
+ * behaviour mode + controller state to the overlay profile to show.
+ * minimal_available must be true iff a non-empty Minimal Overlay Preset path
+ * is configured; when false the resolver downgrades MINIMAL to FULL so the
+ * caller's state machine stays in sync with what will actually be loaded. */
 enum overlay_profile overlay_resolve_profile(
-      unsigned behavior, bool controller_connected);
+      unsigned behavior, bool controller_connected,
+      bool minimal_available);
 
 void input_overlay_check_mouse_cursor(void);
 #endif

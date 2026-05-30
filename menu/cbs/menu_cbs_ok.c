@@ -1132,6 +1132,32 @@ int generic_action_ok_displaylist_push(
 
          info_path          = parent_dir;
          break;
+      case ACTION_OK_DL_INPUT_OVERLAY_MINIMAL_PRESET:
+         filebrowser_set_type(FILEBROWSER_SELECT_OVERLAY);
+         info.directory_ptr = idx;
+         info_label         = MENU_ENUM_LABEL_INPUT_OVERLAY_MINIMAL_PRESET_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_INPUT_OVERLAY_MINIMAL_PRESET;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+
+         {
+            char expanded[PATH_MAX_LENGTH];
+            fill_pathname_expand_special(expanded,
+                  settings->paths.path_overlay_minimal, sizeof(expanded));
+#ifdef HAVE_COMPRESSION
+            {
+               char *delim = (char*)path_get_archive_delim(expanded);
+               if (delim)
+                  *delim = '\0';
+            }
+#endif
+            action_ok_get_file_browser_start_path(
+                  expanded,
+                  settings->paths.directory_overlay,
+                  parent_dir, sizeof(parent_dir), true);
+         }
+
+         info_path          = parent_dir;
+         break;
       case ACTION_OK_DL_OSK_OVERLAY_PRESET:
          filebrowser_clear_type();
             info.directory_ptr = idx;
@@ -2476,7 +2502,18 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_SET_PATH_OVERLAY:
          flush_char = MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST_STR;
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
+         /* Both the main and minimal overlay-preset file pickers reach this
+          * case (both register FILEBROWSER_SELECT_OVERLAY). Dispatch the
+          * override flag based on which setting the user is editing so the
+          * minimal-preset path participates in per-game / per-core overrides
+          * symmetrically with the main preset. */
+         if (string_is_equal(menu_label,
+                  MENU_ENUM_LABEL_INPUT_OVERLAY_MINIMAL_PRESET_STR))
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_OVERLAY_MINIMAL_PRESET, NULL);
+         else
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
          ret        = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH_OSK_OVERLAY:
@@ -6691,6 +6728,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_generic_list, ACTION_OK_DL_GENERIC)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_audio_dsp_plugin, ACTION_OK_DL_AUDIO_DSP_PLUGIN)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_video_filter, ACTION_OK_DL_VIDEO_FILTER)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_overlay_preset, ACTION_OK_DL_OVERLAY_PRESET)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_input_overlay_minimal_preset, ACTION_OK_DL_INPUT_OVERLAY_MINIMAL_PRESET)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_osk_overlay_preset, ACTION_OK_DL_OSK_OVERLAY_PRESET)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_video_font, ACTION_OK_DL_VIDEO_FONT)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rpl_entry, ACTION_OK_DL_RPL_ENTRY)
@@ -9324,6 +9362,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                    action_ok_audio_dsp_plugin},
          {MENU_ENUM_LABEL_VIDEO_FILTER,                        action_ok_video_filter},
          {MENU_ENUM_LABEL_OVERLAY_PRESET,                      action_ok_overlay_preset},
+         {MENU_ENUM_LABEL_INPUT_OVERLAY_MINIMAL_PRESET,        action_ok_input_overlay_minimal_preset},
          {MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,                  action_ok_osk_overlay_preset},
          {MENU_ENUM_LABEL_RECORD_CONFIG,                       action_ok_record_configfile},
          {MENU_ENUM_LABEL_STREAM_CONFIG,                       action_ok_stream_configfile},
@@ -9579,6 +9618,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                    action_ok_audio_dsp_plugin},
          {MENU_ENUM_LABEL_VIDEO_FILTER,                        action_ok_video_filter},
          {MENU_ENUM_LABEL_OVERLAY_PRESET,                      action_ok_overlay_preset},
+         {MENU_ENUM_LABEL_INPUT_OVERLAY_MINIMAL_PRESET,        action_ok_input_overlay_minimal_preset},
          {MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,                  action_ok_osk_overlay_preset},
          {MENU_ENUM_LABEL_REMAP_FILE_LOAD,                     action_ok_remap_file},
          {MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,                  action_ok_override_file},

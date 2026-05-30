@@ -18136,22 +18136,10 @@ static bool setting_append_list(
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.input_overlay_hide_when_gamepad_connected,
-               MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-               DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
+         /* Legacy "Hide When Controller Is Connected" bool is superseded by
+          * input_overlay_behavior (FR #18178). The cfg key + migration in
+          * configuration.c are kept for downgrade safety; the menu entry is
+          * intentionally not registered so users see only the new enum. */
 
          CONFIG_UINT(
                list, list_info,

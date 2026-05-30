@@ -3359,6 +3359,11 @@ void config_set_defaults(void *data)
                settings->paths.directory_overlay,
                FILE_PATH_DEFAULT_OVERLAY,
                sizeof(settings->paths.path_overlay));
+      /* No default for path_overlay_minimal: leave it empty so the
+       * resolver falls back to the main preset until the user explicitly
+       * picks a minimal preset via Settings -> On-Screen Display -> On-Screen
+       * Overlay -> Minimal Overlay Preset. Avoids pointing at an asset that
+       * may not ship in the user's overlay bundle. */
       if (!*settings->paths.path_osk_overlay)
          fill_pathname_join_special(settings->paths.path_osk_overlay,
                settings->paths.directory_overlay,
@@ -4021,7 +4026,10 @@ static bool config_load_file(global_t *global,
       const char *extra_path = NULL;
 #ifdef HAVE_OVERLAY
       char old_overlay_path[PATH_MAX_LENGTH], new_overlay_path[PATH_MAX_LENGTH];
+      char old_overlay_minimal_path[PATH_MAX_LENGTH], new_overlay_minimal_path[PATH_MAX_LENGTH];
       config_get_path(conf, "input_overlay", old_overlay_path, sizeof(old_overlay_path));
+      config_get_path(conf, "input_overlay_minimal",
+            old_overlay_minimal_path, sizeof(old_overlay_minimal_path));
 #endif
       strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_OVERRIDE),
             sizeof(tmp_append_path));
@@ -4051,6 +4059,11 @@ static bool config_load_file(global_t *global,
       config_get_path(conf, "input_overlay", new_overlay_path, sizeof(new_overlay_path));
       if (!string_is_equal(old_overlay_path, new_overlay_path))
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
+      config_get_path(conf, "input_overlay_minimal",
+            new_overlay_minimal_path, sizeof(new_overlay_minimal_path));
+      if (!string_is_equal(old_overlay_minimal_path, new_overlay_minimal_path))
+         retroarch_override_setting_set(
+               RARCH_OVERRIDE_SETTING_OVERLAY_MINIMAL_PRESET, NULL);
 #endif
    }
 

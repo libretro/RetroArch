@@ -5825,8 +5825,9 @@ static enum runloop_state_enum runloop_check_state(
          static uint64_t     last_frame_count    = 0;
          unsigned behavior          = settings->uints.input_overlay_behavior;
          bool     controller_active = (input_config_get_device_name(0) != NULL);
+         bool     minimal_available = (*settings->paths.path_overlay_minimal != '\0');
          unsigned cur_profile       = (unsigned)overlay_resolve_profile(
-               behavior, controller_active);
+               behavior, controller_active, minimal_available);
 
          /* Reset cross-content stale state: if the core's frame counter
           * regressed (content unload / new content load) the debounce

@@ -112,7 +112,8 @@ enum rarch_state_flags
    RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14),
    RARCH_FLAGS_HAS_SET_XDELTA_PREF          = (1 << 15),
    RARCH_FLAGS_XDELTA_PREF                  = (1 << 16),
-   RARCH_FLAGS_HAS_SET_OVERLAY_PRESET       = (1 << 17)
+   RARCH_FLAGS_HAS_SET_OVERLAY_PRESET       = (1 << 17),
+   RARCH_FLAGS_HAS_SET_OVERLAY_MINIMAL_PRESET = (1 << 18)
 };
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);

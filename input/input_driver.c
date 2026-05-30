@@ -6174,7 +6174,8 @@ void input_overlay_set_visibility(int overlay_idx,
  * it is safe to call every frame.  Additional input sources (e.g. an active
  * stylus) can be added as parameters here without touching the call sites. */
 enum overlay_profile overlay_resolve_profile(
-      unsigned behavior, bool controller_connected)
+      unsigned behavior, bool controller_connected,
+      bool minimal_available)
 {
    switch (behavior)
    {
@@ -6182,8 +6183,10 @@ enum overlay_profile overlay_resolve_profile(
          return controller_connected
             ? OVERLAY_PROFILE_HIDDEN : OVERLAY_PROFILE_FULL;
       case OVERLAY_BEHAVIOR_CONDITIONAL:
-         return controller_connected
-            ? OVERLAY_PROFILE_MINIMAL : OVERLAY_PROFILE_FULL;
+         if (controller_connected)
+            return minimal_available
+               ? OVERLAY_PROFILE_MINIMAL : OVERLAY_PROFILE_FULL;
+         return OVERLAY_PROFILE_FULL;
       case OVERLAY_BEHAVIOR_STATIC:
       default:
          break;
@@ -6207,7 +6210,9 @@ static bool input_overlay_want_hidden(void)
    {
       unsigned behavior         = settings->uints.input_overlay_behavior;
       bool controller_connected = (input_config_get_device_name(0) != NULL);
-      if (overlay_resolve_profile(behavior, controller_connected)
+      bool minimal_available    = (*settings->paths.path_overlay_minimal != '\0');
+      if (overlay_resolve_profile(behavior, controller_connected,
+               minimal_available)
             == OVERLAY_PROFILE_HIDDEN)
          hide = true;
    }
@@ -6346,7 +6351,8 @@ static void input_overlay_loaded(retro_task_t *task,
       if (enable_overlay
             && settings->bools.input_overlay_pointer_enable
             && overlay_resolve_profile(behavior,
-                  input_config_get_device_name(0) != NULL)
+                  input_config_get_device_name(0) != NULL,
+                  *settings->paths.path_overlay_minimal != '\0')
                == OVERLAY_PROFILE_HIDDEN)
          ol->flags |= INPUT_OVERLAY_GAMEPAD_HIDDEN;
    }
@@ -6387,20 +6393,18 @@ static const char *input_overlay_path(bool want_osk)
       return settings->paths.path_osk_overlay;
 
    /* Conditional profiles: when the resolved profile is MINIMAL, skip the
-    * auto-preferred lookup and return the user's minimal preset directly,
-    * falling back to the full preset when it is unset. */
+    * auto-preferred lookup and return the user's minimal preset directly.
+    * The resolver only returns MINIMAL when the path is non-empty, so no
+    * further fallback is needed here. */
    {
       unsigned             behavior          = settings->uints.input_overlay_behavior;
       bool                 controller_active = (input_config_get_device_name(0) != NULL);
+      bool                 minimal_available = (*settings->paths.path_overlay_minimal != '\0');
       enum overlay_profile profile           = overlay_resolve_profile(
-            behavior, controller_active);
+            behavior, controller_active, minimal_available);
 
       if (profile == OVERLAY_PROFILE_MINIMAL)
-      {
-         if (*settings->paths.path_overlay_minimal)
-            return settings->paths.path_overlay_minimal;
-         return settings->paths.path_overlay;
-      }
+         return settings->paths.path_overlay_minimal;
    }
 
    /* If the option is set to turn this off, just return default */
