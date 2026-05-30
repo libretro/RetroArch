@@ -5848,31 +5848,31 @@ static enum runloop_state_enum runloop_check_state(
        * the overlay's input zones conflict with stylus taps. Restore it once no
        * stylus event has occurred for ~2s (window owned by android_input.c) so the
        * touch menu remains reachable when the pen is set down. Mirrors the
-       * gamepad-hide block above (edge-triggered via a static bool). */
+       * gamepad-hide block above (edge-triggered via a static bool).
+       *
+       * Always FULLY UNLOAD on stylus active, regardless of
+       * input_overlay_pointer_enable. Native S-Pen events in android_input.c
+       * write directly to android->pointer[0..2].x/y and bypass overlay_ptr
+       * entirely, so unloading does not lose any stylus input surface. A
+       * loaded overlay with pointer_enable=true intercepts RETRO_DEVICE_POINTER
+       * queries and answers from its own touch tracker (count=1 PRESSED=true)
+       * instead of the native pointer state (count=0 PRESSED=false for hover),
+       * which breaks the count-independent hover contract that S-Pen-aware
+       * cores (e.g. snes9x stylus/spen-support) rely on. Hardware-validated
+       * on Mario Paint (CRC 266B220E) — hover stops driving the in-game cursor
+       * when the overlay is kept resident via soft-hide. */
       {
          static bool last_stylus_hidden = false;
          bool stylus_hidden             = android_input_stylus_recently_active();
 
-         /* When pointer input is enabled, soft-hide instead of unloading so
-          * the stylus (which drives the overlay as a pointer surface) keeps
-          * working. Level-triggered: enforce flag state every frame. */
-         if (   settings->bools.input_overlay_pointer_enable
-             && input_st->overlay_ptr)
-         {
-            if (stylus_hidden)
-               input_st->overlay_ptr->flags |=  INPUT_OVERLAY_GAMEPAD_HIDDEN;
-            else
-               input_st->overlay_ptr->flags &= ~INPUT_OVERLAY_GAMEPAD_HIDDEN;
-         }
-         else if (stylus_hidden != last_stylus_hidden)
+         if (stylus_hidden != last_stylus_hidden)
          {
             if (stylus_hidden)
                input_overlay_unload();
             else
                input_overlay_init();
+            last_stylus_hidden = stylus_hidden;
          }
-
-         last_stylus_hidden = stylus_hidden;
       }
 #endif
 
