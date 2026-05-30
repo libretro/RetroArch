@@ -5679,18 +5679,12 @@ static void ozone_update_scroll(ozone_handle_t *ozone,
 static int ozone_get_sublabel_max_width(ozone_handle_t *ozone,
       unsigned video_info_width, unsigned entry_padding)
 {
-   int max_width          = video_info_width / 2;
-   int sublabel_max_width = video_info_width
-         - (entry_padding * 2)
-         - (ozone->dimensions.entry_icon_padding * 3);
+   int sublabel_max_width = video_info_width - entry_padding;
 
    if (ozone->depth == 1)
       sublabel_max_width -= (int)ozone->dimensions_sidebar_width;
    if (ozone->show_thumbnail_bar)
       sublabel_max_width -= ozone->dimensions.thumbnail_bar_width;
-
-   if (sublabel_max_width > max_width)
-      sublabel_max_width = max_width;
 
    return sublabel_max_width;
 }

@@ -1392,10 +1392,6 @@ MSG_HASH(
    "Відэа"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Драйвер відэа на выкарыстанне."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "Драйвер OpenGL 1.x. Патрабуе версію:OpenGL не менш за 1.1. Не падтрымлівае шэйдары. Па магчымасці, замест яго ўжывайце пазнейшыя драйверы OpenGL."
    )
@@ -1492,10 +1488,6 @@ MSG_HASH(
    "Аўдыя"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Гукавы драйвер на выкарыстанне."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "Драйвер RSound для сеткавых аўдыясістэм."
    )
@@ -1553,10 +1545,6 @@ MSG_HASH(
    "Мікрафон"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Драйвер мікрафона на выкарыстанне."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Перадыскрэтызацыя мікрафона"
    )
@@ -1594,24 +1582,8 @@ MSG_HASH(
    "Камера"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Драйвер камеры на выкарыстанне."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Драйвер Bluetooth на выкарыстанне."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Драйвер Wi-Fi на выкарыстанне."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Месцазнаходжанне"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Драйвер месцазнаходжання на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1640,14 +1612,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Запіс"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Драйвер запісу на выкарыстанне."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Драйвер MIDI на выкарыстанне."
    )
 
 /* Settings > Video */
@@ -1971,10 +1935,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Вертыкальная частата абнаўлення"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Вертыкальная частата абнаўлення вашага экрана. Выкарыстоўваецца для падліку адпаведнай частаты ўводнага гуку.\nІгнаруееца, калі ўключана 'Відэа асобным патокам'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2895,10 +2855,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Максімум карыстальнікаў"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Максімальная колькасць карыстальнікаў, якіх падтрымае RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4459,10 +4415,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Лічыльнік часу кадра"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Настройкі лічыльніка часу кадра.\nАктыўна толькі пры ўключэнні опцыі 'Рэндэрынг у асобным патоку'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -6660,10 +6612,6 @@ MSG_HASH(
    "Зводка пры запуску"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Паказваць інфармацыю па загружанай гульні і бягучы прагрэс карыстальніка.\nУ рэжыме 'Для ўсіх апазнаных гульняў' будзе адлюстроўвацца зводка па гульнях без даступных дасягненняў."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Усе распазнаныя гульні"
    )
@@ -7137,10 +7085,6 @@ MSG_HASH(
    "Паказваць прывязкі ядраў у плэйлістах"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Дадаваць для запісаў у плэйлістах тэг прывязкі ядра (пры наяўнасці).\nІгнаруецца, калі ўключана адлюстраванне пазнак у плэйлістах."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Паказваць пазнакі ў плэйлістах"
    )
@@ -7239,10 +7183,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Пазнака часу запуску ў плэйлісце"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Выбар тыпу часу запуску, які адлюстроўваецца ў пазнаках плэйліста.\nАдпаведная опцыя павінна быць уключана ў наладах 'Захаванняў'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7420,10 +7360,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Статус актыўнасці Discord (Rich Presence)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Дазваляць дадатку Discord паказ звестак аб бягучым кантэнце.\nДаступна толькі для афіцыйнага настольнага кліента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -7815,16 +7751,8 @@ MSG_HASH(
    "Дадаць у мікшар"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Дадаць гукавую дарожку ў даступны аўдыё-струменевы слот.\nНе ўлічваецца, калі няма даступных слатоў."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Дадаць у мікшар і прайграць"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Дадаць гукавую дарожку ў даступны аўдыё-струменевы слот і прайграць.\nНе ўлічваецца, калі няма даступных слатоў."
    )
 
 /* Netplay */
@@ -11908,10 +11836,6 @@ MSG_HASH(
    "Лічыльнікі ядра"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Дыск не выбраны"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Лічыльнікі франтэнда"
    )
@@ -12230,10 +12154,6 @@ MSG_HASH(
    "Адсутнічаюць аргументы і ўбудаванае меню, спампоўваецца даведка..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Ўстаноўка дыска ў прывад"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Чаканне кліента..."
    )
@@ -12531,14 +12451,6 @@ MSG_HASH(
    "Сувязь з ядром у плэй-лісце была скінутая."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Устаўлены дыск"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Не ўдалося дадаць дыск"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Каталог праграмы"
    )
@@ -12703,14 +12615,6 @@ MSG_HASH(
    "Адлучыць прыладу ад сапраўднага порта."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Зачынены латок віртуальнага cd-прывада."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Адкрыты латок віртуальнага cd-прывада."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Сцягванне"
    )
@@ -12861,10 +12765,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Не атрымалася атрымаць дадзеныя SRAM з боку хаста."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Не ўдалося вымаць дыск з латка."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13211,10 +13111,6 @@ MSG_HASH(
    "Налады прывязак скінуты да стандартных значэнняў."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Дыск выняты з латка."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Выдалены часовы файл кантэнту"
    )
@@ -13229,10 +13125,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Адноўлена старое захаванне."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Шэйдары: адноўлены стандартны прасэт шэйдара"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -13465,14 +13357,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Не ўдалося разлічыць памеры вобласці прагляду. Будуць скарыстаны неапрацаваныя дадзеныя. Магчымы памылкі..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Не ўдалося адкрыць латок віртуальнага cd-прывада."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Не атрымалася зачыніць латок віртуальнага cd-прывада."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -13727,8 +13611,44 @@ MSG_HASH(
    "Чыт выдалены."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Не ўдалося ўсталяваць дыск."
+   MSG_DISK_CLOSED,
+   "Зачынены латок віртуальнага cd-прывада."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Не атрымалася зачыніць латок віртуальнага cd-прывада."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Адкрыты латок віртуальнага cd-прывада."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Не ўдалося адкрыць латок віртуальнага cd-прывада."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Дыск выняты з латка."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Не ўдалося вымаць дыск з латка."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Дыск не выбраны"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Устаўлены дыск"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Не ўдалося дадаць дыск"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Ўстаноўка дыска ў прывад"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

@@ -1352,10 +1352,6 @@ MSG_HASH(
    )
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Videostuurprogramma om te gebruiken."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x stuurprogramma. Minimale versie vereist: OpenGL 1.1. Ondersteunt geen shaders. Gebruik nieuwere OpenGL stuurprogramma's, indien mogelijk."
    )
@@ -1452,10 +1448,6 @@ MSG_HASH(
    "Geluid"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Audiostuurprogramma om te gebruiken."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "RSound stuurprogramma voor genetwerkte audiosystemen."
    )
@@ -1513,10 +1505,6 @@ MSG_HASH(
    "Microfoon"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Te gebruiken microfoonstuurprogramma"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Microfoon Resampler"
    )
@@ -1546,24 +1534,8 @@ MSG_HASH(
    "Dichtstbijzijnde resampling implementatie. Deze resampler negeert de kwaliteitsinstelling."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Camerastuurprogramma om te gebruiken."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Bluetooth-stuurprogramma te gebruiken."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "WiFi-stuurprogramma om te gebruiken."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Locatie Driver"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Locatiestuurprogramma om te gebruiken."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -1588,14 +1560,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Opname Driver"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Record-stuurprogramma om te gebruiken."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "MIDI-stuurprogramma om te gebruiken."
    )
 
 /* Settings > Video */
@@ -1923,10 +1887,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Verticale Refresh Rate"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Verticale verversingssnelheid van uw scherm. Wordt gebruikt om een geschikte audio-ingangssnelheid te berekenen.\nDit wordt genegeerd als 'Video met Schroefdraad' is ingeschakeld."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2927,10 +2887,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Maximum Aantal Gebruikers"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Maximaal aantal gebruikers ondersteund door RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4815,10 +4771,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Frame Tijd Teller"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Instellingen wijzigen die de frame time teller beïnvloeden.\nAlleen actief wanneer schroefdraad-video is uitgeschakeld."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7056,10 +7008,6 @@ MSG_HASH(
    "Samenvatting bij het starten"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Toont informatie over het spel dat wordt geladen en de huidige voortgang van de gebruiker.\n'Alle geïdentificeerde spellen' zal een samenvatting tonen voor spellen zonder gepubliceerde achievements."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Alle geïdentificeerde spellen"
    )
@@ -7525,10 +7473,6 @@ MSG_HASH(
    "Toon gekoppelde cores in afspeellijsten"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Specificeer wanneer afspeellijst items te taggen met de huidige bijbehorende core (indien aanwezig).\nDeze instelling wordt genegeerd wanneer afspeellijstsublabels zijn ingeschakeld."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Toon Afspeellijstsublabels"
    )
@@ -7623,10 +7567,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Looptijd voor afspeellijstsublabels"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Selecteer welk type runtime log record moet worden weergegeven op de afspeellijst sublabels.\nHet bijbehorende runtime log moet ingeschakeld zijn via het \"Opslaan\"-menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7800,10 +7740,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Discord Inschakelen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Sta de Discord-app toe om data te tonen over de afgespeelde inhoud.\nAlleen beschikbaar met de native desktop client."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8163,16 +8099,8 @@ MSG_HASH(
    "Aan audio mixer toevoegen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Voeg deze audiotrack toe aan een beschikbare audio stream-slot.\nAls er momenteel geen slots beschikbaar zijn, wordt het genegeerd."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Aan audio mixer toevoegen en afspelen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Voeg deze audiotrack toe aan een beschikbare audio stream-slot en speel het af.\nAls er momenteel geen slots beschikbaar zijn, wordt het genegeerd."
    )
 
 /* Netplay */
@@ -9491,10 +9419,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Laad nieuwe schijf"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Selecteer een nieuwe schijf van het bestandssysteem en voeg deze toe in de indexlijst.\nOPMERKING: Dit is een legacy functie. In plaats daarvan wordt het aangeraden om M3U afspeellijsten te gebruiken voor titels met meerdere schijven."
    )
 
 /* Quick Menu > Shaders */
@@ -12428,10 +12352,6 @@ MSG_HASH(
    "Core Prestatie tellers"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Geen schijf geselecteerd"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Front-end Prestatie Tellers"
    )
@@ -12732,10 +12652,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
    "Geen argumenten opgegeven en geen menu ingebouwd, er wordt hulp weergegeven..."
-   )
-MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Schijf in schijflade aan het instellen"
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
@@ -13043,14 +12959,6 @@ MSG_HASH(
    "De core-koppeling voor dit afspeellijstitem is gereset."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Bijgevoegde schijf: "
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Kon schijf niet toevoegen"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Programmamap"
    )
@@ -13219,14 +13127,6 @@ MSG_HASH(
    "Apparaat ontkoppeld van een geldige poort."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Virtuele schijflade gesloten."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Virtuele schijflade geopend."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Bezig met downloaden"
    )
@@ -13377,10 +13277,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "SRAM data ophalen van de host mislukt"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Schijf uit de lade verwijderen mislukt"
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13739,10 +13635,6 @@ MSG_HASH(
    "Alle remap-opties gereset naar de standaardwaarden"
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Schijf uit de lade verwijderd."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Tijdelijk inhoudsbestand aan het verwijderen"
    )
@@ -13753,10 +13645,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Oud onderbrekingspunt geladen."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shaders: herstellen van standaard shader preset naar"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14005,14 +13893,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Weergave grootte berekening mislukt! Zal doorgaan met rauw gegevens. Dit werkt waarschijnlijk niet goed..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Virtuele schijflade uitwerpen mislukt."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Virtuele schijflade sluiten mislukt."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14271,8 +14151,44 @@ MSG_HASH(
    "Cheat verwijderd."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Schijf instellen mislukt."
+   MSG_DISK_CLOSED,
+   "Virtuele schijflade gesloten."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Virtuele schijflade sluiten mislukt."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Virtuele schijflade geopend."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Virtuele schijflade uitwerpen mislukt."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Schijf uit de lade verwijderd."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Schijf uit de lade verwijderen mislukt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Geen schijf geselecteerd"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Bijgevoegde schijf: "
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Kon schijf niet toevoegen"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Schijf in schijflade aan het instellen"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

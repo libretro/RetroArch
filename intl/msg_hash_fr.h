@@ -1433,7 +1433,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Pilote vidéo à utiliser."
+   "Pilote vidéo à utiliser. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1533,7 +1533,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Pilote audio à utiliser."
+   "Pilote audio à utiliser. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1590,7 +1590,7 @@ MSG_HASH(
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Pilote de microphone à utiliser."
+   "Pilote de microphone à utiliser. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1631,11 +1631,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Pilote d'appareil photo à utiliser."
+   "Pilote de caméra à utiliser. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Pilote Bluetooth à utiliser."
+   "Pilote Bluetooth à utiliser. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
@@ -1643,7 +1643,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Pilote Wi-Fi à utiliser."
+   "Pilote Wi-Fi à utiliser. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1651,7 +1651,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Pilote de localisation à utiliser."
+   "Pilote de géolocalisation à utiliser. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1683,7 +1683,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Pilote d'enregistrement à utiliser."
+   "Pilote d'enregistrement à utiliser. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
@@ -1691,7 +1691,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Pilote MIDI à utiliser."
+   "Pilote MIDI à utiliser. (Redémarrage requis)"
    )
 
 /* Settings > Video */
@@ -2050,7 +2050,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Renseigne la fréquence de rafraîchissement vertical actuelle de votre écran. Elle sera utilisée pour calculer un débit audio approprié.\nCette option sera ignorée si 'Vidéo sur plusieurs fils d'exécution' est activé."
+   "Fréquence de rafraîchissement vertical actuelle de votre écran. Elle sera utilisée pour calculer un débit audio approprié. Cette option sera ignorée si 'Vidéo sur plusieurs fils d'exécution' est activé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -3074,7 +3074,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Nombre maximum d'utilisateurs pris en charge par RetroArch."
+   "Nombre maximum d'utilisateurs pris en charge par RetroArch. (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4668,6 +4668,18 @@ MSG_HASH(
    "Sauvegarde automatiquement la mémoire SRAM non volatile à un intervalle régulier. Cette option est désactivée par défaut. L'intervalle est mesuré en secondes. Une valeur de 0 désactive la sauvegarde automatique."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Sauvegarde instantanée : intervalle automatique"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Faire automatiquement une sauvegarde instantanée à un intervalle régulier (en secondes). Mettre à 0 pour désactiver."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Fait automatiquement une sauvegarde instantanée à intervalle régulier, mesuré en secondes. Cette option est utile pour créer des sauvegardes périodiques de votre progression dans le jeu, en particulier sur des appareils qui peuvent fermer inopinément en raison de la batterie ou d'autres problèmes. Une valeur de 0 désactive cette fonctionnalité."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
    "Replay : intervalle des points de contrôle"
    )
@@ -4974,7 +4986,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Modifier les paramètres qui influent sur le compteur de temps par image.\nActif uniquement lorsque la vidéo sur plusieurs fils d'exécution est désactivée."
+   "Modifier les réglages qui influent sur le compteur de temps par image. Cette option est active uniquement lorsque la vidéo sur plusieurs fils d'exécution est désactivée."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7253,7 +7265,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Affiche des informations sur le jeu en cours de chargement et la progression actuelle de l'utilisateur.\n'Tous les jeux identifiés' affichera un résumé pour les jeux sans succès publiés."
+   "Affiche des informations sur le jeu en cours de chargement et la progression actuelle de l'utilisateur. 'Tous les jeux identifiés' affichera un résumé pour les jeux sans succès publiés."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7730,7 +7742,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Indique quand marquer les entrées de la liste de lecture avec leur cœur actuellement associé (le cas échéant).\nCe réglage est ignoré lorsque les sous-descriptions des éléments dans les listes de lecture sont activées."
+   "Indique quand marquer les entrées de la liste de lecture avec leur cœur actuellement associé (le cas échéant). Ce réglage est ignoré lorsque les sous-descriptions des éléments dans les listes de lecture sont activées."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7830,7 +7842,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Sélectionner le type d'enregistrement du temps de jeu à afficher dans les sous-descriptions des listes de lecture.\nLe journal du temps de jeu correspondant doit être activé via le menu d'options 'Sauvegarde'."
+   "Sélectionner le type d'enregistrement du temps de jeu à afficher dans les sous-descriptions des listes de lecture. Le journal du temps de jeu correspondant doit être activé via le menu d'options 'Sauvegarde'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8015,7 +8027,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Permettre à l'application Discord d'afficher des données sur le contenu joué.\nUniquement disponible avec le client de bureau natif."
+   "Permettre à l'application Discord d'afficher des données sur le contenu joué. Uniquement disponible avec le client de bureau natif."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8416,7 +8428,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Ajouter cette piste audio dans un emplacement de diffusion audio disponible.\nSi aucun emplacement n'est disponible, elle sera ignorée."
+   "Ajouter cette piste audio dans un emplacement de diffusion audio disponible. Si aucun emplacement n'est disponible, elle sera ignorée."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8424,7 +8436,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Ajouter cette piste audio dans un emplacement de diffusion audio disponible et la lire.\nSi aucun emplacement n'est disponible, elle sera ignorée."
+   "Ajouter cette piste audio dans un emplacement de diffusion audio disponible et la lire. Si aucun emplacement n'est disponible, elle sera ignorée."
    )
 
 /* Netplay */
@@ -9510,7 +9522,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "Gros-boutienne : 258 = 0x0102\nPetit-boutienne : 258 = 0x0201"
+   "Gros-boutienne : 258 = 0x0102, petit-boutienne : 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -9774,7 +9786,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Sélectionner un nouveau disque à partir du système de fichiers et l'ajouter dans la liste d'index.\nREMARQUE : C'est une fonctionnalité héritée. Il est plutôt recommandé d'utiliser des listes de lecture M3U pour des titres multi-disques."
+   "Sélectionner un nouveau disque à partir du système de fichiers et l'ajouter dans la liste d'index."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
+   "Sélectionner un nouveau disque à partir du système de fichiers et l'ajouter dans la liste d'index.\nREMARQUE : C'est une fonctionnalité héritée. Il est plutôt recommandé d'utiliser des listes de lecture M3U pour les titres multi-disques."
    )
 
 /* Quick Menu > Shaders */
@@ -12800,10 +12816,6 @@ MSG_HASH(
    "Compteurs de cœur"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Aucun disque sélectionné"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Compteurs de l'interface"
    )
@@ -13118,10 +13130,6 @@ MSG_HASH(
    "Aucun paramètre fourni et pas de menu intégré, affichage de l'aide..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Insertion de disque dans le lecteur"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "En attente d'un client..."
    )
@@ -13247,7 +13255,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
-   "Impossible d'expulser le client : \"%s\""
+   "Échec d'expulsion du client : \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED_CLIENT_S,
@@ -13255,7 +13263,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
-   "Impossible de bannir le client : \"%s\""
+   "Échec de bannissement du client : \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
@@ -13425,14 +13433,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESET_CORE_ASSOCIATION,
    "L'association au cœur a été réinitialisée pour l'entrée dans la liste de lecture."
-   )
-MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disque ajouté"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Échec de l'ajout du disque"
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
@@ -13607,14 +13607,6 @@ MSG_HASH(
    "Déconnecter le périphérique d'un port valide."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Plateau du lecteur de disque virtuel fermé."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Plateau du lecteur de disque virtuel éjecté."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Téléchargement"
    )
@@ -13769,10 +13761,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Échec de l'obtention des données SRAM depuis l'hôte."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Échec de l'éjection du disque depuis le lecteur."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14147,10 +14135,6 @@ MSG_HASH(
    "Toutes les options du remappage des touches ont été réinitialisées aux valeurs par défaut."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Disque retiré du lecteur."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Suppression du fichier de contenu temporaire"
    )
@@ -14419,14 +14403,6 @@ MSG_HASH(
    "Le calcul de la taille de la fenêtre d'affichage a échoué ! Continuera à utiliser les données brutes. Cela ne fonctionnera probablement pas correctement..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Impossible d'éjecter le plateau du lecteur de disque virtuel."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Impossible de fermer le plateau du lecteur de disque virtuel."
-   )
-MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
    "Chargement auto d'une sauvegarde instantanée depuis"
    )
@@ -14683,8 +14659,48 @@ MSG_HASH(
    "Cheat supprimé."
    )
 MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Plateau du lecteur de disque virtuel fermé."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Impossible de fermer le plateau du lecteur de disque virtuel."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Plateau du lecteur de disque virtuel éjecté."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Impossible d'éjecter le plateau du lecteur de disque virtuel."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Disque retiré du lecteur."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Échec de l'éjection du disque depuis le lecteur."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Aucun disque sélectionné"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disque ajouté"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Échec de l'ajout du disque"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Insertion de disque dans le lecteur"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Impossible de sélectionner le disque."
+   "Échec de la sélection du disque"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

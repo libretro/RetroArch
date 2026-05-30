@@ -1364,10 +1364,6 @@ MSG_HASH(
    "Vídeo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Driver de vídeo a ser usado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "Driver OpenGL 1.x. Versão mínima necessária: OpenGL 1.1. Não suporta shaders. Use drivers OpenGL mais antigos, se possível."
    )
@@ -1464,10 +1460,6 @@ MSG_HASH(
    "Áudio"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Driver de áudio a ser usado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "Driver RSound para sistemas de áudio em rede."
    )
@@ -1525,10 +1517,6 @@ MSG_HASH(
    "Microfone"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Controlador de microfone a utilizar."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Reamostrador de microfone"
    )
@@ -1566,24 +1554,8 @@ MSG_HASH(
    "Câmara"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Driver de câmara a ser usado."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Driver Bluetooth a ser usado."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Driver Wi-Fi a ser usado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Localização"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Driver de localização a ser usado."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -1608,14 +1580,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Gravação de vídeo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Driver de gravação de vídeo a ser usado."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Driver MIDI a ser usado."
    )
 
 /* Settings > Video */
@@ -1883,10 +1847,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Taxa de atualização"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Taxa de atualização vertical do ecrã. Usado para calcular uma taxa de entrada de áudio apropriada.\nIsto será ignorado se \"Vídeo segmentado\" estiver ativado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2319,10 +2279,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Número máximo de utilizadores"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Número máximo de utilizadores suportados pelo RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -4642,10 +4598,6 @@ MSG_HASH(
    "O ficheiro já existe. A guardar no buffer de cópia de segurança"
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Colocando o disco na área de notificação"
-   )
-MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Você saiu do jogo"
    )
@@ -4709,10 +4661,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONNECTION_SLOT,
    "Vaga para ligação"
-   )
-MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disco anexado"
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
@@ -4949,10 +4897,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Falha ao receber os dados da SRAM do anfitrião."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Falha ao remover o disco da área de notificações."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -5203,10 +5147,6 @@ MSG_HASH(
    "Remapeamento do ficheiro guardado com sucesso."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Disco removido da área de notificação."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Removendo conteúdo temporário do ficheiro"
    )
@@ -5221,10 +5161,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Gravação do estado antigo restaurada."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Sombreamento: restaurando padrões de pré-definição de sombreamento em"
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
@@ -5459,8 +5395,20 @@ MSG_HASH(
    "Correspondência eliminada."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Falha ao definir o disco."
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Disco removido da área de notificação."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Falha ao remover o disco da área de notificações."
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disco anexado"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Colocando o disco na área de notificação"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

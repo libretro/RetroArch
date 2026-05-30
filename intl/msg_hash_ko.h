@@ -1468,10 +1468,6 @@ MSG_HASH(
    "비디오 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "사용할 비디오 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x 드라이버입니다. 최소 OpenGL 1.1 지원이 필요합니다. 셰이더를 지원하지 않습니다. 가능한 경우 더 최신 버전의 OpenGL 드라이버를 사용하십시오."
    )
@@ -1568,10 +1564,6 @@ MSG_HASH(
    "오디오 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "사용할 오디오 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "네트워크 오디오 시스템을 위한 RSound 드라이버입니다."
    )
@@ -1629,10 +1621,6 @@ MSG_HASH(
    "마이크"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "사용할 마이크 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "마이크 리샘플러"
    )
@@ -1670,32 +1658,16 @@ MSG_HASH(
    "카메라 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "사용할 카메라 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
    "블루투스"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "사용할 블루투스 드라이버입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "Wi-Fi 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "사용할 Wi-Fi 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "위치 드라이버"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "사용할 위치 드라이버입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1726,16 +1698,8 @@ MSG_HASH(
    "녹화 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "사용할 녹화 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
    "MIDI 드라이버"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "사용할 MIDI 드라이버입니다."
    )
 
 /* Settings > Video */
@@ -2087,10 +2051,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "주사율"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "화면의 주사율입니다. 적절한 오디오 입력 비율을 계산하는데 사용됩니다.\n '스레드된 비디오' 설정 사용시 무시됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -3119,10 +3079,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "최대 사용자"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "RetroArch에서 지원할 최대 사용자 수를 설정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -5023,10 +4979,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "프레임 타임 카운터"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "프레임 타임 카운터에 영향을 주는 설정을 변경합니다.\n스레드된 비디오가 비활성화되었을 경우에만 사용 가능합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7300,10 +7252,6 @@ MSG_HASH(
    "시작 시 요약 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "불러와진 게임에 대한 정보와 사용자의 현재 진행도를 표시합니다.\n'확인된 모든 게임'으로 설정할 경우 등록된 도전과제가 없는 게임에서도 요약을 표시합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "확인된 모든 게임"
    )
@@ -7777,10 +7725,6 @@ MSG_HASH(
    "실행목록에 연결된 코어 보이기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "연결된 코어가 있을 경우 항목 이름에 표시되게 합니다.\n이 설정은 실행목록 하위 라벨이 활성화되어 있으면 무시됩니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "실행목록 하위라벨 보이기"
    )
@@ -7883,10 +7827,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "실행목록 하위 실행시간 라벨 형식"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "실행목록 하위의 실행시간 라벨을 어떻게 표시할지 선택합니다.\n'저장' 설정에서 실행시간 로그 저장이 활성화되어 있어야합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8064,10 +8004,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
    "코어가 카메라에 접근할 수 있게 합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Discord 앱에 실행 중인 콘텐츠에 대한 정보를 표시합니다.\n네이티브 데스크탑 앱에서만 사용할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8459,16 +8395,8 @@ MSG_HASH(
    "믹서에 추가"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "이 오디오 트랙을 사용 가능한 오디오 스트림 슬롯에 추가합니다.\n재생 가능한 슬롯이 없을 경우 무시됩니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "믹서에 추가 후 재생"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "이 오디오 트랙을 사용 가능한 오디오 스트림 슬롯에 추가한 뒤 재생합니다.\n재생 가능한 슬롯이 없을 경우 무시됩니다."
    )
 
 /* Netplay */
@@ -9569,10 +9497,6 @@ MSG_HASH(
    "빅 엔디안"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "빅 엔디안일 때: 258 = 0x0102\n리틀 엔디안일 때: 258 = 0x0201"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "메모리에서 값 검색"
    )
@@ -9847,10 +9771,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "새 디스크 불러오기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "파일시스템에서 새로운 디스크를 선택한 뒤 인덱스 목록에 추가합니다.\n주의: 이 기능은 레거시 기능입니다. 멀티 디스크 타이틀을 실행할 때는 이 기능 대신 M3U 실행목록을 사용하는 것이 권장됩니다."
    )
 
 /* Quick Menu > Shaders */
@@ -12896,10 +12816,6 @@ MSG_HASH(
    "코어 카운터"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "선택된 디스크 없음"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "프론트엔드 카운터"
    )
@@ -13222,10 +13138,6 @@ MSG_HASH(
    "제공되는 인수 및 메뉴, 도움말이 없습니다..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "디스크 트레이 설정"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "클라이언트를 기다리고 있습니다..."
    )
@@ -13531,14 +13443,6 @@ MSG_HASH(
    "실행목록 상의 코어 연결이 초기화 되었습니다."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "추가 디스크"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "디스크 추가 실패"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "프로그램 폴더"
    )
@@ -13711,14 +13615,6 @@ MSG_HASH(
    "장치 연결해제."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "가상 디스크 트레이를 닫았습니다."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "가상 디스크 트레이를 꺼냈습니다."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "다운로드 중"
    )
@@ -13873,10 +13769,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "호스트에서 SRAM 데이터 수신 실패."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "트레이에서 디스크 제거 실패."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14255,10 +14147,6 @@ MSG_HASH(
    "모든 입력설정 옵션이 기본값으로 초기화되었습니다."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "트레이에서 디스크 제거됨."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "임시 콘텐츠 파일 제거 중"
    )
@@ -14273,10 +14161,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "이전 상태저장 복원."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "셰이더: 기본 셰이더 프리셋 복구: "
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14529,14 +14413,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "뷰포트 크기 계산 실패! 원시 데이터를 계속 사용합니다. 정상 적인 동작을 보장할 수 없습니다..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "가상 디스크 트레이를 꺼내지 못했습니다."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "가상 디스크 트레이를 닫지 못했습니다."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14795,8 +14671,44 @@ MSG_HASH(
    "치트 삭제됨."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "디스크 삽입에 실패했습니다."
+   MSG_DISK_CLOSED,
+   "가상 디스크 트레이를 닫았습니다."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "가상 디스크 트레이를 닫지 못했습니다."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "가상 디스크 트레이를 꺼냈습니다."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "가상 디스크 트레이를 꺼내지 못했습니다."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "트레이에서 디스크 제거됨."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "트레이에서 디스크 제거 실패."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "선택된 디스크 없음"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "추가 디스크"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "디스크 추가 실패"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "디스크 트레이 설정"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

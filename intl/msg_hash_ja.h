@@ -1376,10 +1376,6 @@ MSG_HASH(
    "ビデオ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "使用するビデオのドライバです。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x ドライバです。最小要求バージョン: OpenGL 1.1.1。シェーダーに対応していません。可能であれば、後の OpenGL ドライバを使用してください。"
    )
@@ -1476,10 +1472,6 @@ MSG_HASH(
    "オーディオ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "使用するオーディオのドライバです。 "
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "ネットワークオーディオシステム用の RSound ドライバです。"
    )
@@ -1533,10 +1525,6 @@ MSG_HASH(
    "マイク"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "使用するマイクのドライバです。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "マイクリサンプラー"
    )
@@ -1574,24 +1562,8 @@ MSG_HASH(
    "カメラ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "使用するカメラのドライバです。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "使用する Bluetooth のドライバです。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "使用する Wi-Fi のドライバです。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "位置情報"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "使用する位置情報のドライバです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1620,14 +1592,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "録画"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "使用する録画のドライバです。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "使用する MIDI のドライバです。"
    )
 
 /* Settings > Video */
@@ -1939,10 +1903,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "垂直リフレッシュレート"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "画面の垂直リフレッシュレートです。適切なオーディオ入力レートを計算するために使用されます。\n[ビデオのスレッド化] を有効にすると、これは無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2799,10 +2759,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "最大ユーザー数"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "RetroArch が対応する最大ユーザー数です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4275,10 +4231,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "フレームタイムカウンター"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "フレームタイムカウンターに影響する設定を変更します。\nビデオのスレッド化が無効化されている場合にのみ有効になります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -6388,10 +6340,6 @@ MSG_HASH(
    "スタートアップ概要"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "ロード中のゲームとユーザーの現在の進捗状況についての情報を表示します。\n[すべての認識されたゲーム] は実績が公開されていないゲームの概要を表示します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "すべての特定されたゲーム"
    )
@@ -6865,10 +6813,6 @@ MSG_HASH(
    "関連付けられたコアを表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "プレイリストエントリーに、現在関連付けられているコア (もしあれば) をタグ付けするタイミングを指定します。\nプレイリストのサブラベルが有効になっている場合、この設定は無視されます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "プレイリストのサブラベルを表示"
    )
@@ -6967,10 +6911,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "プレイリストのサブラベルのプレイ時間"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "サブラベルに表示するプレイ時間の種類を選択します。\n対応するプレイ時間を [保存] オプションメニューで有効にする必要があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7140,10 +7080,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
    "コアにカメラのアクセスを許可します。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Discord アプリにプレイされたコンテンツについての情報を表示することを許可します。\nネイティブデスクトップクライアントでのみ利用可能です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -7531,16 +7467,8 @@ MSG_HASH(
    "ミキサーに追加"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "このオーディオトラックを利用可能なオーディオストリームスロットに追加します。\n現在利用可能なスロットがない場合は無視されます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "ミキサーに追加して再生"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "このオーディオトラックを利用可能なオーディオストリームスロットに追加して再生します。\n現在利用可能なスロットがない場合は無視されます。"
    )
 
 /* Netplay */
@@ -8503,10 +8431,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
    "ビッグエンディアン"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "ビッグエンディアン: 258 = 0x0102\nリトルエンディアン: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -11452,10 +11376,6 @@ MSG_HASH(
    "コアカウンター"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "ディスクが選択されていません"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "フロントエンドカウンター"
    )
@@ -11774,10 +11694,6 @@ MSG_HASH(
    "引数が指定されておらず、メニューもビルトインされていないため、ヘルプを表示します…"
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "ディスクがトレイに入りました"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "クライアントを待機中..."
    )
@@ -12067,14 +11983,6 @@ MSG_HASH(
    "プレイリストエントリーのコアの関連付けがリセットされました。"
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "ディスクを挿入しました"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "ディスクの追加に失敗しました"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "アプリディレクトリ"
    )
@@ -12235,14 +12143,6 @@ MSG_HASH(
    "デバイスを有効なポートから切断してください"
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "仮想ディスクトレイを閉じました。"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "仮想ディスクトレイを取り出しました。"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "ダウンロード中"
    )
@@ -12381,10 +12281,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "ホストから SRAM データを受信できませんでした。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "トレイからディスクを削除できませんでした。"
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -12719,10 +12615,6 @@ MSG_HASH(
    "すべての入力リマップオプションはデフォルトにリセットされます。"
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "ディスクをトレイから取り出しました。"
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "一時コンテンツファイルを削除中"
    )
@@ -12737,10 +12629,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "以前のステートセーブを復元しました。"
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "シェーダー: デフォルトのシェーダープリセットを復元しています to"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -12957,14 +12845,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "表示領域サイズの計算に失敗しました! RAW データを引き続き使用します。これはおそらく正常に動作しません…"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "仮想ディスクトレイの取り出しに失敗しました。"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "仮想ディスクトレイを閉じることができませんでした。"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -13219,8 +13099,44 @@ MSG_HASH(
    "チートを削除しました。"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "ディスクの設定に失敗しました。"
+   MSG_DISK_CLOSED,
+   "仮想ディスクトレイを閉じました。"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "仮想ディスクトレイを閉じることができませんでした。"
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "仮想ディスクトレイを取り出しました。"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "仮想ディスクトレイの取り出しに失敗しました。"
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "ディスクをトレイから取り出しました。"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "トレイからディスクを削除できませんでした。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "ディスクが選択されていません"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "ディスクを挿入しました"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "ディスクの追加に失敗しました"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "ディスクがトレイに入りました"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

@@ -8785,11 +8785,35 @@ static void general_write_handler(rarch_setting_t *setting)
          if (!settings->bools.video_fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
+      case MENU_ENUM_LABEL_REWIND_ENABLE:
+         {
+            struct menu_state *menu_st = menu_state_get_ptr();
+            /* Toggling rewind support shows or hides the dependent
+             * rewind items (granularity, buffer size, ...), so force
+             * the page to rebuild immediately. The setting value is
+             * already written by the framework before this handler
+             * runs, and the CMD_EVENT_REWIND_TOGGLE attached to the
+             * setting still fires via rarch_cmd below. */
+            menu_st->flags            |= MENU_ST_FLAG_PREVENT_POPULATE
+                                       | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+         }
+         break;
       case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
-         settings->flags                  |= SETTINGS_FLG_MODIFIED;
-         settings->uints.video_hdr_mode    = *setting->value.target.unsigned_integer;
+         {
+            struct menu_state *menu_st     = menu_state_get_ptr();
+            settings->flags               |= SETTINGS_FLG_MODIFIED;
+            settings->uints.video_hdr_mode = *setting->value.target.unsigned_integer;
 
-         rarch_cmd = CMD_EVENT_REINIT;
+            rarch_cmd                      = CMD_EVENT_REINIT;
+
+            /* Switching HDR on/off shows or hides the dependent HDR
+             * items (paper white, expand gamut, scanlines, ...), so
+             * force the page to rebuild immediately. This fires for
+             * both left/right scroll and dropdown OK selection
+             * because they both invoke setting->change_handler. */
+            menu_st->flags                |= MENU_ST_FLAG_PREVENT_POPULATE
+                                           | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+         }
          break;
       case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
          {
@@ -8827,12 +8851,18 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES:
          {
             video_driver_state_t *video_st               = video_state_get_ptr();
+            struct menu_state *menu_st                   = menu_state_get_ptr();
             settings->flags                              |= SETTINGS_FLG_MODIFIED;
             settings->bools.video_hdr_scanlines          = *setting->value.target.boolean;
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_scanlines)
                video_st->poke->set_hdr_scanlines(video_st->data,
                      settings->bools.video_hdr_scanlines);
+
+            /* Scanlines on/off shows or hides the subpixel layout
+             * item, so force the page to rebuild immediately. */
+            menu_st->flags                               |= MENU_ST_FLAG_PREVENT_POPULATE
+                                                          | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_SUBPIXEL_LAYOUT:
@@ -12936,8 +12966,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_exact;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact;
-
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact_input;
          CONFIG_UINT(
                list, list_info,
                &cheat_manager_state.dummy,
@@ -13036,7 +13065,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_eqplus;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqplus;
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqplus_input;
 
          CONFIG_UINT(
                list, list_info,
@@ -13052,7 +13081,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_eqminus;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqminus;
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqminus_input;
 
          CONFIG_UINT(
                list, list_info,

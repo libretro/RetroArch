@@ -1412,10 +1412,6 @@ MSG_HASH(
    "วิดีโอ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "ไดรเวอร์วิดีโอที่จะใช้งาน"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "ไดรเวอร์ OpenGL 1.x เวอร์ชันขั้นต่ำที่ต้องการ: OpenGL 1.1 ไม่รองรับแชเดอร์ (Shaders) ควรใช้ไดรเวอร์ OpenGL เวอร์ชันที่ใหม่กว่าแทน หากทำได้"
    )
@@ -1512,10 +1508,6 @@ MSG_HASH(
    "เสียง"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "ไดรเวอร์เสียงที่ใช้งาน"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "ไดรเวอร์ RSound สำหรับระบบเสียงผ่านเครือข่าย"
    )
@@ -1573,10 +1565,6 @@ MSG_HASH(
    "ไมโครโฟน"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "ไดรเวอร์ไมโครโฟนที่ใช้งาน"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "ความถี่สัญญาณเสียงไมโครโฟน"
    )
@@ -1614,28 +1602,12 @@ MSG_HASH(
    "กล้อง"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "ไดรเวอร์กล้องที่ใช้งาน"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
    "บลูทูธ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "ไดรเวอร์บลูทูธที่ใช้งาน"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "ไดรเวอร์ Wi-Fi ที่ใช้งาน"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "พิกัดตำแหน่ง"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "ไดรเวอร์พิกัดตำแหน่งที่ใช้งาน"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1664,14 +1636,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "บันทึกวิดีโอ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "ไดรเวอร์การบันทึกที่ใช้งาน"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "ไดรเวอร์ MIDI ที่ใช้งาน"
    )
 
 /* Settings > Video */
@@ -2015,10 +1979,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "อัตราการรีเฟรชแนวตั้ง"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "อัตราการรีเฟรชแนวตั้งของหน้าจอ ใช้สำหรับคำนวณอัตราอินพุตเสียงที่เหมาะสม\nค่านี้จะถูกละเว้นหากเปิดใช้งาน 'วิดีโอแบบแยกเธรด' อยู่"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -3003,10 +2963,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "จำนวนผู้ใช้สูงสุด"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "จำนวนผู้ใช้สูงสุดที่รองรับโดย RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4863,10 +4819,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "ตัวนับเวลาเฟรม"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "ปรับเปลี่ยนการตั้งค่าที่มีผลต่อตัวนับเวลาเฟรม\nจะใช้งานได้เมื่อปิดการใช้งานวิดีโอแบบเธรดเท่านั้น"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7108,10 +7060,6 @@ MSG_HASH(
    "รายการสรุปเมื่อเริ่มระบบ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "แสดงข้อมูลเกี่ยวกับเกมที่กำลังโหลดและลำดับความคืบหน้าปัจจุบันของผู้ใช้\n'ทุกเกมที่ระบุได้' จะแสดงข้อมูลสรุปสำหรับเกมที่ไม่มีรายการความสำเร็จ เผยแพร่อยู่"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "ทุกเกมที่ระบุได้"
    )
@@ -7561,10 +7509,6 @@ MSG_HASH(
    "แสดง Core ที่เกี่ยวข้องในเพลย์ลิสต์"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "กำหนดว่าจะให้แสดงแท็ก Core ในเพลย์ลิสต์เมื่อใด (ถ้ามี)การตั้งค่านี้จะถูกละเว้นเมื่อเปิดใช้งานคำอธิบายย่อยในเพลย์ลิสต์"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "แสดงคำอธิบายย่อยในเพลย์ลิสต์"
    )
@@ -7663,10 +7607,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "เวลาที่ใช้เล่นในคำอธิบายย่อยของเพลย์ลิสต์"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "เลือกประเภทของ log เวลาที่ใช้เล่นที่จะแสดงในคำอธิบายย่อยของเพลย์ลิสต์\nต้องเปิดใช้งาน log เวลาที่ใช้เล่นที่เกี่ยวข้องผ่านเมนูตัวเลือกการบันทึกก่อน"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7844,10 +7784,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
    "อนุญาตให้ Core เข้าถึงกล้อง"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "อนุญาตให้แอป Discord แสดงข้อมูลเกี่ยวกับเนื้อหาที่กำลังเล่น\nใช้งานได้เฉพาะกับโปรแกรมบนเดสก์ท็อปเท่านั้น"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8219,16 +8155,8 @@ MSG_HASH(
    "เพิ่มลงใน Mixer"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "เพิ่มแทร็กเสียงนี้ลงในช่องสตรีมเสียงที่ว่างอยู่\nหากไม่มีช่องว่างที่พร้อมใช้งานในขณะนี้ ข้อมูลนี้จะถูกข้ามไป"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "เพิ่มลงใน Mixer และเล่น"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "เพิ่มแทร็กเสียงนี้ลงในช่องสตรีมเสียงที่ว่างอยู่และเล่นทันที\nหากไม่มีช่องว่างที่พร้อมใช้งานในขณะนี้ ข้อมูลนี้จะถูกข้ามไป"
    )
 
 /* Netplay */
@@ -9579,10 +9507,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "โหลดแผ่นดิสก์ใหม่"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "เลือกแผ่นดิสก์ใหม่จากระบบไฟล์และเพิ่มเข้าไปในรายการลำดับแผ่น\nหมายเหตุ: นี่เป็นฟีเจอร์แบบเก่า ขอแนะนำให้ใช้ไฟล์เพลย์ลิสต์ M3U สำหรับเกมที่มีหลายแผ่นแทน"
    )
 
 /* Quick Menu > Shaders */
@@ -12096,10 +12020,6 @@ MSG_HASH(
    "ตัวนับ Core"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "ไม่ได้เลือกแผ่น"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "ตัวนับ Frontend"
    )
@@ -12414,10 +12334,6 @@ MSG_HASH(
    "ไม่มีการส่งค่าเข้ามา และไม่มีเมนูในตัว กำลังแสดงความช่วยเหลือ…"
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "กำลังตั้งค่าแผ่นในถาด"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "กำลังรอผู้ใช้เชื่อมต่อ…"
    )
@@ -12723,14 +12639,6 @@ MSG_HASH(
    "การเชื่อม Core ของรายการในเพลย์ลิสต์ถูกรีเซ็ตแล้ว:"
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "ดิสก์ถูกเพิ่มแล้ว"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "ไม่สามารถเพิ่มดิสก์ได้"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "ไดเรกทอรีแอปพลิเคชัน"
    )
@@ -12903,14 +12811,6 @@ MSG_HASH(
    "ตัดการเชื่อมต่ออุปกรณ์ออกจากพอร์ตที่ถูกต้อง"
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "ปิดถาดดิสก์เสมือนแล้ว"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "ถาดดิสก์เสมือนถูกดันออกแล้ว"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "กำลังดาวน์โหลด"
    )
@@ -13065,10 +12965,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "ไม่สามารถรับข้อมูล SRAM จากโฮสต์ได้"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "ไม่สามารถนำแผ่นออกจากถาดได้"
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13447,10 +13343,6 @@ MSG_HASH(
    "รีเซ็ตตัวเลือกการรีแมปอินพุตทั้งหมดกลับเป็นค่าเริ่มต้น"
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "นำแผ่นออกจากถาด"
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "การลบไฟล์เนื้อหาชั่วคราว"
    )
@@ -13465,10 +13357,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "เรียกคืนไฟล์บันทึกสถานะเก่า"
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "เชดเดอร์: กำลังคืนค่าเพรสเซ็ตเชดเดอร์เริ่มต้น"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -13717,14 +13605,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "การคำนวณขนาด Viewport ล้มเหลว! จะดำเนินการต่อโดยใช้ข้อมูลดิบ ซึ่งอาจจะทำงานได้ไม่ถูกต้อง..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "ไม่สามารถดึงถาดแผ่นดิสก์เสมือนออกได้"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "ไม่สามารถปิดถาดแผ่นดิสก์เสมือนได้"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -13983,8 +13863,44 @@ MSG_HASH(
    "ลบโค้ดโกงแล้ว"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "ไม่สามารถตั้งค่าดิสก์ได้"
+   MSG_DISK_CLOSED,
+   "ปิดถาดดิสก์เสมือนแล้ว"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "ไม่สามารถปิดถาดแผ่นดิสก์เสมือนได้"
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "ถาดดิสก์เสมือนถูกดันออกแล้ว"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "ไม่สามารถดึงถาดแผ่นดิสก์เสมือนออกได้"
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "นำแผ่นออกจากถาด"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "ไม่สามารถนำแผ่นออกจากถาดได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "ไม่ได้เลือกแผ่น"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "ดิสก์ถูกเพิ่มแล้ว"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "ไม่สามารถเพิ่มดิสก์ได้"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "กำลังตั้งค่าแผ่นในถาด"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

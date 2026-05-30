@@ -1396,10 +1396,6 @@ MSG_HASH(
    )
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Videodrivrutin att använda."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x drivrutin. Lägsta krav: OpenGL 1.1. Stöder inte shaders. Använd senare OpenGL-drivrutiner istället, om det är möjligt."
    )
@@ -1496,10 +1492,6 @@ MSG_HASH(
    "Ljud"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Ljuddrivrutin att använda."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "RSound-drivrutin för nätverksbaserade ljudsystem."
    )
@@ -1557,10 +1549,6 @@ MSG_HASH(
    "Mikrofon"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Mikrofon-drivrutin att använda."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Mikrofonomsamplare"
    )
@@ -1598,24 +1586,8 @@ MSG_HASH(
    "Kamera"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Kameradrivrutin att använda."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Bluetooth-drivrutin att använda."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "WiFi-drivrutin att använda."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Plats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Plats-drivrutin att använda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1644,14 +1616,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Inspelning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Inspelnings-drivrutin att använda."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "MIDI-drivrutin att använda."
    )
 
 /* Settings > Video */
@@ -1987,10 +1951,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Vertikal uppdateringsfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikal uppdateringsfrekvens för din skärm. Används för att beräkna en lämplig ljudingångshastighet.\nDetta kommer att ignoreras om 'Trådad video' är aktiverat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2923,10 +2883,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Max användare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Maximalt antal användare som stöds av RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4767,10 +4723,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Räknare för bildtider"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Ändra inställningar som påverkar bildrutornas tidräknare.\nEndast aktivt när trådad video är inaktiverat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -6948,10 +6900,6 @@ MSG_HASH(
    "Sammandrag av uppstart"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Visar information om spelet som laddas och användarens aktuella framsteg.\n”Alla identifierade spel” visar en sammanfattning för spel utan publicerade prestationer."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Alla identifierade spel"
    )
@@ -7425,10 +7373,6 @@ MSG_HASH(
    "Visa associerade kärnor i spellistor"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Ange när poster i spellistan ska taggas med den aktuella associerade kärnan (om någon).\nDen här inställningen ignoreras när underetiketter för spellistor är aktiverade."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Visa underetiketter för spellista"
    )
@@ -7700,10 +7644,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
    "Tillåt kärnor att komma åt kameran."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Tillåt Discord-appen att visa data om det innehåll som spelas upp. Endast tillgänglig med den inbyggda skrivbordsklienten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8083,16 +8023,8 @@ MSG_HASH(
    "Lägg till i Mixer"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Lägg till det här ljudspåret i en tillgänglig ljudströmsplats.\nOm inga platser är tillgängliga för närvarande ignoreras det."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Lägg till i Mixer och spela"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Lägg till det här ljudspåret i en tillgänglig ljudströmsplats och spela upp det.\nOm inga platser är tillgängliga för närvarande ignoreras det."
    )
 
 /* Netplay */
@@ -12076,10 +12008,6 @@ MSG_HASH(
    "Kärnräknare"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Ingen skiva vald"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Frontend-räknare"
    )
@@ -12364,10 +12292,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
    "Inga argument angavs och ingen meny inbyggd, visar hjälp..."
-   )
-MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Matar in skiva i släden"
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
@@ -12675,14 +12599,6 @@ MSG_HASH(
    "Kärnassociering för spellisteposten har återställts."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Lade till skivan på slutet"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Misslyckades med att lägga till skivan"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Programkatalog"
    )
@@ -12851,14 +12767,6 @@ MSG_HASH(
    "Koppla från enhet från en giltig port."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Stängde virtuell skivsläde."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Matade ut virtuell skivsläde."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Hämtar ner"
    )
@@ -13009,10 +12917,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Misslyckades med att ta emot SRAM-data från värd."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Misslyckades med att ta bort skiva från facket."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13379,10 +13283,6 @@ MSG_HASH(
    "Alla alternativ för inmatningsommappningar återställda till standard."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Tog bort skiva från släde."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Tar bort temporär innehållsfil"
    )
@@ -13397,10 +13297,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Återställde äldre sparat tillstånd."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shaders: återställer standardförval för shader till"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -13633,14 +13529,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VERSION_OF_LIBRETRO_API,
    "Version av libretro API"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Misslyckades med att mata ut virtuell skivsläde."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Misslyckades med att stänga virtuell skivsläde."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -13895,8 +13783,44 @@ MSG_HASH(
    "Fusk raderat."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Misslyckades med att ställa in skiva."
+   MSG_DISK_CLOSED,
+   "Stängde virtuell skivsläde."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Misslyckades med att stänga virtuell skivsläde."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Matade ut virtuell skivsläde."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Misslyckades med att mata ut virtuell skivsläde."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Tog bort skiva från släde."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Misslyckades med att ta bort skiva från facket."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Ingen skiva vald"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Lade till skivan på slutet"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Misslyckades med att lägga till skivan"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Matar in skiva i släden"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

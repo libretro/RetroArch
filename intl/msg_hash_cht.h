@@ -1400,10 +1400,6 @@ MSG_HASH(
    "顯示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "設定影像處理使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x 驅動程式。\n系統最低需求: OpenGL 1.1。\n不支援著色器。\n條件允許的情況下, 請使用更高版本的OpenGL驅動程式。"
    )
@@ -1500,10 +1496,6 @@ MSG_HASH(
    "音效"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "設定音訊訊號使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "用於連網音效系統的RSound驅動程式。"
    )
@@ -1561,10 +1553,6 @@ MSG_HASH(
    "麥克風"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "設定麥克風使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "麥克風重新取樣器"
    )
@@ -1602,32 +1590,16 @@ MSG_HASH(
    "鏡頭"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "設定攝像鏡頭使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
    "藍牙"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "設定藍牙使用的驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "無線網路 (Wi-Fi)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "設定無線網路使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "定位"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "設定全球定位系統使用的驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1658,16 +1630,8 @@ MSG_HASH(
    "錄製"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "設定錄影和直播使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
    "音樂數位介面 (MIDI)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "設定音樂數位介面使用的驅動程式。"
    )
 
 /* Settings > Video */
@@ -1967,10 +1931,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "垂直更新率"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "設定螢幕的垂直更新率, 用於計算適合的音訊輸入速率, 僅限顯示選項中「單執行緒影像處理」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2895,10 +2855,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "最大用戶人數"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "設定應用程式支援控制器的數量。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4355,10 +4311,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "影格即時統計"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "變更影格即時統計的設定。\n僅限顯示選項中「單執行緒影像處理」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -6440,10 +6392,6 @@ MSG_HASH(
    "執行通知"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "顯示執行遊戲的完成度通知, 設定<全部驗證的遊戲>時顯示未建立成就項目的通知。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "全部驗證的遊戲"
    )
@@ -6917,10 +6865,6 @@ MSG_HASH(
    "項目顯示載入核心"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "列表項目額外顯示載入核心名稱, 開啟「顯示項目的子標籤」時此選項被忽略, Ozone主題由資訊欄顯示不影響。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "顯示項目的子標籤"
    )
@@ -7019,10 +6963,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "項目子標籤日誌類型"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "設定顯示執行日誌的類型, 用於列表項目子標籤訊息顯示, 儲存執行日誌(各別/共用)可透過「存檔」選項中開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7196,10 +7136,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Discord個人狀態"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "允許Discord應用程式, 使用目前的動態作為狀態訊息, 僅適用於Discord電腦版本。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -7603,16 +7539,8 @@ MSG_HASH(
    "加入到混音器"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "加入到混音器空白編號等待播放。\n如果編號已滿，將無法加入。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "加入到混音器並播放"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "加入到混音器空白編號直接播放。\n如果編號已滿，將無法加入。"
    )
 
 /* Netplay */
@@ -8583,10 +8511,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
    "位元組順序"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "<開啟> 大端序: 258 = 0x0102\n<關閉> 小端序: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -11796,10 +11720,6 @@ MSG_HASH(
    "核心計數器"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "未選擇映像檔。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "前端計數器"
    )
@@ -12118,10 +12038,6 @@ MSG_HASH(
    "沒有提供參數, 沒有內建選單, 顯示幫助..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "將光碟片放入托盤中。"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "等待挑戰者加入..."
    )
@@ -12411,14 +12327,6 @@ MSG_HASH(
    "已清除項目的預設載入核心。"
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "加入映像檔"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "無法加入映像檔"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "應用程式資料夾"
    )
@@ -12579,14 +12487,6 @@ MSG_HASH(
    "從有效連接埠斷開裝置。"
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "虛擬光碟機托盤進入。"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "虛擬光碟機托盤退出。"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "正在下載"
    )
@@ -12725,10 +12625,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "無法從主機端接收存檔數據。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "無法從托盤中取出。"
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13075,10 +12971,6 @@ MSG_HASH(
    "已重置全部按鍵配置為預設值。"
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "從托盤中取出光碟片。"
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "刪除暫存檔案"
    )
@@ -13093,10 +12985,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "已載入還原的即時存檔。"
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "著色器: 還原預設著色器配置到"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -13317,14 +13205,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "顯示大小計算失敗! 將繼續使用原始數據, 可能無法正常運作..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "虛擬光碟機托盤無法退出。"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "虛擬光碟機托盤無法進入。"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -13549,6 +13429,46 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "已刪除金手指。"
+   )
+MSG_HASH(
+   MSG_DISK_CLOSED,
+   "虛擬光碟機托盤進入。"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "虛擬光碟機托盤無法進入。"
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "虛擬光碟機托盤退出。"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "虛擬光碟機托盤無法退出。"
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "從托盤中取出光碟片。"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "無法從托盤中取出。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "未選擇映像檔。"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "加入映像檔"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "無法加入映像檔"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "將光碟片放入托盤中。"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,

@@ -1404,10 +1404,6 @@ MSG_HASH(
    "Οδηγός Βίντεο"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Οδηγός βίντεο προς χρήση."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "Πρόγραμμα οδήγησης OpenGL 1.x. Ελάχιστη απαιτούμενη έκδοση: OpenGL 1.1. Δεν έχει υποστήριξη για shaders. Προτιμήστε νεότερους OpenGL οδηγούς όπου είναι εφικτό."
    )
@@ -1475,10 +1471,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "Οδηγός Ήχου"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Οδηγός ήχου προς χρήση."
-   )
 #ifdef HAVE_MICROPHONE
 #endif
 MSG_HASH(
@@ -1494,28 +1486,12 @@ MSG_HASH(
    "Οδηγός Κάμερας"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Οδηγός Κάμερας προς χρήση."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Οδηγός Bluetooth προς χρήση."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "Οδηγός Wi-Fi"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Επιλογή οδηγού Wi-Fi."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Οδηγός Τοποθεσίας"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Οδηγός Τοποθεσίας προς χρήση."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1526,16 +1502,8 @@ MSG_HASH(
    "Οδηγός Εγγραφής"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Οδηγός Εγγραφής προς χρήση."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
    "Οδηγός MIDI"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Οδηγός MIDI προς χρήση."
    )
 
 /* Settings > Video */
@@ -2103,10 +2071,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Μέγιστοι Χρήστες"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Μέγιστος αριθμός χρηστών που υποστηρίζεται από το RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -4800,10 +4764,6 @@ MSG_HASH(
    "Μετρητές Πυρήνων"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Δεν επιλέχθηκε δίσκος"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
    "Οριζόντιο Μενού"
    )
@@ -4948,10 +4908,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
    "Λήφθηκε σύνδεση από: \"%s (%s)\""
-   )
-MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Τοποθέτηση δίσκου στην μονάδα δίσκου"
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
@@ -5321,6 +5277,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    "Λανθασμένος κωδικός."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Δεν επιλέχθηκε δίσκος"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Τοποθέτηση δίσκου στην μονάδα δίσκου"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_NORMAL,

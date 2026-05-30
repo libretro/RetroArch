@@ -2293,17 +2293,22 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_CONFIG_FILE:
 #ifdef HAVE_CONFIGFILE
          {
-            bool config_save_on_exit        = settings->bools.config_save_on_exit;
+            struct menu_state *menu_st      = menu_state_get_ptr();
             flush_type                      = MENU_SETTINGS;
 
             disp_get_ptr()->flags          |= GFX_DISP_FLAG_MSG_FORCE;
 
-            if (config_replace(config_save_on_exit, action_path))
-            {
-               bool pending_push            = false;
-               menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-               ret = -1;
-            }
+            /* config_replace() performs a full driver/menu
+             * reinitialisation and may switch the active menu driver,
+             * freeing the current menu instance. Performing it here -
+             * from within the menu action dispatch - would invalidate
+             * the menu lists (selection_buf/menu_stack) still in use by
+             * generic_menu_entry_action() and its callers, leading to a
+             * use-after-free. Defer it: runloop_check_state() performs
+             * the load on the next frame, before the menu is iterated. */
+            strlcpy(menu_st->pending_config_path, action_path,
+                  sizeof(menu_st->pending_config_path));
+            menu_st->flags                 |= MENU_ST_FLAG_PENDING_CONFIG_REPLACE;
          }
 #endif
          break;

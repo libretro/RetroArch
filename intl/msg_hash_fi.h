@@ -1392,10 +1392,6 @@ MSG_HASH(
    )
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Käytettävä videoajuri."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x -ajuri. Vaadittu vähimmäisversio: OpenGL 1.1. Ei tue varjostimia. Käytä mieluummin uudempia OpenGL-ajureita, jos mahdollista."
    )
@@ -1492,10 +1488,6 @@ MSG_HASH(
    "Ääni"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Käytettävä ääniajuri."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "RSound-ajuri verkkoon perustuville äänijärjestelmille."
    )
@@ -1549,10 +1541,6 @@ MSG_HASH(
    "Mikrofoni"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Mikrofonin ajuri."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Mikrofonin näytteenottaja"
    )
@@ -1578,24 +1566,8 @@ MSG_HASH(
    "Kamera"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Käytettävä kamera-ajuri."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Käytettävä Bluetooth-ajuri."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Käytettävä Wi-Fi-ajuri."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Sijainti"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Käytettävä sijaintiajuri."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1608,14 +1580,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Nauhoitus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Käytettävä nauhoitusajuri."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Käytettävä MIDI-ajuri."
    )
 
 /* Settings > Video */
@@ -1875,10 +1839,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Pystysuuntainen virkistystaajuus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Näytön pystysuora päivitysnopeus. Käytetään sopivan äänen syöttönopeuden laskemiseen.\nTämä jätetään huomiotta, jos 'säikeistetty video' on käytössä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2651,10 +2611,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Käyttäjien enimmäismäärä"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Käyttäjien enimmäismäärä, mitä RetroArch tukee."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -3967,10 +3923,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Kuva-aikalaskuri"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Muuta kuva-aikalaskuriin vaikuttavia asetuksia.\nKäytössä vain kun säikeistetty video on pois käytöstä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -6281,10 +6233,6 @@ MSG_HASH(
    "Näytä liitetyt ytimet soittolistoilla"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Määritä, milloin soittolistan kohteet merkitään parhaillaan liitettyyn ytimeen (jos sellaisia on).\nTämä asetus ohitetaan, kun soittolistojen alatunnisteet ovat käytössä."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Näytä soittolistan alatunnisteet"
    )
@@ -6387,10 +6335,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Soittolistan alatunnisteen ajoaika"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Valitse minkä tyyppinen ajoaikainen lokitallenne näytetään soittolistan alatunnisteissa.\nVastaava ajonaikainen loki on otettava käyttöön \"Tallennus\"-valikosta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -6540,10 +6484,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Discordin rikastettu läsnäolo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Salli Discord-sovelluksen näyttää tietoja suoritettavasta sisällöstä.\nSaatavilla vain natiivilla työpöytäsovelluksella."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -6923,16 +6863,8 @@ MSG_HASH(
    "Lisää mikseriin"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Lisää tämä ääniraita käytettävissä olevaan äänivirtalähtöön.\nJos lähtö ei ole tällä hetkellä saatavilla, se ohitetaan."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Lisää mikseriin ja soita"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Lisää tämä ääniraita käytettävissä olevaan äänivirtalähtöön ja soita se.\nJos lähtö ei ole tällä hetkellä saatavilla, se ohitetaan."
    )
 
 /* Netplay */
@@ -10848,10 +10780,6 @@ MSG_HASH(
    "Ydinlaskurit"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Ei levyä valittuna"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Käyttöliittymän laskurit"
    )
@@ -11136,10 +11064,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
    "Ei lisättyjä parametreja ja eikä sisäänrakennettua valikkoa, näytetään ohje..."
-   )
-MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Asetetaan levy asemaan"
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
@@ -11439,14 +11363,6 @@ MSG_HASH(
    "Soittolistan kohteen ydin liitos on nollattu."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Lisätty levy"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Levyn lisääminen epäonnistui"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Sovellus kansio"
    )
@@ -11611,14 +11527,6 @@ MSG_HASH(
    "Irrota laite kelvollisesta portista."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Suljettiin virtuaalinen levyasema."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Avattiin virtuaalinen levyasema."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Ladataan"
    )
@@ -11769,10 +11677,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "SRAM-dataa ei voitu vastaanottaa isännältä."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Levyn poistaminen levyasemasta epäonnistui."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -12095,10 +11999,6 @@ MSG_HASH(
    "Kaikki syötteen uudelleenkartoitusasetukset palautetaan oletukselle."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Levy poistettiin asemasta."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Poistetaan väliaikainen sisältötiedosto"
    )
@@ -12113,10 +12013,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Palautettiin vanha tilatallennus."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Varjostimet: palautetaan varjostimen oletusasetukset"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -12331,14 +12227,6 @@ MSG_HASH(
    "Ikkunan koon laskenta epäonnistui! jatketaan raakadatan käyttöä. Tämä ei varmaan toimi oikein..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Virtuaalisen levyaseman avaaminen epäonnistui."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Virtuaalisen levyaseman sulkeminen epäonnistui."
-   )
-MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
    "Tilan lataaminen kohteesta"
    )
@@ -12523,8 +12411,44 @@ MSG_HASH(
    "Huijaus poistettu."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Levyn asettaminen epäonnistui."
+   MSG_DISK_CLOSED,
+   "Suljettiin virtuaalinen levyasema."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Virtuaalisen levyaseman sulkeminen epäonnistui."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Avattiin virtuaalinen levyasema."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Virtuaalisen levyaseman avaaminen epäonnistui."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Levy poistettiin asemasta."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Levyn poistaminen levyasemasta epäonnistui."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Ei levyä valittuna"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Lisätty levy"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Levyn lisääminen epäonnistui"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Asetetaan levy asemaan"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

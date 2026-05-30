@@ -1404,10 +1404,6 @@ MSG_HASH(
    )
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Kullanılacak video sürücüsü."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x sürücüsü. Gerekli asgari sürüm: OpenGL 1.1. Gölgelendiricileri desteklemez. Bunun yerine mümkünse daha sonraki OpenGL sürücülerini kullanın."
    )
@@ -1504,10 +1500,6 @@ MSG_HASH(
    "Ses"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Kullanılacak ses sürücüsü."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "Ağa bağlı ses sistemleri için RSound sürücüsü."
    )
@@ -1565,10 +1557,6 @@ MSG_HASH(
    "Mikrofon"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Kullanılacak mikrofon sürücüsü."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Mikrofon Yeniden Örnekleyici"
    )
@@ -1606,24 +1594,8 @@ MSG_HASH(
    "Kamera"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Kullanılacak kamera sürücüsü."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Kullanılacak Bluetooth sürücüsü."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Kullanılacak Wi-Fi sürücüsü."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Konum"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Kullanılacak konum sürücüsü."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1652,14 +1624,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Kayıt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Kullanılacak kayıt sürücüsü."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Kullanılacak MIDI sürücüsü."
    )
 
 /* Settings > Video */
@@ -2003,10 +1967,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Dikey Yenileme Hızı"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Ekranınızın dikey yenileme hızıdır. Uygun bir ses giriş oranını hesaplamak için kullanılır.\n'Baskın Video' etkinse bu yok sayılır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2963,10 +2923,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Azami Kullanıcı"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "RetroArch tarafından desteklenen azami kullanıcı sayısı."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4651,10 +4607,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Kare Zaman Sayacı"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Kare süresi sayacını etkileyen ayarları değiştirin.\nYalnızca baskın video devre dışı bırakıldığında etkindir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -6872,10 +6824,6 @@ MSG_HASH(
    "Başlangıç Özeti"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Yüklenmekte olan oyun ve kullanıcının mevcut ilerleme durumu hakkında bilgileri gösterir.\n'Tanımlanan Tüm Oyunlar', yayınlanmış başarısı olmayan oyunların özetini gösterir."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Tanımlanan Tüm Oyunlar"
    )
@@ -7349,10 +7297,6 @@ MSG_HASH(
    "Oynatma Listelerinde İlişkili Çekirdekleri Göster"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Oynatma listesi girdilerinde ilişkilendirilmiş çekirdek (varsa) ne zaman etiketleneceğini belirle.\nNOT: Oynatma listesi alt etiketleri etkinleştirildiğinde bu ayar dikkate alınmaz."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Oynatma Listesi Alt Etiketlerini Göster"
    )
@@ -7455,10 +7399,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Oynatma Listesi Alt Etiket Çalışma Zamanı"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Oynatma listesi alt etiketlerinde hangi günlük kaydının görüntüleneceğini seçer.\nİlgili çalışma zamanı günlüğünün 'Durum Kaydı' seçenekler menüsünden etkinleştirilmesi gerektiğini unutmayın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7636,10 +7576,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Discord Zengin İçerik"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Discord uygulamasının oynatılan içerikle ilgili verileri göstermesine izin ver.\nYalnızca yerel masaüstü istemcisinde kullanılabilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8031,16 +7967,8 @@ MSG_HASH(
    "Karıştırıcıya Ekle"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Ses parçasını kullanılabilir bir ses akışı yuvasına ekleyin.\nŞu anda mevcut yuva bulunmuyorsa, dikkate alınmaz."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Karıştırıcıya Ekle ve Oynat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Ses parçasını kullanılabilir bir ses akışı yuvasına ekleyin ve oynatın.\nŞu anda mevcut yuva bulunmuyorsa, dikkate alınmaz."
    )
 
 /* Netplay */
@@ -12268,10 +12196,6 @@ MSG_HASH(
    "Çekirdek Sayaçları"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Disk seçilmedi"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Ön Uç Sayaçları"
    )
@@ -12582,10 +12506,6 @@ MSG_HASH(
    "Hiçbir argüman sağlanmadı ve menü görüntülenmedi, yardım görüntüleniyor..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Disk sistem tepsisi ayarı"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "İstemci bekleniyor..."
    )
@@ -12891,14 +12811,6 @@ MSG_HASH(
    "Oynatma listesi girişi çekirdek ilişkilendirmesi sıfırlandı."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Eklenen disk"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Disk eklenemedi"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Uygulama Dizini"
    )
@@ -13063,14 +12975,6 @@ MSG_HASH(
    "Cihazı doğrulanmış bağlantı noktasından çıkarın."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Sanal disk tepsisi kapalı."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Sanal disk tepsisi çıkarıldı."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "İndiriliyor"
    )
@@ -13225,10 +13129,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Ana bilgisayardan SRAM verileri alınamadı."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Disk tepsiden çıkartılamadı."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13599,10 +13499,6 @@ MSG_HASH(
    "Tüm giriş yeniden eşleme seçenekleri varsayılana sıfırlanır."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Disk tepsiden kaldırıldı."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Geçici içerik dosyasını kaldır"
    )
@@ -13617,10 +13513,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Eski durum kaydı geri yüklendi."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Gölgelendirici: varsayılan gölgelendirici ön ayarı geri yükleniyor"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -13857,14 +13749,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Görüntü alanı boyutu hesaplaması başarısız! Ham veriler kullanılmaya devam edilecek. Muhtemelen düzgün çalışmayacak..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Sanal disk tepsisi çıkarılamadı."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Sanal disk tepsisi kapatılamadı."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14119,8 +14003,44 @@ MSG_HASH(
    "Hile silindi."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Disk ayarlanamadı."
+   MSG_DISK_CLOSED,
+   "Sanal disk tepsisi kapalı."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Sanal disk tepsisi kapatılamadı."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Sanal disk tepsisi çıkarıldı."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Sanal disk tepsisi çıkarılamadı."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Disk tepsiden kaldırıldı."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Disk tepsiden çıkartılamadı."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Disk seçilmedi"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Eklenen disk"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Disk eklenemedi"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Disk sistem tepsisi ayarı"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
