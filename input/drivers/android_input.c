@@ -166,6 +166,79 @@ bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t len, int id);
 void (*engine_handle_dpad)(struct android_app *, AInputEvent*, int, int);
 
+/* Pending-removed-device queue. Populated from the Java UI thread by the
+ * JNI export below (RetroActivityCommon.onInputDeviceRemoved) and drained
+ * from the native input poll thread on every poll. Guarded by
+ * android_app->mutex (the same lock used by APP_CMD_* handlers in this
+ * file), which is a known-good cross-thread primitive on Android. A small
+ * fixed queue size handles multi-device disconnect bursts (e.g. two BT
+ * controllers powered off together); overflow drops the newest event
+ * rather than clobbering pending entries. */
+#define ANDROID_REMOVED_QUEUE_SIZE 8
+static int g_android_removed_ids[ANDROID_REMOVED_QUEUE_SIZE];
+static int g_android_removed_count = 0;
+
+JNIEXPORT void JNICALL
+Java_com_retroarch_browser_retroactivity_RetroActivityCommon_inputDeviceRemoved
+      (JNIEnv *env, jobject this_obj, jint device_id)
+{
+   struct android_app *android_app = (struct android_app*)g_android;
+   (void)env;
+   (void)this_obj;
+   /* Native side not up yet (activity early lifecycle): drop the event.
+    * RetroArch will re-autoconfig on next input event from the device if
+    * it reconnects, so this is safe to ignore. */
+   if (!android_app)
+      return;
+   slock_lock(android_app->mutex);
+   if (g_android_removed_count < ANDROID_REMOVED_QUEUE_SIZE)
+      g_android_removed_ids[g_android_removed_count++] = (int)device_id;
+   slock_unlock(android_app->mutex);
+}
+
+/* Called from android_input_poll. Drains queued device-removed events
+ * delivered by Android's InputManager and clears the matching pad_states
+ * slot + RetroArch input config name, so input_config_get_device_name(port)
+ * reflects the OS state. This is what lets the Conditional Overlay Profile
+ * resolver (FR #18178) see the controller as gone after a Bluetooth
+ * controller powers off or otherwise unbinds. */
+static void android_input_drain_pending_removed(android_input_t *android)
+{
+   struct android_app *android_app = (struct android_app*)g_android;
+   int local_ids[ANDROID_REMOVED_QUEUE_SIZE];
+   int local_count = 0;
+   int i;
+   unsigned port;
+   if (!android_app)
+      return;
+   slock_lock(android_app->mutex);
+   if (g_android_removed_count > 0)
+   {
+      local_count = g_android_removed_count;
+      memcpy(local_ids, g_android_removed_ids,
+            sizeof(int) * (size_t)local_count);
+      g_android_removed_count = 0;
+   }
+   slock_unlock(android_app->mutex);
+   for (i = 0; i < local_count; i++)
+   {
+      int removed_id = local_ids[i];
+      for (port = 0; port < MAX_USERS; port++)
+      {
+         if (android->pad_states[port].id == removed_id)
+         {
+            /* -1 sentinel rather than 0: Android InputDevice.getDeviceId()
+             * can legitimately return 0 for some internal/virtual devices,
+             * so a 0-cleared slot could spuriously match a future query. */
+            android->pad_states[port].id = -1;
+            android->pad_states[port].name[0] = '\0';
+            input_config_clear_device_name(port);
+            break;
+         }
+      }
+   }
+}
+
 static void android_input_poll_input_gingerbread(android_input_t *android);
 static void android_input_poll_input_default(android_input_t *android);
 static void (*android_input_poll_input)(android_input_t *android);
@@ -1831,6 +1904,8 @@ static void android_input_poll(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
    settings_t            *settings = config_get_ptr();
+
+   android_input_drain_pending_removed(android);
 
    while ((ident =
             ALooper_pollAll(settings->uints.input_block_timeout,

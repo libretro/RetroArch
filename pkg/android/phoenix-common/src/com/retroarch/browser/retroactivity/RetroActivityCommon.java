@@ -554,6 +554,10 @@ public class RetroActivityCommon extends NativeActivity
     /* Close any cached USB connection so we don't hold a stale handle. */
     closeUsbConnection(deviceId);
     mUsbPermissionPending.remove(Integer.valueOf(deviceId));
+    /* Tell the native input driver so the conditional overlay resolver
+     * and other consumers of input_config_get_device_name() see the
+     * device as gone. */
+    inputDeviceRemoved(deviceId);
   }
 
   /**
@@ -989,6 +993,15 @@ public class RetroActivityCommon extends NativeActivity
    * Called when the user grants access to a Storage Access Framework tree.
    */
   public native void safTreeAdded(String tree);
+
+  /**
+   * Notify the native input driver that Android removed an input device.
+   * Called from {@link #onInputDeviceRemoved(int)} so the conditional overlay
+   * resolver (FR #18178) sees a controller as gone after a Bluetooth
+   * controller is powered off / unbinds, and any other native consumer of
+   * input_config_get_device_name() reflects the OS state.
+   */
+  public native void inputDeviceRemoved(int deviceId);
 
 
 
