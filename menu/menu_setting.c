@@ -9344,6 +9344,10 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
+      case MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS:
+#ifdef HAVE_XMB
+      case MENU_ENUM_LABEL_XMB_ENTRY_ICONS:
+#endif
          {
             /* Reset wallpaper by menu context reset */
             struct menu_state *menu_st = menu_state_get_ptr();
@@ -19855,7 +19859,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_xmb_layout;
             menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_UINT(
@@ -19876,6 +19879,21 @@ static bool setting_append_list(
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_xmb_entry_icons,
+                  MENU_ENUM_LABEL_XMB_ENTRY_ICONS,
+                  MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+                  DEFAULT_XMB_ENTRY_ICONS,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             CONFIG_BOOL(
                   list, list_info,
