@@ -5564,6 +5564,12 @@ static int xmb_draw_item(
       line_ticker_width += xmb->icon_size / xmb->last_scale_factor / 16;
    }
 
+   if (settings->floats.menu_scale_factor > 1.0f)
+   {
+      ticker_limit      /= settings->floats.menu_scale_factor;
+      line_ticker_width /= settings->floats.menu_scale_factor;
+   }
+
    /* Don't update ticker limit while waiting for thumbnail status */
    if (     (xmb->is_playlist || xmb->is_explore_list)
          && (  (  gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
@@ -5602,8 +5608,6 @@ static int xmb_draw_item(
          gfx_animation_ticker(&ticker);
    }
 
-   label_offset = xmb->margins_label_top;
-
    if (vertical_fade_factor)
    {
       float min_alpha  = 0.01f;
@@ -5634,6 +5638,8 @@ static int xmb_draw_item(
       if (new_alpha < node->alpha || node->x == 0)
          node->alpha = node->label_alpha = new_alpha;
    }
+
+   label_offset = xmb->margins_label_top;
 
    if (show_sublabels)
    {
@@ -6694,6 +6700,9 @@ static void xmb_layout_common(xmb_handle_t *xmb, float scale_factor, unsigned ne
                                  + (new_font_size - (new_font_size / 6) * scale_factor);
    xmb->margins_title_bottom     = (margins_title * scale_factor) + (4 * scale_factor);
 
+   xmb->margins_dialog           = new_font_size * 2.0f;
+   xmb->margins_slice            = new_font_size / 2.0f;
+
    xmb->cursor_size              = 64.0f          * scale_factor;
    xmb->icon_size                = 128.0f         * scale_factor;
 
@@ -6705,6 +6714,7 @@ static void xmb_layout_common(xmb_handle_t *xmb, float scale_factor, unsigned ne
 static void xmb_layout_ps3(xmb_handle_t *xmb, settings_t *settings)
 {
    float scale_factor            = xmb->last_scale_factor;
+   float scale_cap               = (settings->floats.menu_scale_factor > 1.0f) ? settings->floats.menu_scale_factor : 1;
    unsigned new_font_size        = 32 * scale_factor;
 
    xmb->above_subitem_offset     =  1.5f;
@@ -6722,25 +6732,25 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, settings_t *settings)
    xmb->font_size                = new_font_size;
    xmb->font2_size               = 22.0f          * scale_factor;
 
-   xmb->icon_spacing_horizontal  = 192.0f         * scale_factor;
+   xmb->icon_spacing_horizontal  = 192.0f         * scale_factor / scale_cap;
    xmb->icon_spacing_vertical    = 64.0f          * scale_factor;
 
-   xmb->margins_screen_top       = (256 + 16)     * scale_factor;
-   xmb->margins_screen_left      = 336.0f         * scale_factor;
+   xmb->margins_screen_top       = (256 + 16)     * scale_factor / scale_cap;
+   xmb->margins_screen_left      = 336.0f         * scale_factor / scale_cap;
 
-   xmb->margins_label_left       = 85.0f          * scale_factor;
+   xmb->margins_label_left       = 85.0f          * scale_factor / scale_cap;
    xmb->margins_label_top        = new_font_size / 3.0f;
 
-   xmb->margins_setting_left     = 660.0f         * scale_factor * xmb->scale_mod[6];
-   xmb->margins_dialog           = new_font_size * 2.0f;
-   xmb->margins_slice            = new_font_size / 2.0f;
+   xmb->margins_setting_left     = 660.0f         * scale_factor / scale_cap * xmb->scale_mod[6];
 
    xmb_layout_common(xmb, scale_factor, new_font_size);
+   xmb->icon_size /= scale_cap;
 }
 
 static void xmb_layout_psp(xmb_handle_t *xmb, settings_t *settings)
 {
    float scale_factor            = xmb->last_scale_factor;
+   float scale_cap               = (settings->floats.menu_scale_factor > 1.0f) ? settings->floats.menu_scale_factor : 1;
    unsigned new_font_size        = 26 * scale_factor;
 
    xmb->above_subitem_offset     =  1.5f;
@@ -6758,20 +6768,19 @@ static void xmb_layout_psp(xmb_handle_t *xmb, settings_t *settings)
    xmb->font_size                = new_font_size;
    xmb->font2_size               = 18.0f          * scale_factor;
 
-   xmb->icon_spacing_horizontal  = 192.0f         * scale_factor;
+   xmb->icon_spacing_horizontal  = 192.0f         * scale_factor / scale_cap;
    xmb->icon_spacing_vertical    = 82.0f          * scale_factor;
 
-   xmb->margins_screen_top       = 192.0f         * scale_factor;
-   xmb->margins_screen_left      = 136.0f         * scale_factor;
+   xmb->margins_screen_top       = 192.0f         * scale_factor / scale_cap;
+   xmb->margins_screen_left      = 136.0f         * scale_factor / scale_cap;
 
-   xmb->margins_label_left       = 85.0f          * scale_factor;
+   xmb->margins_label_left       = 85.0f          * scale_factor / scale_cap;
    xmb->margins_label_top        = new_font_size / 3.0f;
 
-   xmb->margins_setting_left     = 520.0f         * scale_factor * xmb->scale_mod[6];
-   xmb->margins_dialog           = new_font_size * 2.0f;
-   xmb->margins_slice            = new_font_size / 2.0f;
+   xmb->margins_setting_left     = 520.0f         * scale_factor / scale_cap * xmb->scale_mod[6];
 
    xmb_layout_common(xmb, scale_factor, new_font_size);
+   xmb->icon_size /= scale_cap;
 }
 
 static void xmb_init_scale_mod(float *scale_mod, float scale_value)
