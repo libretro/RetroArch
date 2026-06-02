@@ -86,6 +86,14 @@ MSG_HASH(
    "Elekti kernon por uzi."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Malŝargi kernon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Malteni la ŝargitan kernon."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Foliumu por libretron kernon. Kien la retumilo komenciĝas dependas de via Kerna Dosieruja vojo. Se ĝi estus malplena, ĝi komenciĝus en radiko. \nSe Kerna Dosierujo estus dosierujo, la menuo uzus tion por la plej supra dosierujo. Se la Kerna Dosierujo estus plena, ĝi komenciĝus en la dosierujo, kiu la dosiero estas."
    )
@@ -132,8 +140,36 @@ MSG_HASH(
    "Ludlistoj"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   "Skanita enhavo, kiu kongruos kun la datumbazo, aperos ĉi tie."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    "Importi enhavon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "Krei kaj ĝisdatigi ludlistojn skanante enhavon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   "Montri labortablan menuon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Malfermi la tradician labortablan menuon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Malebligi envicigan reĝimon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "Montri ĉiujn agordojn rilatantajn kun konfiguro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   "Reta ĝisdatigilo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
@@ -142,6 +178,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
    "Retaludo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY,
+   "Aliĝi al retluda sesio aŭ gastigi iun."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -164,12 +204,64 @@ MSG_HASH(
    "Configurations"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   "Administri kaj krei konfigurajn dosierojn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
    "Helpo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
    "Learn more about how it works."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   "Restartigi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Restartigi aplikaĵon RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   "Forlasi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "Forlasi aplikaĵon RetroArch. Konfigura konservado ĉe forlaso estas ebligita."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Forlasi aplikaĵon RetroArch. Konfigura konservado ĉe forlaso estas malebligita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Forlasi RetroArch. Ĉesigi la programon per ajna severa maniero (SIGKILL, kc) ĉesigos RetroArch sen konservi la konfiguraĵon ajnakaze. En Uniks-similaj sistemoj, SIGINT/SIGTERM ebligas puran forlason, kio inkluzivas konfiguran konservon se ebligita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Sinkronigi nun"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Permane lanĉi nuban sinkronigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Solvi konfliktojn: konservi lokalaĵojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Solvi ĉiujn konfliktojn alŝutante lokalajn dosierojn en la servilon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Solvi konfliktojn: konservi servilaĵojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Solvi ĉiujn konfliktojn elŝutante servilajn dosierojn, anstataŭigante lokalajn kopiojn."
    )
 
 /* Main Menu > Load Core */
@@ -178,9 +270,45 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    "Download Core..."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   "Elŝuti kaj instali kernon el la reta ĝisdatigilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   "Instali aŭ restaŭri kernon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   "Instali aŭ restaŭri kernon el la dosierujo \"Elŝutaĵoj\"."
+   )
+MSG_HASH( /* FIXME Maybe add a description? */
+   MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   "Komencigi vide-traktilon"
+   )
+MSG_HASH( /* FIXME Maybe add a description? */
+   MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   "Komenci foran RetroPad"
+   )
 
 /* Main Menu > Load Content */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FAVORITES,
+   "Komenca dosierujo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   "Elŝutaĵoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   "Foliumi arĥivon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   "Ŝargi arĥivon"
+   )
 
 /* Main Menu > Load Content > Playlists */
 
@@ -189,47 +317,523 @@ MSG_HASH(
    "Preferataj"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   "Enhavo aldonita al \"Preferataj\" aperos ĉi tie."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "Muziko"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   "Jam ludita muziko aperos ĉi tie."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
    "Bildoj"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   "Jam viditaj bildoj aperos ĉi tie."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
    "Videoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   "Jam luditaj videoj aperos ĉi tie."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
    "Esplori"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   "Foliumi ĉiun enhavon kongruantan kun la datumbazo per kategoriigita serĉinterfaco."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
    "Malplenaj kernoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   "Instaligitaj kernoj, kiuj povas funkcii sen ŝargi enhavon, aperos ĉi tie."
    )
 
 /* Main Menu > Online Updater */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   "Kernelŝutilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   "Ĝisdatigi instaligitajn kernojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   "Ĝisdatigi ĉiujn instaligitajn kernojn ĝis la plej lasta disponebla versio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Ŝanĝi kernojn de Switch al versioj de Play Store"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Anstataŭigi ĉiujn malnovajn kaj permane instalitajn kernojn kontraŭ la plej lastaj versioj el la Play Store, kiam ajn disponeblaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   "Ĝisdatigilo de ludlistaj bildetoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   "Elŝuti bildetojn por eroj de la elektita ludlisto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   "Elŝutilo de enhavoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Elŝuti senkostajn enhavojn por la elektita kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Elŝutilo de dosieroj de la sistemo de la kernoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Elŝuti helpajn sistemdosierojn bezonatajn por la ĝusta funkciado de la kernoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   "Ĝisdatigi informaciajn dosierojn de kernoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   "Ĝisdatigi havaĵojn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   "Ĝisdatigi regilajn profilarojn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   "Ĝisdatigi trompkodojn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   "Ĝisdatigi datumbazojn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   "Ĝisdatigi supermetaĵojn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   "Ĝisdatigi ombrigilojn GLSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   "Ĝisdatigi ombrigilojn Cg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   "Ĝisdatigi ombrigilojn Slang"
+   )
 
 /* Main Menu > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   "Kernaj informoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   "Diskaj informoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   "Vidi informojn pri enigitaj aŭdvidaĵaj diskoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   "Retaj informoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "Vidi retaj interfacoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   "Informoj de sistemo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   "Vidi informojn specifajn de la aparato."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   "Administrilo de datumbazoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   "Vidi datumbazojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   "Administrilo de kursoroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   "Vidi antaŭajn serĉojn."
+   )
 
 /* Main Menu > Information > Core Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   "Nomo de la kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   "Etikedo de la kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   "Versio de la kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   "Nomo de la sistemo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   "Fabrikinto de la sistemo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+   "Kategorioj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   "Kreinto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   "Permesoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   "Permesilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   "Subtenataj kromaĵoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   "Grafikaj API bezonataj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Plena dosierindiko"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   "Subteno de rapidkonservado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "Neniu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   "Baza (konservi/ŝargi)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "Seriigita (konservi/ŝargi, revolvi)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Determinisma (konservi/ŝargi, revolvi, , retludo)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
+   "Mikroprogramaro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "Noto: la opcio \"Sistemdosieroj estas en Enhavdosierujo\" estas ebligita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "Serĉante en: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "Mankanta, bezonata:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "Mankanta, opcia:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Estanta, bezonata:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Estanta, opcia:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   "Ŝlosi instalita kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "Malebligu modifon de la kurante instalita kerno. Povas esti uzata por malhelpi nedeziratajn ĝisdatigojn kiam enhavoj bezonos specifan kernan version (ekz. ROM-aroj de Arcade) aŭ ŝanĝojn de la rapidkonserva formato de la propra kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "Eksigi el menuo \"Senenhavaj kernoj\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "Malebligi, ke ĉi tiu kerno estu videbla en la sekcio/menuo \"Senenhavaj kernoj\". Nur aplikiĝas kiam montromodo estas agordita je \"Adaptita\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   "Forigi kernon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_DELETE,
+   "Forigi ĉi tiun kernon el la disko."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   "Rezerva kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   "Krei arĥivitan restaŭrkopion de la kurante instalita kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   "Restaŭri restaŭrkopion"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
+   "Instali antaŭan version de la kerno el listo de arĥivitaj restaŭrkopioj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   "Forigi restaŭrkopiojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
+   "Forigi dosieron el la listo de arĥivitaj restaŭrkopioj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
+   "[Aǔtomate]"
+   )
 
 /* Main Menu > Information > System Information */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+   "Dato de muntado"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
-   "RetroArch versio"
+   "Versio de RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   "Versio de Git"
+   )
+MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+   MSG_COMPILER,
+   "Programtradukilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   "Modelo de CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+   "Trajtoj de CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "Arĥitekturo de CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "Kernoj de CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT disponebla"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
+   "Identigilo de pakaĵo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   "Identigilo de fasado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
+   "Operaciumo de fasado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+   "Kurentofonto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
+   "Pelilo de videokunteksto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   "Larĝo de bildo (mm)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   "Alto de bildo (mm)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   ""
    )
 
 /* Main Menu > Information > Database Manager > Information */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   "Nomo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   "Priskribo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
+   "Ĝenro"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   "Enable Achievements"
+   "Akiroj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   "Kategorio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   "Lingvo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   "Regiono"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   "Ekskluzivaĵo de ludkonzolo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   "Ekskluzivaĵo de platformo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   "Poentaro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   "Komunikilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   "Artstilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   "Ludspeco"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   "Rakontspeco"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   "Ludritmo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   "Perspektivo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   "Etoso"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
+   "Vidigstilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   "Veturilspeco"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   "Eldonisto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   "Programisto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   "Origino"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+   "Franĉizo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   "Rangigo de TGDB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   "Rangigo de revuo Famitsu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   "Recenzo de revuo Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   "Rangigo de revuo Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   "Numero de revuo Edge"
    )
 
 /* Main Menu > Configuration File */
@@ -312,6 +916,10 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Komunikilo"
+   )
 
 #ifdef HAVE_MIST
 #endif
@@ -835,8 +1443,16 @@ MSG_HASH(
 /* Settings > Directory */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   "Elŝutaĵoj"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
    "Dynamic Wallpapers"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   "Komenca dosierujo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -892,6 +1508,10 @@ MSG_HASH(
 
 /* Playlist Item > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Nomo"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
    "Content Database"
@@ -949,6 +1569,10 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Cheat Details */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   "Priskribo"
+   )
 
 /* Quick Menu > Disc Control */
 
@@ -1031,6 +1655,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
    "Ŝargi kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Nomo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
