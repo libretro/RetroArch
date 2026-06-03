@@ -79,11 +79,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "Ŝargi kerno"
+   "Ŝargi kernon"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Elekti kernon por uzi."
+   "Elekti kernon uzotan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
@@ -111,19 +111,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Ŝargi unu diskon"
+   "Ŝargi diskon"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Ŝarĝu fizikan enhavan diskon. Unue elektu la kernon (Ŝarĝi Kernon) por uzi kun la disko."
+   "Ŝargu fizikan enhavan diskon. Unue elektu la kernon (Ŝargi kernon) por uzi kun la disko."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "Forĵeti Diskon"
+   "Forĵeti diskon"
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Forĵetu la fizikan enhavan diskon al interna stokado. Ĝi estos savita je imaga dosiero."
+   "Forĵetu la fizikan enhavan diskon al interna stokado. Ĝi estos konservita kiel bilda dosiero."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -173,7 +173,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Download add-ons, components and contents for RetroArch."
+   "Elŝuti kromaĵojn, komponantojn kaj enhavojn por RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
@@ -189,7 +189,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS,
-   "Agordi la programon."
+   "Konfiguri la programon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
@@ -197,11 +197,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   "Display core, network and system information."
+   "Montri sistemajn informojn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "Configurations"
+   "Konfigura dosiero"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
@@ -213,7 +213,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
-   "Learn more about how it works."
+   "Lerni pli pri kiel la programo funkcias."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
@@ -268,7 +268,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "Download Core..."
+   "Elŝuiti kernon"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
@@ -284,7 +284,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   "Komencigi vide-traktilon"
+   "Komencigi videtraktilon"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
@@ -452,7 +452,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   ""
+   "Vidi informojn aktualajn por la aplikaĵo aŭ kerno."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
@@ -765,7 +765,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
-   ""
+   "Regiloj"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
@@ -835,72 +835,504 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Numero de revuo Edge"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Monato de eldondato"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Jaro de eldondato"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   "Rangigo de BBFC"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   "Rangigo de ESRB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   "Rangigo de ELSPA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   "Rangigo de PEGI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   "Pliboniga aparataro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   "Rangigo de CERO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   "Seria numero"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   "Subteno de analoga regilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   "Subteno de kunhelpa ludo"
+   )
 
 /* Main Menu > Configuration File */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   "Ŝargi konfiguron"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "Ŝargi ekzistantan konfiguron kaj anstataŭigi kurantajn valorojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   "Konservi kurantan konfiguron"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   "Anstataŭigi kurantan konfiguran dosieron."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   "Konservi novan konfiguron"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   "Konservi kurantan konfiguron en aparta dosiero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Konservi konfiguron kiel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Konservi kurantan konfiguron kiel propra konfigura dosiero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Konservi ĉefan konfiguron"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Konservi ĉefan konfiguron kiel ĉefa konfiguro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Restarigi defaŭltajn valorojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "Restarigi kurantan konfiguron kun defaŭltajn valorojn."
+   )
 
 /* Main Menu > Help */
 
 /* Main Menu > Help > Basic Menu Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   "Rulumi supren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   "Rulumi malsupren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   "Konfirmi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
+   "Informojn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   "Starti"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   "Baskuligi menuon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   "Ĉesi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   "Baskuligi klavaron"
+   )
 
 /* Settings */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-   "Driver"
+   "Peliloj"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   "Change drivers for this system."
+   "Ŝanĝi pelilojn uzatajn de la sistemo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   "Video Driver"
+   "Videpelilo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   "Adjusts settings for video output."
+   "Ŝanĝi la agordojn pri videa eligo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   "Audio Driver"
+   "Sonpelilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "Ŝanĝi la agordojn pri sona enigo kaj eligo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   "Input Driver"
+   "Enigpelilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   "Ŝanĝi la agordojn pri regilo, klavaro kaj muso."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   "Respondotempo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   "Ŝanĝi agordojn rilatantajn al respondotempo de video, sono kaj enigo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   "Kerno"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "Change settings for the core."
+   "Ŝanĝi agordojn pri la kernoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   "Konfiguro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   "Ŝanĝi la defaŭltajn agordojn por la konfiguraj dosieroj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   "Konservado"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   "Change settings for the saving."
+   "Ŝanĝi la agordojn pri konservado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "Sinkronigo kun la nubo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "Ŝanĝi agordojn pri sinkronigo kun la nubo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "Ebligi nubsinkronigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "Provi sinkronigi konfigurojn, SRAM kaj statojn al provizanto de nuba konservejo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "Detrua nubsinkronigo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Sinkronigi: konservaĵojn/statojn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sinkronigi: konfigurajn dosierojn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Sinkronigi: bildetojn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Sinkronigi: sistemaj dosieroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Kiam ebligita, konservaĵoj/statoj estos sinkronigitaj al la nubo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Kiam ebligita, konfiguraj dosieroj estos sinkronigitaj al la nubo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Kiam ebligita, bildetoj estos sinkronigitaj al la nubo. Ĝenerale, ne rekomendata krom por grandaj kolektoj el propraj bildetoj; alikaze, la bildeta elŝutilo estas pli bona elekto."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Kiam ebligita, sistemaj dosieroj estos sinkronigitaj al la nubo. Ĉi tio povas grave pliigi la tempon bezonata por sinkronigi; uzu singarde."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "Kiam malebligita, dosieroj estas movitaj al restaŭrkopia dosiero antaŭ ol esti anstataŭigitaj aŭ forigitaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Sinkroniga reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Aŭtomata: sinkronigi ĉe komenciĝo de RetroArch kaj kiam kernoj estas malŝargitaj.Permana: nur sinkronigi kiam la butono \"Sinkronigi nun\" estas permane ekagigita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Aŭtomata"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Permana"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "Nubsinkroniĝa servilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "Kiun nubsinkroniĝan retan protokolon uzi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "Nubkonserveja URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "La URL por la enirejo de la API al la nubkonserveja servo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "Uzantnomo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "Via uzantnomo por via nubkonserveja konto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "Pasvorto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "Via pasvorto por via nubkonserveja konto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Identigilo de alirklavo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "La identigilo de via alirklavo por via nubkonserveja konto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Sekreta alirklavo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Via sekreta alirklavo por via nubkonserveja konto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   "URL de S3"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "La URL de la finpunkto de S3 de via nuba konservejo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   "Protokolado"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "Change settings for the logging."
+   "Ŝanĝi agordojn pri protokolado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   "Dosieresplorilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "Ŝanĝi agordojn pri la dosieresplorilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "Konfigura dosiero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "Densigita arĥiva dosiero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "Konfigura dosiero por registradoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "Dosiero de datumbazo de kursoroj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "Dosiero de konfiguraĵoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "Dosiero de antaŭagordoj de ombrigilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "Dosiero de ombrigilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   "Dosiero de reasignado de regiloj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "Dosiero de trompaĵo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "Dosiero de supermetaĵo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "Dosiero de datumbazo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "Dosiero de tiparo TrueType."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "Simpla dosiero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "Video. Elektu ĝin por malfermi ĉi tiun dosieron per la filmetoludilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "Muziko. Elektu ĝin por malfermi ĉi tiun dosieron per la muzikludilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "Bilda dosiero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "Bildo. Elektu ĝin por malfermi ĉi tiun dosieron per la bildmontrilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Kerno de Libretro. Elekti ĉi tion ligos ĉi tiun kernon al la ludo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Kerno de Libretro. Elektu ĉi tiun dosieron por farigi RetroArch ŝargi la kernon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "Dosierujo. Elektu ĝin por malfermi ĉi tiun dosierujon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   "Limigo de filmertrafikon"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "Change settings for rewinding, fast-forwarding, and slow-motion."
+   "Ŝanĝi agordojn pri revolvi, rapidpluigi kaj malrapidpluigi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   "Registrado"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "Change settings for the recording."
+   "Ŝanĝi agordojn pri registri."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   "Surekrana montraĵo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   "Ŝanĝi agordojn pri surmetaĵoj bildaj kaj klavaraj, kaj surekranaj sciigoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   "Fasado"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   "Change settings for the user interface."
+   "Ŝanĝi agordojn pri la fasado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   "AI-servo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   "Ŝanĝi agordojn pri la AI-servo (traduko/parolsintezo/ks)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   "Alireblo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   "Ŝanĝi agordojn pri la alirebla rakontilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   "Kurentomastrumado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   "Ŝanği agordojn pri kurentomastrumado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Enable Achievements"
+   "Akiroj"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Change settings for the achievements."
+   "Ŝanĝi agordojn pri akiroj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   "Reto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   "Ŝanĝi agordojn pri servilo kaj reto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -908,32 +1340,188 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   "Change settings for the playlists."
+   "Ŝanĝi agordojn pri ludlisto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   "Uzanto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Ŝanĝi agordojn pri privateco, konto kaj uzantnomo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   "Dosierujo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   "Change default directories for this system."
+   "Ŝanĝi la defaŭltajn dosierujojn, kie dosieroj estas lokataj."
    )
 
 /* Core option category placeholders for icons */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   "Kodumoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Mapado"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    "Komunikilo"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Rendimento"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Sono"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "Specifoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Konservejo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Sistemo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "Tempomezurado"
+   )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "Ŝanĝi agordojn rilatantajn al Steam."
+   )
 #endif
 
 /* Settings > Drivers */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   "Input Driver"
+   "Enigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Eniga pelilo uzota. Kelkaj videaj peliloj devigas certan enigan pelilon. Bezonas restartigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "La eniga pelilo linuxraw bezonas aktivan TTY. Klavaraj eventoj estas legataj rekte el la TTY, kio faras ĝin pli simpla, sed ne tiel fleksebla kiel udev. Musoj, kc., tute ne estas subtenataj. Ĉi tiu pelilo uzas la pli malnovan API por la stirstango (/dev/input/js*)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   "Regilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   "Regila pelilo uzota. Bezonas restartigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "Pelilo de regilo de DirectInput."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "Aparata pelilo de homa interfaco de malalta nivelo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "Pelilo de Linux uzanta krudajn datumojn, uzas malnovan API de stirstango. Anstataŭe, uzu udev se eble."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Pelilo de LInux por regiloj konektitaj al paralela konektejo per specialaj adaptiloj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "Regila pelilo bazita sur bibliotekoj SDL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "Regila pelilo kun interfaco udev, ĝenerale rekomendata. Uzas la lasta stirstanga API evdev por subteno de stirstango. Ĝi subtenas dumkure permutebladon kaj preman respondreagon.\nDefaŭlte en la plej multo de la distribuaĵoj, nodoj de /dev/input estas nur por root (reĝimo 600). Oni povas agordi regulon de udev, kio faros ĉi tiujn alireblaj por ne-root."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "Regila pelilo XInput. Ĉefe por regiloj de XBox."
    )
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-   "Video Driver"
+   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   "Videa pelilo uzota. Bezonas restartigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "Pelilo OpenGL 1.x. Minimuma versio bezonata: OpenGL 1.1. Ne subtenas ombrigilojn. Anstataŭe, uzu postajn pelilojn OpenGL se eble."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "Pelilo OpenGL 2.x. Ĉi tiu pelilo ebligas al kernoj de libretro GL esti uzataj aldone al kernoj bildigitaj per programaro. Minimuma versio bezonata: OpenGL 2.0 aŭ OpenGLES 2.0. Subtenas la formaton de ombrigilo GLSL. Anstataŭe, uzu pelilon glcore se eble."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "Pelilo OpenGL 3.x. Ĉi tiu pelilo ebligas kernojn de libretro GL esti uzataj aldone al kernoj bildigataj per programaro. Minimuma versio bezonata: OpenGL 3.2 aŭ OpenGLES 3.0+. Subtenas la formaton de ombrigilo Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "Pelilo Vulkan. Ĉi tiu pelilo ebligas al kernoj de libretro Vulkan esti uzataj aldone al kernoj bildigataj per programaro. Minimuma versio bezonata: Vulkan 1.0. Subtenas ombrigilojn HDR kaj Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "Pelilo bildigita per programaro SDL 1.2. Rendimento estas taksata kiel esti suboptimuma. Konsideru uzi ĝin nur lastrimede."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "Pelilo bildigita per programaro SDL 2. Rendimento por realigoj de kernoj de libretro bildigitaj per programaro dependas de la realigo de SDL de via platformo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "Metala pelilo por platformoj de Apple. Subtenas la ombrigilan formaton Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "Pelilo Direct3D 8 sen subteno de ombrigiloj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "Pelilo Direct3D 9 kun subteno por la malnova formato de ombrigilo Cg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "Pelilo Direct3D 9 kun subteno por la formato de ombrigilo HLSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Pelilo Direct3D 10 kun subteno por la formato de ombrigilo Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "Pelilo Direct3D 11 kun subteno por la formatoj de ombrigilo HDR kaj Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "Pelilo Direct3D 12 kun subteno por la formato de ombrigilo HDR kaj Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -1168,6 +1756,10 @@ MSG_HASH(
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "Ĉesi"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
    "Close"
    )
@@ -1179,6 +1771,10 @@ MSG_HASH(
 
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   "AI-servo"
+   )
 
 
 /* Settings > Input > Port # Controls */
@@ -1513,6 +2109,10 @@ MSG_HASH(
    "Nomo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   "Kerno"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
    "Content Database"
    )
@@ -1641,6 +2241,10 @@ MSG_HASH(
 /* Qt (Desktop Menu) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFO,
+   "Informojn"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
    "Preview Shader Parameters"
    )
@@ -1654,7 +2258,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   "Ŝargi kerno"
+   "Ŝargi kernon"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_NAME,
@@ -1663,6 +2267,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    "Ludlistoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   "Dosieresplorilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE,
+   "Kerno"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
@@ -1686,6 +2298,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    "Historio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER,
+   "Uzanto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   "Starti"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,

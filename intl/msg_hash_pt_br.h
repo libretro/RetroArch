@@ -11300,6 +11300,14 @@ MSG_HASH(
    "Seleciona um tema diferente de ícone para o RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Ícones de Entradas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Exibe ícones para as entradas do menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    "Ícones de interruptor"
    )

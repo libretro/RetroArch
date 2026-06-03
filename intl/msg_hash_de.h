@@ -11320,6 +11320,14 @@ MSG_HASH(
    "Wähle ein anderes Thema für das Menü aus. Änderungen werden übernommen, nachdem Du das Programm neu gestartet hast."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Eintragssymbole"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Symbole für Menüeinträge zeichnen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    "Schaltersymbole"
    )

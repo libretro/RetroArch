@@ -3061,6 +3061,10 @@ MSG_HASH(
    "İvmeölçerin hassasiyetini ayarlayın."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Sensör Oryantasyonu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
    "Otomatik"
    )
@@ -3208,6 +3212,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Dokunsal geri bildirim ve titreşim ayarlarını değiştirir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Hareket/Işık Sensörleri"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
