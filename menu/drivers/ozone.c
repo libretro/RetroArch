@@ -5679,7 +5679,9 @@ static void ozone_update_scroll(ozone_handle_t *ozone,
 static int ozone_get_sublabel_max_width(ozone_handle_t *ozone,
       unsigned video_info_width, unsigned entry_padding)
 {
-   int sublabel_max_width = video_info_width - entry_padding;
+   int sublabel_max_width = video_info_width
+         - (entry_padding * 2)
+         - (ozone->dimensions.entry_icon_padding * 2);
 
    if (ozone->depth == 1)
       sublabel_max_width -= (int)ozone->dimensions_sidebar_width;
