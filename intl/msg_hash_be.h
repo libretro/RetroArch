@@ -8183,16 +8183,8 @@ MSG_HASH(
    "Дадаць да плэй-ліста"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Дадаць змесціва да плэй-ліста."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Стварыць новы плэйлiст"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Стварыць новы плэйліст і дадаць у яго бягучы запіс."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8215,16 +8207,8 @@ MSG_HASH(
    "Звесткі"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Прагляд пашыранай інфармацыі па кантэнце."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Сцягнуць мініяцюры"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Сцягнуць мініяцюры здымка экрана/бокс-арта/тытульнага экрана бягучага змесціва. Абнаўляе ўсе наяўныя мініяцюры."
    )
 
 /* Playlist Item > Set Core Association */

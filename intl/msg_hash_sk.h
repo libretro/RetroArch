@@ -8916,7 +8916,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Pridať obsah do zoznamu skladieb."
+   "Pridať túto položku do hracieho zoznamu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -8924,7 +8924,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Vytvoriť nový zoznam skladieb a pridať doň aktuálnu položku."
+   "Vytvoriť nový hrací zoznam a pridať sem túto položku."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8948,7 +8948,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Zobraziť viac informácií o obsahu."
+   "Zobraziť viac informácií o tomto obsahu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -8956,7 +8956,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Stiahnuť screenshot/obal/náhľady titulnej obrazovky pre aktuálny obsah. Aktualizuje existujúce náhľady."
+   "Stiahnuť obrázky miniatúr pre tento obsah. Aktualizuje existujúce obrázky."
    )
 
 /* Playlist Item > Set Core Association */
@@ -11310,6 +11310,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Vyberte inú tému ikon pre RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Ikony položiek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Kresliť ikony pre položky ponuky."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,

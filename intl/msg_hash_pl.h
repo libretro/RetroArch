@@ -7955,10 +7955,6 @@ MSG_HASH(
    "Dodaj do playlisty"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Dodaj zawartość do listy odtwarzania."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
    "Ustaw powiązanie rdzenia"
    )
@@ -7971,16 +7967,8 @@ MSG_HASH(
    "Informacja"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Zobacz więcej informacji o zawartości."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Pobierz miniatury"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Pobierz zrzut ekranu/okładkę/ekran tytułowy dla bieżącej zawartości. Aktualizuje wszystkie istniejące miniatury."
    )
 
 /* Playlist Item > Set Core Association */

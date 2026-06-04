@@ -8803,16 +8803,8 @@ MSG_HASH(
    "Adicionar a uma playlist"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Adiciona o conteúdo a uma playlist."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Criar nova playlist"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Cria uma nova lista de reprodução e adiciona o item atual nela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8835,16 +8827,8 @@ MSG_HASH(
    "Informações"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Mostra mais informações sobre o conteúdo."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Baixar miniaturas"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Faz o download de imagens em miniatura da captura de tela, arte da caixa ou tela de título para o conteúdo atual. Atualiza quaisquer miniaturas existentes."
    )
 
 /* Playlist Item > Set Core Association */

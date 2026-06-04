@@ -8891,16 +8891,8 @@ MSG_HASH(
    "Hozzáadás játéklistához"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "A tartalom hozzáadása játéklistához."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Új játéklista létrehozása"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Új játéklista létrehozása és az aktuális elem hozzáadása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8923,16 +8915,8 @@ MSG_HASH(
    "Információ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "További információk a tartalomról."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Bélyegképek letöltése"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Képernyőkép / dobozkép / címképernyő bélyegképeinek letöltése a jelenlegi tartalomhoz. Frissíti a már meglevő bélyegképeket."
    )
 
 /* Playlist Item > Set Core Association */

@@ -9028,7 +9028,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Thêm trò chơi vào danh sách chơi."
+   "Thêm mục này vào danh sách phát."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -9036,7 +9036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Tạo một danh sách phát mới và thêm mục hiện tại vào đó."
+   "Tạo danh sách phát mới và thêm mục này vào đó."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -9060,7 +9060,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Xem thêm thông tin về trò chơi."
+   "Xem thêm thông tin về nội dung này."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -9068,7 +9068,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Tải xuống hình thu nhỏ ảnh chụp màn hình/bìa/hình tiêu đề cho trò chơi hiện tại. Cập nhật mọi hình thu nhỏ hiện có."
+   "Tải ảnh thu nhỏ cho nội dung này. Các ảnh hiện có sẽ được cập nhật."
    )
 
 /* Playlist Item > Set Core Association */
@@ -11606,6 +11606,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Chọn chủ đề biểu tượng khác cho RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Biểu tượng mục menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Hiển thị biểu tượng cho các mục menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,

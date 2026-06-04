@@ -9019,16 +9019,8 @@ MSG_HASH(
    "실행목록에 추가"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "이 콘텐츠를 실행목록에 추가합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "새 실행목록 만들기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "새로운 실행목록을 만들고 현재 항목을 새 실행목록에 추가합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -9051,16 +9043,8 @@ MSG_HASH(
    "정보"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "콘텐츠에 대한 자세한 정보를 확인합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "미리보기 다운로드"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "현재 콘텐츠의 스크린샷/박스아트/타이틀 화면의 미리보기 이미지를 다운로드합니다. 기존 미리보기가 있을 경우 덮어씌워집니다."
    )
 
 /* Playlist Item > Set Core Association */
@@ -11590,6 +11574,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "다른 아이콘 테마 선택. 변경 내용은 프로그램을 다시 시작 후 적용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "메뉴 항목 아이콘"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "메뉴 항목의 아이콘을 그립니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,

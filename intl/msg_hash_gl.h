@@ -8847,16 +8847,8 @@ MSG_HASH(
    "Engadir á lista de reprodución"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Engade o contido a unha lista de reprodución."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Crear unha nova lista de reprodución"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Produciuse un erro ao engadir á lista de reprodución: lista de reprodución chea."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8879,16 +8871,8 @@ MSG_HASH(
    "Información"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Ver máis información sobre o contido."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Descargar miniaturas"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Descarga imaxes en miniatura de captura de pantalla/arte da caixa/pantalla de título para o contido actual. Actualiza as miniaturas existentes."
    )
 
 /* Playlist Item > Set Core Association */

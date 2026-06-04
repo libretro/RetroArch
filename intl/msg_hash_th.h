@@ -8659,16 +8659,8 @@ MSG_HASH(
    "เพิ่มลงในเพลย์ลิสต์"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "เพิ่มเนื้อหาลงในเพลย์ลิสต์"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "สร้างเพลย์ลิสต์ใหม่"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "สร้างเพลย์ลิสต์ใหม่และเพิ่มรายการปัจจุบันลงไป"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8691,16 +8683,8 @@ MSG_HASH(
    "ข้อมูล"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "ดูข้อมูลเพิ่มเติมเกี่ยวกับเนื้อหาชิ้นนี้"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "ดาวน์โหลดรูปตัวอย่าง"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "ดาวน์โหลดรูปภาพสกรีนช็อต/หน้าปก/ภาพหน้าจอชื่อเกม สำหรับเนื้อหาปัจจุบัน และอัปเดตไฟล์เดิมที่มีอยู่เดิม"
    )
 
 /* Playlist Item > Set Core Association */

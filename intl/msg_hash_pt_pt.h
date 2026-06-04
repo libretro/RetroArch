@@ -3535,24 +3535,12 @@ MSG_HASH(
    "Adicionar à lista de reprodução"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Adiciona o conteúdo a uma lista de reprodução."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Criar nova lista de reprodução"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Cria uma nova lista de reprodução e adiciona a entrada atual à mesma."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Informação"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Ver mais informações sobre o conteúdo."
    )
 
 /* Playlist Item > Set Core Association */

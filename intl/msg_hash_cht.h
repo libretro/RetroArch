@@ -7971,10 +7971,6 @@ MSG_HASH(
    "加入到列表"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "加入此項目到列表。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "建立新的列表"
    )
@@ -7999,16 +7995,8 @@ MSG_HASH(
    "資訊"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "顯示更多相關的資訊。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "下載預覽縮圖"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "下載此項目的預覽縮圖。"
    )
 
 /* Playlist Item > Set Core Association */

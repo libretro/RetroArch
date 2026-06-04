@@ -1473,27 +1473,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
-   "Pelilo OpenGL 1.x. Minimuma versio bezonata: OpenGL 1.1. Ne subtenas ombrigilojn. Anstataŭe, uzu postajn pelilojn OpenGL se eble."
+   "Pelilo de OpenGL 1.x. Minimuma versio bezonata: OpenGL 1.1. Ne subtenas ombrigilojn. Anstataŭe, uzu postajn pelilojn OpenGL se eble."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
-   "Pelilo OpenGL 2.x. Ĉi tiu pelilo ebligas al kernoj de libretro GL esti uzataj aldone al kernoj bildigitaj per programaro. Minimuma versio bezonata: OpenGL 2.0 aŭ OpenGLES 2.0. Subtenas la formaton de ombrigilo GLSL. Anstataŭe, uzu pelilon glcore se eble."
+   "Pelilo de OpenGL 2.x. Ĉi tiu pelilo ebligas al kernoj de libretro GL esti uzataj aldone al kernoj bildigitaj per programaro. Minimuma versio bezonata: OpenGL 2.0 aŭ OpenGLES 2.0. Subtenas la formaton de ombrigilo GLSL. Anstataŭe, uzu pelilon glcore se eble."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
-   "Pelilo OpenGL 3.x. Ĉi tiu pelilo ebligas kernojn de libretro GL esti uzataj aldone al kernoj bildigataj per programaro. Minimuma versio bezonata: OpenGL 3.2 aŭ OpenGLES 3.0+. Subtenas la formaton de ombrigilo Slang."
+   "Pelilo de OpenGL 3.x. Ĉi tiu pelilo ebligas al kernoj de libretro GL esti uzataj aldone al kernoj bildigataj per programaro. Minimuma versio bezonata: OpenGL 3.2 aŭ OpenGLES 3.0+. Subtenas la formaton de ombrigilo Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
-   "Pelilo Vulkan. Ĉi tiu pelilo ebligas al kernoj de libretro Vulkan esti uzataj aldone al kernoj bildigataj per programaro. Minimuma versio bezonata: Vulkan 1.0. Subtenas ombrigilojn HDR kaj Slang."
+   "Pelilo de Vulkan. Ĉi tiu pelilo ebligas al kernoj de libretro Vulkan esti uzataj aldone al kernoj bildigataj per programaro. Minimuma versio bezonata: Vulkan 1.0. Subtenas ombrigilojn HDR kaj Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
-   "Pelilo bildigita per programaro SDL 1.2. Rendimento estas taksata kiel esti suboptimuma. Konsideru uzi ĝin nur lastrimede."
+   "Pelilo bildigita per programaro de SDL 1.2. Rendimento estas taksata kiel esti suboptimuma. Konsideru uzi ĝin nur lastrimede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
-   "Pelilo bildigita per programaro SDL 2. Rendimento por realigoj de kernoj de libretro bildigitaj per programaro dependas de la realigo de SDL de via platformo."
+   "Pelilo bildigita per programaro de SDL 2. Rendimento por realigoj de kernoj de libretro bildigitaj per programaro dependas de la realigo de SDL de via platformo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
@@ -1501,94 +1501,606 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
-   "Pelilo Direct3D 8 sen subteno de ombrigiloj."
+   "Pelilo de Direct3D 8 sen subteno de ombrigiloj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
-   "Pelilo Direct3D 9 kun subteno por la malnova formato de ombrigilo Cg."
+   "Pelilo de Direct3D 9 kun subteno por la malnova formato de ombrigilo Cg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
-   "Pelilo Direct3D 9 kun subteno por la formato de ombrigilo HLSL."
+   "Pelilo de Direct3D 9 kun subteno por la formato de ombrigilo HLSL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
-   "Pelilo Direct3D 10 kun subteno por la formato de ombrigilo Slang."
+   "Pelilo de Direct3D 10 kun subteno por la formato de ombrigilo Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
-   "Pelilo Direct3D 11 kun subteno por la formatoj de ombrigilo HDR kaj Slang."
+   "Pelilo de Direct3D 11 kun subteno por la formatoj de ombrigilo HDR kaj Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
-   "Pelilo Direct3D 12 kun subteno por la formato de ombrigilo HDR kaj Slang."
+   "Pelilo de Direct3D 12 kun subteno por la formato de ombrigilo HDR kaj Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "Pelilo de DispmanX. Uzas la API DispmanX por la GPU Videocore IV en Raspberry Pi 0..3. Neniu subteno por surmetaĵoj aŭ ombrigiloj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "Pelilo de LibCACA. Produktas signa eligo anstataŭ grafikoj. Ne rekomendata por praktika uzado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "Malaltnivela videa pelilo de Exynos, kiu uzas la bloko G2D en Samsung Exynos SoC por operacioj \"blit\". Rendimento por kernoj bildigitaj per programaro devus esti optimuma."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Simpla videa pelilo de DRM. Ĉi tiu estas malaltnivela videa pelilo uzante libdrm por aparatara skalado uzante supermetaĵoj de GPU."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "Malaltnivela videa pelilo de Sunxi uzanta la bloko G2D en Allwinner SoCs."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Pelilo de Wii U. Subtenas ombrigilojn Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "Pelilo de Switch. Subtenas la ombrigila formato GLSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "Pelilo de OpenVG. Uzas API de 2D vektoraj grafikoj plirapidigitaj per aparataro de OpenVG."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "Pelilo de GDI. Uzas malnovan interfaco de Windows. Ne rekomendata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "Kuranta videa pelilo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   "Audio Driver"
+   "Sono"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+   "Sona pelilo uzota. Bezonas restartigo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   "Pelilo de RSound por retkonektitaj sonaj sistemoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "Malnova pelilo de Open Sound System."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "Defaŭlta pelilo de ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   "Pelilo de ALSA kun subteno al fanigado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   "Pelilo de ALSA realigita sen dependaĵoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   "Pelilo de sonsistemo de RoarAudio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   "Pelilo de OpenAL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   "Pelilo de OpenSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   "Pelilo de DirectSound. DirectSound estas uzata ĉefe de Windows 95 ĝis Windows XP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   "Pelilo de Windows Audio Session API. WASAPI estas ĉefe uzata de Windows 7 kaj plue."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   "Pelilo de PulseAudio. Se la sistemo uzas PulseAudio, certiĝu, ke vi uzu ĉi tiun pelilon anstataŭ ekz. ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "Pelilo de PipeWire. Se la sistemo uzas PipeWire, certiĝu, ke vi uzu ĉi tiun pelilon anstataŭ ekz. PulseAudio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   "Pelilo de Jack Audio Connection Kit."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "Mikrofono"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Mikrofona pelilo uzota. Bezonas restartigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "Mikrofona resonpecigado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "Pelilo de mikrofona resonpecigado uzota."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   "Audio Resampler Driver"
+   "Resonpecigado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   "Resonpecigada pelilo uzota."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   "Realigo en fenestro je sinc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "Implikita kosinusa realigo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
+   "Plej proksima resonpeciga realigo. Ĉi tiu resonpecigilo ignoras la agordon pri kvalito."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-   "Camera Driver"
+   "Kamerao"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
-   "Bluetooth Enable"
+   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   "Kameraa pelilo uzota. Bezonas restartigon."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-   "Wi-Fi Driver"
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Pelilo de Bluetooth uzota. Bezonas restartigon."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+   "Pelilo de Wi-Fi uzota. Bezonas restartigon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   "Location Driver"
+   "Loko"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "Pelilo de loko uzota. Bezonas restartigon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   "Menu Driver"
+   "Menuo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Menua pelilo uzota. Bezonas restartigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "XMB estas grafika interfaco de RetroArch, kiu ŝajnas kvazaŭ menuo de konsolo de 7-a generacio. Ĝi povas subteni la samajn trajtojn kiel Ozone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "Ozone estas la defaŭlta grafika interfaco de RetroArcho sur la plej multo de platformoj. Ĝi estas optimumigita por navigado per ludregilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   "RGUI estas simpla integrita grafika interfaco por RetroArch. Ĝi havas la plej malaltajn rendimentajn postulojn inter la menuaj peliloj, kaj povas esti uzata sur malaltdistingivaj ekranoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "Sur porteblaj aparatoj, RetroArch defaŭlte uzas la poŝtelefonan uzantinterfaco, MaterialUI. Ĉi tiu interfaco estas dezajnita je tuŝekranaj kaj montrilaj aparatoj, kiel muso aŭ stirglobo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   "Record Driver"
+   "Registro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "Registra pelilo uzota. Bezonas restartigon."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Pelilo de MIDI uzota. Bezonas restartigon."
    )
 
 /* Settings > Video */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   "SwitchRes por CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   "Generas malaltdistingivaj videajn signalojn por ekranoj de CRT."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   "Eligo"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   "Adjusts settings for video output."
+   "Ŝanĝi agordojn pri videa eligo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Plenekrana reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Ŝanĝi agordojn pri la plenekrana reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Enfenestra reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Ŝanĝi agordojn pri la enfenestra reĝimo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   "Skalado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   "Ŝanĝi agordojn pri videa skalado."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "Ŝanĝi agordojn pri video rilatantaj al HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   "Audio Sync Enable"
+   "Sinkronigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "Ŝanĝi agordojn pri videa sinkronigo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Apliki videan filtrilon. Eblas, ke la videa pelilo ne respektu ĉi tion."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Ebligi videan filtrilon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   "Halteti ekrankurtenon."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   "Preventu la aktivigon de ekrankurtenon de via sistemo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Haltetas la ekrankurtenon. Eblas, ke la videa pelilo ne respektu ĉi tion."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   "Fadenigita video"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   "Plibonigas rendimenton kontraŭ atendotempo kaj videa \"mikrobalbutado\". Uzu ĝin nur se plena rapideco ne povas esti atingita alikaze."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "Uzi pelilon de fadenigita video. Uzi ĉi tio povas plibonigi rendimenton, eble kontraŭ respondotempo kaj pli videa \"mikrobalbutado\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   "Enmeto de nigraj filmeroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Enmego de nigraj filmeroj - malhelaj filmeroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Alĝustigas la nombron de nigraj filmeroj enmetotaj en la totala sinsekvo de \"scan-out\". Ju pli alta valoro, des pli movklareco; ju malpli alta valoro, des pli brileco. Ne aplikebla je 120Hz, ĉar nur ekzistas 1 nigra filmero enmetota. Agordoj pli alta ol ebla limigos vin al la maksimume ebla por via elektita ofteco de aktualigo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Alĝustigas la nombron de tute nigraj filmeroj montrotaj en la sinsekvo de enmeto de nigraj filmeroj. Ju pli da nigraj filmeroj, des pli da movklareco sed malpli da brileco. NE aplikebla je 120Hz ĉar nur ekzistas unu totala aldona filmero de 60Hz, do ĝi devos esti nigra, alikaze enmeto de nigraj fotogramoj estus tute ne aktiva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   "Ombrigilaj subfilmeroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "AVERTO: Rapida flagro povus kaŭzi bilda daŭro (\"image presistence\") en kelkaj ekranoj. Uzu ĝin je via propra risko. // Imitas baza rulanta \"scanline\" sur pluraj subfilmeroj dividante la ekrano supren vertikale kaj bildigante ĉiu parto de la ekrano laŭ kiom da subfilmeroj estas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Enmetas kromajn ombrigilajn filmerojn inter filmeroj por ĉiuj eblaj ombrigilaj efikoj designitaj por ruli pli rapide ol la enhava ofteco. Uzu nur opcion designitan por la ofteco de aktualigo de via ekrano. Ne uzota je oftecoj de aktualigo, kiuj ne estas obloj de 60Hz, kiel 144Hz, 165Hz, kc. Ne kombinu ĝin kun intervalo de permuto > 1, enmeto de nigrajn filmerojn, filmera prokrasto aŭ sinkronigi al ĝusta filmerofteco de enhavo. Lasi la VRR de sistemo estas bone, sed ne estas uzebla kun ĉi ti[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Imito de rulanta \"scanline\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "AVERTO: Rapida flagro povus kaŭzi bildan daŭron (\"image presistence\") en kelkaj ekranoj. Uzu ĝin je via propra risko. // Imitas baza rulanta \"scanline\" sur pluraj subfilmeroj dividante la ekranon supren vertikale kaj bildigante ĉiun parton de la ekrano laŭ kiom da subfilmeroj estas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Imitas bazan rulantan \"scanline\" sur pluraj subfilmeroj dividante la ekranon supren vertikale kaj bildigante ĉiun parton de la ekrano laŭ kiom da subfilmeroj estas de la plej supro de la ekrano malsupren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   "Dulineara filtrado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Milde malklarigi la bildon por malakrigi akrajn bilderajn eĝojn. Ĉi tiu opcio malmulte influas rendimenton. Devus esti malebligita se uzante ombrigiloj."
    )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Bilda interpolado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Specifi metodon de bilda interpolado kiam skalante enhavon per la ena IPU. \"Dukuba\" aŭ \"Dulineara\" estas rekomendata kiam uzante videajn filtrilojn funkciigate de CPU. Ĉi tiu opcio havas nenian influon al rendimento."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "Dukuba"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "Dulineara"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "Plej proksima najbaro"
+   )
 #if defined(RS90) || defined(MIYOO)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Bilda interpolado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Specifi metodon de bilda interpolado kiam \"Entejra skalado\" estas malebligita. \"Plej proksima najbaro\" malplli influas la rendimenton."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Plej proksima najbaro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Duon-lineara"
+   )
 #endif
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "Prokrasti aŭtomatan ombrigilon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "Prokrasti aŭtomate ŝargi ombrigilojn (je ms). Povas solvi grafikajn missignalojn kiam uzante \"ekrankopian\" programaron."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   "Videa filtrilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "Apliki videan filtrilon funkciiganta de CPU. Povas multe influi rendimenton. Kelkaj videaj filtriloj povas funkcii nur por kernoj, kiuj uzas 32-bitan aŭ 16-bitan koloradon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "Apliki videan filtrilon funkciiganta de CPU. Povas multe influi rendimenton. Kelkaj videaj filtriloj povas funkcii nur por kernoj, kiuj uzas 32-bitan aŭ 16-bitan koloradon. Dinamike ligitaj videfiltrilaj bibliotekoj estas elekteblaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   "Apliki videan filtrilon funkciiganta de CPU. Povas multe influi rendimenton. Kelkaj videaj filtriloj povas funkcii nur por kernoj, kiuj uzas 32-bitan aŭ 16-bitan koloradon. Integritaj videfiltrilaj bibliotekoj estas elekteblaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "Forigi videan filtrilon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "Malŝargi ajnan aktivan videan filtrilon funkciigita de CPU."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Ebligi plenekranan reĝimon super \"noĉo\" en aparatoj Android kaj iOS"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Uzi argumentajn bufrojn de Metal (bezonas rekomencigon)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Provi plibonigi rendimenton uzante argumentajn bufrojn de Metal. Kelkaj kernoj povas bezoni ĉi tion. Ĉi tio povas \"rompi\" kelkajn ombrigilojn, ĉefe en kadukaj aparataroj aŭ malnovaj versioj de operaciumoj."
+)
 
 /* Settings > Video > CRT SwitchRes */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   "SwitchRes por CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   "Nur por ekranoj de CRT. Provas uzi ĝustajn distingivon kaj ofteco de aktualigo de la kerno/ludo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   "Superdistingivo de CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   "Interŝanĝi inter indiĝenaj kaj ultralarĝaj superdistingivoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "Horizontala centerigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "Ŝanĝu ĉi tiun opcion se la bildo ne estas ĝuste centerigita en la ekrano."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Horizontala grando"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "Ŝanĝu ĉi tiun opcion por alĝustigi la horizontalajn agordojn por ŝanĝi la bildan grandon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   "Vertikala centrigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Ŝanĝu ĉi tiun opcion se la bildo ne estas ĝuste centrigita en la ekrano."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Uzi altdistingivan menuon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "Ŝanĝi al altdistingiva reĝimlinio (\"modeline\") por uzi kun altdistingivaj menuoj kiam nenia enhavo estas ŝargita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Propra ofteco de aktualigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Uzi propran oftecon de aktualigo specifitan en la konfigura dosiero se bezonata."
+   )
 
 /* Settings > Video > Output */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   "Ekrana indekso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   "Elekti la ekranan indekson uzotan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
+   "Kiun ekranon preferi. 0 (defaŭlte) signifas nenian apartan ekranon estas preferata, 1 kaj plie (1 por la unua ekrano) sugestas al RetroArch uzi tiun apartan ekranon."
+   )
 #if defined (WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Optimumigi por la GamePad de Wii U (bezonas rekomencigon)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+   "Uzi ĝuste duoblan skaladon de la GamePad kiel la vidujo. Malebligu por montri je la indiĝena distingivo de la TV."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-   "Rotation"
+   "Videa rotacio"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   "Forces a certain rotation of the screen. The rotation is added to rotations which the core sets."
+   "Devigas certan rotacion de la video. La rotacio estas aldonita al rotacioj agorditaj de la kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   "Ekrana orientigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   "Devigas certan orientigon de la ekrano de la operaciumo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+   "Indekso de GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Elekti la grafikan kardon uzotan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Ekrana horizontala deŝovo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Devigas certan deŝovon horizontale sur la video. La deŝovo estas aplikata ĉie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Ekrana vertikala deŝovo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Devigas certa deŝovo vertikale sur la video. La deŝovo estas aplikata ĉie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   "Vertikala ofteco de aktualigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "Vertikala ofteco de aktualigo de via ekrano. Uzata por kalkuli ĝustan oftecon de aŭdia enigo. Ĉi tio estos ignorata se \"Fadenigita video\" estas ebligita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   "Pritaksita ekrana ofteco de aktualigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   "La fidela pritaksita ofteco de aktualigo de la ekrano je Hz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
+   "La fidela ofteco de aktualigo de via ekrano (Hz). Ĉi tio estas uzata por kalkuli oftecon de aŭdia enigo per la formulo:\nofteco de aŭdia enigo = ofteco de luda enigo * ofteco de ekrana aktualigo / ofteco de luda aktualigo\nSe la kerno ne raportas ajnajn valorojn, oni supozos la defaŭltajn valorojn de NTSC por retrokongruo.\nĈi tiu valoro devus esti ĉirkaŭ 60Hz por eviti grandajn ŝanĝojn en la tono. Se via ekrano ne rulas ĉe aŭ ĉirkaŭ 60Hz, malebligu VSync, kaj lasu ĉi tion ĉe ĝia[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   "Agordi ekran-raportitan ofteco de aktualigo"
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Vertikala ofteco de aktualigo"
+   )
 #endif
 
 /* Settings > Video > Fullscreen Mode */
@@ -1622,10 +2134,18 @@ MSG_HASH(
 /* Settings > Audio */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   "Eligo"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Adjusts settings for audio output."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "Mikrofono"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
@@ -1674,6 +2194,10 @@ MSG_HASH(
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "Mikrofono"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "Audio Device"
    )
@@ -1714,6 +2238,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    "Input Driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   "Eligo"
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */

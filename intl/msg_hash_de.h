@@ -8804,7 +8804,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Den Inhalt einer Wiedergabeliste hinzufügen."
+   "Diesen Eintrag zur Playlist hinzufügen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -8836,7 +8836,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Weiterführende Informationen über diesen Inhalt ansehen."
+   "Weitere Informationen zu diesem Inhalt anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -8844,7 +8844,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Screenshot-/Box-Art-/Titelbild-Vorschaubilder für den aktuellen Inhalt herunterladen. Aktualisiert alle vorhandenen Vorschaubilder."
+   "Miniaturbilder für diesen Inhalt herunterladen. Aktualisiert alle vorhandenen Bilder."
    )
 
 /* Playlist Item > Set Core Association */

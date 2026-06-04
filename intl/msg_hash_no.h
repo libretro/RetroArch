@@ -3351,10 +3351,6 @@ MSG_HASH(
    "Lag ny spilleliste"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Lag en ny spilleliste og legg til den gjeldende oppføringen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Informasjon"
    )

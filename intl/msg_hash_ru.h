@@ -9011,16 +9011,8 @@ MSG_HASH(
    "Добавить в плейлист"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Добавить контент в плейлист."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Создать новый плейлист"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Создать новый плейлист и добавить в него текущую запись."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -9043,16 +9035,8 @@ MSG_HASH(
    "Информация"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Просмотр расширенной информации по контенту."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Скачать миниатюры"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Загрузка миниатюр скриншота/обложки/начального экрана для данного контента. Обновит все существующие миниатюры."
    )
 
 /* Playlist Item > Set Core Association */

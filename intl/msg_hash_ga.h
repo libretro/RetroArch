@@ -8992,7 +8992,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Cuir an t-ábhar le seinmliosta."
+   "Cuir an iontráil seo le seinmliosta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -9000,7 +9000,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Cruthaigh seinmliosta nua agus cuir an iontráil reatha leis."
+   "Cruthaigh seinmliosta nua agus cuir an iontráil seo leis."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -9024,7 +9024,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Féach tuilleadh eolais faoin ábhar."
+   "Féach tuilleadh eolais faoin ábhar seo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -9032,7 +9032,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Íoslódáil mionsamhlacha scáileáin/ealaín bosca/scáileáin teidil don ábhar reatha. Nuashonraíonn sé aon mionsamhlacha atá ann cheana."
+   "Íoslódáil mioníomhánna don ábhar seo. Nuashonraíonn sé aon íomhánna atá ann cheana."
    )
 
 /* Playlist Item > Set Core Association */
@@ -11614,6 +11614,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Roghnaigh téama deilbhín difriúil do RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Deilbhíní Iontrála"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Tarraing deilbhíní le haghaidh iontrálacha roghchláir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,

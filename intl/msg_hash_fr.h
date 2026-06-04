@@ -8944,7 +8944,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Ajouter le contenu à une liste de lecture."
+   "Ajouter cette entrée à une liste de lecture."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -8952,7 +8952,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Créer une nouvelle playlist et ajouter l'entrée courante à celle-ci."
+   "Créer une nouvelle liste de lecture et ajouter cette entrée à celle-ci."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8976,7 +8976,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Affiche plus d'informations sur le contenu."
+   "Affiche plus d'informations sur ce contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -8984,7 +8984,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Télécharge les miniatures des captures d'écran/pochettes/écrans titre pour le contenu actuel. Mets à jour toutes les miniatures existantes."
+   "Télécharger les images de miniatures pour ce contenu. Met à jour toutes les images existantes."
    )
 
 /* Playlist Item > Set Core Association */
@@ -11534,6 +11534,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Sélectionner un thème d'icônes différent pour RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Icônes des entrées du menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Afficher des icônes pour les entrées du menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
