@@ -88,7 +88,6 @@ ifneq (,$(findstring unix,$(platform)))
 ifeq ($(OPENGL),1)
    GL_LIB := -lGL
 	HAVE_OPENGL = 1
-	HAVE_GL_FFT := 1
 endif
    HAVE_SSA := 1
 
@@ -109,8 +108,7 @@ else ifneq (,$(findstring osx,$(platform)))
 
 ifeq ($(OPENGL),1)
    GL_LIB := -framework OpenGL
-   HAVE_GL_FFT := 1
-	HAVE_OPENGL = 1
+   HAVE_OPENGL = 1
 endif
    OSXVER = `sw_vers -productVersion | cut -d. -f 2`
    OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
@@ -133,7 +131,6 @@ ifeq ($(OPENGL),1)
 	HAVE_OPENGL = 1
 	GLES = 1
    GL_LIB := -framework OpenGLES
-   HAVE_GL_FFT := 1
    CFLAGS += -DHAVE_OPENGLES -DHAVE_OPENGLES3
 endif
    HAVE_ARMV7=1
@@ -193,11 +190,26 @@ else
 ifeq ($(OPENGL),1)
    GL_LIB := -lopengl32
    CFLAGS += -DHAVE_OPENGL
-	HAVE_OPENGL = 1
-	HAVE_GL_FFT := 1
-	WIN32_PLATFORM := 1
+   HAVE_OPENGL = 1
+   WIN32_PLATFORM := 1
 endif
    LIBS += -L.
+endif
+
+# webOS
+ifneq (,$(or $(findstring webos,$(CROSS_COMPILE)),$(findstring starfish,$(CROSS_COMPILE))))
+   ARCH_X86 = 0
+   ARCH_X86_64 = 0
+   ifneq (,$(findstring arm,$(CROSS_COMPILE)))
+      HAVE_ARMV6 = 1
+      HAVE_NEON = 1
+   else
+      ARCH_AARCH64 = 1
+   endif
+   HAVE_OPENGL = 1
+   GLES = 1
+   GL_LIB := -lGLESv2
+   HAVE_SSA := 0
 endif
 
 ifeq ($(LIBRETRO_SWITCH), 1)

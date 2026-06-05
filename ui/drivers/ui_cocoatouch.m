@@ -24,14 +24,22 @@
 #include <queues/task_queue.h>
 #include <string/stdstring.h>
 #include <retro_timers.h>
+#include <defines/cocoa_defines.h>
 
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
+
+#if defined(HAVE_COCOA_METAL)
+#include "../../gfx/common/metal_view.h"
+#endif
+
 #include "../ui_companion_driver.h"
 #include "../../audio/audio_driver.h"
+#include "../../gfx/video_display_server.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../input/drivers/cocoa_input.h"
+#include "../../input/input_driver.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
 #include "../../tasks/task_content.h"
@@ -50,11 +58,17 @@
 #include "../../menu/menu_setting.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay_private.h"
+#endif
+
 #import <AVFoundation/AVFoundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 
 #import <MetricKit/MetricKit.h>
 #import <MetricKit/MXMetricManager.h>
+
+#import "../../pkg/apple/WebServer/WebServer.h"
 
 #ifdef HAVE_MFI
 #import <GameController/GameController.h>
@@ -416,6 +430,11 @@ enum
 
 - (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
+   /* Skip processing if iOS native keyboard (UITextField) is active
+    * to prevent double-processing and memory corruption in UIKit's string formatting */
+   if (ios_keyboard_active())
+      return [super pressesBegan:presses withEvent:event];
+
    for (UIPress *press in presses)
       [self handleUIPress:press withEvent:event down:YES];
    [super pressesBegan:presses withEvent:event];
@@ -423,6 +442,11 @@ enum
 
 - (void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
+   /* Skip processing if iOS native keyboard (UITextField) is active
+    * to prevent double-processing and memory corruption in UIKit's string formatting */
+   if (ios_keyboard_active())
+      return [super pressesEnded:presses withEvent:event];
+
    for (UIPress *press in presses)
       [self handleUIPress:press withEvent:event down:NO];
    [super pressesEnded:presses withEvent:event];
@@ -513,6 +537,18 @@ enum
 @end
 #endif
 
+@interface RetroArch_iOS () <UITextFieldDelegate>
+/* 'retain' works identically to 'strong' under ARC but unlike 'strong'
+ * is also accepted by the pre-ARC compiler - so the file remains
+ * buildable under MRR without a separate code path. */
+@property (nonatomic, retain) UITextField *keyboardTextField;
+@property (nonatomic, copy) void(^keyboardCompletionCallback)(const char *);
+@property (nonatomic, assign) char **keyboardBufferPtr;
+@property (nonatomic, assign) size_t *keyboardSizePtr;
+@property (nonatomic, assign) size_t *keyboardPtrPtr;
+@property (nonatomic, assign) char *keyboardAllocatedBuffer;
+@end
+
 @implementation RetroArch_iOS
 
 #pragma mark - ApplePlatform
@@ -531,6 +567,14 @@ enum
    if (_renderView != nil)
    {
       [_renderView removeFromSuperview];
+      /* _renderView holds a +1 retain regardless of which path below
+       * created it (the Metal / Vulkan branches take +1 directly from
+       * +new; the OPENGL_ES branch retains the singleton returned by
+       * glkitview_init()).  Release it here so the ownership invariant
+       * is balanced before we nil the ivar.  Under ARC this is a
+       * no-op and the implicit __strong ivar handles the release when
+       * _renderView is assigned nil. */
+      RARCH_RELEASE(_renderView);
       _renderView = nil;
    }
 
@@ -538,6 +582,9 @@ enum
    {
 #ifdef HAVE_COCOA_METAL
        case APPLE_VIEW_TYPE_VULKAN:
+         /* +new returns a +1 object; that retain transfers into
+          * _renderView and satisfies the ivar's ownership invariant
+          * directly.  No extra RARCH_RETAIN needed. */
          _renderView = [MetalLayerView new];
 #if TARGET_OS_IOS
          _renderView.multipleTouchEnabled = YES;
@@ -556,7 +603,12 @@ enum
          break;
 #endif
        case APPLE_VIEW_TYPE_OPENGL_ES:
-         _renderView = (BRIDGE GLKView*)glkitview_init();
+         /* glkitview_init() returns an unretained pointer to the
+          * cocoa_gl_ctx.m singleton.  Retain explicitly so _renderView
+          * matches the +1 invariant the Metal / Vulkan paths get from
+          * +new.  Under ARC RARCH_RETAIN is a no-op and the implicit
+          * __strong ivar assignment takes the retain via objc_storeStrong. */
+         _renderView = RARCH_RETAIN((BRIDGE GLKView*)glkitview_init());
          break;
 
        case APPLE_VIEW_TYPE_NONE:
@@ -570,7 +622,16 @@ enum
 #if TARGET_OS_IOS
    if (@available(iOS 13.4, *))
    {
-      [_renderView addInteraction:[[UIPointerInteraction alloc] initWithDelegate:self]];
+      /* +[UIPointerInteraction alloc] initWithDelegate: returns +1.
+       * -addInteraction: retains internally, so autorelease our own
+       * +1 to balance under MRR.  ARC already releases on scope
+       * exit; the macro is a no-op there.  RARCH_AUTORELEASE is a
+       * statement-only macro (it expands to ((void)0) under ARC)
+       * so it must appear on its own line rather than wrapping the
+       * rvalue. */
+      UIPointerInteraction *interaction = [[UIPointerInteraction alloc] initWithDelegate:self];
+      RARCH_AUTORELEASE(interaction);
+      [_renderView addInteraction:interaction];
       _renderView.userInteractionEnabled = YES;
    }
 #endif
@@ -668,10 +729,18 @@ enum
       }
    }
 
-   /* Configure KSCrash for local storage only */
+   /* Configure KSCrash for local storage only.
+    * Autorelease the +1 from +new: -installWithConfiguration: keeps
+    * its own reference via config.reportStoreConfiguration retain and
+    * KSCrash's own retain of the config, so our local can be released
+    * at autorelease-pool drain without dangling any of those.
+    * RARCH_AUTORELEASE is a statement-only macro; call it on its own
+    * line after the assignment.  No-op under ARC. */
    KSCrashConfiguration *config = [KSCrashConfiguration new];
+   RARCH_AUTORELEASE(config);
    config.installPath = crashReportsPath;
    KSCrashReportStoreConfiguration *storeConfig = [KSCrashReportStoreConfiguration new];
+   RARCH_AUTORELEASE(storeConfig);
    storeConfig.reportsPath = crashReportsPath;
    storeConfig.appName = @"RetroArch";
    storeConfig.maxReportCount = 10; /* Keep last 10 crash reports */
@@ -719,7 +788,12 @@ enum
       if (!report)
          continue;
 
+      /* -mutableCopy returns +1.  Inside a for-loop that's a
+       * per-iteration leak under MRR; autorelease so it is cleaned up
+       * when the pool drains at the next run-loop iteration.
+       * Statement-only macro, so on its own line.  No-op under ARC. */
       NSMutableDictionary *mutableReport = [report.value mutableCopy];
+      RARCH_AUTORELEASE(mutableReport);
 
       /* Remove binary_images to reduce file size */
       if ([mutableReport objectForKey:@"binary_images"])
@@ -744,8 +818,12 @@ enum
                                                                error:nil];
       if (minifiedData)
       {
+         /* +1 from alloc+init; per-iteration leak inside the for-loop
+          * under MRR without an autorelease.  Statement-only macro, so
+          * on its own line.  No-op under ARC. */
          NSString *jsonString = [[NSString alloc] initWithData:minifiedData
                                                       encoding:NSUTF8StringEncoding];
+         RARCH_AUTORELEASE(jsonString);
          if (jsonString)
          {
             /* Log with a unique marker that can be extracted with grep/sed */
@@ -785,7 +863,11 @@ enum
 
       // Define the original and new file paths
       NSString *originalPath = [cachesDirectory stringByAppendingPathComponent:@"RetroArch/config/retroarch.cfg"];
+      /* +1 from alloc+init; autorelease so scope-exit cleans up under
+       * MRR the same way ARC does.  Statement-only macro, so on its
+       * own line.  No-op under ARC. */
       NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+      RARCH_AUTORELEASE(dateFormatter);
       [dateFormatter setDateFormat:@"HHmm-yyMMdd"];
       NSString *timestamp = [dateFormatter stringFromDate:[NSDate date]];
       NSString *newPath = [cachesDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"RetroArch/config/RetroArch-%@.cfg", timestamp]];
@@ -808,8 +890,16 @@ enum
 
    [self setDelegate:self];
 
-   /* Setup window */
-   self.window        = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   /* Setup window.
+    * self.window is a retain property (see apple_platform.h); the
+    * setter takes its own retain.  Autorelease the +1 from alloc+init
+    * via a temp so the setter's retain is the sole owner under MRR.
+    * Under ARC the strong setter retains and ARC scope-releases the
+    * temp.  Statement-only macro, so RARCH_AUTORELEASE goes on its
+    * own line. */
+   UIWindow *win      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   RARCH_AUTORELEASE(win);
+   self.window        = win;
    [self.window makeKeyAndVisible];
 
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
@@ -850,8 +940,6 @@ enum
          free((void*)appicon_setting->values);
       appicon_setting->values = options;
    }
-
-   rarch_start_draw_observer();
 
 #if TARGET_OS_TV
    update_topshelf();
@@ -914,11 +1002,37 @@ enum
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
+   RARCH_LOG("[Lifecycle] applicationDidEnterBackground - stopping services\n");
 #if TARGET_OS_TV
    update_topshelf();
 #endif
    rarch_stop_draw_observer();
    command_event(CMD_EVENT_SAVE_FILES, NULL);
+
+   /* Stop Bonjour services to prevent XPC crashes when connections are
+    * invalidated while the app is suspended. Web servers will be restarted
+    * when the app becomes active again. Netplay discovery must be
+    * re-initiated by the user. */
+#if !TARGET_OS_SIMULATOR
+   RARCH_LOG("[Lifecycle] Stopping web servers (Bonjour)\n");
+   [[WebServer sharedInstance] stopServers];
+#endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) && defined(HAVE_NETPLAYDISCOVERY_NSNET)
+   netplay_mdns_suspend();
+#endif
+
+   /* Clear any stuck or stale touches when backgrounding */
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)input_state_get_ptr()->current_data;
+   if (apple)
+   {
+      apple->touch_count = 0;
+      memset(apple->touches, 0, sizeof(apple->touches));
+   }
+}
+
+- (void)applicationDidReceiveMemoryWarning:(UIApplication *)application
+{
+    RARCH_LOG("[Lifecycle] applicationDidReceiveMemoryWarning - XPC connections may be invalidated\n");
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application
@@ -929,24 +1043,45 @@ enum
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
+   RARCH_LOG("[Lifecycle] applicationWillResignActive\n");
    self.bgDate = [NSDate date];
    rarch_stop_draw_observer();
+
+   /* Clear any stuck or stale touches when losing focus */
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)input_state_get_ptr()->current_data;
+   if (apple)
+   {
+      apple->touch_count = 0;
+      memset(apple->touches, 0, sizeof(apple->touches));
+   }
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-   rarch_start_draw_observer();
-   NSError *error;
+   NSError *error = nil;
    settings_t *settings            = config_get_ptr();
    bool ui_companion_start_on_boot = settings->bools.ui_companion_start_on_boot;
 
+   RARCH_LOG("[Lifecycle] applicationDidBecomeActive - configuring AVAudioSession\n");
    if (settings->bools.audio_respect_silent_mode)
        [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
    else
        [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:&error];
+   if (error)
+       RARCH_ERR("[Lifecycle] AVAudioSession setCategory error: %s\n", [[error localizedDescription] UTF8String]);
+
+   /* Restart Bonjour services that were stopped when backgrounding */
+#if !TARGET_OS_SIMULATOR
+   RARCH_LOG("[Lifecycle] Restarting web servers (Bonjour)\n");
+   [[WebServer sharedInstance] startServers];
+#endif
 
    if (!ui_companion_start_on_boot)
       [self showGameView];
+
+#if TARGET_OS_TV
+   rarch_start_draw_observer();
+#endif
 
 #ifdef HAVE_CLOUDSYNC
    if (self.bgDate)
@@ -958,6 +1093,18 @@ enum
       self.bgDate = nil;
    }
 #endif
+
+#if TARGET_OS_IOS
+   /* Enable CoreMotion and capture rest position for AccelerometerRest.
+    * CoreMotion must be active for reads to return non-zero values,
+    * so enable first, then start the 30-frame averaging capture. */
+   if (settings->bools.input_sensors_enable)
+   {
+      input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_ENABLE, 60);
+      input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_ENABLE, 60);
+      input_sensor_start_rest_capture();
+   }
+#endif
 }
 
 -(BOOL)openRetroArchURL:(NSURL *)url
@@ -967,7 +1114,11 @@ enum
    // Handle topshelf URLs: retroarch://topshelf?path=...&core_path=...
    if ([url.host isEqualToString:@"topshelf"])
    {
+      /* +1 from alloc+init; autorelease so scope-exit balances under
+       * MRR.  Statement-only macro, so on its own line.  No-op under
+       * ARC. */
       NSURLComponents *comp = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+      RARCH_AUTORELEASE(comp);
       NSString *ns_path, *ns_core_path;
       char path[PATH_MAX_LENGTH];
       char core_path[PATH_MAX_LENGTH];
@@ -1060,6 +1211,28 @@ enum
 
    [self.window setRootViewController:[CocoaView get]];
 
+   /* Initialize hidden keyboard text field for iOS native keyboard support */
+   if (!self.keyboardTextField)
+   {
+      /* self.keyboardTextField is a retain property (see private
+       * category above); the setter takes its own retain.  Autorelease
+       * the +1 from alloc+init via a temp so the setter's retain is
+       * the sole owner under MRR.  Statement-only macro, so
+       * RARCH_AUTORELEASE goes on its own line.  No-op under ARC. */
+      UITextField *tf = [[UITextField alloc] initWithFrame:CGRectMake(0, -100, 1, 1)];
+      RARCH_AUTORELEASE(tf);
+      self.keyboardTextField = tf;
+      self.keyboardTextField.delegate = self;
+      self.keyboardTextField.autocapitalizationType = UITextAutocapitalizationTypeNone;
+      self.keyboardTextField.autocorrectionType = UITextAutocorrectionTypeNo;
+      self.keyboardTextField.spellCheckingType = UITextSpellCheckingTypeNo;
+      self.keyboardTextField.smartQuotesType = UITextSmartQuotesTypeNo;
+      self.keyboardTextField.smartDashesType = UITextSmartDashesTypeNo;
+      self.keyboardTextField.smartInsertDeleteType = UITextSmartInsertDeleteTypeNo;
+      self.keyboardTextField.returnKeyType = UIReturnKeyDone;
+      [[CocoaView get].view addSubview:self.keyboardTextField];
+   }
+
    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
          command_event(CMD_EVENT_AUDIO_START, NULL);
          });
@@ -1072,7 +1245,11 @@ enum
 {
     for (MXMetricPayload *payload in payloads)
     {
+        /* +1 from alloc+init; per-iteration leak inside the loop under
+         * MRR without an autorelease.  Statement-only macro, so on its
+         * own line.  No-op under ARC. */
         NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
+        RARCH_AUTORELEASE(json);
         RARCH_LOG("[Cocoa] Got Metric Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
     }
 }
@@ -1081,7 +1258,11 @@ enum
 {
     for (MXDiagnosticPayload *payload in payloads)
     {
+        /* +1 from alloc+init; per-iteration leak inside the loop under
+         * MRR without an autorelease.  Statement-only macro, so on its
+         * own line.  No-op under ARC. */
         NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
+        RARCH_AUTORELEASE(json);
         RARCH_LOG("[Cocoa] Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
     }
 }
@@ -1112,6 +1293,125 @@ enum
 }
 #endif
 
+#pragma mark - UITextFieldDelegate (iOS/tvOS Native Keyboard Support)
+
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
+{
+   if (textField != self.keyboardTextField || !self.keyboardAllocatedBuffer || !self.keyboardSizePtr)
+      return YES;
+
+   /* Calculate new text */
+   NSString *newText = [textField.text stringByReplacingCharactersInRange:range withString:string];
+
+   /* Update the RetroArch buffer in real-time so the menu can display it */
+   const char *utf8Text = [newText UTF8String];
+   if (utf8Text)
+   {
+      size_t newLen;
+      strlcpy(self.keyboardAllocatedBuffer, utf8Text, 512);
+      newLen = strlen(self.keyboardAllocatedBuffer);
+      *self.keyboardSizePtr = newLen;
+      /* Keep ptr in sync with size to prevent buffer overrun when appending */
+      if (self.keyboardPtrPtr)
+         *self.keyboardPtrPtr = newLen;
+   }
+
+   return YES;
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField
+{
+   if (textField == self.keyboardTextField)
+   {
+      /* Update buffer with final text before calling callback */
+      if (self.keyboardAllocatedBuffer && self.keyboardSizePtr)
+      {
+         const char *finalText = [textField.text UTF8String];
+         if (finalText)
+         {
+            size_t finalLen;
+            strlcpy(self.keyboardAllocatedBuffer, finalText, 512);
+            finalLen = strlen(self.keyboardAllocatedBuffer);
+            *self.keyboardSizePtr = finalLen;
+            if (self.keyboardPtrPtr)
+               *self.keyboardPtrPtr = finalLen;
+         }
+      }
+
+      /* Store callback and buffer before clearing callback reference */
+      void(^callback)(const char *) = self.keyboardCompletionCallback;
+      char *buffer = self.keyboardAllocatedBuffer;
+
+      /* Clear callback to prevent double-invoke, but keep buffer references
+       * since the callback will free the buffer via input_keyboard_line_free() */
+      self.keyboardCompletionCallback = nil;
+
+      /* DON'T dismiss keyboard here - let menu_input_dialog_end() -> ios_keyboard_end() do it
+       * This ensures ios_keyboard_active() returns true when the callback checks it */
+
+      /* Call completion callback with buffer pointer
+       * The callback will call menu_input_dialog_end() which will call ios_keyboard_end() */
+      if (callback && buffer)
+         callback(buffer);
+      /* Clear our references after callback completes */
+      self.keyboardBufferPtr = NULL;
+      self.keyboardSizePtr = NULL;
+      self.keyboardPtrPtr = NULL;
+      self.keyboardAllocatedBuffer = NULL;
+
+      return NO;  /* Return NO to prevent UIKit from processing the return key event further */
+   }
+   return YES;
+}
+
+- (void)textFieldDidEndEditing:(UITextField *)textField
+{
+   if (textField == self.keyboardTextField)
+   {
+      /* Only call callback if it wasn't already called (by textFieldShouldReturn) */
+      if (self.keyboardCompletionCallback)
+      {
+         /* User dismissed keyboard without hitting return - treat as cancel */
+         void(^callback)(const char *) = self.keyboardCompletionCallback;
+
+         /* Clear callback to prevent double-invoke, but keep buffer references
+          * since the callback will free the buffer via input_keyboard_line_free() */
+         self.keyboardCompletionCallback = nil;
+
+         /* Call callback with NULL to indicate cancel
+          * The callback will handle cleanup via input_keyboard_line_free() */
+         callback(NULL);
+
+         /* Clear our references after callback completes */
+         self.keyboardBufferPtr = NULL;
+         self.keyboardSizePtr = NULL;
+         self.keyboardPtrPtr = NULL;
+         self.keyboardAllocatedBuffer = NULL;
+      }
+   }
+}
+
+#if !__has_feature(objc_arc)
+/* RetroArch_iOS is the UIApplication delegate and therefore a
+ * process-lifetime singleton - this dealloc effectively never runs in
+ * practice.  Keeping it for symmetry with ui_cocoa.m's dealloc and so
+ * the ownership picture is complete for anyone reading the file: every
+ * retained ivar / property has a paired release here, and _renderView
+ * is released by -setViewType: whenever it is reassigned (see above).
+ * No-op under ARC where retained ivars/properties are released
+ * automatically. */
+- (void)dealloc
+{
+   RARCH_RELEASE(_renderView);
+   RARCH_RELEASE(_window);
+   RARCH_RELEASE(_documentsDirectory);
+   RARCH_RELEASE(_bgDate);
+   RARCH_RELEASE(_keyboardTextField);
+   RARCH_RELEASE(_keyboardCompletionCallback);
+   RARCH_SUPER_DEALLOC();
+}
+#endif
+
 @end
 
 ui_companion_driver_t ui_companion_cocoatouch = {
@@ -1134,6 +1434,88 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    NULL, /* application */
    "cocoatouch",
 };
+
+/* C interface for iOS/tvOS native keyboard support */
+bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
+                       const char *label,
+                       input_keyboard_line_complete_t callback, void *userdata)
+{
+   size_t len;
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   if (!app || !app.keyboardTextField || !buffer_ptr || !size_ptr)
+      return false;
+
+   /* Allocate a fixed-size buffer for keyboard input */
+   char *allocated_buffer = (char *)malloc(512);
+   if (!allocated_buffer)
+      return false;
+
+   /* Initialize buffer with existing content if any */
+   if (*buffer_ptr && **buffer_ptr)
+      strlcpy(allocated_buffer, *buffer_ptr, 512);
+   else
+      allocated_buffer[0] = '\0';
+
+   /* Update the keyboard_line buffer pointer to point to our allocated buffer */
+   *buffer_ptr = allocated_buffer;
+   len = strlen(allocated_buffer);
+   *size_ptr = len;
+   if (ptr_ptr)
+      *ptr_ptr = len;
+
+   /* Store pointers so we can update them as user types */
+   app.keyboardBufferPtr = buffer_ptr;
+   app.keyboardSizePtr = size_ptr;
+   app.keyboardPtrPtr = ptr_ptr;
+   app.keyboardAllocatedBuffer = allocated_buffer;
+
+   /* Set up the text field with initial text from the buffer */
+   app.keyboardTextField.text = (allocated_buffer[0] != '\0') ?
+      [NSString stringWithUTF8String:allocated_buffer] : @"";
+
+   /* Optionally set placeholder from label */
+   if (label)
+      app.keyboardTextField.placeholder = [NSString stringWithUTF8String:label];
+
+   /* Store the completion callback */
+   app.keyboardCompletionCallback = ^(const char *text) {
+      input_driver_state_t *input_st = input_state_get_ptr();
+
+      if (callback)
+         callback(userdata, text);
+
+      /* Clean up RetroArch's keyboard state, mirroring what the built-in keyboard does */
+      if (input_st)
+      {
+         RARCH_LOG("[iOS KB] cleaning up input state\n");
+         input_keyboard_line_free(input_st);
+         input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+      }
+   };
+
+   /* Show the keyboard */
+   [app.keyboardTextField becomeFirstResponder];
+   return true;
+}
+
+bool ios_keyboard_active(void)
+{
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   return app && app.keyboardTextField && [app.keyboardTextField isFirstResponder];
+}
+
+void ios_keyboard_end(void)
+{
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   if (app && app.keyboardTextField)
+   {
+      [app.keyboardTextField resignFirstResponder];
+      app.keyboardCompletionCallback = nil;
+
+      /* Reset keyboard state to ensure keys aren't stuck after dialog closes */
+      apple_input_keyboard_reset();
+   }
+}
 
 int main(int argc, char *argv[])
 {

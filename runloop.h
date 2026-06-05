@@ -183,7 +183,13 @@ struct runloop
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char    *secondary_library_path;
 #endif
-   my_list *runahead_save_state_list;
+   /* Embedded directly: was previously a my_list wrapper holding a
+    * single retro_ctx_serialize_info_t* in data[0].  The list machinery
+    * was overkill for one pointer — two extra mallocs at init (the
+    * my_list struct + its 16-slot data array), one extra indirection
+    * per access, and a constructor/destructor function-pointer pair
+    * for what amounts to alloc/free of a data buffer. */
+   retro_ctx_serialize_info_t runahead_savestate_info;
    my_list *input_state_list;
    preempt_t *preempt_data;
 #endif
@@ -267,6 +273,7 @@ struct runloop
 #endif
 
    uint32_t flags;
+   uint8_t pending_disk_control_insert;
    int8_t run_frames_and_pause;
 
    char runtime_content_path_basename[PATH_MAX_LENGTH];
@@ -287,20 +294,21 @@ struct runloop
 
    struct
    {
+      /* TODO/FIXME: Same type for all */
       char *remapfile;
-      char savefile [PATH_MAX_LENGTH*2];
-      char savestate[PATH_MAX_LENGTH*2];
-      char replay   [PATH_MAX_LENGTH*2];
-      char cheatfile[PATH_MAX_LENGTH*2];
-      char ups      [PATH_MAX_LENGTH*2];
-      char bps      [PATH_MAX_LENGTH*2];
-      char ips      [PATH_MAX_LENGTH*2];
-      char xdelta   [PATH_MAX_LENGTH*2];
-      char label    [PATH_MAX_LENGTH*2];
+      char label    [PATH_MAX_LENGTH];
+      char savefile [PATH_MAX_LENGTH];
+      char savestate[PATH_MAX_LENGTH];
+      char replay   [PATH_MAX_LENGTH];
+      char cheatfile[PATH_MAX_LENGTH];
+      char ups      [PATH_MAX_LENGTH];
+      char bps      [PATH_MAX_LENGTH];
+      char ips      [PATH_MAX_LENGTH];
+      char xdelta   [PATH_MAX_LENGTH];
    } name;
 
-   bool missing_bios;
    bool perfcnt_enable;
+   bool paused_hotkey;
 };
 
 typedef struct runloop runloop_state_t;

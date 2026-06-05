@@ -123,17 +123,11 @@ static int16_t rvl_input_state(
             int16_t x                   = gx->mouse[joy_idx].x_abs;
             int16_t y                   = gx->mouse[joy_idx].y_abs;
 
-#if 1
-            /* TODO/FIXME - is this necessary? */
-            video_driver_get_viewport_info(&vp);
-
-            vp.x                        = 0;
-            vp.y                        = 0;
-            vp.width                    = 0;
-            vp.height                   = 0;
-            vp.full_width               = 0;
-            vp.full_height              = 0;
-#endif
+            /* Pre-patch had a video_driver_get_viewport_info(&vp)
+             * call here, immediately followed by six lines that
+             * zeroed every field it populated. Net effect was the
+             * zero-initialiser above. The call dispatched through
+             * the video vtable on every lightgun query - delete it. */
 
             if (video_driver_translate_coord_viewport_wrap(&vp, x, y,
                         &res_x, &res_y, &res_screen_x, &res_screen_y))
@@ -202,6 +196,18 @@ static void *gx_input_init(const char *joypad_driver)
    gx->mouse_max  = 1;
    gx->mouse      = (gx_input_mouse_t*)calloc(
          gx->mouse_max, sizeof(gx_input_mouse_t));
+   /* NULL-check: the RETRO_DEVICE_MOUSE input handler
+    * dereferences gx->mouse[joy_idx].x_abs etc. unconditionally.
+    * On OOM fail the whole driver init rather than leave the
+    * handler to NULL-deref on the first mouse event.  The free
+    * helper at line ~187 is NULL-safe so falling through to
+    * free(gx) would leak nothing - but free(gx) directly is
+    * minimal-diff. */
+   if (!gx->mouse)
+   {
+      free(gx);
+      return NULL;
+   }
 #endif
 
    return gx;
@@ -216,7 +222,7 @@ static INLINE int rvl_count_mouse(gx_input_t *gx)
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       const char *joypad_name = joypad_driver_name(i);
-      if (!string_is_empty(joypad_name))
+      if (joypad_name && *joypad_name)
          if (string_is_equal(joypad_name, "Wiimote Controller"))
             count++;
    }
@@ -231,7 +237,8 @@ static void rvl_input_poll(void *data)
    {
       int count = rvl_count_mouse(gx);
 
-      if (gx && count > 0)
+      /* The outer `if (gx && gx->mouse)` already established gx != NULL. */
+      if (count > 0)
       {
          unsigned i;
          if (count != gx->mouse_max)
@@ -239,27 +246,46 @@ static void rvl_input_poll(void *data)
             gx_input_mouse_t *tmp = (gx_input_mouse_t*)realloc(
                   gx->mouse, count * sizeof(gx_input_mouse_t));
             if (!tmp)
+            {
+               /* Pre-patch bug: freed gx->mouse but left the
+                * dangling pointer and stale mouse_max in place.
+                * The subsequent 'for (i = 0; i < gx->mouse_max;
+                * i++)' loop would read/write through the freed
+                * pointer - UAF.  Clear both the pointer and the
+                * count so the outer gate 'if (gx && gx->mouse)'
+                * at line ~242 rejects subsequent calls, and the
+                * remaining loop in this call is skipped via the
+                * added 'mouse_max = 0'. */
                free(gx->mouse);
+               gx->mouse     = NULL;
+               gx->mouse_max = 0;
+            }
             else
             {
-               unsigned i;
+               int old_max   = gx->mouse_max;
                gx->mouse     = tmp;
                gx->mouse_max = count;
 
-               for (i = 0; i < gx->mouse_max; i++)
-               {
-                  gx->mouse[i].x_last = 0;
-                  gx->mouse[i].y_last = 0;
-               }
+               /* realloc-grow does NOT zero the new tail.
+                * Zero only the freshly-added entries so that the
+                * subsequent x_last = x_abs read does not pick up
+                * uninitialised heap data. Existing entries keep
+                * their last known position across hot-plug. */
+               if (count > old_max)
+                  memset(&gx->mouse[old_max], 0,
+                        (count - old_max) * sizeof(gx_input_mouse_t));
             }
          }
 
-         for (i = 0; i < gx->mouse_max; i++)
+         if (gx->mouse)
          {
-            gx->mouse[i].x_last = gx->mouse[i].x_abs;
-            gx->mouse[i].y_last = gx->mouse[i].y_abs;
-            gx_joypad_read_mouse(i, &gx->mouse[i].x_abs,
-                  &gx->mouse[i].y_abs, &gx->mouse[i].button);
+            for (i = 0; i < (unsigned)gx->mouse_max; i++)
+            {
+               gx->mouse[i].x_last = gx->mouse[i].x_abs;
+               gx->mouse[i].y_last = gx->mouse[i].y_abs;
+               gx_joypad_read_mouse(i, &gx->mouse[i].x_abs,
+                     &gx->mouse[i].y_abs, &gx->mouse[i].button);
+            }
          }
       }
    }

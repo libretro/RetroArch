@@ -485,6 +485,7 @@ enum retro_language
    RETRO_LANGUAGE_GALICIAN            = 33,
    RETRO_LANGUAGE_NORWEGIAN           = 34,
    RETRO_LANGUAGE_IRISH               = 35,
+   RETRO_LANGUAGE_THAI                = 36,
    RETRO_LANGUAGE_LAST,
 
    /** Defined to ensure that <tt>sizeof(retro_language) == sizeof(int)</tt>. Do not use. */
@@ -518,6 +519,9 @@ enum retro_language
 
 /* Video ram lets a frontend peek into a game systems video RAM (VRAM). */
 #define RETRO_MEMORY_VIDEO_RAM   3
+
+/* ROM lets a frontend peek into a game systems ROM. */
+#define RETRO_MEMORY_ROM   4
 
 /** @} */
 
@@ -2587,6 +2591,71 @@ enum retro_mod
 */
 #define RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE (81 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/**
+ * Returns the local player's netplay client index when using frontend-managed
+ * multiplayer/rollback netplay.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to an unsigned integer where the frontend stores the local client index.
+ * 0 indicates host. Values > 0 indicate connected clients.
+ * @return \\c true if the environment call is available and value was written,
+ * \\c false otherwise.
+*/
+#define RETRO_ENVIRONMENT_GET_NETPLAY_CLIENT_INDEX (82 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Allocates a region of executable memory, optionally dual-mapped.
+ *
+ * The frontend allocates memory suitable for JIT code generation and returns
+ * it to the core.  The returned mode tells the core how to use the memory:
+ *
+ *  - \c RETRO_EXEC_MEM_MODE_UNRESTRICTED: The platform has no restrictions
+ *    on executable memory.  The core should self-allocate.  Do not call
+ *    this environment with a non-zero size in this mode.
+ *  - \c RETRO_EXEC_MEM_MODE_RWX: Single mapping, read-write-execute.
+ *    \c rx and \c rw point to the same region.
+ *  - \c RETRO_EXEC_MEM_MODE_WX_TOGGLE: Single mapping, write XOR execute.
+ *    \c rx and \c rw point to the same region; the core must toggle
+ *    protections itself (e.g. mprotect) before writing or executing.
+ *  - \c RETRO_EXEC_MEM_MODE_DUAL_MAP: Separate read-execute and read-write
+ *    mappings of the same physical pages.  The core writes through \c rw
+ *    and executes from \c rx.
+ *
+ * Returned memory is page-aligned.  The frontend tracks all allocations
+ * and frees any outstanding ones when the core is unloaded.
+ *
+ * The core sets \c version and \c size before calling.  The frontend fills
+ * in \c mode, \c rx, and \c rw on success.
+ *
+ * If \c size is 0, this is a probe: the frontend returns \c true and sets
+ * \c mode to indicate what kind of memory it would provide, but does not
+ * allocate.  \c rx and \c rw will be NULL.  Cores can use this to decide
+ * whether to take a JIT code path before committing to an allocation.
+ *
+ * @param[in,out] data <tt>struct retro_exec_mem_alloc *</tt>.
+ * @return \c true if the allocation succeeded, \c false otherwise.
+ *         If the frontend does not support this call, returns \c false
+ *         and the core should fall back to managing its own executable memory.
+ * @see retro_exec_mem_alloc
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_FREE
+ */
+#define RETRO_ENVIRONMENT_EXEC_MEM_ALLOC 83
+
+/**
+ * Frees a region of executable memory previously allocated with
+ * \c RETRO_ENVIRONMENT_EXEC_MEM_ALLOC.
+ *
+ * This is optional; the frontend will free all outstanding allocations
+ * when the core is unloaded.  Cores that never need to release memory
+ * mid-session need not call this.
+ *
+ * @param[in] data <tt>struct retro_exec_mem_free *</tt>.
+ * @return \c true if the memory was freed, \c false otherwise.
+ * @see retro_exec_mem_free
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_ALLOC
+ */
+#define RETRO_ENVIRONMENT_EXEC_MEM_FREE  84
+
 /**@}*/
 
 /**
@@ -2921,6 +2990,19 @@ typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const cha
 typedef int (RETRO_CALLCONV *retro_vfs_stat_t)(const char *path, int32_t *size);
 
 /**
+ * Gets information about the given file (64-bit size).
+ *
+ * @param path The path to the file to query.
+ * @param[out] size The reported size of the file in bytes.
+ * May be \c NULL, in which case this value is ignored.
+ * @return A bitmask of \c RETRO_VFS_STAT flags,
+ * or 0 if \c path doesn't refer to a valid file.
+ * @see RETRO_VFS_STAT
+ * @since VFS API v4
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_stat_64_t)(const char *path, int64_t *size);
+
+/**
  * Creates a directory at the given path.
  *
  * @param dir The desired location of the new directory.
@@ -3075,6 +3157,10 @@ struct retro_vfs_interface
 
    /** @copydoc retro_vfs_closedir_t */
    retro_vfs_closedir_t closedir;
+
+   /* VFS API v4 */
+   /** @copydoc retro_vfs_stat_64_t */
+   retro_vfs_stat_64_t stat_64;
 };
 
 /**
@@ -4215,6 +4301,9 @@ struct retro_log_callback
 /** Indicates CPU support for the ASIMD instruction set. */
 #define RETRO_SIMD_ASIMD    (1 << 21)
 
+/** Indicates CPU support for the AVX512 instruction set. */
+#define RETRO_SIMD_AVX512   (1 << 22)
+
 /** @} */
 
 /**
@@ -4476,15 +4565,18 @@ enum retro_sensor_action
 /* Id values for SENSOR types. */
 
 /**
- * Returns the device's acceleration along its local X axis minus the effect of gravity, in m/s^2.
+ * Returns the device's acceleration along its local X axis, in g (standard gravity, 9.80665 m/s^2).
+ * Includes the effect of gravity;
+ * a device at rest on a table will have values close to 0, 0, 1.
  *
- * Positive values mean that the device is accelerating to the right.
+ * Positive values mean that the device is accelerating to the right,
  * assuming the user is looking at it head-on.
  */
 #define RETRO_SENSOR_ACCELEROMETER_X 0
 
 /**
- * Returns the device's acceleration along its local Y axis minus the effect of gravity, in m/s^2.
+ * Returns the device's acceleration along its local Y axis, in g (standard gravity, 9.80665 m/s^2).
+ * Includes the effect of gravity.
  *
  * Positive values mean that the device is accelerating upwards,
  * assuming the user is looking at it head-on.
@@ -4492,7 +4584,8 @@ enum retro_sensor_action
 #define RETRO_SENSOR_ACCELEROMETER_Y 1
 
 /**
- * Returns the the device's acceleration along its local Z axis minus the effect of gravity, in m/s^2.
+ * Returns the device's acceleration along its local Z axis, in g (standard gravity, 9.80665 m/s^2).
+ * Includes the effect of gravity.
  *
  * Positive values indicate forward acceleration towards the user,
  * assuming the user is looking at the device head-on.
@@ -7391,6 +7484,45 @@ struct retro_device_power
     * so do not assume that this will be 100 in the \c RETRO_POWERSTATE_CHARGED state.
     */
    int8_t percent;
+};
+
+/** @} */
+
+/** @defgroup Executable Memory Modes
+ * Describes how the frontend provisions executable memory.
+ * @{
+ */
+
+#define RETRO_EXEC_MEM_MODE_UNAVAILABLE  0 /**< No executable memory available */
+#define RETRO_EXEC_MEM_MODE_UNRESTRICTED 1 /**< No restrictions; core should self-allocate */
+#define RETRO_EXEC_MEM_MODE_RWX          2 /**< Single mapping, read-write-execute */
+#define RETRO_EXEC_MEM_MODE_WX_TOGGLE    3 /**< Single mapping, write XOR execute (core toggles) */
+#define RETRO_EXEC_MEM_MODE_DUAL_MAP     4 /**< Separate R-X and R-W mappings of same pages */
+
+/**
+ * Parameters for \c RETRO_ENVIRONMENT_EXEC_MEM_ALLOC.
+ *
+ * The core fills in \c version and \c size before calling.
+ * The frontend fills in \c mode, \c rx, and \c rw on success.
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_ALLOC
+ */
+struct retro_exec_mem_alloc
+{
+   unsigned version;  /**< Set by core (currently 1). */
+   size_t   size;     /**< Set by core: requested bytes.  */
+   unsigned mode;     /**< Set by frontend: one of \c RETRO_EXEC_MEM_MODE_*. */
+   void    *rx;       /**< Set by frontend: execute from this pointer. */
+   void    *rw;       /**< Set by frontend: write through this pointer.
+                           Equal to \c rx when mode is RWX or WX_TOGGLE. */
+};
+
+/**
+ * Parameters for \c RETRO_ENVIRONMENT_EXEC_MEM_FREE.
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_FREE
+ */
+struct retro_exec_mem_free
+{
+   void *rx;  /**< The \c rx pointer returned by a previous alloc call. */
 };
 
 /** @} */

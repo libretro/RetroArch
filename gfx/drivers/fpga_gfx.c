@@ -53,13 +53,14 @@ typedef struct fpga
    RegOp regOp; /* ptr alignment */
    volatile unsigned *framebuffer;
    unsigned char *menu_frame;
+   size_t menu_frame_cap;
    unsigned menu_width;
    unsigned menu_height;
    unsigned menu_pitch;
-   unsigned video_width;
-   unsigned video_height;
-   unsigned video_pitch;
-   unsigned video_bits;
+   unsigned frame_width;
+   unsigned frame_height;
+   unsigned frame_pitch;
+   unsigned frame_bits;
    unsigned menu_bits;
    bool rgb32;
 } fpga_t;
@@ -134,28 +135,26 @@ static void *fpga_init(const video_info_t *video,
 {
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
+   if (!fpga)
+      return NULL;
+
    *input                               = NULL;
    *input_data                          = NULL;
 
-   fpga->video_width                    = video->width;
-   fpga->video_height                   = video->height;
+   fpga->frame_width                    = video->width;
+   fpga->frame_height                   = video->height;
    fpga->rgb32                          = video->rgb32;
 
-   fpga->video_bits                     = video->rgb32 ? 32 : 16;
+   fpga->frame_bits                     = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      fpga->video_pitch = video->width * 4;
+      fpga->frame_pitch = video->width * 4;
    else
-      fpga->video_pitch = video->width * 2;
+      fpga->frame_pitch = video->width * 2;
 
    fpga_create(fpga);
 
    return fpga;
-
-error:
-   if (fpga)
-      free(fpga);
-   return NULL;
 }
 
 static bool fpga_frame(void *data, const void *frame,
@@ -167,7 +166,7 @@ static bool fpga_frame(void *data, const void *frame,
    unsigned height           = 0;
    bool draw                 = true;
    fpga_t *fpga              = (fpga_t*)data;
-   unsigned bits             = fpga->video_bits;
+   unsigned bits             = fpga->frame_bits;
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
@@ -179,15 +178,15 @@ static bool fpga_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (     (fpga->video_width  != frame_width)
-         || (fpga->video_height != frame_height)
-         || (fpga->video_pitch  != pitch))
+   if (     (fpga->frame_width  != frame_width)
+         || (fpga->frame_height != frame_height)
+         || (fpga->frame_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         fpga->video_width = frame_width;
-         fpga->video_height = frame_height;
-         fpga->video_pitch = pitch;
+         fpga->frame_width = frame_width;
+         fpga->frame_height = frame_height;
+         fpga->frame_pitch = pitch;
       }
    }
 
@@ -203,9 +202,9 @@ static bool fpga_frame(void *data, const void *frame,
    else
 #endif
    {
-      width         = fpga->video_width;
-      height        = fpga->video_height;
-      pitch         = fpga->video_pitch;
+      width         = fpga->frame_width;
+      height        = fpga->frame_height;
+      pitch         = fpga->frame_pitch;
 
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
@@ -267,12 +266,6 @@ static bool fpga_frame(void *data, const void *frame,
             }
          }
       }
-#if 0
-      else
-      {
-         /* TODO/FIXME: handle 32-bit core output */
-      }
-#endif
    }
 
    return true;
@@ -313,35 +306,34 @@ static void fpga_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   fpga_t *fpga   = (fpga_t*)data;
-   unsigned pitch = width * 2;
+   fpga_t  *fpga    = (fpga_t*)data;
+   unsigned pitch   = width * (rgb32 ? 4 : 2);
+   size_t   required;
 
-   if (fpga->rgb32)
-      pitch = width * 4;
+   if (!frame || !width || !height || !pitch)
+      return;
 
-   if (fpga->menu_frame)
-      free(fpga->menu_frame);
-   fpga->menu_frame = NULL;
+   required = (size_t)pitch * (size_t)height;
 
-   if (  !fpga->menu_frame           ||
-         fpga->menu_width  != width  ||
-         fpga->menu_height != height ||
-         fpga->menu_pitch != pitch)
-      if (pitch && height)
-         fpga->menu_frame = (unsigned char*)malloc(pitch * height);
-
-   if (fpga->menu_frame && frame && pitch && height)
+   if (required > fpga->menu_frame_cap)
    {
-      memcpy(fpga->menu_frame, frame, pitch * height);
-      fpga->menu_width  = width;
-      fpga->menu_height = height;
-      fpga->menu_pitch  = pitch;
-      fpga->menu_bits   = fpga->rgb32 ? 32 : 16;
+      unsigned char *tmp = (unsigned char*)realloc(
+            fpga->menu_frame, required);
+      if (!tmp)
+         return;                        /* keep previous frame intact */
+      fpga->menu_frame     = tmp;
+      fpga->menu_frame_cap = required;
    }
+
+   memcpy(fpga->menu_frame, frame, required);
+   fpga->menu_width  = width;
+   fpga->menu_height = height;
+   fpga->menu_pitch  = pitch;
+   fpga->menu_bits   = rgb32 ? 32 : 16;
 }
 
 /* TODO/FIXME - implement */
-static void fpga_set_osd_msg(void *data, const char *msg,
+static void fpga_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font) { }
 static void fpga_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len) { }
@@ -379,10 +371,11 @@ static const video_poke_interface_t fpga_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void fpga_get_poke_interface(void *data,
@@ -417,6 +410,8 @@ video_driver_t video_fpga = {
 #endif
    fpga_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

@@ -105,23 +105,6 @@ typedef enum bool_e
 
 /*{{{ Debugging and profiling macros */
 
-#if 0
-/* There's already an assert_once in <logging/logging.h> */
-#ifdef DEBUG
-#define assert_once(x) \
-   { \
-      static uint8_t ignore = 0; \
-      if(!ignore) \
-      { \
-         assert(x); \
-         ignore++; \
-      } \
-   }
-#else
-#define assert_once(x) (void)0
-#endif
-#endif /* 0 */
-
 #if defined(__HIGHC__) && !defined(NDEBUG)
 /* HighC lacks a __FUNCTION__ preproc symbol... :( */
 #define profile_rename(name) _ASM(".global " name "\n" name ":\n")

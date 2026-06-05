@@ -103,7 +103,7 @@ typedef struct oga_video
 
 static bool oga_create_display(oga_video_t* vid)
 {
-   int i, ret;
+   int i;
    drmModeConnector *connector;
    drmModeModeInfo *mode;
    drmModeEncoder *encoder;
@@ -761,10 +761,11 @@ video_poke_interface_t oga_poke_interface = {
    NULL, /* get_current_shader */
    oga_get_current_software_framebuffer,
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void oga_get_poke_interface(void *data, const video_poke_interface_t **iface)
@@ -793,6 +794,8 @@ video_driver_t video_oga = {
 #endif
    oga_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

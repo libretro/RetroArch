@@ -375,7 +375,7 @@ static chd_error huff_codec_decompress(void *codec, const uint8_t *src, uint32_t
 	free(bitbuf);
 	return result;
 }
- 
+
 
 /***************************************************************************
     CODEC INTERFACES
@@ -514,7 +514,7 @@ static const codec_interface codec_interfaces[] =
 		NULL
 	}
 #endif
-	
+
 };
 
 /***************************************************************************
@@ -586,19 +586,6 @@ static INLINE uint32_t get_bigendian_uint32_t(const uint8_t *base)
 }
 
 /*-------------------------------------------------
-    put_bigendian_uint32_t - write a uint32_t to
-    the data stream in bigendian order
--------------------------------------------------*/
-
-static INLINE void put_bigendian_uint32_t(uint8_t *base, uint32_t value)
-{
-	base[0] = value >> 24;
-	base[1] = value >> 16;
-	base[2] = value >> 8;
-	base[3] = value;
-}
-
-/*-------------------------------------------------
     put_bigendian_uint24 - write a UINT24 to
     the data stream in bigendian order
 -------------------------------------------------*/
@@ -653,20 +640,6 @@ static INLINE void map_extract(const uint8_t *base, map_entry *entry)
 	entry->crc = get_bigendian_uint32_t(&base[8]);
 	entry->length = get_bigendian_uint16(&base[12]) | (base[14] << 16);
 	entry->flags = base[15];
-}
-
-/*-------------------------------------------------
-    map_assemble - write a single map
-    entry to the datastream
--------------------------------------------------*/
-
-static INLINE void map_assemble(uint8_t *base, map_entry *entry)
-{
-	put_bigendian_uint64_t(&base[0], entry->offset);
-	put_bigendian_uint32_t(&base[8], entry->crc);
-	put_bigendian_uint16(&base[12], entry->length);
-	base[14] = entry->length >> 16;
-	base[15] = entry->flags;
 }
 
 /*-------------------------------------------------
@@ -757,7 +730,7 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 	uint8_t rawbuf[16];
 	struct huffman_decoder* decoder;
 	enum huffman_error err;
-	uint64_t curoffset;	
+	uint64_t curoffset;
 	int rawmapsize = map_size_v5(header);
 
 	if (!chd_compressed(header))
@@ -931,8 +904,9 @@ static INLINE void map_extract_old(const uint8_t *base, map_entry *entry, uint32
     chd_open_file - open a CHD file for access
 -------------------------------------------------*/
 
-CHD_EXPORT chd_error chd_open_file(FILE *file, int mode, chd_file *parent, chd_file **chd) {
-	core_file *stream = malloc(sizeof(core_file));
+CHD_EXPORT chd_error chd_open_file(FILE *file, int mode, chd_file *parent, chd_file **chd)
+{
+	core_file *stream = (core_file*)malloc(sizeof(core_file));
 	if (!stream)
 		return CHDERR_OUT_OF_MEMORY;
 	stream->argp = file;
@@ -1032,11 +1006,11 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 
 #ifdef NEED_CACHE_HUNK
 	/* allocate and init the hunk cache */
-	newchd->cache = (uint8_t *)malloc(newchd->header.hunkbytes);
+	newchd->cache   = (uint8_t *)malloc(newchd->header.hunkbytes);
 	newchd->compare = (uint8_t *)malloc(newchd->header.hunkbytes);
 	if (newchd->cache == NULL || newchd->compare == NULL)
 		EARLY_EXIT(err = CHDERR_OUT_OF_MEMORY);
-	newchd->cachehunk = ~0;
+	newchd->cachehunk   = ~0;
 	newchd->comparehunk = ~0;
 #endif
 
@@ -1658,7 +1632,7 @@ static uint32_t header_guess_unitbytes(chd_file *chd)
 {
 	/* look for hard disk metadata; if found, then the unit size == sector size */
 	char metadata[512];
-	int i0, i1, i2, i3;
+	unsigned int i0, i1, i2, i3;
 	if (chd_get_metadata(chd, HARD_DISK_METADATA_TAG, 0, metadata, sizeof(metadata), NULL, NULL, NULL) == CHDERR_NONE &&
 		sscanf(metadata, HARD_DISK_METADATA_FORMAT, &i0, &i1, &i2, &i3) == 4)
 		return i3;
@@ -2089,7 +2063,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 #endif
 						break;
 				}
-				
+
 				if (codec==NULL)
 					return CHDERR_CODEC_ERROR;
 				err = chd->codecintf[rawmap[0]]->decompress(codec, compressed_bytes, blocklen, dest, chd->header.hunkbytes);

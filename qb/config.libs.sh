@@ -42,6 +42,8 @@ if [ "$OS" = 'BSD' ]; then
    [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
    [ -d /usr/local/lib ] && add_dirs LIBRARY /usr/local/lib
    DYLIB=-lc;
+elif [ "$OS" = 'Darwin' ]; then
+   DYLIB=
 elif [ "$OS" = 'Haiku' ]; then
    DYLIB=""
    CLIB=-lroot
@@ -244,23 +246,142 @@ check_platform Linux RPILED 'The RPI led driver is' true
 check_platform Darwin METAL 'Metal is' true
 
 if [ "$OS" = 'Darwin' ]; then
+   # Detect whether we're building against a pre-10.7 (Lion) macOS target.
+   # Many modern Apple APIs used by RetroArch require 10.7 or later
+   # (Metal, Vulkan/MoltenVK, GCD, NSWindowDelegate protocol, C11
+   # <stdatomic.h>, AVFoundation, @available).  On Tiger/Leopard /
+   # PowerPC / Xcode 3.1 those APIs are absent and builds fail.
+   #
+   # We also compute macos_target_pre_10_11 for code that requires
+   # Xcode 7-era Obj-C features (nullability macros, lightweight
+   # generics) - those need SDK 10.11 / Xcode 7 or newer.
+   #
+   # MACOSX_DEPLOYMENT_TARGET (set by the invoker or the toolchain)
+   # takes priority over sw_vers, because on a cross-build the host
+   # OS version may be newer than the target.
+   macos_target_pre_10_7=no
+   macos_target_pre_10_11=no
+   macos_target_ver="${MACOSX_DEPLOYMENT_TARGET:-}"
+   if [ -z "$macos_target_ver" ] && command -v sw_vers >/dev/null 2>&1; then
+      macos_target_ver="$(sw_vers -productVersion 2>/dev/null)"
+   fi
+   if [ -n "$macos_target_ver" ]; then
+      mt_major=$(printf %s "$macos_target_ver" | cut -d. -f1)
+      mt_minor=$(printf %s "$macos_target_ver" | cut -d. -f2)
+      [ -z "$mt_major" ] && mt_major=0
+      [ -z "$mt_minor" ] && mt_minor=0
+      if [ "$mt_major" -lt 10 ] || \
+         { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 7 ]; }; then
+         macos_target_pre_10_7=yes
+      fi
+      if [ "$mt_major" -lt 10 ] || \
+         { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 11 ]; }; then
+         macos_target_pre_10_11=yes
+      fi
+      unset mt_major mt_minor
+   fi
+
+   # macOS: the Metal and Vulkan (MoltenVK) defaults differ from what the
+   # generic qb logic produces.
+   #   * HAVE_METAL defaults to 'no' in config.params.sh so check_platform
+   #     early-outs. Force it on here so the Metal video driver is built,
+   #     unless the user explicitly passed --disable-metal.
+   #   * HAVE_VULKAN must be set to 'yes' before the COCOA_METAL check
+   #     below, which decides which AppKit glue to compile based on
+   #     whether Metal/Vulkan is in play. Link-time libvulkan is not
+   #     required on Darwin; MoltenVK is loaded dynamically at runtime
+   #     by gfx/common/vulkan_common.c.
+   # Skip the force-on on pre-10.7 targets — Metal is 10.11+ and
+   # MoltenVK is 10.11+, so neither is buildable on Tiger/Leopard.
+   # That also keeps HAVE_COCOA_METAL off, which in turn avoids code
+   # paths that use the 10.6+ NSWindowDelegate protocol.
+   if [ "$macos_target_pre_10_7" = 'no' ]; then
+      [ "${USER_METAL:-}"  != 'no' ] && HAVE_METAL=yes
+      [ "${USER_VULKAN:-}" != 'no' ] && HAVE_VULKAN=yes
+   else
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; Metal/Vulkan not forced on (neither is available before 10.11)."
+   fi
+
+   check_platform Darwin COCOA 'Cocoa is' true
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
    check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
    add_opt CRTSWITCHRES no
 
-   if [ "$HAVE_METAL" = yes ]; then
+   # The microphone driver (audio/drivers/coreaudio_mic_macos.m) uses
+   # C11 <stdatomic.h>, which requires a 10.6/10.7-era SDK or newer.
+   # On Xcode 3.1 / 10.4-10.5 / PowerPC the header doesn't exist and
+   # the driver cannot be compiled.  Auto-disable microphone support
+   # on pre-10.7 targets unless the user passed --enable-microphone.
+   if [ "$macos_target_pre_10_7" = 'yes' ] && \
+      [ "${USER_MICROPHONE:-}" != 'yes' ] && \
+      [ "$HAVE_MICROPHONE" != 'no' ]; then
+      HAVE_MICROPHONE=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling microphone (requires C11 <stdatomic.h>).  Override with --enable-microphone."
+   fi
+
+   # RetroArchPlaylistManager.m/.h uses Obj-C nullability macros
+   # (NS_ASSUME_NONNULL_BEGIN/END, nullable, _Nonnull) and
+   # lightweight generics (NSArray<...>) - all Xcode 7+ (2015)
+   # features requiring SDK 10.11 / iOS 9.0 or newer.  Enable on
+   # iOS/tvOS (any HAVE_COCOATOUCH build is modern enough in
+   # practice) and on macOS 10.11+ targets.  Disable on pre-10.11
+   # macOS where GCC/old-clang can't parse the syntax.
+   if [ "$HAVE_COCOATOUCH" = 'yes' ] || \
+      [ "$macos_target_pre_10_11" = 'no' ]; then
+      HAVE_RETROARCH_PLAYLIST_MANAGER=yes
+   else
+      HAVE_RETROARCH_PLAYLIST_MANAGER=no
+   fi
+
+   # AVFoundation camera + recording drivers.  The framework itself
+   # is Apple-wide, but the RetroArch driver sources (camera/drivers/
+   # avfoundation.m, record/drivers/record_avfoundation.m) use APIs
+   # that landed in macOS 10.7 (AVCaptureSession, dispatch_queue_t
+   # blocks, @autoreleasepool as a statement).  On iOS/tvOS any
+   # HAVE_COCOATOUCH build is modern enough in practice.  On macOS
+   # gate on the same 10.7 threshold we already use for
+   # Metal/Vulkan/microphone.  Also requires the AVFoundation
+   # framework to be present in the SDK (checked immediately below);
+   # we pre-check it here so the version gate and framework gate are
+   # evaluated together before macos_target_ver goes out of scope.
+   check_lib '' AVFOUNDATION "-framework AVFoundation"
+   if [ "${USER_AVF:-}" = 'no' ]; then
+      HAVE_AVF=no
+   elif [ "$HAVE_AVFOUNDATION" != 'yes' ]; then
+      HAVE_AVF=no
+      [ "${USER_AVF:-}" = 'yes' ] && \
+         die 1 "Forced AVFoundation enable but -framework AVFoundation is not available in the SDK."
+   elif [ "$HAVE_COCOATOUCH" = 'yes' ] || \
+        [ "$macos_target_pre_10_7" = 'no' ]; then
+      HAVE_AVF=yes
+   else
+      HAVE_AVF=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling AVFoundation camera/recording drivers.  Override with --enable-avf."
+   fi
+
+   unset macos_target_ver macos_target_pre_10_7 macos_target_pre_10_11
+
+   if [ "$HAVE_METAL" = yes ] || [ "$HAVE_VULKAN" = yes ]; then
       check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain
    else
       check_lib '' COCOA "-framework AppKit" NSApplicationMain
    fi
 
-   check_lib '' AVFOUNDATION "-framework AVFoundation"
    check_lib '' CORELOCATION "-framework CoreLocation"
    check_lib '' IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
    check_lib '' AL "-framework OpenAL" alcOpenDevice
+   # MFi (Made For iPhone) / GameController.framework joypad support.
+   # Used for any modern gamepad on macOS (Xbox, DualShock, DualSense, MFi).
+   # Matches the -DHAVE_MFI default in pkg/apple/BaseConfig.xcconfig.
+   check_lib '' MFI "-framework GameController"
    HAVE_X11=no # X11 breaks on recent OSXes even if present.
    HAVE_SDL=no
    HAVE_SW2=no
+   # Prefer the system zlib on macOS. The vendored copy in deps/libz
+   # (zlib 1.3) no longer compiles against recent macOS SDKs because
+   # its zutil.h defines fdopen() as a macro that collides with the
+   # fdopen declaration in <stdio.h>. The system libz works fine.
+   [ "$HAVE_BUILTINZLIB" = 'auto' ] && HAVE_BUILTINZLIB=no
 else
    check_lib '' AL -lopenal alcOpenDevice
 fi
@@ -292,8 +413,6 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_pkgconf QT6CORE Qt6Core 6.2
       check_pkgconf QT6GUI Qt6Gui 6.2
       check_pkgconf QT6WIDGETS Qt6Widgets 6.2
-      check_pkgconf QT6CONCURRENT Qt6Concurrent 6.2
-      check_pkgconf QT6NETWORK Qt6Network 6.2
       #check_pkgconf QT6WEBENGINE Qt6WebEngine 6.2
 
       # pkg-config is needed to reliably find Qt6 libraries.
@@ -301,15 +420,11 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_enabled QT6CORE QT Qt 'Qt6Core is' user
       check_enabled QT6GUI QT Qt 'Qt6GUI is' user
       check_enabled QT6WIDGETS QT Qt 'Qt6Widgets is' user
-      check_enabled QT6CONCURRENT QT Qt 'Qt6Concurrent is' user
-      check_enabled QT6NETWORK QT Qt 'Qt6Network is' user
       #check_enabled QT6WEBENGINE QT Qt 'Qt6Webengine is' user
 
       if [ "$HAVE_QT6CORE" = 'yes' ] && \
          [ "$HAVE_QT6GUI" = 'yes' ] &&  \
-         [ "$HAVE_QT6WIDGETS" = 'yes' ] &&  \
-         [ "$HAVE_QT6CONCURRENT" = 'yes' ] && \
-         [ "$HAVE_QT6NETWORK" = 'yes' ]
+         [ "$HAVE_QT6WIDGETS" = 'yes' ]
       then
          HAVE_QT6='yes'
          add_define MAKEFILE HAVE_QT6 1
@@ -321,8 +436,6 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_pkgconf QT5CORE Qt5Core 5.2
       check_pkgconf QT5GUI Qt5Gui 5.2
       check_pkgconf QT5WIDGETS Qt5Widgets 5.2
-      check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
-      check_pkgconf QT5NETWORK Qt5Network 5.2
       #check_pkgconf QT5WEBENGINE Qt6WebEngine 5.2
 
       # pkg-config is needed to reliably find Qt5 libraries.
@@ -330,8 +443,6 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_enabled QT5CORE QT Qt 'Qt5Core is' true
       check_enabled QT5GUI QT Qt 'Qt5GUI is' true
       check_enabled QT5WIDGETS QT Qt 'Qt5Widgets is' true
-      check_enabled QT5CONCURRENT QT Qt 'Qt5Concurrent is' true
-      check_enabled QT5NETWORK QT Qt 'Qt5Network is' true
       #check_enabled QT5WEBENGINE QT Qt 'Qt5Webengine is' true
    fi
 
@@ -401,24 +512,19 @@ check_enabled HID LIBUSB libusb 'HID is' false
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 check_lib '' DINPUT -ldinput8
-check_lib '' D3D8 -ld3d8
 check_lib '' D3D9 -ld3d9
 check_lib '' DSOUND -ldsound
 
 check_enabled DINPUT XINPUT xinput 'Dinput is' true
 
-if [ "$HAVE_D3DX" != 'no' ]; then
-   check_lib '' D3DX8 -ld3dx8
-   check_lib '' D3DX9 -ld3dx9
-fi
-
+check_platform Win32 D3D8  'Direct3D 8 is'  true
 check_platform Win32 D3D10 'Direct3D 10 is' true
 check_platform Win32 D3D11 'Direct3D 11 is' true
 check_platform Win32 D3D12 'Direct3D 12 is' true
-check_platform Win32 D3DX 'Direct3DX is' true
 check_platform Win32 WASAPI 'WASAPI is' true
 check_platform Win32 XAUDIO 'XAudio is' true
 check_platform Win32 WINMM 'WinMM is' true
+check_platform Win32 ASIO 'ASIO is' true
 
 if [ "$HAVE_BLISSBOX" != 'no' ]; then
    if [ "$HAVE_LIBUSB" != 'no' ] || [ "$OS" = 'Win32' ]; then
@@ -564,7 +670,7 @@ check_header '' XSHM X11/Xlib.h X11/extensions/XShm.h
 check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
 check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
-check_pkgconf WAYLAND_PROTOS wayland-protocols 1.37
+check_pkgconf WAYLAND_PROTOS wayland-protocols 1.43
 check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
 
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
@@ -598,6 +704,12 @@ check_enabled CXX OPENGL_CORE 'OpenGL core' 'The C++ compiler is' false
 check_enabled THREADS VULKAN vulkan 'Threads are' false
 
 if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
+   HAVE_VULKAN=yes
+elif [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Darwin' ]; then
+   # macOS: Vulkan is provided by MoltenVK and is loaded dynamically at
+   # runtime via gfx/common/vulkan_common.c (see vksym.h). Link-time
+   # presence of libvulkan is not required, mirroring the Win32 path above
+   # and matching what pkg/apple/Metal.xcconfig does for the Xcode build.
    HAVE_VULKAN=yes
 else
    check_lib '' VULKAN -lvulkan vkCreateInstance
@@ -754,4 +866,16 @@ if [ "$HAVE_CXX11" = 'yes' ]; then
    else
       check_platform Win32 SR2 'CRT modeswitching is' true
    fi
+fi
+
+# First try system libsmb2
+check_pkgconf SMBCLIENT libsmb2 0.0
+check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false
+
+if [ "$HAVE_SMBCLIENT" = "yes" ]; then
+    echo "SMB support enabled (system libsmb2)"
+elif [ "$HAVE_BUILTINSMBCLIENT" = "yes" ] || [ "$HAVE_BUILTINSMBCLIENT" = "auto" ]; then
+    HAVE_BUILTINSMBCLIENT=yes
+    echo "SMB support - building bundled libsmb2"
+    add_dirs INCLUDE ./deps/libsmb2/include
 fi

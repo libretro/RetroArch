@@ -29,455 +29,171 @@
 
 #include "core_info.h"
 #include "database_info.h"
+#include "manual_content_scan.h"
 
 int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
       const char *path)
 {
+   /* Build queries of the shape {'KEY':"PATH"} (or {'KEY':PATH}
+    * for numeric/rating fields, or the DEVELOPER glob form).
+    *
+    * Pre-this-rewrite each case unrolled the per-character
+    * writes with s[++_len]= and then a path strlcpy followed
+    * by another short s[++_len]= chain.  None of those writes
+    * was bounded against len; if the caller's buffer was
+    * smaller than the prefix's length the writes ran off the
+    * end of s, and after the path strlcpy the trailing
+    * s[_len]='"';s[++_len]='}' sequence could OOB-write up to
+    * 3 bytes when path filled s.  Naively replacing the chain
+    * with _len += strlcpy(s+_len, lit, len-_len) does not
+    * help: strlcpy returns strlen(source) regardless of
+    * truncation, so on overflow _len passes len and the next
+    * (len - _len) underflows size_t, producing an
+    * unbounded-size strlcpy and the same OOB.
+    *
+    * Use strlcpy_append (libretro-common/string/stdstring.c),
+    * which is bound-checked and clamps *pos to len - 1 on
+    * truncation, so subsequent calls in the chain short-
+    * circuit safely.  The caller checks the final return
+    * value to detect any truncation in the chain. */
    size_t _len = 0;
+
+   if (!s || len == 0)
+      return -1;
 
    switch (type)
    {
       case DATABASE_QUERY_ENTRY:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'n';
-         s[++_len]  = 'a';
-         s[++_len]  = 'm';
-         s[++_len]  = 'e';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'name':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_PUBLISHER:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'p';
-         s[++_len]  = 'u';
-         s[++_len]  = 'b';
-         s[++_len]  = 'l';
-         s[++_len]  = 'i';
-         s[++_len]  = 's';
-         s[++_len]  = 'h';
-         s[++_len]  = 'e';
-         s[++_len]  = 'r';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'publisher':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_DEVELOPER:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'd';
-         s[++_len]  = 'e';
-         s[++_len]  = 'v';
-         s[++_len]  = 'e';
-         s[++_len]  = 'l';
-         s[++_len]  = 'o';
-         s[++_len]  = 'p';
-         s[++_len]  = 'e';
-         s[++_len]  = 'r';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = 'g';
-         s[++_len]  = 'l';
-         s[++_len]  = 'o';
-         s[++_len]  = 'b';
-         s[++_len]  = '(';
-         s[++_len]  = '\'';
-         s[++_len]  = '*';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '*';
-         s[++_len]  = '\'';
-         s[++_len]  = ')';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'developer':glob('*");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "*')}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_ORIGIN:
-         s[  _len]  = '{';
-	      s[++_len]  = '\'';
-         s[++_len]  = 'o';
-         s[++_len]  = 'r';
-         s[++_len]  = 'i';
-         s[++_len]  = 'g';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'origin':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_FRANCHISE:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'f';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 'n';
-         s[++_len]  = 'c';
-         s[++_len]  = 'h';
-         s[++_len]  = 'i';
-         s[++_len]  = 's';
-         s[++_len]  = 'e';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'franchise':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 's';
-         s[++_len]  = 'r';
-         s[++_len]  = 'b';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'esrb_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_BBFC_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'b';
-         s[++_len]  = 'b';
-         s[++_len]  = 'f';
-         s[++_len]  = 'c';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[++_len]  = '"';
-         s[++_len]  = '}';
-         s[++_len] = '\0';
+         /* Pre-rewrite this case wrote s[++_len] = '"' after
+          * the path strlcpy instead of s[_len] = '"', leaving
+          * the strlcpy's NUL terminator embedded in the query
+          * and silently breaking BBFC searches.  Fix while
+          * rewriting. */
+         strlcpy_append(s, len, &_len, "{'bbfc_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_ELSPA_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 'l';
-         s[++_len]  = 's';
-         s[++_len]  = 'p';
-         s[++_len]  = 'a';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'elspa_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_ESRB_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 's';
-         s[++_len]  = 'r';
-         s[++_len]  = 'b';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'esrb_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_PEGI_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'p';
-         s[++_len]  = 'e';
-         s[++_len]  = 'g';
-         s[++_len]  = 'i';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'pegi_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_CERO_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'c';
-         s[++_len]  = 'e';
-         s[++_len]  = 'r';
-         s[++_len]  = 'o';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'cero_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_ENHANCEMENT_HW:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 'n';
-         s[++_len]  = 'h';
-         s[++_len]  = 'a';
-         s[++_len]  = 'n';
-         s[++_len]  = 'c';
-         s[++_len]  = 'e';
-         s[++_len]  = 'm';
-         s[++_len]  = 'e';
-         s[++_len]  = 'n';
-         s[++_len]  = 't';
-         s[++_len]  = '_';
-         s[++_len]  = 'h';
-         s[++_len]  = 'w';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'enhancement_hw':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 'd';
-         s[++_len]  = 'g';
-         s[++_len]  = 'e';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]   = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'edge_rating':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 'd';
-         s[++_len]  = 'g';
-         s[++_len]  = 'e';
-         s[++_len]  = '_';
-         s[++_len]  = 'i';
-         s[++_len]  = 's';
-         s[++_len]  = 's';
-         s[++_len]  = 'u';
-         s[++_len]  = 'e';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'edge_issue':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'f';
-         s[++_len]  = 'a';
-         s[++_len]  = 'm';
-         s[++_len]  = 'i';
-         s[++_len]  = 't';
-         s[++_len]  = 's';
-         s[++_len]  = 'u';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'famitsu_rating':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'r';
-         s[++_len]  = 'e';
-         s[++_len]  = 'l';
-         s[++_len]  = 'e';
-         s[++_len]  = 'a';
-         s[++_len]  = 's';
-         s[++_len]  = 'e';
-         s[++_len]  = 'm';
-         s[++_len]  = 'o';
-         s[++_len]  = 'n';
-         s[++_len]  = 't';
-         s[++_len]  = 'h';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'releasemonth':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'r';
-         s[++_len]  = 'e';
-         s[++_len]  = 'l';
-         s[++_len]  = 'e';
-         s[++_len]  = 'a';
-         s[++_len]  = 's';
-         s[++_len]  = 'e';
-         s[++_len]  = 'y';
-         s[++_len]  = 'e';
-         s[++_len]  = 'a';
-         s[++_len]  = 'r';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'releaseyear':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_MAX_USERS:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'u';
-         s[++_len]  = 's';
-         s[++_len]  = 'e';
-         s[++_len]  = 'r';
-         s[++_len]  = 's';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'users':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_GENRE:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'g';
-         s[++_len]  = 'e';
-         s[++_len]  = 'n';
-         s[++_len]  = 'r';
-         s[++_len]  = 'e';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'genre':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_REGION:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'r';
-         s[++_len]  = 'e';
-         s[++_len]  = 'g';
-         s[++_len]  = 'i';
-         s[++_len]  = 'o';
-         s[++_len]  = 'n';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'region':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_NONE:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'':':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
    }
 
@@ -502,12 +218,24 @@ char *bin_to_hex_alloc(const uint8_t *data, size_t len)
    return ret;
 }
 
+/* Field selection flags for database_cursor_iterate_filtered.
+ * 0 = extract all fields (backward compatible). */
+#define DB_EXTRACT_NAME     (1 << 0)
+#define DB_EXTRACT_CRC      (1 << 1)
+#define DB_EXTRACT_SERIAL   (1 << 2)
+#define DB_EXTRACT_SIZE     (1 << 3)
+#define DB_EXTRACT_MD5      (1 << 4)
+#define DB_EXTRACT_SHA1     (1 << 5)
+
+/* Combination used by the scanner */
+#define DB_EXTRACT_SCAN_FIELDS \
+   (DB_EXTRACT_NAME | DB_EXTRACT_CRC | DB_EXTRACT_SERIAL | DB_EXTRACT_SIZE)
+
 static int database_cursor_iterate(libretrodb_cursor_t *cur,
       database_info_t *db_info)
 {
    size_t i;
    struct rmsgpack_dom_value item;
-   const char* str                = NULL;
 
    if (libretrodb_cursor_read_item(cur, &item) != 0)
       return -1;
@@ -526,227 +254,389 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
    {
       struct rmsgpack_dom_value *key = &item.val.map.items[i].key;
       struct rmsgpack_dom_value *val = &item.val.map.items[i].value;
-      const char *val_string         = NULL;
+      const char *str;
+      const char *val_string;
+      size_t      str_len;
 
       if (!key || !val)
          continue;
 
-      val_string                     = val->val.string.buff;
-      str                            = key->val.string.buff;
+      if (key->type != RDT_STRING)
+         continue;
 
-      if (string_is_equal(str, "publisher"))
+      str     = key->val.string.buff;
+      str_len = strlen(str);
+
+      val_string = val->val.string.buff;
+
+      switch (str_len)
       {
-         if (!string_is_empty(val_string))
-            db_info->publisher = strdup(val_string);
+         case 3:
+            if (memcmp(str, "crc", 3) == 0)
+            {
+               if (val->type == RDT_BINARY)
+               {
+                  switch (val->val.binary.len)
+                  {
+                     case 1:
+                        db_info->crc32 = *(uint8_t*)val->val.binary.buff;
+                        break;
+                     case 2:
+                        db_info->crc32 = swap_if_little16(
+                              *(uint16_t*)val->val.binary.buff);
+                        break;
+                     case 4:
+                        db_info->crc32 = swap_if_little32(
+                              *(uint32_t*)val->val.binary.buff);
+                        break;
+                     default:
+                        db_info->crc32 = 0;
+                        break;
+                  }
+               }
+            }
+            else if (memcmp(str, "md5", 3) == 0)
+            {
+               if (val->type == RDT_BINARY)
+                  db_info->md5 = bin_to_hex_alloc(
+                        (uint8_t*)val->val.binary.buff,
+                        val->val.binary.len);
+            }
+            break;
+
+         case 4:
+            if (memcmp(str, "name", 4) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->name = strdup(val_string);
+            }
+            else if (memcmp(str, "size", 4) == 0)
+               db_info->size = (uint64_t)val->val.uint_;
+            else if (memcmp(str, "coop", 4) == 0)
+               db_info->coop_supported = (int)val->val.uint_;
+            else if (memcmp(str, "sha1", 4) == 0)
+            {
+               if (val->type == RDT_BINARY)
+                  db_info->sha1 = bin_to_hex_alloc(
+                        (uint8_t*)val->val.binary.buff,
+                        val->val.binary.len);
+            }
+            break;
+
+         case 5:
+            if (memcmp(str, "genre", 5) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->genre = strdup(val_string);
+            }
+            else if (memcmp(str, "score", 5) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->score = strdup(val_string);
+            }
+            else if (memcmp(str, "media", 5) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->media = strdup(val_string);
+            }
+            else if (memcmp(str, "users", 5) == 0)
+               db_info->max_users = (unsigned)val->val.uint_;
+            break;
+
+         case 6:
+            if (memcmp(str, "serial", 6) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->serial = strdup(val_string);
+            }
+            else if (memcmp(str, "region", 6) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->region = strdup(val_string);
+            }
+            else if (memcmp(str, "pacing", 6) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->pacing = strdup(val_string);
+            }
+            else if (memcmp(str, "visual", 6) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->visual = strdup(val_string);
+            }
+            else if (memcmp(str, "origin", 6) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->origin = strdup(val_string);
+            }
+            else if (memcmp(str, "rumble", 6) == 0)
+               db_info->rumble_supported = (int)val->val.uint_;
+            else if (memcmp(str, "analog", 6) == 0)
+               db_info->analog_supported = (int)val->val.uint_;
+            break;
+
+         case 7:
+            if (memcmp(str, "setting", 7) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->setting = strdup(val_string);
+            }
+            break;
+
+         case 8:
+            if (memcmp(str, "category", 8) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->category = strdup(val_string);
+            }
+            else if (memcmp(str, "language", 8) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->language = strdup(val_string);
+            }
+            else if (memcmp(str, "controls", 8) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->controls = strdup(val_string);
+            }
+            else if (memcmp(str, "artstyle", 8) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->artstyle = strdup(val_string);
+            }
+            else if (memcmp(str, "gameplay", 8) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->gameplay = strdup(val_string);
+            }
+            else if (memcmp(str, "rom_name", 8) == 0)
+            {
+               /* rom_name is not used anywhere in codebase,
+                * but is frequently added to DB */
+            }
+            break;
+
+         case 9:
+            if (memcmp(str, "publisher", 9) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->publisher = strdup(val_string);
+            }
+            else if (memcmp(str, "developer", 9) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->developer = string_split(val_string, "|");
+            }
+            else if (memcmp(str, "narrative", 9) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->narrative = strdup(val_string);
+            }
+            else if (memcmp(str, "vehicular", 9) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->vehicular = strdup(val_string);
+            }
+            else if (memcmp(str, "franchise", 9) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->franchise = strdup(val_string);
+            }
+            break;
+
+         case 10:
+            if (memcmp(str, "edge_issue", 10) == 0)
+               db_info->edge_magazine_issue = (unsigned)val->val.uint_;
+            break;
+
+         case 11:
+            if (memcmp(str, "description", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->description = strdup(val_string);
+            }
+            else if (memcmp(str, "perspective", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->perspective = strdup(val_string);
+            }
+            else if (memcmp(str, "bbfc_rating", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->bbfc_rating = strdup(val_string);
+            }
+            else if (memcmp(str, "esrb_rating", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->esrb_rating = strdup(val_string);
+            }
+            else if (memcmp(str, "cero_rating", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->cero_rating = strdup(val_string);
+            }
+            else if (memcmp(str, "pegi_rating", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->pegi_rating = strdup(val_string);
+            }
+            else if (memcmp(str, "edge_rating", 11) == 0)
+               db_info->edge_magazine_rating = (unsigned)val->val.uint_;
+            else if (memcmp(str, "tgdb_rating", 11) == 0)
+               db_info->tgdb_rating = (unsigned)val->val.uint_;
+            else if (memcmp(str, "edge_review", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->edge_magazine_review = strdup(val_string);
+            }
+            else if (memcmp(str, "releaseyear", 11) == 0)
+               db_info->releaseyear = (unsigned)val->val.uint_;
+            break;
+
+         case 12:
+            if (memcmp(str, "elspa_rating", 12) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->elspa_rating = strdup(val_string);
+            }
+            else if (memcmp(str, "releasemonth", 12) == 0)
+               db_info->releasemonth = (unsigned)val->val.uint_;
+            else if (memcmp(str, "achievements", 12) == 0)
+               db_info->achievements = (int)val->val.uint_;
+            break;
+
+         case 14:
+            if (memcmp(str, "famitsu_rating", 14) == 0)
+               db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
+            else if (memcmp(str, "enhancement_hw", 14) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->enhancement_hw = strdup(val_string);
+            }
+            break;
+
+         case 17:
+            if (memcmp(str, "console_exclusive", 17) == 0)
+               db_info->console_exclusive = (int)val->val.uint_;
+            break;
+
+         case 18:
+            if (memcmp(str, "platform_exclusive", 18) == 0)
+               db_info->platform_exclusive = (int)val->val.uint_;
+            break;
+
+         default:
+            break;
       }
-      else if (string_is_equal(str, "developer"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->developer = string_split(val_string, "|");
-      }
-      else if (string_is_equal(str, "serial"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->serial = strdup(val_string);
-      }
-      else if (string_is_equal(str, "rom_name"))
-      {
-/* rom_name is not used anywhere in codebase, but is frequently added to DB */
-#if 0
-         if (!string_is_empty(val_string))
-            db_info->rom_name = strdup(val_string);
-#endif
-      }
-      else if (string_is_equal(str, "name"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->name = strdup(val_string);
-      }
-      else if (string_is_equal(str, "description"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->description = strdup(val_string);
-      }
-      else if (string_is_equal(str, "genre"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->genre = strdup(val_string);
-      }
-      else if (string_is_equal(str, "category"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->category = strdup(val_string);
-      }
-      else if (string_is_equal(str, "language"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->language = strdup(val_string);
-      }
-      else if (string_is_equal(str, "region"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->region = strdup(val_string);
-      }
-      else if (string_is_equal(str, "score"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->score = strdup(val_string);
-      }
-      else if (string_is_equal(str, "media"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->media = strdup(val_string);
-      }
-      else if (string_is_equal(str, "controls"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->controls = strdup(val_string);
-      }
-      else if (string_is_equal(str, "artstyle"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->artstyle = strdup(val_string);
-      }
-      else if (string_is_equal(str, "gameplay"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->gameplay = strdup(val_string);
-      }
-      else if (string_is_equal(str, "narrative"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->narrative = strdup(val_string);
-      }
-      else if (string_is_equal(str, "pacing"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->pacing = strdup(val_string);
-      }
-      else if (string_is_equal(str, "perspective"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->perspective = strdup(val_string);
-      }
-      else if (string_is_equal(str, "setting"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->setting = strdup(val_string);
-      }
-      else if (string_is_equal(str, "visual"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->visual = strdup(val_string);
-      }
-      else if (string_is_equal(str, "vehicular"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->vehicular = strdup(val_string);
-      }
-      else if (string_is_equal(str, "origin"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->origin = strdup(val_string);
-      }
-      else if (string_is_equal(str, "franchise"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->franchise = strdup(val_string);
-      }
-      else if (string_ends_with_size(str, "_rating",
-               strlen(str), STRLEN_CONST("_rating")))
-      {
-         if (string_is_equal(str, "bbfc_rating"))
-         {
-            if (!string_is_empty(val_string))
-               db_info->bbfc_rating = strdup(val_string);
-         }
-         else if (string_is_equal(str, "esrb_rating"))
-         {
-            if (!string_is_empty(val_string))
-               db_info->esrb_rating = strdup(val_string);
-         }
-         else if (string_is_equal(str, "elspa_rating"))
-         {
-            if (!string_is_empty(val_string))
-               db_info->elspa_rating = strdup(val_string);
-         }
-         else if (string_is_equal(str, "cero_rating"))
-         {
-            if (!string_is_empty(val_string))
-               db_info->cero_rating          = strdup(val_string);
-         }
-         else if (string_is_equal(str, "pegi_rating"))
-         {
-            if (!string_is_empty(val_string))
-               db_info->pegi_rating          = strdup(val_string);
-         }
-         else if (string_is_equal(str, "edge_rating"))
-            db_info->edge_magazine_rating    = (unsigned)val->val.uint_;
-         else if (string_is_equal(str, "famitsu_rating"))
-            db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
-         else if (string_is_equal(str, "tgdb_rating"))
-            db_info->tgdb_rating             = (unsigned)val->val.uint_;
-      }
-      else if (string_is_equal(str, "enhancement_hw"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->enhancement_hw       = strdup(val_string);
-      }
-      else if (string_is_equal(str, "edge_review"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->edge_magazine_review = strdup(val_string);
-      }
-      else if (string_is_equal(str, "edge_issue"))
-         db_info->edge_magazine_issue     = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "users"))
-         db_info->max_users               = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "releasemonth"))
-         db_info->releasemonth            = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "releaseyear"))
-         db_info->releaseyear             = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "rumble"))
-         db_info->rumble_supported        = (int)val->val.uint_;
-      else if (string_is_equal(str, "achievements"))
-         db_info->achievements            = (int)val->val.uint_;
-      else if (string_is_equal(str, "console_exclusive"))
-         db_info->console_exclusive       = (int)val->val.uint_;
-      else if (string_is_equal(str, "platform_exclusive"))
-         db_info->platform_exclusive      = (int)val->val.uint_;
-      else if (string_is_equal(str, "coop"))
-         db_info->coop_supported          = (int)val->val.uint_;
-      else if (string_is_equal(str, "analog"))
-         db_info->analog_supported        = (int)val->val.uint_;
-      else if (string_is_equal(str, "size"))
-         db_info->size                    = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "crc"))
-      {
-         switch (val->val.binary.len)
-         {
-            case 1:
-               db_info->crc32 = *(uint8_t*)val->val.binary.buff;
-               break;
-            case 2:
-               db_info->crc32 = swap_if_little16(*(uint16_t*)val->val.binary.buff);
-               break;
-            case 4:
-               db_info->crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff);
-               break;
-            default:
-               db_info->crc32 = 0;
-               break;
-         }
-      }
-      else if (string_is_equal(str, "sha1"))
-         db_info->sha1 = bin_to_hex_alloc(
-               (uint8_t*)val->val.binary.buff, val->val.binary.len);
-      else if (string_is_equal(str, "md5"))
-         db_info->md5 = bin_to_hex_alloc(
-               (uint8_t*)val->val.binary.buff, val->val.binary.len);
    }
 
    rmsgpack_dom_value_free(&item);
 
+   return 0;
+}
+
+/**
+ * database_cursor_iterate_filtered:
+ *
+ * Like database_cursor_iterate, but only extracts fields specified
+ * by the @fields bitmask. Skips strdup/allocation for unrequested
+ * fields, eliminating ~30 unnecessary strdup+free per record when
+ * only a few fields are needed (e.g. scanner needs crc+name+serial+size).
+ *
+ * @fields: Bitmask of DB_EXTRACT_* flags. 0 = extract all.
+ */
+static int database_cursor_iterate_filtered(libretrodb_cursor_t *cur,
+      database_info_t *db_info, unsigned fields)
+{
+   size_t i;
+   struct rmsgpack_dom_value item;
+
+   /* Fall back to full extraction if no mask specified */
+   if (fields == 0)
+      return database_cursor_iterate(cur, db_info);
+
+   if (libretrodb_cursor_read_item(cur, &item) != 0)
+      return -1;
+
+   if (item.type != RDT_MAP)
+   {
+      rmsgpack_dom_value_free(&item);
+      return 1;
+   }
+
+   db_info->analog_supported = -1;
+   db_info->rumble_supported = -1;
+   db_info->coop_supported   = -1;
+
+   for (i = 0; i < item.val.map.len; i++)
+   {
+      struct rmsgpack_dom_value *key = &item.val.map.items[i].key;
+      struct rmsgpack_dom_value *val = &item.val.map.items[i].value;
+      const char *str;
+      size_t      str_len;
+
+      if (!key || !val || key->type != RDT_STRING)
+         continue;
+
+      str     = key->val.string.buff;
+      str_len = key->val.string.len;
+
+      switch (str_len)
+      {
+         case 3:
+            if ((fields & DB_EXTRACT_CRC) && memcmp(str, "crc", 3) == 0)
+            {
+               if (val->type == RDT_BINARY)
+               {
+                  switch (val->val.binary.len)
+                  {
+                     case 1:  db_info->crc32 = *(uint8_t*)val->val.binary.buff; break;
+                     case 2:  db_info->crc32 = swap_if_little16(*(uint16_t*)val->val.binary.buff); break;
+                     case 4:  db_info->crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff); break;
+                     default: db_info->crc32 = 0; break;
+                  }
+               }
+            }
+            else if ((fields & DB_EXTRACT_MD5) && memcmp(str, "md5", 3) == 0)
+            {
+               if (val->type == RDT_BINARY)
+                  db_info->md5 = bin_to_hex_alloc(
+                        (uint8_t*)val->val.binary.buff, val->val.binary.len);
+            }
+            break;
+
+         case 4:
+            if ((fields & DB_EXTRACT_NAME) && memcmp(str, "name", 4) == 0)
+            {
+               const char *vs = val->val.string.buff;
+               if (vs && *vs)
+                  db_info->name = strdup(vs);
+            }
+            else if ((fields & DB_EXTRACT_SIZE) && memcmp(str, "size", 4) == 0)
+               db_info->size = (uint64_t)val->val.uint_;
+            else if ((fields & DB_EXTRACT_SHA1) && memcmp(str, "sha1", 4) == 0)
+            {
+               if (val->type == RDT_BINARY)
+                  db_info->sha1 = bin_to_hex_alloc(
+                        (uint8_t*)val->val.binary.buff, val->val.binary.len);
+            }
+            break;
+
+         case 6:
+            if ((fields & DB_EXTRACT_SERIAL) && memcmp(str, "serial", 6) == 0)
+            {
+               const char *vs = val->val.string.buff;
+               if (vs && *vs)
+                  db_info->serial = strdup(vs);
+            }
+            break;
+
+         default:
+            break;
+      }
+   }
+
+   rmsgpack_dom_value_free(&item);
    return 0;
 }
 
@@ -777,12 +667,19 @@ static int database_cursor_open(libretrodb_t *db,
    return 0;
 }
 
+/* Types 'cue' and 'gdi' are prioritized */
 static bool type_is_prioritized(const char *path)
 {
    const char *ext = path_get_extension(path);
-   if (     string_is_equal_noncase(ext, "cue")
-         || string_is_equal_noncase(ext, "gdi"))
-      return true;
+   if (ext)
+   {
+      char e0 = ext[0] | 0x20;
+      char e1 = ext[1] | 0x20;
+      char e2 = ext[2] | 0x20;
+      if (ext[3] == '\0')
+         return (e0 == 'c' && e1 == 'u' && e2 == 'e')
+            || (e0 == 'g' && e1 == 'd' && e2 == 'i');
+   }
    return false;
 }
 
@@ -797,8 +694,9 @@ static int dir_entry_compare(const void *left, const void *right)
 }
 
 database_info_handle_t *database_info_dir_init(const char *dir,
-      enum database_type type, retro_task_t *task,
-      bool show_hidden_files)
+      enum database_type type, char *file_exts,
+      bool show_hidden_files, bool recursive, bool include_archive,
+      struct string_list **content_list)
 {
    core_info_list_t *core_info_list = NULL;
    struct string_list       *list   = NULL;
@@ -808,11 +706,14 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    if (!db)
       return NULL;
 
-   core_info_get_list(&core_info_list);
+   /* File list will include all supported files, 
+    * unless extension list is given */
+   if (!file_exts || !*file_exts)
+      core_info_get_list(&core_info_list);
 
-   if (!(list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : NULL,
+   if (!(list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : file_exts,
          false, show_hidden_files,
-         false, true)))
+         include_archive, recursive)))
    {
       free(db);
       return NULL;
@@ -823,14 +724,13 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
    db->status             = DATABASE_STATUS_ITERATE;
    db->type               = type;
-   db->list_ptr           = 0;
-   db->list               = list;
+   *content_list          = list;
 
    return db;
 }
 
 database_info_handle_t *database_info_file_init(const char *path,
-      enum database_type type, retro_task_t *task)
+      enum database_type type, retro_task_t *task, struct string_list **content_list)
 {
    union string_list_elem_attr attr;
    struct string_list        *list  = NULL;
@@ -851,23 +751,149 @@ database_info_handle_t *database_info_file_init(const char *path,
 
    db->status             = DATABASE_STATUS_ITERATE;
    db->type               = type;
-   db->list_ptr           = 0;
-   db->list               = list;
+   *content_list          = list;
 
    return db;
 }
 
 void database_info_free(database_info_handle_t *db)
 {
+/*   if (db)
+      string_list_free(db->list);*/
+}
+
+/**
+ * database_info_list_new_names_only:
+ *
+ * Fast path for loading just game names from an .rdb file.
+ * Used by the Database Manager browse list which only needs names.
+ * Reads each record's map header, scans for the "name" key using
+ * field-level skip, extracts just the name string, skips everything
+ * else. ~10x less work per record than the full extraction path.
+ */
+static database_info_list_t *database_info_list_new_names_only(
+      const char *rdb_path)
+{
+   libretrodb_t *db            = libretrodb_new();
+   libretrodb_cursor_t *cur    = libretrodb_cursor_new();
+   database_info_list_t *list  = NULL;
+   database_info_t *items      = NULL;
+   size_t count                = 0;
+   size_t capacity             = 0;
+
+   if (!db || !cur)
+      goto end;
+
+   if (database_cursor_open(db, cur, rdb_path, NULL) != 0)
+      goto end;
+
+   list = (database_info_list_t*)malloc(sizeof(*list));
+   if (!list)
+      goto end;
+
+   list->count = 0;
+   list->list  = NULL;
+
+   /* Initial capacity — avoids realloc churn for small databases
+    * and reduces it for large ones */
+   capacity = 256;
+   items    = (database_info_t*)calloc(capacity, sizeof(*items));
+   if (!items)
+   {
+      free(list);
+      list = NULL;
+      goto end;
+   }
+
+   for (;;)
+   {
+      struct rmsgpack_dom_value item;
+
+      if (libretrodb_cursor_read_item(cur, &item) != 0)
+         break;
+
+      if (item.type == RDT_MAP)
+      {
+         unsigned i;
+         char *found_name = NULL;
+
+         /* Scan the DOM for the "name" field only */
+         for (i = 0; i < item.val.map.len; i++)
+         {
+            struct rmsgpack_dom_value *k = &item.val.map.items[i].key;
+            struct rmsgpack_dom_value *v = &item.val.map.items[i].value;
+
+            if (  k->type == RDT_STRING
+               && k->val.string.len == 4
+               && memcmp(k->val.string.buff, "name", 4) == 0
+               && v->type == RDT_STRING
+               && v->val.string.buff
+               && *v->val.string.buff)
+            {
+               found_name = strdup(v->val.string.buff);
+               break;
+            }
+         }
+
+         if (found_name)
+         {
+            /* Grow array geometrically */
+            if (count >= capacity)
+            {
+               database_info_t *new_items;
+               capacity *= 2;
+               new_items = (database_info_t*)realloc(
+                     items, capacity * sizeof(*items));
+               if (!new_items)
+               {
+                  free(found_name);
+                  rmsgpack_dom_value_free(&item);
+                  break;
+               }
+               items = new_items;
+               /* Zero the new portion so free() on unset
+                * fields is safe */
+               memset(&items[count], 0,
+                     (capacity - count) * sizeof(*items));
+            }
+
+            memset(&items[count], 0, sizeof(items[count]));
+            items[count].name = found_name;
+            count++;
+         }
+      }
+
+      rmsgpack_dom_value_free(&item);
+   }
+
+   list->list  = items;
+   list->count = count;
+
+end:
    if (db)
-      string_list_free(db->list);
+   {
+      libretrodb_cursor_close(cur);
+      libretrodb_close(db);
+      libretrodb_free(db);
+   }
+   if (cur)
+      libretrodb_cursor_free(cur);
+
+   return list;
 }
 
 database_info_list_t *database_info_list_new(
       const char *rdb_path, const char *query)
 {
+   return database_info_list_new_filtered(rdb_path, query, 0);
+}
+
+database_info_list_t *database_info_list_new_filtered(
+      const char *rdb_path, const char *query, unsigned fields)
+{
    int ret                                  = 0;
    unsigned k                               = 0;
+   unsigned capacity                        = 0;
    database_info_t *database_info           = NULL;
    database_info_list_t *database_info_list = NULL;
    libretrodb_t *db                         = libretrodb_new();
@@ -875,6 +901,17 @@ database_info_list_t *database_info_list_new(
 
    if (!db || !cur)
       goto end;
+
+   /* Fast path: name-only extraction for Database Manager browse
+    * (NULL query = unfiltered scan, only name is used by caller) */
+   if (!query)
+   {
+      /* Free the db/cur we just allocated — the fast path
+       * creates its own */
+      libretrodb_free(db);
+      libretrodb_cursor_free(cur);
+      return database_info_list_new_names_only(rdb_path);
+   }
 
    if ((database_cursor_open(db, cur, rdb_path, query) != 0))
       goto end;
@@ -888,19 +925,33 @@ database_info_list_t *database_info_list_new(
    database_info_list->count  = 0;
    database_info_list->list   = NULL;
 
+   /* Pre-allocate with geometric growth instead of realloc-by-one */
+   capacity      = 64;
+   database_info = (database_info_t*)calloc(capacity, sizeof(*database_info));
+   if (!database_info)
+   {
+      free(database_info_list);
+      database_info_list = NULL;
+      goto end;
+   }
+
    while (ret != -1)
    {
       database_info_t db_info = {0};
-      ret = database_cursor_iterate(cur, &db_info);
+      ret = database_cursor_iterate_filtered(cur, &db_info, fields);
 
       if (ret == 0)
       {
-         database_info_t *db_ptr  = NULL;
-         database_info_t *new_ptr = (database_info_t*)
-            realloc(database_info, (k+1) * sizeof(database_info_t));
-
-         if (!new_ptr)
+         /* Grow geometrically when full */
+         if (k >= capacity)
          {
+            database_info_t *new_ptr;
+            capacity *= 2;
+            new_ptr = (database_info_t*)realloc(
+                  database_info, capacity * sizeof(*database_info));
+
+            if (!new_ptr)
+            {
             if (db_info.bbfc_rating)
                free(db_info.bbfc_rating);
             if (db_info.cero_rating)
@@ -991,9 +1042,9 @@ database_info_list_t *database_info_list_new(
          }
 
          database_info = new_ptr;
-         db_ptr        = &database_info[k];
+         }
 
-         memcpy(db_ptr, &db_info, sizeof(*db_ptr));
+         memcpy(&database_info[k], &db_info, sizeof(db_info));
 
          k++;
       }

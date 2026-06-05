@@ -145,7 +145,7 @@ static void *vg_init(const video_info_t *video,
    RARCH_LOG("[VG] Detecting screen resolution: %ux%u.\n", temp_width, temp_height);
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
 
    interval = video->vsync ? 1 : 0;
 
@@ -164,7 +164,7 @@ static void *vg_init(const video_info_t *video,
 
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
-      video_driver_get_size(&temp_width, &temp_height);
+      video_driver_get_output_size(&temp_width, &temp_height);
 
       win_width  = temp_width;
       win_height = temp_height;
@@ -174,8 +174,6 @@ static void *vg_init(const video_info_t *video,
          || !vg->ctx_driver->set_video_mode(vg->ctx_data,
             win_width, win_height, video->fullscreen))
       goto error;
-
-   video_driver_get_size(&temp_width, &temp_height);
 
    temp_width        = 0;
    temp_height       = 0;
@@ -195,10 +193,10 @@ static void *vg_init(const video_info_t *video,
    {
       RARCH_LOG("[VG] Verified window resolution %ux%u.\n",
             temp_width, temp_height);
-      video_driver_set_size(temp_width, temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
    }
-
-   video_driver_get_size(&temp_width, &temp_height);
+   else
+      video_driver_get_output_size(&temp_width, &temp_height);
 
    vg->mScreenAspect = (float)temp_width / temp_height;
 
@@ -313,32 +311,18 @@ static void vg_calculate_quad(vg_t *vg,
       unsigned vp_width, unsigned vp_height)
 {
    video_viewport_t vp;
-   settings_t *settings      = config_get_ptr();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   float device_aspect       = (float)vp_width / vp_height;
 
-   vp.x                      = 0;
-   vp.y                      = 0;
-   vp.width                  = vp_width;
-   vp.height                 = vp_height;
-   vp.full_width             = vp_width;
-   vp.full_height            = vp_height;
+   vp.full_width   = vp_width;
+   vp.full_height  = vp_height;
 
+   /* Calculate device_aspect for mScreenAspect (used elsewhere) */
+   vg->mScreenAspect = (float)vp_width / vp_height;
    if (vg->ctx_driver->translate_aspect)
-      device_aspect = vg->ctx_driver->translate_aspect(vg->ctx_data, vp_width, vp_height);
+      vg->mScreenAspect = vg->ctx_driver->translate_aspect(vg->ctx_data, vp_width, vp_height);
 
-   vg->mScreenAspect = device_aspect;
    /* OpenVG uses a bottom-left origin coordinate system */
-   if (video_scale_integer)
-   {
-      video_viewport_get_scaled_integer(&vp,
-            vp_width, vp_height,
-            video_driver_get_aspect_ratio(),
-            vg->keep_aspect,
-            false);
-   }
-   else if (vg->keep_aspect)
-      video_viewport_get_scaled_aspect(&vp, vp_width, vp_height, false);
+   video_driver_update_viewport(&vp, false, vg->keep_aspect, false);
+
    vg->x1 = vp.x;
    vg->y1 = vp.y;
    vg->x2 = vp.width;
@@ -456,7 +440,7 @@ static bool vg_alive(void *data)
             &quit, &resize, &temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
 
    return !quit;
 }
@@ -512,6 +496,8 @@ video_driver_t video_vg = {
 #endif
    vg_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

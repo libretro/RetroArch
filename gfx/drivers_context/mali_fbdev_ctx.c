@@ -144,11 +144,32 @@ static void gfx_ctx_mali_fbdev_clear_screen(void)
    struct fb_var_screeninfo vinfo;
    void *buffer          = NULL;
    int fd                = open("/dev/fb0", O_RDWR);
-   ioctl (fd, FBIOGET_VSCREENINFO, &vinfo);
+   /* open() returns -1 on failure (fb0 missing, permission denied,
+    * exclusive use, etc.).  The subsequent ioctl / write on an
+    * invalid fd would not crash but would read garbage out of
+    * 'vinfo' (uninitialised stack), produce nonsense buffer_size,
+    * and write(-1, NULL, garbage_size) below NULL-derefs inside
+    * the write() syscall boundary when buffer is also NULL from
+    * the calloc failure.  Just skip the framebuffer clear on
+    * error - it's a cosmetic teardown step, not load-bearing. */
+   if (fd < 0)
+      return;
+   if (ioctl (fd, FBIOGET_VSCREENINFO, &vinfo) < 0)
+   {
+      close(fd);
+      return;
+   }
    buffer_size           = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
    buffer                = calloc(1, buffer_size);
-   write(fd,buffer,buffer_size);
-   free(buffer);
+   /* NULL-check the calloc: write(fd, NULL, buffer_size) is
+    * undefined (POSIX leaves write-from-NULL as EFAULT-or-crash
+    * territory, and Linux returns EFAULT but some implementations
+    * don't). */
+   if (buffer)
+   {
+      write(fd,buffer,buffer_size);
+      free(buffer);
+   }
    close(fd);
 
    /* Clear framebuffer and set cursor on again */
@@ -386,6 +407,26 @@ static float gfx_ctx_mali_fbdev_get_refresh_rate(void *data)
    return mali->refresh_rate;
 }
 
+static bool gfx_ctx_mali_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
+   return egl_create_surface(&mali->egl, &mali->native_window);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_mali_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
+   return egl_destroy_surface(&mali->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_init,
    gfx_ctx_mali_fbdev_destroy,
@@ -421,5 +462,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_set_flags,
    gfx_ctx_mali_fbdev_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_mali_create_surface,
+   gfx_ctx_mali_destroy_surface
 };

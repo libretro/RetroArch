@@ -80,11 +80,13 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     String currentCore = currentIntent != null ? currentIntent.getStringExtra("LIBRETRO") : null;
     
     
-    // Check if we're trying to launch different content  
+    // Check if we're trying to launch different content
     if ((newRom != null && !newRom.equals(currentRom)) ||
         (newCore != null && !newCore.equals(currentCore))) {
-      // Different game content - exit cleanly and let launcher restart us
-      finish();
+      // Different game content - start fresh instance then exit
+      Intent restartIntent = new Intent(intent);
+      restartIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+      startActivity(restartIntent);
       System.exit(0);
     } else {
       // Same content, just update intent
@@ -118,7 +120,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
           getWindow().getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
       } catch (Exception e) {
-        Log.w("Key doesn't exist yet.", e.getMessage());
+        Log.w("RetroActivityFuture", "Key doesn't exist yet: " + e.getMessage());
       }
     }
   }
@@ -149,7 +151,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
         inputGrabMouse(hasFocus);
       }
     } catch (Exception e) {
-      Log.w("[onWindowFocusChanged] exception thrown:", e.getMessage());
+      Log.w("RetroActivityFuture", "[onWindowFocusChanged] exception thrown: " + e.getMessage());
     }
   }
 
@@ -185,7 +187,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
             | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
       } catch (Exception e) {
-        Log.w("[attemptToggleImmersiveMode] exception thrown:", e.getMessage());
+        Log.w("RetroActivityFuture", "[attemptToggleImmersiveMode] exception thrown: " + e.getMessage());
       }
     }
   }
@@ -200,7 +202,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
           mDecorView.releasePointerCapture();
         }
       } catch (Exception e) {
-        Log.w("[attemptTogglePointerCapture] exception thrown:", e.getMessage());
+        Log.w("RetroActivityFuture", "[attemptTogglePointerCapture] exception thrown: " + e.getMessage());
       }
     }
   }
@@ -217,7 +219,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       } catch (NoSuchMethodException e) {
         // Extensions were not available so do nothing
       } catch (Exception e) {
-        Log.w("[attemptToggleNvidiaCursorVisibility] exception thrown:", e.getMessage());
+        Log.w("RetroActivityFuture", "[attemptToggleNvidiaCursorVisibility] exception thrown: " + e.getMessage());
       }
     }
   }
@@ -235,7 +237,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
           mDecorView.setPointerIcon(null);
         }
       } catch (Exception e) {
-        Log.w("[attemptTogglePointerIcon] exception thrown:", e.getMessage());
+        Log.w("RetroActivityFuture", "[attemptTogglePointerIcon] exception thrown: " + e.getMessage());
       }
     }
   }

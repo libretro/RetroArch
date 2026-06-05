@@ -23,7 +23,7 @@
 #ifndef __RARCH_MISCELLANEOUS_H
 #define __RARCH_MISCELLANEOUS_H
 
-#define RARCH_MAX_SUBSYSTEMS 10
+#define RARCH_MAX_SUBSYSTEMS 20
 #define RARCH_MAX_SUBSYSTEM_ROMS 10
 
 #include <stdint.h>
@@ -510,6 +510,8 @@ typedef struct
 #  endif
 #elif defined(PS2)
 #  define PRI_SIZET "u"
+#elif defined(__EMSCRIPTEN__)
+#  define PRI_SIZET "zu"
 #else
 #  if (SIZE_MAX == 0xFFFF)
 #    define PRI_SIZET "hu"

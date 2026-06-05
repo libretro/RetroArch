@@ -70,7 +70,7 @@ extern "C" {
 #include "../../verbosity.h"
 
 #ifndef FFMPEG3
-#define FFMPEG3 ((LIBAVUTIL_VERSION_INT < (56, 6, 100)) || \
+#define FFMPEG3 ((LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56, 6, 100)) || \
       (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 10, 100)))
 #endif
 
@@ -484,6 +484,16 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    param->out_width  = (float)param->out_width  * params->scale_factor;
    param->out_height = (float)param->out_height * params->scale_factor;
 
+   /* Ensure even dimensions for chroma-subsampled pixel formats.
+    * Odd dimensions cause encoder init failure with e.g. libx264.
+    * Round up (pad) rather than down so no source pixels are lost. */
+   if (     video->pix_fmt == AV_PIX_FMT_YUV420P
+         || video->pix_fmt == AV_PIX_FMT_YUV422P)
+   {
+      param->out_width  = (param->out_width  + 1) & ~1;
+      param->out_height = (param->out_height + 1) & ~1;
+   }
+
    video->codec->codec_type          = AVMEDIA_TYPE_VIDEO;
    video->codec->width               = param->out_width;
    video->codec->height              = param->out_height;
@@ -514,12 +524,26 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
     * clues how big this buffer should be. */
    video->outbuf_size      = 1 << 23;
    video->outbuf           = (uint8_t*)av_malloc(video->outbuf_size);
+   /* NULL-check outbuf: caller (ffmpeg_new) returns false via goto
+    * error on our false return, and ffmpeg_free handles partial
+    * init state via av_freep guards. */
+   if (!video->outbuf)
+      return false;
 
    video->frame_drop_ratio = params->frame_drop_ratio;
 
    size = av_image_get_buffer_size(video->pix_fmt, param->out_width,
          param->out_height, 1);
    video->conv_frame_buf   = (uint8_t*)av_malloc(size);
+   /* NULL-check conv_frame_buf: the memset on the next line
+    * NULL-derefs on OOM, as does av_image_fill_arrays below
+    * which writes into frame->data pointers based on
+    * conv_frame_buf. */
+   if (!video->conv_frame_buf)
+      return false;
+   /* Zero the buffer so padding pixels (from rounding odd dimensions
+    * up to even) are black rather than uninitialized. */
+   memset(video->conv_frame_buf, 0, size);
    video->conv_frame       = av_frame_alloc();
 
    AVFrame* frame = video->conv_frame;
@@ -731,7 +755,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          params->scale_factor = 1;
       if (     streaming_mode == STREAMING_MODE_YOUTUBE
             || streaming_mode == STREAMING_MODE_TWITCH
-            || streaming_mode == STREAMING_MODE_FACEBOOK)
+            || streaming_mode == STREAMING_MODE_FACEBOOK
+            || streaming_mode == STREAMING_MODE_KICK)
          strlcpy(params->format, "flv", sizeof(params->format));
       else
          strlcpy(params->format, "mpegts", sizeof(params->format));
@@ -831,9 +856,19 @@ static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 #endif
    ctx                    = avformat_alloc_context();
    handle->muxer.ctx      = ctx;
+   /* NULL-check ctx: ffmpeg_free cleans up handle->muxer.ctx via
+    * avformat_free_context which NULL-tolerates (see ffmpeg
+    * docs).  ctx->* writes below NULL-deref on OOM. */
+   if (!ctx)
+      return false;
 #if !FFMPEG3
    _len                   = MIN(strlen(handle->params.filename) + 1, PATH_MAX_LENGTH);
    ctx->url               = (char*)av_malloc(_len);
+   /* NULL-check ctx->url: strlcpy on the next line NULL-derefs
+    * on OOM.  ctx->url is freed by avformat_free_context as
+    * part of the muxer teardown in ffmpeg_free. */
+   if (!ctx->url)
+      return false;
    strlcpy(ctx->url, handle->params.filename, _len);
 #else
    strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
@@ -1253,9 +1288,16 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
 static void ffmpeg_scale_input(ffmpeg_t *handle,
       const struct record_video_data *vid)
 {
+   /* When output was padded to even dimensions, clamp the scaling
+    * destination to the source size. */
+   unsigned dst_w = (vid->width < handle->params.out_width)
+      ? vid->width : handle->params.out_width;
+   unsigned dst_h = (vid->height < handle->params.out_height)
+      ? vid->height : handle->params.out_height;
+
    /* Attempt to preserve more information if we scale down. */
-   bool shrunk = handle->params.out_width < vid->width
-      || handle->params.out_height < vid->height;
+   bool shrunk = dst_w < vid->width
+      || dst_h < vid->height;
 
    if (handle->video.use_sws)
    {
@@ -1263,7 +1305,7 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 
       handle->video.sws = sws_getCachedContext(handle->video.sws,
             vid->width, vid->height, handle->video.in_pix_fmt,
-            handle->params.out_width, handle->params.out_height,
+            dst_w, dst_h,
             handle->video.pix_fmt,
             shrunk ? SWS_BILINEAR : SWS_POINT, NULL, NULL, NULL);
 
@@ -1276,8 +1318,8 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
             &handle->video.scaler,
             handle->video.conv_frame->data[0],
             vid->data,
-            handle->params.out_width,
-            handle->params.out_height,
+            dst_w,
+            dst_h,
             handle->video.conv_frame->linesize[0],
             vid->width,
             vid->height,
@@ -1329,11 +1371,21 @@ static void planarize_audio(ffmpeg_t *handle)
 
    if (handle->audio.frames_in_buffer > handle->audio.planar_buf_frames)
    {
-      handle->audio.planar_buf = av_realloc(handle->audio.planar_buf,
+      /* realloc-to-tmp: av_realloc follows C realloc contract and
+       * leaves the old buffer intact on failure.  Pre-patch self-
+       * assigned planar_buf to the return, which on OOM would
+       * leak the old buffer AND leave planar_buf_frames (and
+       * subsequently the 'frames_in_buffer > planar_buf_frames'
+       * guard above) claiming the old size.  On next call with
+       * the same or smaller frame count the guard would skip the
+       * realloc branch and pass a now-NULL planar_buf to
+       * planarize_float/s16 below, NULL-derefing. */
+      void *new_buf = av_realloc(handle->audio.planar_buf,
             handle->audio.frames_in_buffer * handle->params.channels *
             handle->audio.sample_size);
-      if (!handle->audio.planar_buf)
+      if (!new_buf)
          return;
+      handle->audio.planar_buf = new_buf;
 
       handle->audio.planar_buf_frames = handle->audio.frames_in_buffer;
    }
@@ -1458,32 +1510,56 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
 
    if (aud->frames > handle->audio.float_conv_frames)
    {
-      handle->audio.float_conv = (float*)av_realloc(handle->audio.float_conv,
+      /* Three stacked realloc-assign-self patterns pre-patch, all
+       * leaked on OOM and all left the associated *_frames
+       * counter out of sync with the actual allocation.  Worst
+       * case: the second or third av_realloc fails after the
+       * first (or first two) succeeded, float_conv_frames was
+       * already bumped to the new size, and the next call would
+       * skip this whole 'if (aud->frames > ..._frames)' block
+       * and pass a NULL buffer to the downstream convert/
+       * resample calls.
+       *
+       * Fix: realloc into tmp locals, commit each pointer only
+       * after its own alloc succeeds, and defer the
+       * float_conv_frames / resample_out_frames /
+       * fixed_conv_frames counter bumps until the corresponding
+       * allocation has succeeded. */
+      float   *new_float_conv;
+      float   *new_resample_out;
+      int16_t *new_fixed_conv;
+      size_t   new_resample_out_frames;
+      size_t   new_fixed_conv_frames;
+
+      new_float_conv = (float*)av_realloc(handle->audio.float_conv,
             aud->frames * handle->params.channels * sizeof(float));
-      if (!handle->audio.float_conv)
+      if (!new_float_conv)
          return;
+      handle->audio.float_conv        = new_float_conv;
+      handle->audio.float_conv_frames = aud->frames;
 
-      handle->audio.float_conv_frames   = aud->frames;
       /* To make sure we don't accidentally overflow. */
-      handle->audio.resample_out_frames = aud->frames
-         * handle->audio.ratio + 16;
-      handle->audio.resample_out        = (float*)
+      new_resample_out_frames = aud->frames * handle->audio.ratio + 16;
+      new_resample_out        = (float*)
          av_realloc(handle->audio.resample_out,
-               handle->audio.resample_out_frames *
+               new_resample_out_frames *
                handle->params.channels * sizeof(float));
-      if (!handle->audio.resample_out)
+      if (!new_resample_out)
          return;
+      handle->audio.resample_out        = new_resample_out;
+      handle->audio.resample_out_frames = new_resample_out_frames;
 
-      handle->audio.fixed_conv_frames = MAX(
+      new_fixed_conv_frames = MAX(
             handle->audio.resample_out_frames,
             handle->audio.float_conv_frames);
-      handle->audio.fixed_conv        = (int16_t*)av_realloc(
+      new_fixed_conv        = (int16_t*)av_realloc(
             handle->audio.fixed_conv,
-            handle->audio.fixed_conv_frames *
+            new_fixed_conv_frames *
             handle->params.channels * sizeof(int16_t));
-
-      if (!handle->audio.fixed_conv)
+      if (!new_fixed_conv)
          return;
+      handle->audio.fixed_conv        = new_fixed_conv;
+      handle->audio.fixed_conv_frames = new_fixed_conv_frames;
    }
 
    if (handle->audio.use_float || handle->audio.resampler)
@@ -1602,7 +1678,13 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
       did_work = false;
 
-      if (handle->config.audio_enable)
+      /* Gate audio-fifo drain on audio_buf non-NULL: audio_buf
+       * is an OOM-prone av_malloc above, and fifo_read does
+       * memcpy-into-destination which NULL-derefs on a NULL
+       * audio_buf.  On OOM we skip audio flush - the fifo
+       * retains its data and is freed unread by the caller's
+       * subsequent ffmpeg_free teardown. */
+      if (handle->config.audio_enable && audio_buf)
       {
          if (FIFO_READ_AVAIL(handle->audio_fifo) >= audio_buf_size)
          {
@@ -1617,7 +1699,9 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
          }
       }
 
-      if (FIFO_READ_AVAIL(handle->attr_fifo) >= sizeof(attr_buf))
+      /* Gate video-fifo drain on video_buf non-NULL: same
+       * reasoning as the audio branch. */
+      if (video_buf && FIFO_READ_AVAIL(handle->attr_fifo) >= sizeof(attr_buf))
       {
          fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
          fifo_read(handle->video_fifo, video_buf,
@@ -1629,8 +1713,10 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       }
    }while (did_work);
 
-   /* Flush out last audio. */
-   if (handle->config.audio_enable)
+   /* Flush out last audio.  Skip on OOM - audio_buf is the
+    * destination for ffmpeg_flush_audio's internal fifo_read
+    * (via ffmpeg_push_audio_thread) and NULL would NULL-deref. */
+   if (handle->config.audio_enable && audio_buf)
       ffmpeg_flush_audio(handle, audio_buf, audio_buf_size);
 
    /* Flush out last video. */

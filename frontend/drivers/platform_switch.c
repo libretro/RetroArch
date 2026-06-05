@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <boolean.h>
@@ -196,11 +197,15 @@ static void get_first_valid_core(char *path_return, size_t len)
 
    if ((dir = opendir(SD_PREFIX "/retroarch/cores")))
    {
+      size_t ext_len = strlen(extension);
       while ((ent = readdir(dir)))
       {
+         size_t name_len;
          if (!ent)
             break;
-         if (strlen(ent->d_name) > strlen(extension) && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
+         name_len = strlen(ent->d_name);
+         if (   name_len > ext_len
+             && !strcmp(ent->d_name + name_len - ext_len, extension))
          {
             size_t _len = strlcpy(path_return, SD_PREFIX "/retroarch/cores", len);
             _len += strlcpy(path_return + _len,
@@ -298,7 +303,7 @@ static void frontend_switch_get_env(
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
       const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
+      if (dir_path && *dir_path)
          path_mkdir(dir_path);
    }
 
@@ -347,7 +352,7 @@ static void frontend_switch_deinit(void *data)
 #ifdef HAVE_LIBNX
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       char args[PATH_MAX];
 
@@ -372,7 +377,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
          }
          else
 #endif
-         if (!string_is_empty(content))
+         if (content && *content)
             snprintf(args, sizeof(args), "%s \"%s\"", path, content);
       }
 #else
@@ -382,10 +387,8 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
          if (stat(path, &sbuff))
          {
             char core_path[PATH_MAX];
-
             get_first_valid_core(core_path, sizeof(core_path));
-
-            if (string_is_empty(core_path))
+            if (!core_path || !*core_path)
                svcExitProcess();
          }
       }
@@ -486,7 +489,7 @@ char *realpath(const char *name, char *resolved)
 
    if (!resolved)
    {
-      rpath = malloc(path_max);
+      rpath = (char*)malloc(path_max);
       if (!rpath)
          return NULL;
    }
@@ -626,11 +629,6 @@ static void frontend_switch_init(void *data)
 #endif /* HAVE_LIBNX (splash) */
 }
 
-static int frontend_switch_get_rating(void)
-{
-   return 11;
-}
-
 enum frontend_architecture frontend_switch_get_arch(void)
 {
    return FRONTEND_ARCH_ARMV8;
@@ -741,7 +739,37 @@ static size_t frontend_switch_get_os(
 
    LIB_ASSERT_OK(fail_object, ipc_send(set_sys, &rq, &ipc_default_response_fmt));
 
-   sscanf(firmware_version + 0x68, "%d.%d.%d", major, minor, &patch);
+   /* Parse "<major>.<minor>.<patch>" without sscanf.
+    * Matches prior best-effort semantics: a field that fails to
+    * parse leaves itself and subsequent fields at their current
+    * values. */
+   {
+      const char *p = firmware_version + 0x68;
+      char       *endp;
+      long        v;
+
+      v = strtol(p, &endp, 10);
+      if (endp != p)
+      {
+         *major = (int)v;
+         if (*endp == '.')
+         {
+            p = endp + 1;
+            v = strtol(p, &endp, 10);
+            if (endp != p)
+            {
+               *minor = (int)v;
+               if (*endp == '.')
+               {
+                  p = endp + 1;
+                  v = strtol(p, &endp, 10);
+                  if (endp != p)
+                     patch = (int)v;
+               }
+            }
+         }
+      }
+   }
 
 fail_object:
    ipc_close(set_sys);
@@ -792,7 +820,6 @@ frontend_ctx_driver_t frontend_ctx_switch =
    frontend_switch_shutdown,
    frontend_switch_get_name,
    frontend_switch_get_os,
-   frontend_switch_get_rating,
    NULL,                               /* content_loaded */
    frontend_switch_get_arch,           /* get_architecture       */
    frontend_switch_get_powerstate,     /* get_powerstate         */
@@ -815,6 +842,7 @@ frontend_ctx_driver_t frontend_ctx_switch =
    NULL,                               /* is_narrator_running */
    NULL,                               /* accessibility_speak */
    NULL,                               /* set_gamemode */
+   NULL, /* get_display_type */
    "switch",                           /* ident */
    NULL                                /* get_video_driver */
 };

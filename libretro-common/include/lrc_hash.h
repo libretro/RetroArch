@@ -51,6 +51,16 @@ RETRO_BEGIN_DECLS
  **/
 void sha256_hash(char *s, const uint8_t *in, size_t len);
 
+/**
+ * SHA1Digest:
+ * @data              : Input.
+ * @len               : Size of @data.
+ * @digest            : Output.
+ *
+ * Hashes SHA1
+ **/
+void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20]);
+
 int sha1_calculate(const char *path, char *result);
 
 uint32_t djb2_calculate(const char *str);
@@ -62,14 +72,11 @@ typedef CC_MD5_CTX MD5_CTX;
 #define MD5_Final CC_MD5_Final
 #else
 
-/* Any 32-bit or wider unsigned integer data type will do */
-typedef unsigned int MD5_u32plus;
-
 typedef struct {
-	MD5_u32plus lo, hi;
-	MD5_u32plus a, b, c, d;
+	uint32_t lo, hi;
+	uint32_t a, b, c, d;
 	unsigned char buffer[64];
-	MD5_u32plus block[16];
+	uint32_t block[16];
 } MD5_CTX;
 
 /*

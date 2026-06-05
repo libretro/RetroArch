@@ -108,9 +108,14 @@
 #include <3ds/services/cfgu.h>
 #endif
 
+#if defined(WEBOS)
+#include <sys/stat.h>
+#endif
+
 /* iOS/OSX specific. Lacks clock_gettime(), so implement it. */
 #ifdef __MACH__
 #include <sys/time.h>
+#include <AvailabilityMacros.h>
 
 #ifndef CLOCK_MONOTONIC
 #define CLOCK_MONOTONIC 0
@@ -120,10 +125,18 @@
 #define CLOCK_REALTIME 0
 #endif
 
-/**
- * TODO/FIXME: clock_gettime function is part of iOS 10 now
- **/
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
+/* clock_gettime() was added in iOS 10.0 / macOS 10.12 Sierra.
+ * On deployment targets below those versions the symbol doesn't
+ * exist in libSystem and the link fails, so fall back to a
+ * gettimeofday() shim.  Gated on MIN_REQUIRED (deployment target)
+ * rather than MAX_ALLOWED (SDK) because the binary needs to run on
+ * the deployment target, and Apple weak-links clock_gettime when
+ * targeting < 10.12 even from a newer SDK. */
+#if (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) \
+       && __IPHONE_OS_VERSION_MIN_REQUIRED < 100000) \
+ || (defined(MAC_OS_X_VERSION_MIN_REQUIRED) \
+       && MAC_OS_X_VERSION_MIN_REQUIRED < 101200)
+#define RA_NEEDS_CLOCK_GETTIME_SHIM 1
 static int ra_clock_gettime(int clk_ik, struct timespec *t)
 {
    struct timeval now;
@@ -137,7 +150,7 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 #endif
 #endif
 
-#if defined(__MACH__) && __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
+#if defined(__MACH__) && defined(RA_NEEDS_CLOCK_GETTIME_SHIM)
 #else
 #define ra_clock_gettime clock_gettime
 #endif
@@ -240,6 +253,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return osGetTime() * 1000;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
    struct timespec tv;
+   tv.tv_sec  = 0;
+   tv.tv_nsec = 0;
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
@@ -518,21 +533,21 @@ unsigned cpu_features_get_core_amount(void)
    CFGU_GetSystemModel(&device_model);/*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
    switch (device_model)
    {
-		case 0:
-		case 1:
-		case 3:
-			/*Old 3/2DS*/
-			return 2;
+      case 0:
+      case 1:
+      case 3:
+         /*Old 3/2DS*/
+         return 2;
 
-		case 2:
-		case 4:
-		case 5:
-			/*New 3/2DS*/
-			return 4;
+      case 2:
+      case 4:
+      case 5:
+         /*New 3/2DS*/
+         return 4;
 
-		default:
-			/*Unknown Device Or Check Failed*/
-			break;
+      default:
+         /*Unknown Device Or Check Failed*/
+         break;
    }
    return 1;
 #elif defined(WIIU)
@@ -599,53 +614,78 @@ uint64_t cpu_features_get(void)
    const int avx_flags = (1 << 27) | (1 << 28);
 #endif
 #if defined(__MACH__)
-   size_t _len          = sizeof(size_t);
-   if (sysctlbyname("hw.optional.floatingpoint", NULL, &_len, NULL, 0) == 0)
+   /* sysctlbyname() returns 0 (success) whenever the key exists, regardless
+    * of its value. On Intel Macs the hw.optional.* keys are always present
+    * but report 0 when the feature is unsupported (e.g. avx512f on pre-Skylake
+    * Xeon CPUs). We therefore have to read the value, not just the success
+    * code. */
+   int      _val        = 0;
+   size_t   _len        = sizeof(_val);
+   if (   sysctlbyname("hw.optional.floatingpoint", &_val, &_len, NULL, 0) == 0
+       && _val)
       cpu |= RETRO_SIMD_CMOV;
 
 #if defined(CPU_X86)
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.mmx", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.mmx", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_MMX | RETRO_SIMD_MMXEXT;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.sse", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.sse", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSE;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.sse2", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.sse2", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSE2;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.sse3", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.sse3", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSE3;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.supplementalsse3", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.supplementalsse3", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSSE3;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.sse4_1", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.sse4_1", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSE4;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.sse4_2", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.sse4_2", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSE42;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.aes", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.aes", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_AES;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.avx1_0", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.avx1_0", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_AVX;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.avx2_0", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.avx2_0", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_AVX2;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.altivec", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.avx512f", &_val, &_len, NULL, 0) == 0 && _val)
+      cpu |= RETRO_SIMD_AVX512;
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.altivec", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_VMX;
 #else
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.neon", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.neon", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_NEON;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.neon_fp16", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.neon_fp16", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_VFPV3;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.neon_hpfp", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.neon_hpfp", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_VFPV4;
 #endif
 #elif defined(_XBOX1)
@@ -666,12 +706,13 @@ uint64_t cpu_features_get(void)
    /* printf("[CPUID]: Vendor: %s\n", vendor); */
 
    vendor_is_intel = (
-         flags[1] == VENDOR_INTEL_b &&
-         flags[2] == VENDOR_INTEL_c &&
-         flags[3] == VENDOR_INTEL_d);
+            flags[1] == VENDOR_INTEL_b 
+         && flags[2] == VENDOR_INTEL_c
+         && flags[3] == VENDOR_INTEL_d);
 
    max_flag = flags[0];
-   if (max_flag < 1) /* Does CPUID not support func = 1? (unlikely ...) */
+   /* Does CPUID not support func = 1? (unlikely ...) */
+   if (max_flag < 1) 
       return 0;
 
    x86_cpuid(1, flags);
@@ -718,9 +759,48 @@ uint64_t cpu_features_get(void)
 
    if (max_flag >= 7)
    {
-      x86_cpuid(7, flags);
-      if (flags[1] & (1 << 5))
+      /* CPUID leaf 7 sub-leaf 0 requires ECX = 0.
+       * x86_cpuid() does not set ECX, so call cpuid directly. */
+      int32_t flags7[4];
+#if defined(__GNUC__)
+      __asm__ volatile (
+            "mov %%" REG_b ", %%" REG_S "\n"
+            "cpuid\n"
+            "xchg %%" REG_b ", %%" REG_S "\n"
+            : "=a"(flags7[0]), "=S"(flags7[1]), "=c"(flags7[2]), "=d"(flags7[3])
+            : "a"(7), "c"(0));
+#elif defined(_MSC_VER) && INT_MAX == 2147483647
+#if _MSC_VER >= 1600
+      __cpuidex((int*)flags7, 7, 0);
+#else
+      {
+         int *p = (int*)flags7;
+         __asm {
+            mov eax, 7
+            xor ecx, ecx
+            cpuid
+            mov esi, p
+            mov [esi],      eax
+            mov [esi + 4],  ebx
+            mov [esi + 8],  ecx
+            mov [esi + 12], edx
+         }
+      }
+#endif
+#else
+      memset(flags7, 0, sizeof(flags7));
+#endif
+
+      if (flags7[1] & (1 << 5))
          cpu |= RETRO_SIMD_AVX2;
+
+      /* AVX-512 Foundation detection.
+       * Requires CPUID leaf 7 sub-leaf 0 EBX bit 16 (AVX-512F),
+       * and OS support for saving ZMM state:
+       * xgetbv XCR0 bits 1,2 (SSE/AVX) and 5,6,7 (opmask, ZMM_Hi256, Hi16_ZMM). */
+      if ((flags7[1] & (1 << 16))
+            && ((xgetbv_x86(0) & 0xe6) == 0xe6))
+         cpu |= RETRO_SIMD_AVX512;
    }
 
    x86_cpuid(0x80000000, flags);
@@ -785,7 +865,7 @@ void cpu_features_get_model_name(char *s, int len)
       uint8_t s[16];
    } flags;
    int i, j;
-   int pos = 0;
+   int pos    = 0;
    bool start = false;
 
    if (!s)
@@ -806,8 +886,8 @@ void cpu_features_get_model_name(char *s, int len)
       {
          if (!start && flags.s[j] == ' ')
             continue;
-         else
-            start = true;
+
+         start = true;
 
          if (pos == len - 1)
          {
@@ -850,14 +930,74 @@ end:
          if ((model_name = strstr(line + 10, ": ")))
          {
             model_name += 2;
-            strncpy(s, model_name, len);
-            s[len - 1] = '\0';
+            strlcpy(s, model_name, len);
          }
 
          break;
       }
 
       filestream_close(fp);
+
+#if defined(WEBOS)
+      struct stat st;
+      if (stat("/usr/bin/lscpu", &st) == 0)
+      {
+         FILE *pipe = popen("/usr/bin/lscpu", "r");
+         if (pipe)
+         {
+            char buf[256];
+
+            while (fgets(buf, sizeof(buf), pipe))
+            {
+               if (strncmp(buf, "Model name:", 11) == 0)
+               {
+                  const char *p = strchr(buf, ':');
+                  if (p)
+                  {
+                     size_t len2;
+                     p++; // skip ':'
+                     while (*p == ' ' || *p == '\t')
+                        p++;
+                     len2 = strcspn(p, "\r\n");
+
+                     if (len2 > 0)
+                     {
+                        char *tmp = malloc(len2 + 1);
+                        if (tmp)
+                        {
+                           memcpy(tmp, p, len2);
+                           tmp[len2] = '\0';
+
+                           if (s[0] != '\0')
+                           {
+                              size_t oldlen  = strlen(s);
+                              char *combined = (char*)malloc(oldlen + len2 + 4);
+                              if (combined)
+                              {
+                                 memcpy(combined, s, oldlen);
+                                 combined[oldlen]     = ' ';
+                                 combined[oldlen + 1] = '(';
+                                 memcpy(combined + oldlen + 2, tmp, len2);
+                                 combined[oldlen + 2 + len2]     = ')';
+                                 combined[oldlen + 2 + len2 + 1] = '\0';
+
+                                 strlcpy(s, combined, len);
+                                 free(combined);
+                              }
+                           }
+                           else
+                              strlcpy(s, tmp, len);
+                           free(tmp);
+                        }
+                     }
+                  }
+                  break;
+               }
+            }
+            pclose(pipe);
+         }
+      }
+#endif
    }
 #endif
 }

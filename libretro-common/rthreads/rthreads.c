@@ -34,7 +34,8 @@
 #include <boolean.h>
 #include <rthreads/rthreads.h>
 
-/* with RETRO_WIN32_USE_PTHREADS, pthreads can be used even on win32. Maybe only supported in MSVC>=2005  */
+/* with RETRO_WIN32_USE_PTHREADS, pthreads can be used even on win32.
+ * Maybe only supported in MSVC>=2005 */
 
 #if defined(_WIN32) && !defined(RETRO_WIN32_USE_PTHREADS)
 #define USE_WIN32_THREADS
@@ -66,7 +67,7 @@
 #include <ps2sdkapi.h>
 #endif
 
-#ifdef __MACH__
+#if defined(__MACH__) && defined(__APPLE__)
 #include <mach/clock.h>
 #include <mach/mach.h>
 #endif
@@ -97,8 +98,7 @@ struct slock
 };
 
 #ifdef USE_WIN32_THREADS
-/* The syntax we'll use is mind-bending unless we use a struct. Plus, we might want to store more info later */
-/* This will be used as a linked list immplementing a queue of waiting threads */
+/* This will be used as a linked list implementing a queue of waiting threads */
 struct queue_entry
 {
    struct queue_entry *next;
@@ -109,12 +109,12 @@ struct scond
 {
 #ifdef USE_WIN32_THREADS
    /* With this implementation of scond, we don't have any way of waking
-    * (or even identifying) specific threads
+    * (or even identifying) specific threads.
     * But we need to wake them in the order indicated by the queue.
-    * This potato token will get get passed around every waiter.
+    * This potato token will get passed around every waiter.
     * The bearer can test whether he's next, and hold onto the potato if he is.
     * When he's done he can then put it back into play to progress
-    * the queue further */
+    * the queue further. */
    HANDLE hot_potato;
 
    /* The primary signalled event. Hot potatoes are passed until this is set. */
@@ -146,7 +146,7 @@ static void *thread_wrap(void *data_)
 {
    struct thread_data *data = (struct thread_data*)data_;
    if (!data)
-	   return 0;
+      return 0;
    data->func(data->userdata);
    free(data);
    return 0;
@@ -154,7 +154,7 @@ static void *thread_wrap(void *data_)
 
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 {
-	return sthread_create_with_priority(thread_func, userdata, 0);
+   return sthread_create_with_priority(thread_func, userdata, 0);
 }
 
 /* TODO/FIXME - this needs to be implemented for Switch/3DS */
@@ -236,11 +236,16 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 int sthread_detach(sthread_t *thread)
 {
 #ifdef USE_WIN32_THREADS
+   if (!thread)
+      return 0;
    CloseHandle(thread->thread);
    free(thread);
    return 0;
 #else
-   int ret = pthread_detach(thread->id);
+   int ret;
+   if (!thread)
+      return 0;
+   ret = pthread_detach(thread->id);
    free(thread);
    return ret;
 #endif
@@ -404,17 +409,40 @@ void scond_free(scond_t *cond)
 }
 
 #ifdef USE_WIN32_THREADS
-static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds)
+
+#if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
+static LARGE_INTEGER scond_perf_freq;
+static bool scond_perf_freq_inited = false;
+
+static void scond_init_perf_freq(void)
+{
+   if (!scond_perf_freq_inited)
+   {
+      QueryPerformanceFrequency(&scond_perf_freq);
+      scond_perf_freq_inited = true;
+   }
+}
+#else
+static bool scond_begin_period_done = false;
+
+static void scond_init_timer_period(void)
+{
+   if (!scond_begin_period_done)
+   {
+      scond_begin_period_done = true;
+      timeBeginPeriod(1);
+   }
+}
+#endif
+
+static bool scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds)
 {
    struct queue_entry myentry;
    struct queue_entry **ptr;
 
 #if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
-   static LARGE_INTEGER performanceCounterFrequency;
    LARGE_INTEGER tsBegin;
-   static bool first_init  = true;
 #else
-   static bool beginPeriod = false;
    DWORD tsBegin;
 #endif
    DWORD waitResult;
@@ -429,20 +457,9 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    /* since this library is meant for realtime game software
     * I have no problem setting this to 1 and forgetting about it. */
 #if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
-   if (first_init)
-   {
-      performanceCounterFrequency.QuadPart = 0;
-      first_init = false;
-   }
-
-   if (performanceCounterFrequency.QuadPart == 0)
-      QueryPerformanceFrequency(&performanceCounterFrequency);
+   scond_init_perf_freq();
 #else
-   if (!beginPeriod)
-   {
-      beginPeriod = true;
-      timeBeginPeriod(1);
-   }
+   scond_init_timer_period();
 #endif
 
    /* Now we can take a good timestamp for use in faking the timeout ourselves. */
@@ -501,7 +518,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
          QueryPerformanceCounter(&now);
          elapsed  = now.QuadPart - tsBegin.QuadPart;
          elapsed *= 1000;
-         elapsed /= performanceCounterFrequency.QuadPart;
+         elapsed /= scond_perf_freq.QuadPart;
 #else
          DWORD now     = timeGetTime();
          DWORD elapsed = now - tsBegin;
@@ -612,7 +629,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
 void scond_wait(scond_t *cond, slock_t *lock)
 {
 #ifdef USE_WIN32_THREADS
-   _scond_wait_win32(cond, lock, INFINITE);
+   scond_wait_win32(cond, lock, INFINITE);
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -621,7 +638,7 @@ void scond_wait(scond_t *cond, slock_t *lock)
 int scond_broadcast(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
-   /* Remember, we currently have mutex */
+   EnterCriticalSection(&cond->cs);
    if (cond->waiters != 0)
    {
       /* Awaken everything which is currently queued up */
@@ -632,6 +649,7 @@ int scond_broadcast(scond_t *cond)
       /* Since there is now at least one pending waken, the potato must be in play */
       SetEvent(cond->hot_potato);
    }
+   LeaveCriticalSection(&cond->cs);
    return 0;
 #else
    return pthread_cond_broadcast(&cond->cond);
@@ -648,7 +666,6 @@ void scond_signal(scond_t *cond)
     * to control access to it with this */
    EnterCriticalSection(&cond->cs);
 
-   /* remember: we currently have mutex */
    if (cond->waiters == 0)
    {
       LeaveCriticalSection(&cond->cs);
@@ -695,14 +712,14 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    if (timeout_us == 0)
       return false;
    else if (timeout_us < 1000)
-      return _scond_wait_win32(cond, lock, 1);
+      return scond_wait_win32(cond, lock, 1);
    /* Someone asking for 1000 or 1001 timeout shouldn't
     * accidentally get 2ms. */
-   return _scond_wait_win32(cond, lock, timeout_us / 1000);
+   return scond_wait_win32(cond, lock, timeout_us / 1000);
 #else
    int64_t seconds, remainder;
    struct timespec now;
-#ifdef __MACH__
+#if defined(__MACH__) && defined(__APPLE__)
    /* OSX doesn't have clock_gettime. */
    clock_serv_t cclock;
    mach_timespec_t mts;
@@ -718,21 +735,26 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    now.tv_sec            = s;
    now.tv_nsec           = n;
 #elif defined(PS2)
-   int tickms            = ps2_clock();
-   now.tv_sec            = tickms / 1000;
-   now.tv_nsec           = tickms * 1000;
+   {
+      int tickms            = ps2_clock();
+      now.tv_sec            = tickms / 1000;
+      now.tv_nsec           = (long)(tickms % 1000) * 1000000L;
+   }
 #elif !defined(DINGUX_BETA) && (defined(__mips__) || defined(VITA) || defined(_3DS))
-   struct timeval tm;
-   gettimeofday(&tm, NULL);
-   now.tv_sec            = tm.tv_sec;
-   now.tv_nsec           = tm.tv_usec * 1000;
+   {
+      struct timeval tm;
+      gettimeofday(&tm, NULL);
+      now.tv_sec            = tm.tv_sec;
+      now.tv_nsec           = tm.tv_usec * 1000;
+   }
 #elif defined(RETRO_WIN32_USE_PTHREADS)
    _ftime64_s(&now);
 #elif defined(GEKKO)
-   /* Avoid gettimeofday due to it being reported to be broken */
-   const uint64_t tickms = gettime() / TB_TIMER_CLOCK;
-   now.tv_sec            = tickms / 1000;
-   now.tv_nsec           = tickms * 1000;
+   {
+      const uint64_t tickms = gettime() / TB_TIMER_CLOCK;
+      now.tv_sec            = tickms / 1000;
+      now.tv_nsec           = (long)(tickms % 1000) * 1000000L;
+   }
 #else
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
@@ -743,7 +765,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    now.tv_sec          += seconds;
    now.tv_nsec         += remainder * INT64_C(1000);
 
-   if (now.tv_nsec > 1000000000)
+   if (now.tv_nsec >= 1000000000)
    {
       now.tv_nsec      -= 1000000000;
       now.tv_sec       += 1;
@@ -768,7 +790,6 @@ bool sthread_tls_delete(sthread_tls_t *tls)
 #ifdef USE_WIN32_THREADS
    return TlsFree(*tls) != 0;
 #else
-   /* TODO/FIXME - broken for UCRT */
    return pthread_key_delete(*tls) == 0;
 #endif
 }
@@ -778,7 +799,6 @@ void *sthread_tls_get(sthread_tls_t *tls)
 #ifdef USE_WIN32_THREADS
    return TlsGetValue(*tls);
 #else
-   /* TODO/FIXME - broken for UCRT */
    return pthread_getspecific(*tls);
 #endif
 }
@@ -788,7 +808,6 @@ bool sthread_tls_set(sthread_tls_t *tls, const void *data)
 #ifdef USE_WIN32_THREADS
    return TlsSetValue(*tls, (void*)data) != 0;
 #else
-   /* TODO/FIXME - broken for UCRT */
    return pthread_setspecific(*tls, data) == 0;
 #endif
 }

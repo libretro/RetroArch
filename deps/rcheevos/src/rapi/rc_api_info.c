@@ -383,7 +383,7 @@ int rc_api_process_fetch_games_list_server_response(rc_api_fetch_games_list_resp
 
   entry = response->entries;
   while (rc_json_get_next_object_field(&iterator, &field)) {
-    entry->id = strtol(field.name, &end, 10);
+    entry->id = (uint32_t)strtol(field.name, &end, 10);
 
     field.name = "";
     if (!rc_json_get_string(&entry->name, &response->response.buffer, &field, ""))
@@ -448,7 +448,8 @@ int rc_api_process_fetch_game_titles_server_response(rc_api_fetch_game_titles_re
   rc_json_field_t entry_fields[] = {
     RC_JSON_NEW_FIELD("ID"),
     RC_JSON_NEW_FIELD("Title"),
-    RC_JSON_NEW_FIELD("ImageIcon")
+    RC_JSON_NEW_FIELD("ImageIcon"),
+    RC_JSON_NEW_FIELD("ImageUrl")
   };
 
   memset(response, 0, sizeof(*response));
@@ -481,6 +482,10 @@ int rc_api_process_fetch_game_titles_server_response(rc_api_fetch_game_titles_re
       rc_json_extract_filename(&entry_fields[2]);
       if (!rc_json_get_required_string(&entry->image_name, &response->response, &entry_fields[2], "ImageIcon"))
         return RC_MISSING_VALUE;
+
+      rc_json_get_optional_string(&entry->image_url, &response->response, &entry_fields[3], "ImageUrl", "");
+      if (!entry->image_url[0])
+        entry->image_url = rc_api_build_avatar_url(&response->response.buffer, RC_IMAGE_TYPE_GAME, entry->image_name);
 
       ++entry;
     }

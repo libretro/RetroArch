@@ -9,7 +9,8 @@ var autoStart = false;
 
 var BrowserFS = BrowserFS;
 var afs;
-var zipTOC;
+var zipfs;
+var xhrfs;
 var initializationCount = 0;
 var Module;
 var currentCore;
@@ -31,9 +32,6 @@ var ModuleBase = {
    },
    retroArchExit: function(core, content) {
       relaunch(core, content);
-   },
-   onRuntimeInitialized: function() {
-      appInitialized();
    },
    print: function(text) {
       console.log("stdout:", text);
@@ -65,28 +63,31 @@ function cleanupStorage() {
 function idbfsInit() {
    var imfs = new BrowserFS.FileSystem.InMemory();
    if (BrowserFS.FileSystem.IndexedDB.isAvailable()) {
-      afs = new BrowserFS.FileSystem.AsyncMirror(imfs,
-         new BrowserFS.FileSystem.IndexedDB(function(e, fs) {
+      BrowserFS.FileSystem.IndexedDB.Create({storeName: "RetroArch"}, function(e, idbfs) {
+         if (e) {
+            // fallback to imfs
+            afs = new BrowserFS.FileSystem.InMemory();
+            console.error("WEBPLAYER: error (idbfs): " + e + " falling back to in-memory filesystem");
+            appInitialized();
+         } else {
+            // initialize afs by copying files from async storage to sync storage.
+            BrowserFS.FileSystem.AsyncMirror.Create({sync: imfs, async: idbfs}, function(e, fs) {
                if (e) {
-                  // fallback to imfs
                   afs = new BrowserFS.FileSystem.InMemory();
-                  console.error("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
+                  console.error("WEBPLAYER: error (afs): " + e + " falling back to in-memory filesystem");
                   appInitialized();
                } else {
-                  // initialize afs by copying files from async storage to sync storage.
-                  afs.initialize(function(e) {
-                     if (e) {
-                        afs = new BrowserFS.FileSystem.InMemory();
-                        console.error("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
-                        appInitialized();
-                     } else {
-                        console.log("WEBPLAYER: idbfs setup successful");
-                        appInitialized();
-                     }
-                  });
+                  afs = fs;
+                  console.log("WEBPLAYER: idbfs setup successful");
+                  appInitialized();
                }
-            },
-            "RetroArch"));
+            });
+         }
+      });
+   } else {
+      afs = new BrowserFS.FileSystem.InMemory();
+      console.error("WEBPLAYER: idbfs not available; falling back to in-memory filesystem");
+      appInitialized();
    }
 }
 
@@ -110,12 +111,34 @@ function zipfsInit() {
             bufferView.set(new Uint8Array(buf), idx, buf.byteLength);
             idx += buf.byteLength;
          }
-         BrowserFS.FileSystem.ZipFS.computeIndex(BrowserFS.BFSRequire('buffer').Buffer(new Uint8Array(buffer, 0, idx)), function(toc) {
-            zipTOC = toc;
-            console.log("WEBPLAYER: zipfs setup successful");
-            appInitialized();
+         // create a ZipFS filesystem for the bundled data
+         BrowserFS.FileSystem.ZipFS.Create({zipData: BrowserFS.BFSRequire('buffer').Buffer(new Uint8Array(buffer, 0, idx))}, function(e, fs) {
+            if (e) {
+               zipfs = new BrowserFS.FileSystem.InMemory();
+               console.error("WEBPLAYER: error (zipfs): " + e + " falling back to in-memory filesystem");
+               appInitialized();
+            } else {
+               zipfs = fs;
+               console.log("WEBPLAYER: zipfs setup successful");
+               appInitialized();
+            }
          });
       })
+   });
+}
+
+function xhrfsInit() {
+   // create an XmlHttpRequest filesystem for core assets
+   BrowserFS.FileSystem.XmlHttpRequest.Create({baseUrl: "assets/cores/", index: "assets/cores/.index-xhr"}, function(e, fs) {
+      if (e) {
+         xhrfs = new BrowserFS.FileSystem.InMemory();
+         console.error("WEBPLAYER: error (xhrfs): " + e + " falling back to in-memory filesystem");
+         appInitialized();
+      } else {
+         xhrfs = fs;
+         console.log("WEBPLAYER: xhrfs setup successful");
+         appInitialized();
+      }
    });
 }
 
@@ -123,8 +146,8 @@ function appInitialized() {
    /* Need to wait for the file system, the wasm runtime, and the zip download
       to complete before enabling the Run button. */
    initializationCount++;
-   if (initializationCount == 3) {
-      setupFileSystem();
+   if (initializationCount == 4) {
+      finishFileSystemSetup();
       preLoadingComplete();
    }
 }
@@ -159,19 +182,14 @@ function mountBrowserFS() {
    }
 }
 
-function setupFileSystem() {
+function finishFileSystemSetup() {
    // create a mountable filesystem that will server as a root mountpoint for browserfs
    var mfs = new BrowserFS.FileSystem.MountableFileSystem();
-
-   // create a ZipFS filesystem for the bundled data
-   var zipfs = new BrowserFS.FileSystem.ZipFS(zipTOC);
-   // create an XmlHttpRequest filesystem for core assets
-   var xfs = new BrowserFS.FileSystem.XmlHttpRequest(".index-xhr", "assets/cores/");
 
    mfs.mount('/home/web_user/retroarch', zipfs);
    mfs.mount('/home/web_user/retroarch/cores', new BrowserFS.FileSystem.InMemory());
    mfs.mount('/home/web_user/retroarch/userdata', afs);
-   mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs);
+   mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xhrfs);
    BrowserFS.initialize(mfs);
    mountBrowserFS();
 
@@ -197,14 +215,6 @@ function startRetroArch() {
       Module.retroArchSend("FULLSCREEN_TOGGLE");
       Module.canvas.focus();
    });
-
-   // subsequent relaunches will start automatically
-   ModuleBase.onRuntimeInitialized = function() {
-      setTimeout(function() {
-         mountBrowserFS();
-         Module.callMain(Module.arguments);
-      }, 0);
-   };
 
    retroArchRunning = true;
    Module.callMain(Module.arguments);
@@ -334,26 +344,31 @@ $(function() {
 
    // Find which core to load.
    currentCore = localStorage.getItem("core") || defaultCore;
-   loadCore(currentCore);
+   loadCore(currentCore).then(function() {
+      console.log("WEBPLAYER: wasm runtime initialized");
+      appInitialized();
+   });
 
    // Start loading the filesystem
    idbfsInit();
    zipfsInit();
+   xhrfsInit();
 });
 
-function loadCoreFallback(currentCore) {
+async function loadCoreFallback(currentCore) {
    if (currentCore == defaultCore) {
-      alert("Error: could not load default core!");
+      console.error("Error: couldn't load default core!");
+      alert("Error: couldn't load default core!");
       return;
    }
-   loadCore(defaultCore);
+   await loadCore(defaultCore);
 }
 
-function loadCore(core, args) {
+async function loadCore(core, args) {
    // Make the core the selected core in the UI.
    $('#core-selector a.active').removeClass('active');
    var coreTitle = $('#core-selector a[data-core="' + core + '"]').addClass('active').text();
-   $('#dropdownMenu1').text(coreTitle);
+   $('#dropdownMenu1').text(coreTitle || core);
 
    ModuleBase.arguments = args || ["-v", "--menu", "-c", "/home/web_user/retroarch/userdata/retroarch.cfg"];
    ModuleBase.preRun = [modulePreRun];
@@ -361,23 +376,24 @@ function loadCore(core, args) {
    ModuleBase.corePath = "/home/web_user/retroarch/cores/" + core + "_libretro.core";
 
    // Load the Core's related JavaScript.
-   import("./" + core + "_libretro.js").then(script => {
-      script.default(Object.assign({}, ModuleBase)).then(mod => {
-         Module = mod;
-      }).catch(err => {
+   try {
+      let script = await import("./" + core + "_libretro.js");
+      try {
+         Module = await script.default(Object.assign({}, ModuleBase));
+      } catch (err) {
          console.error("Couldn't instantiate module", err);
-         loadCoreFallback(core);
+         await loadCoreFallback(core);
          throw err;
-      });
-   }).catch(err => {
+      }
+   } catch (err) {
       console.error("Couldn't load script", err);
-      loadCoreFallback(core);
+      await loadCoreFallback(core);
       throw err;
-   });
+   }
 }
 
 // exit/exitspawn hook
-function relaunch(core, content) {
+async function relaunch(core, content) {
    // force restart on exit
    if (!core) core = ModuleBase.corePath;
 
@@ -393,5 +409,7 @@ function relaunch(core, content) {
    currentCore = core.slice(0, -14).split("/").slice(-1)[0];
 
    localStorage.setItem("core", currentCore);
-   loadCore(currentCore, ["-v", content, "-c", "/home/web_user/retroarch/userdata/retroarch.cfg"]);
+   await loadCore(currentCore, ["-v", content, "-c", "/home/web_user/retroarch/userdata/retroarch.cfg"]);
+   mountBrowserFS();
+   Module.callMain(Module.arguments);
 }

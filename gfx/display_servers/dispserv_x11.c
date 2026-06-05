@@ -17,6 +17,7 @@
 
 /* We are targeting XRandR 1.2 here. */
 #include <math.h>
+#include <string.h>
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
@@ -729,18 +730,29 @@ const char *x11_display_server_get_output_options(void *data)
    if (!(res = XRRGetScreenResources(dpy, root)))
       return NULL;
 
-   for (i = 0; i < res->noutput; i++)
+   /* Build "out1|out2|out3" via offset tracking; the prior
+    * strlcat-in-loop form re-scanned `s` from the start on every
+    * append, giving O(outputs^2) total cost.  Also resets `s` at
+    * the start of the loop — without that, subsequent calls would
+    * append to leftover content in the static buffer. */
    {
-      size_t _len;
-      if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
-         return NULL;
-
-      _len = strlcat(s, info->name, sizeof(s));
-      if ((i+1) < res->noutput)
+      size_t buf_len = 0;
+      size_t avail   = sizeof(s);
+      s[0] = '\0';
+      for (i = 0; i < res->noutput && buf_len + 1 < avail; i++)
       {
-         s[  _len] = '|';
-         s[++_len] = '\0';
+         size_t nlen;
+         if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
+            return NULL;
+         nlen = strlen(info->name);
+         if (i > 0)
+            s[buf_len++] = '|';
+         if (nlen >= avail - buf_len)
+            nlen = avail - buf_len - 1;
+         memcpy(s + buf_len, info->name, nlen);
+         buf_len += nlen;
       }
+      s[buf_len] = '\0';
    }
 
    return s;
@@ -759,6 +771,308 @@ static uint32_t x11_display_server_get_flags(void *data)
 #endif
 
    return flags;
+}
+
+#ifdef HAVE_XRANDR
+static float x11_display_server_get_refresh_rate(void *data)
+{
+   float refresh_rate             = 0.0f;
+   dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
+   Display *dpy                   = x11_display_server_open_display(dispserv);
+   XRRScreenResources *screen     = NULL;
+
+   if (!dpy)
+      return 0.0f;
+
+   screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
+
+   if (screen)
+   {
+      int i;
+      for (i = 0; i < screen->noutput; i++)
+      {
+         XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+
+         if (info->connection == RR_Connected && info->crtc)
+         {
+            int j;
+            XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, info->crtc);
+
+            if (crtc && crtc->mode)
+            {
+               for (j = 0; j < screen->nmode; j++)
+               {
+                  if (screen->modes[j].id == crtc->mode)
+                  {
+                     XRRModeInfo *mode = &screen->modes[j];
+                     if (mode->hTotal && mode->vTotal)
+                        refresh_rate = (float)mode->dotClock
+                           / ((float)mode->hTotal * (float)mode->vTotal);
+                     break;
+                  }
+               }
+            }
+
+            if (crtc)
+               XRRFreeCrtcInfo(crtc);
+            XRRFreeOutputInfo(info);
+            break;
+         }
+
+         XRRFreeOutputInfo(info);
+      }
+
+      XRRFreeScreenResources(screen);
+   }
+
+   x11_display_server_close_display(dispserv, dpy);
+   return refresh_rate;
+}
+
+static void x11_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *s, size_t len)
+{
+   dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
+   Display *dpy                   = x11_display_server_open_display(dispserv);
+   XRRScreenResources *screen     = NULL;
+
+   if (!dpy)
+      return;
+
+   screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
+
+   if (screen)
+   {
+      int i;
+      for (i = 0; i < screen->noutput; i++)
+      {
+         XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+
+         if (info->connection == RR_Connected && info->crtc)
+         {
+            XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, info->crtc);
+
+            if (crtc)
+            {
+               if (width)
+                  *width  = crtc->width;
+               if (height)
+                  *height = crtc->height;
+               XRRFreeCrtcInfo(crtc);
+            }
+
+            XRRFreeOutputInfo(info);
+            break;
+         }
+
+         XRRFreeOutputInfo(info);
+      }
+
+      XRRFreeScreenResources(screen);
+   }
+
+   x11_display_server_close_display(dispserv, dpy);
+}
+
+static void x11_display_server_get_video_output_prev(void *data)
+{
+   dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
+   Display *dpy                   = x11_display_server_open_display(dispserv);
+   XRRScreenResources *screen     = NULL;
+
+   if (!dpy)
+      return;
+
+   screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
+
+   if (screen)
+   {
+      int i;
+      for (i = 0; i < screen->noutput; i++)
+      {
+         XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+
+         if (info->connection == RR_Connected && info->crtc)
+         {
+            XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, info->crtc);
+
+            if (crtc && crtc->mode)
+            {
+               int j;
+               int cur_idx = -1;
+
+               /* Find the current mode index in the output's mode list */
+               for (j = 0; j < info->nmode; j++)
+               {
+                  if (info->modes[j] == crtc->mode)
+                  {
+                     cur_idx = j;
+                     break;
+                  }
+               }
+
+               /* Select previous mode */
+               if (cur_idx > 0)
+               {
+                  int k;
+                  RRMode prev_mode = info->modes[cur_idx - 1];
+                  for (k = 0; k < screen->nmode; k++)
+                  {
+                     if (screen->modes[k].id == prev_mode)
+                     {
+                        XRRSetCrtcConfig(dpy, screen, info->crtc,
+                              CurrentTime, crtc->x, crtc->y,
+                              prev_mode, crtc->rotation,
+                              crtc->outputs, crtc->noutput);
+                        break;
+                     }
+                  }
+               }
+            }
+
+            if (crtc)
+               XRRFreeCrtcInfo(crtc);
+            XRRFreeOutputInfo(info);
+            break;
+         }
+
+         XRRFreeOutputInfo(info);
+      }
+
+      XRRFreeScreenResources(screen);
+   }
+
+   x11_display_server_close_display(dispserv, dpy);
+}
+
+static void x11_display_server_get_video_output_next(void *data)
+{
+   dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
+   Display *dpy                   = x11_display_server_open_display(dispserv);
+   XRRScreenResources *screen     = NULL;
+
+   if (!dpy)
+      return;
+
+   screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
+
+   if (screen)
+   {
+      int i;
+      for (i = 0; i < screen->noutput; i++)
+      {
+         XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+
+         if (info->connection == RR_Connected && info->crtc)
+         {
+            XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, info->crtc);
+
+            if (crtc && crtc->mode)
+            {
+               int j;
+               int cur_idx = -1;
+
+               /* Find the current mode index in the output's mode list */
+               for (j = 0; j < info->nmode; j++)
+               {
+                  if (info->modes[j] == crtc->mode)
+                  {
+                     cur_idx = j;
+                     break;
+                  }
+               }
+
+               /* Select next mode */
+               if (cur_idx >= 0 && cur_idx + 1 < info->nmode)
+               {
+                  int k;
+                  RRMode next_mode = info->modes[cur_idx + 1];
+                  for (k = 0; k < screen->nmode; k++)
+                  {
+                     if (screen->modes[k].id == next_mode)
+                     {
+                        XRRSetCrtcConfig(dpy, screen, info->crtc,
+                              CurrentTime, crtc->x, crtc->y,
+                              next_mode, crtc->rotation,
+                              crtc->outputs, crtc->noutput);
+                        break;
+                     }
+                  }
+               }
+            }
+
+            if (crtc)
+               XRRFreeCrtcInfo(crtc);
+            XRRFreeOutputInfo(info);
+            break;
+         }
+
+         XRRFreeOutputInfo(info);
+      }
+
+      XRRFreeScreenResources(screen);
+   }
+
+   x11_display_server_close_display(dispserv, dpy);
+}
+#endif
+
+#ifndef HAVE_XRANDR
+static void x11_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *s, size_t len)
+{
+   Display *dpy = XOpenDisplay(NULL);
+   if (!dpy)
+      return;
+   if (width)
+      *width  = DisplayWidth(dpy, DefaultScreen(dpy));
+   if (height)
+      *height = DisplayHeight(dpy, DefaultScreen(dpy));
+   XCloseDisplay(dpy);
+}
+#endif
+
+static bool x11_get_metrics(void *data,
+      enum display_metric_types type, float *value)
+{
+   unsigned screen_no      = 0;
+   Display *dpy            = NULL;
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_PIXEL_WIDTH:
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayWidth(dpy, screen_no);
+         XCloseDisplay(dpy);
+         break;
+      case DISPLAY_METRIC_PIXEL_HEIGHT:
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayHeight(dpy, screen_no);
+         XCloseDisplay(dpy);
+         break;
+      case DISPLAY_METRIC_MM_WIDTH:
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayWidthMM(dpy, screen_no);
+         XCloseDisplay(dpy);
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayHeightMM(dpy, screen_no);
+         XCloseDisplay(dpy);
+         break;
+      case DISPLAY_METRIC_DPI:
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = ((((float)DisplayWidth  (dpy, screen_no)) * 25.4)
+               /  (  (float)DisplayWidthMM(dpy, screen_no)));
+         XCloseDisplay(dpy);
+         break;
+      case DISPLAY_METRIC_NONE:
+      default:
+         *value = 0;
+         return false;
+   }
+
+   return true;
 }
 
 const video_display_server_t dispserv_x11 = {
@@ -781,6 +1095,21 @@ const video_display_server_t dispserv_x11 = {
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
 #endif
+#ifdef HAVE_XRANDR
+   x11_display_server_get_refresh_rate,
+   x11_display_server_get_video_output_size,
+#else
+   NULL, /* get_refresh_rate — no standard Xlib API */
+   x11_display_server_get_video_output_size,
+#endif
+#ifdef HAVE_XRANDR
+   x11_display_server_get_video_output_prev,
+   x11_display_server_get_video_output_next,
+#else
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+#endif
+   x11_get_metrics,
    x11_display_server_get_flags,
    "x11"
 };

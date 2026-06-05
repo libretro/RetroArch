@@ -59,7 +59,7 @@ struct string_list
  *
  * Searches for an element (@elem) inside the string list.
  *
- * @return Number of elements found, otherwise 0.
+ * @return 1-based index if element could be found, otherwise 0.
  */
 int string_list_find_elem(const struct string_list *list, const char *elem);
 
@@ -111,7 +111,7 @@ struct string_list *string_list_new(void);
  * @attr             : attributes of new element.
  *
  * Appends a new element to the string list.
-
+ *
  * Hidden non-leaf function cost:
  * - Calls string_list_capacity()
  * - Calls strdup
@@ -120,6 +120,21 @@ struct string_list *string_list_new(void);
  **/
 bool string_list_append(struct string_list *list, const char *elem,
       union string_list_elem_attr attr);
+
+/**
+ * string_list_append_n:
+ * @list             : pointer to string list
+ * @elem             : element to add to the string list
+ * @len              : length of @elem (caller already knows it)
+ * @attr             : attributes of new element.
+ *
+ * Appends a new element when the caller already has its length,
+ * avoiding a redundant strlen inside strdup.
+ *
+ * @return true if successful, otherwise false.
+ **/
+bool string_list_append_n(struct string_list *list, const char *elem,
+      size_t len, union string_list_elem_attr attr);
 
 /**
  * string_list_free

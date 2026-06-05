@@ -1,0 +1,196 @@
+name: CI Linux samples/tasks
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-tasks:
+    name: Build and run samples/tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential zlib1g-dev
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build database_task
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -eu
+          make clean all
+          test -x database_task
+
+      - name: Smoke-test database_task argv parsing
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -u
+          # database_task with no args should print the usage line and
+          # exit non-zero.  This catches build regressions in the argv
+          # parsing / main() entry path without depending on the task
+          # queue actually running to completion -- task_push_dbscan
+          # delegates to task_push_manual_content_scan which does not
+          # plumb through the caller's completion callback, so the
+          # loop can only be terminated externally (by timeout or
+          # signal).  The full loop is exercised in local testing; in
+          # CI we settle for the argv smoke.
+          #
+          # We capture the exit status via "|| rc=$?" so that the
+          # expected non-zero exit does NOT trip the default "set -e"
+          # that GitHub Actions' bash shell injects (it wraps with
+          # "bash --noprofile --norc -eo pipefail").  Without this
+          # guard the step exits at the binary invocation before our
+          # assertion runs.
+          rc=0
+          ./database_task > /dev/null 2>&1 || rc=$?
+          if [[ $rc -eq 0 ]]; then
+            echo "::error title=Test failed::database_task with no args exited 0; expected non-zero (usage)"
+            exit 1
+          fi
+          echo "[pass] database_task no-args exit=$rc (expected non-zero)"
+
+      - name: Build and run archive_name_safety_test
+        shell: bash
+        working-directory: samples/tasks/decompress
+        run: |
+          set -eu
+          make clean all
+          test -x archive_name_safety_test
+          # Regression test for the Zip Slip / absolute-path defences
+          # in tasks/task_decompress.c::archive_name_is_safe().  The
+          # test keeps a verbatim copy of the predicate and runs it
+          # against 23 safe and unsafe inputs.  If task_decompress.c
+          # ever amends the predicate, the copy here must follow.
+          timeout 60 ./archive_name_safety_test
+          echo "[pass] archive_name_safety_test"
+
+      - name: Build and run http_method_match_test (ASan)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # Regression test for the heap-buffer-overflow fix in
+          # tasks/task_http.c::task_push_http_transfer_generic().
+          # Pre-fix, an unsafe memcmp(method, "GET", 3) read past
+          # the strdup'd buffer when method was NULL or shorter
+          # than 3 bytes.  Build under AddressSanitizer so a
+          # regression to the unsafe expression is caught at the
+          # bounds level, not just the truth-table level.  If
+          # task_http.c amends the GET-dispatch predicate, the
+          # copy in http_method_match_test.c must follow.
+          make clean all SANITIZER=address
+          test -x http_method_match_test
+          timeout 60 ./http_method_match_test
+          echo "[pass] http_method_match_test"
+
+      - name: Build and run video_shader_wildcard_test (ASan)
+        shell: bash
+        working-directory: samples/tasks/video_shader_parse
+        run: |
+          set -eu
+          # Regression test for the buffer-overflow defences in
+          # gfx/video_shader_parse.c::video_shader_replace_wildcards_impl().
+          # Pre-fix, _len = strlcpy(replace_text, source, 256)
+          # returned strlen(source) regardless of the 256-byte
+          # cap.  When source was a $CONTENT-DIR$ / $PRESET-DIR$
+          # / $CORE$ value longer than 256 bytes (DIR_MAX_LENGTH
+          # is 4096, NAME_MAX_LENGTH 256), the subsequent
+          # memcpy(dst + prefix, replace_text, _len) read off
+          # the end of replace_text and the strlcpy's size
+          # argument PATH_MAX_LENGTH - prefix - _len underflowed
+          # size_t.  Build under AddressSanitizer so the OOB
+          # read on replace_text and the underflow-driven OOB
+          # write on dst are both caught at the bounds level.
+          # If video_shader_parse.c amends the post-replacement
+          # arithmetic, the verbatim copy in
+          # video_shader_wildcard_test.c must follow.
+          make clean all SANITIZER=address
+          test -x video_shader_wildcard_test
+          timeout 60 ./video_shader_wildcard_test
+          echo "[pass] video_shader_wildcard_test"
+
+      - name: Build and run input_remap_bounds_test (ASan)
+        shell: bash
+        working-directory: samples/tasks/input_remap
+        run: |
+          set -eu
+          # Regression test for the input-remap analog-axis OOB-
+          # write fixes in configuration.c::input_remapping_load_file()
+          # and input/input_driver.c.  Pre-fix a malformed .rmp
+          # could supply a remap target outside [0, RARCH_ANALOG_
+          # BIND_LIST_END), which the use sites in input_driver.c
+          # then indexed into a fixed-size analog_value[][8] array
+          # without bounds (button -> analog branch) or with a
+          # broken bound that compared elements against bytes
+          # (analog -> analog branch using sizeof instead of
+          # ARRAY_SIZE).  Build under AddressSanitizer so any
+          # reintroduction of either primitive is caught at the
+          # bounds level.  If configuration.c or input_driver.c
+          # amends the relevant predicates, the verbatim copies
+          # in input_remap_bounds_test.c must follow.
+          make clean all SANITIZER=address
+          test -x input_remap_bounds_test
+          timeout 60 ./input_remap_bounds_test
+          echo "[pass] input_remap_bounds_test"
+
+      - name: Build and run bsv_replay_bounds_test (ASan)
+        shell: bash
+        working-directory: samples/tasks/bsv_replay
+        run: |
+          set -eu
+          # Regression test for the .bsv replay-file event-count
+          # bounds in input/bsv/bsvmovie.c.  Pre-fix a malformed
+          # replay file with key_event_count > 128 or
+          # input_event_count > 512 caused a heap-buffer-overflow
+          # write into bsv_movie_t (a calloc'd struct) with
+          # attacker-chosen 8/12-byte payloads at attacker-chosen
+          # offsets up to ~500KB.  Build under AddressSanitizer
+          # so any reintroduction of the unbounded count is caught
+          # at the bounds level.  If input/bsv/bsvmovie.c amends
+          # the predicate, the verbatim copy in
+          # bsv_replay_bounds_test.c must follow.
+          make clean all SANITIZER=address
+          test -x bsv_replay_bounds_test
+          timeout 60 ./bsv_replay_bounds_test
+          echo "[pass] bsv_replay_bounds_test"
+
+      - name: Build and run bps_patch_bounds_test (ASan)
+        shell: bash
+        working-directory: samples/tasks/bps_patch
+        run: |
+          set -eu
+          # Regression test for the .bps patch parser bounds in
+          # tasks/task_patch.c::bps_apply_patch.  Pre-fix a
+          # malicious .bps could write attacker-chosen bytes
+          # past the malloc'd target_data buffer (heap-buffer-
+          # overflow WRITE), read past source_data (info leak),
+          # and read past modify_data via TARGET_READ.  The
+          # size-prelude was also unbounded, allowing 32-bit
+          # truncation of modify_target_size to drive a
+          # smaller-than-expected allocation.  Build under
+          # AddressSanitizer so any reintroduction is caught
+          # at the bounds level.  If task_patch.c amends the
+          # action-loop predicates, the verbatim copy in
+          # bps_patch_bounds_test.c must follow.
+          make clean all SANITIZER=address
+          test -x bps_patch_bounds_test
+          timeout 60 ./bps_patch_bounds_test
+          echo "[pass] bps_patch_bounds_test"

@@ -158,7 +158,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
    params          = (struct rarch_main_wrap*)params_data;
    params->flags  |=   RARCH_MAIN_WRAP_FLAG_VERBOSE;
 
-   if (!string_is_empty(argv[CONTENT_PATH_ARG_INDEX]))
+   if (argv[CONTENT_PATH_ARG_INDEX] && *argv[CONTENT_PATH_ARG_INDEX])
    {
       static char path[PATH_MAX_LENGTH] = {0};
       struct rarch_main_wrap      *args =
@@ -271,12 +271,6 @@ static void frontend_orbis_exitspawn(char *s, size_t len, char *args)
    frontend_orbis_exec(s, should_load_game);
 }
 
-static int frontend_orbis_get_rating(void)
-{
-   /* TODO/FIXME - needs a different rating */
-   return 6;
-}
-
 enum frontend_architecture frontend_orbis_get_arch(void)
 {
    return FRONTEND_ARCH_X86_64;
@@ -340,7 +334,6 @@ frontend_ctx_driver_t frontend_ctx_orbis = {
    frontend_orbis_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_orbis_get_rating,
    NULL,                         /* content_loaded */
    frontend_orbis_get_arch,
    NULL,
@@ -363,6 +356,7 @@ frontend_ctx_driver_t frontend_ctx_orbis = {
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "orbis",                      /* ident */
    NULL                          /* get_video_driver */
 };

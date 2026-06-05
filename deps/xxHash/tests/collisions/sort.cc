@@ -44,16 +44,5 @@ void sort64(uint64_t* table, size_t size)
 
 void sort128(XXH128_hash_t* table, size_t size)
 {
-#if 0
-    // C++ sort using a custom function object
-    struct {
-        bool operator()(XXH128_hash_t a, XXH128_hash_t b) const
-        {
-            return XXH128_cmp(&a, &b);
-        }
-    } customLess;
-    std::sort(table, table + size, customLess);
-#else
     qsort(table, size, sizeof(*table), XXH128_cmp);
-#endif
 }

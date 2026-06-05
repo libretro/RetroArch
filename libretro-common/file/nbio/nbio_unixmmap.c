@@ -84,10 +84,34 @@ static void *nbio_mmap_unix_open(const char * filename, unsigned mode)
    }
 
    handle            = malloc(sizeof(struct nbio_mmap_unix_t));
+   /* NULL-check the handle malloc: the four field writes below
+    * would segfault on OOM.  On failure munmap the region and
+    * close the fd we acquired above - both were destined to be
+    * owned by the handle and will leak otherwise. */
+   if (!handle)
+   {
+      if (_len != 0)
+         munmap(ptr, _len);
+      close(fd);
+      return NULL;
+   }
    handle->fd        = fd;
    handle->map_flags = map_flags[mode];
    handle->len       = _len;
    handle->ptr       = ptr;
+
+   /* For read-only mappings the fd is no longer needed once mmap has
+    * succeeded — the mapping remains valid after close(). Release it
+    * immediately so that loading many small files (e.g. hundreds of
+    * menu thumbnails via the async task queue) doesn't exhaust
+    * RLIMIT_NOFILE and cause unrelated fopen() calls to fail. The
+    * resize path (write mode) still needs the fd for ftruncate, so
+    * only close for read-only modes. */
+   if (o_flags[mode] == O_RDONLY)
+   {
+      close(fd);
+      handle->fd = -1;
+   }
    return handle;
 }
 
@@ -152,9 +176,46 @@ static void nbio_mmap_unix_free(void *data)
    struct nbio_mmap_unix_t* handle = (struct nbio_mmap_unix_t*)data;
    if (!handle)
       return;
-   close(handle->fd);
+   if (handle->fd >= 0)
+      close(handle->fd);
    munmap(handle->ptr, handle->len);
    free(handle);
+}
+
+static int nbio_mmap_unix_get_fd(void *data)
+{
+   struct nbio_mmap_unix_t* handle = (struct nbio_mmap_unix_t*)data;
+   if (handle)
+      return handle->fd;
+   return -1;
+}
+
+static bool nbio_mmap_unix_get_progress(void *data,
+      size_t *completed, size_t *total)
+{
+   struct nbio_mmap_unix_t* handle = (struct nbio_mmap_unix_t*)data;
+   if (!handle)
+   {
+      if (completed) *completed = 0;
+      if (total)     *total     = 0;
+      return false;
+   }
+   /* mmap is always "complete" — pages fault on demand */
+   if (completed) *completed = handle->len;
+   if (total)     *total     = handle->len;
+   return false;
+}
+
+static void *nbio_mmap_unix_load_entire(void *data, size_t *len)
+{
+   /* mmap: data is already mapped — just return the pointer.
+    * No begin_read/iterate ceremony needed. */
+   struct nbio_mmap_unix_t* handle = (struct nbio_mmap_unix_t*)data;
+   if (!handle)
+      return NULL;
+   if (len)
+      *len = handle->len;
+   return handle->ptr;
 }
 
 nbio_intf_t nbio_mmap_unix = {
@@ -166,6 +227,10 @@ nbio_intf_t nbio_mmap_unix = {
    nbio_mmap_unix_get_ptr,
    nbio_mmap_unix_cancel,
    nbio_mmap_unix_free,
+   NULL, /* set_chunk_size - mmap doesn't chunk */
+   nbio_mmap_unix_get_fd,
+   nbio_mmap_unix_get_progress,
+   nbio_mmap_unix_load_entire,
    "nbio_mmap_unix",
 };
 #else
@@ -178,6 +243,10 @@ nbio_intf_t nbio_mmap_unix = {
    NULL,
    NULL,
    NULL,
+   NULL, /* set_chunk_size */
+   NULL, /* get_fd */
+   NULL, /* get_progress */
+   NULL, /* load_entire */
    "nbio_mmap_unix",
 };
 

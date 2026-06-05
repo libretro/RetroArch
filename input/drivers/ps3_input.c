@@ -291,6 +291,13 @@ static int ps3_init_spurs(ps3_input_t *ps3)
 
    ps3->threads = (sys_spu_thread_t *)malloc(sizeof(sys_spu_thread_t) * nthread);
 
+   /* NULL-check: spursGetSpuThreadId writes into ps3->threads.
+    * Return -1 to match the pattern of the malloc-failure branch
+    * in ps3_init_gem below.  ps3_end_spurs (the cleanup path)
+    * free()s ps3->threads via free(NULL) which is a no-op. */
+   if (!ps3->threads)
+      return -1;
+
    if ((ret = spursGetSpuThreadId(ps3->spurs, ps3->threads, &nthread)))
       return ret;
 

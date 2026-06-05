@@ -74,7 +74,6 @@ static enum gfx_ctx_api ctx_orbis_api = GFX_CTX_OPENGL_API;
 
 /* TODO/FIXME - global reference */
 extern bool platform_orbis_has_focus;
-extern SceKernelModule s_piglet_module;
 
 void orbis_ctx_destroy(void *data)
 {
@@ -289,17 +288,6 @@ static void orbis_ctx_swap_buffers(void *data)
 #endif
 }
 
-static gfx_ctx_proc_t orbis_ctx_get_proc_address(const char *symbol)
-{
-   gfx_ctx_proc_t ptr_sym = NULL;
-#ifdef HAVE_EGL
-   ptr_sym = egl_get_proc_address(symbol);
-#endif
-   if (!ptr_sym && s_piglet_module > 0)
-      sceKernelDlsym(s_piglet_module, symbol, (void **)&ptr_sym);
-   return ptr_sym;
-}
-
 static void orbis_ctx_bind_hw_render(void *data, bool enable)
 {
 #ifdef HAVE_EGL
@@ -318,9 +306,12 @@ static uint32_t orbis_ctx_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    }
+   else
+   {
 #ifdef HAVE_GLSL
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
+   }
 
    return flags;
 }
@@ -331,6 +322,26 @@ static float orbis_ctx_get_refresh_rate(void *data)
 {
    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
    return ctx_orbis->refresh_rate;
+}
+
+static bool orbis_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t*)data;
+   return egl_create_surface(&ctx_orbis->egl, &ctx_orbis->native_window);
+#else
+   return false;
+#endif
+}
+
+static bool orbis_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t*)data;
+   return egl_destroy_surface(&ctx_orbis->egl);
+#else
+   return false;
+#endif
 }
 
 const gfx_ctx_driver_t orbis_ctx = {
@@ -368,4 +379,7 @@ const gfx_ctx_driver_t orbis_ctx = {
     orbis_ctx_set_flags,
     orbis_ctx_bind_hw_render,
     NULL,
-    NULL};
+    NULL,
+    orbis_create_surface,
+    orbis_destroy_surface
+};

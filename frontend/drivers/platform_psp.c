@@ -184,7 +184,7 @@ static void frontend_psp_get_env_settings(int *argc, char *argv[],
 #endif
 
 #ifndef IS_SALAMANDER
-   if (params && *argc > 1 && !string_is_empty(argv[1]))
+   if (params && *argc > 1 && (argv[1] && *argv[1]))
 #ifdef HAVE_NETWORKING
    /* If the process was forked for netplay purposes,
       DO NOT touch the arguments. */
@@ -303,8 +303,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    if (args < sizeof(argp) && should_load_game)
    {
       const char *content = path_get(RARCH_PATH_CONTENT);
-
-      if (!string_is_empty(content))
+      if (content && *content)
          args += strlcpy(argp + args, content, sizeof(argp) - args) + 1;
    }
 #endif
@@ -338,7 +337,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
       if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
             (void*)arg_data))
 #endif
-      if (!string_is_empty(content))
+      if (content && *content)
       {
          strlcpy(game_path, content, sizeof(game_path));
          arg_data[0] = game_path;
@@ -366,11 +365,11 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
          if (delim)
             *delim = '\0';
 
-         if (!string_is_empty(param1))
+         if (param1 && *param1)
          {
             path = param1;
 
-            if (!string_is_empty(param2))
+            if (param2 && *param2)
             {
                arg_data[0] = param2;
                arg_data[1] = NULL;
@@ -426,15 +425,6 @@ static void frontend_psp_exitspawn(char *s, size_t len, char *args)
    }
 #endif
    frontend_psp_exec(s, should_load_content);
-}
-
-static int frontend_psp_get_rating(void)
-{
-#ifdef VITA
-   return 6; /* Go with a conservative figure for now. */
-#else
-   return 4;
-#endif
 }
 
 static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *percent)
@@ -606,7 +596,6 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_shutdown,        /* shutdown         */
    NULL,                         /* get_name         */
    NULL,                         /* get_os           */
-   frontend_psp_get_rating,      /* get_rating       */
    NULL,                         /* content_loaded   */
    frontend_psp_get_arch,        /* get_architecture */
    frontend_psp_get_powerstate,
@@ -635,12 +624,14 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "vita",                       /* ident */
 #else
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "psp",                        /* ident */
 #endif
    NULL                          /* get_video_driver */

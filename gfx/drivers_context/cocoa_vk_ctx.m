@@ -18,6 +18,8 @@
 #include "../../config.h"
 #endif
 
+#include <TargetConditionals.h>
+
 #if TARGET_OS_IPHONE
 #include <CoreGraphics/CoreGraphics.h>
 #else
@@ -31,16 +33,14 @@
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 
+#include "../common/vulkan_common.h"
+
 #include "../../ui/drivers/ui_cocoa.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../common/vulkan_common.h"
-#ifdef HAVE_METAL
-#include "../common/metal_common.h"
-#endif
 
 typedef struct cocoa_vk_ctx_data
 {
@@ -140,15 +140,11 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
 
 static float cocoa_vk_gfx_ctx_get_refresh_rate(void *data)
 {
-#ifdef OSX
-    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
-    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
-    float currentRate = CGDisplayModeGetRefreshRate(currentMode);
-    CFRelease(currentMode);
-    return currentRate;
-#else
-    return [UIScreen mainScreen].maximumFramesPerSecond;
-#endif
+   /* Body consolidated into cocoa_common.m.  Kept as a named
+    * vtable entry because vulkan_get_refresh_rate() reaches the
+    * ctx driver directly via video_context_driver_get_refresh_rate,
+    * bypassing dispserv_apple's own hook. */
+   return cocoa_get_refresh_rate();
 }
 
 static gfx_ctx_proc_t cocoa_vk_gfx_ctx_get_proc_address(const char *symbol_name)
@@ -186,7 +182,7 @@ static void cocoa_vk_gfx_ctx_swap_interval(void *data, int i)
    unsigned interval              = (unsigned)i;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
-   if (cocoa_ctx->swap_interval != interval)
+   if (cocoa_ctx->swap_interval != (int)interval)
    {
       cocoa_ctx->swap_interval    = interval;
       if (cocoa_ctx->vk.swapchain)
@@ -237,8 +233,6 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    CocoaView *g_view              = (CocoaView*)nsview_get_ptr();
 #endif
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
-   static bool
-      has_went_fullscreen         = false;
    cocoa_ctx->width               = width;
    cocoa_ctx->height              = height;
 
@@ -263,8 +257,6 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    mode.fullscreen                = fullscreen;
    [apple_platform setVideoMode:mode];
    cocoa_show_mouse(data, !fullscreen);
-
-   has_went_fullscreen            = fullscreen;
 
    return true;
 }
@@ -357,38 +349,11 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
 static void cocoa_vk_gfx_ctx_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-#if TARGET_OS_IPHONE
-   /* iOS/tvOS: Return physical screen resolution, not window size */
-   UIScreen *screen = [UIScreen mainScreen];
-   CGRect nativeBounds = screen.nativeBounds;
-   *width  = (unsigned)nativeBounds.size.width;
-   *height = (unsigned)nativeBounds.size.height;
-
-   if (desc && desc_len > 0)
-   {
-      float scale = cocoa_screen_get_native_scale();
-      if (scale >= 3.0f)
-         strlcpy(desc, "Super Retina", desc_len);
-      else if (scale >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
-      else
-         strlcpy(desc, "Standard", desc_len);
-   }
-#else
-   /* macOS: Return display resolution */
-   CGDirectDisplayID display = CGMainDisplayID();
-   *width  = (unsigned)CGDisplayPixelsWide(display);
-   *height = (unsigned)CGDisplayPixelsHigh(display);
-
-   if (desc && desc_len > 0)
-   {
-      float scale = cocoa_screen_get_backing_scale_factor();
-      if (scale >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
-      else
-         strlcpy(desc, "Standard", desc_len);
-   }
-#endif
+   /* Body consolidated into cocoa_common.m.  Kept as a named
+    * vtable entry because video_thread_wrapper.c's
+    * thread_get_video_output_size calls the poke / ctx hook
+    * directly, bypassing dispserv_apple. */
+   cocoa_get_video_output_size(width, height, desc, desc_len);
 }
 
 const gfx_ctx_driver_t gfx_ctx_cocoavk = {
@@ -438,5 +403,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_set_flags,
    cocoa_vk_gfx_ctx_bind_hw_render,
    cocoa_vk_gfx_ctx_get_context_data,
-   NULL  /* make_current */
+   NULL, /* make_current */
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

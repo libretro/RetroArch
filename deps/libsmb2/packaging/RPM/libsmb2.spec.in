@@ -1,0 +1,135 @@
+Name: libsmb2
+Summary: SMB2/3 client library
+Vendor: Ronnie Sahlberg
+Packager: ronniesahlberg@gmail.com
+Version: @VERSION@
+Release: 1
+Epoch: 0
+License: GNU LGPL version 2.1
+Group: System Environment/Libraries
+URL: http://www.github.com/sahlberg/libsmb2
+
+Source: libsmb2-%{version}.tar.gz
+
+Provides: lib = %{version}
+
+Prefix: /usr
+BuildRoot: %{_tmppath}/%{name}-%{version}-root
+
+%description
+Libsmb2 is a SMB2/3 client library
+
+#######################################################################
+
+
+
+%prep
+%setup -q
+# setup the init script and sysconfig file
+%setup -T -D -n libsmb2-%{version} -q
+
+%build
+
+## check for ccache
+if ccache -h >/dev/null 2>&1 ; then
+	CC="ccache gcc"
+else
+	CC="gcc"
+fi
+
+export CC
+
+## always run autogen.sh
+aclocal
+autoheader
+autoconf
+libtoolize -c -f -i
+automake --add-missing
+
+
+CFLAGS="$RPM_OPT_FLAGS $EXTRA -O2 -D_GNU_SOURCE" %configure
+
+%install
+# Clean up in case there is trash left from a previous build
+rm -rf $RPM_BUILD_ROOT
+
+# Create the target build directory hierarchy
+
+make DESTDIR=$RPM_BUILD_ROOT install
+
+# Remove "*.old" files
+find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+
+#######################################################################
+## Files section                                                     ##
+#######################################################################
+
+%files
+%defattr(-,root,root)
+
+%{_libdir}/libsmb2.so*
+
+%package devel
+Summary: Development libraries for LibSMB2
+Group: Development
+
+%description devel
+development libraries for LibSMB2
+
+%files devel
+%defattr(-,root,root)
+%{_includedir}/smb2/libsmb2.h
+%{_includedir}/smb2/libsmb2-raw.h
+%{_includedir}/smb2/libsmb2-dcerpc.h
+%{_includedir}/smb2/libsmb2-dcerpc-lsa.h
+%{_includedir}/smb2/libsmb2-dcerpc-srvsvc.h
+%{_includedir}/smb2/smb2.h
+%{_includedir}/smb2/smb2-errors.h
+%{_libdir}/libsmb2.a
+%{_libdir}/pkgconfig/libsmb2.pc
+
+%changelog
+* Mon Dec 16 2024 : Version 6.1.0
+ - Fix return code for smb2-ls on failure
+ - Fix memory errors in smb2_opendir()
+ - Add a macro te test for the version of the share-enum api
+* Wed Dec 11 2024 : Version 6.0.0
+ - Major rewrites to DCE-RPC
+ - Initial support for building servers
+* Mon Jan 17 2022 : Version 4.0.0
+ - Add support for SMB3 encryption
+ - Add support for Anonymous NTLMSSP logins
+ - Add support for readlink.
+ - Add API to notify application of changes to which filehandles are used by
+ libsmb2.
+ - Add support for Big Endian DCERPC and allow it to be controlled from the
+ URL.
+ - Add support for 3.1.1 signing
+ - Add support for PS2(EE) and PS3
+ - Fixes to UCS2 when compose characters are used.
+ 
+ - Various MacOS fixes
+ - Fix a few NULL dereferences
+* Mon Jun 10 2019 : Version 3.0.0
+ - ESP32 support
+ - Support specifying the port number in an SMB URL.
+ - Add creation time to smb_stat
+ - Abort all commands when the context is destroyed.
+ - Free all file and directory handles when the context is destroyed.
+ - Fix handling of O_TRUNC
+ - Add more error codes.
+ - Add support for SMB2_IOCTL
+ - Handle DCE/RPC fragment reassembly for IOCTL().
+* Sat Jul 7 2018 : Version 2.0.0
+ - SMB2/3 signing
+ - Kerberos authentication
+ - Builtin NTLMSSP authentication for when libkrb5 is not available
+ - Share enumeration
+ - CMake support
+ - Various bugfixes
+* Sun Mar 5 2017 : Version 1.0.0
+ - Initial version

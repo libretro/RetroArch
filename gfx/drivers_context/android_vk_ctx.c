@@ -261,7 +261,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    NULL,                                     /* get_video_output_size */
    NULL,                                     /* get_video_output_prev */
    NULL,                                     /* get_video_output_next */
-   android_display_get_metrics,
+   NULL, /* get_metrics - handled by display server */
    NULL,
    NULL,                                     /* update_title */
    android_gfx_ctx_vk_check_window,
@@ -280,5 +280,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    android_gfx_ctx_vk_set_flags,
    android_gfx_ctx_vk_bind_hw_render,
    android_gfx_ctx_vk_get_context_data,
-   NULL                                      /* make_current */
+   NULL,                                     /* make_current */
+   NULL,                                     /* create_surface */
+   NULL                                      /* destroy_surface */
 };

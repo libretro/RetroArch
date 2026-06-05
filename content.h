@@ -54,6 +54,9 @@ bool content_load_state(const char* path, bool load_to_backup_buffer, bool autol
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path, bool save_to_disk);
 
+/* Automatically save a state if the interval has elapsed. */
+bool content_save_state_automatic(void);
+
 /* Save an automatic savestate to disk. */
 bool content_auto_save_state(const char *path);
 
@@ -103,9 +106,10 @@ bool content_init(void);
 /* Resets the state and savefile backup buffers */
 void content_reset_savestate_backups(void);
 
-/* Checks if the buffers are empty */
+/* Checks if the buffers are empty, or undo feature is disabled */
 bool content_undo_load_buf_is_empty(void);
 bool content_undo_save_buf_is_empty(void);
+bool content_undo_save_disabled(void);
 
 /* Clears the pending subsystem rom buffer */
 bool content_is_subsystem_pending_load(void);

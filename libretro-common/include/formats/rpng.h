@@ -34,7 +34,7 @@ RETRO_BEGIN_DECLS
 
 typedef struct rpng rpng_t;
 
-rpng_t *rpng_init(const char *path);
+rpng_t *rpng_alloc(void);
 
 bool rpng_is_valid(rpng_t *rpng);
 
@@ -47,7 +47,8 @@ void rpng_free(rpng_t *rpng);
 bool rpng_iterate_image(rpng_t *rpng);
 
 int rpng_process_image(rpng_t *rpng,
-      void **data, size_t size, unsigned *width, unsigned *height);
+      void **data, size_t size, unsigned *width, unsigned *height,
+      bool supports_rgba);
 
 bool rpng_start(rpng_t *rpng);
 

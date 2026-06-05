@@ -23,19 +23,9 @@
 *  Price functions for optimal parser
 ***************************************/
 
-#if 0    /* approximation at bit level (for tests) */
-#  define BITCOST_ACCURACY 0
-#  define BITCOST_MULTIPLIER (1 << BITCOST_ACCURACY)
-#  define WEIGHT(stat, opt) ((void)(opt), ZSTD_bitWeight(stat))
-#elif 0  /* fractional bit accuracy (for tests) */
-#  define BITCOST_ACCURACY 8
-#  define BITCOST_MULTIPLIER (1 << BITCOST_ACCURACY)
-#  define WEIGHT(stat,opt) ((void)(opt), ZSTD_fracWeight(stat))
-#else    /* opt==approx, ultra==accurate */
 #  define BITCOST_ACCURACY 8
 #  define BITCOST_MULTIPLIER (1 << BITCOST_ACCURACY)
 #  define WEIGHT(stat,opt) ((opt) ? ZSTD_fracWeight(stat) : ZSTD_bitWeight(stat))
-#endif
 
 /* ZSTD_bitWeight() :
  * provide estimated "cost" of a stat in full bits only */
@@ -1039,23 +1029,6 @@ static U32 ZSTD_totalLen(ZSTD_optimal_t sol)
 {
     return sol.litlen + sol.mlen;
 }
-
-#if 0 /* debug */
-
-static void
-listStats(const U32* table, int lastEltID)
-{
-    int const nbElts = lastEltID + 1;
-    int enb;
-    for (enb=0; enb < nbElts; enb++) {
-        (void)table;
-        /* RAWLOG(2, "%3i:%3i,  ", enb, table[enb]); */
-        RAWLOG(2, "%4i,", table[enb]);
-    }
-    RAWLOG(2, " \n");
-}
-
-#endif
 
 FORCE_INLINE_TEMPLATE size_t
 ZSTD_compressBlock_opt_generic(ZSTD_matchState_t* ms,

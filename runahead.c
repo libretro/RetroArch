@@ -148,36 +148,39 @@ void runahead_set_load_content_info(void *data,
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static void strcat_alloc(char **dst, const char *s)
 {
-   size_t _len;
-   char *src    = *dst;
+   char *tmp;
+   size_t dst_len, s_len, new_len;
 
-   if (!src)
+   if (!dst)
+      return;
+
+   if (!*dst)
    {
       if (s)
       {
-         size_t __len = strlen(s);
-         if (__len != 0)
-            src = strldup(s, __len + 1);
-         else
-            src = NULL;
+         dst_len  = strlen(s);
+         tmp      = (char*)malloc(dst_len + 1);
+         if (tmp)
+            memcpy(tmp, s, dst_len + 1);
+         *dst = tmp;
       }
       else
-         src    = (char*)calloc(1,1);
-
-      *dst      = src;
+         *dst = (char*)calloc(1, 1);
       return;
    }
 
-   if (!s)
+   if (!s || !*s)
       return;
 
-   _len = strlen(src);
-
-   if (!(src = (char*)realloc(src, _len + strlen(s) + 1)))
+   dst_len = strlen(*dst);
+   s_len   = strlen(s);
+   new_len = dst_len + s_len + 1;
+   tmp     = (char*)realloc(*dst, new_len);
+   if (!tmp)
       return;
 
-   *dst = src;
-   strcpy(src + _len, s);
+   *dst = tmp;
+   strlcpy(tmp + dst_len, s, s_len + 1);
 }
 
 void runahead_secondary_core_destroy(void *data)
@@ -198,10 +201,17 @@ void runahead_secondary_core_destroy(void *data)
 
    dylib_close(runloop_st->secondary_lib_handle);
    runloop_st->secondary_lib_handle = NULL;
-   filestream_delete(runloop_st->secondary_library_path);
+   /* Delete the on-disk copy of the secondary core and free the
+    * path string. The NULL check guards both: filestream_delete
+    * is currently NULL-safe but the explicit guard here also
+    * documents the intent and protects against future changes
+    * to the VFS layer's NULL handling. */
    if (runloop_st->secondary_library_path)
+   {
+      filestream_delete(runloop_st->secondary_library_path);
       free(runloop_st->secondary_library_path);
-   runloop_st->secondary_library_path = NULL;
+      runloop_st->secondary_library_path = NULL;
+   }
 }
 
 static char *get_tmpdir_alloc(const char *override_dir)
@@ -331,7 +341,7 @@ static char *copy_core_to_temp_file(
    int64_t  dll_file_size      = 0;
    const char  *core_base_name = path_basename_nocompression(core_path);
 
-   if (string_is_empty(core_base_name))
+   if (!core_base_name || !*core_base_name)
       return NULL;
 
    if (!(tmpdir = get_tmpdir_alloc(dir_libretro)))
@@ -626,12 +636,23 @@ static void mylist_resize(my_list *list,
 
    if (new_size > list->capacity)
    {
+      void **new_data;
+
       if (new_capacity < list->capacity * 2)
          new_capacity = list->capacity * 2;
 
-      /* try to realloc */
-      list->data      = (void**)realloc(
+      /* Try to realloc. On OOM, leave the list at its current
+       * capacity and silently no-op the resize - the caller
+       * (mylist_add_element) tolerates list->data[old_size]
+       * being NULL: runahead_input_state_set_last guards on
+       * 'if (element)' before writing to it, and downstream
+       * code already accepts that runahead state may be
+       * incomplete. */
+      new_data = (void**)realloc(
             (void*)list->data, new_capacity * sizeof(void*));
+      if (!new_data)
+         return;
+      list->data = new_data;
 
       for (i = list->capacity; i < new_capacity; i++)
          list->data[i] = NULL;
@@ -667,9 +688,16 @@ static void mylist_resize(my_list *list,
 
 static void *mylist_add_element(my_list *list)
 {
-   int old_size = list->size;
-   if (list)
-      mylist_resize(list, old_size + 1, true);
+   int old_size;
+   if (!list)
+      return NULL;
+   old_size = list->size;
+   mylist_resize(list, old_size + 1, true);
+   /* mylist_resize may have failed to grow on OOM, in which case
+    * list->size is still old_size and list->data[old_size] is
+    * out of bounds. Re-check before returning. */
+   if (list->size <= old_size)
+      return NULL;
    return list->data[old_size];
 }
 
@@ -703,43 +731,80 @@ static void mylist_create(my_list **list_p, int initial_capacity,
       mylist_destroy(list_p);
 
    list               = (my_list*)malloc(sizeof(my_list));
+   if (!list)
+   {
+      *list_p         = NULL;
+      return;
+   }
    *list_p            = list;
    list->size         = 0;
    list->constructor  = constructor;
    list->destructor   = destructor;
    list->data         = (void**)calloc(initial_capacity, sizeof(void*));
-   list->capacity     = initial_capacity;
+   /* On calloc OOM, leave list->data NULL and capacity 0;
+    * mylist_resize's realloc grows from there on first add and
+    * a subsequent realloc(NULL, n) is well-defined. */
+   list->capacity     = list->data ? initial_capacity : 0;
 }
 
 static void *input_list_element_constructor(void)
 {
    void *ptr                   = malloc(sizeof(input_list_element));
-   input_list_element *element = (input_list_element*)ptr;
+   input_list_element *element;
 
+   /* NULL-check the outer malloc: the field writes below
+    * (port/device/index/state_size) would NULL-deref on OOM.
+    * The caller (runahead_input_state_set_last) already tolerates
+    * a NULL return: 'if (element) { ... }'.  mylist_resize also
+    * tolerates a NULL constructor result - it just leaves
+    * list->data[i] = NULL. */
+   if (!ptr)
+      return NULL;
+
+   element                     = (input_list_element*)ptr;
    element->port               = 0;
    element->device             = 0;
    element->index              = 0;
    element->state              = (int16_t*)calloc(NAME_MAX_LENGTH,
          sizeof(int16_t));
+   /* NULL-check the inner calloc too.  If it fails the caller's
+    * 'element->state[id] = value' NULL-derefs.  No way to signal
+    * partial-failure through the constructor callback's return
+    * type, so free the outer allocation and return NULL to match
+    * the outer-OOM behaviour. */
+   if (!element->state)
+   {
+      free(ptr);
+      return NULL;
+   }
    element->state_size         = NAME_MAX_LENGTH;
 
    return ptr;
 }
 
-static void input_list_element_realloc(input_list_element *element,
+static bool input_list_element_realloc(input_list_element *element,
       unsigned int new_size)
 {
    if (new_size > element->state_size)
    {
-      element->state = (int16_t*)realloc(element->state,
+      /* realloc-to-tmp: the pre-patch 'element->state = realloc(
+       * element->state, ...)' self-assigns NULL on OOM, which
+       * then made the very next line '&element->state[element->
+       * state_size]' perform pointer arithmetic on NULL (UB) and
+       * the memset trap on a garbage address. */
+      int16_t *tmp = (int16_t*)realloc(element->state,
             new_size * sizeof(int16_t));
+      if (!tmp)
+         return false;
+      element->state = tmp;
       memset(&element->state[element->state_size], 0,
             (new_size - element->state_size) * sizeof(int16_t));
       element->state_size = new_size;
    }
+   return true;
 }
 
-static void input_list_element_expand(input_list_element *element,
+static bool input_list_element_expand(input_list_element *element,
       unsigned int new_index)
 {
    unsigned int new_size = element->state_size;
@@ -747,7 +812,7 @@ static void input_list_element_expand(input_list_element *element,
       new_size = 32;
    while (new_index >= new_size)
       new_size *= 2;
-   input_list_element_realloc(element, new_size);
+   return input_list_element_realloc(element, new_size);
 }
 
 static void input_list_element_destructor(void* element_ptr)
@@ -782,8 +847,12 @@ static void runahead_input_state_set_last(
             && (element->index  == index)
          )
       {
-         if (id >= element->state_size)
-            input_list_element_expand(element, id);
+         /* Gate the state[id] write on expand success: if expand
+          * OOM'd, state_size is still too small and writing to
+          * state[id] would corrupt memory past the buffer. */
+         if (id >= element->state_size
+               && !input_list_element_expand(element, id))
+            return;
          element->state[id] = value;
          return;
       }
@@ -798,8 +867,10 @@ static void runahead_input_state_set_last(
       element->port         = port;
       element->device       = device;
       element->index        = index;
-      if (id >= element->state_size)
-         input_list_element_expand(element, id);
+      /* Same expand-OOM guard as the lookup branch above. */
+      if (id >= element->state_size
+            && !input_list_element_expand(element, id))
+         return;
       element->state[id]    = value;
    }
 }
@@ -896,48 +967,43 @@ static void runahead_remove_input_state_hook(runloop_state_t *runloop_st)
    }
 }
 
-static void *runahead_save_state_alloc(void)
-{
-   runloop_state_t     *runloop_st       = runloop_state_get_ptr();
-   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)
-      malloc(sizeof(retro_ctx_serialize_info_t));
-
-   if (!savestate)
-      return NULL;
-
-   savestate->data          = NULL;
-   savestate->data_const    = NULL;
-   savestate->size          = 0;
-
-   if (     (runloop_st->runahead_save_state_size > 0)
-         && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN))
-   {
-      savestate->data       = malloc(runloop_st->runahead_save_state_size);
-      savestate->data_const = savestate->data;
-      savestate->size       = runloop_st->runahead_save_state_size;
-   }
-
-   return savestate;
-}
-
-static void runahead_save_state_free(void *data)
-{
-   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)data;
-   if (!savestate)
-      return;
-   free(savestate->data);
-   free(savestate);
-}
-
-static void runahead_save_state_list_init(
+static bool runahead_savestate_info_init(
       runloop_state_t *runloop_st,
       size_t save_state_size)
 {
-   runloop_st->runahead_save_state_size  = save_state_size;
-   runloop_st->flags                    |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
+   retro_ctx_serialize_info_t *info       = &runloop_st->runahead_savestate_info;
 
-   mylist_create(&runloop_st->runahead_save_state_list, 16,
-         runahead_save_state_alloc, runahead_save_state_free);
+   runloop_st->runahead_save_state_size   = save_state_size;
+   runloop_st->flags                     |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
+
+   /* Free any previous buffer so callers can safely re-init.  The
+    * matching invariant (data NULL when nothing allocated) lets the
+    * per-frame save_state/load_state path use the buffer pointer as
+    * its readiness check. */
+   free(info->data);
+   info->data       = NULL;
+   info->data_const = NULL;
+   info->size       = 0;
+
+   if (save_state_size == 0)
+      return false;
+
+   info->data       = malloc(save_state_size);
+   if (!info->data)
+      return false;
+
+   info->data_const = info->data;
+   info->size       = save_state_size;
+   return true;
+}
+
+static void runahead_savestate_info_free(runloop_state_t *runloop_st)
+{
+   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
+   free(info->data);
+   info->data       = NULL;
+   info->data_const = NULL;
+   info->size       = 0;
 }
 
 /* Hooks - Hooks to cleanup, and add dirty input hooks */
@@ -961,7 +1027,7 @@ static void runahead_remove_hooks(runloop_state_t *runloop_st)
 
 static void runahead_destroy(runloop_state_t *runloop_st)
 {
-   mylist_destroy(&runloop_st->runahead_save_state_list);
+   runahead_savestate_info_free(runloop_st);
    runahead_remove_hooks(runloop_st);
    runahead_clear_variables(runloop_st);
 }
@@ -1011,7 +1077,7 @@ static void runahead_add_hooks(runloop_state_t *runloop_st)
 static void runahead_err(runloop_state_t *runloop_st)
 {
    runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_AVAILABLE;
-   mylist_destroy(&runloop_st->runahead_save_state_list);
+   runahead_savestate_info_free(runloop_st);
    runahead_remove_hooks(runloop_st);
    runloop_st->runahead_save_state_size       = 0;
    runloop_st->flags                         |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
@@ -1023,33 +1089,28 @@ static bool runahead_create(runloop_state_t *runloop_st)
    video_driver_state_t *video_st = video_state_get_ptr();
    size_t info_size               = core_serialize_size_special();
 
-   runahead_save_state_list_init(runloop_st, info_size);
-   if (video_st->flags & VIDEO_FLAG_ACTIVE)
-      video_st->flags |=  VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
-   else
-      video_st->flags &= ~VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
-
-   if (      (runloop_st->runahead_save_state_size == 0)
-         || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN))
+   if (!runahead_savestate_info_init(runloop_st, info_size))
    {
       runahead_err(runloop_st);
       return false;
    }
 
+   if (video_st->flags & VIDEO_FLAG_ACTIVE)
+      video_st->flags |=  VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
+   else
+      video_st->flags &= ~VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
+
    runahead_add_hooks(runloop_st);
    runloop_st->flags |= RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
-   if (runloop_st->runahead_save_state_list)
-      mylist_resize(runloop_st->runahead_save_state_list, 1, true);
    return true;
 }
 
 static bool runahead_save_state(runloop_state_t *runloop_st)
 {
-   if (runloop_st->runahead_save_state_list)
+   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
+   if (info->data)
    {
-      retro_ctx_serialize_info_t *serialize_info =
-         (retro_ctx_serialize_info_t*)runloop_st->runahead_save_state_list->data[0];
-      if (core_serialize_special(serialize_info))
+      if (core_serialize_special(info))
          return true;
       runahead_err(runloop_st);
    }
@@ -1058,15 +1119,13 @@ static bool runahead_save_state(runloop_state_t *runloop_st)
 
 static bool runahead_load_state(runloop_state_t *runloop_st)
 {
-   retro_ctx_serialize_info_t *serialize_info =
-      (retro_ctx_serialize_info_t*)
-      runloop_st->runahead_save_state_list->data[0];
-   bool last_dirty                            = (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY) ? true : false;
-   bool ret                                   = core_unserialize_special(serialize_info);
+   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
+   bool last_dirty                  = (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY) ? true : false;
+   bool ret                         = core_unserialize_special(info);
    if (last_dirty)
-      runloop_st->flags                      |=  RUNLOOP_FLAG_INPUT_IS_DIRTY;
+      runloop_st->flags             |=  RUNLOOP_FLAG_INPUT_IS_DIRTY;
    else
-      runloop_st->flags                      &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+      runloop_st->flags             &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
 
    if (!ret)
       runahead_err(runloop_st);
@@ -1077,11 +1136,10 @@ static bool runahead_load_state(runloop_state_t *runloop_st)
 #if HAVE_DYNAMIC
 static bool runahead_load_state_secondary(runloop_state_t *runloop_st, settings_t *settings)
 {
-   retro_ctx_serialize_info_t *serialize_info =
-      (retro_ctx_serialize_info_t*)runloop_st->runahead_save_state_list->data[0];
+   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
 
    if (!secondary_core_deserialize(runloop_st, settings,
-            serialize_info->data_const, serialize_info->size))
+            info->data_const, info->size))
    {
       runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
       runahead_err(runloop_st);
@@ -1563,7 +1621,7 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
    for (p = 0; p < max_users; p++)
    {
       /* Check full digital joypad */
-      int16_t joypad_state = (int16_t)(state_cb(p, RETRO_DEVICE_JOYPAD,
+      int16_t joypad_state = (int16_t)(state_cb((unsigned)p, RETRO_DEVICE_JOYPAD,
             0, RETRO_DEVICE_ID_JOYPAD_MASK));
       if (joypad_state != preempt->joypad_state[p])
       {

@@ -370,7 +370,15 @@ static int omapfb_backup_state(omapfb_data_t *pdata)
    if (!pdata->saved_state->mem || mem == MAP_FAILED)
    {
       RARCH_ERR("[Omap] Backup layer (mem backup) failed.\n");
-      munmap(mem, pdata->saved_state->mi.size);
+      /* Only munmap if mmap actually succeeded.  munmap(MAP_FAILED, ...)
+       * is undefined per POSIX - MAP_FAILED is (void*)-1 and any
+       * implementation-specific behaviour it triggers is no guarantee
+       * against a future libc flagging it as an error or crashing.
+       * The malloc failure path separately leaves saved_state->mem
+       * as NULL; it gets cleaned up by omapfb_free() via the caller's
+       * fail_omapfb goto. */
+      if (mem != MAP_FAILED)
+         munmap(mem, pdata->saved_state->mi.size);
       return -1;
    }
    memcpy(pdata->saved_state->mem, mem, pdata->saved_state->mi.size);
@@ -1105,10 +1113,11 @@ static const video_poke_interface_t omap_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void omap_get_poke_interface(void *data,
@@ -1138,6 +1147,8 @@ video_driver_t video_omap = {
 #endif
    omap_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

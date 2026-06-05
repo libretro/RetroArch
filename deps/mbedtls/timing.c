@@ -43,6 +43,13 @@
 #include <windows.h>
 #include <winbase.h>
 
+#if defined(__MINGW32__) || defined(__MINGW64__)
+/* MSYS2/MinGW: provide struct timeval + gettimeofday() for the
+ * fallback timing implementation used when HAVE_HARDCLOCK
+ * isn't defined (e.g., on aarch64-w64-mingw32 / clangarm64). */
+#include <sys/time.h>
+#endif
+
 struct _hr_time
 {
     LARGE_INTEGER start;

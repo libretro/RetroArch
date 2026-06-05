@@ -335,5 +335,6 @@ audio_driver_t audio_ctr_dsp_thread = {
    NULL,
    NULL,
    ctr_dsp_thread_audio_write_avail,
-   ctr_dsp_thread_audio_buffer_size
+   ctr_dsp_thread_audio_buffer_size,
+   NULL  /* write_raw */
 };

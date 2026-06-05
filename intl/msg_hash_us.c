@@ -41,7 +41,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY), len);
              break;
           default:
-             if (string_is_empty(s))
+             if (!s || !*s)
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
              break;
        }
@@ -54,6 +54,12 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
        {
           case MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS), len);
+             break;
+          case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR), len);
+             break;
+          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND), len);
              break;
           case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS), len);
@@ -84,9 +90,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN), len);
-             break;
-          case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
-             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE), len);
              break;
           case MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS), len);
@@ -141,9 +144,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY), len);
-             break;
-          case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR), len);
              break;
           case MENU_ENUM_LABEL_CORE_LIST:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CORE_LIST), len);
@@ -510,7 +510,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              }
              break;
           default:
-             if (string_is_empty(s))
+             if (!s || !*s)
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
              return -1;
        }

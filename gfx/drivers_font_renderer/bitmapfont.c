@@ -185,6 +185,17 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
    handle->atlas.height    = (BMP_ATLAS_PADDING + (FONT_HEIGHT * handle->scale_factor)) * BMP_ATLAS_ROWS;
    handle->atlas.buffer    = (uint8_t*)calloc(handle->atlas.width * handle->atlas.height, 1);
 
+   /* NULL-check atlas.buffer: char_to_texture below writes into
+    * handle->atlas.buffer[x + y * atlas.width] and would NULL-
+    * deref on OOM.  font_renderer_bmp_free NULL-safely frees
+    * atlas.buffer via the free(NULL) no-op, so we can bail out
+    * via free(handle) alone. */
+   if (!handle->atlas.buffer)
+   {
+      free(handle);
+      return NULL;
+   }
+
    for (i = 0; i < BMP_ATLAS_SIZE; i++)
    {
       unsigned x           = (i % BMP_ATLAS_COLS) *
@@ -199,7 +210,7 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
       handle->glyphs[i].atlas_offset_x = x;
       handle->glyphs[i].atlas_offset_y = y;
       handle->glyphs[i].draw_offset_x  = 0;
-      handle->glyphs[i].draw_offset_y  = -FONT_HEIGHT_BASELINE_OFFSET * handle->scale_factor;
+      handle->glyphs[i].draw_offset_y  = 1 - FONT_HEIGHT_BASELINE_OFFSET * handle->scale_factor;
       handle->glyphs[i].advance_x      = FONT_WIDTH_STRIDE * handle->scale_factor;
       handle->glyphs[i].advance_y      = 0;
    }

@@ -171,7 +171,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
       extracted_path = (char*)&ptr.Data;
 
       if (
-            !string_is_empty(extracted_path)
+            (extracted_path && *extracted_path)
             && (!strstr(extracted_path, "Pool"))
             /* Hack. Unknown problem */)
       {
@@ -185,20 +185,36 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
       char *extracted_path                 = (char*)calloc(dwLaunchDataSize, sizeof(char));
       BYTE* pLaunchData                    = (BYTE*)calloc(dwLaunchDataSize, sizeof(BYTE));
 
-      XGetLaunchData(pLaunchData, dwLaunchDataSize);
-      memset(extracted_path, 0, dwLaunchDataSize);
-
-      strlcpy(extracted_path, pLaunchData, dwLaunchDataSize);
-
-      /* Auto-start game */
-      if (!string_is_empty(extracted_path))
-         strlcpy(path, extracted_path, sizeof(path));
-
-      if (pLaunchData)
+      /* NULL-check both callocs: memset / XGetLaunchData /
+       * strlcpy below NULL-deref on OOM.  Pre-patch
+       * extracted_path was also leaked on the happy path
+       * because the teardown at the bottom of this block
+       * only freed pLaunchData; the early return on OOM
+       * would have leaked both.  Fix: bail with both
+       * pointers freed (free(NULL) is a no-op so no extra
+       * guard needed). */
+      if (!extracted_path || !pLaunchData)
+      {
+         free(extracted_path);
          free(pLaunchData);
+      }
+      else
+      {
+         XGetLaunchData(pLaunchData, dwLaunchDataSize);
+         memset(extracted_path, 0, dwLaunchDataSize);
+
+         strlcpy(extracted_path, pLaunchData, dwLaunchDataSize);
+
+         /* Auto-start game */
+         if (*extracted_path)
+            strlcpy(path, extracted_path, sizeof(path));
+
+         free(pLaunchData);
+         free(extracted_path);
+      }
    }
 #endif
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
 
@@ -258,7 +274,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_content)
 #endif
 
 #ifdef IS_SALAMANDER
-   if (!string_is_empty(path))
+   if (path && *path)
 #ifdef _XBOX360
       XLaunchNewImage(path, 0);
 #else
@@ -271,8 +287,8 @@ static void frontend_xdk_exec(const char *path, bool should_load_content)
    if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
       strlcpy((char*)ptr.Data, path_get(RARCH_PATH_CONTENT), sizeof(ptr.Data));
 
-   if (!string_is_empty(path))
-      XLaunchNewImage(path, !string_is_empty((const char*)ptr.Data) ? &ptr : NULL);
+   if (path && *path)
+      XLaunchNewImage(path, ((const char*)ptr.Data && *(const char*)ptr.Data) ? &ptr : NULL);
 #elif defined(_XBOX360)
    if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
    {
@@ -280,7 +296,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_content)
       XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
    }
 
-   if (!string_is_empty(path))
+   if (path && *path)
       XLaunchNewImage(path, 0);
 #endif
 #endif
@@ -338,15 +354,6 @@ static void frontend_xdk_exitspawn(char *s, size_t len, char *args)
    }
 #endif
    frontend_xdk_exec(s, should_load_content);
-}
-
-static int frontend_xdk_get_rating(void)
-{
-#if defined(_XBOX360)
-   return 11;
-#elif defined(_XBOX1)
-   return 7;
-#endif
 }
 
 enum frontend_architecture frontend_xdk_get_arch(void)
@@ -407,7 +414,7 @@ static int frontend_xdk_parse_drive_list(void *data, bool load_content)
 }
 
 frontend_ctx_driver_t frontend_ctx_xdk = {
-   frontend_xdk_get_env_settings,/* env_settings */
+   frontend_xdk_get_environment_settings,/* env_settings */
    frontend_xdk_init,            /* init   */
    NULL,                         /* deinit */
    frontend_xdk_exitspawn,       /* exitspawn */
@@ -421,7 +428,6 @@ frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_xdk_get_rating,
    NULL,                         /* content_loaded */
    frontend_xdk_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
@@ -444,6 +450,7 @@ frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "xdk",                        /* ident */
    NULL                          /* get_video_driver */
 };

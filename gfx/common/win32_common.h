@@ -37,7 +37,6 @@
 #include "../../retroarch.h"
 
 #ifndef _XBOX
-#include "../../ui/drivers/ui_win32_resource.h"
 #include "../../ui/drivers/ui_win32.h"
 
 #if (defined(_MSC_VER) && (_MSC_VER >= 1400)) || defined(__MINGW32__)
@@ -81,6 +80,7 @@ extern unsigned g_win32_resize_width;
 extern unsigned g_win32_resize_height;
 extern float g_win32_refresh_rate;
 extern ui_window_win32_t main_window;
+extern HACCEL window_accelerators;
 
 void win32_monitor_get_info(void);
 
@@ -88,8 +88,6 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
 int win32_change_display_settings(const char *str, void *devmode_data,
       unsigned flags);
-
-bool win32_get_video_output(DEVMODE *dm, int mode, size_t len);
 
 #if !defined(__WINRT__)
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
@@ -107,14 +105,7 @@ bool win32_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen);
 
-bool win32_window_create(void *data, unsigned style,
-      RECT *mon_rect, unsigned width,
-      unsigned height, bool fullscreen);
-
 bool win32_suspend_screensaver(void *data, bool enable);
-
-bool win32_get_metrics(void *data,
-      enum display_metric_types type, float *value);
 
 void win32_show_cursor(void *data, bool state);
 
@@ -137,22 +128,11 @@ void win32_check_window(void *data,
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
-void win32_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len);
-
-void win32_get_video_output_prev(
-      unsigned *width, unsigned *height);
-
-void win32_get_video_output_next(
-      unsigned *width, unsigned *height);
-
 void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
 uint8_t win32_get_flags(void);
-
-float win32_get_refresh_rate(void *data);
 
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
@@ -186,6 +166,62 @@ BOOL IsIconic(HWND hwnd);
 #endif
 
 void win32_setup_pixel_format(HDC hdc, bool supports_gl);
+
+#if !defined(__WINRT__)
+/* Programmatic replacement for the menu, dialog, accelerator,
+ * and manifest resources that were in media/rarch.rc.
+ *
+ * The icon resource remains in rarch.rc (compiled by windres/rc)
+ * so that the .exe has an embedded icon visible in Explorer.
+ * Everything else is created at runtime via Win32 API calls. */
+
+/* Mark the process as DPI-aware (replaces the <dpiAware>true</dpiAware>
+ * entry that used to live in media/rarch.manifest).
+ *
+ * MUST be called before any HWND is created — directly or transitively
+ * (e.g. via CoInitialize or AllocConsole).  Call it at the very top of
+ * rarch_main(), before anything else.  Safe to call on any Windows
+ * version: falls back from SetProcessDpiAwareness (Win8.1+) to
+ * SetProcessDPIAware (Vista/7), and is a no-op on older systems. */
+void win32_apply_dpi_awareness(void);
+
+/* Call once before creating any windows.
+ * Creates the accelerator table and other programmatic resources. */
+void win32_resources_init(void);
+
+/* Release resources created by win32_resources_init(). */
+void win32_resources_free(void);
+
+/* Return the accelerator table
+ * (replaces LoadAccelerators + MAKEINTRESOURCE(IDR_ACCELERATOR1)). */
+HACCEL win32_resources_get_accelerator(void);
+#endif /* !__WINRT__ */
+
+#ifdef HAVE_D3DKMT
+#include <sdkddkver.h>
+#if !defined(NTDDI_VERSION) || NTDDI_VERSION < 0x06000000
+# undef NTDDI_VERSION
+# define NTDDI_VERSION 0x06000000   /* NTDDI_LONGHORN / Vista */
+#endif
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
+# undef _WIN32_WINNT
+# define _WIN32_WINNT 0x0600
+#endif
+typedef LONG NTSTATUS;
+#define STATUS_SUCCESS ((NTSTATUS)0)
+#include <d3dkmthk.h>
+typedef NTSTATUS(CALLBACK* D3DKMTOPENADAPTERFROMHDC)(D3DKMT_OPENADAPTERFROMHDC*);
+static D3DKMTOPENADAPTERFROMHDC pD3DKMTOpenAdapterFromHdc;
+typedef NTSTATUS(CALLBACK* D3DKMTGETSCANLINE)(D3DKMT_GETSCANLINE*);
+static D3DKMTGETSCANLINE pD3DKMTGetScanLine;
+
+typedef struct d3dkmt_adapter
+{
+   D3DKMT_GETSCANLINE sl;
+} d3dkmt_adapter_t;
+
+extern int d3dkmt_scanline_get(void);
+#endif /* HAVE_D3DKMT */
 
 RETRO_END_DECLS
 

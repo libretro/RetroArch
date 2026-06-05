@@ -29,8 +29,12 @@
 
 #if defined(HAVE_FFMPEG) && defined(HAVE_AVFORMAT) && defined(HAVE_AVCODEC) && \
    defined(HAVE_AVDEVICE) && defined(HAVE_AVUTIL) && defined(HAVE_SWSCALE)
-/* FFMPEG consists of several libraries, and the camera driver needs most of them */
+/* FFMPEG consists of several libraries, and the camera driver needs most of them.
+ * The camera driver uses APIs introduced in avformat 58 (ffmpeg 4.0). */
+#include <libavformat/version.h>
+#if LIBAVFORMAT_VERSION_MAJOR >= 58
 #define HAVE_FFMPEG_CAMERA
+#endif
 #endif
 
 static void *nullcamera_init(const char *device, uint64_t caps,

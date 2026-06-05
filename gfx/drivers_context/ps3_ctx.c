@@ -99,6 +99,15 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
    global->console.screen.resolutions.list  =
       malloc(resolution_count * sizeof(uint32_t));
 
+   /* NULL-check: the resolutions.list[...] writes in the loop
+    * below and the '...list[...current.idx]' read at line ~138
+    * would NULL-deref on OOM.  Void-returning function; leaving
+    * resolutions.check == false means the next call will retry
+    * (which is desired - an OOM here is transient and we want
+    * to populate the list once memory is available). */
+   if (!global->console.screen.resolutions.list)
+      return;
+
    for (i = 0; i < num_videomodes; i++)
    {
       if (cellVideoOutGetResolutionAvailability(
@@ -414,5 +423,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_get_flags,
    gfx_ctx_ps3_set_flags,
    NULL,
-   NULL
+   NULL,
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

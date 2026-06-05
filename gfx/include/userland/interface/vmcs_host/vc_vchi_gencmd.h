@@ -28,8 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef VC_VCHI_GENCMD_H
 #define VC_VCHI_GENCMD_H
 #include "vchost_platform_config.h"
-#include "interface/vchi/vchi.h"
-#include "interface/vcos/vcos.h" //for VCHPRE_ abd VCHPOST_ macro's for func declaration
+#include "../vchi/vchi.h"
+#include "../vcos/vcos.h" /* for VCHPRE_ abd VCHPOST_ macro's for func declaration */
 
 /* Initialise general command service. Returns it's interface number. This initialises
    the host side of the interface, it does not send anything to VideoCore. */

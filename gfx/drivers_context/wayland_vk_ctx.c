@@ -16,6 +16,10 @@
 
 #include <unistd.h>
 
+#ifdef HAVE_WAYLAND_BACKPORT
+#include "../../gfx/common/wayland_client_backport.h"
+#endif
+
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 
@@ -188,6 +192,13 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
       goto error;
 
+   /* Set buffer scale before creating the Vulkan WSI surface.
+    * Fixes incorrect size/offset on HiDPI/fullscreen. */
+   if (!wl->fractional_scale &&
+       wl_compositor_get_version(wl->compositor) >=
+       WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
+      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+
    if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
          wl->input.dpy, wl->surface,
          wl->buffer_width,
@@ -195,13 +206,27 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
          wl->swap_interval))
       goto error;
 
+   /* Fullscreen is compositor-sized on Wayland.
+    * Do not ignore configure events in fullscreen. */
+   if (fullscreen)
+      wl->ignore_configuration = false;
+
    if (!gfx_ctx_wl_set_video_mode_common_fullscreen(wl, fullscreen))
       goto error;
 
    return true;
 
 error:
-   gfx_ctx_wl_destroy(data);
+   /* Do not destroy `wl` here.  The caller in
+    * gfx/drivers/vulkan.c::vulkan_init treats a false return
+    * from set_video_mode as a failure of the in-flight `vk_t`
+    * construction and runs vulkan_free() on it, which calls
+    * ctx_driver->destroy(ctx_data) -- i.e. gfx_ctx_wl_destroy()
+    * -- on the very pointer we already freed.  That second call
+    * walks freed memory in gfx_ctx_wl_destroy_resources() and
+    * then free()s the same pointer again.  Leave cleanup to the
+    * caller's single normal-path destroy.  Cocoa / Android
+    * already do this; this matches them. */
    return false;
 }
 
@@ -294,11 +319,11 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    gfx_ctx_wl_set_swap_interval,
    gfx_ctx_wl_set_video_mode,
    gfx_ctx_wl_get_video_size_common,
-   gfx_ctx_wl_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   gfx_ctx_wl_get_metrics_common,
+   NULL, /* metrics - handled by display server */
    NULL,
    gfx_ctx_wl_update_title_common,
    gfx_ctx_wl_check_window,
@@ -318,4 +343,6 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    gfx_ctx_wl_bind_hw_render,
    gfx_ctx_wl_get_context_data,
    NULL,
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

@@ -10,3 +10,11 @@ AppPackages/
 /ReleaseANGLE
 /x64
 /ARM64
+
+# Microsoft.Windows.CppWinRT
+!/packages/Microsoft.Windows.CppWinRT.2.0.250303.1/bin/*
+!/packages/Microsoft.Windows.CppWinRT.2.0.250303.1/build/*
+
+# MESA
+!/RetroArch-msvcUWP/MESA/x64/*.dll
+!/RetroArch-msvcUWP/MESA/x64/*.lib

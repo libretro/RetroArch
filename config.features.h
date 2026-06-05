@@ -404,6 +404,12 @@
 #define SUPPORTS_RTGA false
 #endif
 
+#ifdef HAVE_RWEBP
+#define SUPPORTS_RWEBP true
+#else
+#define SUPPORTS_RWEBP false
+#endif
+
 #ifdef HAVE_CORETEXT
 #define SUPPORTS_CORETEXT true
 #else

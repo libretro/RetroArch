@@ -48,6 +48,9 @@
 
 #include "../../driver.h"
 #include "../../retroarch.h"
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
 
 #define RSX_MAX_BUFFERS 2
 #define RSX_MAX_MENU_BUFFERS 2
@@ -514,13 +517,22 @@ static void rsx_font_free(void *data,
 
    rsxClearSurface(font->rsx->context, GCM_CLEAR_Z);
    gcmSetWaitFlip(font->rsx->context);
-#if 0
-   /* TODO fix crash on loading core */
+
+   /* Drain the RSX command queue before freeing font memory.
+    * gcmSetWaitFlip only waits for the page flip, not for all
+    * draw commands to complete.  rsxFinish ensures the GPU is
+    * fully idle so the font texture and vertex buffer can be
+    * safely freed.
+    *
+    * Previously #if 0'd out, leaking font RSX memory on every
+    * font scale change or context reset. */
+   rsxFinish(font->rsx->context, 0);
+
    if (font->texture.data)
       rsxFree(font->texture.data);
    if (font->vertices)
       rsxFree(font->vertices);
-#endif
+
    free(font);
 }
 
@@ -638,7 +650,7 @@ static int rsx_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
    const struct font_glyph* glyph_q = NULL;
-   rsx_font_t *font   = (rsx_font_t*)data;
+   rsx_font_t *font    = (rsx_font_t*)data;
    const char* msg_end = msg + msg_len;
    int delta_x         = 0;
 
@@ -756,14 +768,28 @@ static void rsx_font_render_line(rsx_t *rsx,
    int delta_x          = 0;
    int delta_y          = 0;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that rsx_font_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x             -= rsx_font_get_message_width(font, msg, msg_len, scale);
-         break;
-      case TEXT_ALIGN_CENTER:
-         x             -= rsx_font_get_message_width(font, msg, msg_len, scale) / 2.0;
-         break;
+      int width_accum     = 0;
+      const char *scan    = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
+
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    while (msg < msg_end)
@@ -832,12 +858,12 @@ static void rsx_font_render_message(rsx_t *rsx,
    float inv_win_height                   = 1.0f / rsx->vp.height;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / rsx->vp.height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
-
+      const char *delim = msg;
+      while (*delim != '\n' && *delim != '\0')
+         delim++;
+      size_t msg_len = delim - msg;
       /* Draw the line */
       rsx_font_render_line(rsx, font, glyph_q,
             msg, msg_len, scale, color, pos_x,
@@ -848,11 +874,9 @@ static void rsx_font_render_message(rsx_t *rsx,
             inv_win_width,
             inv_win_height,
             text_align);
-
-      if (!delim)
+      if (*delim == '\0')
          break;
-
-      msg += msg_len + 1;
+      msg = delim + 1;
       lines++;
    }
 }
@@ -877,7 +901,7 @@ static void rsx_font_setup_viewport(
 static void rsx_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float color[4];
@@ -895,7 +919,7 @@ static void rsx_font_render_msg(
    float video_msg_color_b          = settings->floats.video_msg_color_b;
    rsx_t *rsx                       = (rsx_t*)userdata;
 
-   if (!font || string_is_empty(msg) || !rsx)
+   if (!font || !msg || !*msg || !rsx)
       return;
 
    width                            = rsx->width;
@@ -946,7 +970,7 @@ static void rsx_font_render_msg(
    else
       rsx_font_setup_viewport(rsx, font, width, height, full_screen);
 
-   if (    !string_is_empty(msg)
+   if (     (msg && *msg)
          && font->font_data
          && font->font_driver)
    {
@@ -984,7 +1008,7 @@ static const struct font_glyph *rsx_font_get_glyph(
 {
    rsx_font_t *font = (rsx_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 
@@ -1140,35 +1164,14 @@ static void rsx_set_projection(rsx_t *rsx,
 static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
-	int i;
+   int i;
    rsx_viewport_t vp;
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
-   settings_t *settings      = config_get_ptr();
    rsx_t *rsx                = (rsx_t*)data;
-   bool video_scale_integer  = settings->bools.video_scale_integer;
 
-   if (video_scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&rsx->vp,
-            vp_width, vp_height,
-            video_driver_get_aspect_ratio(), rsx->keep_aspect,
-            true);
-      vp_width               = rsx->vp.width;
-      vp_height              = rsx->vp.height;
-   }
-   else if (rsx->keep_aspect && !force_full)
-   {
-      video_viewport_get_scaled_aspect(&rsx->vp, vp_width, vp_height, true);
-      vp_width               = rsx->vp.width;
-      vp_height              = rsx->vp.height;
-   }
-   else
-   {
-      rsx->vp.x               = 0;
-      rsx->vp.y               = 0;
-      rsx->vp.width           = vp_width;
-      rsx->vp.height          = vp_height;
-   }
+   rsx->vp.full_width         = vp_width;
+   rsx->vp.full_height        = vp_height;
+   video_driver_update_viewport(&rsx->vp, force_full, rsx->keep_aspect, true);
 
    vp.min                     = 0.0f;
    vp.max                     = 1.0f;
@@ -1191,13 +1194,6 @@ static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
    rsxSetScissor(rsx->context, vp.x, vp.y, vp.w, vp.h);
 
    rsx_set_projection(rsx, &ortho, allow_rotate);
-
-   /* Set last backbuffer viewport. */
-   if (!force_full)
-   {
-      rsx->vp.width           = vp_width;
-      rsx->vp.height          = vp_height;
-   }
 }
 
 static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
@@ -1570,7 +1566,7 @@ static void* rsx_init(const video_info_t* video,
    rsx->vp.full_width        = rsx->width;
    rsx->vp.full_height       = rsx->height;
    rsx->rgb32                = video->rgb32;
-   video_driver_set_size(rsx->vp.width, rsx->vp.height);
+   video_driver_set_output_size(rsx->vp.width, rsx->vp.height);
    rsx_set_viewport(rsx, rsx->vp.width, rsx->vp.height, false, true);
 
    if (input && input_data)
@@ -1597,81 +1593,11 @@ static void* rsx_init(const video_info_t* video,
 
 static void rsx_update_viewport(rsx_t* rsx)
 {
-   int x                     = 0;
-   int y                     = 0;
-   unsigned vp_width         = rsx->width;
-   unsigned vp_height        = rsx->height;
-   float device_aspect       = ((float)vp_width) / vp_height;
-   settings_t *settings      = config_get_ptr();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   rsx->vp.full_width  = rsx->width;
+   rsx->vp.full_height = rsx->height;
+   video_driver_update_viewport(&rsx->vp, false, rsx->keep_aspect, true);
 
-   if (video_scale_integer)
-   {
-      video_viewport_get_scaled_integer(&rsx->vp, vp_width, vp_height,
-            video_driver_get_aspect_ratio(), rsx->keep_aspect,
-            true);
-      vp_width               = rsx->vp.width;
-      vp_height              = rsx->vp.height;
-   }
-   else if (rsx->keep_aspect)
-   {
-      float desired_aspect   = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_vp_custom;
-         /* RSX/libgcm has top-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = custom_vp->y;
-         vp_width                    = custom_vp->width;
-         vp_height                   = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if ((fabsf(device_aspect - desired_aspect) < 0.0001f))
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            float viewport_bias = settings->floats.video_vp_bias_x;
-            delta           = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x               = (int)roundf(vp_width * ((0.5f - delta) * (viewport_bias * 2.0f)));
-            vp_width        = (unsigned)roundf(2.0f * vp_width * delta);
-         }
-         else
-         {
-            float viewport_bias = 1.0 - settings->floats.video_vp_bias_y;
-            delta           = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y               = (int)roundf(vp_height * ((0.5f - delta) * (viewport_bias * 2.0f)));
-            vp_height       = (unsigned)roundf(2.0f * vp_height * delta);
-         }
-      }
-
-      rsx->vp.x             = x;
-      rsx->vp.y             = y;
-      rsx->vp.width         = vp_width;
-      rsx->vp.height        = vp_height;
-   }
-   else
-   {
-      rsx->vp.x             = 0;
-      rsx->vp.y             = 0;
-      rsx->vp.width         = vp_width;
-      rsx->vp.height        = vp_height;
-   }
-
-   rsx->should_resize       = false;
+   rsx->should_resize  = false;
 }
 
 static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
@@ -1692,8 +1618,8 @@ static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-static uintptr_t rsx_load_texture(void *video_data, void *data,
-      bool threaded, enum texture_filter_type filter_type)
+static uintptr_t rsx_load_texture_internal(void *video_data, void *data,
+      enum texture_filter_type filter_type)
 {
    rsx_t *rsx                     = (rsx_t *)video_data;
    struct texture_image *image    = (struct texture_image*)data;
@@ -1704,22 +1630,95 @@ static uintptr_t rsx_load_texture(void *video_data, void *data,
    rsxAddressToOffset(texture->data, &texture->offset);
    rsx_load_texture_data(rsx, texture, image->pixels, image->width, image->height, image->width*4, true, false, filter_type);
 
-   return (uintptr_t)texture;;
+   return (uintptr_t)texture;
+}
+
+static void rsx_unload_texture_internal(void *data, uintptr_t handle)
+{
+   rsx_texture_t *texture = (rsx_texture_t *)handle;
+   if (texture)
+   {
+      if (texture->data)
+      {
+         rsx_t *rsx = (rsx_t *)data;
+         /* Drain the RSX command queue before freeing texture
+          * memory.  The GPU may still be reading this memory for
+          * the current frame's draw.  rsxFinish blocks until all
+          * submitted commands complete — equivalent to
+          * vkQueueWaitIdle / D3D12 Signal+Wait.
+          *
+          * This was previously #if 0'd out, leaking every menu
+          * texture's RSX memory permanently.  On PS3 with 256MB
+          * RAM, menu navigation would eventually exhaust memory. */
+         if (rsx && rsx->context)
+            rsxFinish(rsx->context, 0);
+         rsxFree(texture->data);
+      }
+      free(texture);
+   }
+}
+
+#ifdef HAVE_THREADS
+typedef struct
+{
+   void                         *video_data;
+   struct texture_image         *image;
+   enum texture_filter_type      filter_type;
+   uintptr_t                     handle;
+} rsx_texture_cmd_t;
+
+static uintptr_t rsx_texture_load_wrap(void *data)
+{
+   rsx_texture_cmd_t *cmd = (rsx_texture_cmd_t*)data;
+   cmd->handle = rsx_load_texture_internal(
+         cmd->video_data, cmd->image, cmd->filter_type);
+   return 0;
+}
+
+static uintptr_t rsx_texture_unload_wrap(void *data)
+{
+   rsx_texture_cmd_t *cmd = (rsx_texture_cmd_t*)data;
+   rsx_unload_texture_internal(cmd->video_data, cmd->handle);
+   return 0;
+}
+#endif
+
+static uintptr_t rsx_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      rsx_texture_cmd_t cmd;
+      cmd.video_data  = video_data;
+      cmd.image       = (struct texture_image *)data;
+      cmd.filter_type = filter_type;
+      cmd.handle      = 0;
+      video_thread_texture_handle(&cmd, rsx_texture_load_wrap);
+      return cmd.handle;
+   }
+#endif
+   return rsx_load_texture_internal(video_data, data, filter_type);
 }
 
 static void rsx_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
-   rsx_texture_t *texture = (rsx_texture_t *)handle;
-   if (texture)
+   if (!handle)
+      return;
+#ifdef HAVE_THREADS
+   if (threaded)
    {
-#if 0
-      /* TODO fix crash on loading core */
-      if (texture->data)
-         rsxFree(texture->data);
-#endif
-      free(texture);
+      rsx_texture_cmd_t cmd;
+      cmd.video_data  = data;
+      cmd.image       = NULL;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = handle;
+      video_thread_texture_handle(&cmd, rsx_texture_unload_wrap);
+      return;
    }
+#endif
+   rsx_unload_texture_internal(data, handle);
 }
 
 #if 0
@@ -2342,7 +2341,7 @@ static bool rsx_frame(void* data, const void* frame,
    if (statistics_show)
       if (osd_params)
          font_driver_render_msg(gcm,
-               video_info->stat_text,
+               video_info->stat_text, video_info->stat_text_len,
                osd_params, NULL);
 #endif
 
@@ -2357,7 +2356,7 @@ static bool rsx_frame(void* data, const void* frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(gcm, msg, NULL, NULL);
+      font_driver_render_msg(gcm, msg, strlen(msg), NULL, NULL);
 
 #if 0
    /* TODO: translucid menu */
@@ -2495,12 +2494,12 @@ static void rsx_viewport_info(void* data, struct video_viewport* vp)
  * or can it be removed? */
 static void rsx_set_osd_msg(void *data,
       video_frame_info_t *video_info,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    rsx_t* gcm = (rsx_t*)data;
    if (gcm && gcm->msg_rendering_enabled)
-      font_driver_render_msg(data, msg, params, font);
+      font_driver_render_msg(data, msg, msg_len, params, font);
 }
 #endif
 
@@ -2528,10 +2527,11 @@ static const video_poke_interface_t rsx_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void rsx_get_poke_interface(void* data,
@@ -2566,6 +2566,8 @@ video_driver_t video_gcm =
 #endif
    rsx_get_poke_interface,
    rsx_wrap_type_to_enum,
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    rsx_widgets_enabled
 #endif

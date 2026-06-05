@@ -190,6 +190,7 @@ int file_archive_compressed_read(
 
 const struct file_archive_file_backend* file_archive_get_zlib_file_backend(void);
 const struct file_archive_file_backend* file_archive_get_7z_file_backend(void);
+const struct file_archive_file_backend* file_archive_get_zstd_file_backend(void);
 
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path);
 
@@ -216,6 +217,7 @@ uint32_t file_archive_get_file_crc32_and_size(const char *path, uint64_t *size);
 
 extern const struct file_archive_file_backend zlib_backend;
 extern const struct file_archive_file_backend sevenzip_backend;
+extern const struct file_archive_file_backend zstd_backend;
 
 RETRO_END_DECLS
 

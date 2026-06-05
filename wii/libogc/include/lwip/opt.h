@@ -482,11 +482,7 @@ a lot of data that needs to be copied, this should be set high. */
  *    of living in lcp.h)
  */
 #define PPP_MTU                         1500     /* Default MTU (size of Info field) */
-#if 0
-#define PPP_MAXMTU  65535 - (PPP_HDRLEN + PPP_FCSLEN)
-#else
 #define PPP_MAXMTU                      1500 /* Largest MTU we allow */
-#endif
 #define PPP_MINMTU                      64
 #define PPP_MRU                         1500     /* default MRU = max length of info field */
 #define PPP_MAXMRU                      1500     /* Largest MRU we allow */

@@ -32,7 +32,13 @@
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 
 #include "../ui/drivers/cocoa/cocoa_common.m"
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
+/* RetroArchPlaylistManager uses Obj-C lightweight generics and
+ * nullability macros (Xcode 7+, 2015).  Usable on iOS/tvOS and
+ * modern macOS, not on older macOS SDKs.  Flag is synthesized
+ * in cocoa_common.h for non-qb builds; set directly by qb. */
 #include "../ui/drivers/cocoa/RetroArchPlaylistManager.m"
+#endif
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/cocoa_gl_ctx.m"
 #endif
@@ -76,14 +82,10 @@
 
 #ifdef HAVE_AVF
 #include "../camera/drivers/avfoundation.m"
-#endif
-
-#if defined(HAVE_DISCORD)
-#include "../deps/discord-rpc/src/discord_register_osx.m"
+#include "../record/drivers/record_avfoundation.m"
 #endif
 
 #ifdef HAVE_METAL
-#import "../gfx/common/metal/metal_renderer.m"
 #import "../gfx/drivers/metal.m"
 #endif
 

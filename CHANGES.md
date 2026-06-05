@@ -1,5 +1,151 @@
 # Future
+- 3DS: Remove bottom screen fade out animation
+- AI/TRANSLATION: Fix for drawing translation overlay within viewport
+- ANDROID: Fix Enter key not working on keyboards
+- ANDROID: Enable ZSTD compression usage
+- ANDROID: Preserve OpenGL context when app is paused
+- ANDROID: Fix double launch issue when changing games from external launcher
+- ANDROID: Allow launchers to pass content:// URIs to RetroArch
+- ANDROID: Enable network commands
+- ANDROID: Fix dual-motor rumble for USB-connected DS4 and DualSense controllers
+- AUDIO: ASIO driver for Windows platforms
+- AUDIO/MICROPHONE: Fix resampling, apple drivers
+- APPLE: Use coreaudio3 resampling
+- APPLE: Add coreaudio3 driver to iOS/TVOS
+- APPLE: Add jollycv, skyemu, gearlynx, amiarcadia, o2em, uzem , applewin, azahar cores to App Store builds
+- APPLE: Add Apple on-device OCR / translation to AI service
+- APPLE: Add avfoundation record driver
+- COMMAND: Fix null pointer exception in COMMAND_GET_STATUS
+- COMMAND: Only allow pause when there is a core running
+- CHEEVOS: Update to rcheevos 12.3
+- CHEEVOS: Download badges on demand only
+- CHEEVOS: Fix for PS2/PSP CHD hashing with RetroAchievements
+- CLOUDSYNC: Google Drive cloud sync driver
+- CONFIG: Fix saving main configuration after load configuration
+- DOS: RetroArch for DOS can now start up and handle keyboard correctly
+- CLOUDSYNC: Conflict resolution options
+- EMSCRIPTEN: Added dice to core selection dropdown
+- EMSCRIPTEN: Numerous bugfixes
+- FFMPEG: new features for save state, variable strength seek, audio/subtitle stream controls
+- INPUT: Fix illuminance sensor on Linux
+- INPUT: Fix raw mouse position after window state changes
+- INPUT: New analog-to-digital types: both stick, twin-stick (for pressing face buttons with analog stick).
+- INPUT: Fix for setups which have Game Focus and Hotkey Enable on the same key
+- INPUT: Autoconf profile load/save rework: saved profiles have now higher priority, several QoL improvements for saving
+- INPUT: Allow remap of gyro/accelerometer axes in autoconfig
+- INPUT: Fix "Sort Remaps by Gamepad" when launching from CLI
+- INPUT/ANDROID: Default for input block timeout is now 1 instead of 0
+- INPUT/MFI: Controller disconnection fix
+- INPUT/SDL: Fix controller vid/pid detection on Windows
+- INPUT/SDL: Add wiimote sensor capabilities
+- INPUT/UDEV: Fix multi-touch detection
+- INPUT/UDEV: Gyroscope and accelerometer sensor support
+- INPUT/UDEV: Add wiimote sensor capabilities
+- IOS: Fix external keyboards
+- IOS: Add pd777 core
+- LAKKA: RetroFlag specific options for safe shutdown and reset
+- LIBRETRO: ROM memory type added
+- LIBRETRO: Sensor interface clarifications
+- LIBRETRO: RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO allows cores to disable frontend's save state undo feature to decrease memory usage
+- LIBRETRO: Performance improvements for nbio and archive handling in libretro-common
+- LIBRETRO: Performance improvements for utf encoding in libretro-common
+- LIBRETRO: Performance improvements for crc32 computation
+- LIBRETRO: Enable Linux ARM64 compilation for RetroArch (and several cores)
+- LIBRETRO: Fix CHD handling of MODE1/RAW MODE2/RAW tracks
+- LIBRETRO: API for coordinating executable memory regions 
+- LOCALIZATION: Add Thai language
+- MACOS: Fix OpenGL color on wide gamut displays
+- MACOS: Support for physical optical discs
+- MENU: Do hard reset when pushing RetroPad Start on Restart menu item
+- MENU: Remove "Missing firmware check" option
+- MENU: Show keyboard overlay selection even if it is not loaded
+- MENU: Core info link improvements
+- MENU: Disc control improvements: allow change without eject, insert is auto-delayed to allow core to detect disc change, save file name not changed when manual disc append is used
+- MENU: Fixes for building without menu
+- MENU: Widget default size adjusted
+- MENU: Use RetroPad Y inside shader menu to toggle background opacity or reset shader passes
+- MENU: Fast-forward notification control now acts as frame throttle notification control (including slowmotion and rewind)
+- MENU: Unused RetroRating and performance level indications removed
+- MENU: Evergarden theme for Ozone and RGUI
+- MENU: Saving menu is reorganized
+- MENU: Save state thumbnails are now saved in native resolution for HW rendered cores
+- MENU: Refactor of bind/remap menu
+- MENU: Rename Quick Menu Restart to Reset
+- MENU: Add sublabels for built-in cores and show them in core manager list
+- MENU: Cheat menu rework
+- MENU: Add Load State to Run menu
+- MENU: Fix crash when closing content with runahead and remaps active
+- MENU: Default core downloader URL on ARM64 Linux platforms
+- MENU: New "Display Time" on-screen panel
+- MENU: New hotkey for Toggle Video Filter
+- MENU/EXPLORE: Improve merging metadata of similar items (mostly for NES db)
+- MENU/GLUI: Add Dracula color theme
+- MENU/OZONE: Add dynamic header icon option
+- MENU/OZONE: Fix occasional left mouse click selection error
+- MENU/OZONE: Left sidebar is now optional
+- MENU/XMB: Current menu icon refactor
+- MENU/XMB: Left thumbnail and handheld mode fixes
+- MENU/XMB: Tab change possible by gestures
+- MENU/XMB: Horizontal menu is now optional
+- NETWORK: New network commands SAVE_STATE_SLOT N and GET_CONFIG_PARAM
+- OVERLAY: Allow overlays to position the viewport
+- OVERLAY: Hold button function
+- OVERLAY: Allow interaction during next overlay swap
+- OVERLAY: Alternative 2-touch option
+- OVERLAY: Allow touch mouse/lightgun to still work when controller is connected
+- PS2: Improve driver usage
+- PS2: Fix booting from internal HDD
+- RECORD: Fix GPU recording performance
+- RJPEG, RPNG: Optimizations, Add Neon and SSE2 optimized codepaths
+- SCAN: Fix 3DS content scanning skipping all files
+- SCAN: Fix CHD scanning skipping some files
+- SCAN: Improve Saturn content recognition
+- SCAN: Improve Philips CD-i content recognition
+- SCAN: Improve scan performance by caching playlist updates
+- SCAN: Interpret M3U files during scanning
+- SCAN: Merge manual and automatic scan into a more flexible setup
+- SCAN: Improve GDI content recognition
+- SHADER: Display on-screen error when preset load fails
+- SHADER: Add gyroscope / accelerometer uniforms for shaders
+- SHADER: Add aggressive shader caching to slang shader backend
+- VIDEO: Throttle framerate when VSync is enabled but window is not focused
+- VIDEO: New video filters de-dither, pixel-art-AA, ntsc, crop-borders
+- VIDEO/GL: Fix some issues with GLSL shaders when using GLCore driver
+- VIDEO/SDL2: Add shared context
+- VIDEO/D3D9: Various rendering fixes and improvements
+- VIDEO/D3D9: d3d9_hlsl is now the default on Windows XP
+- VIDEO/D3D11/D3D12/VULKAN: Major HDR update. Inverse tone mapping uses RGB maxing instead of luminance, better full-spectrum remapping of SDR space to HDR, Contrast option remove. Performance improved. HDR menu settings exposed to shaders, fast HDR single-pass scanline simulation added.
+- VIDEO/D3D11/D3D12/VULKAN: Multi-mode HDR Expand Gamut selection
+- VIDEO/D3D11/D3D12/VULKAN: scRGB (HDR16) support
+- VIDEO/D3D11/D3D12/VULKAN: Show only supported HDR modes in menu
+- VIDEO/D3D11/D3D12: HDR screenshot support
+- VIDEO/D3D12: Support for scanline sync with d3dkmt
+- VIDEO/GDI: Various fixes and improvements
+- VIDEO/METAL: Add HDR10/scRGB output support
+- VIDEO/METAL: Add support for GPU index
+- VIDEO/SDL2: Add hardware-accelerated support for widgets, XMB, Ozone
+- VIDEO/VULKAN: VK_EXT_full_screen_exclusive is now optional
+- VIDEO/WAYLAND: Fix fullscreen window offset/incorrect sizing
+- VIDEO/WAYLAND: Fix issue with tiny menu in case of fullscreen
+- VITA: Enable cloudsync feature
+- VFS: Add Samba share browse and load content (Windows file shares)
+- WEBOS: Enable mouse use, include developer dir
+- WEBOS: Enable ffmpeg core
+- WEBOS: Add Wayland support
+- WEBOS: Allow user to decide about the screensaver
+- WEBOS: WebOS 1 and 2 compatibility
+- WEBOS: Magic remote improvements
+- WEBOS: Enable ALSA sound driver
+- WIN32: Fix Windows version detection
+- XBOX: Fix menu and achievement sounds
+- XBOX: Update UWP Mesa
+- XBOX: Add zstd support
+
+# 1.22.1
 - ANDROID: OnNewIntent handler to allow launchers start new content without closing first
+- ANDROID: Use app-specific storage for Google Play builds of RetroArch
+- ANDROID: Implement support for the Storage Access Framework, to allow the user to mount most directories1 from internal storage, the SD card, other removable storage devices and any document providers provided by other Android apps on the current device.
+- 3DS: Add 800px mode for New 3DS models
 - APPLE: Include sameduck, gearcoleco, geargrafx cores in App Store builds
 - APPLE: Include reminiscence, virtualjaguar, vitaquake2 cores in App Store builds
 - APPLE: Include gam4980 core in App Store builds
@@ -8,18 +154,20 @@
 - APPLE: Don't force fullscreen, allow multitasking on iPad
 - APPLE: AppIntents for Siri, Shortcuts
 - APPLE: Fix ffmpeg camera driver
+- APPLE/MFI: Try harder to own the home button
 - AUDIO: Microphone CoreAudio driver for iOS and macOS
 - AUTOCONF: Autoconfig match extended with a physical identifier
 - CAMERA: Use ffmpeg libavfilter virtual input device as default
 - CHEEVOS: Show additional message for unsupported achievements
 - CHEEVOS: Upgrade to rcheevos 12.1
 - CHEEVOS: Change expired token message from info to error
-- DATABASE: Filter in Database Manager now works for genre and region
+- CHEEVOS: Hashing of RVZ files is now supported
 - CLOUDSYNC: Enable icloud_drive cloud sync backend on MacOS / iOS
 - CLOUDSYNC: Don't always trust the server hash
 - CLOUDSYNC: Enable WebDAV support for Android
 - CLOUDSYNC: Speed up cloudsync on Apple
 - DATABASE: Improve multidisk game scanning
+- DATABASE: Filter in Database Manager now works for genre and region
 - EMSCRIPTEN: Support core switching
 - EMSCRIPTEN: Support suspend screensaver
 - EMSCRIPTEN/RWEBCAM: Fix camera driver
@@ -34,6 +182,7 @@
 - INPUT: Fix heavy slowdown when using Bluetooth XInput controllers with rumble
 - INPUT: Reset and close content hotkeys now require confirmation, similar to quit
 - INPUT: Menu toggle and hotkey enable can now be assigned to the same key
+- INPUT: Option to have hotkeys follow the port mapped first to the core
 - INPUT/ANDROID: Favor mouse coordinates for lightgun
 - INPUT/UDEV: Fix lost terminal settings after restart from menu
 - INPUT/BSV/REPLAY: Bumped replay format version to 2. Old replays will still play back fine.
@@ -44,8 +193,13 @@
 - INPUT/BSV/REPLAY: Add hotkeys and text commands to force a checkpoint insertion into the currently recording replay, and to seek backwards to the previous checkpoint and forwards to the next checkpoint.
 - INPUT/BSV/REPLAY: Add a text command to seek to a specific frame of the currently playing/recording replay; it will return via the command replier the actual seeked-to frame (right now it only supports seeking to checkpoints).
 - INTL: Add Irish Gaelic to selectable languages
+- IOS: Use native keyboard in search
 - IOS: Fix crash on iOS9 when fetching refresh rate
+- IOS: Stronger haptics, controllable by setting
+- IOS: Down arrow menu is removed, all 3 options are available by other means now
 - IOS/MACOS: Fix display server resolution and refresh rates
+- IOS/TVOS: Use native keyboard
+- JPEG: Fix clamping bug in JPEG decode
 - LIBRETRO: Deprecate intfstream_open_writable_memory
 - LIBRETRO: New environment function RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE
 - LINUX: Add full complement of key/value pairs to desktop entry
@@ -71,6 +225,7 @@
 - MENU: Allow kiosk mode and hiding of Settings menu also in GLUI and RGUI
 - MENU: Task widget improvements
 - MENU/GLUI: Show thumbnails in Explore view
+- MENU/XMB: Improvements for mobile/touch. More natural horizontal/vertical scrolling
 - MENU/XMB: Select button toggles thumbnails in playlists
 - MENU/XMB,OZONE: Fix content icons when playlist tabs are hidden
 - MENU/OZONE: Horizontal padding factor option
@@ -82,6 +237,7 @@
 - OTHER: ZStandard support and libchdr update for support of chd files converted with createdvd option
 - OVERLAY: Speed limit on touch pointer tracking
 - OVERLAY: Dedicate each touch pointer to hitboxes or pointing devices
+- OVERLAY: Fix overlay turbo fire
 - PLAYLIST: Built-in playlists are now stored under playlists/builtin
 - PLAYLIST: Fix subsystem information in playlists
 - PS3: Fix psl1ght target of dist-cores.sh
@@ -90,8 +246,12 @@
 - SAVESTATES: Savestate thumbnails are default enabled for x86_64 builds
 - SAVESTATES: Slot is now remembered using the runtime log file
 - SAVESTATES: Slot hotkey widget shows save state thumbnail
+- SCAN: Fix crash with Sega CD
+- SCAN: Log files without database match
+- SCAN: Optimization of database queries by content file size
 - VIDEO: Fix auto swap interval setup
 - VIDEO: Improvements for integer scale half scaling
+- VIDEO: Adjustments to smart integer scaling, considering title safe area
 - VIDEO: Frame delay improvements for the automatic setting
 - VIDEO: Auto-enable GPU recording with HW context cores
 - VIDEO: Fix viewport bias when using custom aspect ratio
@@ -102,13 +262,16 @@
 - VIDEO/SHADER: Shader hold function, useful for some lightguns and shader comparison
 - VIDEO/SWITCHRES: Horizontal and vertical geometry adjustment options added
 - VIDEO/SWITCHRES: Game overrides
+- VIDEO/VULKAN: Add VK_EXT_full_screen_exclusive extension support for Windows
 - VIDEO/WAYLAND: Support for xdg-toplevel-icon-v1
 - VIDEO/WAYLAND: Fix deadlock when using Wayland Vulkan driver
 - VIDEO/WAYLAND: Fix fullscreen on auto monitor index (partial)
 - VITA: Touchscreen support for PS Vita
+- VITA: Set RGUI framebuffer to 272 lines to remove blurriness
 - WEBOS: Various fixes and tunings
 - WEBOS: Disable core dumps
 - WEBOS: Debug builds enabled
+- WEBOS: Fix GLES 3/3.1/3.2 option, enable 64-bit option
 
 # 1.21.0
 - 3DS: Fix unique IDs for newer cores
@@ -228,6 +391,7 @@
 - VITA: Fixes
 - WINDOWS: Win32 socket improvements
 - WII: Fixes
+- WII: Audit pass on Wii/libogc-side code: fix strndup OOB read, calloc overflow check, gx_joypad button truncation, RGUI 21:9 menu_tex overflow + DCFlushRange size, MEM_K0_TO_K1 framebuffer & g_tex leak on driver re-init, device-thread mutex/cond leak, DEFAULT_DIR_REMAP ordering, hoist check_port0_active out of poll loop
 - WIIU: Fixes
 - WEBPLAYER: Update core list for 1.20.0
 

@@ -1,0 +1,30 @@
+name: CI Linux Headless [No Menu] (i686)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  linux-nomenu: # Smoketest build with no menu support compiled in
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install build-essential libxkbcommon-dev libx11-xcb-dev zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev nvidia-cg-toolkit nvidia-cg-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Configure
+        run: ./configure --disable-menu
+      - name: Build
+        run: make

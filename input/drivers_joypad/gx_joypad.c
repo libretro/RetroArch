@@ -242,14 +242,21 @@ static int32_t gx_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return (pad_state[port] & (UINT64_C(1) << joykey));
+   /* pad_state is uint64_t and enums run up to bit 62 (GX_QUIT_KEY).
+    * The previous implementation returned the uint64_t mask directly,
+    * which truncated to int32_t and reported "not pressed" for every
+    * joykey >= 32 (i.e. every Wiimote/Classic/Nunchuk binding). */
+   return (pad_state[port] & (UINT64_C(1) << joykey)) != 0;
 }
 
 static void gx_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
    if (port < DEFAULT_MAX_PADS)
    {
-      BITS_COPY16_PTR( state, pad_state[port] );
+      /* pad_state[] is uint64_t. The previous BITS_COPY16_PTR only
+       * preserved bits 0..15, dropping every Wiimote/Classic/Nunchuk
+       * bit (28..44) and GX_QUIT_KEY (62). */
+      BITS_COPY64_PTR( state, pad_state[port] );
    }
    else
       BIT256_CLEAR_ALL_PTR(state);
@@ -579,10 +586,6 @@ static void gx_joypad_poll(void)
       if (gx_joypad_query_pad(port))
          pad_count++;
 
-      /* Always enable 1 pad in port 0 if there's only 1 controller connected.
-       * This avoids being stuck in rgui input settings. */
-      check_port0_active(pad_count);
-
       if (ptype != pad_type[port])
          handle_hotplug(port, ptype);
 
@@ -591,6 +594,12 @@ static void gx_joypad_poll(void)
             if (analog_state[port][i][j] == -0x8000)
                analog_state[port][i][j] = -0x7fff;
    }
+
+   /* Always enable 1 pad in port 0 if there's only 1 controller connected.
+    * This avoids being stuck in rgui input settings.
+    * Pre-patch: called inside the per-port loop on a partial pad_count,
+    * which could mis-fire force-enable on the first few iterations. */
+   check_port0_active(pad_count);
 
    state_p1 = pad_state[0];
 

@@ -26,7 +26,6 @@
 
 #include <retro_miscellaneous.h>
 #include <libretro_dspfilter.h>
-#include <string/stdstring.h>
 
 #define sqr(a) ((a) * (a))
 
@@ -72,7 +71,7 @@ static void vibrato_free(void *data)
 static void vibratocore_init(struct vibrato_core *core,float depth,int samplerate,float freq)
 {
 	core->size       = VIBRATO_BASE_DELAY_SEC * samplerate * 2;
-	core->buffer     = malloc((core->size + VIBRATO_ADD_DELAY) * sizeof(float));
+	core->buffer     = (float*)malloc((core->size + VIBRATO_ADD_DELAY) * sizeof(float));
 	memset(core->buffer, 0, (core->size   + VIBRATO_ADD_DELAY) * sizeof(float));
 	core->samplerate = samplerate;
 	core->freq       = freq;

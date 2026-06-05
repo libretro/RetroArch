@@ -26,6 +26,7 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #endif
 
 #include <retro_common_api.h>
@@ -85,7 +86,26 @@ typedef struct rcheevos_locals_t
    rc_libretro_memory_regions_t memory;/* achievement addresses to core memory mappings */
 
 #ifdef HAVE_THREADS
-   enum event_command queued_command; /* action queued by background thread to be run on main thread */
+   /* Action queued by a background thread (e.g. the rcheevos
+    * client's HTTP completion thread) to be dispatched on the
+    * main thread by rcheevos_test. Atomic because writers can
+    * be on a worker thread while the main-thread reader is
+    * polling per frame; plain enum access would be a data race
+    * with no memory barrier. */
+   retro_atomic_int_t queued_command;
+
+   /* Bumped on every load lifecycle reset (rcheevos_load and
+    * rcheevos_unload). Captured at rc_client_begin_identify_and_load_game
+    * time and passed through the callback's userdata; the
+    * background callback compares its captured value against the
+    * current value at completion and drops stale completions
+    * whose target rcheevos_locals state has been reset out from
+    * under them. Without this, a load for game A that completes
+    * after the user has closed content and started loading game B
+    * would write FINALIZE_LOAD into queued_command and cause the
+    * main thread to apply game A's finalization to game B's
+    * memory map. */
+   retro_atomic_int_t load_generation;
 #endif
 
    char user_agent_prefix[128];       /* RetroArch/OS version information */
@@ -102,6 +122,8 @@ typedef struct rcheevos_locals_t
    bool hardcore_being_enabled;       /* allows callers to detect hardcore mode while it's being enabled */
 
    bool core_supports;                /* false if core explicitly disables achievements */
+   bool badges_loaded;                /* true once all badges have been loaded */
+   bool badges_loading;               /* true if the download queue is running */
 } rcheevos_locals_t;
 
 rcheevos_locals_t* get_rcheevos_locals(void);

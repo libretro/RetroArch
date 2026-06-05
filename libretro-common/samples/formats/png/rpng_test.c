@@ -88,7 +88,7 @@ static bool rpng_load_image_argb(const char *path, uint32_t **data,
    do
    {
       retval = rpng_process_image(rpng,
-            (void**)data, file_len, width, height);
+            (void**)data, file_len, width, height, false);
    }while(retval == IMAGE_PROCESS_NEXT);
 
    if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
@@ -134,7 +134,6 @@ static int test_rpng(const char *in_path)
    fprintf(stderr, "Path: %s.\n", in_path);
    fprintf(stderr, "Got image: %u x %u.\n", width, height);
 
-#if 0
    fprintf(stderr, "\nRPNG:\n");
    for (unsigned h = 0; h < height; h++)
    {
@@ -143,7 +142,6 @@ static int test_rpng(const char *in_path)
          fprintf(stderr, "[%08x] ", data[h * width + w]);
       fprintf(stderr, "\n");
    }
-#endif
 
 #ifdef HAVE_IMLIB2
    /* Validate with imlib2 as well. */
@@ -157,7 +155,6 @@ static int test_rpng(const char *in_path)
    height     = imlib_image_get_width();
    imlib_data = imlib_image_get_data_for_reading_only();
 
-#if 0
    fprintf(stderr, "\nImlib:\n");
    for (unsigned h = 0; h < height; h++)
    {
@@ -165,7 +162,6 @@ static int test_rpng(const char *in_path)
          fprintf(stderr, "[%08x] ", imlib_data[h * width + w]);
       fprintf(stderr, "\n");
    }
-#endif
 
    if (memcmp(imlib_data, data, width * height * sizeof(uint32_t)) != 0)
    {

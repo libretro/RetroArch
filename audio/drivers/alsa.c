@@ -18,7 +18,6 @@
 #include <stdlib.h>
 
 #include <lists/string_list.h>
-#include <string/stdstring.h>
 
 #include <alsa/asoundlib.h>
 #include <alsa/pcm.h>
@@ -209,7 +208,6 @@ static struct string_list *alsa_microphone_device_list_new(const void *data)
 
 static void alsa_microphone_device_list_free(const void *driver_context, struct string_list *devices)
 {
-   (void)driver_context;
    string_list_free(devices);
    /* Does nothing if devices is NULL */
 }
@@ -539,4 +537,5 @@ audio_driver_t audio_alsa = {
    alsa_device_list_free,
    alsa_write_avail,
    alsa_buffer_size,
+   NULL /* write_raw */
 };

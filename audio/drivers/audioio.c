@@ -205,4 +205,5 @@ audio_driver_t audio_audioio = {
    NULL,
    audioio_write_avail,
    audioio_buffer_size,
+   NULL /* write_raw */
 };

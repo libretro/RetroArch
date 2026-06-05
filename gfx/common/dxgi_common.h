@@ -24,12 +24,23 @@ RETRO_BEGIN_DECLS
 typedef struct ALIGN(16)
 {
    math_matrix_4x4   mvp;
-   float             contrast;         /* 2.0f    */
-   float             paper_white_nits; /* 200.0f  */
-   float             max_nits;         /* 1000.0f */
-   float             expand_gamut;     /* 1.0f    */
-   float             inverse_tonemap;  /* 1.0f    */
-   float             hdr10;            /* 1.0f    */
+   struct
+   {
+      float width;
+      float height;
+   } source_size;
+   struct
+   {
+      float width;
+      float height;
+   } output_size;
+   float             paper_white_nits;    /* 200.0f  */
+   unsigned          subpixel_layout;     /* 0       */
+   float             scanlines;           /* 1.0f    */
+   unsigned          expand_gamut;        /* 0       */
+   float             inverse_tonemap;     /* 1.0f    */
+   float             hdr10;               /* 1.0f    */
+   unsigned          hdr_mode;            /* 0 = off, 1 = HDR10, 2 = scRGB, 3 = PQ->scRGB */
 } dxgi_hdr_uniform_t;
 
 enum dxgi_swapchain_bit_depth
@@ -274,7 +285,7 @@ enum dxgi_swapchain_bit_depth
 #endif
 
 #include <assert.h>
-#include <dxgi1_6.h>
+#include "../include/dxsdk/dxgi1_6.h"
 
 #ifndef countof
 #define countof(a) (sizeof(a) / sizeof(*a))
@@ -465,6 +476,26 @@ void dxgi_set_hdr_metadata(
       float                         max_cll,
       float                         max_fall
 );
+
+/* Convert an HDR swapchain-format pixel buffer into SDR BGR24 bottom-up,
+ * suitable for a screenshot.  src_format is the swapchain format:
+ *   - DXGI_FORMAT_R10G10B10A2_UNORM : HDR10 (ST.2084 PQ, BT.2020)
+ *   - DXGI_FORMAT_R16G16B16A16_FLOAT: scRGB (linear BT.709, 1.0 = 80 nits)
+ * paper_white_nits is the user's configured SDR paper-white (typically
+ * 200), used to scale the HDR encoding back down so SDR content in the
+ * original framebuffer maps back to SDR 1.0.  Source is top-down; the
+ * output is laid out bottom-up to match the read_viewport contract.
+ * Returns false if the format is not an HDR format we handle. */
+bool dxgi_hdr_readback_to_bgr24(
+      DXGI_FORMAT  src_format,
+      const void*  src_data,
+      unsigned     src_pitch,
+      unsigned     src_x,
+      unsigned     src_y,
+      unsigned     width,
+      unsigned     height,
+      float        paper_white_nits,
+      uint8_t*     dst_bgr24);
 #endif
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);

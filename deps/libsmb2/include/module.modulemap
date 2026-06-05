@@ -1,0 +1,21 @@
+module SMB2 [system] [extern_c] {
+    module LibSMB2 {
+        header "apple/config.h"
+        header "smb2/smb2-errors.h"
+        header "smb2/smb2.h"
+        header "smb2/libsmb2.h"
+		header "smb2/libsmb2-dcerpc.h"
+		header "smb2/libsmb2-dcerpc-lsa.h"
+        header "smb2/libsmb2-dcerpc-srvsvc.h"
+    }
+    
+    module Internal {
+        header "libsmb2-private.h"
+    }
+    
+    explicit module Raw {
+        header "smb2/libsmb2-raw.h"
+    }
+    
+    export SMB2
+}

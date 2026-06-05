@@ -142,7 +142,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 #endif
 
    {
-      static float pure_white[16] = {
+      float pure_white[16] = {
          1.00, 1.00, 1.00, 1.00,
          1.00, 1.00, 1.00, 1.00,
          1.00, 1.00, 1.00, 1.00,
@@ -270,6 +270,24 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       /* Badge */
       else
       {
+         /* Backdrop */
+         gfx_display_draw_quad(
+            p_disp,
+            video_info->userdata,
+            video_width,
+            video_height,
+            screen_pos_x,
+            screen_pos_y,
+            state->height,
+            state->height,
+            video_width,
+            video_height,
+            p_dispwidget->backdrop_orig,
+            NULL);
+
+         if (dispctx && dispctx->blend_begin)
+            dispctx->blend_begin(video_info->userdata);
+
          gfx_widgets_draw_icon(
             video_info->userdata,
             p_disp,
@@ -284,6 +302,9 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             1.0f, /* cos(rad)   = cos(0)  = 1.0f */
             0.0f, /* sine(rad)  = sine(0) = 0.0f */
             pure_white);
+
+         if (dispctx && dispctx->blend_end)
+            dispctx->blend_end(video_info->userdata);
       }
 
       if (is_folding)
@@ -551,10 +572,10 @@ static void gfx_widget_achievement_popup_start(
    state->width = MAX(
       font_driver_get_message_width(
          p_dispwidget->gfx_widget_fonts.regular.font,
-         state->queue[state->queue_read_index].title, 0, 1.0f),
+         state->queue[state->queue_read_index].title, strlen(state->queue[state->queue_read_index].title), 1.0f),
       font_driver_get_message_width(
          p_dispwidget->gfx_widget_fonts.regular.font,
-         state->queue[state->queue_read_index].subtitle, 0, 1.0f)
+         state->queue[state->queue_read_index].subtitle, strlen(state->queue[state->queue_read_index].subtitle), 1.0f)
    );
    state->width += p_dispwidget->simple_widget_padding * 2;
    state->unfold = 0.0f;
@@ -632,6 +653,13 @@ void gfx_widgets_push_achievement(const char* title, const char* subtitle, const
 #endif
 }
 
+static bool gfx_widget_achievement_popup_visible(void)
+{
+   gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
+   return state->queue_read_index >= 0
+      && state->queue[state->queue_read_index].title;
+}
+
 const gfx_widget_t gfx_widget_achievement_popup = {
    &gfx_widget_achievement_popup_init,
    &gfx_widget_achievement_popup_free,
@@ -639,5 +667,6 @@ const gfx_widget_t gfx_widget_achievement_popup = {
    &gfx_widget_achievement_popup_context_destroy,
    NULL, /* layout */
    NULL, /* iterate */
-   &gfx_widget_achievement_popup_frame
+   &gfx_widget_achievement_popup_frame,
+   &gfx_widget_achievement_popup_visible
 };

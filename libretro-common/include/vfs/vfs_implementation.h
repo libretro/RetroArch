@@ -59,6 +59,8 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
 
 int retro_vfs_stat_impl(const char *path, int32_t *size);
 
+int retro_vfs_stat_64_impl(const char *path, int64_t *size);
+
 int retro_vfs_mkdir_impl(const char *dir);
 
 libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *dir, bool include_hidden);

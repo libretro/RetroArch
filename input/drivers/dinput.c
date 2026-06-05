@@ -45,8 +45,6 @@
 #include "../../config.h"
 #endif
 
-#include <string/stdstring.h>
-
 #ifndef _XBOX
 #include "../../gfx/common/win32_common.h"
 #endif
@@ -144,7 +142,7 @@ static void *dinput_init(const char *joypad_driver)
    if (!(di = (struct dinput_input*)calloc(1, sizeof(*di))))
       return NULL;
 
-   if (!string_is_empty(joypad_driver))
+   if (joypad_driver && *joypad_driver)
       di->joypad_drv_name = strdup(joypad_driver);
 
 #ifdef __cplusplus

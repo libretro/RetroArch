@@ -96,8 +96,19 @@ static void *android_gfx_ctx_init(void *video_driver)
    android_ctx_data_t        *and       = (android_ctx_data_t*)
       calloc(1, sizeof(*and));
 
-   if (!android_app || !and)
-      return false;
+   /* Separate the two checks so the combined bail doesn't leak
+    * 'and' when it succeeded but android_app was NULL.  In the
+    * pre-patch form both conditions shared one return without
+    * a free.  Also fixed the return value: the pre-patch
+    * 'return false' was 'return 0' which is NULL for a void*-
+    * returning function but sloppy; use NULL explicitly. */
+   if (!and)
+      return NULL;
+   if (!android_app)
+   {
+      free(and);
+      return NULL;
+   }
 
 #ifdef HAVE_OPENGLES
    if (g_es3)
@@ -274,6 +285,27 @@ static uint32_t android_gfx_ctx_get_flags(void *data)
 
 static void android_gfx_ctx_set_flags(void *data, uint32_t flags) { }
 
+static bool android_gfx_ctx_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   struct android_app *android_app = (struct android_app*)g_android;
+   android_ctx_data_t *and = (android_ctx_data_t*)data;
+   return egl_create_surface(&and->egl, android_app->window);
+#else
+   return false;
+#endif
+}
+
+static bool android_gfx_ctx_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   android_ctx_data_t *and = (android_ctx_data_t*)data;
+   return egl_destroy_surface(&and->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
    android_gfx_ctx_destroy,
@@ -286,7 +318,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   android_display_get_metrics,
+   NULL, /* get_metrics - handled by display server */
    NULL,
    NULL, /* update_title */
    android_gfx_ctx_check_window,
@@ -309,5 +341,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_set_flags,
    android_gfx_ctx_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   android_gfx_ctx_create_surface,
+   android_gfx_ctx_destroy_surface
 };

@@ -6,10 +6,6 @@
 #define HAVE_COCOATOUCH
 #endif
 
-#ifndef HAVE_IOS_SWIFT
-#define HAVE_IOS_SWIFT
-#endif
-
 #include "libretro-common/include/libretro.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../input/input_keymaps.h"

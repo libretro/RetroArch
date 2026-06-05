@@ -69,6 +69,14 @@
    coords[5] = yamt; \
    coords[7] = yamt
 
+#if defined(HAVE_SLANG)
+#define GL3_DEFAULT_SHADER_TYPE RARCH_SHADER_SLANG
+#elif defined(HAVE_GLSL)
+#define GL3_DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#else
+#define GL3_DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
+#endif
+
 struct gl3_streamed_texture
 {
    GLuint tex;
@@ -132,22 +140,24 @@ typedef struct gl3
    struct
    {
       GLuint alpha_blend;
-#ifdef HAVE_SHADERPIPELINE
       GLuint font;
+#ifdef HAVE_SHADERPIPELINE
       GLuint ribbon;
       GLuint ribbon_simple;
       GLuint snow_simple;
       GLuint snow;
       GLuint bokeh;
+      GLuint snowflake;
 #endif /* HAVE_SHADERPIPELINE */
       struct gl3_buffer_locations alpha_blend_loc;
-#ifdef HAVE_SHADERPIPELINE
       struct gl3_buffer_locations font_loc;
+#ifdef HAVE_SHADERPIPELINE
       struct gl3_buffer_locations ribbon_loc;
       struct gl3_buffer_locations ribbon_simple_loc;
       struct gl3_buffer_locations snow_simple_loc;
       struct gl3_buffer_locations snow_loc;
       struct gl3_buffer_locations bokeh_loc;
+      struct gl3_buffer_locations snowflake_loc;
 #endif /* HAVE_SHADERPIPELINE */
    } pipelines;
 #endif /* HAVE_SLANG */
@@ -166,6 +176,8 @@ typedef struct gl3
    unsigned pbo_readback_index;
    unsigned hw_render_max_width;
    unsigned hw_render_max_height;
+   unsigned menu_texture_width;
+   unsigned menu_texture_height;
    GLuint scratch_vbos[GL_CORE_NUM_VBOS];
    GLuint hw_render_texture;
    GLuint hw_render_fbo;
@@ -180,6 +192,7 @@ typedef struct gl3
    uint16_t flags;
 
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
+   bool menu_texture_rgb32;
 } gl3_t;
 
 typedef struct gl3_video_shader_ctx_init
@@ -378,6 +391,53 @@ GLuint gl3_compile_shader(GLenum stage, const char *source)
    return shader;
 }
 
+/**
+ * gl3_parse_version:
+ * @version : GL_VERSION string (e.g. "4.6", "OpenGL ES 3.0", "OpenGL 4.5 …")
+ * @major   : pointer receiving the major version number
+ * @minor   : pointer receiving the minor version number
+ *
+ * Returns true if both major and minor were parsed successfully.
+ */
+static bool gl3_parse_version(const char *version,
+      unsigned *major, unsigned *minor)
+{
+   const char *p = version;
+   unsigned val;
+
+   if (!p)
+      return false;
+
+   /* Skip any leading non-digit prefix
+    * ("OpenGL ES ", "OpenGL ", etc.) */
+   while (*p && (*p < '0' || *p > '9'))
+      p++;
+
+   if (*p < '0' || *p > '9')
+      return false;
+
+   /* Parse major */
+   val = 0;
+   while (*p >= '0' && *p <= '9')
+      val = val * 10 + (*p++ - '0');
+   *major = val;
+
+   if (*p != '.')
+      return false;
+   p++;
+
+   if (*p < '0' || *p > '9')
+      return false;
+
+   /* Parse minor */
+   val = 0;
+   while (*p >= '0' && *p <= '9')
+      val = val * 10 + (*p++ - '0');
+   *minor = val;
+
+   return true;
+}
+
 uint32_t gl3_get_cross_compiler_target_version(void)
 {
    const char *version = (const char*)glGetString(GL_VERSION);
@@ -385,13 +445,13 @@ uint32_t gl3_get_cross_compiler_target_version(void)
    unsigned minor      = 0;
 
 #ifdef HAVE_OPENGLES3
-   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+   if (!gl3_parse_version(version, &major, &minor))
       return 300;
 
    if (major == 2 && minor == 0)
       return 100;
 #else
-   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
+   if (!gl3_parse_version(version, &major, &minor))
       return 150;
 
    if (major == 3)
@@ -503,8 +563,6 @@ static void gfx_display_gl3_draw_pipeline(
             gl->chain.shader->use(gl, gl->chain.shader_data, draw->pipeline_id,
                   true);
 
-            t += 0.01;
-
             uniform_param.type              = UNIFORM_1F;
             uniform_param.enabled           = true;
             uniform_param.location          = 0;
@@ -559,7 +617,7 @@ static void gfx_display_gl3_draw_pipeline(
             draw->backend_data_size          = 2 * sizeof(float);
 
             /* Match UBO layout in shader. */
-            yflip = -1.0f;
+            yflip = 1.0f;
             memcpy(ubo_scratch_data, &t, sizeof(t));
             memcpy(ubo_scratch_data + sizeof(float), &yflip, sizeof(yflip));
             break;
@@ -568,6 +626,7 @@ static void gfx_display_gl3_draw_pipeline(
          case VIDEO_SHADER_MENU_3:
          case VIDEO_SHADER_MENU_4:
          case VIDEO_SHADER_MENU_5:
+         case VIDEO_SHADER_MENU_6:
             draw->backend_data               = ubo_scratch_data;
             draw->backend_data_size          = sizeof(math_matrix_4x4)
                + 4 * sizeof(float);
@@ -580,7 +639,8 @@ static void gfx_display_gl3_draw_pipeline(
                   output_size,
                   sizeof(output_size));
 
-            if (draw->pipeline_id == VIDEO_SHADER_MENU_5)
+            if (   draw->pipeline_id == VIDEO_SHADER_MENU_5
+                || draw->pipeline_id == VIDEO_SHADER_MENU_6)
                yflip = 1.0f;
 
             memcpy(ubo_scratch_data + sizeof(math_matrix_4x4)
@@ -589,31 +649,20 @@ static void gfx_display_gl3_draw_pipeline(
                   + 3 * sizeof(float), &yflip, sizeof(yflip));
             draw->coords          = &blank_coords;
             blank_coords.vertices = 4;
-            draw->prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
             break;
       }
    }
 #endif
 
-   t += 0.01;
+   t += 0.01f;
+   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
+    * exactly representable up to t ~ 167772 (where 0.5*ulp first
+    * exceeds 0.01), so 65536 has wide margin and wraps roughly
+    * every 30 h of cumulative menu time, making the discontinuity
+    * effectively unobservable. */
+   if (t > 65536.0f)
+      t -= 65536.0f;
 #endif
-}
-
-static GLenum gfx_display_prim_to_gl3_enum(
-      enum gfx_display_prim_type type)
-{
-   switch (type)
-   {
-      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
-         return GL_TRIANGLE_STRIP;
-      case GFX_DISPLAY_PRIM_TRIANGLES:
-         return GL_TRIANGLES;
-      case GFX_DISPLAY_PRIM_NONE:
-      default:
-         break;
-   }
-
-   return 0;
 }
 
 static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
@@ -643,8 +692,8 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
             draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
          : (math_matrix_4x4*)&gl->mvp_no_rot);
 
-      glDrawArrays(gfx_display_prim_to_gl3_enum(
-               draw->prim_type), 0, draw->coords->vertices);
+      /* Menu draws use a triangle-strip layout. */
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
    }
 #ifdef HAVE_SLANG
    else
@@ -694,6 +743,11 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
             glUseProgram(gl->pipelines.bokeh);
             loc = &gl->pipelines.bokeh_loc;
             break;
+
+         case VIDEO_SHADER_MENU_6:
+            glUseProgram(gl->pipelines.snowflake);
+            loc = &gl->pipelines.snowflake_loc;
+            break;
 #endif /* HAVE_SHADERPIPELINE */
 
          default:
@@ -740,18 +794,9 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
             4 * sizeof(float), (void *)(uintptr_t)0);
 
-      switch (draw->prim_type)
-      {
-         case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
-            break;
-         case GFX_DISPLAY_PRIM_TRIANGLES:
-            glDrawArrays(GL_TRIANGLES, 0, draw->coords->vertices);
-            break;
-         case GFX_DISPLAY_PRIM_NONE:
-         default:
-            break;
-      }
+      /* See the matching comment in the chain.active branch above:
+       * every caller passes TRIANGLESTRIP. */
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
 
       glDisableVertexAttribArray(0);
       glDisableVertexAttribArray(1);
@@ -925,26 +970,29 @@ static void *gl3_raster_font_init(void *data,
 static int gl3_raster_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
+   void *font_data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
    const struct font_glyph* glyph_q = NULL;
    gl3_raster_t *font   = (gl3_raster_t*)data;
-   const char* msg_end = msg + msg_len;
-   int delta_x         = 0;
+   const char* msg_end  = msg + msg_len;
+   int delta_x          = 0;
 
    if (     !font
          || !font->font_driver
          || !font->font_data )
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   get_glyph = font->font_driver->get_glyph;
+   font_data = font->font_data;
+   glyph_q   = get_glyph(font_data, '?');
 
    while (msg < msg_end)
    {
       const struct font_glyph *glyph;
-      unsigned code                  = utf8_walk(&msg);
+      unsigned code = utf8_walk(&msg);
 
       /* Do something smarter here ... */
-      if (!(glyph = font->font_driver->get_glyph(
-            font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -1043,15 +1091,32 @@ static void gl3_raster_font_render_line(gl3_t *gl,
    int y                = roundf(pos_y * gl->vp.height);
    int delta_x          = 0;
    int delta_y          = 0;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t) = font->font_driver->get_glyph;
+   void *font_data      = font->font_data;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that gl3_raster_font_get_message_width 
+    * would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= gl3_raster_font_get_message_width(font, msg, msg_len, scale);
-         break;
-      case TEXT_ALIGN_CENTER:
-         x -= gl3_raster_font_get_message_width(font, msg, msg_len, scale) / 2.0;
-         break;
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = get_glyph(font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
+
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    while (msg < msg_end)
@@ -1064,8 +1129,7 @@ static void gl3_raster_font_render_line(gl3_t *gl,
          unsigned code = utf8_walk(&msg);
 
          /* Do something smarter here ... */
-         if (!(glyph = font->font_driver->get_glyph(
-               font->font_data, code)))
+         if (!(glyph = get_glyph(font_data, code)))
             if (!(glyph = glyph_q))
                continue;
 
@@ -1121,12 +1185,13 @@ static void gl3_raster_font_render_message(
    const struct font_glyph* glyph_q = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / gl->vp.height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
-
+      const char *delim = msg;
+      size_t msg_len;
+      while (*delim != '\n' && *delim != '\0')
+         delim++;
+      msg_len = delim - msg;
       /* Draw the line */
       gl3_raster_font_render_line(gl, font,
             glyph_q,
@@ -1139,10 +1204,8 @@ static void gl3_raster_font_render_message(
             inv_win_width,
             inv_win_height,
             text_align);
-
-      if (!delim)
+      if (*delim == '\0')
          break;
-
       msg += msg_len + 1;
       lines++;
    }
@@ -1173,7 +1236,7 @@ static void gl3_raster_font_setup_viewport(
 static void gl3_raster_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    GLfloat color[4];
@@ -1192,7 +1255,7 @@ static void gl3_raster_font_render_msg(
    float video_msg_color_g          = settings->floats.video_msg_color_g;
    float video_msg_color_b          = settings->floats.video_msg_color_b;
 
-   if (!font || string_is_empty(msg) || !gl)
+   if (!font || !msg || !*msg || !gl)
       return;
 
    if (params)
@@ -1240,7 +1303,7 @@ static void gl3_raster_font_render_msg(
    else
       gl3_raster_font_setup_viewport(gl, width, height, font, full_screen);
 
-   if (!string_is_empty(msg)
+   if (  (msg && *msg)
          && font->font_data  && font->font_driver)
    {
       if (drop_x || drop_y)
@@ -1273,7 +1336,7 @@ static const struct font_glyph *gl3_raster_font_get_glyph(
 {
    gl3_raster_t *font = (gl3_raster_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 
@@ -1661,12 +1724,12 @@ static void gl3_destroy_resources(gl3_t *gl)
       glDeleteProgram(gl->pipelines.alpha_blend);
       gl->pipelines.alpha_blend = 0;
    }
-#ifdef HAVE_SHADERPIPELINE
    if (gl->pipelines.font)
    {
       glDeleteProgram(gl->pipelines.font);
       gl->pipelines.font = 0;
    }
+#ifdef HAVE_SHADERPIPELINE
    if (gl->pipelines.ribbon)
    {
       glDeleteProgram(gl->pipelines.ribbon);
@@ -1691,6 +1754,11 @@ static void gl3_destroy_resources(gl3_t *gl)
    {
       glDeleteProgram(gl->pipelines.bokeh);
       gl->pipelines.bokeh = 0;
+   }
+   if (gl->pipelines.snowflake)
+   {
+      glDeleteProgram(gl->pipelines.snowflake);
+      gl->pipelines.snowflake = 0;
    }
 #endif /* HAVE_SHADERPIPELINE */
 #endif /* HAVE_SLANG */
@@ -1928,37 +1996,10 @@ static void gl3_set_viewport(gl3_t *gl,
       unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
-   settings_t *settings            = config_get_ptr();
-   float device_aspect             = (float)vp_width / vp_height;
-   bool video_scale_integer        = settings->bools.video_scale_integer;
-
-   if (gl->ctx_driver->translate_aspect)
-      device_aspect         = gl->ctx_driver->translate_aspect(
-            gl->ctx_data, vp_width, vp_height);
-
-   if (video_scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&gl->vp,
-            vp_width, vp_height,
-            video_driver_get_aspect_ratio(),
-            (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false,
-            false);
-      vp_width  = gl->vp.width;
-      vp_height = gl->vp.height;
-   }
-   else if ((gl->flags & GL3_FLAG_KEEP_ASPECT) && !force_full)
-   {
-      gl->vp.full_height = gl->video_height;
-      video_viewport_get_scaled_aspect2(&gl->vp, vp_width, vp_height, false, device_aspect, video_driver_get_aspect_ratio());
-      vp_width           = gl->vp.width;
-      vp_height          = gl->vp.height;
-   }
-   else
-   {
-      gl->vp.x           = gl->vp.y = 0;
-      gl->vp.width       = vp_width;
-      gl->vp.height      = vp_height;
-   }
+   gl->vp.full_width  = vp_width;
+   gl->vp.full_height = vp_height;
+   video_driver_update_viewport(&gl->vp, force_full,
+         (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false, false);
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    gl3_set_projection(gl, &gl3_default_ortho, allow_rotate);
@@ -1966,13 +2007,13 @@ static void gl3_set_viewport(gl3_t *gl,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->out_vp_width  = vp_width;
-      gl->out_vp_height = vp_height;
+      gl->out_vp_width  = gl->vp.width;
+      gl->out_vp_height = gl->vp.height;
    }
 
-   gl->filter_chain_vp.x = gl->vp.x;
-   gl->filter_chain_vp.y = gl->vp.y;
-   gl->filter_chain_vp.width = gl->vp.width;
+   gl->filter_chain_vp.x      = gl->vp.x;
+   gl->filter_chain_vp.y      = gl->vp.y;
+   gl->filter_chain_vp.width  = gl->vp.width;
    gl->filter_chain_vp.height = gl->vp.height;
 }
 
@@ -1987,11 +2028,11 @@ static bool gl3_init_pipelines(gl3_t *gl)
 #include "vulkan_shaders/alpha_blend.frag.inc"
       ;
 
-#ifdef HAVE_SHADERPIPELINE
    static const uint32_t font_frag[] =
 #include "vulkan_shaders/font.frag.inc"
       ;
 
+#ifdef HAVE_SHADERPIPELINE
    static const uint32_t pipeline_ribbon_vert[] =
 #include "vulkan_shaders/pipeline_ribbon.vert.inc"
       ;
@@ -2019,6 +2060,10 @@ static bool gl3_init_pipelines(gl3_t *gl)
    static const uint32_t pipeline_bokeh_frag[] =
 #include "vulkan_shaders/pipeline_bokeh.frag.inc"
       ;
+
+   static const uint32_t pipeline_snowflake_frag[] =
+#include "vulkan_shaders/pipeline_snowflake.frag.inc"
+      ;
 #endif /* HAVE_SHADERPIPELINE */
 
    if (!gl->pipelines.alpha_blend)
@@ -2028,7 +2073,6 @@ static bool gl3_init_pipelines(gl3_t *gl)
    if (!gl->pipelines.alpha_blend)
       return false;
 
-#ifdef HAVE_SHADERPIPELINE
    if (!gl->pipelines.font)
       gl->pipelines.font = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
                                                       font_frag, sizeof(font_frag),
@@ -2036,6 +2080,7 @@ static bool gl3_init_pipelines(gl3_t *gl)
    if (!gl->pipelines.font)
       return false;
 
+#ifdef HAVE_SHADERPIPELINE
    if (!gl->pipelines.ribbon_simple)
       gl->pipelines.ribbon_simple = gl3_cross_compile_program(pipeline_ribbon_simple_vert, sizeof(pipeline_ribbon_simple_vert),
                                                                pipeline_ribbon_simple_frag, sizeof(pipeline_ribbon_simple_frag),
@@ -2055,6 +2100,13 @@ static bool gl3_init_pipelines(gl3_t *gl)
                                                        pipeline_bokeh_frag, sizeof(pipeline_bokeh_frag),
                                                        &gl->pipelines.bokeh_loc, true);
    if (!gl->pipelines.bokeh)
+      return false;
+
+   if (!gl->pipelines.snowflake)
+      gl->pipelines.snowflake = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
+                                                           pipeline_snowflake_frag, sizeof(pipeline_snowflake_frag),
+                                                           &gl->pipelines.snowflake_loc, true);
+   if (!gl->pipelines.snowflake)
       return false;
 
    if (!gl->pipelines.snow_simple)
@@ -2091,38 +2143,38 @@ static bool gl3_init_pipelines(gl3_t *gl)
  **/
 static enum rarch_shader_type gl3_get_fallback_shader_type(enum rarch_shader_type type)
 {
-#if defined(HAVE_SLANG) || defined(HAVE_GLSL) || defined(HAVE_CG)
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
    int i;
    gfx_ctx_flags_t flags;
    flags.flags     = 0;
    video_context_driver_get_flags(&flags);
 
-   if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL && type != RARCH_SHADER_SLANG)
+   /* No context driver advertises GFX_CTX_FLAGS_SHADERS_CG for the
+    * "glcore" video driver -- audited x_ctx.c, wgl_ctx.c, drm_ctx.c,
+    * wayland_ctx.c, etc.  Cg requires the legacy fixed-function / ARB
+    * asm pipeline that Core Profile contexts don't expose, so no
+    * RARCH_SHADER_CG path is wired up here.  GLSL and slang are both
+    * Core Profile-compatible and remain valid; in practice context
+    * drivers advertise SLANG for glcore but the GLSL fallback is kept
+    * for builds without slang/spirv-cross. */
+   if (type != RARCH_SHADER_GLSL && type != RARCH_SHADER_SLANG)
    {
-      type = DEFAULT_SHADER_TYPE;
+      type = GL3_DEFAULT_SHADER_TYPE;
 
-      if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL && type != RARCH_SHADER_SLANG)
+      if (type != RARCH_SHADER_GLSL && type != RARCH_SHADER_SLANG)
          type = RARCH_SHADER_SLANG;
    }
 
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < 2; i++)
    {
       switch (type)
       {
-         case RARCH_SHADER_CG:
-#ifdef HAVE_CG
-            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-               return type;
-#endif
-            type = RARCH_SHADER_SLANG;
-            break;
-
          case RARCH_SHADER_GLSL:
 #ifdef HAVE_GLSL
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                return type;
 #endif
-            type = RARCH_SHADER_CG;
+            type = RARCH_SHADER_SLANG;
             break;
 
          case RARCH_SHADER_SLANG:
@@ -2194,11 +2246,6 @@ static const shader_backend_t *gl3_shader_driver_set_backend(
 
    switch (fallback)
    {
-#ifdef HAVE_CG
-      case RARCH_SHADER_CG:
-         RARCH_LOG("[GLCore] Using Cg shader backend.\n");
-         return &gl_cg_backend;
-#endif
 #ifdef HAVE_GLSL
       case RARCH_SHADER_GLSL:
          RARCH_LOG("[GLCore] Using GLSL shader backend.\n");
@@ -2545,9 +2592,15 @@ static bool gl3_create_fbo_targets(gl3_t *gl)
 error:
    RARCH_ERR("[GLCore] Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
    if (gl->chain.fbo_feedback_texture)
+   {
       glDeleteTextures(1, &gl->chain.fbo_feedback_texture);
+      gl->chain.fbo_feedback_texture = 0;
+   }
    if (gl->chain.fbo_feedback)
+   {
       glDeleteFramebuffers(1, &gl->chain.fbo_feedback);
+      gl->chain.fbo_feedback = 0;
+   }
    glDeleteTextures(gl->chain.num_fbo_passes, gl->chain.fbo_texture);
    glDeleteFramebuffers(gl->chain.num_fbo_passes, gl->chain.fbo);
    gl->chain.num_fbo_passes = 0;
@@ -2580,7 +2633,7 @@ static bool gl3_init_filter_chain_with_path(gl3_t *gl, const char *shader_path)
 
    if (type != parse_type)
    {
-      if (!string_is_empty(shader_path))
+      if (shader_path && *shader_path)
          RARCH_WARN("[GLCore] Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
             shader_path, video_shader_type_to_str(parse_type), video_shader_type_to_str(type));
 
@@ -2589,7 +2642,13 @@ static bool gl3_init_filter_chain_with_path(gl3_t *gl, const char *shader_path)
 
 #ifdef HAVE_GLSL
    if (type == RARCH_SHADER_GLSL)
-      gl_glsl_set_context_type(true, gl->version_major, gl->version_minor);
+      gl_glsl_set_context_type(
+#ifdef HAVE_OPENGLES
+            false,
+#else
+            true,
+#endif
+            gl->version_major, gl->version_minor);
 #endif
 
 #ifdef HAVE_SLANG
@@ -2605,7 +2664,7 @@ static bool gl3_init_filter_chain_with_path(gl3_t *gl, const char *shader_path)
          return false;
       }
 
-      if (string_is_empty(shader_path))
+      if (!shader_path || !*shader_path)
       {
          RARCH_LOG("[GLCore] Loading stock shader.\n");
          return gl3_init_default_filter_chain(gl);
@@ -2818,7 +2877,6 @@ static void *gl3_init(const video_info_t *video,
    gl3_t *gl                            = (gl3_t*)calloc(1, sizeof(gl3_t));
    const gfx_ctx_driver_t *ctx_driver   = gl3_get_context(gl);
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-   unsigned i;
 
    if (!gl || !ctx_driver)
       goto error;
@@ -2914,8 +2972,8 @@ static void *gl3_init(const video_info_t *video,
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
 
-   if (!string_is_empty(version))
-      sscanf(version, "%u.%u", &gl->version_major, &gl->version_minor);
+   if (version && *version)
+      gl3_parse_version(version, &gl->version_major, &gl->version_minor);
 
    video_driver_set_gpu_api_version_string(version);
 
@@ -2949,8 +3007,9 @@ static void *gl3_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
-   video_driver_get_size(&temp_width, &temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
+   else
+      video_driver_get_output_size(&temp_width, &temp_height);
    gl->video_width  = temp_width;
    gl->video_height = temp_height;
 
@@ -3251,7 +3310,7 @@ static bool gl3_alive(void *data)
 
    if (temp_width != 0 && temp_height != 0)
    {
-      video_driver_set_size(temp_width, temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
       gl->video_width  = temp_width;
       gl->video_height = temp_height;
    }
@@ -3294,6 +3353,144 @@ static bool gl3_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
+#ifdef HAVE_SLANG
+/* ---- Deferred (per-frame) shader loading for GL Core ---- */
+
+typedef struct gl3_deferred_state
+{
+   gl3_filter_chain_t *new_chain;   /* chain being built          */
+   gl3_filter_chain_t *old_chain;   /* previous, kept as fallback */
+   enum glslang_filter_chain_filter filter;
+} gl3_deferred_state_t;
+
+static bool gl3_shader_load_begin(void *data,
+      shader_load_deferred_t *deferred)
+{
+   gl3_t *gl = (gl3_t *)data;
+   gl3_deferred_state_t *ds;
+
+   if (!gl)
+      return false;
+
+   ds = (gl3_deferred_state_t*)calloc(1, sizeof(*ds));
+   if (!ds)
+      return false;
+
+   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+
+   /* Keep old chain alive — it continues rendering
+    * while the new one is being compiled. */
+   ds->old_chain = gl->filter_chain;
+   ds->filter    = gl->video_info.smooth
+      ? GLSLANG_FILTER_CHAIN_LINEAR
+      : GLSLANG_FILTER_CHAIN_NEAREST;
+
+   ds->new_chain = gl3_filter_chain_create_deferred(
+         deferred->preset_path,
+         ds->filter,
+         &deferred->total_passes);
+
+   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+
+   if (!ds->new_chain)
+   {
+      RARCH_ERR("[GLCore] Deferred: failed to create chain for \"%s\".\n",
+            deferred->preset_path);
+      free(ds);
+      return false;
+   }
+
+   RARCH_LOG("[GLCore] Deferred: prepared %u passes for \"%s\".\n",
+         deferred->total_passes, deferred->preset_path);
+
+   deferred->driver_data = ds;
+   return true;
+}
+
+static bool gl3_shader_load_step(void *data,
+      shader_load_deferred_t *deferred)
+{
+   gl3_t *gl                = (gl3_t *)data;
+   gl3_deferred_state_t *ds = (gl3_deferred_state_t*)deferred->driver_data;
+   unsigned pass            = deferred->current_pass;
+
+   if (!gl || !ds)
+   {
+      deferred->state = SHADER_LOAD_FAILED;
+      return false;
+   }
+
+   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+
+   if (pass < deferred->total_passes)
+   {
+      RARCH_LOG("[GLCore] Deferred: compiling pass %u/%u...\n",
+            pass + 1, deferred->total_passes);
+
+      if (!gl3_filter_chain_compile_pass(ds->new_chain, pass, ds->filter))
+      {
+         RARCH_ERR("[GLCore] Deferred: failed to compile pass %u.\n", pass);
+         gl3_filter_chain_free(ds->new_chain);
+         /* Restore old chain */
+         gl->filter_chain = ds->old_chain;
+         deferred->state  = SHADER_LOAD_FAILED;
+         goto cleanup;
+      }
+
+      deferred->current_pass++;
+
+      if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+
+      return true; /* more work remains */
+   }
+
+   /* Check if this is a cancellation (state was changed externally).
+    * Don't try to finalize a partially compiled chain — just clean up. */
+   if (deferred->state != SHADER_LOAD_COMPILING)
+   {
+      RARCH_LOG("[GLCore] Deferred: cancelled, cleaning up.\n");
+      gl3_filter_chain_free(ds->new_chain);
+      gl->filter_chain = ds->old_chain;
+      deferred->state  = SHADER_LOAD_FAILED;
+      goto cleanup;
+   }
+
+   /* All passes compiled — finalize the chain */
+   RARCH_LOG("[GLCore] Deferred: finalizing chain...\n");
+
+   if (gl3_filter_chain_finalize(ds->new_chain))
+   {
+      /* Tear down old chain */
+      if (ds->old_chain)
+         gl3_filter_chain_free(ds->old_chain);
+
+      /* Swap in the new chain */
+      gl->filter_chain = ds->new_chain;
+      deferred->state  = SHADER_LOAD_DONE;
+
+      RARCH_LOG("[GLCore] Deferred: shader loaded successfully.\n");
+   }
+   else
+   {
+      RARCH_ERR("[GLCore] Deferred: finalize failed.\n");
+      gl3_filter_chain_free(ds->new_chain);
+      gl->filter_chain = ds->old_chain;
+      deferred->state  = SHADER_LOAD_FAILED;
+   }
+
+cleanup:
+   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   free(ds);
+   deferred->driver_data = NULL;
+   return false; /* no more work */
+}
+#endif /* HAVE_SLANG */
+
 static bool gl3_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -3319,10 +3516,16 @@ static bool gl3_set_shader(void *data,
    }
 
    if (gl->chain.fbo_feedback)
+   {
       glDeleteFramebuffers(1, &gl->chain.fbo_feedback);
+      gl->chain.fbo_feedback = 0;
+   }
 
    if (gl->chain.fbo_feedback_texture)
+   {
       glDeleteTextures(1, &gl->chain.fbo_feedback_texture);
+      gl->chain.fbo_feedback_texture = 0;
+   }
 
    if (!gl3_init_filter_chain_with_path(gl, path))
       return false;
@@ -3375,6 +3578,24 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
+   /* Lazy init / reinit: (re)initialize PBO readback when recording
+    * starts after driver init, or when viewport dimensions change. */
+   if (  !(gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
+       || (unsigned)gl->pbo_readback_scaler.in_width  != gl->vp.width
+       || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
+   {
+      recording_state_t *rec_st = recording_state_get_ptr();
+      if (rec_st && rec_st->enable)
+      {
+         /* Tear down old PBO resources before reinitializing */
+         if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
+            gl3_deinit_pbo_readback(gl);
+         gl->flags |= GL3_FLAG_PBO_READBACK_ENABLE;
+         if (gl3_init_pbo_readback(gl))
+            RARCH_LOG("[GLCore] (Re)initialized async PBO readback for recording.\n");
+      }
+   }
+
    num_pixels = gl->vp.width * gl->vp.height;
 
    if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
@@ -3409,7 +3630,7 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
        *
        * Keep codepath similar for GLES and desktop GL.
        */
-      gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
+      gl->readback_buffer_screenshot = (uint32_t*)malloc(num_pixels * sizeof(uint32_t));
 
       if (!gl->readback_buffer_screenshot)
          goto error;
@@ -3417,10 +3638,20 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       if (!is_idle)
          video_driver_cached_frame();
 
-      video_frame_convert_rgba_to_bgr(
-            (const void*)gl->readback_buffer_screenshot,
-            buffer,
-            num_pixels);
+      {
+         /* Clamp to the region glReadPixels actually wrote. */
+         unsigned rb_w = (gl->vp.width  > gl->video_width)
+            ? gl->video_width  : gl->vp.width;
+         unsigned rb_h = (gl->vp.height > gl->video_height)
+            ? gl->video_height : gl->vp.height;
+         video_frame_convert_rgba_to_bgr(
+               (const void*)gl->readback_buffer_screenshot,
+               buffer,
+               rb_w * sizeof(uint32_t),
+               rb_w * 3,
+               rb_w,
+               rb_h);
+      }
 
       free(gl->readback_buffer_screenshot);
       gl->readback_buffer_screenshot = NULL;
@@ -3440,6 +3671,15 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       struct gl3_streamed_texture *streamed,
       const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
+   if (gl->chain.active)
+   {
+      /* The input texture is expected to be square with a power of 2 size when not using Slang */
+      unsigned max = width > height ? width : height;
+      unsigned pow2_size = next_pow2(max);
+      width = pow2_size;
+      height = pow2_size;
+   }
+
    if (width != streamed->width || height != streamed->height)
    {
       if (streamed->tex != 0)
@@ -3793,35 +4033,6 @@ static bool gl3_frame(void *data, const void *frame,
       gl->textures_index = (gl->textures_index + 1)
          & (GL_CORE_NUM_TEXTURES - 1);
 
-   streamed = &gl->textures[gl->textures_index];
-
-   texture.image            = 0;
-   texture.width            = streamed->width;
-   texture.height           = streamed->height;
-   texture.padded_width     = 0;
-   texture.padded_height    = 0;
-   texture.format           = 0;
-
-   if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
-   {
-      texture.image         = gl->hw_render_texture;
-      texture.format        = GL_RGBA8;
-      texture.padded_width  = gl->hw_render_max_width;
-      texture.padded_height = gl->hw_render_max_height;
-
-      if (texture.width == 0)
-         texture.width      = 1;
-      if (texture.height == 0)
-         texture.height     = 1;
-   }
-   else
-   {
-      texture.image         = streamed->tex;
-      texture.format        = gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565;
-      texture.padded_width  = streamed->width;
-      texture.padded_height = streamed->height;
-   }
-
    /* Render to texture in first pass. */
    if (gl->chain.active && gl->chain.num_fbo_passes != 0)
    {
@@ -3832,6 +4043,7 @@ static bool gl3_frame(void *data, const void *frame,
       gl3_renderchain_start_render(gl);
    }
 
+   streamed = &gl->textures[gl->textures_index];
    if (frame)
    {
       if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
@@ -3840,22 +4052,8 @@ static bool gl3_frame(void *data, const void *frame,
          streamed->height   = frame_height;
       }
       else
-      {
-         if (gl->chain.active)
-            gl3_update_input_size(gl, frame_width, frame_height);
-
          gl3_update_cpu_texture(gl, streamed, frame,
                frame_width, frame_height, pitch);
-      }
-
-      /* No point regenerating mipmaps
-       * if there are no new frames. */
-      if (gl->chain.active && gl->chain.mipmap_active)
-      {
-         glBindTexture(GL_TEXTURE_2D, texture.image);
-         glGenerateMipmap(GL_TEXTURE_2D);
-         glBindTexture(GL_TEXTURE_2D, 0);
-      }
    }
 
    if (gl->flags & GL3_FLAG_SHOULD_RESIZE)
@@ -3921,9 +4119,51 @@ static bool gl3_frame(void *data, const void *frame,
          gl3_set_viewport(gl, width, height, false, true);
    }
 
+   /* Can be NULL for frame dupe / NULL render. */
+   if (frame && gl->chain.active)
+   {
+      if (!(gl->flags & GL3_FLAG_HW_RENDER_ENABLE))
+         gl3_update_input_size(gl, frame_width, frame_height);
+   }
+
+   texture.image            = 0;
+   texture.width            = streamed->width;
+   texture.height           = streamed->height;
+   texture.padded_width     = 0;
+   texture.padded_height    = 0;
+   texture.format           = 0;
+
+   if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
+   {
+      texture.image         = gl->hw_render_texture;
+      texture.format        = GL_RGBA8;
+      texture.padded_width  = gl->hw_render_max_width;
+      texture.padded_height = gl->hw_render_max_height;
+
+      if (texture.width == 0)
+         texture.width      = 1;
+      if (texture.height == 0)
+         texture.height     = 1;
+   }
+   else
+   {
+      texture.image         = streamed->tex;
+      texture.format        = gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565;
+      texture.padded_width  = streamed->width;
+      texture.padded_height = streamed->height;
+   }
+
+   /* No point regenerating mipmaps
+    * if there are no new frames. */
+   if (frame && gl->chain.active && gl->chain.mipmap_active)
+   {
+      glBindTexture(GL_TEXTURE_2D, texture.image);
+      glGenerateMipmap(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, 0);
+   }
+
    if (gl->chain.active)
    {
-      unsigned i;
       video_shader_ctx_params_t params;
       struct video_tex_info feedback_info;
 
@@ -4126,7 +4366,7 @@ static bool gl3_frame(void *data, const void *frame,
    else if (statistics_show)
    {
       if (osd_params)
-         font_driver_render_msg(gl, stat_text,
+         font_driver_render_msg(gl, stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
    }
 #endif
@@ -4141,13 +4381,13 @@ static bool gl3_frame(void *data, const void *frame,
       gfx_widgets_frame(video_info);
 #endif
 
-   if (!string_is_empty(msg))
+   if (msg && *msg)
    {
 #if 0
       if (msg_bgcolor_enable)
          gl3_render_osd_background(gl, video_info, msg);
 #endif
-      font_driver_render_msg(gl, msg, NULL, NULL);
+      font_driver_render_msg(gl, msg, strlen(msg), NULL, NULL);
    }
 
    if (gl->ctx_driver->update_window_title)
@@ -4172,11 +4412,20 @@ static bool gl3_frame(void *data, const void *frame,
    }
    else if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
    {
+      /* If recording has stopped, tear down PBO readback */
+      if (!recording_state_get_ptr()->enable)
+      {
+         gl3_deinit_pbo_readback(gl);
+         gl->flags &= ~GL3_FLAG_PBO_READBACK_ENABLE;
+      }
+      else
+      {
 #ifdef HAVE_MENU
-      /* Don't readback if we're in menu mode. */
-      if (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+         /* Don't readback if we're in menu mode. */
+         if (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
 #endif
-         gl3_pbo_async_readback(gl);
+            gl3_pbo_async_readback(gl);
+      }
    }
 
    if (gl->ctx_driver->swap_buffers)
@@ -4293,14 +4542,6 @@ static uint32_t gl3_get_flags(void *data)
    return flags;
 }
 
-static float gl3_get_refresh_rate(void *data)
-{
-   float refresh_rate;
-   if (video_context_driver_get_refresh_rate(&refresh_rate))
-       return refresh_rate;
-   return 0.0f;
-}
-
 static void gl3_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gl3_t *gl     = (gl3_t*)data;
@@ -4318,47 +4559,65 @@ static void gl3_apply_state_changes(void *data)
 static struct video_shader *gl3_get_current_shader(void *data)
 {
    gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return NULL;
+   if (gl->chain.active)
+      return gl->chain.shader->get_current_shader(gl->chain.shader_data);
 #ifdef HAVE_SLANG
-   if (gl && gl->filter_chain)
-      return gl3_filter_chain_get_preset(gl->filter_chain);
+   else
+   {
+      if (gl->filter_chain)
+         return gl3_filter_chain_get_preset(gl->filter_chain);
+   }
 #endif
    return NULL;
 }
 
 #ifdef HAVE_THREADS
-static int video_texture_load_wrap_gl3_mipmap(void *data)
+typedef struct
 {
-   GLuint id = 0;
-   gl3_t *gl = (gl3_t*)video_driver_get_ptr();
+   gl3_t     *gl;
+   void      *payload;
+} gl3_texture_cmd_t;
+
+static uintptr_t video_texture_load_wrap_gl3_mipmap(void *data)
+{
+   GLuint id               = 0;
+   gl3_texture_cmd_t *cmd  = (gl3_texture_cmd_t*)data;
+   gl3_t             *gl   = cmd->gl;
+   void              *image = cmd->payload;
 
    if (gl && gl->ctx_driver->make_current)
       gl->ctx_driver->make_current(false);
 
-   if (data)
-      video_texture_load_gl3((struct texture_image*)data,
+   if (image)
+      video_texture_load_gl3((struct texture_image*)image,
             TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return (int)id;
 }
 
-static int video_texture_load_wrap_gl3(void *data)
+static uintptr_t video_texture_load_wrap_gl3(void *data)
 {
-   GLuint id = 0;
-   gl3_t *gl = (gl3_t*)video_driver_get_ptr();
+   GLuint id               = 0;
+   gl3_texture_cmd_t *cmd  = (gl3_texture_cmd_t*)data;
+   gl3_t             *gl   = cmd->gl;
+   void              *image = cmd->payload;
 
    if (gl && gl->ctx_driver->make_current)
       gl->ctx_driver->make_current(false);
 
-   if (data)
-      video_texture_load_gl3((struct texture_image*)data,
+   if (image)
+      video_texture_load_gl3((struct texture_image*)image,
             TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
 }
 
-static int video_texture_unload_wrap_gl3(void *data)
+static uintptr_t video_texture_unload_wrap_gl3(void *data)
 {
    GLuint  glid;
-   uintptr_t id = (uintptr_t)data;
-   gl3_t    *gl = (gl3_t*)video_driver_get_ptr();
+   gl3_texture_cmd_t *cmd = (gl3_texture_cmd_t*)data;
+   gl3_t             *gl  = cmd->gl;
+   uintptr_t          id  = (uintptr_t)cmd->payload;
 
    if (gl && gl->ctx_driver->make_current)
       gl->ctx_driver->make_current(false);
@@ -4377,7 +4636,12 @@ static uintptr_t gl3_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
+      gl3_texture_cmd_t cmd;
       custom_command_method_t func = video_texture_load_wrap_gl3;
+
+      cmd.gl      = (gl3_t*)video_data;
+      cmd.payload = data;
+
       switch (filter_type)
       {
          case TEXTURE_FILTER_MIPMAP_LINEAR:
@@ -4387,7 +4651,7 @@ static uintptr_t gl3_load_texture(void *video_data, void *data,
          default:
             break;
       }
-      return video_thread_texture_handle(data, func);
+      return video_thread_texture_handle(&cmd, func);
    }
 #endif
 
@@ -4405,8 +4669,13 @@ static void gl3_unload_texture(void *data, bool threaded,
 #ifdef HAVE_THREADS
    if (threaded)
    {
+      gl3_texture_cmd_t cmd;
       custom_command_method_t func = video_texture_unload_wrap_gl3;
-      video_thread_texture_handle((void *)id, func);
+
+      cmd.gl      = (gl3_t*)data;
+      cmd.payload = (void*)id;
+
+      video_thread_texture_handle(&cmd, func);
       return;
    }
 #endif
@@ -4440,18 +4709,38 @@ static void gl3_set_texture_frame(void *data,
       ? GL_LINEAR : GL_NEAREST;
    unsigned base_size   = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl3_t *gl            = (gl3_t*)data;
+   bool recreate;
+
    if (!gl)
       return;
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
-   if (gl->menu_texture)
-      glDeleteTextures(1, &gl->menu_texture);
-   glGenTextures(1, &gl->menu_texture);
-   glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
-   glTexStorage2D(GL_TEXTURE_2D, 1, rgb32
-         ? GL_RGBA8 : GL_RGBA4, width, height);
+   /* glTexStorage2D is immutable — the texture object must be
+    * recreated whenever dimensions or pixel format change.  For
+    * same-size same-format updates we keep the existing texture
+    * and just stream new pixel data via glTexSubImage2D. */
+   recreate = (gl->menu_texture == 0)
+           || (gl->menu_texture_width  != width)
+           || (gl->menu_texture_height != height)
+           || (gl->menu_texture_rgb32  != rgb32);
+
+   if (recreate)
+   {
+      if (gl->menu_texture != 0)
+         glDeleteTextures(1, &gl->menu_texture);
+      glGenTextures(1, &gl->menu_texture);
+      glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
+      glTexStorage2D(GL_TEXTURE_2D, 1, rgb32
+            ? GL_RGBA8 : GL_RGBA4, width, height);
+
+      gl->menu_texture_width  = width;
+      gl->menu_texture_height = height;
+      gl->menu_texture_rgb32  = rgb32;
+   }
+   else
+      glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, base_size);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -4460,6 +4749,10 @@ static void gl3_set_texture_frame(void *data,
                    width, height, GL_RGBA, rgb32
                    ? GL_UNSIGNED_BYTE
                    : GL_UNSIGNED_SHORT_4_4_4_4, frame);
+
+   /* Filter/wrap/swizzle are set every call: the linear-filter menu
+    * setting can toggle at runtime, and the cost of these calls is
+    * negligible compared to the pixel upload above. */
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, menu_filter);
@@ -4494,30 +4787,6 @@ static void gl3_set_texture_enable(void *data, bool state, bool fullscreen)
       gl->flags &= ~GL3_FLAG_MENU_TEXTURE_FULLSCREEN;
 }
 
-static void gl3_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
-{
-   gl3_t   *gl = (gl3_t*)data;
-   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_size)
-      gl->ctx_driver->get_video_output_size(
-            gl->ctx_data,
-            width, height, desc, desc_len);
-}
-
-static void gl3_get_video_output_prev(void *data)
-{
-   gl3_t   *gl = (gl3_t*)data;
-   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_prev)
-      gl->ctx_driver->get_video_output_prev(gl->ctx_data);
-}
-
-static void gl3_get_video_output_next(void *data)
-{
-   gl3_t   *gl = (gl3_t*)data;
-   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_next)
-      gl->ctx_driver->get_video_output_next(gl->ctx_data);
-}
-
 static uintptr_t gl3_get_current_framebuffer(void *data)
 {
    gl3_t *gl = (gl3_t*)data;
@@ -4540,11 +4809,11 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_load_texture,
    gl3_unload_texture,
    gl3_set_video_mode,
-   gl3_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    NULL, /* set_filtering */
-   gl3_get_video_output_size,
-   gl3_get_video_output_prev,
-   gl3_get_video_output_next,
+   NULL, /* video_output_size - handled by display server */
+   NULL, /* video_output_prev - handled by display server */
+   NULL, /* video_output_next - handled by display server */
    gl3_get_current_framebuffer,
    gl3_get_proc_address,
    gl3_set_aspect_ratio,
@@ -4557,10 +4826,11 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void gl3_get_poke_interface(void *data,
@@ -4640,6 +4910,13 @@ video_driver_t video_gl3 = {
 #endif
    gl3_get_poke_interface,
    gl3_wrap_type_to_enum,
+#ifdef HAVE_SLANG
+   gl3_shader_load_begin,
+   gl3_shader_load_step,
+#else
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
+#endif
 #ifdef HAVE_GFX_WIDGETS
    gl3_gfx_widgets_enabled
 #endif

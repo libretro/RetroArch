@@ -52,6 +52,18 @@ typedef struct nbio_buf
    unsigned bufsize;
 } nbio_buf_t;
 
+/* Generic progress_cb that forwards a task's progress (0-100) to the
+ * platform's window/taskbar progress indicator (e.g. ITaskbarList3 on
+ * Win32). Set this on any task whose progress should be reflected on
+ * the taskbar -- aggregating tasks (e.g. the Core Updater's outer
+ * task) need to do this manually because their inner http transfers
+ * run muted and so their own progress callbacks never fire.
+ *
+ * Available regardless of HAVE_NETWORKING: implementation lives in
+ * task_file_transfer.c so non-network long-running tasks (manual
+ * content scan, core backup, ...) can use it too. */
+void task_window_progress_cb(retro_task_t *task);
+
 #ifdef HAVE_NETWORKING
 typedef struct
 {
@@ -78,6 +90,11 @@ void *task_push_http_post_transfer_with_user_agent(const char *url, const char *
 
 void *task_push_http_post_transfer_with_headers(const char *url, const char *post_data, bool mute,
    const char *type, const char *headers, retro_task_callback_t cb, void *user_data);
+
+void *task_push_http_transfer_with_content(const char *url, const char *method,
+   const void *content, size_t content_len, const char *content_type, bool mute,
+   bool headers_accept_err, const char *headers,
+   retro_task_callback_t cb, void *user_data);
 
 void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
@@ -178,6 +195,14 @@ bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
       retro_task_callback_t cb, void *userdata);
 
+/* Async icon/texture loading.  generation_ptr must point to a static
+ * variable in the calling module (not a heap struct field). */
+bool task_push_icon_load(const char *fullpath,
+      bool supports_rgba,
+      uintptr_t *target_texture,
+      uint64_t generation,
+      uint64_t *generation_ptr);
+
 #ifdef HAVE_LIBRETRODB
 bool task_push_dbscan(
       const char *playlist_directory,
@@ -188,8 +213,7 @@ bool task_push_dbscan(
 #endif
 
 bool task_push_manual_content_scan(
-      const playlist_config_t *playlist_config,
-      const char *playlist_directory);
+      bool do_menu_refresh);
 
 #ifdef HAVE_OVERLAY
 bool task_push_overlay_load_default(
@@ -257,6 +281,7 @@ bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
 
 void set_save_state_in_background(bool state);
+void set_save_state_disable_undo(bool disable);
 
 #ifdef HAVE_CDROM
 void task_push_cdrom_dump(const char *drive);
@@ -275,6 +300,8 @@ extern const char* const input_builtin_autoconfs[];
 /* cloud sync tasks */
 void task_push_cloud_sync_update_driver(void);
 void task_push_cloud_sync(void);
+void task_push_cloud_sync_resolve_keep_local(void);
+void task_push_cloud_sync_resolve_keep_server(void);
 
 RETRO_END_DECLS
 

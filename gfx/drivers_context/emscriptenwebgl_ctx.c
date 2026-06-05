@@ -248,5 +248,7 @@ const gfx_ctx_driver_t gfx_ctx_emscripten_webgl = {
    gfx_ctx_emscripten_webgl_set_flags,
    gfx_ctx_emscripten_webgl_bind_hw_render,
    NULL, /* get_context_data */
-   NULL  /* make_current */
+   NULL, /* make_current */
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

@@ -15,6 +15,7 @@
  */
 
 #include <ctype.h>
+#include <string.h>
 
 #include <file/file_path.h>
 #include <streams/file_stream.h>
@@ -46,6 +47,11 @@
  * drawing with linear filtering enabled */
 #define STB_UNICODE_ATLAS_PADDING 1
 
+/* Improved hash: mix in upper bits to reduce clustering
+ * for CJK and other non-Latin codepoints */
+#define STB_UNICODE_HASH_SIZE 0x100
+#define STB_UNICODE_HASH(c) (((c) ^ ((c) >> 8)) & (STB_UNICODE_HASH_SIZE - 1))
+
 typedef struct stb_unicode_atlas_slot
 {
    struct stb_unicode_atlas_slot* next;
@@ -58,7 +64,7 @@ typedef struct
 {
    uint8_t *font_data;
    struct font_atlas atlas;               /* ptr alignment */
-   stb_unicode_atlas_slot_t* uc_map[0x100];
+   stb_unicode_atlas_slot_t* uc_map[STB_UNICODE_HASH_SIZE];
    stb_unicode_atlas_slot_t atlas_slots[STB_UNICODE_ATLAS_SIZE];
    stbtt_fontinfo info;                   /* ptr alignment */
    int max_glyph_width;
@@ -85,21 +91,32 @@ static void font_renderer_stb_unicode_free(void *data)
 
 static stb_unicode_atlas_slot_t* font_renderer_stb_unicode_get_slot(stb_unicode_font_renderer_t *handle)
 {
-   int i, map_id;
+   int i;
+   unsigned map_id;
    unsigned oldest = 0;
+   stb_unicode_atlas_slot_t *ptr;
+   /* Find the least-recently-used slot.
+    * Unsigned subtraction handles wrap-around correctly. */
+   unsigned oldest_age = handle->usage_counter - 
+      handle->atlas_slots[0].last_used;
 
    for (i = 1; i < STB_UNICODE_ATLAS_SIZE; i++)
-      if ((handle->usage_counter - handle->atlas_slots[i].last_used) >
-         (handle->usage_counter - handle->atlas_slots[oldest].last_used))
-         oldest = i;
+   {
+      unsigned age = handle->usage_counter - handle->atlas_slots[i].last_used;
+      if (age > oldest_age)
+      {
+         oldest_age = age;
+         oldest     = i;
+      }
+   }
 
-   /* remove from map */
-   map_id = handle->atlas_slots[oldest].charcode & 0xFF;
+   /* Remove from map */
+   map_id = STB_UNICODE_HASH(handle->atlas_slots[oldest].charcode);
    if (handle->uc_map[map_id] == &handle->atlas_slots[oldest])
       handle->uc_map[map_id] = handle->atlas_slots[oldest].next;
    else if (handle->uc_map[map_id])
    {
-      stb_unicode_atlas_slot_t* ptr = handle->uc_map[map_id];
+      ptr = handle->uc_map[map_id];
       while (ptr->next && ptr->next != &handle->atlas_slots[oldest])
          ptr = ptr->next;
       ptr->next = handle->atlas_slots[oldest].next;
@@ -120,13 +137,13 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    uint8_t *dst                         = NULL;
    stb_unicode_atlas_slot_t* atlas_slot = NULL;
    stb_unicode_font_renderer_t *self    = (stb_unicode_font_renderer_t*)data;
-   float glyph_advance_x                = 0.0f;
-   float glyph_draw_offset_y            = 0.0f;
+   float glyph_advance_x               = 0.0f;
+   float glyph_draw_offset_y           = 0.0f;
 
    if (!self)
       return NULL;
 
-   map_id                               = charcode & 0xFF;
+   map_id                               = STB_UNICODE_HASH(charcode);
    atlas_slot                           = self->uc_map[map_id];
 
    while (atlas_slot)
@@ -152,17 +169,20 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    stbtt_GetGlyphHMetrics(&self->info, glyph_index, &advance_width, &left_side_bearing);
 
    if (stbtt_GetGlyphBox(&self->info, glyph_index, &x0, NULL, NULL, &y1))
-      stbtt_MakeGlyphBitmap(&self->info, dst, self->max_glyph_width, self->max_glyph_height,
-            self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
+      stbtt_MakeGlyphBitmap(&self->info, dst,
+         self->max_glyph_width, self->max_glyph_height,
+         self->atlas.width, self->scale_factor,
+         self->scale_factor, glyph_index);
    else
    {
       /* This means the glyph is empty. In this case, stbtt_MakeGlyphBitmap()
        * fills the corresponding region of the atlas buffer with garbage,
-       * so just zero it */
-      int x, y;
-      for (x = 0; x < self->max_glyph_width; x++)
-         for (y = 0; y < self->max_glyph_height; y++)
-            dst[x + (y * self->atlas.width)] = 0;
+       * so just zero it.
+       * Use row-major memset for cache-friendly clearing. */
+      int row;
+      for (row = 0; row < self->max_glyph_height; row++)
+         memset(dst + (row * self->atlas.width), 0,
+                (size_t)self->max_glyph_width);
    }
 
    atlas_slot->glyph.width          = self->max_glyph_width;
@@ -172,7 +192,7 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
     * *nearest* integer */
    glyph_advance_x                  = (float)advance_width * self->scale_factor;
    atlas_slot->glyph.advance_x      = (int)((glyph_advance_x > 0.0f)
-         ? (glyph_advance_x + 0.5f) 
+         ? (glyph_advance_x + 0.5f)
          : (glyph_advance_x - 0.5f));
    /* advance_y is always zero */
    atlas_slot->glyph.advance_y      = 0;
@@ -185,7 +205,7 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
     * to the nearest integer */
    glyph_draw_offset_y              = (float)(-y1) * self->scale_factor;
    atlas_slot->glyph.draw_offset_y  = (int)((glyph_draw_offset_y < 0.0f)
-         ? floor((double)glyph_draw_offset_y) 
+         ? floor((double)glyph_draw_offset_y)
          : ceil((double)glyph_draw_offset_y));
 
    self->atlas.dirty                = true;
@@ -198,7 +218,7 @@ static bool font_renderer_stb_unicode_create_atlas(
 {
    unsigned i, x, y;
    stb_unicode_atlas_slot_t* slot = NULL;
-   int max_glyph_size             = (font_size < 0) ? -font_size : font_size;
+   int max_glyph_size             = (font_size < 0) ? (int)(-font_size) : (int)font_size;
 
    self->max_glyph_width          = max_glyph_size;
    self->max_glyph_height         = max_glyph_size;
@@ -224,14 +244,11 @@ static bool font_renderer_stb_unicode_create_atlas(
       }
    }
 
-   for (i = 0; i < 256; i++)
+   /* Pre-populate only printable ASCII (32-126).
+    * Control characters (0-31) are never rendered and
+    * would waste atlas slots that could hold real glyphs. */
+   for (i = 32; i < 127; i++)
       font_renderer_stb_unicode_get_glyph(self, i);
-
-   for (i = 0; i < 256; i++)
-   {
-      if (ISALNUM(i))
-         font_renderer_stb_unicode_get_glyph(self, i);
-   }
 
    return true;
 }
@@ -242,7 +259,7 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    stb_unicode_font_renderer_t *self =
       (stb_unicode_font_renderer_t*)calloc(1, sizeof(*self));
 
-   if (!self || font_size < 1.0)
+   if (!self || font_size < 1.0f)
       goto error;
 
    /* See https://github.com/nothings/stb/blob/master/stb_truetype.h#L539 */
@@ -260,6 +277,10 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    if (!path_is_valid(font_path) || !filestream_read_file(font_path, (void**)&self->font_data, NULL))
       goto error;
 
+   /* Guard against empty/corrupt font files */
+   if (!self->font_data)
+      goto error;
+
    if (!stbtt_InitFont(&self->info, self->font_data,
             stbtt_GetFontOffsetForIndex(self->font_data, 0)))
       goto error;
@@ -270,6 +291,9 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
       self->scale_factor = stbtt_ScaleForMappingEmToPixels(&self->info, -font_size);
    else
       self->scale_factor = stbtt_ScaleForPixelHeight(&self->info, font_size);
+
+   if (self->scale_factor <= 0.0f)
+      goto error;
 
    /* Ascender, descender and line_gap values always
     * end up ~0.5 pixels too small when scaled...

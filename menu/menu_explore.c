@@ -24,12 +24,14 @@
 #include <formats/rjson_helpers.h>
 #include <retro_endianness.h>
 #include <streams/file_stream.h>
+#include <string/stdstring.h>
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "../retroarch.h"
 #include "../configuration.h"
 #include "../file_path_special.h"
+#include "../msg_hash_lbl_str.h"
 #include "../playlist.h"
 #include "../verbosity.h"
 #include "../libretro-db/libretrodb.h"
@@ -186,7 +188,19 @@ static void ex_arena_grow(ex_arena *arena, size_t min_size)
 {
    size_t _len = EX_ARENA_ALIGN_UP(
          MAX(min_size, EX_ARENA_BLOCK_SIZE), EX_ARENA_ALIGNMENT);
-   arena->ptr  = (char *)malloc(_len);
+   char *new_block = (char *)malloc(_len);
+   /* NULL-check: on OOM leave arena->ptr and arena->end
+    * pointing at the current (exhausted) block if there is one,
+    * or both NULL on first grow.  ex_arena_alloc returns the
+    * current arena->ptr as the caller's 'ptr' and the caller
+    * dereferences it, so we need ex_arena_alloc itself to
+    * signal the failure - that's handled by the 'end - ptr'
+    * pointer-subtraction which is defined to be 0 when both
+    * are NULL.  The second check in ex_arena_alloc below
+    * catches the remaining OOM path. */
+   if (!new_block)
+      return;
+   arena->ptr  = new_block;
    arena->end  = arena->ptr + _len;
    RBUF_PUSH(arena->blocks, arena->ptr);
 }
@@ -196,6 +210,12 @@ static void *ex_arena_alloc(ex_arena *arena, size_t len)
    void *ptr  = NULL;
    if (len > (size_t)(arena->end - arena->ptr))
       ex_arena_grow(arena, len);
+   /* Re-check after grow: on OOM the grow function leaves
+    * arena->ptr and arena->end unchanged, so the capacity
+    * check still fails.  Return NULL so callers can bail
+    * rather than dereference stale or NULL storage. */
+   if (len > (size_t)(arena->end - arena->ptr))
+      return NULL;
    ptr        = arena->ptr;
    arena->ptr = (char *)
       EX_ARENA_ALIGN_UP((uintptr_t)(arena->ptr + len), EX_ARENA_ALIGNMENT);
@@ -355,6 +375,14 @@ static void explore_add_unique_string(
          entry                = (explore_string_t*)
             ex_arena_alloc(&state->arena,
                   sizeof(explore_string_t) + _len);
+         /* NULL-check: ex_arena_alloc returns NULL on OOM now.
+          * On failure skip this entry - the surrounding loop
+          * iterates over chars in the input string splitting on
+          * separators, so one missed entry just means one
+          * category value doesn't get indexed this pass.  Picked
+          * up on the next scan once memory is available. */
+         if (!entry)
+            continue;
          memcpy(entry->str, str, _len);
          entry->str[_len]      = '\0';
          RBUF_PUSH(state->by[cat], entry);
@@ -396,10 +424,14 @@ static void explore_unload_icons(explore_state_t *state)
          video_driver_texture_unload(&state->icons[i]);
 }
 
+/* File-static generation counter for async icon loads */
+static uint64_t explore_icon_load_gen = 0;
+
 static void explore_load_icons(explore_state_t *state)
 {
    char path[PATH_MAX_LENGTH];
    size_t i, _len, system_count;
+   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    if (!state)
       return;
 
@@ -409,6 +441,9 @@ static void explore_load_icons(explore_state_t *state)
    /* unload any icons that could exist from a previous call to this */
    explore_unload_icons(state);
 
+   /* Invalidate any in-flight async icon loads */
+   explore_icon_load_gen++;
+
    /* RBUF_RESIZE leaves memory uninitialised,
       have to zero it 'manually' */
    RBUF_RESIZE(state->icons, system_count);
@@ -416,14 +451,13 @@ static void explore_load_icons(explore_state_t *state)
 
    fill_pathname_application_special(path, sizeof(path),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS);
-   if (string_is_empty(path))
+   if (!*path)
       return;
 
    _len = fill_pathname_slash(path, sizeof(path));
 
    for (i = 0; i != system_count; i++)
    {
-      struct texture_image ti;
       size_t __len = _len;
       __len       += strlcpy(path + _len,
                  state->by[EXPLORE_BY_SYSTEM][i]->str,
@@ -432,19 +466,9 @@ static void explore_load_icons(explore_state_t *state)
       if (!path_is_valid(path))
          continue;
 
-      ti.width         = 0;
-      ti.height        = 0;
-      ti.pixels        = NULL;
-      ti.supports_rgba = video_driver_supports_rgba();
-
-      if (!image_texture_load(&ti, path))
-         continue;
-
-      if (ti.pixels)
-         video_driver_texture_load(&ti,
-               TEXTURE_FILTER_MIPMAP_LINEAR, &state->icons[i]);
-
-      image_texture_free(&ti);
+      gfx_display_load_icon(path, supports_rgba,
+            &state->icons[i], explore_icon_load_gen,
+            &explore_icon_load_gen);
    }
 }
 
@@ -477,8 +501,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
    if (!state)
       return NULL;
 
-   state->label_explore_item_str    =
-      msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_ITEM);
+   state->label_explore_item_str = MENU_ENUM_LABEL_EXPLORE_ITEM_STR;
 
    /* Index all playlists */
    for (dir = retro_vfs_opendir_impl(directory_playlist, false); dir;)
@@ -504,7 +527,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
          break;
       }
 
-      fname                                     = retro_vfs_dirent_get_name_impl(dir);
+      fname = retro_vfs_dirent_get_name_impl(dir);
       if (fname)
          fext                           = strrchr(fname, '.');
 
@@ -541,7 +564,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
                && strcasecmp(entry->db_name, fname))
          {
             db_name = entry->db_name;
-            db_ext = strrchr(db_name, '.');
+            db_ext  = strrchr(db_name, '.');
             if (!db_ext)
                db_ext = db_name + strlen(db_name);
             rdb_hash = ex_hash32_nocase_filtered(
@@ -664,7 +687,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
                continue;
 
             key_str                         = key->val.string.buff;
-            if (string_is_equal(key_str, "crc"))
+            if (!strcmp(key_str, "crc"))
             {
                switch (val->val.binary.len)
                {
@@ -684,13 +707,13 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
                continue;
             }
-            else if (string_is_equal(key_str, "name"))
+            else if (!strcmp(key_str, "name"))
             {
                name = val->val.string.buff;
                continue;
             }
 #ifdef EXPLORE_SHOW_ORIGINAL_TITLE
-            else if (string_is_equal(key_str, "original_title"))
+            else if (!strcmp(key_str, "original_title"))
             {
                original_title = val->val.string.buff;
                continue;
@@ -699,7 +722,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
             for (cat = 0; cat != EXPLORE_CAT_COUNT; cat++)
             {
-               if (!string_is_equal(key_str, explore_by_info[cat].rdbkey))
+               if (strcmp(key_str, explore_by_info[cat].rdbkey) != 0)
                   continue;
 
                meta_count++;
@@ -773,7 +796,14 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             size_t _len       = strlen(original_title) + 1;
             e->original_title = (char*)
                ex_arena_alloc(&state->arena, _len);
-            memcpy(e->original_title, original_title, _len);
+            /* NULL-check: arena alloc returns NULL on OOM.  Skip
+             * the memcpy; e->original_title stays NULL (matches
+             * the 'e->original_title = NULL' initialisation a
+             * few lines above).  Callers under
+             * EXPLORE_SHOW_ORIGINAL_TITLE are expected to gate
+             * reads of this field. */
+            if (e->original_title)
+               memcpy(e->original_title, original_title, _len);
          }
 #endif
 
@@ -785,16 +815,16 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             _len       = RBUF_SIZEOF(split_buf);
             e->split   = (explore_string_t **)
                ex_arena_alloc(&state->arena, _len);
-            memcpy(e->split, split_buf, _len);
+            /* NULL-check: arena alloc returns NULL on OOM.  Skip
+             * the memcpy; e->split stays NULL.  Downstream
+             * iteration in the Explore menu checks 'e->split'
+             * before walking the pointer array. */
+            if (e->split)
+               memcpy(e->split, split_buf, _len);
             RBUF_CLEAR(split_buf);
          }
 
-         /* if all entries have found connections, we can leave early */
-         if (--rdb->count == 0)
-         {
-            rmsgpack_dom_value_free(&item);
-            break;
-         }
+         /* Do not leave early, even if all items have been found - merge all hits */
       }
 
       libretrodb_cursor_close(cur);
@@ -862,7 +892,7 @@ static int explore_action_sublabel_spacer(
     * > In RGUI it does nothing other than
     *   unnecessarily blank out the fallback
     *   core title text in the sublabel area */
-   if (string_is_equal(menu_driver, "ozone"))
+   if (!strcmp(menu_driver, "ozone"))
    {
       s[0] = ' ';
       s[1] = '\0';
@@ -874,7 +904,7 @@ static int explore_action_sublabel_spacer(
 static int explore_action_ok(const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   const char* explore_tab = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB);
+   const char *explore_tab = MENU_ENUM_LABEL_EXPLORE_TAB_STR;
    if (type >= EXPLORE_TYPE_FIRSTITEM || type == EXPLORE_TYPE_FILTERNULL)
    {
       struct menu_state   *menu_st  = menu_state_get_ptr();
@@ -1018,8 +1048,9 @@ static const char* explore_get_view_path(struct menu_state *menu_st,
    /* check if we are opening a saved view via Content > Playlists */
    if (    (cur->type == MENU_EXPLORE_TAB)
          && cur->path
-         && !string_is_equal(cur->path,
-            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE))
+         && memcmp(cur->path,
+            MENU_ENUM_LABEL_GOTO_EXPLORE_STR,
+            STRLEN_CONST(MENU_ENUM_LABEL_GOTO_EXPLORE_STR) + 1) != 0
       )
       return cur->path;
 
@@ -1200,18 +1231,18 @@ static void explore_load_view(explore_state_t *state, const char* path)
       if (depth == 1 && type == RJSON_STRING)
       {
          const char* key = rjson_get_string(json, NULL);
-         if (        string_is_equal(key, "filter_name")
+         if (        !strcmp(key, "filter_name")
                   && rjson_next(json) == RJSON_STRING)
             strlcpy(state->view_search,
                   rjson_get_string(json, NULL),
 		  sizeof(state->view_search));
-         else if (   string_is_equal(key, "filter_equal")
+         else if (   !strcmp(key, "filter_equal")
                   && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_EQUAL;
-         else if (   string_is_equal(key, "filter_min")
+         else if (   !strcmp(key, "filter_min")
                   && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_MIN;
-         else if (   string_is_equal(key, "filter_max")
+         else if (   !strcmp(key, "filter_max")
                   && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_MAX;
       }
@@ -1221,7 +1252,8 @@ static void explore_load_view(explore_state_t *state, const char* path)
       {
          const char* key = rjson_get_string(json, NULL);
          for (cat = 0; cat != EXPLORE_CAT_COUNT; cat++)
-            if (string_is_equal(key, explore_by_info[cat].rdbkey))
+            if (memcmp(key, explore_by_info[cat].rdbkey,
+                     strlen(explore_by_info[cat].rdbkey) + 1) == 0)
                break;
          if (cat == EXPLORE_CAT_COUNT)
             rjson_next(json); /* skip value */
@@ -1311,7 +1343,7 @@ static void explore_load_view(explore_state_t *state, const char* path)
 unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
 {
    unsigned i;
-   char tmp[512];
+   char tmp[1024];
    struct explore_state *state  = explore_state;
    struct menu_state   *menu_st = menu_state_get_ptr();
    menu_handle_t *menu          = menu_st->driver_data;
@@ -1457,8 +1489,9 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                   && !explore_by_info[cat].is_boolean
                   && RBUF_LEN(state->by[cat]) > 1))
          {
-            size_t _len = strlcpy(tmp,
-                  msg_hash_to_str(explore_by_info[cat].by_enum), sizeof(tmp));
+            size_t _len = 0;
+            strlcpy_append(tmp, sizeof(tmp), &_len,
+                  msg_hash_to_str(explore_by_info[cat].by_enum));
 
             if (is_top)
             {
@@ -1470,20 +1503,21 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                            entries[RBUF_LEN(entries) - 1]->str);
                else if (!explore_by_info[cat].is_boolean)
                {
-                  _len += strlcpy (tmp + _len, " (", sizeof(tmp) - _len);
-                  _len += snprintf(tmp + _len,       sizeof(tmp) - _len,
+                  strlcpy_append(tmp, sizeof(tmp), &_len, " (");
+                  _len += snprintf(tmp + _len, sizeof(tmp) - _len,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT),
                         (unsigned)RBUF_LEN(entries));
-                  strlcpy(tmp  + _len, ")",  sizeof(tmp) - _len);
+                  if (_len >= sizeof(tmp))
+                     _len = sizeof(tmp) - 1;
+                  strlcpy_append(tmp, sizeof(tmp), &_len, ")");
                }
             }
             else if (i != state->view_levels)
             {
-               _len += strlcpy(tmp + _len, " (", sizeof(tmp) - _len);
-               _len += strlcpy(tmp + _len,
-                     msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER),
-                     sizeof(tmp)     - _len);
-               strlcpy(tmp + _len, ")", sizeof(tmp) - _len);
+               strlcpy_append(tmp, sizeof(tmp), &_len, " (");
+               strlcpy_append(tmp, sizeof(tmp), &_len,
+                     msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER));
+               strlcpy_append(tmp, sizeof(tmp), &_len, ")");
             }
 
             explore_menu_entry(list, state,
@@ -1807,7 +1841,7 @@ ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
       return -1;
 
    db_name = entry->by[EXPLORE_BY_SYSTEM]->str;
-   if (!string_is_empty(db_name))
+   if (db_name && *db_name)
       playlist_index = menu_explore_get_entry_playlist_index(
             type, &playlist, NULL, NULL, NULL, NULL);
 
@@ -1842,7 +1876,11 @@ void menu_explore_context_init(void)
 void menu_explore_context_deinit(void)
 {
    if (explore_state)
+   {
+      /* Invalidate in-flight async icon loads before unloading */
+      explore_icon_load_gen++;
       explore_unload_icons(explore_state);
+   }
 }
 
 void menu_explore_free_state(explore_state_t *state)
@@ -1859,6 +1897,8 @@ void menu_explore_free_state(explore_state_t *state)
       playlist_free(state->playlists[i]);
    RBUF_FREE(state->playlists);
 
+   /* Invalidate in-flight async icon loads before freeing */
+   explore_icon_load_gen++;
    explore_unload_icons(state);
    RBUF_FREE(state->icons);
 

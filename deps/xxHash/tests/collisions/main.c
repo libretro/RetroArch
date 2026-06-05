@@ -825,11 +825,6 @@ static size_t search_collisions(
     /* clean and exit */
     free (hashCandidates);
 
-#if 0  /* debug */
-    for (size_t n=0; n<nbCandidates; n++)
-        printf("0x%016llx \n", (unsigned long long)hashCandidates[n]);
-#endif
-
     if (param.resultPtr) param.resultPtr->nbCollisions = collisions;
     return collisions;
 }

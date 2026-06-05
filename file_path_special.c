@@ -100,13 +100,13 @@ bool fill_pathname_application_data(char *s, size_t len)
 #endif
 
 #elif defined(OSX)
+   CFStringRef parent_path;
+   CFURLRef bundle_url, parent_url;
    CFBundleRef bundle = CFBundleGetMainBundle();
    if (!bundle)
       return false;
 
    /* get the directory containing the app */
-   CFStringRef parent_path;
-   CFURLRef bundle_url, parent_url;
    bundle_url  = CFBundleCopyBundleURL(bundle);
    parent_url  = CFURLCreateCopyDeletingLastPathComponent(NULL, bundle_url);
    parent_path = CFURLCopyFileSystemPath(parent_url, kCFURLPOSIXPathStyle);
@@ -200,7 +200,7 @@ size_t fill_pathname_application_special(char *s,
 
             /* Try config directory setting first,
              * fallback to the location of the current configuration file. */
-            if (!string_is_empty(dir_menu_config))
+            if (dir_menu_config && *dir_menu_config)
                _len = strlcpy(s, dir_menu_config, len);
             else if (!path_is_empty(RARCH_PATH_CONFIG))
                _len = fill_pathname_basedir(s, path_get(RARCH_PATH_CONFIG), len);
@@ -225,7 +225,7 @@ size_t fill_pathname_application_special(char *s,
             settings_t *settings            = config_get_ptr();
             const char *path_menu_wallpaper = settings->paths.path_menu_wallpaper;
 
-            if (!string_is_empty(path_menu_wallpaper))
+            if (path_menu_wallpaper && *path_menu_wallpaper)
                _len = strlcpy(s, path_menu_wallpaper, len);
             else
             {
@@ -251,7 +251,7 @@ size_t fill_pathname_application_special(char *s,
             const char *dir_assets = settings->paths.directory_assets;
 
 #ifdef HAVE_XMB
-            if (string_is_equal(menu_ident, "xmb"))
+            if (memcmp(menu_ident, "xmb", 3) == 0)
             {
                char tmp_dir[DIR_MAX_LENGTH];
                char tmp_path[PATH_MAX_LENGTH];
@@ -262,8 +262,8 @@ size_t fill_pathname_application_special(char *s,
             else
 #endif
 #if defined(HAVE_MATERIALUI) || defined(HAVE_OZONE)
-            if (     string_is_equal(menu_ident, "glui")
-                  || string_is_equal(menu_ident, "ozone"))
+            if (     memcmp(menu_ident, "glui", STRLEN_CONST("glui")) == 0
+                  || memcmp(menu_ident, "ozone", STRLEN_CONST("ozone")) == 0)
             {
                char tmp_dir[DIR_MAX_LENGTH];
                fill_pathname_join_special(tmp_dir, dir_assets, menu_ident, sizeof(tmp_dir));
@@ -288,7 +288,7 @@ size_t fill_pathname_application_special(char *s,
 #endif
 
 #ifdef HAVE_XMB
-            if (string_is_equal(menu_ident, "xmb"))
+            if (memcmp(menu_ident, "xmb", 4) == 0)
             {
                char tmp_dir[DIR_MAX_LENGTH];
                char tmp_path[PATH_MAX_LENGTH];
@@ -300,8 +300,8 @@ size_t fill_pathname_application_special(char *s,
             else
 #endif
 #if defined(HAVE_OZONE) || defined(HAVE_MATERIALUI)
-		    if (    string_is_equal(menu_ident, "ozone")
-               || string_is_equal(menu_ident, "glui"))
+          if (    memcmp(menu_ident, "glui", STRLEN_CONST("glui")) == 0
+               || memcmp(menu_ident, "ozone", STRLEN_CONST("ozone")) == 0)
             {
                char tmp_dir[DIR_MAX_LENGTH];
                char tmp_path[PATH_MAX_LENGTH];
@@ -375,7 +375,7 @@ size_t fill_pathname_application_special(char *s,
             settings_t           *settings = config_get_ptr();
             const char *path_menu_xmb_font = settings->paths.path_menu_xmb_font;
 
-            if (!string_is_empty(path_menu_xmb_font))
+            if (path_menu_xmb_font && *path_menu_xmb_font)
                _len = strlcpy(s, path_menu_xmb_font, len);
             else
             {

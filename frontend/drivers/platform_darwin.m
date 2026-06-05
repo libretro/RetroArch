@@ -19,14 +19,22 @@
 #include <stddef.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <sys/utsname.h>
 
 #include <mach/mach.h>
+#ifdef HAVE_GCD
+#include <dispatch/dispatch.h>
+#include <defines/cocoa_defines.h>
+#include <retro_atomic.h>
+#endif
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
+#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
 #import <AVFoundation/AVFoundation.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -119,11 +127,63 @@ typedef enum
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
 
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
+#if defined(OSX)
 static int speak_pid                            = 0;
 #endif
 
 static char darwin_cpu_model_name[64] = {0};
+
+#ifdef HAVE_GCD
+/* Directory watching implementation using GCD dispatch sources */
+typedef struct darwin_watch_entry
+{
+   int fd;                    /* File descriptor opened with O_EVTONLY */
+   dispatch_source_t source;  /* GCD dispatch source for monitoring */
+   /* Per-entry semaphore signalled from the source's cancel
+    * handler.  Needed because dispatch_source_cancel is
+    * asynchronous: it flags the source for cancellation but
+    * any already-dispatched event handler invocation keeps
+    * running to completion on its target queue, which is the
+    * global concurrent queue here.  The event handler
+    * dereferences &watch_data->event_count, so we cannot free
+    * watch_data until we're sure no in-flight handler remains.
+    * The cancel handler fires once all handler invocations
+    * have drained, so waiting on this semaphore before free()
+    * is the standard safe-teardown pattern for dispatch
+    * sources. */
+   dispatch_semaphore_t cancel_sem;
+   char *path;                /* Watched file path */
+} darwin_watch_entry_t;
+
+typedef struct darwin_watch_data
+{
+   dispatch_queue_t queue;       /* Dispatch queue for event handlers */
+   darwin_watch_entry_t *watches; /* Array of watch entries */
+   size_t watch_count;           /* Number of active watches */
+   /* Monotonic event counter.  Setter (GCD event handler thread)
+    * increments via retro_atomic_fetch_add_int when the
+    * filesystem reports an event; reader (main thread, in
+    * frontend_darwin_check_for_path_changes) acquire-loads it
+    * and compares against last_seen below.
+    *
+    * The previous design used a binary flag set/cleared via
+    * OSAtomicCompareAndSwap32, but Apple deprecated OSAtomic.h
+    * in 10.12 (2016) in favour of <stdatomic.h>.  Replacing the
+    * flag with a counter is also strictly more flexible: the
+    * "did anything change?" semantic is preserved exactly
+    * (now != last_seen), and the count is available if a future
+    * caller wants to batch events.  retro_atomic.h provides the
+    * portable fetch_add / load_acquire primitives needed; no
+    * compare-exchange operation is necessary, because the
+    * monotonic counter never needs to be read-and-cleared
+    * atomically (last_seen is main-thread-only state). */
+   retro_atomic_int_t event_count;
+   /* Reader-side cursor.  Touched only by the main thread in
+    * frontend_darwin_check_for_path_changes; not atomic. */
+   int last_seen;
+   int flags;                    /* Event flags to monitor */
+} darwin_watch_data_t;
+#endif
 
 static void CFSearchPathForDirectoriesInDomains(
       char *s, size_t len)
@@ -373,7 +433,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    }
 #endif
    if (portable)
-      strncpy(documents_dir_buf, application_data, sizeof(documents_dir_buf));
+      strlcpy(documents_dir_buf, application_data, sizeof(documents_dir_buf));
    else
    {
       CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
@@ -385,7 +445,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    path_resolve_realpath(documents_dir_buf, sizeof(documents_dir_buf), true);
    strlcat(documents_dir_buf, "/RetroArch", sizeof(documents_dir_buf));
    /* iOS and tvOS are going to put everything in the documents dir */
-   strncpy(application_data, documents_dir_buf, sizeof(application_data));
+   strlcpy(application_data, documents_dir_buf, sizeof(application_data));
 #endif
 
    /* By the time we are here:
@@ -419,14 +479,36 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-   NSURL *url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
+   /* -[NSBundle URLForResource:withExtension:subdirectory:] is 10.6+
+    * (NS_AVAILABLE(10_6, 4_0)).  On 10.5 Leopard the selector doesn't
+    * exist and the runtime throws "unrecognized selector".  Guard
+    * with respondsToSelector: and fall through to the existing
+    * fill_pathname_join fallback on older systems, which simply
+    * won't do bundle-shipped filter auto-discovery. */
+   NSURL *url = nil;
+   SEL url_for_resource_sel = @selector(URLForResource:withExtension:subdirectory:);
+   if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
+      url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
    if (url)
-       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+       /* URLForResource: with a nil name returns a URL pointing at
+        * the first matching .dsp file.  What we want is the directory
+        * it lives in, so strip the last path component.
+        *
+        * The previous code used [[url baseURL] fileSystemRepresentation],
+        * which was wrong on two counts: -baseURL returns nil for URLs
+        * constructed absolutely (which is what URLForResource: returns),
+        * so the result was a NULL source pointer into strlcpy; and on
+        * pre-10.9 SDKs NSURL doesn't declare -fileSystemRepresentation,
+        * so GCC resolved the selector against NSString's version with
+        * an incompatible-receiver warning. */
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], [[[url path] stringByDeletingLastPathComponent] UTF8String], sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
+   url = nil;
+   if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
+      url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
    if (url)
-       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[[url path] stringByDeletingLastPathComponent] UTF8String], sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], application_data, "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], application_data, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
@@ -475,116 +557,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 
    if (!path_is_directory(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]))
       path_mkdir(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]);
-}
-
-static int frontend_darwin_get_rating(void)
-{
-   char model[PATH_MAX_LENGTH] = {0};
-
-   frontend_darwin_get_name(model, sizeof(model));
-
-   /* iPhone 4 */
-#if 0
-   if (strstr(model, "iPhone3"))
-      return -1;
-#endif
-
-   /* iPad 1 */
-#if 0
-   if (strstr(model, "iPad1,1"))
-      return -1;
-#endif
-
-   /* iPhone 4S */
-   if (strstr(model, "iPhone4,1"))
-      return 8;
-
-   /* iPad 2/iPad Mini 1 */
-   if (strstr(model, "iPad2"))
-      return 9;
-
-   /* iPhone 5/5C */
-   if (strstr(model, "iPhone5"))
-      return 13;
-
-   /* iPhone 5S */
-   if (strstr(model, "iPhone6,1") || strstr(model, "iPhone6,2"))
-      return 14;
-
-   /* iPad Mini 2/3 */
-   if (     strstr(model, "iPad4,4")
-         || strstr(model, "iPad4,5")
-         || strstr(model, "iPad4,6")
-         || strstr(model, "iPad4,7")
-         || strstr(model, "iPad4,8")
-         || strstr(model, "iPad4,9")
-      )
-      return 15;
-
-   /* iPad Air */
-   if (     strstr(model, "iPad4,1")
-         || strstr(model, "iPad4,2")
-         || strstr(model, "iPad4,3")
-      )
-      return 16;
-
-   /* iPhone 6, iPhone 6 Plus */
-   if (strstr(model, "iPhone7"))
-      return 17;
-
-   /* iPad Air 2 */
-   if (strstr(model, "iPad5,3") || strstr(model, "iPad5,4"))
-      return 18;
-
-   /* iPad Pro (12.9 Inch) */
-   if (strstr(model, "iPad6,7") || strstr(model, "iPad6,8"))
-     return 19;
-
-   /* iPad Pro (9.7 Inch) */
-   if (strstr(model, "iPad6,3") || strstr(model, "iPad6,4"))
-     return 19;
-
-   /* iPad 5th Generation */
-   if (strstr(model, "iPad6,11") || strstr(model, "iPad6,12"))
-     return 19;
-
-   /* iPad Pro (12.9 Inch 2nd Generation) */
-   if (strstr(model, "iPad7,1") || strstr(model, "iPad7,2"))
-     return 19;
-
-   /* iPad Pro (10.5 Inch) */
-   if (strstr(model, "iPad7,3") || strstr(model, "iPad7,4"))
-     return 19;
-
-   /* iPad Pro 6th Generation) */
-   if (strstr(model, "iPad7,5") || strstr(model, "iPad7,6"))
-     return 19;
-
-   /* iPad Pro (11 Inch) */
-   if (     strstr(model, "iPad8,1")
-         || strstr(model, "iPad8,2")
-         || strstr(model, "iPad8,3")
-         || strstr(model, "iPad8,4")
-      )
-      return 19;
-
-   /* iPad Pro (12.9 3rd Generation) */
-    if (   strstr(model, "iPad8,5")
-        || strstr(model, "iPad8,6")
-        || strstr(model, "iPad8,7")
-        || strstr(model, "iPad8,8")
-       )
-       return 19;
-
-   /* iPad Air 3rd Generation) */
-    if (   strstr(model, "iPad11,3")
-        || strstr(model, "iPad11,4"))
-       return 19;
-
-   /* TODO/FIXME -
-      - more ratings for more systems
-      - determine rating more intelligently*/
-   return -1;
 }
 
 static enum frontend_powerstate frontend_darwin_get_powerstate(
@@ -944,10 +916,284 @@ static bool accessibility_speak_macos(int speed,
 
 #endif
 
+#ifdef HAVE_GCD
+/* Tear down the per-watcher darwin_watch_data_t: cancel every
+ * dispatch source, close every file descriptor, free the copied
+ * path strings, free the watches array, and free watch_data itself.
+ *
+ * Does NOT release watch_data->queue: that slot holds the handle
+ * returned by dispatch_get_global_queue(), which is a process-wide
+ * singleton that must never be released - dispatch_release on a
+ * global queue is documented as undefined behaviour (on pre-10.8
+ * SDKs where OS_OBJECT_USE_OBJC=0 it over-decrements the refcount;
+ * on newer SDKs it's a no-op macro under ARC, so the bug has been
+ * latent but real).  The earlier teardown code called
+ * 'dispatch_release(watch_data->queue)' under !__has_feature(objc_arc);
+ * that call has been removed here.
+ *
+ * Does NOT touch the path_change_data_t wrapper that points at
+ * watch_data; that's the caller's responsibility. */
+static void darwin_watch_data_free(darwin_watch_data_t *watch_data)
+{
+   size_t i;
+
+   if (!watch_data)
+      return;
+
+   if (watch_data->watches)
+   {
+      for (i = 0; i < watch_data->watch_count; i++)
+      {
+         if (watch_data->watches[i].source)
+         {
+            /* Cancel the source, then wait for the cancel
+             * handler to fire.  dispatch_source_cancel is
+             * asynchronous - it only marks the source as
+             * cancelled.  Any already-dispatched event handler
+             * invocation (the one that increments
+             * &watch_data->event_count) keeps running to
+             * completion on the global concurrent queue.  The
+             * cancel handler is guaranteed to fire AFTER all
+             * pending event handler invocations have drained,
+             * so dispatch_semaphore_wait(cancel_sem, FOREVER)
+             * is the standard 'wait until source is fully
+             * quiesced' pattern.  Without this wait a racing
+             * event handler would NUL-deref or, worse, write
+             * into freed memory for event_count. */
+            dispatch_source_cancel(watch_data->watches[i].source);
+            if (watch_data->watches[i].cancel_sem)
+            {
+               dispatch_semaphore_wait(
+                     watch_data->watches[i].cancel_sem,
+                     DISPATCH_TIME_FOREVER);
+            }
+            RARCH_DISPATCH_RELEASE(watch_data->watches[i].source);
+            RARCH_DISPATCH_RELEASE(watch_data->watches[i].cancel_sem);
+         }
+         if (watch_data->watches[i].fd >= 0)
+            close(watch_data->watches[i].fd);
+         if (watch_data->watches[i].path)
+            free(watch_data->watches[i].path);
+      }
+      free(watch_data->watches);
+   }
+   free(watch_data);
+}
+
+static void frontend_darwin_watch_path_for_changes(
+      struct string_list *list, int flags,
+      path_change_data_t **change_data)
+{
+   darwin_watch_data_t *watch_data = NULL;
+
+   /* Cleanup mode - free existing watch data */
+   if (!list)
+   {
+      if (!change_data || !*change_data)
+         return;
+
+      darwin_watch_data_free(
+            (darwin_watch_data_t*)((*change_data)->data));
+      free(*change_data);
+      *change_data = NULL;
+      return;
+   }
+
+   /* Setup mode - create new watch data */
+   watch_data = (darwin_watch_data_t*)calloc(1, sizeof(*watch_data));
+   if (!watch_data)
+      return;
+
+   watch_data->queue = dispatch_get_global_queue(
+         DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+   watch_data->watch_count = list->size;
+   watch_data->watches = (darwin_watch_entry_t*)calloc(
+         list->size, sizeof(darwin_watch_entry_t));
+   watch_data->flags = flags;
+   /* watch_data was calloc'd, so event_count and last_seen are
+    * already zero-bit; but plain assignment to a
+    * retro_atomic_int_t is illegal under the C11 stdatomic
+    * backend, so use the init helper for the atomic field. */
+   retro_atomic_int_init(&watch_data->event_count, 0);
+   watch_data->last_seen = 0;
+
+   if (!watch_data->watches)
+   {
+      free(watch_data);
+      return;
+   }
+
+   /* Convert generic flags to GCD dispatch VNODE flags */
+   {
+      unsigned long vnode_flags = 0;
+      size_t i;
+
+      if (flags & PATH_CHANGE_TYPE_MODIFIED)
+         vnode_flags |= DISPATCH_VNODE_WRITE;
+      if (flags & PATH_CHANGE_TYPE_WRITE_FILE_CLOSED)
+         vnode_flags |= DISPATCH_VNODE_ATTRIB; /* mtime changes on close */
+      if (flags & PATH_CHANGE_TYPE_FILE_MOVED)
+         vnode_flags |= DISPATCH_VNODE_RENAME;
+      if (flags & PATH_CHANGE_TYPE_FILE_DELETED)
+         vnode_flags |= DISPATCH_VNODE_DELETE;
+
+      /* Set up watch for each file in the list */
+      for (i = 0; i < list->size; i++)
+      {
+         const char *path = list->elems[i].data;
+         int fd           = open(path, O_EVTONLY);
+
+         watch_data->watches[i].fd         = fd;
+         watch_data->watches[i].source     = NULL;
+         watch_data->watches[i].path       = NULL;
+         watch_data->watches[i].cancel_sem = NULL;
+
+         if (fd >= 0)
+         {
+            dispatch_source_t    source;
+            dispatch_semaphore_t cancel_sem;
+
+            watch_data->watches[i].path = strdup(path);
+
+            /* Create cancel semaphore up-front.  If this fails
+             * (realistically only on OOM) we skip source creation
+             * entirely rather than create a source we cannot
+             * safely tear down - without a semaphore the free
+             * path has no way to wait for in-flight event
+             * handlers to drain before the free(). */
+            cancel_sem = dispatch_semaphore_create(0);
+            if (!cancel_sem)
+            {
+               close(fd);
+               watch_data->watches[i].fd = -1;
+               continue;
+            }
+
+            /* Create dispatch source for monitoring file events */
+            source = dispatch_source_create(
+                  DISPATCH_SOURCE_TYPE_VNODE,
+                  fd,
+                  vnode_flags,
+                  watch_data->queue);
+
+            if (source)
+            {
+               /* Set up event handler - bump the atomic event
+                * counter when a filesystem event fires.  This
+                * block captures watch_data by pointer and the
+                * cancel-handler synchronisation below is what
+                * keeps the capture safe against the teardown
+                * path.
+                *
+                * fetch_add (rather than the previous CAS(0, 1))
+                * always stores, but the rate is bounded by GCD
+                * vnode events (sub-millisecond/day in normal
+                * use), so the extra store cost is below
+                * measurement noise.  In return we get a
+                * monotonic counter that the reader can compare
+                * against its last_seen cursor without losing
+                * notifications, and we drop the dependency on
+                * OSAtomic.h which Apple deprecated in 10.12. */
+               dispatch_source_set_event_handler(source, ^{
+                  retro_atomic_fetch_add_int(
+                        &watch_data->event_count, 1);
+               });
+
+               /* Cancel handler signals cancel_sem.  darwin_watch_
+                * data_free will cancel the source and wait on this
+                * semaphore, guaranteeing all pending event handlers
+                * have completed before watch_data is freed. */
+               dispatch_source_set_cancel_handler(source, ^{
+                  dispatch_semaphore_signal(cancel_sem);
+               });
+
+               watch_data->watches[i].source     = source;
+               watch_data->watches[i].cancel_sem = cancel_sem;
+               dispatch_resume(source);
+            }
+            else
+            {
+               /* Failed to create dispatch source, close fd and
+                * release the unused semaphore. */
+               RARCH_DISPATCH_RELEASE(cancel_sem);
+               close(fd);
+               watch_data->watches[i].fd = -1;
+            }
+         }
+      }
+   }
+
+   /* Allocate and return change_data structure */
+   *change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t));
+   if (*change_data)
+      (*change_data)->data = watch_data;
+   else
+   {
+      /* path_change_data_t wrapper alloc failed.  The previous code
+       * called frontend_darwin_watch_path_for_changes(NULL, 0,
+       *   &(path_change_data_t*){watch_data})
+       * i.e. it passed a fake path_change_data_t pointer that
+       * actually pointed at watch_data itself (a darwin_watch_data_t).
+       * The teardown branch then read '(*change_data)->data' from
+       * that pointer, which happened to be the 'queue' field of
+       * darwin_watch_data_t (both are void*-sized at offset 0).
+       * So watch_data got set to the global dispatch queue pointer;
+       * the subsequent for-loop walked off the end of that system-
+       * owned struct interpreting arbitrary bytes as watch_count /
+       * watches[], and the final free() free()d the shared global
+       * queue.  The only reason it has not caused user-visible
+       * breakage is that this OOM path is ~never taken in practice.
+       *
+       * Replaced with a direct call to darwin_watch_data_free which
+       * operates on a real darwin_watch_data_t* without the fake
+       * wrapper. */
+      darwin_watch_data_free(watch_data);
+   }
+}
+
+static bool frontend_darwin_check_for_path_changes(
+      path_change_data_t *change_data)
+{
+   darwin_watch_data_t *watch_data = NULL;
+
+   if (!change_data || !change_data->data)
+      return false;
+
+   watch_data = (darwin_watch_data_t*)(change_data->data);
+
+   /* Acquire-load the producer's counter and compare against
+    * our reader-side cursor.  If they differ, at least one
+    * event fired since the last call -- update the cursor and
+    * return true.
+    *
+    * No CAS is needed because last_seen is main-thread-only
+    * state.  The acquire-load pairs with the producer's
+    * fetch_add (which has acq_rel semantics in retro_atomic.h),
+    * so any data the producer published before its increment
+    * is visible to us by the time we read here.
+    *
+    * The counter is monotonic and never reset, so over a long
+    * enough run it would wrap around -- but on a 32-bit signed
+    * int at filesystem-event rates this takes hundreds of
+    * years.  The `now != last_seen` comparison remains correct
+    * across wraparound under modular int arithmetic; any non-
+    * zero (now - last_seen) means the producer advanced. */
+   {
+      int now = retro_atomic_load_acquire_int(
+            &watch_data->event_count);
+      bool changed = (now != watch_data->last_seen);
+      watch_data->last_seen = now;
+      return changed;
+   }
+}
+#endif
+
 static bool frontend_darwin_is_narrator_running(void)
 {
+#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
       return true;
+#endif
 #if OSX
    return is_narrator_running_macos();
 #else
@@ -963,6 +1209,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
    else if (speed > 10)
       speed               = 10;
 
+#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
    {
       static dispatch_once_t once;
@@ -987,6 +1234,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
       [synth speakUtterance:utterance];
       return true;
    }
+#endif
 
 #if defined(OSX)
    return accessibility_speak_macos(speed, speak_text, priority);
@@ -1004,6 +1252,11 @@ static void frontend_darwin_content_loaded(void)
 #endif
 }
 
+static enum rarch_display_type frontend_darwin_get_display_type(void)
+{
+   return RARCH_DISPLAY_OSX;
+}
+
 frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_env,         /* get_env */
    NULL,                            /* init */
@@ -1015,7 +1268,6 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* shutdown */
    frontend_darwin_get_name,        /* get_name */
    frontend_darwin_get_os,          /* get_os               */
-   frontend_darwin_get_rating,      /* get_rating           */
    frontend_darwin_content_loaded,  /* content_loaded       */
    frontend_darwin_get_arch,        /* get_architecture     */
    frontend_darwin_get_powerstate,  /* get_powerstate       */
@@ -1030,14 +1282,20 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* detach_console */
    NULL,                            /* get_lakka_version */
    NULL,                            /* set_screen_brightness */
+#ifdef HAVE_GCD
+   frontend_darwin_watch_path_for_changes, /* watch_path_for_changes */
+   frontend_darwin_check_for_path_changes, /* check_for_path_changes */
+#else
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
+#endif
    NULL,                            /* set_sustained_performance_mode */
    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
    frontend_darwin_get_user_language, /* get_user_language   */
    frontend_darwin_is_narrator_running, /* is_narrator_running */
    frontend_darwin_accessibility_speak, /* accessibility_speak */
    NULL,                            /* set_gamemode        */
+   frontend_darwin_get_display_type,
    "darwin",                        /* ident               */
    NULL                             /* get_video_driver    */
 };

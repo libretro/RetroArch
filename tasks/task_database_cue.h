@@ -16,6 +16,8 @@
 
 #include <ctype.h>
 #include <streams/interface_stream.h>
+#include <streams/file_stream.h>
+#include <streams/chd_stream.h>
 
 RETRO_BEGIN_DECLS
 
@@ -52,6 +54,26 @@ int gdi_find_track(const char *gdi_path, bool first, char *s,
       size_t len);
 size_t gdi_next_file(intfstream_t *fd, const char *gdi_path, char *s,
       size_t len);
+
+int intfstream_get_serial(intfstream_t *fd, char *s, size_t len,
+      const char *filename);
+bool intfstream_file_get_serial(const char *name,
+      uint64_t offset, int64_t size, char *s, size_t len, uint64_t *fsize);
+int task_database_cue_get_serial(const char *name, char *s, size_t len,
+      uint64_t *filesize);
+int task_database_gdi_get_serial(const char *name, char *s, size_t len,
+      uint64_t *filesize);
+bool is_chd_file_cdi(const char *path);
+int task_database_chd_get_serial(const char *name, char *serial, size_t len,
+      uint64_t *filesize);
+bool intfstream_file_get_crc_and_size(const char *name,
+      uint64_t offset, int64_t len, uint32_t *crc, uint64_t *size);
+int task_database_cue_get_crc_and_size(const char *name, uint32_t *crc,
+      uint64_t *size);
+int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc,
+      uint64_t *size);
+bool task_database_chd_get_crc_and_size(const char *name, uint32_t *crc,
+      uint64_t *size);
 
 RETRO_END_DECLS
 

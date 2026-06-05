@@ -43,13 +43,6 @@ static void frontend_qnx_shutdown(bool unused)
    bps_shutdown();
 }
 
-static int frontend_qnx_get_rating(void)
-{
-   /* TODO/FIXME - look at unique identifier per device and
-    * determine rating for some */
-   return -1;
-}
-
 static void frontend_qnx_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
@@ -63,7 +56,7 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
 
    getcwd(workdir, sizeof(workdir));
 
-   if (!string_is_empty(workdir))
+   if (workdir && *workdir)
    {
       assets_path[0]               = '\0';
       data_path[0]                 = '\0';
@@ -181,7 +174,6 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    frontend_qnx_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_qnx_get_rating,
    NULL,                         /* load_content */
    frontend_qnx_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
@@ -204,6 +196,7 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode        */
+   NULL, /* get_display_type */
    "qnx",                        /* ident               */
    NULL                          /* get_video_driver    */
 };

@@ -78,12 +78,15 @@ static void get_first_valid_core(char* path_return, size_t len)
 
    if (dir)
    {
-      while (ent = readdir(dir))
+      size_t ext_len = strlen(extension);
+      while ((ent = readdir(dir)))
       {
+         size_t name_len;
          if (!ent)
             break;
-         if (strlen(ent->d_name) > strlen(extension)
-               && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
+         name_len = strlen(ent->d_name);
+         if (   name_len > ext_len
+             && !strcmp(ent->d_name + name_len - ext_len, extension))
          {
             size_t _len = strlcpy(path_return, "sdmc:/retroarch/cores/", len);
             strlcpy(path_return + _len, ent->d_name, len - _len);
@@ -196,7 +199,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
    DEBUG_VAR(path);
    DEBUG_STR(path);
 
-   if (!string_is_empty(path))
+   if (path && *path)
    {
 #ifndef IS_SALAMANDER
 #ifdef HAVE_NETWORKING
@@ -221,7 +224,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
                (void*)&arg_data[1]))
 #endif
-         if (!string_is_empty(content))
+         if (content && *content)
          {
             strlcpy(game_path, content, sizeof(game_path));
             arg_data[1] = game_path;
@@ -235,10 +238,8 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
          if (stat(path, &sbuff))
          {
             char core_path[PATH_MAX];
-
             get_first_valid_core(core_path, sizeof(core_path));
-
-            if (string_is_empty(core_path))
+            if (!core_path || !*core_path)
                error_and_quit("There are no cores installed, install a core to continue.");
          }
       }
@@ -481,33 +482,6 @@ static void frontend_ctr_init(void* data)
 #endif
 }
 
-static int frontend_ctr_get_rating(void)
-{
-   u8 device_model = 0xFF;
-
-   /*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
-   CFGU_GetSystemModel(&device_model);
-
-   switch (device_model)
-   {
-      case 0:
-      case 1:
-      case 3:
-         /*Old 3/2DS*/
-         return 3;
-      case 2:
-      case 4:
-      case 5:
-         /*New 3/2DS*/
-         return 6;
-      default:
-         /*Unknown Device Or Check Failed*/
-         break;
-   }
-
-   return -1;
-}
-
 enum frontend_architecture frontend_ctr_get_arch(void)
 {
    return FRONTEND_ARCH_ARM;
@@ -642,7 +616,6 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    frontend_ctr_shutdown,        /* shutdown                       */
    frontend_ctr_get_name,        /* get_name                       */
    frontend_ctr_get_os,          /* get_os                         */
-   frontend_ctr_get_rating,      /* get_rating                     */
    NULL,                         /* load_content                   */
    frontend_ctr_get_arch,        /* get_architecture               */
    frontend_ctr_get_powerstate,  /* get_powerstate                 */
@@ -665,6 +638,7 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    NULL,                         /* is_narrator_running            */
    NULL,                         /* accessibility_speak            */
    NULL,                         /* set_gamemode                   */
+   NULL, /* get_display_type */
    "ctr",                        /* ident                          */
    NULL                          /* get_video_driver               */
 };

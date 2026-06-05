@@ -87,6 +87,12 @@ static void* sevenzip_stream_new(void)
    struct sevenzip_context_t *sevenzip_context =
          (struct sevenzip_context_t*)calloc(1, sizeof(struct sevenzip_context_t));
 
+   /* NULL-check the calloc: the field writes below NULL-deref
+    * on OOM and the returned NULL is handled by the caller
+    * (sevenzip_parse_file_free at line ~112 NULL-tolerates). */
+   if (!sevenzip_context)
+      return NULL;
+
    /* These are the allocation routines - currently using
     * the non-standard 7zip choices. */
    sevenzip_context->allocImp.Alloc     = sevenzip_stream_alloc_impl;
@@ -159,7 +165,7 @@ static int64_t sevenzip_file_read(
       lookStream.bufSize = 0;
 
 #if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       wchar_t *path_w = utf8_to_utf16_string_alloc(path);
       if (path_w)
@@ -269,7 +275,18 @@ static int64_t sevenzip_file_read(
                 * We would however need to realloc anyways, because RetroArch
                 * expects a \0 at the end, therefore we allocate new,
                 * copy and free the old one. */
-               *buf = malloc((size_t)(outsize + 1));
+               /* NULL-check the malloc before the NUL-termination
+                * write and the memcpy below dereference '*buf'.  On
+                * OOM mark the extraction failed and break out of the
+                * file-search loop; the '!(file_found && res == SZ_OK)'
+                * branch further down then forces outsize = -1 and
+                * the teardown runs. */
+               if (!(*buf = malloc((size_t)(outsize + 1))))
+               {
+                  res     = SZ_ERROR_MEM;
+                  outsize = -1;
+                  break;
+               }
                ((char*)(*buf))[outsize] = '\0';
                memcpy(*buf, output + offset, outsize);
             }
@@ -362,7 +379,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    state->context = sevenzip_context;
 
 #if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
-   if (!string_is_empty(file))
+   if (file && *file)
    {
       wchar_t *file_w = utf8_to_utf16_string_alloc(file);
 

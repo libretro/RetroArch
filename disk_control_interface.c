@@ -293,8 +293,7 @@ static size_t disk_control_get_index_set_msg(
       image_label[0] = '\0';
       disk_control_get_image_label(
             disk_control, index, image_label, sizeof(image_label));
-
-      has_label      = !string_is_empty(image_label);
+      has_label      = *image_label;
 
       /* Get message duration
        * > Default is 60
@@ -342,25 +341,19 @@ bool disk_control_set_eject_state(
    size_t _len;
 
    if (!disk_control || !disk_control->cb.set_eject_state)
-      return false;
+      return err;
 
    /* Set eject state */
    if (disk_control->cb.set_eject_state(eject))
-      _len  = strlcpy(
-            msg,
-            eject
-            ? msg_hash_to_str(MSG_DISK_EJECTED)
-            : msg_hash_to_str(MSG_DISK_CLOSED),
-              sizeof(msg));
+      _len = strlcpy(msg,
+            eject ? msg_hash_to_str(MSG_DISK_EJECTED) : msg_hash_to_str(MSG_DISK_CLOSED),
+            sizeof(msg));
    else
    {
       err  = true;
-      _len = strlcpy(
-            msg,
-            eject
-            ? msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_EJECT)
-            : msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE),
-              sizeof(msg));
+      _len = strlcpy(msg,
+            eject ? msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_EJECT) : msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE),
+            sizeof(msg));
    }
 
    if (_len > 0)
@@ -398,9 +391,9 @@ bool disk_control_set_eject_state(
 /**
  * disk_control_set_index:
  *
- * Sets currently selected disk index
- *
- * NOTE: Will fail if disk is not currently ejected
+ * Sets currently selected disk index.
+ * Does silent eject and delayed insert with
+ * 'runloop_st->pending_disk_control_insert' if tray is closed.
  **/
 bool disk_control_set_index(
       disk_control_interface_t *disk_control,
@@ -414,17 +407,26 @@ bool disk_control_set_index(
 
    msg[0] = '\0';
 
-   if (!disk_control)
-      return false;
+   if (     !disk_control
+         || !disk_control->cb.get_eject_state
+         || !disk_control->cb.get_num_images
+         || !disk_control->cb.get_image_index
+         || !disk_control->cb.set_image_index)
+      return err;
 
-   if (   !disk_control->cb.get_eject_state
-       || !disk_control->cb.get_num_images
-       || !disk_control->cb.set_image_index)
-      return false;
+   /* Do nothing if the desired disc is already in */
+   if (disk_control->cb.get_image_index() == index)
+      return !err;
 
-   /* Ensure that disk is currently ejected */
+   /* Do delayed disk insert if changing while not ejected */
    if (!disk_control->cb.get_eject_state())
-      return false;
+   {
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+      if (     runloop_st
+            && disk_control_set_eject_state(disk_control, true, false))
+         runloop_st->pending_disk_control_insert = 100;
+   }
 
    /* Get current number of disk images */
    num_images = disk_control->cb.get_num_images();
@@ -466,7 +468,6 @@ bool disk_control_set_index(
           && disk_control->cb.get_image_path)
       {
          char new_image_path[PATH_MAX_LENGTH] = {0};
-         /* Get current image index + path */
          unsigned new_image_index = disk_control->cb.get_image_index();
          bool image_path_valid    = disk_control->cb.get_image_path(
                new_image_index, new_image_path, sizeof(new_image_path));
@@ -593,12 +594,12 @@ bool disk_control_append_image(
        || !disk_control->cb.get_eject_state)
       return false;
 
-   if (string_is_empty(image_path))
+   if (!image_path || !*image_path)
       return false;
 
    image_filename = path_basename(image_path);
 
-   if (string_is_empty(image_filename))
+   if (!image_filename || !*image_filename)
       return false;
 
    /* Get initial disk eject state */
@@ -618,20 +619,20 @@ bool disk_control_append_image(
 
    if ((new_index = disk_control->cb.get_num_images()) < 1)
       goto error;
-   new_index--;
 
+   new_index--;
    info.path = image_path;
+
    if (!disk_control->cb.replace_image_index(new_index, &info))
+      goto error;
+
+   /* If tray was initially closed, insert disk */
+   if (   !initial_disk_ejected
+       && !disk_control_set_eject_state(disk_control, false, false))
       goto error;
 
    /* Set new index */
    if (!disk_control_set_index(disk_control, new_index, false))
-      goto error;
-
-   /* If tray was initially closed, insert disk
-    * (i.e. leave system in the state we found it) */
-   if (   !initial_disk_ejected
-       && !disk_control_set_eject_state(disk_control, false, false))
       goto error;
 
    /* Display log */
@@ -658,11 +659,7 @@ error:
     * NOTE: If this fails then it's game over -
     * just display the error notification and
     * hope for the best... */
-   if (!disk_control->cb.get_eject_state())
-      disk_control_set_eject_state(disk_control, true, false);
    disk_control_set_index(disk_control, initial_index, false);
-   if (!initial_disk_ejected)
-      disk_control_set_eject_state(disk_control, false, false);
 
    _len        = strlcpy(msg,
          msg_hash_to_str(MSG_FAILED_TO_APPEND_DISK), sizeof(msg) - 3);
@@ -672,7 +669,7 @@ error:
    _len += strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
 
    runloop_msg_queue_push(msg, _len, 2, 180, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
    return false;
 }
@@ -701,7 +698,7 @@ bool disk_control_set_initial_index(
    if (!disk_control)
       return false;
 
-   if (string_is_empty(content_path))
+   if (!content_path || !*content_path)
       goto error;
 
    /* Check that 'initial index' functionality is enabled */
@@ -802,7 +799,7 @@ bool disk_control_verify_initial_index(
       if (   (image_index == disk_control->index_record.image_index)
           && (string_is_equal(image_path, disk_control->index_record.image_path)
           ||   ((disk_control->index_record.image_index == 0)
-          &&  string_is_empty(disk_control->index_record.image_path))))
+          &&  !*disk_control->index_record.image_path)))
          success = true;
    }
 
@@ -839,7 +836,7 @@ bool disk_control_verify_initial_index(
    /* If current disk is correct and recorded image
     * path is empty (i.e. first run), need to register
     * current image path */
-   else if (string_is_empty(disk_control->index_record.image_path))
+   else if (!*disk_control->index_record.image_path)
       disk_index_file_set(
             &disk_control->index_record, image_index, image_path);
 

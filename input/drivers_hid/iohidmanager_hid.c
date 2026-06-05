@@ -49,7 +49,12 @@ typedef struct apple_hid
 
 struct iohidmanager_hid_adapter
 {
-   uint32_t slot;
+   /* pad_connection_pad_init() returns int32_t and can return -1 on
+    * allocation failure.  Storing the return in uint32_t compiles
+    * but makes the `slot == -1` check at the call site a signed/
+    * unsigned comparison GCC warns about.  Matches wiiusb_hid.c's
+    * adapter struct which got this right. */
+   int32_t slot;
    IOHIDDeviceRef handle;
    uint32_t locationId;
    char name[NAME_MAX_LENGTH];
@@ -645,6 +650,19 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
       started (by deterministic method). if so do not re-add the pad */
    uint32_t device_location_id = iohidmanager_hid_device_get_location_id(device);
 
+   /* Hoist the !hid check above the hid->slots[i] dereference
+    * below.  hid_driver_get_data() can return NULL if a device-
+    * match callback fires before iohidmanager_hid_init's
+    * assignment or after iohidmanager_hid_free's teardown.
+    * The existing 'if (!hid) goto error' guard at line ~669
+    * was dead code because the for-loop directly below this
+    * comment reads hid->slots[i].data unconditionally -
+    * NULL-deref on NULL hid happened before we ever reached
+    * the calloc.  Fix by bailing out now before any hid
+    * dereference. */
+   if (!hid)
+      return;
+
    for (i = 0; i < MAX_USERS; i++)
    {
       struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
@@ -661,8 +679,6 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
 
    if (!(adapter = (struct iohidmanager_hid_adapter*)calloc(1, sizeof(*adapter))))
       return;
-   if (!hid)
-      goto error;
 
    adapter->handle     = device;
    adapter->locationId = device_location_id;
@@ -691,7 +707,7 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
    if (adapter->slot == -1)
       goto error;
 
-   if (string_is_empty(adapter->name))
+   if (!*adapter->name)
       strcpy(adapter->name, "Unknown Controller With No Name");
 
    if (pad_connection_has_interface(hid->slots, adapter->slot))

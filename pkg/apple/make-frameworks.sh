@@ -37,7 +37,11 @@ fi
 
 mkdir -p "$OUTDIR"
 
-for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*\.dylib$') ; do
+process_one() {
+    set -e
+    local dylib="$1"
+    local intermediate fwName fwDir build_sdk dSYMDir dylibName
+
     intermediate=$(basename "$dylib")
     intermediate="${intermediate/%.dylib/}"
     if [ -n "$SUFFIX" ] ; then
@@ -87,7 +91,16 @@ for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*
         # Update Info.plist with framework identifier
         /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.apple.xcode.dsym.$fwName" "$dSYMDir/Contents/Info.plist"
     fi
-done
+}
+export -f process_one
+export OUTDIR DSYM_OUTDIR SUFFIX PLATFORM_FAMILY_NAME PLATFORM \
+       DEPLOYMENT_TARGET CODE_SIGN_IDENTITY_FOR_ITEMS
+
+JOBS=$(sysctl -n hw.ncpu)
+if [ "$JOBS" -gt 8 ] ; then JOBS=8 ; fi
+
+find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*\.dylib$' -print0 \
+    | xargs -0 -n1 -P"$JOBS" bash -c 'process_one "$0"' || exit 1
 
 # Copy in MoltenVK as an embedded library manually instead of having
 # Xcode do it. This makes it potentially easier to substitute out
@@ -101,6 +114,14 @@ MVK_PLATFORM_SUBDIR="${SWIFT_PLATFORM_TARGET_PREFIX}-$(echo $ARCHS_STANDARD_64_B
 if [ -d "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework" ] ; then
     echo copying moltenvk from "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework"
     cp -R "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework" "${OUTDIR}"
+    # tvOS App Store rejects arm64e; strip it from the fat MoltenVK binary
+    if [ "$PLATFORM_FAMILY_NAME" = "tvOS" -a "$APPSTORE_BUILD" = "1" ] ; then
+        MVK_BIN="${OUTDIR}/MoltenVK.framework/MoltenVK"
+        if lipo -info "$MVK_BIN" 2>/dev/null | grep -q arm64e ; then
+            echo "stripping arm64e from MoltenVK for tvOS App Store build"
+            lipo -remove arm64e "$MVK_BIN" -output "$MVK_BIN"
+        fi
+    fi
     codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK.framework"
 fi
 
@@ -110,4 +131,19 @@ if [ -n "$MOLTENVK_LEGACY_XCFRAMEWORK_PATH" -a -d "${MOLTENVK_LEGACY_XCFRAMEWORK
     cp -R "${MOLTENVK_LEGACY_XCFRAMEWORK_PATH}/${MVK_PLATFORM_SUBDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework" "${OUTDIR}"
     codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework/MoltenVK-${MOLTENVK_LEGACY_VERSION}"
     codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework"
+fi
+
+# Copy Vulkan ICD file for loader discovery (macOS only)
+# This allows the Vulkan loader to find MoltenVK when using validation layers
+# Only include current MoltenVK - legacy version is for old OS support, not validation
+if [ "$PLATFORM_FAMILY_NAME" = "macOS" ] ; then
+    RESOURCES_DIR="$(dirname "$OUTDIR")/Resources"
+    ICD_DIR="$RESOURCES_DIR/vulkan/icd.d"
+    mkdir -p "$ICD_DIR"
+
+    if [ -f "${OUTDIR}/MoltenVK.framework/Versions/A/Resources/MoltenVK_icd.json" ] ; then
+        sed 's|\.\./MoltenVK|../../../Frameworks/MoltenVK.framework/Versions/A/MoltenVK|' \
+            "${OUTDIR}/MoltenVK.framework/Versions/A/Resources/MoltenVK_icd.json" \
+            > "$ICD_DIR/MoltenVK_icd.json"
+    fi
 fi

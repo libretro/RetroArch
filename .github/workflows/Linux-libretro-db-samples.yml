@@ -1,0 +1,160 @@
+name: CI Linux libretro-db samples
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples:
+    name: Build and run libretro-db/samples
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential zlib1g-dev
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run samples
+        shell: bash
+        working-directory: libretro-db/samples
+        env:
+          # Build samples under AddressSanitizer + UndefinedBehaviorSanitizer.
+          # Both libretro-db sample tests support this via the SANITIZER=
+          # convention also used in samples/tasks/http/Makefile.  ASan
+          # catches any reintroduced leak (intfstream_t in libretrodb_open
+          # / cursor_close, etc.) and any out-of-bounds memory access, so
+          # this is the regression-protective build for these tests.
+          MAKE_ARGS: "SANITIZER=address,undefined"
+        run: |
+          set -u
+          set -o pipefail
+
+          # Samples whose binary, when invoked with no arguments, runs a
+          # self-contained test and exits 0 on success / non-zero on
+          # failure.  These are built AND executed.
+          declare -a RUN_TARGETS=(
+            rmsgpack_overflow_test
+            libretrodb_leak_test
+          )
+
+          # Per-binary run command (overrides ./<binary> if present).
+          declare -A RUN_ENV=()
+
+          # Samples that are build-only.
+          declare -a BUILD_ONLY_DIRS=(
+          )
+
+          # Samples that are currently broken at build time on a stock
+          # Ubuntu host and are therefore neither built nor run.
+          declare -a SKIP_DIRS=(
+          )
+
+          is_in() {
+            local needle=$1; shift
+            local h
+            for h in "$@"; do [[ "$h" == "$needle" ]] && return 0; done
+            return 1
+          }
+
+          fails=0
+          builds=0
+          runs=0
+
+          # Collect all Makefile directories (one or two levels deep).
+          mapfile -t MKDIRS < <(find . -name Makefile -printf '%h\n' | sort)
+
+          printf '\n==> %d sample directories found\n' "${#MKDIRS[@]}"
+          for d in "${MKDIRS[@]}"; do printf '    %s\n' "${d#./}"; done
+          printf '\n'
+
+          for d in "${MKDIRS[@]}"; do
+            rel=${d#./}
+            printf '========================================\n'
+            printf '[%s] %s\n' "$(is_in "$rel" "${SKIP_DIRS[@]}" && echo skip || echo build)" "$rel"
+            printf '========================================\n'
+
+            if is_in "$rel" "${SKIP_DIRS[@]}"; then
+              printf '[skip] %s is on the skip list\n\n' "$rel"
+              continue
+            fi
+
+            # Build
+            if ! ( cd "$d" && make clean all $MAKE_ARGS ); then
+              printf '\n::error title=Build failed::%s failed to build\n' "$rel"
+              fails=$((fails+1))
+              continue
+            fi
+            builds=$((builds+1))
+
+            # Skip run for build-only dirs
+            if is_in "$rel" "${BUILD_ONLY_DIRS[@]}"; then
+              printf '[skip-run] %s (build-only list)\n\n' "$rel"
+              continue
+            fi
+
+            # Extract targets from Makefile.  Handles:
+            #   TARGET := foo
+            #   TARGETS = a b c
+            #   TARGET_TEST := foo_test
+            #   TARGET_TEST2 := foo_test2
+            mapfile -t targets < <(
+              grep -hE '^(TARGET|TARGETS|TARGET_TEST[0-9]*)[[:space:]]*[:?]?=' "$d/Makefile" \
+              | sed -E 's/^[^=]*=[[:space:]]*//' \
+              | tr -s ' \t' '\n' \
+              | grep -v '^$' \
+              | sort -u
+            )
+
+            for t in "${targets[@]}"; do
+              if ! is_in "$t" "${RUN_TARGETS[@]}"; then
+                printf '[skip-run] %s/%s (not in run allowlist)\n' "$rel" "$t"
+                continue
+              fi
+
+              bin="$d/$t"
+              if [[ ! -x "$bin" ]]; then
+                printf '::error title=Missing binary::%s was in the run allowlist but %s does not exist after build\n' "$t" "$bin"
+                fails=$((fails+1))
+                continue
+              fi
+
+              extra_env=${RUN_ENV[$t]:-}
+
+              printf '\n[run] %s\n' "$bin"
+              if ( cd "$d" && env $extra_env timeout 60 "./$t" ); then
+                printf '[pass] %s\n\n' "$t"
+                runs=$((runs+1))
+              else
+                rc=$?
+                printf '\n::error title=Test failed::%s exited with status %d\n' "$t" "$rc"
+                fails=$((fails+1))
+              fi
+            done
+          done
+
+          printf '========================================\n'
+          printf 'Summary\n'
+          printf '========================================\n'
+          printf '  Built: %d\n' "$builds"
+          printf '  Ran:   %d\n' "$runs"
+          printf '  Failed: %d\n' "$fails"
+
+          if [[ $fails -gt 0 ]]; then
+            exit 1
+          fi

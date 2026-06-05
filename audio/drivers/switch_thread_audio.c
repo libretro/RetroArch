@@ -441,7 +441,8 @@ audio_driver_t audio_switch_thread = {
       NULL, /* device_list_new */
       NULL, /* device_list_free */
       switch_thread_audio_write_avail,
-      switch_thread_audio_buffer_size
+      switch_thread_audio_buffer_size,
+      NULL  /* write_raw */
 };
 
 /* vim: set ts=3 sw=3 */

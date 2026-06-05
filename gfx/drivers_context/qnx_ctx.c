@@ -391,6 +391,26 @@ static uint32_t gfx_ctx_qnx_get_flags(void *data)
 
 static void gfx_ctx_qnx_set_flags(void *data, uint32_t flags) { }
 
+static bool gfx_ctx_qnx_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
+   return egl_create_surface(&qnx->egl, screen_win);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_qnx_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
+   return egl_destroy_surface(&qnx->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_qnx = {
    gfx_ctx_qnx_init,
    gfx_ctx_qnx_destroy,
@@ -426,5 +446,7 @@ const gfx_ctx_driver_t gfx_ctx_qnx = {
    gfx_ctx_qnx_set_flags,
    gfx_ctx_qnx_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_qnx_create_surface,
+   gfx_ctx_qnx_destroy_surface
 };

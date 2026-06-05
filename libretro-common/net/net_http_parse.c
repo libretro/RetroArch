@@ -58,13 +58,20 @@ int string_parse_html_anchor(const char *line, char *link, char *name,
       if (!*link)
       {
          const char *end = strstr(line, "\"");
+         size_t _len;
 
          if (!end)
             return 1;
 
-         memcpy(link, line, end - line);
+         /* Bound the href length against the caller's buffer.
+          * Pre-patch the memcpy was unbounded and a long href
+          * would overflow link[].  Keep room for the NUL. */
+         _len = (size_t)(end - line);
+         if (_len >= link_size)
+            _len = (link_size > 0) ? link_size - 1 : 0;
 
-         *(link + (end - line)) = '\0';
+         memcpy(link, line, _len);
+         link[_len] = '\0';
          line += end - line;
       }
 
@@ -72,13 +79,18 @@ int string_parse_html_anchor(const char *line, char *link, char *name,
       {
          const char *start = strstr(line, "\">");
          const char *end   = start ? strstr(start, "</a>") : NULL;
+         size_t _len;
 
          if (!start || !end)
             return 1;
 
-         memcpy(name, start + 2, end - start - 2);
+         /* Same bounding for the anchor text. */
+         _len = (size_t)(end - start - 2);
+         if (_len >= name_size)
+            _len = (name_size > 0) ? name_size - 1 : 0;
 
-         *(name + (end - start - 2)) = '\0';
+         memcpy(name, start + 2, _len);
+         name[_len] = '\0';
       }
    }
 

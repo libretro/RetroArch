@@ -25,18 +25,81 @@
 #include <ctype.h>
 
 #include <features/features_cpu.h>
-#include <file/file_path.h>
 #include <string/stdstring.h>
+#include <file/file_path.h>
+#include <lists/file_list.h>
 
 #include "gfx_display.h"
 #include "gfx_animation.h"
-
 #include "gfx_thumbnail.h"
+
+#include "../configuration.h"
+#include "../msg_hash.h"
+#include "../paths.h"
+#include "../file_path_special.h"
+
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
 
 #include "../tasks/tasks_internal.h"
 
 #define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  16.66667f * 3
 #define DEFAULT_GFX_THUMBNAIL_FADE_DURATION 166.66667f
+
+/* The thumbnail .status field is atomically-typed (see the
+ * gfx_thumbnail_t comment in gfx_thumbnail.h).  Reads and writes
+ * therefore must go through the retro_atomic API rather than
+ * plain assignment / dereference; on the C11 stdatomic and C++11
+ * std::atomic backends, plain access to such a field is illegal.
+ *
+ * The two cross-thread sites in this file are noted at the
+ * call sites:
+ *  - The release-stores in gfx_thumbnail_handle_upload publish
+ *    prior texture / width / height writes.
+ *  - The acquire-load in gfx_thumbnail_draw pairs with those.
+ * All other accesses are single-threaded; they go through the
+ * retro_atomic API only because the field's atomic-typed
+ * storage requires it.  The cost on weak-memory ARM/PowerPC is
+ * one extra ldar/stlr per cold-path access; on x86 TSO the
+ * barriers compile out entirely.
+ *
+ * The wrappers are static-inline (rather than function-like
+ * macros) so callers have a clear function boundary.  GCC 13+
+ * at -O3 emits a spurious -Wstringop-overflow on the inlined
+ * __atomic_* primitive when called from gfx_thumbnail_request,
+ * because the optimiser cannot prove the @c thumbnail argument
+ * non-NULL across every `goto end:` flow-graph path; the
+ * suppression below is a targeted fix that does not affect
+ * codegen.  No effect on non-GCC backends. */
+
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 12
+#  define GFX_THUMB_STATUS_DIAG_PUSH \
+   _Pragma("GCC diagnostic push") \
+   _Pragma("GCC diagnostic ignored \"-Wstringop-overflow\"")
+#  define GFX_THUMB_STATUS_DIAG_POP \
+   _Pragma("GCC diagnostic pop")
+#else
+#  define GFX_THUMB_STATUS_DIAG_PUSH
+#  define GFX_THUMB_STATUS_DIAG_POP
+#endif
+
+GFX_THUMB_STATUS_DIAG_PUSH
+static INLINE void gfx_thumb_status_store(
+      retro_atomic_int_t *ptr, enum gfx_thumbnail_status val)
+{
+   retro_atomic_store_release_int(ptr, (int)val);
+}
+
+static INLINE enum gfx_thumbnail_status gfx_thumb_status_load(
+      retro_atomic_int_t *ptr)
+{
+   return (enum gfx_thumbnail_status)retro_atomic_load_acquire_int(ptr);
+}
+GFX_THUMB_STATUS_DIAG_POP
+
+#define GFX_THUMB_STATUS_STORE(ptr, val) gfx_thumb_status_store((ptr), (val))
+#define GFX_THUMB_STATUS_LOAD(ptr)       gfx_thumb_status_load((ptr))
 
 /* Utility structure, sent as userdata when pushing
  * an image load */
@@ -112,9 +175,9 @@ static void gfx_thumbnail_init_fade(
    /* A 'fade in' animation is triggered if:
     * - Thumbnail is available
     * - Thumbnail is missing and 'fade_missing' is enabled */
-   if (   (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+   if (   (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_AVAILABLE)
        || (p_gfx_thumb->fade_missing
-       && (thumbnail->status == GFX_THUMBNAIL_STATUS_MISSING)))
+       && (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_MISSING)))
    {
       if (p_gfx_thumb->fade_duration > 0.0f)
       {
@@ -158,7 +221,7 @@ static void gfx_thumbnail_handle_upload(
       goto end;
 
    /* Only process image if we are waiting for it */
-   if (thumbnail_tag->thumbnail->status != GFX_THUMBNAIL_STATUS_PENDING)
+   if (GFX_THUMB_STATUS_LOAD(&thumbnail_tag->thumbnail->status) != GFX_THUMBNAIL_STATUS_PENDING)
       goto end;
 
    /* Sanity check: if thumbnail already has a texture,
@@ -169,8 +232,11 @@ static void gfx_thumbnail_handle_upload(
       gfx_thumbnail_reset(thumbnail_tag->thumbnail);
 
    /* Set thumbnail 'missing' status by default
-    * (saves a number of checks later) */
-   thumbnail_tag->thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+    * (saves a number of checks later)
+    * > Release-store ensures prior texture reset is
+    *   visible before status change */
+   GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
+         GFX_THUMBNAIL_STATUS_MISSING);
 
    /* If we reach this stage, thumbnail 'fade in'
     * animations should be applied (based on current
@@ -183,7 +249,7 @@ static void gfx_thumbnail_handle_upload(
 
    /* Upload texture to GPU */
    if (!video_driver_texture_load(
-            img, TEXTURE_FILTER_MIPMAP_LINEAR,
+            img, TEXTURE_FILTER_LINEAR,
             &thumbnail_tag->thumbnail->texture))
       goto end;
 
@@ -191,8 +257,12 @@ static void gfx_thumbnail_handle_upload(
    thumbnail_tag->thumbnail->width  = img->width;
    thumbnail_tag->thumbnail->height = img->height;
 
-   /* Update thumbnail status */
-   thumbnail_tag->thumbnail->status = GFX_THUMBNAIL_STATUS_AVAILABLE;
+   /* Update thumbnail status
+    * > Release-store ensures texture/width/height writes
+    *   are visible to the video thread before it sees
+    *   AVAILABLE via acquire-load in gfx_thumbnail_draw() */
+   GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
+         GFX_THUMBNAIL_STATUS_AVAILABLE);
 
 end:
    /* Clean up */
@@ -241,20 +311,21 @@ static bool gfx_thumbnail_get_path(
       switch (thumbnail_id)
       {
          case GFX_THUMBNAIL_RIGHT:
-            if (!string_is_empty(path_data->right_path))
+            if (*path_data->right_path)
             {
                *path          = path_data->right_path;
                return true;
             }
             break;
          case GFX_THUMBNAIL_LEFT:
-            if (!string_is_empty(path_data->left_path))
+            if (*path_data->left_path)
             {
                *path          = path_data->left_path;
                return true;
             }
+            break;
          case GFX_THUMBNAIL_ICON:
-            if (!string_is_empty(path_data->icon_path))
+            if (*path_data->icon_path)
             {
                *path          = path_data->icon_path;
                return true;
@@ -298,7 +369,7 @@ void gfx_thumbnail_request(
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
    gfx_thumbnail_reset(thumbnail);
-   thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
 
    /* Update/extract thumbnail path */
    if (gfx_thumbnail_is_enabled(path_data, thumbnail_id))
@@ -324,10 +395,10 @@ void gfx_thumbnail_request(
                /* Would like to cancel any existing image load tasks
                 * here, but can't see how to do it... */
                if (task_push_image_load(
-                        thumbnail_path, video_driver_supports_rgba(),
+                        thumbnail_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
                         gfx_thumbnail_upscale_threshold,
                         gfx_thumbnail_handle_upload, thumbnail_tag))
-                  thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
+                  GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
             }
 #ifdef HAVE_NETWORKING
             /* Handle on demand thumbnail downloads */
@@ -350,14 +421,14 @@ void gfx_thumbnail_request(
                 *   checks required for this involve significant
                 *   overheads. We can avoid this entirely with
                 *   a simple string comparison) */
-               if ((!string_is_empty(path_data->content_img)))
+               if (*path_data->content_img)
                   if (string_is_equal(path_data->content_img, last_img_name))
                      goto end;
 
                strlcpy(last_img_name, path_data->content_img, sizeof(last_img_name));
 
                /* Get system name */
-               if (string_is_empty(path_data->system))
+               if (!*path_data->system)
                   goto end;
 
                /* Since task_push_pl_entry_download will shift the flag, do not attempt if it is already
@@ -385,7 +456,7 @@ void gfx_thumbnail_request(
 
 end:
    /* Trigger 'fade in' animation, if required */
-   if (thumbnail->status != GFX_THUMBNAIL_STATUS_PENDING)
+   if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) != GFX_THUMBNAIL_STATUS_PENDING)
       gfx_thumbnail_init_fade(p_gfx_thumb,
             thumbnail);
 }
@@ -411,10 +482,10 @@ void gfx_thumbnail_request_file(
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
    gfx_thumbnail_reset(thumbnail);
-   thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
 
    /* Check if file path is valid */
-   if (   string_is_empty(file_path)
+   if (   (!file_path || !*file_path)
        || !path_is_valid(file_path))
       return;
 
@@ -429,10 +500,10 @@ void gfx_thumbnail_request_file(
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
    if (task_push_image_load(
-         file_path, video_driver_supports_rgba(),
+         file_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
          gfx_thumbnail_upscale_threshold,
          gfx_thumbnail_handle_upload, thumbnail_tag))
-      thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
+      GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
 }
 
 /* Resets (and free()s the current texture of) the
@@ -454,14 +525,13 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    }
 
    /* Reset all parameters */
-   thumbnail->status      = GFX_THUMBNAIL_STATUS_UNKNOWN;
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_UNKNOWN);
    thumbnail->texture     = 0;
    thumbnail->width       = 0;
    thumbnail->height      = 0;
    thumbnail->alpha       = 0.0f;
    thumbnail->delay_timer = 0.0f;
-   thumbnail->flags      &= ~(GFX_THUMB_FLAG_FADE_ACTIVE
-                            | GFX_THUMB_FLAG_CORE_ASPECT);
+   thumbnail->flags       = 0;
 }
 
 /* Stream processing */
@@ -501,7 +571,7 @@ void gfx_thumbnail_request_stream(
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
    if (   !thumbnail
-       || (thumbnail->status != GFX_THUMBNAIL_STATUS_UNKNOWN))
+       || (GFX_THUMB_STATUS_LOAD(&thumbnail->status) != GFX_THUMBNAIL_STATUS_UNKNOWN))
       return;
 
    /* Check if stream delay timer has elapsed */
@@ -516,7 +586,7 @@ void gfx_thumbnail_request_stream(
           * > Reset thumbnail and set missing status
           *   to prevent repeated load attempts */
          gfx_thumbnail_reset(thumbnail);
-         thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+         GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
          thumbnail->alpha  = 1.0f;
          return;
       }
@@ -559,41 +629,41 @@ void gfx_thumbnail_request_streams(
       unsigned gfx_thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
 {
-   bool process_right = false;
-   bool process_left  = false;
+   bool process_r = false;
+   bool process_l = false;
 
    if (!right_thumbnail || !left_thumbnail)
       return;
 
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
-   process_right = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
-   process_left  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
+   process_r = (GFX_THUMB_STATUS_LOAD(&right_thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN);
+   process_l = (GFX_THUMB_STATUS_LOAD(&left_thumbnail->status)  == GFX_THUMBNAIL_STATUS_UNKNOWN);
 
-   if (process_right || process_left)
+   if (process_r || process_l)
    {
       /* Check if stream delay timer has elapsed */
       gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
       float delta_time                   = p_anim->delta_time;
-      bool request_right                 = false;
-      bool request_left                  = false;
+      bool request_r                     = false;
+      bool request_l                     = false;
 
-      if (process_right)
+      if (process_r)
       {
          right_thumbnail->delay_timer += delta_time;
-         request_right                 =
+         request_r                     =
                (right_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
       }
 
-      if (process_left)
+      if (process_l)
       {
          left_thumbnail->delay_timer  += delta_time;
-         request_left                  =
+         request_l                     =
                (left_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
       }
 
       /* Check if one or more thumbnails should be requested */
-      if (request_right || request_left)
+      if (request_r || request_l)
       {
          /* Sanity check */
          if (!path_data)
@@ -601,17 +671,17 @@ void gfx_thumbnail_request_streams(
             /* No path information
              * > Reset thumbnail and set missing status
              *   to prevent repeated load attempts */
-            if (request_right)
+            if (request_r)
             {
                gfx_thumbnail_reset(right_thumbnail);
-               right_thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+               GFX_THUMB_STATUS_STORE(&right_thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
                right_thumbnail->alpha  = 1.0f;
             }
 
-            if (request_left)
+            if (request_l)
             {
                gfx_thumbnail_reset(left_thumbnail);
-               left_thumbnail->status  = GFX_THUMBNAIL_STATUS_MISSING;
+               GFX_THUMB_STATUS_STORE(&left_thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
                left_thumbnail->alpha   = 1.0f;
             }
 
@@ -619,13 +689,13 @@ void gfx_thumbnail_request_streams(
          }
 
          /* Request image load */
-         if (request_right)
+         if (request_r)
             gfx_thumbnail_request(
                   path_data, GFX_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail,
                   gfx_thumbnail_upscale_threshold,
                   network_on_demand_thumbnails);
 
-         if (request_left)
+         if (request_l)
             gfx_thumbnail_request(
                   path_data, GFX_THUMBNAIL_LEFT, playlist, idx, left_thumbnail,
                   gfx_thumbnail_upscale_threshold,
@@ -664,7 +734,7 @@ void gfx_thumbnail_process_stream(
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
-      if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN)
       {
          gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
 
@@ -681,7 +751,7 @@ void gfx_thumbnail_process_stream(
                /* Content is invalid
                 * > Reset thumbnail and set missing status */
                gfx_thumbnail_reset(thumbnail);
-               thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+               GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
                thumbnail->alpha  = 1.0f;
                return;
             }
@@ -700,7 +770,7 @@ void gfx_thumbnail_process_stream(
        * > If status is GFX_THUMBNAIL_STATUS_UNKNOWN,
        *   thumbnail is already in a blank state - but we
        *   must ensure that delay timer is set to zero */
-      if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN)
          thumbnail->delay_timer = 0.0f;
       /* In all other cases, reset thumbnail */
       else
@@ -738,33 +808,33 @@ void gfx_thumbnail_process_streams(
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
-      bool process_right = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
-      bool process_left  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
+      bool process_r = (GFX_THUMB_STATUS_LOAD(&right_thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN);
+      bool process_l = (GFX_THUMB_STATUS_LOAD(&left_thumbnail->status)  == GFX_THUMBNAIL_STATUS_UNKNOWN);
 
-      if (process_right || process_left)
+      if (process_r || process_l)
       {
          /* Check if stream delay timer has elapsed */
          gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
          float delta_time                   = p_anim->delta_time;
-         bool request_right                 = false;
-         bool request_left                  = false;
+         bool request_r                     = false;
+         bool request_l                     = false;
 
-         if (process_right)
+         if (process_r)
          {
             right_thumbnail->delay_timer += delta_time;
-            request_right                 =
+            request_r                     =
                   (right_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
          }
 
-         if (process_left)
+         if (process_l)
          {
             left_thumbnail->delay_timer  += delta_time;
-            request_left                  =
+            request_l                     =
                   (left_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
          }
 
          /* Check if one or more thumbnails should be requested */
-         if (request_right || request_left)
+         if (request_r || request_l)
          {
             /* Update thumbnail content */
             if (   !path_data
@@ -773,17 +843,17 @@ void gfx_thumbnail_process_streams(
             {
                /* Content is invalid
                 * > Reset thumbnail and set missing status */
-               if (request_right)
+               if (request_r)
                {
                   gfx_thumbnail_reset(right_thumbnail);
-                  right_thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+                  GFX_THUMB_STATUS_STORE(&right_thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
                   right_thumbnail->alpha  = 1.0f;
                }
 
-               if (request_left)
+               if (request_l)
                {
                   gfx_thumbnail_reset(left_thumbnail);
-                  left_thumbnail->status  = GFX_THUMBNAIL_STATUS_MISSING;
+                  GFX_THUMB_STATUS_STORE(&left_thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
                   left_thumbnail->alpha   = 1.0f;
                }
 
@@ -791,13 +861,13 @@ void gfx_thumbnail_process_streams(
             }
 
             /* Request image load */
-            if (request_right)
+            if (request_r)
                gfx_thumbnail_request(
                      path_data, GFX_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail,
                      gfx_thumbnail_upscale_threshold,
                      network_on_demand_thumbnails);
 
-            if (request_left)
+            if (request_l)
                gfx_thumbnail_request(
                      path_data, GFX_THUMBNAIL_LEFT, playlist, idx, left_thumbnail,
                      gfx_thumbnail_upscale_threshold,
@@ -812,12 +882,12 @@ void gfx_thumbnail_process_streams(
        *   thumbnail is already in a blank state - but we
        *   must ensure that delay timer is set to zero
        * > In all other cases, reset thumbnail */
-      if (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      if (GFX_THUMB_STATUS_LOAD(&right_thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN)
          right_thumbnail->delay_timer = 0.0f;
       else
          gfx_thumbnail_reset(right_thumbnail);
 
-      if (left_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      if (GFX_THUMB_STATUS_LOAD(&left_thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN)
          left_thumbnail->delay_timer = 0.0f;
       else
          gfx_thumbnail_reset(left_thumbnail);
@@ -940,8 +1010,12 @@ void gfx_thumbnail_draw(
       )
       return;
 
-   /* Only draw thumbnail if it is available... */
-   if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+   /* Only draw thumbnail if it is available...
+    * > Acquire-load pairs with release-store in
+    *   gfx_thumbnail_handle_upload() to ensure
+    *   texture/width/height are visible when we
+    *   read AVAILABLE */
+   if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_AVAILABLE)
    {
       gfx_display_ctx_draw_t draw;
       struct video_coords coords;
@@ -950,7 +1024,18 @@ void gfx_thumbnail_draw(
       float draw_height;
       float draw_x;
       float draw_y;
-      float thumbnail_alpha     = thumbnail->alpha * alpha;
+
+      /* Snapshot fields — read once, use local copies for the
+       * remainder of this draw call.  The main thread may update
+       * the live struct concurrently (upload callback, reset, or
+       * animation tick on alpha), but these locals are stable. */
+      uintptr_t thumb_texture = thumbnail->texture;
+      unsigned  thumb_width   = thumbnail->width;
+      unsigned  thumb_height  = thumbnail->height;
+      float     thumb_alpha   = thumbnail->alpha;
+      uint8_t   thumb_flags   = thumbnail->flags;
+
+      float thumbnail_alpha     = thumb_alpha * alpha;
       float thumbnail_color[16] = {
          1.0f, 1.0f, 1.0f, 1.0f,
          1.0f, 1.0f, 1.0f, 1.0f,
@@ -964,10 +1049,28 @@ void gfx_thumbnail_draw(
       if (thumbnail_alpha < 1.0f)
          gfx_display_set_alpha(thumbnail_color, thumbnail_alpha);
 
-      /* Get thumbnail dimensions */
-      gfx_thumbnail_get_draw_dimensions(
-            thumbnail, width, height, scale_factor,
-            &draw_width, &draw_height);
+      /* Get thumbnail dimensions using snapshot values
+       * > Build a temporary on the stack so
+       *   gfx_thumbnail_get_draw_dimensions reads
+       *   consistent data without touching the live struct */
+      {
+         gfx_thumbnail_t thumb_snapshot;
+         thumb_snapshot.texture = thumb_texture;
+         thumb_snapshot.width   = thumb_width;
+         thumb_snapshot.height  = thumb_height;
+         thumb_snapshot.alpha   = thumb_alpha;
+         thumb_snapshot.flags   = thumb_flags;
+         /* Local snapshot: initialise the atomic-typed status
+          * field via _init since this is its first write --
+          * direct assignment to the C11/C++11 atomic forms is
+          * illegal.  This local is never observed by another
+          * thread, so no ordering is required. */
+         retro_atomic_int_init(&thumb_snapshot.status, GFX_THUMBNAIL_STATUS_AVAILABLE);
+         thumb_snapshot.delay_timer = 0.0f;
+         gfx_thumbnail_get_draw_dimensions(
+               &thumb_snapshot, width, height, scale_factor,
+               &draw_width, &draw_height);
+      }
 
       if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
@@ -1001,8 +1104,7 @@ void gfx_thumbnail_draw(
       draw.rotation        = 0.0f;
       draw.coords          = &coords;
       draw.matrix_data     = &mymat;
-      draw.texture         = thumbnail->texture;
-      draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+      draw.texture         = thumb_texture;
       draw.pipeline_id     = 0;
 
       /* Set thumbnail alignment within bounding box */
@@ -1113,4 +1215,868 @@ void gfx_thumbnail_draw(
       if (dispctx->blend_end)
          dispctx->blend_end(userdata);
    }
+}
+
+/* Returns currently set thumbnail 'type' (Named_Snaps,
+ * Named_Titles, Named_Boxarts, Named_Logos) for specified thumbnail
+ * identifier (right, left) */
+static const char *gfx_thumbnail_get_type(
+      unsigned gfx_thumbnails,
+      unsigned left_thumbnails,
+      unsigned icon_thumbnails,
+      gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id)
+{
+   if (path_data)
+   {
+      unsigned type                 = 0;
+      switch (thumbnail_id)
+      {
+         case GFX_THUMBNAIL_RIGHT:
+            if (   path_data->playlist_right_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+               type = (unsigned)path_data->playlist_right_mode - 1;
+            else
+               type = gfx_thumbnails;
+            break;
+         case GFX_THUMBNAIL_LEFT:
+            if (   path_data->playlist_left_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+               type = (unsigned)path_data->playlist_left_mode - 1;
+            else
+               type = left_thumbnails;
+            break;
+         case GFX_THUMBNAIL_ICON:
+            if (   path_data->playlist_icon_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+               type = (unsigned)path_data->playlist_icon_mode - 1;
+            else
+               type = icon_thumbnails;
+            break;
+         default:
+            goto end;
+      }
+
+      switch (type)
+      {
+         case 1:
+            return "Named_Snaps";
+         case 2:
+            return "Named_Titles";
+         case 3:
+            return "Named_Boxarts";
+         case 4:
+            return "Named_Logos";
+         case 0:
+         default:
+            break;
+      }
+   }
+
+end:
+   return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+}
+
+/* Fills content_img field of path_data using existing
+ * content_label field (for internal use only) */
+void gfx_thumbnail_fill_content_img(char *s,
+   size_t len, const char *src, bool shorten)
+{
+   char *scrub_char_ptr = NULL;
+   /* Copy source label string */
+   size_t _len          = strlcpy(s, src, len);
+
+   /* Shortening logic: up to first space + bracket */
+   if (shorten)
+   {
+      int bracketpos    = -1;
+      if ((bracketpos = string_find_index_substring_string(src, " (")) > 0)
+         _len = bracketpos;
+      /* Explicit zero if short name is same as standard name - saves some queries later. */
+      else
+      {
+         s[0] = '\0';
+         return;
+      }
+   }
+   /* Scrub characters that are not cross-platform and/or violate the
+    * No-Intro filename standard:
+    * https://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).pdf
+    * Replace these characters in the entry name with underscores */
+   while ((scrub_char_ptr = strpbrk(s, "&*/:`\"<>?\\|")))
+      *scrub_char_ptr = '_';
+   /* Add PNG extension */
+   strlcpy(s + _len, ".png", len - _len);
+}
+
+/* Resets thumbnail path data
+ * (blanks all internal string containers) */
+void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
+{
+   if (!path_data)
+      return;
+
+   path_data->system_len           = 0;
+   path_data->system[0]            = '\0';
+   path_data->content_path[0]      = '\0';
+   path_data->content_label_len    = 0;
+   path_data->content_label[0]     = '\0';
+   path_data->content_core_name[0] = '\0';
+   path_data->content_db_name[0]   = '\0';
+   path_data->content_img[0]       = '\0';
+   path_data->content_img_full[0]  = '\0';
+   path_data->content_img_short[0] = '\0';
+   path_data->right_path[0]        = '\0';
+   path_data->left_path[0]         = '\0';
+   path_data->icon_path[0]         = '\0';
+
+   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_icon_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+}
+
+/* Initialisation */
+
+/* Creates new thumbnail path data container.
+ * Returns handle to new gfx_thumbnail_path_data_t object.
+ * on success, otherwise NULL.
+ * Note: Returned object must be free()d */
+gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void)
+{
+   /* Use calloc rather than malloc.  gfx_thumbnail_path_reset()
+    * resets the string buffers and the playlist_*_mode fields
+    * but does NOT touch playlist_index, leaving it as garbage
+    * from malloc until the first set_content_*() call.  Read
+    * sites in xmb (xmb_set_title) sample
+    * thumbnail_path_data->playlist_index before any setter has
+    * necessarily run, then pass it to playlist_get_index() --
+    * which is bounds-checked, so a garbage index just returns
+    * a stale pl_entry rather than crashing, but the code is
+    * latently UB and a future read site without the same defence
+    * would inherit a real bug.  Zero-init via calloc closes
+    * the window without churning path_reset's API. */
+   gfx_thumbnail_path_data_t *path_data = (gfx_thumbnail_path_data_t*)
+      calloc(1, sizeof(*path_data));
+   if (!path_data)
+      return NULL;
+
+   gfx_thumbnail_path_reset(path_data);
+
+   return path_data;
+}
+
+/* Utility Functions */
+
+/* Returns true if specified thumbnail is enabled
+ * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
+bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id)
+{
+   if (path_data)
+   {
+      settings_t          *settings = config_get_ptr();
+      unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
+      unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
+      unsigned menu_icon_thumbnails = settings->uints.menu_icon_thumbnails;
+
+      switch (thumbnail_id)
+      {
+         case GFX_THUMBNAIL_RIGHT:
+            if (   path_data->playlist_right_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+               return path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
+            return gfx_thumbnails != 0;
+         case GFX_THUMBNAIL_LEFT:
+            if (   path_data->playlist_left_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+               return path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
+            return menu_left_thumbnails != 0;
+         case GFX_THUMBNAIL_ICON:
+            if (   path_data->playlist_icon_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+                return path_data->playlist_icon_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
+            return menu_icon_thumbnails != 0;
+         default:
+            break;
+      }
+   }
+
+   return false;
+}
+
+/* Setters */
+
+/* Sets current 'system' (default database name).
+ * Returns true if 'system' is valid.
+ * If playlist is provided, extracts system-specific
+ * thumbnail assignment metadata (required for accurate
+ * usage of gfx_thumbnail_is_enabled())
+ * > Used as a fallback when individual content lacks an
+ *   associated database name */
+bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
+      const char *system, playlist_t *playlist)
+{
+   if (!path_data)
+      return false;
+
+   /* When system is updated, must regenerate right/left
+    * thumbnail paths */
+   path_data->right_path[0]       = '\0';
+   path_data->left_path[0]        = '\0';
+
+   /* 'Reset' path_data system string */
+   path_data->system_len          = 0;
+   path_data->system[0]           = '\0';
+
+   /* Must also reset playlist thumbnail display modes */
+   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+
+   if (!system || !*system)
+      return false;
+
+   /* Hack: There is only one MAME thumbnail repo,
+    * so filter any input starting with 'MAME...' */
+   if (strncmp(system, "MAME", 4) == 0)
+      path_data->system_len = strlcpy(path_data->system, "MAME", sizeof(path_data->system));
+   else
+      path_data->system_len = strlcpy(path_data->system, system, sizeof(path_data->system));
+
+   /* Addendum: Now that we have per-playlist thumbnail display
+    * modes, we must extract them here - otherwise
+    * gfx_thumbnail_is_enabled() will go out of sync */
+   if (playlist)
+   {
+      const char *playlist_path    = playlist_get_conf_path(playlist);
+
+      /* Note: This is not considered an error
+       * (just means that input playlist is ignored) */
+      if (playlist_path && *playlist_path)
+      {
+         const char *playlist_file = path_basename_nocompression(playlist_path);
+         /* Note: This is not considered an error
+          * (just means that input playlist is ignored) */
+         if (playlist_file && *playlist_file)
+         {
+            /* Check for history/favourites playlists */
+            bool playlist_valid =
+               (   memcmp(system, "history", 8) == 0
+                && memcmp(playlist_file,
+                   FILE_PATH_CONTENT_HISTORY,
+                   sizeof(FILE_PATH_CONTENT_HISTORY)) == 0)
+               || (     memcmp(system, "favorites", 10) == 0
+                     && memcmp(playlist_file,
+                        FILE_PATH_CONTENT_FAVORITES,
+                        sizeof(FILE_PATH_CONTENT_FAVORITES)) == 0);
+
+            /* This means we have to work a little harder
+             * i.e. check whether the cached playlist file
+             * matches the database name */
+            if (!playlist_valid)
+            {
+               char playlist_name[NAME_MAX_LENGTH];
+               fill_pathname(playlist_name, playlist_file, "", sizeof(playlist_name));
+               playlist_valid = string_is_equal(playlist_name, system);
+            }
+
+            /* If we have a valid playlist, extract thumbnail modes */
+            if (playlist_valid)
+            {
+               path_data->playlist_right_mode =
+                  playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT);
+               path_data->playlist_left_mode =
+                  playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT);
+            }
+         }
+      }
+   }
+
+   return true;
+}
+
+/* Sets current thumbnail content according to the specified label.
+ * Returns true if content is valid */
+bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char *label)
+{
+   if (!path_data)
+      return false;
+
+   /* When content is updated, must regenerate right/left
+    * thumbnail paths */
+   path_data->right_path[0]        = '\0';
+   path_data->left_path[0]         = '\0';
+
+   /* 'Reset' path_data content strings */
+   path_data->content_path[0]      = '\0';
+   path_data->content_label_len    = 0;
+   path_data->content_label[0]     = '\0';
+   path_data->content_core_name[0] = '\0';
+   path_data->content_db_name[0]   = '\0';
+   path_data->content_img[0]       = '\0';
+   path_data->content_img_full[0]  = '\0';
+   path_data->content_img_short[0] = '\0';
+
+   /* Must also reset playlist thumbnail display modes */
+   path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_index       = 0;
+
+   if (!label || !*label)
+      return false;
+
+   /* Cache content label */
+   path_data->content_label_len = strlcpy(path_data->content_label,
+         label, sizeof(path_data->content_label));
+
+   /* Determine content image name */
+   gfx_thumbnail_fill_content_img(path_data->content_img,
+         sizeof(path_data->content_img),
+         path_data->content_label, false);
+   gfx_thumbnail_fill_content_img(path_data->content_img_short,
+         sizeof(path_data->content_img_short),
+         path_data->content_label, true);
+
+   /* Have to set content path to *something*...
+    * Just use label value (it doesn't matter) */
+   strlcpy(path_data->content_path, label, sizeof(path_data->content_path));
+
+   /* Redundant error check... */
+   return *path_data->content_img;
+}
+
+/* Sets current thumbnail content to the specified image.
+ * Returns true if content is valid */
+bool gfx_thumbnail_set_content_image(
+      gfx_thumbnail_path_data_t *path_data,
+      const char *img_dir, const char *img_name)
+{
+   if (!path_data)
+      return false;
+
+   /* When content is updated, must regenerate right/left
+    * thumbnail paths */
+   path_data->right_path[0]        = '\0';
+   path_data->left_path[0]         = '\0';
+
+   /* 'Reset' path_data content strings */
+   path_data->content_path[0]      = '\0';
+   path_data->content_label_len    = 0;
+   path_data->content_label[0]     = '\0';
+   path_data->content_core_name[0] = '\0';
+   path_data->content_db_name[0]   = '\0';
+   path_data->content_img[0]       = '\0';
+   path_data->content_img_full[0]  = '\0';
+   path_data->content_img_short[0] = '\0';
+
+   /* Must also reset playlist thumbnail display modes */
+   path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_index       = 0;
+
+   if ((!img_dir || !*img_dir) || (!img_name || !*img_name))
+      return false;
+
+   if (path_is_media_type(img_name) != RARCH_CONTENT_IMAGE)
+      return false;
+
+   /* Cache content image name */
+   strlcpy(path_data->content_img,
+            img_name, sizeof(path_data->content_img));
+
+   path_data->content_label_len = fill_pathname(
+         path_data->content_label,
+         path_data->content_img, "",
+         sizeof(path_data->content_label));
+
+   /* Set file path */
+   fill_pathname_join_special(path_data->content_path,
+      img_dir, img_name, sizeof(path_data->content_path));
+
+   /* Set core name to "imageviewer" */
+   strlcpy(path_data->content_core_name,
+         "imageviewer",
+         sizeof(path_data->content_core_name));
+
+   /* Set database name (arbitrarily) to "_images_"
+    * (required for compatibility with gfx_thumbnail_update_path(),
+    * but not actually used...) */
+   strlcpy(path_data->content_db_name,
+         "_images_", sizeof(path_data->content_db_name));
+
+   /* Redundant error check */
+   return *path_data->content_path;
+}
+
+/* Sets current thumbnail content to the specified playlist entry.
+ * Returns true if content is valid.
+ * > Note: It is always best to use playlists when setting
+ *   thumbnail content, since there is no guarantee that the
+ *   corresponding menu entry label will contain a useful
+ *   identifier (it may be 'tainted', e.g. with the current
+ *   core name). 'Real' labels should be extracted from source */
+bool gfx_thumbnail_set_content_playlist(
+      gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx)
+{
+   const char *content_path           = NULL;
+   const char *content_label          = NULL;
+   const char *core_name              = NULL;
+   const char *db_name                = NULL;
+   const struct playlist_entry *entry = NULL;
+
+   if (!path_data)
+      return false;
+
+   /* When content is updated, must regenerate right/left
+    * thumbnail paths */
+   path_data->right_path[0]           = '\0';
+   path_data->left_path[0]            = '\0';
+
+   /* 'Reset' path_data content strings */
+   path_data->content_path[0]         = '\0';
+   path_data->content_label_len       = 0;
+   path_data->content_label[0]        = '\0';
+   path_data->content_core_name[0]    = '\0';
+   path_data->content_db_name[0]      = '\0';
+   path_data->content_img[0]          = '\0';
+   path_data->content_img_full[0]     = '\0';
+   path_data->content_img_short[0]    = '\0';
+
+   /* Must also reset playlist thumbnail display modes */
+   path_data->playlist_right_mode     = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode      = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_index          = 0;
+
+   if (!playlist)
+      return false;
+
+   if (idx >= playlist_get_size(playlist))
+      return false;
+
+   /* Read playlist values */
+   playlist_get_index(playlist, idx, &entry);
+
+   if (!entry)
+      return false;
+
+   content_path  = entry->path;
+   content_label = entry->label;
+   core_name     = entry->core_name;
+   db_name       = entry->db_name;
+
+   /* Content without a path is invalid by definition */
+   if (!content_path || !*content_path)
+      return false;
+
+   /* Cache content path
+    * (This is required for imageviewer, history and favourites content) */
+   strlcpy(path_data->content_path,
+            content_path, sizeof(path_data->content_path));
+
+   /* Cache core name
+    * (This is required for imageviewer content) */
+   if (core_name && *core_name)
+      strlcpy(path_data->content_core_name,
+            core_name, sizeof(path_data->content_core_name));
+
+   /* Get content label */
+   if (content_label && *content_label)
+      path_data->content_label_len = strlcpy(path_data->content_label,
+            content_label, sizeof(path_data->content_label));
+   else
+      path_data->content_label_len = fill_pathname(path_data->content_label,
+            path_basename(content_path),
+            "", sizeof(path_data->content_label));
+
+   /* Determine content image name */
+   {
+      char tmp_buf[NAME_MAX_LENGTH];
+      fill_pathname(tmp_buf, path_basename(path_data->content_path),
+            "", sizeof(tmp_buf));
+
+      gfx_thumbnail_fill_content_img(path_data->content_img_full,
+         sizeof(path_data->content_img_full), tmp_buf, false);
+      gfx_thumbnail_fill_content_img(path_data->content_img,
+         sizeof(path_data->content_img), path_data->content_label, false);
+
+      /* Explicit zero if full name is same as standard name 
+         - saves some queries later. */
+      if (string_is_equal(path_data->content_img,
+          path_data->content_img_full))
+         path_data->content_img_full[0] = '\0';
+
+      gfx_thumbnail_fill_content_img(path_data->content_img_short,
+         sizeof(path_data->content_img_short), path_data->content_label, true);
+   }
+
+   /* Store playlist index */
+   path_data->playlist_index = idx;
+
+   /* Redundant error check... */
+   if (!*path_data->content_img)
+      return false;
+
+   /* Thumbnail image name is done -> now check if
+    * per-content database name is defined */
+   if (!db_name || !*db_name)
+      playlist_get_db_name(playlist, idx, &db_name);
+   if (db_name && *db_name)
+   {
+      /* Hack: There is only one MAME thumbnail repo,
+       * so filter any input starting with 'MAME...' */
+      if (strncmp(db_name, "MAME", 4) == 0)
+      {
+         path_data->content_db_name[0] = path_data->content_db_name[2] = 'M';
+         path_data->content_db_name[1] = 'A';
+         path_data->content_db_name[3] = 'E';
+         path_data->content_db_name[4] = '\0';
+      }
+      else
+      {
+         char tmp_buf[NAME_MAX_LENGTH];
+         const char *pos      = strchr(db_name, '|');
+         /* If db_name comes from core info, and there are multiple
+          * databases mentioned separated by |, use only first one */
+         if (pos && (size_t) (pos - db_name) + 1 < sizeof(tmp_buf))
+            strlcpy(tmp_buf, db_name, (size_t)(pos - db_name) + 1);
+         else
+            strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
+
+         fill_pathname(path_data->content_db_name,
+               tmp_buf, "",
+               sizeof(path_data->content_db_name));
+      }
+   }
+
+   /* Playlist entry is valid -> it is now 'safe' to
+    * extract any remaining playlist metadata
+    * (i.e. thumbnail display modes) */
+   path_data->playlist_right_mode =
+         playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT);
+   path_data->playlist_left_mode =
+         playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT);
+
+   return true;
+}
+
+/* Updaters */
+
+/* Updates path for specified thumbnail identifier (right, left).
+ * Must be called after:
+ * - gfx_thumbnail_set_system()
+ * - gfx_thumbnail_set_content*()
+ * ...and before:
+ * - gfx_thumbnail_get_path()
+ * Returns true if generated path is valid */
+bool gfx_thumbnail_update_path(
+      gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id)
+{
+   char content_dir[DIR_MAX_LENGTH];
+   settings_t *settings          = config_get_ptr();
+   const char *system_name       = NULL;
+   char *thumbnail_path          = NULL;
+   const char *dir_thumbnails    = settings->paths.directory_thumbnails;
+   bool playlist_allow_non_png   = settings->bools.playlist_allow_non_png;
+   unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
+   unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
+   unsigned menu_icon_thumbnails = settings->uints.menu_icon_thumbnails;
+   /* Thumbnail extension order. The default (i.e. png) is always the first. */
+   #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 5
+   const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga", 0 };
+
+   if (!path_data)
+      return false;
+
+   /* Determine which path we are updating... */
+   switch (thumbnail_id)
+   {
+      case GFX_THUMBNAIL_RIGHT:
+         thumbnail_path = path_data->right_path;
+         break;
+      case GFX_THUMBNAIL_LEFT:
+         thumbnail_path = path_data->left_path;
+         break;
+      case GFX_THUMBNAIL_ICON:
+         thumbnail_path = path_data->icon_path;
+         break;
+      default:
+         return false;
+   }
+
+   content_dir[0]    = '\0';
+
+   /* Sundry error checking */
+   if (!dir_thumbnails || !*dir_thumbnails)
+      return false;
+
+   if (!gfx_thumbnail_is_enabled(path_data, thumbnail_id))
+      return false;
+
+   /* Generate new path */
+
+   /* > Check path_data for empty strings */
+   if (       (!*path_data->content_path)
+       ||     (!*path_data->content_img)
+       || (   (!*path_data->system)
+           && (!*path_data->content_db_name)))
+      return false;
+
+   /* > Get current system */
+   if (!*path_data->content_db_name)
+   {
+      /* If this is a content history or favorites playlist
+       * then the current 'path_data->system' string is
+       * meaningless. In this case, we fall back to the
+       * content directory name */
+      if (     memcmp(path_data->system, "history", 8) == 0
+            || memcmp(path_data->system, "favorites", 10) == 0)
+      {
+         if (gfx_thumbnail_get_content_dir(
+               path_data, content_dir, sizeof(content_dir)) == 0)
+            return false;
+
+         system_name = content_dir;
+      }
+      else
+         system_name = path_data->system;
+   }
+   else
+      system_name = path_data->content_db_name;
+
+   /* > Special case: thumbnail for imageviewer content
+    *   is the image file itself */
+   if (   memcmp(system_name, "images_history", sizeof("images_history")) == 0
+       || memcmp(path_data->content_core_name, "imageviewer", sizeof("imageviewer")) == 0)
+   {
+      /* imageviewer content is identical for left and right thumbnails */
+      if (path_is_media_type(path_data->content_path) == RARCH_CONTENT_IMAGE)
+         strlcpy(thumbnail_path,
+               path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
+   }
+   else
+   {
+      int  i;
+      char tmp_buf[DIR_MAX_LENGTH];
+      const char *type = gfx_thumbnail_get_type(gfx_thumbnails,
+            menu_left_thumbnails, menu_icon_thumbnails, path_data, thumbnail_id);
+      bool thumbnail_found = false;
+      /* > Normal content: assemble path */
+
+      /* >> Base + system name */
+      fill_pathname_join_special(thumbnail_path, dir_thumbnails,
+            system_name, PATH_MAX_LENGTH * sizeof(char));
+
+      /* >> Add type */
+      fill_pathname_join_special(tmp_buf, thumbnail_path, type, sizeof(tmp_buf));
+
+      thumbnail_path[0] = '\0';
+
+      /* >> Add content image - first try with label (database name) */
+      if (*path_data->content_img)
+      {
+         fill_pathname_join_special(thumbnail_path, tmp_buf,
+               path_data->content_img, PATH_MAX_LENGTH * sizeof(char));
+         thumbnail_found = path_is_valid(thumbnail_path);
+
+         if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
+         {
+            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
+            {
+               if (!path_get_extension_mutable(thumbnail_path))
+                  continue;
+
+               strlcpy(path_get_extension_mutable(thumbnail_path),
+                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+               thumbnail_found = path_is_valid(thumbnail_path);
+            }
+         }
+      }
+
+      /* >> Add content image - second try with full file name */
+      if (   !thumbnail_found 
+          && *path_data->content_img_full)
+      {
+         thumbnail_path[0] = '\0';
+         fill_pathname_join_special(thumbnail_path, tmp_buf,
+               path_data->content_img_full, PATH_MAX_LENGTH * sizeof(char));
+         thumbnail_found = path_is_valid(thumbnail_path);
+
+         if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
+         {
+            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
+            {
+               if (!path_get_extension_mutable(thumbnail_path))
+                  continue;
+
+               strlcpy(path_get_extension_mutable(thumbnail_path),
+                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+               thumbnail_found = path_is_valid(thumbnail_path);
+            }
+         }
+      }
+
+      /* >> Add content image - third try with shortened name (title only) */
+      if (!thumbnail_found && *path_data->content_img_short)
+      {
+         thumbnail_path[0] = '\0';
+         fill_pathname_join_special(thumbnail_path, tmp_buf,
+               path_data->content_img_short, PATH_MAX_LENGTH * sizeof(char));
+         thumbnail_found = path_is_valid(thumbnail_path);
+
+         if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
+         {
+            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
+            {
+               if (!path_get_extension_mutable(thumbnail_path))
+                  continue;
+
+               strlcpy(path_get_extension_mutable(thumbnail_path),
+                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+               thumbnail_found = path_is_valid(thumbnail_path);
+            }
+         }
+      }
+      /* This logic is valid for locally stored thumbnails. For optional downloads,
+       * gfx_thumbnail_get_img_name() is used */
+   }
+
+   /* Final error check - is cached path empty? */
+   return thumbnail_path && *thumbnail_path;
+}
+
+/* Getters */
+
+/* Fetches current content directory.
+ * Returns true if content directory is valid. */
+size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data,
+      char *s, size_t len)
+{
+   size_t _len;
+   char *last_slash;
+   char tmp_buf[NAME_MAX_LENGTH];
+   const char *dir_start;
+   if (!path_data || !*path_data->content_path)
+      return 0;
+   if (!(last_slash = find_last_slash(path_data->content_path)))
+      return 0;
+   _len = last_slash + 1 - path_data->content_path;
+   if (!((_len > 1) && (_len < PATH_MAX_LENGTH)))
+      return 0;
+   /* The historical implementation copied the whole directory
+    * portion of content_path into tmp_buf and then took its
+    * basename.  But content_path is sized PATH_MAX_LENGTH (2048)
+    * and tmp_buf only NAME_MAX_LENGTH (256), so a directory
+    * portion longer than 255 chars (reachable on systems with
+    * deep folder hierarchies) caused strlcpy to write up to
+    * _len-1 bytes into the 256-byte tmp_buf -- a stack overflow.
+    *
+    * Since the goal is the *basename* of the directory (i.e.
+    * the segment between the second-to-last and last slashes),
+    * skip the prefix copy: we only need the tail.  Anchor the
+    * copy at the latest position that still lets the segment
+    * fit in tmp_buf, then take its basename. */
+   dir_start = path_data->content_path;
+   if (_len > sizeof(tmp_buf))
+      dir_start = last_slash + 1 - sizeof(tmp_buf);
+   strlcpy(tmp_buf, dir_start,
+         (last_slash - dir_start + 1) * sizeof(char));
+   return strlcpy(s, path_basename_nocompression(tmp_buf), len);
+}
+
+/* Gets the common savestate thumbnail path. */
+void gfx_savestate_thumbnail_get_path(
+      char *s, size_t len,
+      const char *state_name,
+      int state_slot)
+{
+   size_t _len;
+   playlist_t *playlist = playlist_get_cached();
+
+   if (!s || !len)
+      return;
+
+   s[0] = '\0';
+
+   if (!state_name || !*state_name)
+      return;
+
+#ifdef HAVE_MENU
+   if (playlist)
+   {
+      struct menu_state *menu_st         = menu_state_get_ptr();
+      runloop_state_t *runloop_st        = runloop_state_get_ptr();
+      const struct playlist_entry *entry = NULL;
+
+      if (menu_st && menu_st->driver_data && !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+         playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
+
+      if (entry && *entry->path)
+      {
+         size_t _len;
+         char new_path[PATH_MAX_LENGTH];
+         char entry_basename[PATH_MAX_LENGTH];
+         char old_savefile_dir[PATH_MAX_LENGTH];
+         char old_savestate_dir[PATH_MAX_LENGTH];
+
+         strlcpy(old_savefile_dir, runloop_st->savefile_dir, sizeof(old_savefile_dir));
+         strlcpy(old_savestate_dir, runloop_st->savestate_dir, sizeof(old_savestate_dir));
+
+         strlcpy(new_path, entry->path, sizeof(new_path));
+         path_remove_extension(new_path);
+
+         _len = strlcpy(entry_basename, path_basename(new_path), sizeof(entry_basename));
+         _len = strlcpy(entry_basename + _len, ".state", sizeof(entry_basename) - _len);
+
+         /* Set temporary save redirection paths */
+         runloop_path_set_redirect(config_get_ptr(), old_savefile_dir, old_savestate_dir);
+
+         fill_pathname_join_special(new_path,
+               runloop_st->savestate_dir, entry_basename, sizeof(new_path));
+
+         /* Restore current save redirection paths */
+         dir_set(RARCH_DIR_CURRENT_SAVEFILE, old_savefile_dir);
+         dir_set(RARCH_DIR_CURRENT_SAVESTATE, old_savestate_dir);
+
+         state_name = strdup(new_path);
+      }
+   }
+#endif /* HAVE_MENU */
+
+   _len = strlcpy(s, state_name, len);
+
+   /* The historical implementation accumulated _len from
+    * strlcpy / snprintf returns and used `len - _len` as the
+    * size for subsequent calls.  That pattern is NOT
+    * self-bounding: strlcpy returns strlen(@src), and snprintf
+    * returns the would-be length on truncation, so on any
+    * truncating call _len overshoots @len, the next len-_len
+    * subtraction underflows size_t to ~SIZE_MAX, and the
+    * subsequent strlcpy treats the destination as essentially
+    * infinite.  Reachable when state_name approaches PATH_MAX_LENGTH
+    * (e.g. content loaded from a deep directory tree, since
+    * runloop_st->name.savestate is sized PATH_MAX_LENGTH) and
+    * the slot suffix or extension push the total past @len.
+    *
+    * Clamp _len after each truncation so the chain stays inside
+    * the buffer instead of running off the end. */
+   if (_len >= len)
+      _len = len - 1;
+
+   if (state_slot > 0)
+   {
+      int n = snprintf(s + _len, len - _len, "%d", state_slot);
+      if (n < 0)
+         return;
+      _len += (size_t)n;
+      if (_len >= len)
+         _len = len - 1;
+   }
+   else if (state_slot < 0)
+   {
+      _len = fill_pathname_join_delim(s, state_name, "auto", '.', len);
+      if (_len >= len)
+         _len = len - 1;
+   }
+
+   strlcpy(s + _len, FILE_PATH_PNG_EXTENSION, len - _len);
 }
