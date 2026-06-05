@@ -2058,7 +2058,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Freqüència d'actualització vertical de la pantalla. S'usa per a calcular una freqüència d'àudio adient.\nS'ignorarà si s'activa «Vídeo multifil»."
+   "Freqüència d'actualització vertical de la pantalla. S'usa per a calcular una freqüència d'àudio adient. S'ignorarà si s'activa «Vídeo multifil»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -5018,7 +5018,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Canvia les opcions del comptador de duració de fotogrames.\nNomés en funcionament quan estigui desactivat el vídeo multifil."
+   "Canvia les opcions del comptador de duració de fotogrames.Només en funcionament quan estigui desactivat el vídeo multifil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7297,7 +7297,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Mostra informació sobre el joc que s'està carregat i del progrés de l'usuari.\n'Tots els jocs identificats' mostrarà el resum d'aquells jocs que no tenen assoliments publicats."
+   "Mostra informació sobre el joc que s'està carregat i del progrés de l'usuari. 'Tots els jocs identificats' mostrarà el resum d'aquells jocs que no tenen assoliments publicats."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7774,7 +7774,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Especifica si cal associar elements de la llista de reproducció amb el nucli actual (si existeix).\nAquesta opció s'ignorarà si les subetiquetes a les llistes estan actives."
+   "Especifica si cal associar elements de la llista de reproducció amb el nucli actual (si existeix). Aquesta opció s'ignorarà si les subetiquetes a les llistes estan actives."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7882,7 +7882,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Escull quin tipus de registre del temps de joc es mostra a la llista de reproducció. \nCal activar el registre dins de la configuració."
+   "Escull quin tipus de registre del temps de joc es mostra a la llista de reproducció. Cal activar el registre dins de la configuració."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8067,7 +8067,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Permet que l'app Discord mostri més informació sobre el contingut que s'està executant. \nNomés funcionarà amb el client d'escriptori de Discord."
+   "Permet que l'app Discord mostri més informació sobre el contingut que s'està executant. Només funcionarà amb el client d'escriptori de Discord."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8464,7 +8464,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Afegeix aquesta pista d'àudio a un espai de seqüències d'àudio.\nSi no hi ha espai disponible, s'ignorarà."
+   "Afegeix aquesta pista d'àudio a un espai de seqüències d'àudio. Si no hi ha espai disponible, s'ignorarà."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8472,7 +8472,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Afegeix aquesta pista d'àudio a un espai de seqüències d'àudio i reprodueix-la.\nSi no hi ha espai disponible, s'ignorarà."
+   "Afegeix aquesta pista d'àudio a un espai de seqüències d'àudio i reprodueix-la. Si no hi ha espai disponible, s'ignorarà."
    )
 
 /* Netplay */
@@ -8983,16 +8983,8 @@ MSG_HASH(
    "Afegir a la llista de reproducció"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Afegeix el contingut a una llista de reproducció."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Crea una nova llista de reproducció"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Crea una nova llista de reproducció i afegeix aquest element a la nova llista."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -9015,16 +9007,8 @@ MSG_HASH(
    "Informació"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Visualitza més informació sobre el contingut."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Baixa miniatures"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Baixa imatges de captures de pantalla/art de la capsa/pantalla de títol pel contingut actual. Actualitza les miniatures existents."
    )
 
 /* Playlist Item > Set Core Association */
@@ -9561,6 +9545,10 @@ MSG_HASH(
    "Clica esquerra o dreta per canviar la mida en bits."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
+   "Big Endian: 258 = 0x0102\nLittle Endian: 258 = 0x0201"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "Cerca valors en la memòria"
    )
@@ -9834,6 +9822,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Selecciona un nou disc del sistema de fitxers i afegeix-lo a la llista."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    "Selecciona un nou disc del sistema de fitxers i adjunta-ho a la llista d'índexs.\nNOTA: Aquesta és una opció heretada. Es recomana fer servir llistes M3U per títols que fan servir varis discs."
    )
 
@@ -11508,6 +11500,14 @@ MSG_HASH(
    "Selecciona un tema d'icones per RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Icones d'entrada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Mostra icones en les entrades de menú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    "Icones d'interruptors"
    )
@@ -12752,10 +12752,6 @@ MSG_HASH(
    "Comptadors dels nuclis"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "No heu seleccionat cap disc"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Comptadors de la interfície"
    )
@@ -13074,10 +13070,6 @@ MSG_HASH(
    "No s'ha introduït arguments i no hi ha menú integrant, mostrant ajuda..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Introduint disc a la safata"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Esperant al client..."
    )
@@ -13383,14 +13375,6 @@ MSG_HASH(
    "S'ha restablert l'associació del nucli amb l'element de la llista."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disc afegit"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Error en afegir el disc"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Directori de l’aplicació"
    )
@@ -13559,14 +13543,6 @@ MSG_HASH(
    "Desconnecta el dispositiu d’un port vàlid."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "S’ha tancat la safata de disc virtual."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "S’ha expulsat la safata de disc virtual."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "S’està baixant"
    )
@@ -13717,10 +13693,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "No s’han pogut rebre les dades de SRAM de l’amfitrió."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "No s’ha pogut treure el disc de la safata."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14099,10 +14071,6 @@ MSG_HASH(
    "Totes les opcions d'entrada han sigut restablertes."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Disc eliminat de la safata."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Eliminant el contingut temporal"
    )
@@ -14371,14 +14339,6 @@ MSG_HASH(
    "Error en calcular la mida de l'àrea de visualització! Se seguirà calculant amb les dades en brut. És possible que hi hagi errors..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Error en obrir la safata de discs virtual."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Error en tancar la safata de discs virtual."
-   )
-MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
    "Carrega automàticament el desat ràpid des de"
    )
@@ -14635,8 +14595,48 @@ MSG_HASH(
    "S’ha suprimit el truc."
    )
 MSG_HASH(
+   MSG_DISK_CLOSED,
+   "S’ha tancat la safata de disc virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Error en tancar la safata de discs virtual."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "S’ha expulsat la safata de disc virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Error en obrir la safata de discs virtual."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Disc eliminat de la safata."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "No s’ha pogut treure el disc de la safata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "No heu seleccionat cap disc"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disc afegit"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Error en afegir el disc"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Introduint disc a la safata"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Error en seleccionar el disc."
+   "Error en seleccionar el disc"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

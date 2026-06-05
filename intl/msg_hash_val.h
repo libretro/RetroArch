@@ -1377,10 +1377,6 @@ MSG_HASH(
    "Freqüència de refresc vertical de la imatge"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Usat per calcular una velocitat d'àudio idònia segons la freqüència d'actualització d'imatge de la teua pantalla.\nAixò s'ignorarà si l'opció 'Vídeo multifil' es troba activada."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Grau de refresc d'imatge estimat"
    )
@@ -2224,10 +2220,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Canvia els ajustos del comptador de duració de fotogrames.\nNomés en funcionament quan estiga desactivat el vídeo multifil."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    "Limitar velocitat de fotogrames del menú"

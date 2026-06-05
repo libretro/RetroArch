@@ -2839,7 +2839,11 @@ void video_driver_update_viewport(
             int ol_y      = (int)(ol->viewport.y * vp->full_height);
             unsigned ol_w = (unsigned)(ol->viewport.w * vp->full_width);
             unsigned ol_h = (unsigned)(ol->viewport.h * vp->full_height);
-            RARCH_LOG("[Overlay] Applying viewport override!\n");
+            if (!ol->viewport_override_logged)
+            {
+               RARCH_LOG("[Overlay] Applying viewport override!\n");
+               ((struct overlay *)ol)->viewport_override_logged = true;
+            }
 
             if (ol->flags & OVERLAY_VIEWPORT_FILL)
             {

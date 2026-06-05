@@ -1313,10 +1313,6 @@ MSG_HASH(
    "Vertikalna brzina osvežavanja"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikalna brzina osvežavanja ekrana. Koristi se za računanje pogodne ulazne stope zvuka.\nOvo će biti ignorisano ako je uključena opcija 'Podeli video u niti'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Procenjena brzina osvežavanja ekrana"
    )

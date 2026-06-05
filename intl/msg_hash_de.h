@@ -1998,7 +1998,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikale Signalfrequenz des Bildschirms. Wird verwendet, um eine passende Audioeingangsrate zu berechnen.\nDies wird ignoriert, wenn 'Video in separatem Thread' aktiviert ist."
+   "Vertikale Bildwiederholfrequenz des Bildschirms. Wird zur Berechnung einer geeigneten Audioabtastrate verwendet. Dieser Wert wird ignoriert, wenn „Video in separatem Thread“ aktiviert ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -4902,7 +4902,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Einstellungen, die den Frame-Zeit-Zähler beeinflussen.\nNur aktiv, wenn 'Video in separatem Thread' deaktiviert ist."
+   "Einstellungen, die den Bildzeitzähler beeinflussen. Ist nur aktiviert, wenn „Video in separatem Thread“ ausgeschaltet ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7169,7 +7169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Zeigt Informationen über das zu ladende Spiel und den aktuellen Fortschritt des Nutzers.\n„Alle identifizierten Spiele“ zeigen eine Zusammenfassung für Spiele ohne veröffentlichte Errungenschaften."
+   "Zeigt Informationen über das zu ladende Spiel und den aktuellen Fortschritt des Nutzers. „Alle identifizierten Spiele“ zeigt eine Zusammenfassung für Spiele ohne veröffentlichte Errungenschaften."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7646,7 +7646,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Angeben, wann Wiedergabelisteneinträge mit dem aktuell zugeordneten Core gekennzeichnet werden sollen (falls vorhanden).\nDiese Einstellung wird ignoriert, wenn Sublabels für Wiedergabelisten aktiviert sind."
+   "Legt fest, wann Einträge in der Wiedergabeliste mit dem aktuell zugeordneten Core (falls vorhanden) gekennzeichnet werden sollen. Diese Einstellung wird ignoriert, wenn Sublabels für Wiedergabelisten aktiviert sind."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7750,7 +7750,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Festlegen, welche Art von Laufzeitprotokolldaten in Wiedergabelisten-Sublabels angezeigt werden soll.\nDas entsprechende Laufzeitprotokoll muss über das Optionsmenü 'Speichern' aktiviert werden."
+   "Legt fest, welche Art von Laufzeitprotokolleintrag in Wiedergabelisten-Sublabels angezeigt werden soll. Das entsprechende Laufzeitprotokoll muss über das Optionsmenü „Speichern“ aktiviert werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7931,7 +7931,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Der Discord App erlauben, Daten über den gespielten Inhalt anzuzeigen.\nNur verfügbar mit dem nativen Desktop-Client."
+   "Der App Discord erlauben, Daten über den gespielten Inhalt anzuzeigen. Nur verfügbar mit dem nativen Desktop-Client."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8288,7 +8288,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Diese Audiospur einem verfügbaren Audiostreamslot hinzufügen.\nWenn momentan kein Slot verfügbar ist, wird dies ignoriert."
+   "Diese Audiospur einem verfügbaren Audiostreamslot hinzufügen. Wenn momentan kein Slot verfügbar ist, wird dies ignoriert."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8296,7 +8296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Diese Audiospur einem verfügbaren Audiostreamslot hinzufügen und sie wiedergeben.\nWenn momentan kein Slot verfügbar ist, wird dies ignoriert."
+   "Diese Audiospur einem verfügbaren Audiostreamslot hinzufügen und sie wiedergeben. Wenn momentan kein Slot verfügbar ist, wird dies ignoriert."
    )
 
 /* Netplay */
@@ -8804,7 +8804,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Den Inhalt einer Wiedergabeliste hinzufügen."
+   "Diesen Eintrag zur Playlist hinzufügen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -8836,7 +8836,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Weiterführende Informationen über diesen Inhalt ansehen."
+   "Weitere Informationen zu diesem Inhalt anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -8844,7 +8844,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Screenshot-/Box-Art-/Titelbild-Vorschaubilder für den aktuellen Inhalt herunterladen. Aktualisiert alle vorhandenen Vorschaubilder."
+   "Miniaturbilder für diesen Inhalt herunterladen. Aktualisiert alle vorhandenen Bilder."
    )
 
 /* Playlist Item > Set Core Association */
@@ -9638,6 +9638,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Eine neue Disc aus dem Dateisystem auswählen und sie an die Indexliste anhängen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    "Eine neue Disc aus dem Dateisystem auswählen und der Indexliste hinzufügen. \nHINWEIS: Dies ist eine veraltete Funktion. Es wird stattdessen empfohlen, für Titel mit mehreren Discs M3U-Wiedergabelisten zu verwenden."
    )
 
@@ -11316,6 +11320,14 @@ MSG_HASH(
    "Wähle ein anderes Thema für das Menü aus. Änderungen werden übernommen, nachdem Du das Programm neu gestartet hast."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Eintragssymbole"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Symbole für Menüeinträge zeichnen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    "Schaltersymbole"
    )
@@ -12508,10 +12520,6 @@ MSG_HASH(
    "Core-Zähler"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Keine Disc ausgewählt"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Frontend-Zähler"
    )
@@ -12808,10 +12816,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
    "Keine Argumente angegeben und kein Menü integriert - zeige Hilfe an..."
-   )
-MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Lege Disc ins Laufwerk ein"
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
@@ -13119,14 +13123,6 @@ MSG_HASH(
    "Core-Zuordnung für den Wiedergabelisteneintrag wurde zurückgesetzt."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Angefügte Disc"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Anhängen der Disc fehlgeschlagen"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Anwendungen"
    )
@@ -13299,14 +13295,6 @@ MSG_HASH(
    "Gerät von einem gültigen Port trennen."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Virtuelles Laufwerk geschlossen."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Virtuelles Laufwerk ausgeworfen."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Wird heruntergeladen"
    )
@@ -13461,10 +13449,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "SRAM-Daten wurden vom Host nicht empfangen."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Fehler beim Auswerfen der Disc."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13843,10 +13827,6 @@ MSG_HASH(
    "Alle Tastenzuordnungsoptionen auf Standardwerte zurückgesetzt."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Datenträger aus Laufwerk entfernt."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Entferne temporäre Inhalts-Datei"
    )
@@ -13864,7 +13844,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shader: Standard-Shader-Voreinstellung wiederhergestellt zu"
+   "Shader: Standardshadervoreinstellung wiederherstellen zu"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14113,14 +14093,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Berechnung der Bildgröße fehlgeschlagen! Wird unter Verwendung von Rohdaten fortfahren. Dies wird wahrscheinlich nicht richtig funktionieren ..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Virtuelles Laufwerk konnte nicht ausgeworfen werden."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Virtuelles Laufwerk konnte nicht geschlossen werden."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14379,8 +14351,48 @@ MSG_HASH(
    "Cheat gelöscht."
    )
 MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Virtuelles Laufwerk geschlossen."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Virtuelles Laufwerk konnte nicht geschlossen werden."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Virtuelles Laufwerk ausgeworfen."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Virtuelles Laufwerk konnte nicht ausgeworfen werden."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Datenträger aus Laufwerk entfernt."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Fehler beim Auswerfen der Disc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Keine Disc ausgewählt"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Angefügte Disc"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Anhängen der Disc fehlgeschlagen"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Lege Disc ins Laufwerk ein"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Fehler beim Einstellen der Disc."
+   "Fehler beim Einsetzen der Disc"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

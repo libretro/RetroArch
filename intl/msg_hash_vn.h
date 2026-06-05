@@ -52,7 +52,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   "Trò chơi trực tuyến"
+   "Chơi qua mạng"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
@@ -60,7 +60,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Core tự chạy"
+   "Core tự khởi chạy"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -181,7 +181,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "Tham gia hoặc làm máy chủ cho Trò chơi trực tuyến."
+   "Tham gia hoặc làm máy chủ chơi qua mạng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -354,7 +354,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Core tự chạy"
+   "Core tự khởi chạy"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -433,15 +433,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   "Cập nhật bộ lọc GLSL"
+   "Cập nhật bộ đổ bóng GLSL"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   "Cập nhật bộ lọc Cg"
+   "Cập nhật bộ đổ bóng Cg"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   "Cập nhật bộ lọc Slang"
+   "Cập nhật bộ đổ bóng Slang"
    )
 
 /* Main Menu > Information */
@@ -733,7 +733,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   "Kích hoạt"
+   "Thành tích Retro"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
@@ -1196,11 +1196,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
-   "Tệp gói hiệu ứng đồ hoạ (Shader)."
+   "Tệp gói hiệu ứng bộ đổ bóng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
-   "Tệp hiệu ứng đồ hoạ (Shader)."
+   "Tệp hiệu ứng bộ đổ bóng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
@@ -1312,7 +1312,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Kích hoạt"
+   "Thành tích Retro"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -1465,19 +1465,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
-   "Trình điều khiển OpenGL 1.x. Phiên bản tối thiểu yêu cầu: OpenGL 1.1. Không hỗ trợ shader. Nếu có thể, hãy sử dụng trình điều khiển OpenGL mới hơn."
+   "Trình điều khiển OpenGL 1.x. Phiên bản tối thiểu yêu cầu: OpenGL 1.1. Không hỗ trợ bộ đổ bóng. Nếu có thể, hãy sử dụng trình điều khiển OpenGL mới hơn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
-   "Trình điều khiển OpenGL 2.x. Trình điều khiển này cho phép sử dụng Core libretro GL bên cạnh Core render phần mềm. Phiên bản tối thiểu yêu cầu: OpenGL 2.0 hoặc OpenGLES 2.0. Hỗ trợ định dạng shader GLSL. Nếu có thể, hãy sử dụng trình điều khiển glcore."
+   "Trình điều khiển OpenGL 2.x. Trình điều khiển này cho phép sử dụng Core libretro GL bên cạnh Core render phần mềm. Phiên bản tối thiểu yêu cầu: OpenGL 2.0 hoặc OpenGLES 2.0. Hỗ trợ định dạng bộ đổ bóng GLSL. Nếu có thể, hãy sử dụng trình điều khiển glcore."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
-   "Trình điều khiển OpenGL 3.x. Trình điều khiển này cho phép sử dụng Core libretro GL bên cạnh Core render phần mềm. Phiên bản tối thiểu yêu cầu: OpenGL 3.2 hoặc OpenGLES 3.0 trở lên. Hỗ trợ định dạng bộ lọc Slang."
+   "Trình điều khiển OpenGL 3.x. Trình điều khiển này cho phép sử dụng Core libretro GL bên cạnh Core render phần mềm. Phiên bản tối thiểu yêu cầu: OpenGL 3.2 hoặc OpenGLES 3.0 trở lên. Hỗ trợ định dạng bộ đổ bóng Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
-   "Trình điều khiển Vulkan. Trình điều khiển này cho phép sử dụng Core Vulkan libretro bên cạnh lõi render phần mềm. Phiên bản tối thiểu yêu cầu: Vulkan 1.0. Hỗ trợ trình đổ bóng HDR và ​​Slang."
+   "Trình điều khiển Vulkan. Trình điều khiển này cho phép sử dụng Core Vulkan libretro bên cạnh lõi render phần mềm. Phiên bản tối thiểu yêu cầu: Vulkan 1.0. Hỗ trợ bộ đổ bóng HDR và ​​Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
@@ -1489,35 +1489,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
-   "Trình điều khiển Metal dành cho nền tảng Apple. Hỗ trợ định dạng shader Slang."
+   "Trình điều khiển Metal dành cho nền tảng Apple. Hỗ trợ định dạng bộ đổ bóng Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
-   "Trình điều khiển Direct3D 8 không hỗ trợ shader."
+   "Trình điều khiển Direct3D 8 không hỗ trợ bộ đổ bóng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
-   "Trình điều khiển Direct3D 9 hỗ trợ định dạng shader Cg cũ."
+   "Trình điều khiển Direct3D 9 hỗ trợ định dạng bộ đổ bóng Cg cũ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
-   "Trình điều khiển Direct3D 9 hỗ trợ định dạng shader HLSL."
+   "Trình điều khiển Direct3D 9 hỗ trợ định dạng bộ đổ bóng HLSL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
-   "Trình điều khiển Direct3D 10 hỗ trợ định dạng shader Slang."
+   "Trình điều khiển Direct3D 10 hỗ trợ định dạng bộ đổ bóng Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
-   "Trình điều khiển Direct3D 11 hỗ trợ HDR và ​​định dạng shader Slang."
+   "Trình điều khiển Direct3D 11 hỗ trợ HDR và ​​định dạng bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
-   "Trình điều khiển Direct3D 12 hỗ trợ HDR và ​​định dạng shader Slang."
+   "Trình điều khiển Direct3D 12 hỗ trợ HDR và ​​định dạng bộ đổ bóng Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
-   "Trình điều khiển DispmanX. Sử dụng API DispmanX cho GPU Videocore IV trong Raspberry Pi 0..3. Không hỗ trợ lớp phủ hoặc shader."
+   "Trình điều khiển DispmanX. Sử dụng API DispmanX cho GPU Videocore IV trong Raspberry Pi 0..3. Không hỗ trợ lớp phủ hoặc bộ đổ bóng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
@@ -1537,11 +1537,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
-   "Trình điều khiển Wii U. Hỗ trợ trình đổ bóng Slang."
+   "Trình điều khiển Wii U. Hỗ trợ bộ đổ bóng Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
-   "Trình điều khiển chuyển đổi. Hỗ trợ định dạng shader GLSL."
+   "Trình điều khiển chuyển đổi. Hỗ trợ định dạng bộ đổ bóng GLSL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
@@ -1834,7 +1834,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
-   "Khung phụ bộ lọc"
+   "Khung phụ bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
@@ -1862,7 +1862,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Thêm hiệu ứng làm mờ nhẹ cho hình ảnh để làm mềm các cạnh pixel cứng. Tùy chọn này hầu như không ảnh hưởng đến hiệu suất. Nên tắt nếu sử dụng shader."
+   "Thêm hiệu ứng làm mờ nhẹ cho hình ảnh để làm mềm các cạnh pixel cứng. Tùy chọn này hầu như không ảnh hưởng đến hiệu suất. Nên tắt nếu sử dụng bộ đổ bóng."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1906,11 +1906,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   "Tự động hoãn bộ lọc"
+   "Tự động hoãn bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "Hoãn việc tự động tải shader (tính bằng ms). Có thể khắc phục lỗi đồ họa khi sử dụng phần mềm 'chụp màn hình'."
+   "Hoãn việc tự động tải bộ đổ bóng (tính bằng ms). Có thể khắc phục lỗi đồ họa khi sử dụng phần mềm 'chụp màn hình'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -1946,7 +1946,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
-   "Hãy thử cải thiện hiệu suất bằng cách sử dụng bộ đệm tham số Metal. Một số Core có thể yêu cầu điều này. Điều này có thể làm hỏng một số shader, đặc biệt là trên phần cứng hoặc phiên bản hệ điều hành cũ."
+   "Hãy thử cải thiện hiệu suất bằng cách sử dụng bộ đệm tham số Metal. Một số Core có thể yêu cầu điều này. Điều này có thể làm hỏng một số bộ đổ bóng, đặc biệt là trên phần cứng hoặc phiên bản hệ điều hành cũ."
 )
 
 /* Settings > Video > CRT SwitchRes */
@@ -2078,7 +2078,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Tốc độ làm mới theo chiều dọc của màn hình. Được sử dụng để tính toán tốc độ đầu vào âm thanh phù hợp.\nThông tin này sẽ bị bỏ qua nếu 'Video luồng' được bật."
+   "Tần số quét dọc của màn hình. Được dùng để tính toán tốc độ đầu vào âm thanh phù hợp. Thiết lập này sẽ bị bỏ qua nếu bật “Video phân luồng”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2456,7 +2456,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "Bật chế độ xuất HDR nếu màn hình hỗ trợ. Lưu ý: Khi sử dụng scRGB, các mặt nạ shader CRT có thể bị giảm độ sắc nét do hệ điều hành sẽ chuyển sang HDR10 sau khi áp dụng mặt nạ."
+   "Bật chế độ xuất HDR nếu màn hình hỗ trợ. Lưu ý: Khi sử dụng scRGB, các mặt nạ bộ đổ bóng CRT có thể bị giảm độ sắc nét do hệ điều hành sẽ chuyển sang HDR10 sau khi áp dụng mặt nạ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
@@ -2508,7 +2508,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
-   "Bật đường quét HDR. Đường quét là lý do chính để dùng HDR trong RetroArch, vì việc giả lập scanlines chính xác sẽ tắt phần lớn màn hình, và HDR giúp khôi phục lại một phần độ sáng bị mất. Nếu bạn cần nhiều tùy chỉnh scanlines hơn, hãy dùng shader tùy biến của RetroArch."
+   "Bật đường quét HDR. Đường quét là lý do chính để dùng HDR trong RetroArch, vì việc giả lập scanlines chính xác sẽ tắt phần lớn màn hình, và HDR giúp khôi phục lại một phần độ sáng bị mất. Nếu bạn cần nhiều tùy chỉnh scanlines hơn, hãy dùng bộ đổ bóng tùy biến của RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
@@ -3315,11 +3315,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "Nhấn nhanh"
+   "Bắn tự động"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
-   "Tắt toàn bộ nhấn nhanh"
+   "Tắt tất cả bắn tự động."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
@@ -3331,7 +3331,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
-   "Chu kỳ hoạt động nhấn nhanh"
+   "Chu kỳ bắn tự động"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
@@ -3379,7 +3379,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Chế độ giữ. Chuỗi nhấn nút mặc định đã chọn sẽ hoạt động miễn là nút Tự động nhấn được giữ.\nCó thể gán chế độ tự động nhấn nhanh trong Cài đặt/Điều khiển Cổng X.\nĐể mô phỏng chức năng tự động bắn của thời đại máy tính gia đình, hãy đặt Gán và Nút thành cùng một nút bắn trên cần điều khiển."
+   "Chế độ giữ. Chuỗi nhấn-thả của nút mặc định đã chọn sẽ hoạt động miễn là nút bắn tự động được giữ.\nCó thể gán nút bắn tự động trong Cài đặt/Đầu vào/Điều khiển cổng X.\nĐể giả lập chức năng bắn tự động của máy tính gia đình thời xưa, hãy đặt Gán nút và Nút thành cùng một nút bắn của tay cầm."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
@@ -3391,15 +3391,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
-   "Nút tự động nhấn nhanh"
+   "Nút bắn tự động"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
-   "Tự động nhấn nhanh mục tiêu ở chế độ 'Nút đơn'."
+   "Nút bắn tự động mục tiêu trong chế độ “Một nút”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
-   "Cho phép tự động nhấn nhanh trên D-Pad"
+   "Cho phép bắn tự động trên D-Pad"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
@@ -3407,11 +3407,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "Tự động nhấn nhanh"
+   "Bắn tự động"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Thay đổi cài đặt tự động nhấn nhanh."
+   "Thay đổi cài đặt bắn tự động."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3849,40 +3849,40 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
-   "Bộ lọc đồ họa (Bật/Tắt)"
+   "Bộ đổ bóng (Bật/Tắt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
-   "Bật/tắt shader hiện đang được chọn."
+   "Bật/tắt bộ đổ bóng hiện đang được chọn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
-   "Bộ lọc đồ họa (Nhấn giữ)"
+   "Bộ đổ bóng (Nhấn giữ)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   "Giữ shader hiện đang được chọn bật/tắt khi nhấn phím."
+   "Giữ bộ đổ bóng hiện đang được chọn bật/tắt khi nhấn phím."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
-   "Bộ lọc đồ họa tiếp theo"
+   "Bộ đổ bóng tiếp theo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   "Tải và áp dụng tệp cài đặt trước shader tiếp theo trong thư mục gốc 'Video Shader'."
+   "Tải và áp dụng tệp cài đặt trước bộ đổ bóng tiếp theo trong thư mục gốc 'Video Shader'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
-   "Bộ lọc đồ họa trước đó"
+   "Bộ đổ bóng trước đó"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
-   "Tải và áp dụng tệp cài đặt sẵn shader trước đó vào thư mục gốc của thư mục 'Video Shaders'."
+   "Tải và áp dụng tệp cài đặt sẵn bộ đổ bóng trước đó vào thư mục gốc của thư mục 'Video Shaders'."
    )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-   "Cheats (Bật/Tắt)"
+   "Cheat (Bật/Tắt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
@@ -3995,11 +3995,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
-   "Chế độ tự động nhấn nhanh (Bật/Tắt)"
+   "Bắn tự động (Bật/Tắt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
-   "Chuyển chế độ tự động nhấn nhanh sang Bật/Tắt."
+   "Chuyển sang bắn tự động Bật/Tắt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -4389,7 +4389,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
-   "Tự động nhấn nhanh"
+   "Bắn tự động"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
@@ -4654,7 +4654,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-   "Tự động tải cài đặt trước của Shader"
+   "Tự động tải cài đặt trước của bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
@@ -5038,7 +5038,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Thay đổi các cài đặt ảnh hưởng đến bộ đếm thời gian khung hình.\nChỉ hoạt động khi video đa luồng bị tắt."
+   "Thay đổi các thiết lập ảnh hưởng đến bộ đếm thời gian khung hình. Chỉ hoạt động khi Video phân luồng bị tắt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5171,7 +5171,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   "Chụp hình sau khi áp dụng bộ lọc (nhưng không áp dụng shader). Video sẽ trông đẹp giống như những gì bạn thấy trên màn hình."
+   "Chụp hình sau khi áp dụng bộ đổ bóng (nhưng không áp dụng bộ đổ bóng). Video sẽ trông đẹp giống như những gì bạn thấy trên màn hình."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
@@ -5179,7 +5179,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
-   "Ghi lại đầu ra của vật liệu được GPU áp shader nếu có."
+   "Ghi lại đầu ra của vật liệu được GPU áp bộ đổ bóng nếu có."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
@@ -5816,11 +5816,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Thông báo mã (Cheat) gian lận"
+   "Thông báo mã Cheat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Hiển thị thông báo trên màn hình khi áp dụng mã gian lận."
+   "Hiển thị thông báo trên màn hình khi áp dụng mã Cheat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
@@ -6741,11 +6741,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   "Hiển thị ‘Bộ lọc hình ảnh’"
+   "Hiển thị ‘Bộ đổ bóng’"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   "Hiển thị tùy chọn ‘Bộ lọc hình ảnh’."
+   "Hiển thị tùy chọn ‘Bộ đổ bóng’."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
@@ -7199,7 +7199,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Vô hiệu hóa mã gian lận, tua lại, chuyển động chậm và tải trạng thái lưu. Các thành tích kiếm được ở chế độ khó sẽ được đánh dấu đặc biệt để bạn có thể khoe với người khác những gì đã đạt được mà không cần tính năng trợ giúp của trình giả lập. Bật/tắt tùy chọn này khi đang chạy sẽ khởi động lại trò chơi."
+   "Vô hiệu hóa mã Cheat, tua lại, chuyển động chậm và tải trạng thái lưu. Các thành tích kiếm được ở chế độ khó sẽ được đánh dấu đặc biệt để bạn có thể khoe với người khác những gì đã đạt được mà không cần tính năng trợ giúp của trình giả lập. Bật/tắt tùy chọn này khi đang chạy sẽ khởi động lại trò chơi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -7337,7 +7337,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Hiển thị thông tin về trò chơi đang được tải và tiến trình hiện tại của người dùng.\n“Đã nhận diện tất cả trò chơi” sẽ hiển thị tóm tắt cho các trò chơi chưa có thành tựu công bố."
+   "Hiển thị thông tin về trò chơi đang được tải và tiến trình hiện tại của người dùng. “Tất cả trò chơi đã nhận diện” sẽ hiển thị tóm tắt cho các trò chơi chưa có thành tích được phát hành."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7814,7 +7814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Chỉ định khi nào gắn nhãn các mục trong danh sách phát với core hiện đang liên kết (nếu có).\nCài đặt này bị bỏ qua khi bật nhãn phụ của danh sách phát."
+   "Chỉ định thời điểm gắn lõi hiện được liên kết (nếu có) vào các mục trong danh sách phát. Thiết lập này sẽ bị bỏ qua khi bật nhãn phụ cho danh sách phát."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7918,7 +7918,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Chọn loại bản ghi thời lượng hiển thị trên nhãn phụ của danh sách phát.\nBản ghi thời lượng tương ứng phải được bật trong menu tùy chọn ‘Lưu’."
+   "Chọn loại bản ghi thời gian hoạt động sẽ hiển thị trên nhãn phụ của danh sách phát. Bản ghi thời gian hoạt động tương ứng phải được bật trong menu tùy chọn “Lưu dữ liệu”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8103,7 +8103,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Cho phép ứng dụng Discord hiển thị dữ liệu về trò chơi đã chơi.\nChỉ có sẵn với phiên bản giao diện máy tính gốc."
+   "Cho phép ứng dụng Discord hiển thị dữ liệu về nội dung đang được phát hoặc chơi. Chỉ khả dụng với ứng dụng máy tính gốc."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8264,11 +8264,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
-   "Tệp \"Cheat\" gian lận"
+   "Tệp Cheat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
-   "Các tệp gian lận được lưu trong thư mục này."
+   "Các tệp Cheat được lưu trong thư mục này."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
@@ -8288,11 +8288,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-   "Bộ lọc Shader video"
+   "Bộ lọc bộ đổ bóng video"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
-   "Bộ lọc video dựa trên GPU được lưu trong thư mục này."
+   "Bộ đổ bóng video dựa trên GPU được lưu trong thư mục này."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
@@ -8508,7 +8508,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Thêm bản nhạc này vào một khe luồng âm thanh khả dụng.\nNếu không có khe nào hiện có sẵn, thao tác sẽ bị bỏ qua."
+   "Thêm bản âm thanh này vào một khe luồng âm thanh còn trống. Nếu hiện không có khe nào khả dụng thì sẽ bị bỏ qua."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8516,7 +8516,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Thêm bản nhạc này vào một khe luồng âm thanh khả dụng và phát.\nNếu không có khe nào hiện có sẵn, thao tác sẽ bị bỏ qua."
+   "Thêm bản âm thanh này vào một khe luồng âm thanh còn trống và phát nó. Nếu hiện không có khe nào khả dụng thì sẽ bị bỏ qua."
    )
 
 /* Netplay */
@@ -8531,7 +8531,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Nhập địa chỉ máy chủ Trò chơi trực tuyến và kết nối ở chế độ máy khách."
+   "Nhập địa chỉ máy chủ chơi qua mạng và kết nối ở chế độ máy khách."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
@@ -9028,7 +9028,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Thêm trò chơi vào danh sách chơi."
+   "Thêm mục này vào danh sách phát."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -9036,7 +9036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Tạo một danh sách phát mới và thêm mục hiện tại vào đó."
+   "Tạo danh sách phát mới và thêm mục này vào đó."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -9060,7 +9060,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Xem thêm thông tin về trò chơi."
+   "Xem thêm thông tin về nội dung này."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -9068,7 +9068,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Tải xuống hình thu nhỏ ảnh chụp màn hình/bìa/hình tiêu đề cho trò chơi hiện tại. Cập nhật mọi hình thu nhỏ hiện có."
+   "Tải ảnh thu nhỏ cho nội dung này. Các ảnh hiện có sẽ được cập nhật."
    )
 
 /* Playlist Item > Set Core Association */
@@ -9285,11 +9285,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
-   "Mã gian lận (Cheat)"
+   "Cheat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
-   "Thiết lập mã gian lận."
+   "Thiết lập mã Cheat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -9301,11 +9301,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
-   "Bộ lọc đồ họa"
+   "Bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-   "Thiết lập bộ lọc đồ họa để cải thiện hình ảnh."
+   "Thiết lập bộ đổ bóng để cải thiện hình ảnh."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
@@ -9592,10 +9592,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
    "Thay đổi cheat sẽ có hiệu lực ngay lập tức."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT,
-   "Cheat - Gian lận"
    )
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
@@ -9886,38 +9882,42 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Chọn một đĩa mới từ hệ thống tệp và thêm nó vào cuối danh sách chỉ mục.\nLƯU Ý: Đây là tính năng cũ (legacy). Thay vào đó, nên dùng playlist M3U cho các game nhiều đĩa."
+   "Chọn một đĩa mới từ hệ thống tập tin và thêm nó vào danh sách chỉ mục."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
+   "Chọn một đĩa mới từ hệ thống tập tin và thêm nó vào danh sách chỉ mục.\nLƯU Ý: Đây là tính năng cũ. Thay vào đó, nên dùng danh sách phát M3U cho các trò chơi nhiều đĩa."
    )
 
 /* Quick Menu > Shaders */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
-   "Bộ lọc đồ họa Shaders"
+   "Bộ đổ bóng Video"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
-   "Bật hệ thống xử lý shader video."
+   "Bật hệ thống xử lý bộ đổ bóng video."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
-   "Theo dõi thay đổi trong tập tin shader"
+   "Theo dõi thay đổi trong tập tin bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
-   "Tự động áp dụng các thay đổi được thực hiện trên tập tin shader trong ổ đĩa."
+   "Tự động áp dụng các thay đổi được thực hiện trên tập tin bộ đổ bóng trong ổ đĩa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "Theo dõi các tập tin bộ lọc để phát hiện thay đổi mới. Sau khi lưu thay đổi vào tập tin bộ lọc, bộ lọc sẽ tự động được biên dịch lại và áp dụng cho trò chơi."
+   "Theo dõi các tập tin bộ đổ bóng để phát hiện thay đổi mới. Sau khi lưu thay đổi vào tập tin bộ đổ bóng, nó sẽ tự động được biên dịch lại và áp dụng cho trò chơi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "Ghi nhớ thư mục shader được dùng lần cuối"
+   "Ghi nhớ thư mục bộ đổ bóng được dùng lần cuối"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "Mở Trình duyệt tập tin tại thư mục được sử dụng gần nhất khi tải preset và pass của shader."
+   "Mở Trình duyệt tập tin tại thư mục được sử dụng gần nhất khi tải preset và pass của bộ đổ bóng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -9925,11 +9925,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
-   "Tải một bộ lọc cài sẵn. Hệ thống Bộ lọc theo chuỗi sẽ được thiết lập tự động."
+   "Tải một bộ đổ bóng cài sẵn. Hệ thống Bộ lọc theo chuỗi sẽ được thiết lập tự động."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
-   "Tải trực tiếp một bộ lọc cài đặt sẵn. Menu bộ lọc sẽ được cập nhật tương ứng.\nHệ số phóng to hiển thị trong menu chỉ chính xác nếu cài đặt sẵn sử dụng các phương pháp phóng to đơn giản (ví dụ: phóng to nguồn, hệ số phóng X/Y giống nhau)."
+   "Tải trực tiếp một bộ đổ bóng cài đặt sẵn. Menu bộ lọc sẽ được cập nhật tương ứng.\nHệ số phóng to hiển thị trong menu chỉ chính xác nếu cài đặt sẵn sử dụng các phương pháp phóng to đơn giản (ví dụ: phóng to nguồn, hệ số phóng X/Y giống nhau)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
@@ -9953,7 +9953,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
-   "Lưu hoặc xóa cài đặt sẵn của bộ lọc."
+   "Lưu hoặc xóa cài đặt sẵn của bộ đổ bóng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
@@ -9961,7 +9961,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
-   "Bộ lọc cài đặt sẵn hiện tại đang sử dụng."
+   "Bộ đổ bóng cài đặt sẵn hiện tại đang sử dụng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9969,39 +9969,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-   "Các thay đổi trong cấu hình bộ lọc sẽ có hiệu lực ngay lập tức. Dùng tùy chọn này nếu bạn thay đổi số lượng pass của bộ lọc, lọc, tỉ lệ FBO, v.v."
+   "Các thay đổi trong cấu hình bộ đổ bóng sẽ có hiệu lực ngay lập tức. Dùng tùy chọn này nếu bạn thay đổi số lượng pass của bộ đổ bóng, lọc, tỉ lệ FBO, v.v."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
-   "Sau khi thay đổi cài đặt bộ lọc như số lượng pass, lọc, tỉ lệ FBO, hãy dùng tùy chọn này để áp dụng thay đổi.\nViệc thay đổi các cài đặt shader này là một thao tác khá tốn tài nguyên nên phải thực hiện một cách rõ ràng.\nKhi bạn áp dụng bộ lọc, các cài đặt bộ lọc sẽ được lưu vào một tệp tạm thời (retroarch.slangp/.cgp/.glslp) và được tải. Tệp này vẫn tồn tại sau khi thoát Retr[...]"
+   "Sau khi thay đổi cài đặt bộ đổ bóng như số lượng pass, lọc, tỉ lệ FBO, hãy dùng tùy chọn này để áp dụng thay đổi.\nViệc thay đổi các cài đặt shader này là một thao tác khá tốn tài nguyên nên phải thực hiện một cách rõ ràng.\nKhi bạn áp dụng bộ lọc, các cài đặt bộ đổ bóng sẽ được lưu vào một tệp tạm thời (retroarch.slangp/.cgp/.glslp) và được tải. Tệp này vẫn tồn tại sau khi[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
-   "Tham số bộ lọc"
+   "Tham số bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
-   "Chỉnh sửa trực tiếp bộ lọc hiện tại. Các thay đổi sẽ không được lưu vào tệp cài đặt sẵn."
+   "Chỉnh sửa trực tiếp bộ đổ bóng hiện tại. Các thay đổi sẽ không được lưu vào tệp cài đặt sẵn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
-   "Các bước xử lý bộ lọc"
+   "Các bước xử lý bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
-   "Tăng hoặc giảm số lần xử lý của chuỗi shader. Có thể gán shader riêng cho từng lần xử lý và cấu hình tỉ lệ cũng như bộ lọc của nó."
+   "Tăng hoặc giảm số lần xử lý của chuỗi bộ đổ bóng. Có thể gán bộ đổ bóng cho từng lần xử lý và cấu hình tỉ lệ cũng như bộ đổ bóng của nó."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
-   "RetroArch cho phép kết hợp nhiều bộ lọc với các bước bộ lọc tùy ý, cùng bộ lọc phần cứng và hệ số phóng đại tùy chỉnh.\nTùy chọn này xác định số bước bộ lọc sẽ sử dụng. Nếu bạn đặt là 0 và chọn Áp dụng Thay đổi bộ lọc, bạn sẽ dùng bộ lọc “trống”."
+   "RetroArch cho phép kết hợp nhiều bộ lọc với các bước bộ lọc tùy ý, cùng bộ đổ bóng phần cứng và hệ số phóng đại tùy chỉnh.\nTùy chọn này xác định số bước bộ đổ bóng sẽ sử dụng. Nếu bạn đặt là 0 và chọn Áp dụng Thay đổi bộ lọc, bạn sẽ dùng bộ đổ bóng “trống”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
-   "Bộ lọc Shader"
+   "Bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
-   "Đường dẫn tới bộ lọc. Tất cả các bộ lọc phải cùng loại (ví dụ: Cg, GLSL hoặc Slang). Thiết lập Thư mục Bộ lọc để chọn nơi trình duyệt bắt đầu tìm các bộ lọc."
+   "Đường dẫn tới bộ đổ bóng. Tất cả các bộ đổ bóng phải cùng loại (ví dụ: Cg, GLSL hoặc Slang). Thiết lập Thư mục bộ đổ bóng để chọn nơi trình duyệt bắt đầu tìm các bộ đổ bóng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -10026,7 +10026,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   "Lưu một bộ lọc đã thiết lập sẵn, liên kết với bộ lọc gốc đang tải và chỉ bao gồm những thay đổi về tham số mà bạn đã thực hiện."
+   "Lưu một bộ đổ bóng đã thiết lập sẵn, liên kết với bộ lọc gốc đang tải và chỉ bao gồm những thay đổi về tham số mà bạn đã thực hiện."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
@@ -10034,7 +10034,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
-   "Lưu thiết lập bộ lọc hiện tại."
+   "Lưu thiết lập bộ đổ bóng hiện tại."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -10042,7 +10042,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Lưu thiết lập bộ lọc hiện tại thành một bộ lọc sẵn có mới."
+   "Lưu thiết lập bộ đổ bóng hiện tại thành một bộ đổ bóng sẵn có mới."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
@@ -10050,7 +10050,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
-   "Lưu các cài đặt bộ lọc hiện tại làm cài đặt mặc định toàn hệ thống."
+   "Lưu các cài đặt bộ đổ bóng hiện tại làm cài đặt mặc định toàn hệ thống."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
@@ -10058,7 +10058,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
-   "Lưu các cài đặt bộ lọc hiện tại làm mặc định cho core này."
+   "Lưu các cài đặt bộ đổ bóng hiện tại làm mặc định cho core này."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
@@ -10066,7 +10066,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "Lưu thiết lập bộ lọc hiện tại làm mặc định cho tất cả tệp trong thư mục trò chơi hiện tại."
+   "Lưu thiết lập bộ đổ bóng hiện tại làm mặc định cho tất cả tệp trong thư mục trò chơi hiện tại."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
@@ -10074,11 +10074,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
-   "Lưu thiết lập bộ lọc hiện tại làm mặc định cho trò chơi."
+   "Lưu thiết lập bộ đổ bóng hiện tại làm mặc định cho trò chơi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
-   "Không tìm thấy thiết lập bộ lọc tự động"
+   "Không tìm thấy thiết lập bộ đổ bóng tự động"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
@@ -10117,7 +10117,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
-   "Không có tham số bộ lọc"
+   "Không có tham số bộ đổ bóng"
    )
 
 /* Quick Menu > Overrides */
@@ -10298,7 +10298,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
-   "Hash RetroAchievements"
+   "Hash Thành tựu Retro"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
@@ -11608,6 +11608,14 @@ MSG_HASH(
    "Chọn chủ đề biểu tượng khác cho RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Biểu tượng mục menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Hiển thị biểu tượng cho các mục menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    "Chuyển đổi biểu tượng"
    )
@@ -11625,7 +11633,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "Chuỗi xử lý Shader"
+   "Chuỗi xử lý bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
@@ -11709,6 +11717,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
    "Tùy chỉnh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI,
+   "Giao diện tối giản"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUX,
+   "Tối giản"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
@@ -12378,7 +12394,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
-   "Tham số Shader"
+   "Tham số bộ đổ bóng"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
@@ -12766,7 +12782,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
-   "Shader hiện tại"
+   "Bộ đổ bóng hiện tại"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
@@ -12790,7 +12806,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_REMOVE_PASSES,
-   "Xóa Passes"
+   "Xóa thẻ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_APPLY,
@@ -12798,15 +12814,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS,
-   "Thêm Pass"
+   "Thêm thẻ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES,
-   "Xóa tất cả Passes"
+   "Xóa tất cả thẻ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
-   "Không có shader passes."
+   "Không có bộ đổ bóng nào."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
@@ -12898,10 +12914,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
    "Bộ đếm Core"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Chưa chọn đĩa"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
@@ -13057,19 +13069,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
-   "Chỉnh sửa shader preset hiện đang được sử dụng trong menu."
+   "Chỉnh sửa bộ đổ bóng preset hiện đang được sử dụng trong menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
-   "Bộ lọc cài đặt sẵn"
+   "Bộ đổ bóng cài đặt sẵn"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
-   "Bộ lọc cài đặt sẵn"
+   "Bộ đổ bóng cài đặt sẵn"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
-   "Bộ lọc cài đặt sẵn"
+   "Bộ đổ bóng cài đặt sẵn"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
@@ -13195,7 +13207,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   "Đã nhận được lệnh Trò chơi trực tuyến không xác định"
+   "Đã nhận được lệnh chơi qua mạng không xác định"
    )
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
@@ -13224,10 +13236,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
    "Không có tham số nào được cung cấp và không có menu tích hợp, hiển thị hướng dẫn..."
-   )
-MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Đang đặt đĩa vào khay"
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
@@ -13400,7 +13408,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONNECTING_TO_NETPLAY_HOST,
-   "Đang kết nối vào máy chủ Trò chơi trực tuyến"
+   "Đang kết nối vào máy chủ chơi qua mạng"
    )
 MSG_HASH(
    MSG_CONNECTING_TO_PORT,
@@ -13535,14 +13543,6 @@ MSG_HASH(
    "Liên kết core trong mục playlist đã được đặt lại."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Đã thêm đĩa"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Không thể thêm đĩa"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Application Danh mục"
    )
@@ -13556,7 +13556,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_APPLYING_SHADER,
-   "Đang áp dụng shader"
+   "Đang áp dụng bộ đổ bóng"
    )
 MSG_HASH(
    MSG_AUDIO_MUTED,
@@ -13715,14 +13715,6 @@ MSG_HASH(
    "Ngắt kết nối thiết bị khỏi cổng hợp lệ."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Đã đóng khay đĩa ảo."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Đã nhả khay đĩa ảo."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Đang tải xuống"
    )
@@ -13772,7 +13764,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_SAVING_SHADER_PRESET,
-   "Lỗi khi lưu preset shader."
+   "Lỗi khi lưu thiết lập sẵn bộ đổ bóng."
    )
 MSG_HASH(
    MSG_EXTERNAL_APPLICATION_DIR,
@@ -13800,11 +13792,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER,
-   "Không áp dụng được shader."
+   "Không áp dụng được bộ đổ bóng."
    )
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER_PRESET,
-   "Áp dụng preset shader thất bại:"
+   "Áp dụng thiết lập sẵn bộ đổ bóng thất bại:"
    )
 MSG_HASH(
    MSG_FAILED_TO_BIND_SOCKET,
@@ -13877,10 +13869,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Không thể nhận dữ liệu SRAM từ máy chủ."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Không thể lấy đĩa ra khỏi khay."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14020,7 +14008,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
-   "Đã tìm thấy shader"
+   "Đã tìm thấy bộ đổ bóng"
    )
 MSG_HASH(
    MSG_FRAMES,
@@ -14052,7 +14040,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
-   "Core Libretro được kết xuất phần cứng. Cần sử dụng ghi hình sau shader."
+   "Core Libretro được kết xuất phần cứng. Cần sử dụng ghi hình sau bộ đổ bóng."
    )
 MSG_HASH(
    MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
@@ -14259,10 +14247,6 @@ MSG_HASH(
    "Tất cả tùy chọn định nghĩa phím đã được đặt lại mặc định."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Đĩa đã được lấy ra khỏi khay."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Đang xóa tệp trò chơi tạm thời"
    )
@@ -14280,7 +14264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shaders: khôi phục preset shader mặc định về"
+   "Bộ đổ bóng: Đang khôi phục thiết lập bộ đổ bóng mặc định thành"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14364,11 +14348,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SHADER,
-   "Bộ lọc Shader"
+   "Bộ đổ bóng"
    )
 MSG_HASH(
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
-   "Đã lưu preset shader thành công."
+   "Đã lưu thiết lập sẵn bộ đổ bóng thành công."
    )
 MSG_HASH(
    MSG_SLOW_MOTION,
@@ -14533,14 +14517,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Tính toán kích thước khung nhìn không thành công! Sẽ tiếp tục sử dụng dữ liệu thô. Có thể cách này sẽ không hoạt động chính xác..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Không thể nhả khay đĩa ảo."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Không thể đóng khay đĩa ảo."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14799,8 +14775,48 @@ MSG_HASH(
    "Cheat đã bị xóa."
    )
 MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Đã đóng khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Không thể đóng khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Đã nhả khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Không thể nhả khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Đĩa đã được lấy ra khỏi khay."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Không thể lấy đĩa ra khỏi khay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Chưa chọn đĩa"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Đã thêm đĩa"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Không thể thêm đĩa"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Đang đặt đĩa vào khay"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Không thể đặt đĩa."
+   "Không thể đặt đĩa"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14988,11 +15004,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
-   "Đã xóa preset shader thành công."
+   "Đã xóa thiết lập sẵn bộ đổ bóng thành công."
    )
 MSG_HASH(
    MSG_ERROR_REMOVING_SHADER_PRESET,
-   "Lỗi khi xóa preset shader."
+   "Lỗi khi xóa thiết lập sẵn bộ đổ bóng."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,

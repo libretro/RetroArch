@@ -10238,14 +10238,6 @@ unsigned menu_displaylist_build_list(
                         count++;
                }
 
-               if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
-               {
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                           PARSE_ONLY_UINT, false) == 0)
-                     count++;
-               }
-
                if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY))
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -10258,6 +10250,14 @@ unsigned menu_displaylist_build_list(
                               PARSE_ONLY_INT, false) == 0)
                         count++;
                }
+            }
+
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
             }
 
 #ifdef HAVE_D3DKMT
@@ -10811,6 +10811,7 @@ unsigned menu_displaylist_build_list(
 #endif
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
          {
+            bool video_vsync              = settings->bools.video_vsync;
             bool video_hard_sync          = settings->bools.video_hard_sync;
             bool video_wait_swap          = settings->bools.video_waitable_swapchains;
 #ifdef HAVE_RUNAHEAD
@@ -10838,26 +10839,44 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
+            if (video_vsync)
             {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
-                        PARSE_ONLY_BOOL, false) == 0)
-                  count++;
-            }
+               if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+               }
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
-            {
-               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
-                     PARSE_ONLY_BOOL, false);
-               count++;
-               if (video_hard_sync)
+               if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
                {
                   MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-                        PARSE_ONLY_UINT, false);
+                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
+                        PARSE_ONLY_BOOL, false);
                   count++;
+                  if (video_hard_sync)
+                  {
+                     MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+                           PARSE_ONLY_UINT, false);
+                     count++;
+                  }
+               }
+
+               if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY))
+               {
+                  MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,
+                        PARSE_ONLY_BOOL, false);
+                  count++;
+                  if (video_wait_swap)
+                  {
+                     MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
+                           PARSE_ONLY_INT, false);
+                        count++;
+                  }
                }
             }
 
@@ -10867,21 +10886,6 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
                      PARSE_ONLY_UINT, false);
                count++;
-            }
-
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY))
-            {
-               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,
-                     PARSE_ONLY_BOOL, false);
-               count++;
-               if (video_wait_swap)
-               {
-                  MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
-                        PARSE_ONLY_INT, false);
-                     count++;
-               }
             }
 
 #ifdef HAVE_D3DKMT
@@ -12108,10 +12112,11 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE,                           PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,             PARSE_ONLY_BOOL,   false},
+               {MENU_ENUM_LABEL_XMB_ENTRY_ICONS,                              PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_XMB_CURRENT_MENU_ICON,                        PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_XMB_SWITCH_ICONS,                             PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_RGUI_SWITCH_ICONS,                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_SWITCH_ICONS,                      PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_XMB_CURRENT_MENU_ICON,                        PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_HEADER_ICON,                            PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_HEADER_SEPARATOR,                       PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_SHOW_SIDEBAR,                           PARSE_ONLY_BOOL,   true},

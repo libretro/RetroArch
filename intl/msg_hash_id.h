@@ -1469,10 +1469,6 @@ MSG_HASH(
    "Laju Penyegaran Vertikal"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Laju penyegaran vertikal layar Anda. Digunakan untuk menghitung laju input audio yang sesuai.\nIni akan diabaikan jika 'Video Berulir' diaktifkan."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Estimasi Laju Penyegaran Layar"
    )
@@ -2957,10 +2953,6 @@ MSG_HASH(
 
 /* Settings > User > Privacy */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Mengizinkan Discord menampilkan data tentang apa yang dimainkan.\nHanya tersedia dengan klien desktop lokal."
-   )
 
 /* Settings > User > Accounts */
 
@@ -3094,14 +3086,6 @@ MSG_HASH(
 
 /* Music > Quick Menu */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Tambahkan lintasan audio ini ke slot siaran audio yang tersedia.\nJika saat ini belum ada slot, nanti akan diabaikan."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Tambahkan lintasan audio ini ke slot siaran audio yang tersedia dan putar.\nJika saat ini belum ada slot, nanti akan diabaikan."
-   )
 
 /* Netplay */
 
@@ -3802,10 +3786,6 @@ MSG_HASH(
    "Berkas sudah ada. Menyimpan ke dapar cadangan"
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Mengatur cakram di nampan"
-   )
-MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
    "Kawan (peer) Netplay bermain di versi lama RetroArch. Tidak dapat sambung."
    )
@@ -3891,10 +3871,6 @@ MSG_HASH(
    "Dijeda."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Cakram telah dikeluarkan."
-   )
-MSG_HASH(
    MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
    "Mengulang perekaman karena reinsial kandar."
    )
@@ -3925,6 +3901,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
    "Memindai jejaring nirkabel..."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Cakram telah dikeluarkan."
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Mengatur cakram di nampan"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,

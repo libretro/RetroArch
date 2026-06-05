@@ -1401,10 +1401,6 @@ MSG_HASH(
    "Vertikal oppdateringsrate"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikal oppdateringsrate på skjermen. Brukes til å kalkulere en passende lydinndata rate.\nDette vil bli ignorert hvis \"Trådet Video\" er aktivert."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Estimert oppdateringsrate for skjermen"
    )
@@ -2744,10 +2740,6 @@ MSG_HASH(
    "Synlighet"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Viser informasjon om spillet som lastes og brukerens nåværende fremdrift.\n'Alle identifiserte spill' vil vise sammendrag for spill uten publiserte prestasjoner."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Alle Identifiserte Spill"
    )
@@ -3357,10 +3349,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Lag ny spilleliste"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Lag en ny spilleliste og legg til den gjeldende oppføringen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,

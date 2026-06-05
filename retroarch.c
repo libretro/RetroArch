@@ -3781,8 +3781,8 @@ bool command_event(enum event_command cmd, void *data)
             ram_state_to_file();
 
             /* Save auto state */
-            if (settings->bools.savestate_auto_save &&
-                runloop_st->current_core_type != CORE_TYPE_DUMMY)
+            if (     settings->bools.savestate_auto_save
+                  && runloop_st->current_core_type != CORE_TYPE_DUMMY)
                command_event_save_auto_state();
 
             /* Save last selected disk index, if required */
@@ -4155,6 +4155,7 @@ bool command_event(enum event_command cmd, void *data)
 
             ol->index                      = ol->next_index;
             ol->active                     = &ol->overlays[ol->index];
+            ((struct overlay *)ol->active)->viewport_override_logged = false;
 
             input_overlay_opacity          = (ol->flags & INPUT_OVERLAY_IS_OSK)
                   ? settings->floats.input_osk_overlay_opacity
@@ -4412,6 +4413,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Save auto state */
             if (     runloop_st
                   && (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+                  && !(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
                   && settings->bools.savestate_auto_save)
             {
                command_event_save_auto_state();
@@ -8180,9 +8182,14 @@ bool retroarch_main_init(int argc, char *argv[])
                if (frontend && frontend->get_os)
                {
                   frontend->get_os(osbuf, sizeof(osbuf), &major, &minor);
+#ifdef __aarch64__
+                  const char *arch = " (64-bit)";
+#else
+                  const char *arch = " (32-bit)";
+#endif
                   _len += snprintf(str_output + _len, sizeof(str_output) - _len,
-                        FILE_PATH_LOG_INFO " Running on: %s\n",
-                        osbuf);
+                     FILE_PATH_LOG_INFO " Running on: %s%s\n",
+                     osbuf, arch);
                }
             }
          }
