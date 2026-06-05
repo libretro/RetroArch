@@ -799,11 +799,11 @@ static size_t cheat_manager_get_game_specific_filename(
 
    if (!game_name || !*game_name)
       game_name = path_basename_nocompression(
-            path_get_ptr(RARCH_PATH_BASENAME));
+            runloop_st->runtime_content_path_basename);
 
    if (!game_name || !*game_name)
       game_name = path_basename_nocompression(
-            path_get_ptr(RARCH_PATH_CONTENT));
+            runloop_st->runtime_content_path);
 
    if (     (!path_cheat_database || !*path_cheat_database)
          || (!core_name || !*core_name)
