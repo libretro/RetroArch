@@ -1838,7 +1838,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "AVERTO: Rapida flagro povus kaŭzi bilda daŭro (\"image presistence\") en kelkaj ekranoj. Uzu ĝin je via propra risko. // Imitas baza rulanta \"scanline\" sur pluraj subfilmeroj dividante la ekrano supren vertikale kaj bildigante ĉiu parto de la ekrano laŭ kiom da subfilmeroj estas."
+   "AVERTO: Rapida flagro povus kaŭzi bilda daŭro (\"image presistence\") en kelkaj ekranoj. Uzu ĝin je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subfilmeroj dividante la ekrano supren vertikale kaj bildigante ĉiu parto de la ekrano laŭ kiom da subfilmeroj estas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
@@ -1846,15 +1846,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   "Imito de rulanta \"scanline\""
+   "Imito de rulanta skanlinio"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "AVERTO: Rapida flagro povus kaŭzi bildan daŭron (\"image presistence\") en kelkaj ekranoj. Uzu ĝin je via propra risko. // Imitas baza rulanta \"scanline\" sur pluraj subfilmeroj dividante la ekranon supren vertikale kaj bildigante ĉiun parton de la ekrano laŭ kiom da subfilmeroj estas."
+   "AVERTO: Rapida flagro povus kaŭzi bildan daŭron (\"image presistence\") en kelkaj ekranoj. Uzu ĝin je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subfilmeroj dividante la ekranon supren vertikale kaj bildigante ĉiun parton de la ekrano laŭ kiom da subfilmeroj estas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
-   "Imitas bazan rulantan \"scanline\" sur pluraj subfilmeroj dividante la ekranon supren vertikale kaj bildigante ĉiun parton de la ekrano laŭ kiom da subfilmeroj estas de la plej supro de la ekrano malsupren."
+   "Imitas bazan rulantan skanlinion sur pluraj subfilmeroj dividante la ekranon supren vertikale kaj bildigante ĉiun parton de la ekrano laŭ kiom da subfilmeroj estas de la plej supro de la ekrano malsupren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -2096,40 +2096,532 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
    "Agordi ekran-raportitan ofteco de aktualigo"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "La ofteco de aktualigo laŭ raportite de la ekrana pelilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Aŭtomate ŝanĝi oftecon de aktualigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Aŭtomate interŝanĝi ekranan oftecon de aktualigo laŭ kuranta enhavo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
+   "Nur en ekskluzive plenekrana reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   "Nur en enfenestre plenekrana reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   "Ĉiuj plenekranaj reĝimoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Sojlo de aŭtomata ofteco de aktualigo al PAL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Maksimuma ofteco de aktualigo konsiderata kiel PAL."
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
    "Vertikala ofteco de aktualigo"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Agordi vertikalan oftecon de aktualigo de la ekrano. \"50Hz\" ebligos glatan videon kiam rulante enhavon de PAL."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   "Devigi malebligon de sRGB FBO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   "Devige malebligi subtenon de sRGB FBO. Kelkaj peliloj de Intel OpenGL en Windows havas videajn problemojn kun sRGB FBO-oj. Ebligi ĉi tion povas mildigi ilin."
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "Penekrana reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "Montri en plenekrana reĝimo. Povas esti ŝanĝita plenumtempe. Povas esti nuligita per komanda linio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   "Enfenestra plenekrana reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "Se plenekrane, preferi uzi plenekranan fenestron por preventi ŝanĝojn en la ekrana reĝimo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "Larĝo dum plenekrane"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   "Agordi la propran larĝon por la neenfenestra plenekrana reĝimo. Lasi ĝin neagordita uzos la distingivon de la labortablon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "Plenekrana alto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   "Agordi la propran alton por la neenfenestra plenekrana reĝimo. Lasi ĝin neagordita uzos la distingivon de la labortablo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "Devigi distingivon ĉe UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "Devigi la distingivon al la plenekrana grando. Se agordita je 0, fiksita valoro de 3840 × 2160 estos uzata."
+   )
 
 /* Settings > Video > Windowed Mode */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   "Enfenestra skalado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "Agordi la fenestra grando al la specifita oblo de la grando de la videjo de la kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   "Maldiafaneco de fenestro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "Agordi la maldiafanecon de la fenestro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Montri fenestrajn ornamojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Montri la titolan breton kaj eĝojn de la fenestro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   "Montri menubreton"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   "Memori fenestran lokon kaj grandon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Montri ĉiujn enhavojn en fenestro de fiksita grando, kies dimensioj estos specifitaj de la valoroj de \"Fenestra larĝo\" kaj \"Fenestra alto\", kaj konservi la kurantajn grandon kaj lokon de la fenestro ĉe fermo de RetroArch. Kiam malebligita, la fenestra grando estos dinamike fiksita laŭ la valoro de \"Enfenestra skalado\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Uzi propran fenestran grandon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Montri ĉiun enhavon en fenestro de fiksita grando, kies dimensioj estas specifita de la valoroj de \"Fenestra larĝo\" kaj \"Fenestra alto\". Kiam malebligite, la fenestra grando estos dinamike agordita laŭ la valoro de \"Enfenestra skalado\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   "Fenestra larĝo"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   "Set the custom width size for the display window. Leaving it at 0 will attempt to scale the window as large as possible."
+   "Agordi la propran larĝon por la fenestro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   "Fenestra alto"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   "Set the custom height size for the display window. Leaving it at 0 will attempt to scale the window as large as possible."
+   "Agordi la propran alton por la fenestro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Maksimuma fenestra larĝo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Agordi la maksimuman larĝon de la fenestro kiam aŭtomate regrandigante laŭ la valoro de \"Enfenestra skalado\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Maximuma fenestra alto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Agordi la maksimuman alton de la fenestro kiam aŭtomate regrandigante laŭ la valoro de \"Enfenestra skalado\"."
    )
 
 /* Settings > Video > Scaling */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   "Entjera skalado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Skali videon nur je entjeraj paŝoj. La baza grando dependas de geometrio raportita de la kerno kaj de la bilda proporcio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "Akso de entjera skalado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "Skali ĉu alton ĉu larĝon ĉu ambaŭ. Duonaj paŝoj aplikiĝas nur ĉe altdistingivaj fontoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "Speco de entjera skalado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Rondigi ĉu supren ĉu malsupren al la sekva entjero. \"Inteligente\" reduktas la skaladon kiam la bildo estas tro stucita, kaj, ĉu la marĝenoj estu tro grandaj, malebligas la entjeran skaladon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "Subskalado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "Superskalado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   "Inteligente"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   "Bilda proporcio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "Agordi la bildan proporcion."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   "Konfiguri bildan proporcion"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "Glitpunkta valoro por videa proporcio (larĝo / alto)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   "Konfigura"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
+   "Provizita de kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   "Propra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
+   "Plena"
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Konservi bildan proporcion"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Konservi la proporciojn bilderajn 1:1 kiam skalante enhavon per la ena IPU. Se malebligita, bildoj estos streĉitaj por plenigi la tutan ekranon."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   "Propran bildan proporcion (pozicio X)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Propra videja deŝovo uzata por difini la pozicion de la X-akso de la videjo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Propra bilda proporcio (posicio Y)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Propra videja deŝovo uzata por difini la pozicion de akso-Y de la videjo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Videja biaso X por la ankropunkto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "Videja biaso X por la ankropunkto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Videja biaso Y por la ankropunkto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "Videja biaso Y por la ankropunkto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Horizontala pozicio de la enhavo kiam la videjo estas pli larĝa ol la larĝo de la enhavo. 0.0 estas plej maldekstre, 0.5 estas centro, 1.0 estas plej dekstre."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Vertikala pozicio de la enhavo kiam la videjo estas pli alta ol la alto de la enhavo. 0.0 estas plej supre, 0.5 estas centro, 1.0 estas plej malsupre."
+   )
 #if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Videja biaso X por la ankropunkto (vertikala orientiĝo)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Videja biaso X por la ankropunkto (vertikala orientiĝo)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Videja biaso Y por la ankropunkto (vertikala orientiĝo)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Videja biaso Y por la ankropunkto (vertikala orientiĝo)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Horizontala pozicio de la enhavo kiam la videjo estas pli larĝa ol la larĝo de la enhavo. 0.0 estas plej maldekstre, 0.5 estas centro, 1.0 estas plej dekstre. Vertikala orientiĝo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Vertikala pozicio de la enhavo kiam la videjo estas pli alta ol la alto de la enhavo. 0.0 estas plej supre, 0.5 estas centro, 1.0 estas plej malsupre. Vertikala orientiĝo."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "Propra bilda proporcio (larĝo)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "Propra videja larĝo uzata se la Bilda proporcio estas agordita al \"Propra bilda proporcio\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "Propra bilda proporcio (alto)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "Propra videja alto uzata se la Bilda proporcio estas agordita al \"Propra bilda proporcio\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   "Stuci superskanadon (bezonas rekomenciĝon)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   "Fortranĉas kelkajn bilderojn ĉirkaŭ la eĝoj de la bildo, kiuj kutime estas malplenaj pro la programistoj, kaj kelkfoje ankaŭ enhavas senvalorajn bilderojn."
+   )
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Agordi la eligan reĝimon de HDR se la ekrano subtenas tion. Rimarku: scRGB povus glatigi rigoraj ombrigilaj maskoj de CRT ĉar la operaciuma kunmetilo konvertas al HDR10 post kiam la masko estas aplikita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
+   "Malebligita"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Brilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Brilo de la menuo je cd/m² (nits) kiam uzante ekranon de HDR. Nur videbla kiam HDR estas ebligita en Agordoj > Video > HDR."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Brilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Agordas la bril-nivelon de HDR en nits. Uzu ĝin kombine kun la fizikaj bril-agordoj de via ekrano. Por komenci, agordu ĉi tion je 80 kaj la brilo de via ekrano je la maksimumo. Alternative, agordi ĉi tion je la maksimumaj nits de via ekrano kaj malaltigu la brilon de via ekrano ĝis la bildo ŝajnos bone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Pliigo de koloro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Uzas la plena kolor-gamo de via ekrano por krei pli helan, pli saturan bildon. Por koloroj pli fidelaj al la origina dezajno de la ludo, agordu ĉi tion je Preciza."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   "Preciza"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "Plivastigita"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "Larĝa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
+   "Supera"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Skanlinioj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Ebligi skanlinioj de HDR. Skanlinioj estas la ĉefa kialo por uzi HDR en RetroArch, ĉar preciza realigo de skanlinio malŝaltas la plej multon de la ekrano kaj HDR restaŭras iom el tiu perdita brilo. Se vi bezonas regi viajn skanliniojn pli, rigardu tajloritajn ombrigilojn, kiujn RetroArch havigas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Subbildera aranĝo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Elekti la subbilderan aranĝon de via erkano. Ĉi tio nur influas skanliniojn. Se vi tute ne konas la subbilderan aranĝo de via ekrano, vidu je Rtings.com por la \"subpixel layout\" de via ekrano."
+   )
 
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "Vertikala sinkronigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   "Sinkronigi la eligitan videon de la grafika karto kun la ofteco de aktualigo de la ekrano. Rekomendata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   "Intervalo de interŝanĝo de vertikala sinkronigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   "Uzi propran intervalon de interŝanĝo por vertikala sinkronigo. Efektive malpliigas la oftecon de aktualigo de la ekrano je la specifita faktoro. \"Aŭtomate\" agordas la faktoron laŭ la ofteco de filmeroj raportitaj de la kerno, plibonigante ritmon de filmero kiam rulante, ekzemple, enhavon de 30 fps en ekrano de 60 Hz, aŭ enhavon de 60 fps en ekrano de 120 Hz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "Aŭtomate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   "Adaptiĝema vertikala sinkronigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "Vertikala sinkronigo estas ebligita ĝis kiam rendimento falas sub la celan oftecon de aktualigo. Povas minimumigi \"mikrobalbutadon\" kiam rendimento falas sub realan tempon, kaj povas esti pli energi-efika. Ne kongrua kun \"Filmera prokrasto\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Skanlinia sinkronigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "Sinkronigi videan prezenton kun la pozicioj de la skanlinioj. Malpliigas respondotempon kontraŭ pli da risko de bilda sekciiĝo. Oni bezonas malebligi la vertikalan sinkronigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Filmera prokrasto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "Malpliigas respondotempon kontraŭ pli da risko de videa \"mikrobalbutado\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "Agordas la tempon je milisekondoj inter la lanĉo de la kerno kaj la prezento de la bildo. Malpliigas respondotempon kontraŭ pli da risko de \"mikrobalbutado\".\nValoroj 20 kaj pliaj estos konsiderataj kiel procento de la daŭro je filmeroj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Aŭtomata filmera prokrasto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Alĝustigi efikan \"Filmeran prokraston\" dinamike."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   "Provi teni la deziratan celon por \"Filmera prokrasto\" kaj minimumigi perdon de filmeroj. Komenca punkto estas 3/4 el la filmera tempo kiam \"Filmera prokrasto\" estas 0 (aŭtomate)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Specimenigi filmeran tempon nur en stabila stato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Limigas la specimenigon de la opcio \"Pritaksita ekrana ofteco de aktualigo\" al filmeroj, kiam enhavo rulas pure (ne en menuo, ne paŭzite, ne rapidpluigite... Daŭro en normala situacio). La diagnoza lego fariĝas reala signalo kontraŭ pli malrapida konverĝo post ŝargo de enhavo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "Aŭtomata"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   "efika(j)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   "Rigida sinkronigo de GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   "Rigide sinkronigi la CPU kun la GPU. Malpliigas la respondotempon kontraŭ rendimento."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   "Filmeroj de rigida sinkronigo de GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   "Agordu kiom da filmeroj la CPU povas uzi antaŭtempe de la GPU kiam uzante \"Rigida sinkronigo de GPU\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   "Agordi kiom da filmeroj la CPU povas uzi antaŭtempe de la GPU kiam uzante \"Rigida sinkronigo de GPU\". La maksimuma valoro estas 3.\n 0: tuj sinkronigi kun la GPU.\n 1: Sinkronigi kun la antaŭa filmero.\n 2: kc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   "Sinkronigi al ĝusta enhava filmer-ofteco (G-Sync, FreeSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   "Nenia dekliniĝo de la intervalo postulata de la kerno. Uzi kun ekranoj kun variiĝema ofteco de aktualigo (G-Sync, FreeSync, HDMI 2.1 VRR)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "Sinkronigi la filmer-oftecon laŭ la enhavo. Ĉi tiu opcio egalas al devigi rapidon de ×1 dum ankoraŭ ebligante rapidpluigon. Ne estos dekliniĝoj el la ofteco de aktualigo postulata de la kerno, nek dinamika rego de ofteco de sono."
+   )
 
 /* Settings > Audio */
 
@@ -2139,45 +2631,133 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Adjusts settings for audio output."
+   "Ŝanĝi agordojn pri sona eligo."
    )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
    "Mikrofono"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "Ŝanĝi agordojn pri sona enigo."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "Audio Sync Enable"
+   "Sinkronigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   "Ŝanĝi agordojn pri sona sinkronigo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+   "Ŝanĝi agordojn pri MIDI."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-   "Enable menu audio"
+   "Sonmiksilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   "Ŝanĝi agordojn pri la sonmiksilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   "Menuaj sonoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Ŝanĝi agordojn pri la menuaj sonoj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-   "Audio Mute"
+   "Silentigi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   "Silentigi sonojn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-   "Audio Mixer Mute"
+   "Silentigi sonmiksilon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   "Silentigi la sonmiksilon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Respekti silentan reĝimon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Silentigi ĉiujn sonojn en Silenta reĝimo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Silentigi sonon kiam rapidpluigante"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "Aŭtomate silentigi sonon kiam uzante rapidpluigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Rapidpluigi sonon kun rapidpluigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Rapidpluigi sonon kiam rapidpluigante la ludon. Evitas kraketadon sed ŝanĝas la tonon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "Silentigi sonon revolvante"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "Aŭtomate silentigi sonon kiam revolvante la ludon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   "Audio Volume Level (dB)"
+   "Gajno de laŭteco (dB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   "Audio volume (in dB). 0 dB is normal volume, no gain applied."
+   "Laŭteco (en dB). 0 dB estas normala laŭteco, sen gajno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "Laŭteco, esprimita en dB. 0 dB estas normala laŭteco, kie nenia gajno estas aplikita. Gajno povas esti alĝustigita rulante per Eniga plilaŭtigo / Eniga malplilaŭtigo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   "Audio Mixer Volume Level (dB)"
+   "Sonmiksila gajno de laŭteco (dB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   "Ĉiea sonmiksila laŭteco (en dB). 0 dB estas normala laŭteco, sen ajna gajno."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   "Audio DSP Plugin"
+   "Kromaĵo de DSP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   "Kromaĵo de sona DSP, kiu prilaboras sonon antaŭ ol ĝi estos sendita al la pelilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "Forigi kromaĵon de DSP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   "Malŝargi ajnan aktivan sonan kromaĵon de DSP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   "Reĝimo ekskluzivo por WASAPI"
    )
 
 /* Settings > Audio > Output */
@@ -2204,6 +2784,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
    "Audio Resampler Quality"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Reĝimo ekskluzivo por WASAPI"
    )
 #endif
 
@@ -2737,9 +3321,17 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Bilda proporcio"
+   )
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   "Entjera skalado"
+   )
 
 /* XMB: Settings > User Interface > Appearance */
 
@@ -2830,6 +3422,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Uzanto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Rigide sinkronigi la CPU kun la GPU. Malpliigas la respondotempon kontraŭ rendimento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
