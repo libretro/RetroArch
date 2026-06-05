@@ -790,22 +790,36 @@ static size_t cheat_manager_get_game_specific_filename(
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *core_name       = NULL;
    const char *game_name       = NULL;
+
    if (!core_get_system_info(&sysinfo))
       return 0;
+
    core_name = sysinfo.library_name;
    game_name = path_basename_nocompression(runloop_st->name.cheatfile);
+
+   if (!game_name || !*game_name)
+      game_name = path_basename_nocompression(
+            path_get_ptr(RARCH_PATH_BASENAME));
+
+   if (!game_name || !*game_name)
+      game_name = path_basename_nocompression(
+            path_get_ptr(RARCH_PATH_CONTENT));
+
    if (     (!path_cheat_database || !*path_cheat_database)
          || (!core_name || !*core_name)
          || (!game_name || !*game_name))
       return 0;
+
    fill_pathname_join_special(s1, path_cheat_database, core_name,
          sizeof(s1));
+
    if (saving)
    {
       /* Check if directory is valid, if not, create it */
       if (!path_is_valid(s1))
          path_mkdir(s1);
    }
+
    return fill_pathname_join_special(s, s1, game_name, len);
 }
 
