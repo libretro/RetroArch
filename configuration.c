@@ -61,6 +61,12 @@
  * cannot preprocess. */
 void android_app_set_window_settings(bool notch_write_over,
       bool auto_mouse_grab);
+#ifdef HAVE_CHEEVOS
+void android_app_set_cheevos_settings(const char *host,
+      bool hardcore_enabled);
+bool android_app_get_cheevos_override(char *s, size_t len,
+      bool *hardcore_enabled);
+#endif
 #endif
 
 #include "list_special.h"
@@ -7084,6 +7090,23 @@ static bool config_load_file(global_t *global,
    android_app_set_window_settings(
          settings->bools.video_notch_write_over_enable,
          settings->bools.input_auto_mouse_grab);
+#ifdef HAVE_CHEEVOS
+   {
+      bool hardcore_enabled = false;
+      char cheevos_host[sizeof(settings->arrays.cheevos_custom_host)];
+
+      if (android_app_get_cheevos_override(cheevos_host,
+               sizeof(cheevos_host), &hardcore_enabled))
+      {
+         strlcpy(settings->arrays.cheevos_custom_host, cheevos_host,
+               sizeof(settings->arrays.cheevos_custom_host));
+         settings->bools.cheevos_hardcore_mode_enable = hardcore_enabled;
+      }
+
+      android_app_set_cheevos_settings(settings->arrays.cheevos_custom_host,
+            settings->bools.cheevos_hardcore_mode_enable);
+   }
+#endif
 #endif
    recording_driver_update_streaming_url();
 

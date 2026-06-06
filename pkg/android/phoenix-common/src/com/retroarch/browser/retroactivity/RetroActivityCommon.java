@@ -16,6 +16,7 @@ package com.retroarch.browser.retroactivity;
 
 import com.retroarch.BuildConfig;
 import com.retroarch.browser.preferences.util.UserPreferences;
+import com.retroarch.browser.receiver.RetroAchievementsHostOverrideReceiver;
 import com.retroarch.playcore.PlayCoreManager;
 
 import android.annotation.TargetApi;
@@ -1078,6 +1079,19 @@ public class RetroActivityCommon extends NativeActivity
    * notch setting takes effect without waiting for the next resume. */
   protected void onNotchSettingChanged()
   {
+  }
+
+  /* Achievement settings handed to and taken from the host override
+   * receiver, which owns no config file of its own (see
+   * android_app_set_cheevos_settings in platform_unix.c). */
+  public void setCheevosSettings(String host, boolean hardcoreEnabled)
+  {
+    RetroAchievementsHostOverrideReceiver.recordSettings(this, host, hardcoreEnabled);
+  }
+
+  public String getCheevosOverride()
+  {
+    return RetroAchievementsHostOverrideReceiver.consumeOverride(this);
   }
 
   @TargetApi(24)

@@ -107,6 +107,10 @@
  * cannot preprocess. */
 void android_app_set_window_settings(bool notch_write_over,
       bool auto_mouse_grab);
+#ifdef HAVE_CHEEVOS
+void android_app_set_cheevos_settings(const char *host,
+      bool hardcore_enabled);
+#endif
 #endif
 #include "../location_driver.h"
 #include "../network/cloud_sync_driver.h"
@@ -9990,6 +9994,14 @@ static void overlay_show_mouse_cursor_change_handler(rarch_setting_t *setting)
 static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
 {
    rcheevos_hardcore_enabled_changed();
+#ifdef ANDROID
+   {
+      settings_t *settings = config_get_ptr();
+
+      android_app_set_cheevos_settings(settings->arrays.cheevos_custom_host,
+            settings->bools.cheevos_hardcore_mode_enable);
+   }
+#endif
 }
 
 static void achievement_leaderboard_trackers_enabled_write_handler(rarch_setting_t* setting)
