@@ -57,6 +57,7 @@
 
 #ifdef ANDROID
 #include <sys/system_properties.h>
+#include "../../cheevos/cheevos.h"
 #ifdef HAVE_SAF
 #include <vfs/vfs_implementation_saf.h>
 #include "../../menu/menu_cbs.h"
@@ -738,6 +739,66 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       (*env)->ExceptionDescribe(env);
       (*env)->ExceptionClear(env);
    }
+#endif
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityFuture_applyRetroAchievementsHostOverride
+      (JNIEnv *env, jclass clazz, jstring host_obj, jboolean hardcore_enabled)
+{
+#ifdef HAVE_CHEEVOS
+   const char *host = NULL;
+   settings_t *settings = config_get_ptr();
+   rcheevos_locals_t *locals = get_rcheevos_locals();
+#ifdef HAVE_MENU
+   struct menu_state *menu_st = menu_state_get_ptr();
+#endif
+
+   (void)clazz;
+
+   if (!settings)
+      return;
+
+   if (host_obj)
+   {
+      host = (*env)->GetStringUTFChars(env, host_obj, NULL);
+      if ((*env)->ExceptionOccurred(env))
+      {
+         (*env)->ExceptionDescribe(env);
+         (*env)->ExceptionClear(env);
+         return;
+      }
+   }
+
+   strlcpy(settings->arrays.cheevos_custom_host,
+         host ? host : "", sizeof(settings->arrays.cheevos_custom_host));
+   settings->bools.cheevos_hardcore_mode_enable = (hardcore_enabled == JNI_TRUE);
+
+   if (locals && locals->client)
+      rc_client_set_host(locals->client, settings->arrays.cheevos_custom_host);
+
+   rcheevos_hardcore_enabled_changed();
+   rcheevos_validate_config_settings();
+
+#ifdef HAVE_MENU
+   if (menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE))
+      menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                     | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+#endif
+
+   if (host)
+   {
+      (*env)->ReleaseStringUTFChars(env, host_obj, host);
+      if ((*env)->ExceptionOccurred(env))
+      {
+         (*env)->ExceptionDescribe(env);
+         (*env)->ExceptionClear(env);
+      }
+   }
+#else
+   (void)env;
+   (void)clazz;
+   (void)host_obj;
+   (void)hardcore_enabled;
 #endif
 }
 
