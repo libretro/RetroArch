@@ -103,7 +103,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "Elekti enhavon por lanĉi."
+   "Elekti enhavon lanĉotan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
@@ -123,7 +123,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Forĵetu la fizikan enhavan diskon al interna stokado. Ĝi estos konservita kiel bilda dosiero."
+   "Forĵeti la fizikan enhavan diskon al interna stokado. Ĝi estos konservita kiel bilda dosiero."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -149,7 +149,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Krei kaj ĝisdatigi ludlistojn skanante enhavon."
+   "Krei kaj ĝisdatigi ludlistojn skanante enhavojn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -177,7 +177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "Retaludo"
+   "Retludo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
@@ -358,22 +358,22 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   "Instaligitaj kernoj, kiuj povas funkcii sen ŝargi enhavon, aperos ĉi tie."
+   "Instalitaj kernoj, kiuj povas funkcii sen ŝargi enhavon, aperos ĉi tie."
    )
 
 /* Main Menu > Online Updater */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Kernelŝutilo"
+   "Elŝutilo de kernoj"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   "Ĝisdatigi instaligitajn kernojn"
+   "Ĝisdatigi instalitajn kernojn"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   "Ĝisdatigi ĉiujn instaligitajn kernojn ĝis la plej lasta disponebla versio."
+   "Ĝisdatigi ĉiujn instalitajn kernojn ĝis la plej lasta disponebla versio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
@@ -409,7 +409,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   "Ĝisdatigi informaciajn dosierojn de kernoj"
+   "Ĝisdatigi informajn dosierojn de kernoj"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
@@ -984,7 +984,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   "Videpelilo"
+   "Videa pelilo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
@@ -992,7 +992,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   "Sonpelilo"
+   "Sona pelilo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
@@ -1000,7 +1000,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   "Enigpelilo"
+   "Eniga pelilo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
@@ -1420,7 +1420,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   ""
+   "La pelilo udev legas eventojn evdev por subteno de klavaro. Ĝi ankaŭ subtenas klavarajn revokojn, musojn kaj tuŝplatojn.\nLa plej multo el la distribuaĵoj defaŭlte havas la nodojn /dev/input en reĝimoj por nur root (reĝimo 600). Oni povas konfiguri regulon, por ke ili estu alireblaj al aliaj uzantoj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
@@ -1942,7 +1942,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
-   "Uzi argumentajn bufrojn de Metal (bezonas rekomencigon)"
+   "Uzi argumentajn bufrojn de Metal (bezonas rekomencon)"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
@@ -2025,7 +2025,7 @@ MSG_HASH(
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Optimumigi por la GamePad de Wii U (bezonas rekomencigon)"
+   "Optimumigi por la GamePad de Wii U (bezonas rekomencon)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
@@ -2759,16 +2759,80 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    "Reĝimo ekskluzivo por WASAPI"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   "Ebligi al la pelilo de WASAPI preni ekskluzivan regon de la sonaparato. Se malebligite, ĝi uzos la kunhavigita reĝimo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   "Glitpunkta formato de WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   "Uzi la glitpunktan formaton por la pelilo de WASAPI, se subtenata de via sonaparato."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   "Grando de la kunhavigita bufro de WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   "La intera bufra grando (je filmeroj) kiam uzante la kunhavigitan reĝimon de la pelilo de WASAPI."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "Malfermi stirpanelon de ASIO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Malfermi la stirpanelon de la pelilo ASIO por konfiguri aparatan enkursigon kaj bufrajn agordojn."
+   )
 
 /* Settings > Audio > Output */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   "Audio Enable"
+   "Sono"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   "Ebligi sona eligo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-   "Audio Device"
+   "Aparato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   "Transpasi la defaŭltan sonan aparaton, kiun la sonan pelilon uzas. Ĉi tiu dependas de la pelilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
+   "Transpasi la defaŭltan sonan aparaton, kiun la sona pelilo uzas. Ĉi tio dependas de la pelilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   "Propra valoro de la aparato PCM por la pelilo ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "Propra valoro de dosierindiko por la pelilo OSS (ekz. /dev/dsp)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "Propra valoro de pordo-nomo por la pelilo JACK (ekz. system:playback1,system:playback_2)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   "Propra IP-adreso de servilo RSound por la pelilo RSound."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   "Sona respondotempo (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   "Maksimuma sona respondotempo je milisekondoj. La pelilo celas konservi kurantan respondotempon en 50% de ĉi tiu valoro. Eblas, ke ĉi tio ne estu respektata se la sona pelilo ne povas provizi la agorditan respondotempon."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -2778,16 +2842,68 @@ MSG_HASH(
    "Mikrofono"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "Ebligi enigon de sono en subtenataj kernoj. Se la kerno ne uzas mikrofonon, ne pluigos la ŝargon de la CPU."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
-   "Audio Device"
+   "Aparato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "Transpasi la defaŭltan enigan aparaton, kiun la mikrofona pelilo uzas. Ĉi tio dependas de la pelilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "Transpasi la defaŭltan enigan aparaton, kiun la mikrofona pelilo uzas. Ĉi tio dependas de la pelilo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-   "Audio Resampler Quality"
+   "Resonpeciga kvalito"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Malpliigu ĉi tiun valoron por pli da rendimento kaj malpli da respondotempo kontraŭ sona kvalito; pliigu ĝin por pli da sona kvalito kontraŭ rendimento kaj malpliigo de respondotempo. "
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "Defaŭlta ofteco de enigo (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "Ofteco de sonpecigo de enigo, uzata se kerno ne postulas specifan nombron."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "Respondotempo de sona enigo (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "Dezirata respondotempo de sona enigo je milisekondoj. Povus ne esti respektata se la mikrofona pelilo ne povas provizi la respondotempon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "Reĝimo ekskluzivo por WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Ebligi al RetroArch preni ekskluzivan regadon de la mikrofona aparato kiam uzante la mikrofonan pelilon WASAPI. Se malebligite, RetroArch uzos la kunhavigatan reĝimon anstataŭe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Glitpunkta formato de WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Uzi glitpunktan enigon por la pelilo WASAPI, se subtenata de via sona aparato."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Grando de la kunhavigita bufro de WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "La intera bufra grando (je filmeroj) kiam uzante la kunhavigitan reĝimon de la pelilo WASAPI."
    )
 #endif
 
@@ -2795,63 +2911,359 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   "Audio Resampler Quality"
+   "Resonpeciga kvalito"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   "Malpliigu ĉi tiun valoron por favori rendimenton kaj malpli respondotempon pli ol sona kvalito. Pliigu ĝin por pli bona sona kvalito kontraŭ rendimento kaj malpli da respondotempo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   "Audio Output Rate (Hz)"
+   "Ofteco de eligo (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   "Ofteco de sonpeciga eligo."
    )
 
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   "Audio Sync Enable"
+   "Sinkronigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   "Sinkronigi sonojn. Rekomendata."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-   "Audio Maximum Timing Skew"
+   "Maksimuma sinkroniga varieco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   "La maksimuma ŝanĝo en ofteco de sona enigo. Pliigi ĉi tion ebligas tre grandajn ŝanĝojn sinkronigante kontraŭ malprecizaj sontonoj (ekz. rulante kernojn PAL sur ekranoj NTSC)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
+   "Maksimuma sinkroniga varieco de sono.\nDifinas la maksimuman ŝanĝon en ofteco de enigo. Vi eble volos pliigi ĉi tion por ebligi grandajn ŝanĝojn sinkronigante, ekzemple rulante kernojn PAL sur ekranojn NTSC, kontraŭ malprecizaj sontonoj.\nOfteco de enigo estas difinita kiel:\nofteco de enigo × (1.0 +/− (maks. sinkroniga varieco))"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   "Dinamika regado de sona ofteco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
+   "Helpas glatigi malperfektaĵoj sinkronigante sonon kaj videon. Estu singarda pri tio, ke se malebligita, estas preskaŭ neeble akiri ĝustan sinkronigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   "Agordante ĉi tion je 0 malebligas regadon de ofteco. Alia ajn valoro regas la delton de regado de sona ofteco.\nDifinas kiom da einga ofteco povas esti alĝustigita dinamike. Eniga ofteco × (1.0 +/− (delto de regado de ofteco))."
    )
 
 /* Settings > Audio > MIDI */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-   "Input Driver"
+   "Enigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   "Elekti enigan aparaton."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   "Agordas la enigan aparaton (specifa de la pelilo). Kiam agordita je \"Malŝaltita\", la enigo MIDI estos malebligita. Oni ankaŭ povas tajpi la nomon de la aparato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "Eligo"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   "Elekti eligan aparaton."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
+   "Agordas la eligan aparaton (specifa de la pelilo). Kiam agordita je \"Malŝatita\", la eligo MIDI estos malebligita. Oni ankaŭ povas tajpi la nomon de la aparato.\nKiam eligo MIDI estas ebligita kaj la kerno kaj la ludo aŭ aplikaĵo subtenas eligon MIDI, iom aŭ ĉiom el la sonoj (dependante de la ludo aŭ aplikaĵo) estos generita de la aparato MIDI. Kaze de \"senvalora\" pelilo MIDI, tiam tiuj sonoj estos neaŭdeblaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+   "Laŭteco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   "Agordi eligan laŭtecon (%)."
+   )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_STREAM,
+   "Sonmiksila fluo #%d: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   "Ludi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+   "Komencos ludadon de la sonfluo. Kiam finite, ĝi forigos la kurantan sonfluon el memoro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   "Ludi (ripetade)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
+   "Komencos ludadon de la sonfluo. Kiam finite, ĝi ripetos la kanton denove el la komenco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "Ludi (sinsekve)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "Komencos ludadon de la sonfluo. Kiam finite, ĝi saltos al la sekva sonfluo laŭ sinsekva ordo kaj ripetos ĉi tiun agmanieron. Utila kiel reĝimo por ludi albumojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+   "Haltigi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
+   "Ĉi tio haltigos ludadon de la sonfluo, sed ne forigos ĝin el la memoro. Ĝi povas esti rekomencita elektante \"Ludi\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   "Forigi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
+   "Ĉi tio forigos ludadon de la sonfluo kaj tute forigos ĝin el la memoro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+   "Laŭteco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
+   "Alĝustigi la laŭtecon de la sonfluo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "Stato: neaplikebla"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   "Stato: Haltigita"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   "Stato: Ludate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "Stato: Ludate (ripetade)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   "Stato: Ludate (sinsekve)"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-   "Enable menu audio"
+   "Sonmiksilo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-   "Enable or disable menu sound."
+   "Ludi samtempe sonfluojn eĉ en la menuo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+   "Ebligi sonon de \"Bone\""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+   "Ebligi sonon de \"Rezigni\""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+   "Ebligi sonon de \"Avizo\""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+   "Ebligi sonon \"Fona muziko\""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+   "Ebligi sonojn de \"Rulumado\""
    )
 
 /* Settings > Input */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   "Maksimuma kvanto da uzantoj subtenataj de RetroArch. Bezonas rekomencon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Sondada konduto (bezonas rekomencon)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   "Influas kiel enigsondado estas farata en RetroArch. Agordante ĝin al \"Frua\" aŭ \"Malfrua\" povas rezulti en malpli da respondotempo, dependante de via konfiguro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   "Influas kiel enigsondado estas farata en RetroArch.\nFrua - Enigsondado estas plenumigita antaŭ ol la filmero estas prilaborita.\nNormala - Enigsondado estas plenumigita kiam la sondado estas postulita.\nMalfrua - Enigsondado estas plenumigita ĉe la unua postulo de stato per filmero.\nAgordante ĝin je \"Frua\" aŭ \"Malfrua\" povas rezulti en malpli da respondotempo, dependante de via konfiguro. Ĝi estos ignorata kiam uzante retludo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   "Reasigni regilojn por ĉi tiu kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   "Transpasi la enigajn bindojn kontraŭ la reasignitaj bindoj por la kuranta kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Ordigi reasignadojn laŭ ludregilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Reasignadoj nur estos aplikitaj al la aktiva ludregilo, en kiu ili estis konservitaj."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   "Autoconfig Enable"
+   "Aŭtomata konfiguro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+   "Aŭtomate konfiguras regilojn, kiuj havas profilon, kvazaǔ \"Plug-and-Play\"."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Malebligi fulmoklavojn de Windows (bezonas rekomencon)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "Konservi kombinaĵojn, kiuj uzas la vindozan klavon, en la aplikaĵo."
+   )
 #endif
 #ifdef ANDROID
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Elekti fizikan klavaron"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Uzi ĉi tiun aparaton kiel fizika klavaro kaj ne kiel ludregilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Se RetroArch identigas aparataran klavaron kiel ia ludregilo, ĉi tiu agordo povas esti uzata por devigi RetroArch trakti la misidentigila aparato kiel klavaro.\nĈi tio estas utila se vi provas imiti komputilon en ia aparato Android TV kaj ankaŭ posedas fizikan klavaron, kiu povas esti alligita al la aparato."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "Akcesora sentila enigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "Ebligi enigon el plirapidiga mezurilo, \"gyroscope\" kaj lumiga sentiloj, se subtenate de via kuranta aparataro. Povus influi la rendimenton, kaj/aŭ pliigi kurentuzadon en kelkaj platformoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Aŭtomate kapti muson"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Ebligi kaptadon de muso kiam la aplikaĵo estas fronte."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "Aŭtomate ebligi reĝimon \"Koncentriĝi en ludo\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "Ĉiam ebligi reĝimon \"Koncentriĝi en ludo\" kiam lanĉante kaj daŭrigante enhavon. Kiam agordite je \"Detekti\", ĉi tiu opcio estos ebligita se la kuranta kerno realigas funkciaron de fasada klavara revoko."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   "Malŝaltita"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   "Ŝaltita"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "Detekti"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   "Paŭzi enhavon pro malkonekto de regilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
+   "Paŭzi enhavon kiam ajna regilo estas malkonektita. Uzu \"Start\" por daŭrigi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Sojlo de enigo de butonaj aksoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Kiel malproksime akso devas esti inklinita por rezulti en premo de butono kiam uzante \"Bitigilo\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+   "Analoga malviva zono"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   "Ignori analogajn stirstangajn movojn sub la valoro de malviva zono."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   "Analoga sentemo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Plirapidig-mezurila sentemo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "Sentemo de \"Gyroscope\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   "Alĝustigi la sentemon de analogaj stirstangoj."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Alĝustigi la sentemon de la plirapidiga mezurilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Sentila orientigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Rotacii la aksojn de la plirapidiga mezurilo kaj la \"gyroscope\" por kongrui la orientigon de la aparato."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Aŭtomate"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
@@ -3056,7 +3468,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   "Memoru elekton kiam ŝanĝas inter sekcioj"
+   "Memori elekton kiam ŝanĝante inter sekcioj"
    )
 
 /* Settings > AI Service */
@@ -3205,6 +3617,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
    "Rename the title of the entry."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   "Forigi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
@@ -3401,12 +3817,20 @@ MSG_HASH(
    "Informo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_STOP,
+   "Haltigi"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    "Forigi ludliston"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
    "Content Database:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+   "Forigi"
    )
 
 /* Unsorted */

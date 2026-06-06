@@ -2238,7 +2238,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Отображать содержимое в окне фиксированных размеров, задаваемых параметрами 'Ширина окна' и 'Высота окна' и сохранять положение и размер окна при выходе из RetroArch. Если отключено, размеры окна будут меняться динамически, в зависимости от установки 'Масштаб окна'."
+   "Отображать содержимое в окне фиксированного размера, заданного параметрами 'Ширина окна' и 'Высота окна', с сохранением расположения и размеров при выходе из RetroArch. Если отключено, размер окна устанавливается динамически, согласно настройке 'Масштаб окна'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
@@ -2246,7 +2246,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   "Отображать содержимое в окне фиксированных размеров, задаваемых параметрами 'Ширина окна' и 'Высота окна'. Если отключено, размеры окна будут меняться динамически, в зависимости от установки 'Масштаб окна'."
+   "Отображать содержимое в окне фиксированного размера, заданного параметрами 'Ширина окна' и 'Высота окна'. Если отключено, размер окна устанавливается динамически, согласно настройке 'Масштаб окна'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -2993,7 +2993,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
-   "Выбор устройства вывода (зависит от драйвера). Если выкл., MIDI-выход будет неактивен. Имя устройства также можно ввести вручную. При вкл. и поддержке MIDI приложением/игрой часть звуков будет генерироваться MIDI-устройством. При выборе 'null' данные звуки не воспроизводятся."
+   "Выбор устройства вывода (зависит от драйвера). Если выключено, MIDI-выход будет неактивен. Также можно указать имя устройства. Если MIDI-выход включен и поддерживается приложением/игрой, то все или часть звуков будут генерироваться MIDI-устройством. При установке 'null' для драйвер[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -4126,7 +4126,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "Переключает текущий сеанс Netplay между режимами 'игра' и 'наблюдатель'."
+   "Переключает текущий сеанс сетевой игры между режимами 'Игрок' и 'Наблюдатель'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
@@ -5780,11 +5780,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
-   "Показывать пинг netplay"
+   "Показывать пинг сетевой игры"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "Отображать пинг для текущей комнаты netplay."
+   "Отображать пинг для текущей комнаты сетевой игры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -5932,7 +5932,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Расширенные уведомления Netplay"
+   "Расширенные уведомления сетевой игры"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
@@ -8172,7 +8172,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
-   "Каталог хранения образов BIOS, загрузочных ПЗУ и прочих системных файлов."
+   "Каталог хранения образов BIOS, прошивок и прочих системных файлов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
@@ -8188,7 +8188,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
-   "Каталог хранения ресурсов меню RetroArch."
+   "Каталог хранения ассетов меню, используемых RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
@@ -8519,11 +8519,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Отключиться от Netplay-хоста"
+   "Отключиться от хоста сетевой игры"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Отключить активное соединение Netplay."
+   "Отключить активное соединение сетевой игры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
@@ -8562,15 +8562,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Запустить Netplay-хост"
+   "Запустить хост сетевой игры"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Запуск Netplay в режиме хоста (сервера)."
+   "Запуск сетевой игры в режиме хоста (сервера)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-   "Остановить Netplay-хост"
+   "Остановить хост сетевой игры"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
@@ -8637,11 +8637,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
-   "Проверка базы данных"
+   "Проверка по базе данных"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_USE_DB,
-   "Строгий режим добавлет только элементы, соответствующие записям баз данных. Неточный режим также добавляет файлы поддерживаемых форматов, но без совпадения серийных номеров/CRC. Кастомный DAT вместо баз данных включает проверку пользовательского XML-файла. Режим 'Нет' игнори[...]"
+   "Строгий режим добавляет только записи, совпадающие с базами данных. Неточный режим также добавляет файлы в поддерживаемых форматах, но без совпадения серийных номеров/CRC. Кастомный DAT вместо баз данных использует внешний XML-файл. 'Нет' игнорирует базы данных, используя толь[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
@@ -8649,7 +8649,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
-   "Поиск совпадений может быть ограничен определённой базой данных или же первой подходящей базой для ускорения сканирования."
+   "Поиск совпадений можно ограничить определённой базой данных или же первой подходящей базой для ускорения поиска."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
@@ -8703,7 +8703,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Имя сгенерированного плейлиста, которое также используется для идентификации миниатюр. При автоматической настройке будет присвоено имя подходящей базы данных или каталога контента."
+   "Имя сгенерированного плейлиста, также используемое для идентификации миниатюр. При автонастройке плейлисту будет присвоено имя подходящей базы данных или каталога контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
@@ -8719,7 +8719,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "Выбор ядра, используемого по умолчанию для запуска просканнированного контента."
+   "Выбор ядра, используемого по умолчанию для запуска найденного контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
@@ -10884,11 +10884,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
-   "Строгий"
+   "Строго"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
-   "Неточный"
+   "Неточно"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
@@ -13139,11 +13139,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCAN_COMPLETE,
-   "Сканирование Netplay завершено."
+   "Сканирование сеансов сетевой игры завершено."
    )
 MSG_HASH(
    MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   "К сожалению, данная функция не работает: ядра, не запрашивающие контент, не могут участвовать в netplay."
+   "К сожалению, функция не реализована: сетевая игра недоступна для ядер, не использующих контент."
    )
 MSG_HASH(
    MSG_NATIVE,
@@ -13151,7 +13151,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   "Получена неизвестная команда netplay"
+   "Получена неизвестная команда сетевой игры"
    )
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
@@ -13231,15 +13231,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
-   "ВНИМАНИЕ: участник Netplay использует другую версию RetroArch. При возникновении проблем, используйте одинаковые версии."
+   "ВНИМАНИЕ: один из пиров сетевой игры использует другую версию RetroArch. При появлении проблем используйте одинаковые версии."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORES,
-   "Подключение невозможно, т.к. участник Netplay использует другое ядро."
+   "Участник сетевой игры использует другое ядро. Подключение невозможно."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-   "ВНИМАНИЕ: участник Netplay использует другую версию ядра. При возникновении проблем, используйте одинаковые версии."
+   "ВНИМАНИЕ: один из участников сетевой игры использует другую версию ядра. При появлении проблем используйте одинаковые версии."
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
@@ -13251,7 +13251,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
-   "Введите пароль сервера netplay:"
+   "Введите пароль от сервера сетевой игры:"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_CHAT,
@@ -13271,11 +13271,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_SERVER_HANGUP,
-   "Клиент netplay отключен"
+   "Клиент сетевой игры был отключен"
    )
 MSG_HASH(
    MSG_NETPLAY_CLIENT_HANGUP,
-   "Netplay отключен"
+   "Сетевая игры отключена"
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
@@ -13352,7 +13352,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONNECTING_TO_NETPLAY_HOST,
-   "Подключение к netplay-хосту"
+   "Подключение к хосту сетевой игры"
    )
 MSG_HASH(
    MSG_CONNECTING_TO_PORT,

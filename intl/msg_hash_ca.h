@@ -8983,8 +8983,16 @@ MSG_HASH(
    "Afegir a la llista de reproducció"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Afegeix el contingut a la llista de reproducció."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Crea una nova llista de reproducció"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Crea una nova llista de reproducció i afegeix aquest contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -9007,8 +9015,16 @@ MSG_HASH(
    "Informació"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INFORMATION,
+   "Mostra més informació sobre aquest contingut."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Baixa miniatures"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "Descarrega miniatures per aquest contingut. Actualitza les imatges existents."
    )
 
 /* Playlist Item > Set Core Association */
