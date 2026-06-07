@@ -2560,7 +2560,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Agordas la tempon je milisekondoj inter la lanĉo de la kerno kaj la prezento de la bildo. Malpliigas respondotempon kontraŭ pli da risko de \"mikrobalbutado\".\nValoroj 20 kaj pliaj estos konsiderataj kiel procento de la daŭro je filmeroj."
+   "Agordas la tempon je milisekundoj inter la lanĉo de la kerno kaj la prezento de la bildo. Malpliigas respondotempon kontraŭ pli da risko de \"mikrobalbutado\".\nValoroj 20 kaj pliaj estos konsiderataj kiel procento de la daŭro je filmeroj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2832,7 +2832,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Maksimuma sona respondotempo je milisekondoj. La pelilo celas konservi kurantan respondotempon en 50% de ĉi tiu valoro. Eblas, ke ĉi tio ne estu respektata se la sona pelilo ne povas provizi la agorditan respondotempon."
+   "Maksimuma sona respondotempo je milisekundoj. La pelilo celas konservi kurantan respondotempon en 50% de ĉi tiu valoro. Eblas, ke ĉi tio ne estu respektata se la sona pelilo ne povas provizi la agorditan respondotempon."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -2879,7 +2879,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
-   "Dezirata respondotempo de sona enigo je milisekondoj. Povus ne esti respektata se la mikrofona pelilo ne povas provizi la respondotempon."
+   "Dezirata respondotempo de sona enigo je milisekundoj. Povus ne esti respektata se la mikrofona pelilo ne povas provizi la respondotempon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
@@ -3264,7 +3264,143 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
    "Aŭtomate"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "Alĝustigi la sentemon de la \"Gyroscope\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
+   "Atendotempo por la klavasignado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   "Kiomo da sekondoj atendi antaŭ ol procedi al la sekva klavasignado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+   "Teno de asignado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   "Kvanto da sekundoj teni enigon por asigni ĝin."
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Premu klavaron, muson aŭ regilon"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Maltenu klavojn kaj butonojn!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Atendotempo"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Teni"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Ada aktivigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   "Malebligite haltigas ĉian operaciojn pri ada aktivigo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+   "Periodo de ada aktivigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "La periodo je filmeroj kiam butonoj kun ada aktivigo estas premataj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
+   "Ciklo de laborado de la ada aktivigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
+   "La nombro da filmeroj de la Periodo de ada aktivigo, dum kiuj la butonoj estas premataj. Se ĉi tiu nombro estas egala aŭ pli ol la Periodo de ada aktivigo, la butonoj neniam estos maltenitaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
+   "Duono da ciklo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   "Reĝimo de ada aktivigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   "Elekti la ĝeneralan konduton de la reĝimo de ada aktivigo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
+   "Klasika"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klasika (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
+   "Ununura butono (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Ununura butono (teni)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Reĝimo klasika, dubutona operacio. Tenu butonon kaj premetu la butonon \"Turbo\" por aktivigi la sinsekvo premi-malteni.\nLa butono \"Turbo\" povas esti asignita ĉe Agordoj/Eniga pelilo/Retroregilaj asignoj/Regiloj de konektejo X."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Reĝimo baskuligi klasika, dubutona operacio. Tenu butonon kaj premetu la butonon \"Turbo\" por ebligi la ada aktivigo de tiu butono. Por malebligi la ada aktivigo: tenu la butonon kaj premu la butonon \"Turbo\" denove.\nLa butono \"Turbo\" povas esti asignita ĉe Agordoj/Eniga pelilo/Retroregilaj asignoj/Regiloj de konektejo X."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Reĝimo baskuligi. Premu la butonon unufoje \"Turbo\" por aktivigi la sinsekvo premi-malteni de la elektita defaŭlta butono; premu ĝin denove unufoje por malŝalti ĝin.\nLa butono \"Turbo\" povas esti asignita ĉe Agordoj/Eniga pelilo/Retroregilaj asignoj/Regiloj de konektejo X."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Reĝimo teni. La sinsekvo premi-malteni de la elektita defaŭlta butono estas aktiva dum la butono \"Turbo\" estas tenata.\nLa butono \"Turbo\" povas esti asignita ĉe Agordoj/Eniga pelilo/Retroregilaj asignoj/Regiloj de konektejo X.\nPor imiti la funkcion de ada aktivigo de la erao de hejma komputilo, agordu la Asignadon kaj la Butonon al la sama butono de la stirstango."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   "Asignado de \"Turbo\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   "La asigno, kiu aktivigos la adan aktivigon en la RetroPad. Se lasite vakua, ĝi uzos la asignon specifa de la konektejo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   "Butono \"Turbo\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   "Cela butono \"Turbo\" en reĝimo \"Ununura butono\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
+   "Ebligi direktojn de la direktkruco por \"Turbo\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
+   "Se ebligite, ciferecaj direktaj enigoj povas esti ade aktivigataj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "Ada aktivigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Ŝanĝi agordojn pri ada aktivigo."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "Enable hotkeys"
@@ -3303,6 +3439,14 @@ MSG_HASH(
 
 /* Settings > Input > Port # Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "Ada aktivigo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Teni"
+   )
 
 /* Settings > Latency */
 

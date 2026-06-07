@@ -15463,7 +15463,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ROOM_PASSWORDED,
-   "Закрыто паролем"
+   "Под паролем"
    )
 MSG_HASH(
    MSG_INTERNET,
