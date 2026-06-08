@@ -965,7 +965,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   "Ĉesi"
+   "Forlasi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
@@ -3130,7 +3130,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   "Transpasi la enigajn bindojn kontraŭ la reasignitaj bindoj por la kuranta kerno."
+   "Transpasi la enigajn klavasignadojn kontraŭ la reasignitaj klavasignoj por la kuranta kerno."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
@@ -3274,7 +3274,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   "Kiomo da sekondoj atendi antaŭ ol procedi al la sekva klavasignado."
+   "Kiomo da sekundoj atendi antaŭ ol procedi al la sekva klavasignado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
@@ -3402,26 +3402,330 @@ MSG_HASH(
    "Ŝanĝi agordojn pri ada aktivigo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "Tuŝ-retrokuplado/vibrado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "Ŝanĝi agordojn pri tuŝ-retrokuplado kaj vibrado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Mov-/lum- sentiloj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Ŝanĝi agordojn pri la plirapidiga mezurilo, \"gyroscope\" kaj lumigo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+   "Menuaj regiloj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+   "Ŝanĝi agordojn pri la menuaj regiloj."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-   "Enable hotkeys"
+   "Fulmoklavoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+   "Ŝanĝi agordojn kaj asignadoj por fulmoklavoj. Ekzemple, kiel baskuligi la menuon dum ludado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "Asignoj de RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "Ŝanĝi kiel la virtuala RetroPad estas asignita al fizika eniga aparato. Se eniga aparato estas agnoskita kaj aŭtomate konfigurita ĝuste, uzantoj eble ne bezonos uzi ĉi tiun menuon.\nNote: por ŝanĝoj de enigo specifaj de la kerno, anstataŭe uzu la submenuon \"Regiloj\" de la Rapida menuo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro uzas abstraktaĵon de virtuala ludregilo, konata kiel la \"RetroPad\", por komuniki inter fasadoj (kiel RetroArch) kaj kernoj. Ĉi tiu menuo determinas kiel la virtuala RetroPad estas asignita al la fizikaj enigaj aparatoj, kaj tiuj virtualaj enigaj konektejoj, kiujn ĉi tiuj aparatoj okupas.\n Se fizika eniga aparato estas agnoskita kaj aŭtomate konfigurita ĝuste, uzantoj eble ne bezonos uzi ĉi tiun menuon, kaj por ŝanĝoj de enigo specifaj de kerno, ili devus uzi anstataŭe la sub[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   "Regiloj de konektejo %u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Ŝanĝi la asignojn de la virtuala RetroPad al via fizika eniga aparato por ĉi tiu virtuala konektejo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Ŝanĝi asignojn de enigo specifa de kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Provizora solvo de malkonekto de Android"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Provizora solvo por regiloj malkonektante kaj rekonektante. Malhelpas 2 ludantojn kun samaj regiloj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Konfirmi forlason"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Postuli, ke la fulmoklavo Forlasi estu premata dufoje."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Konfirmi fermi enhavon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Postuli, ke la fulmoklavo Fermi enhavon estu premata dufoje."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Konfirmi rekomencigi enhavon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Postuli, ke la fulmoklavo Rekomencigi enhavon estu premata dufoje."
    )
 
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   "Vibri ĉe premi klavon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   "Ebligi vibradon de aparato (por subtenataj kernoj)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "Forto de vibrado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   "Specifi la magnitudon de tuŝ-retrokupladaj efikoj."
+   )
 
 /* Settings > Input > Menu Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+   "Unuigitaj menuaj regiloj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+   "Uzi la samajn regilojn por kaj la menuo kaj la ludo. Aplikiĝas al la klavaro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "Interŝanĝi butonojn Bone kaj Rezigni"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "Interŝanĝi la butonojn Bone kaj Rezigni. Malebligita estas la butona orientigo japana; ebligita estas la orientigo okcidenta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Interŝanĝi butonojn rulumi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Interŝanĝi butonojn por rulumi. Malebligita rulumas 10 erojn per L/R kaj alfabete per L2/R2."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "Ĉiuj uzantoj regas menuon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Ebligi al ĉiuj uzantoj regi la menuon. Se malebligita, nur Uzanto 1 povas regi la menuon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Ludlistoj per ununura alklako"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "Preterlasi la menuon \"Lanĉi\" kiam lanĉante ludlisterojn. Premu la direktokrucon dum tenante Bone por atingi la menuon \"Lanĉi\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Ebligi reeniri el sekcioj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Reeniri al ĉefa menuo el sekcioj aŭ flankpanelo kiam premante Reen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "Plirapidigo de rulumado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "Maksimuma rapido de la kursoro kiam tenante direkton por rulumi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Ruluma prokrasto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "Komenca prokrasto je milisekundoj kiam tenante direkton por rulumi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
+   "Malebligi butonon Informo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   "Malhelpi la funkciadon de menuaj informoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
+   "Malebligi butonon serĉi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "Malhelpi la funkciadon de menua serĉo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Malebligi maldekstran analogan en menuo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Malhelpi la enigon de la maldekstra analoga stirstango en la menuo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Malebligi dekstran analogan en menuo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Malhelpi la enigon de la dekstra analoga stirstango. Dekstra analoga stirstango ŝanĝas la bildetojn en ludlistoj."
+   )
 
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
+   "Klavo Ebligi fulmoklavojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "Kiam asignita, la klavo \"Ebligi fulmoklavojn\" devas esti tenata antaŭ ol ajnaj aliaj fulmoklavoj estu agnoskitaj. Ebligas regilaj butonoj estu asignitaj al fulmoklavaj funkcioj sen influi normalan enigon. Asigni la modifilon nur al regilo ne necesigos ĝin por klavaraj fulmoklavoj, kaj inverse, sed ambaŭ modifiloj funkcioj por ambaŭ aparatoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   "Se ĉi tiu fulmoklavo estas asignita al klavaro, stirstanga butono aŭ stistanga akso, ĉiuj aliaj fulmoklavoj estos malebligitaj krom ĉi tiu fulmoklavo ankaŭ estas tenata samtempe.\nĈi tio estas utila por realigoj centritaj en RETRO_KEYBOARD, kiuj bezonas grandan areon de la klavaro, kaj kie oni ne deziras, ke fulmoklavoj ĝenu la normalan funkciadon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
+   "Prokrasto por Ebligi fulmoklavojn (filmeroj)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   "Aldoni prokraston je filmeroj antaŭ ol normala enigo estu barita post premi la asignitan klavon \"Ebligi fulmoklavojn\". Ebligas, ke normala enigo de la klavo \"Ebligi fulmoklavojn\" estu kaptita kiam ĝi estas asignita al alia ago (ekz. \"Select\" de RetroPad)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "Kunfandi specojn de fulmoklava aparato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "Bari ĉiujn fulmoklavojn de kaj klavaroj kaj regiloj, se iu havas agordita \"Ebligi fulmoklavojn\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Agnoski nur fulmoklavojn de ludanto 1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Fulmoklavoj estas asignitaj al kerna konektejo 1, eĉ se kerna konektejo 1 estas reasignita al malsama uzanto. Notu: klavaraj fulmoklavoj ne funkcios se kerna konektejo 1 estas reasignita al ia ajn uzanto ol 1 (klavara enigo estas de uzanto 1)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Baskuligi menuon (kombinaĵo de regilo)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Butonkombinaĵo de regilo por baskuligi menuon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
+   "Baskuligi mebuo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
+   "Interŝanĝas la kurantan ekranon inter menuo kaj enhavo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Forlasi (regila kombinaĵo)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Butonkombinaĵo de regilo por forlasi RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Ĉesi"
+   "Forlasi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
+   "Fermas RetroArch, konservante ĉiujn konservan datumon kaj konfigurajn dosierojn en la disko."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   "Close"
+   "Fermi enhavon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   "Fermi la kurantan enhavon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+   "Rekomencigi enhavon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RESET,
+   "Rekomencigi la kurantan enhavon ekde la komenco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
+   "Rapidpluigi (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
+   "Interŝanĝas inter rapidpluigita kaj normala rapidoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Rapidpluigi (teni)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Ebligas rapidpluigon kiam tenate. Enhavo rulas je normala rapido kiam la klavon estas tenata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
+   "Malrapidpluigi (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
+   "Interŝanĝas inter malrapidpluigita kaj normala rapidoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
+   "Malrapidpluigi (teni)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
+   "Ebligas malrapidpluigo kiam tenate. Enhavo rulas je normala rapido kiam la klavo estas maltenata."
    )
 
 
