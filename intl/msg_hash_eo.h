@@ -201,11 +201,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "Konfigura dosiero"
+   "Konfigurdosiero"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   "Administri kaj krei konfigurajn dosierojn."
+   "Administri kaj krei konfigurdosierojn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
@@ -547,7 +547,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Subteno de rapidkonservado"
+   "Subteno de konservstato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -563,7 +563,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "Determinisma (konservi/ŝargi, revolvi, , retludo)"
+   "Determinisma (konservi/ŝargi, revolvi, anticipi, retludo)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
@@ -900,7 +900,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
-   "Anstataŭigi kurantan konfiguran dosieron."
+   "Anstataŭigi kurantan konfigurdosieron."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -916,7 +916,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
-   "Konservi kurantan konfiguron kiel propra konfigura dosiero."
+   "Konservi kurantan konfiguron kiel propra konfigurdosiero."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
@@ -1028,7 +1028,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   "Ŝanĝi la defaŭltajn agordojn por la konfiguraj dosieroj."
+   "Ŝanĝi la defaŭltajn agordojn por la konfigurdosieroj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
@@ -1064,7 +1064,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sinkronigi: konfigurajn dosierojn"
+   "Sinkronigi: konfigurdosierojn"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
@@ -1076,11 +1076,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
-   "Kiam ebligita, konservaĵoj/statoj estos sinkronigitaj al la nubo."
+   "Kiam ebligita, konservaĵoj kaj statoj estos sinkronigitaj al la nubo."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
-   "Kiam ebligita, konfiguraj dosieroj estos sinkronigitaj al la nubo."
+   "Kiam ebligita, konfigurdosieroj estos sinkronigitaj al la nubo."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
@@ -1184,7 +1184,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
-   "Konfigura dosiero."
+   "Konfigurdosiero."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
@@ -1192,7 +1192,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
-   "Konfigura dosiero por registradoj."
+   "Konfigurdosiero por surbendigo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
@@ -1200,7 +1200,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   "Dosiero de konfiguraĵoj."
+   "Konfigurdosiero."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
@@ -1272,11 +1272,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   "Registrado"
+   "Surbendigo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "Ŝanĝi agordojn pri registri."
+   "Ŝanĝi agordojn pri surbendigo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
@@ -1711,11 +1711,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   "Registro"
+   "Surbendigi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Registra pelilo uzota. Bezonas restartigon."
+   "Surbendiga pelilo uzota. Bezonas restartigon."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
@@ -2005,7 +2005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Uzi propran oftecon de aktualigo specifitan en la konfigura dosiero se bezonata."
+   "Uzi propran oftecon de aktualigo specifitan en la konfigudosiero se bezonata."
    )
 
 /* Settings > Video > Output */
@@ -2851,11 +2851,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
-   "Transpasi la defaŭltan enigan aparaton, kiun la mikrofona pelilo uzas. Ĉi tio dependas de la pelilo."
+   "Transpasi la defaŭltan enigaparaton, kiun la mikrofona pelilo uzas. Ĉi tio dependas de la pelilo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
-   "Transpasi la defaŭltan enigan aparaton, kiun la mikrofona pelilo uzas. Ĉi tio dependas de la pelilo."
+   "Transpasi la defaŭltan enigaparaton, kiun la mikrofona pelilo uzas. Ĉi tio dependas de la pelilo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -2969,11 +2969,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   "Elekti enigan aparaton."
+   "Elekti enigaparaton."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_INPUT,
-   "Agordas la enigan aparaton (specifa de la pelilo). Kiam agordita je \"Malŝaltita\", la enigo MIDI estos malebligita. Oni ankaŭ povas tajpi la nomon de la aparato."
+   "Agordas la enigaparaton (specifa de la pelilo). Kiam agordita je \"Malŝaltita\", la enigo MIDI estos malebligita. Oni ankaŭ povas tajpi la nomon de la aparato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -3439,11 +3439,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "Ŝanĝi kiel la virtuala RetroPad estas asignita al fizika eniga aparato. Se eniga aparato estas agnoskita kaj aŭtomate konfigurita ĝuste, uzantoj eble ne bezonos uzi ĉi tiun menuon.\nNote: por ŝanĝoj de enigo specifaj de la kerno, anstataŭe uzu la submenuon \"Regiloj\" de la Rapida menuo."
+   "Ŝanĝi kiel la virtuala RetroPad estas asignita al fizika enigaparato. Se enigaparato estas agnoskita kaj aŭtomate konfigurita ĝuste, uzantoj eble ne bezonos uzi ĉi tiun menuon.\nNote: por ŝanĝoj de enigo specifaj de la kerno, anstataŭe uzu la submenuon \"Regiloj\" de la Rapida menuo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro uzas abstraktaĵon de virtuala ludregilo, konata kiel la \"RetroPad\", por komuniki inter fasadoj (kiel RetroArch) kaj kernoj. Ĉi tiu menuo determinas kiel la virtuala RetroPad estas asignita al la fizikaj enigaj aparatoj, kaj tiuj virtualaj enigaj konektejoj, kiujn ĉi tiuj aparatoj okupas.\n Se fizika eniga aparato estas agnoskita kaj aŭtomate konfigurita ĝuste, uzantoj eble ne bezonos uzi ĉi tiun menuon, kaj por ŝanĝoj de enigo specifaj de kerno, ili devus uzi anstataŭe la sub[...]"
+   "Libretro uzas abstraktaĵon de virtuala ludregilo, konata kiel la \"RetroPad\", por komuniki inter fasadoj (kiel RetroArch) kaj kernoj. Ĉi tiu menuo determinas kiel la virtuala RetroPad estas asignita al la fizikaj enigaparatoj, kaj tiujn virtualajn enigajn konektejojn, kiujn ĉi tiuj aparatoj okupas.\n Se fizika enigaparato estas agnoskita kaj aŭtomate konfigurita ĝuste, uzantoj eble ne bezonos uzi ĉi tiun menuon, kaj por ŝanĝoj de enigo specifaj de kerno, ili devus uzi anstataŭe la subm[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3451,7 +3451,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Ŝanĝi la asignojn de la virtuala RetroPad al via fizika eniga aparato por ĉi tiu virtuala konektejo."
+   "Ŝanĝi la asignojn de la virtuala RetroPad al via fizika enigaparato por ĉi tiu virtuala konektejo."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
@@ -3617,7 +3617,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "Kiam asignita, la klavo \"Ebligi fulmoklavojn\" devas esti tenata antaŭ ol ajnaj aliaj fulmoklavoj estu agnoskitaj. Ebligas regilaj butonoj estu asignitaj al fulmoklavaj funkcioj sen influi normalan enigon. Asigni la modifilon nur al regilo ne necesigos ĝin por klavaraj fulmoklavoj, kaj inverse, sed ambaŭ modifiloj funkcioj por ambaŭ aparatoj."
+   "Kiam asignita, la klavo \"Ebligi fulmoklavojn\" devas esti tenata antaŭ ol ajnaj aliaj fulmoklavoj estu agnoskitaj. Ebligas al regilaj butonoj esti asignitaj al fulmoklavaj funkcioj sen influi normalan enigon. Asigni la modifilon nur al regilo ne necesigos ĝin por klavaraj fulmoklavoj, kaj inverse, sed ambaŭ modifiloj funkcias por ambaŭ aparatoj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
@@ -3677,7 +3677,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
-   "Fermas RetroArch, konservante ĉiujn konservan datumon kaj konfigurajn dosierojn en la disko."
+   "Fermas RetroArch, konservante ĉiujn konservan datumon kaj konfigurdosierojn en la disko."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
@@ -3727,22 +3727,486 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    "Ebligas malrapidpluigo kiam tenate. Enhavo rulas je normala rapido kiam la klavo estas maltenata."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   "Revolvi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   "Revolvas la kurantan enhavon dum klavo estas tenata. La funkcio \"Subteni revolvadon\" debas esti ebligita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
+   "Paŭzi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
+   "Interŝanĝas enhavon inter statoj paŭzita kaj ne-paŭzita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
+   "Sekva filmero"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
+   "Antaŭenirigas enhavon je unu filmero dum paŭzita."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
+   "Silentigi sonon."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
+   "Interŝaltas sonan eligon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
+   "Pliigi laŭtecon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
+   "Pliigas nivelon de laŭteco de sona eligo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
+   "Malpliigi laŭtecon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
+   "Malpliigas nivelon de laŭteco de sona eligo."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+   "Ŝargi staton"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
+   "Ŝargas konservstaton de la kurante elektita spaco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   "Konservi staton"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   "Konservas staton en la kurante elektita spaco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
+   "Sekva konservstata spaco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
+   "Pliigas la indekson de la kurante elektita konservstata spaco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+   "Antaŭa konservstata spaco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
+   "Malpliigas la indekson de la kurante elektita konservstata spaco."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
+   "Elĵeti diskon (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
+   "Se virtuala diskpleto estas fermita, malfermas ĝin kaj forigas la ŝargitan diskon. Alikaze, insertas kurante elektitan diskon kaj fermas la pleton."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
+   "Sekva disko"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "Pliigas la indekson de la kurante elektita disko kaj faras prokrastitan insertadon se virtuala diskpleto estas fermita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
+   "Antaŭa disko"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   "Malpliigas la indekson de la kurante elektita disko kaj faras prokrastitan insertadon se virtuala diskpleto estas fermita."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "Ombrigiloj (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "Interŝaltas la kurante elektita ombrigilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
+   "Ombrigiloj (teni)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   "Tenas la kurante elektitan ombrigilon ŝaltita aŭ malŝaltita dum klavon estas tenata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
+   "Sekva ombrigilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   "Ŝargas kaj aplikas la sekvan antaŭagordan dosieron deo mbrigilo en la radiko de la dosierujo \"Videaj ombrigiloj\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
+   "Antaŭa ombrigilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
+   "Ŝargas kaj aplikas la antaŭan antaŭagordan dosieron de ombrigilo en la radiko de la dosierujo \"Videaj ombrigiloj\"."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
+   "Trompoj (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
+   "Interŝaltas la kurante elektitan trompon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
+   "Sekva trompa indekso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_PLUS,
+   "Pliigas la indekson de la kurante elektita trompo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
+   "Antaŭa trompa indekso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_MINUS,
+   "Malpliigas la indekson de la kurante elektita trompo."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   "Fari ekrankopion"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
+   "Kapti bildon de la kuranta enhavo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+   "Surbendigi (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
+   "Komencigas aŭ ĉesigas surbendigon de la kuranta sesio sur lokan videan dosieron."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+   "Elsendo (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
+   "Komencigas aŭ ĉesigas elsendon de la kuranta sesio al enreta videa platformo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   "Ludi reludon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
+   "Ludi reludan dosieron de la kurante elektita spaco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   "Surbendigi reludon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   "Surbendigi reludan dosieron sur la kurante elektitan spacon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "Halti surbendigon/reludadon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "Ĉesas surbendigon aŭ ludadon de kurantan reludadon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Konservi reludadan kontrolpunkton"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Estigas kontrolpunkton al la kurante ludata reludado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Antaŭa reludada kontrolpunkto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Revolvas la reludadon al la antaŭe aŭtomate aŭ permane konservita kontrolpunkto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Sekva reludada kontrolpunkto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Rapidpluigas la reludadon al la sekva aŭtomate aŭ permane konservita kontrolpunkto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Sekva reludada spaco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "Pliigas la inekson de la kurante elektita reludada spaco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Antaŭa reludada spaco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Malpliigas la indekson de la kurante elektita reludada spaco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
+   "Ada aktivigo (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
+   "Interŝaltas adan aktivigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
+   "Kapti muson (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
+   "Kaptas aŭ liberigas la muson. Kiam kaptita, la kursoro de la sistemo estas kaŝita kaj lokalizita en la fenestro de RetroArch, plibonigante la relativan musan enigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
+   "Koncentriĝi en ludo (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   "Interŝaltas la reĝimon \"Koncentriĝi en ludo\". Kiam oni koncentriĝas en enhavo, fulmoklavoj estas malebligita (la rulanta kerno ricevos ĉiujn enigojn de la klavaro) kaj la muso estas kaptita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Plenekrana (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Interŝanĝas inter plenekrana kaj enfenestra reĝimoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
+   "Labortabla menuo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
+   "Malfermas la uzantinterfacan labortablan helpilon WIMP (angla mallongigo por fenestroj, piktogramoj, menuoj kaj musmontrilo)."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Sinkronigi al ĝusta enhava filmer-ofteco (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Baskuligas sinkronigon al ĝusta enhava filmer-ofteco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   "Anticipi (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "Interŝaltas anticipadon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   "Antaŭtempaj filmeroj (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   "Interŝaltas antaŭtempaj filmeroj."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Apliki videan filtrilon (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Interŝaltas programaran \"Videan filtrilon\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+   "Montri FPS (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
+   "Interŝaltas statindikilo de \"filmeroj per sekundo\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Montri teĥnikajn statistikojn (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "Interŝaltas la montradon de surekranaj teĥnikaj statistikoj.**363"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
+   "Klavara surmetaĵo (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "Interŝaltas klavaran surmetaĵon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
+   "Sekva surmetaĵo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
+   "Ŝanĝas al la sekve disponebla aranĝo de la kurante aktiva enekrana surmetaĵo."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "AI-servo"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
+   "Kaptas bildon de kuranta enhavon por traduki kaj/aŭ legi laŭtvoĉe ajna enekrana teksto. \"AI-servo\" devas esti ebligita kaj konfigurita."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Retluda respondotempo (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Interŝaltas la respondotempan nombrilon por la kuranta retludejo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
+   "Gastigi retludon (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
+   "Interŝaltas gastigon de retludon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
+   "Retluda ludanta/spektanta reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
+   "Interŝanĝas kurantan retludan sesion inter reĝimoj \"ludanta\" kaj \"spektanta\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Retludanta babilejo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Sendas babilejan mesaĝon al la kuranta retluda sesio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Malaperigi retludan babilejon (baskuligi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Baskuli inter malaperantaj kaj statikaj retludaj babilejaj mesaĝoj."
+   )
 
 /* Settings > Input > Port # Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
+   "Speco de aparato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
+   "Specifas la specon de la imitata regilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+   "Speco de analoga al cifereca"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Uzi specifitan analogan stangon por direktokruca enigo. Reĝimoj \"devigi\" transpasas analogan enigon indiĝenan de la kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   "Asigni specifitan analogan stangon por la direktokruca enigo.\nSe kerno subtenas indiĝenan analogan, direktokruca asigno estos malebligita krom opcio \"(devigi)\" estas elektita.\nSe direktokruca asigno estas devigita, kerno ricevos nenian analogan enigon de la specifita stango."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
+   "Indekso de aparato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "La fizika regilo agnoskita de RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Aparato rezervita por ĉi tiu ludanto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Ĉi tiu regilo estos disponita por ĉi tiu ludanto, laŭ la rezerva reĝimo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "Sen rezervado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
+   "Rezervita"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   "Speco de rezervado de aparato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "Preferata: se specifita aparato ĉeestas, ĝi estos asignita al ĉi tiu ludanto. Rezervita: neniu alia regilo estos asignita al ĉi tiu ludanto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "Asignita konektejo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "Specifas la kernan konektejon, kiu ricevos enigojn de fasada regila konektejo %u."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
+   "Agordi ĉiujn regilojn"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Ada aktivigo"
@@ -3804,6 +4268,10 @@ MSG_HASH(
 
 /* Settings > Frame Throttle */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   "Revolvi"
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
@@ -4098,6 +4566,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Close"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   "Ludi reludon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAY_REPLAY,
+   "Ludi reludan dosieron de la kurante elektita spaco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   "Surbendigi reludon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   "Surbendigi reludan dosieron sur la kurante elektitan spacon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   "Halti surbendigon/reludadon"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
