@@ -23,7 +23,6 @@
 
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
-#include <string/stdstring.h>
 #include <asm-generic/errno.h>
 
 #include "../audio_driver.h"

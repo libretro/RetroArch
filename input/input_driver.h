@@ -32,10 +32,6 @@
 #include "../config.h"
 #endif /* HAVE_CONFIG_H */
 
-#if defined(_WIN32) && !defined(SOCKET)
-#include <winsock2.h>
-#endif
-
 #include "input_defines.h"
 #include "input_types.h"
 #ifdef HAVE_OVERLAY
@@ -318,6 +314,7 @@ struct input_keyboard_line
    input_keyboard_line_complete_t cb;
    size_t ptr;
    size_t size;
+   size_t capacity;  /* Allocated size of buffer (excluding NUL) */
    bool enabled;
 };
 
@@ -350,22 +347,22 @@ struct remote_message
    uint16_t state;
 };
 
-struct input_remote
-{
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#ifdef _WIN32
-   SOCKET net_fd[MAX_USERS];
-#else
-   int net_fd[MAX_USERS];
-#endif
-#endif
-   bool state[RARCH_BIND_LIST_END];
-};
-
 typedef struct
 {
    char display_name[NAME_MAX_LENGTH];
 } input_mouse_info_t;
+
+typedef struct
+{
+   int8_t source; /* RETRO_SENSOR_* ID to read from (0-5), -1 = unmapped */
+   int8_t sign;   /* +1 or -1 */
+} input_sensor_axis_t;
+
+typedef struct
+{
+   /* indexed by RETRO_SENSOR_ACCELEROMETER_X..RETRO_SENSOR_GYROSCOPE_Z */
+   input_sensor_axis_t axes[6];
+} input_sensor_map_t;
 
 typedef struct input_remote input_remote_t;
 
@@ -630,6 +627,7 @@ typedef struct
    input_remap_cache_t remapping_cache;
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
+   input_sensor_map_t input_sensor_map[MAX_INPUT_DEVICES];
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
    unsigned input_hotkey_block_counter;
@@ -645,8 +643,40 @@ typedef struct
 
    /* primitives */
    bool analog_requested[MAX_USERS];
+
+   /* Per-port joypad state bitmask cache.
+    * Populated lazily on the first JOYPAD query for each mapped_port
+    * within a frame, then reused for subsequent individual button
+    * queries to the same port.  Avoids up to 32 indirect
+    * joypad->button()/axis() calls per port when cores use the
+    * old per-button query pattern instead of JOYPAD_MASK.
+    * Invalidated at the start of each input_driver_poll(). */
+   int32_t joypad_state_cache[MAX_USERS];
+   bool    joypad_state_cache_valid[MAX_USERS];
+
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
+
+   /* Cached sensor values — written once per frame in input_driver_poll()
+    * on the main thread, read by shader backends on the video thread.
+    * Not formally synchronized; relies on single-writer/single-reader
+    * float stores being practically atomic on ARM/x86. Worst case is
+    * a single stale frame of sensor data. */
+   float sensor_gyroscope_cache[3];
+   float sensor_accelerometer_cache[3];
+
+   /* Accelerometer rest position capture state.
+    * Same thread-safety model as the caches above:
+    * written on the main thread, read by shader backends
+    * on the video thread. */
+   float sensor_accelerometer_rest[3];
+   float rest_accum[3];
+   unsigned rest_sample_count;
+   bool rest_capturing;
+   bool shader_uses_sensors;
+   bool frontend_sensors_enabled;
+   unsigned core_accel_rate; /* >0 means core wants accel at this rate */
+   unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
 } input_driver_state_t;
 
 
@@ -1073,14 +1103,23 @@ bool input_set_rumble_gain(unsigned gain);
 
 float input_get_sensor_state(unsigned port, unsigned id);
 
+void input_sensor_start_rest_capture(void);
+
 bool input_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate);
+
+/* Core-facing sensor callbacks that track core enable/disable state */
+bool input_core_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate);
+float input_core_get_sensor_state(unsigned port, unsigned id);
 
 void *input_driver_init_wrap(input_driver_t *input, const char *name);
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
 
 void input_config_reset_autoconfig_binds(unsigned port);
+
+const input_sensor_map_t *input_config_get_sensor_map(unsigned port);
 
 void input_config_reset(void);
 
@@ -1227,6 +1266,7 @@ extern input_device_driver_t qnx_joypad;
 extern input_device_driver_t mfi_joypad;
 extern input_device_driver_t dos_joypad;
 extern input_device_driver_t rwebpad_joypad;
+extern input_device_driver_t winraw_joypad;
 extern input_device_driver_t test_joypad;
 
 #ifdef HAVE_HID

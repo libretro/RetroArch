@@ -24,7 +24,6 @@
 #include <string.h>
 
 #include <zlib.h>
-#include <string/stdstring.h>
 #include <streams/trans_stream.h>
 
 struct zlib_trans_stream
@@ -121,9 +120,9 @@ static bool zlib_deflate_define(void *data, const char *prop, uint32_t val)
    if (!data)
       return false;
 
-   if (string_is_equal(prop, "level"))
+   if (strcmp(prop, "level") == 0)
       z->level = (int) val;
-   else if (string_is_equal(prop, "window_bits"))
+   else if (strcmp(prop, "window_bits") == 0)
       z->window_bits = (int) val;
    else
       return false;
@@ -137,7 +136,7 @@ static bool zlib_inflate_define(void *data, const char *prop, uint32_t val)
    if (!data)
       return false;
 
-   if (string_is_equal(prop, "window_bits"))
+   if (strcmp(prop, "window_bits") == 0)
    {
       z->window_bits = (int) val;
       return true;

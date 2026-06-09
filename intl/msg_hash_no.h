@@ -1108,20 +1108,12 @@ MSG_HASH(
    )
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Videodriveren som brukes."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
    "Gjeldende videodrivere."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "Lyd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Lyddriveren som brukes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
@@ -1131,10 +1123,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    "Mikrofon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Mikrofondriver som skal brukes."
    )
 #endif
 MSG_HASH(
@@ -1150,24 +1138,8 @@ MSG_HASH(
    "Kamera"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Kameradriveren som brukes."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Bluetoothdriveren som brukes."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Wi-Fi driveren som brukes."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Posisjon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Posisjonsdriveren som brukes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1188,14 +1160,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Opptak"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Opptaksdriveren som brukes."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "MIDIdriveren som brukes."
    )
 
 /* Settings > Video */
@@ -1437,10 +1401,6 @@ MSG_HASH(
    "Vertikal oppdateringsrate"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikal oppdateringsrate på skjermen. Brukes til å kalkulere en passende lydinndata rate.\nDette vil bli ignorert hvis \"Trådet Video\" er aktivert."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Estimert oppdateringsrate for skjermen"
    )
@@ -1674,14 +1634,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Maks luminans"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Papirhvit luminans"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -1835,10 +1787,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Maks antall brukere"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Maksimalt antall brukere som støttes av RetroArch."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
@@ -2580,16 +2528,8 @@ MSG_HASH(
    "Vis 'Fortsett'"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Vis \"Omstart\""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Vis \"Lukk innhold\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Vis 'Lukk innhold' alternativet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -2798,10 +2738,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
    "Synlighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Viser informasjon om spillet som lastes og brukerens nåværende fremdrift.\n'Alle identifiserte spill' vil vise sammendrag for spill uten publiserte prestasjoner."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -3097,6 +3033,9 @@ MSG_HASH(
    "Facebook Spilll strømmingsnøkkel"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -3233,10 +3172,6 @@ MSG_HASH(
    "Skann fil"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Manuell skanning"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Skann"
    )
@@ -3244,16 +3179,8 @@ MSG_HASH(
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Mappe for innhold"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Systemnavn"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Standard kjerne"
@@ -3424,10 +3351,6 @@ MSG_HASH(
    "Lag ny spilleliste"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Lag en ny spilleliste og legg til den gjeldende oppføringen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Informasjon"
    )
@@ -3467,6 +3390,10 @@ MSG_HASH( /* FIXME Unused? */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
    "Gjenoppta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+   "Nullstill"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -4807,6 +4734,7 @@ MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Video modusen støttes ikke"
    )
+
 
 /* Lakka */
 

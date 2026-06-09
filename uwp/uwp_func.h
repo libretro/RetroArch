@@ -30,6 +30,8 @@ bool is_running_on_xbox(void);
 
 int uwp_get_height(void);
 int uwp_get_width(void);
+float uwp_get_refresh_rate(void);
+float uwp_get_dpi(void);
 
 void uwp_input_next_frame(void *data);
 bool uwp_keyboard_pressed(unsigned key);

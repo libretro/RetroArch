@@ -232,6 +232,14 @@ MSG_HASH(
    "Tanca el RetroArch. La configuració es desarà en sortir."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Tanca el RetroArch. La configuració no es desarà en sortir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Tanca el RetroArch. Matar el programa de manera forçada (amb SIGKILL, etc.) finalitzarà el RetroArch sense desar la configuració. En sistemes Unix, SIGINT/SIGTERM permet un tancament net, el que inclou que es desi la configuració si està activat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Sincronitza ara"
    )
@@ -254,14 +262,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Resol tots els conflictes descarregant els fitxers del servidor i reemplaça els fitxers locals."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Tanca el RetroArch. La configuració no es desarà en sortir."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Tanca el RetroArch. Matar el programa de manera forçada (amb SIGKILL, etc.) finalitzarà el RetroArch sense desar la configuració. En sistemes Unix, SIGINT/SIGTERM permet un tancament net, el que inclou que es desi la configuració si està activat."
    )
 
 /* Main Menu > Load Core */
@@ -1127,6 +1127,26 @@ MSG_HASH(
    "La contrasenya del teu compte d'emmagatzematge al núvol."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID de la clau d'accés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "La teva clau d'accés ID per l'emmagatzematge al núvol."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Codi de la clau d'accés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "El teu codi de la clau d'accés per l'emmagatzematge al núvol."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "El teu punt final d'adreça web S3 per emmagatzematge al núvol."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Registres"
    )
@@ -1425,7 +1445,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Controlador de vídeo que es farà servir."
+   "Controlador de vídeo que es farà servir (cal reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1525,7 +1545,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Controlador d'àudio que es farà servir."
+   "Controlador d'àudio que es farà servir (cal reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1586,7 +1606,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Controlador de micròfon que es farà servir."
+   "Controlador de micròfon que es farà servir (cal reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1627,15 +1647,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Controlador de càmera que es farà servir."
+   "Controlador de càmera que es farà servir (cal reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Controlador Bluetooth que es farà servir."
+   "Controlador de bluetooth que es farà servir (cal reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Controlador Wi-Fi que es farà servir."
+   "Controlador de wifi que es farà servir (cal reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1643,7 +1663,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Controlador d'ubicació que es farà servir."
+   "Controlador de localització que es farà servir (cal reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1675,11 +1695,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Controlador d'enregistrament que es farà servir."
+   "Controlador d'enregistrament que es farà servir (cal reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Controlador MIDI que es farà servir."
+   "Controlador MIDI que es farà servir (cal reiniciar)"
    )
 
 /* Settings > Video */
@@ -1735,6 +1755,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Canvia les opcions de sincronització de vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Aplica el filtre de vídeo: És una petició que el controlador de vídeo no té per què respectar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Activa el filtre de vídeo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -2030,7 +2058,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Freqüència d'actualització vertical de la pantalla. S'usa per a calcular una freqüència d'àudio adient.\nS'ignorarà si s'activa «Vídeo multifil»."
+   "Freqüència d'actualització vertical de la pantalla. S'usa per a calcular una freqüència d'àudio adient. S'ignorarà si s'activa «Vídeo multifil»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2400,27 +2428,27 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "Selecciona el mode de sortida HDR si la pantalla el suporta."
+   "Estableix el mode de sortida HDR si el teu monitor en té l'opció. Nota: el mode sRGB pot aclarir les màscares de shaders CRT perquè en compondre les imatges per part del sistema operatiu, es converteix la imatge a HDR10 després d'aplicar la màscara."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    "Apagat"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Pic de luminància"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Brillantor"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Configura la luminància màxima (en cd/m2) que el teu monitor pot reproduir. Un cop hagis escollit un valor, no el canviïs. Ajusta la brillantor mitjançant la lluminositat del blanc. Per saber el quina és la luminància màxima del teu monitor, visita RTings. En els monitors que tinguin activades les línies d'escombrat, cal que augmentis aquest valor, per augmentar la brillantor."
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Brillantor del menú en cd/m2 (nits) quan es fa servir una pantalla HDR. Només està disponible si s'ha activat l'opció HDR en el menú Configuració > Vídeo > HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminància de blancs"
+   "Brillantor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Quan hagis fixat la luminància màxima, es farà aquest valor per configurar la brillantor estàndard. Tècnicament, estableix la luminància amb el blanc d'un full de paper amb text llegible, o la luminància màxima del rang SDR."
+   "Selecciona el nivell de brillantor de HDR en nits. Es fa servir en combinació de la configuració de brillantor del teu monitor. Pots començar per seleccionar un valor de 80 i posar la brillantor del teu monitor al màxim. O també pots posar el valor màxim i ajustar la brillantor del teu monitor fins que es vegi bé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2495,6 +2523,14 @@ MSG_HASH(
    "La sincronització vertical roman activa fins que el rendiment cau per davall de la freqüència d'actualització establerta. Pot minimitzar l'entretallament quan el rendiment cau per davall del temps real, i pot ser més energèticament eficient. No és compatible amb 'Retard de fotogrames'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Sincronització Scanline"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "Sincronitza el vídeo per la posició Scanline. Redueix la latència a costa d'augmentar el risc d'estrebades. La sincronització vertical ha d'estar desactivada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Retard dels fotogrames"
    )
@@ -2517,6 +2553,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Intentar mantenir el desfasament de fotogrames objectiu i minimitzar els fotogrames perduts. Si el desfasament de fotogrames està establert a 0 (automàtic), el punt de partida serà de 3/4 parts de la duració dels fotogrames."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Temps de fotograma de mostra només en estat estable"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Restringeix el mostreig de la \"Freqüència d'actualització de pantalla estimada\" als fotogrames on el contingut s'executa correctament (no és de menú, no està en pausa, no s'avança ràpidament, el temps del fotograma està dins d'un envoltant de sanitat). La lectura de diagnòstic esdevé un senyal real a costa d'una convergència més lenta després de la càrrega del contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2714,6 +2758,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "Mida (en fotogrames) de la memòria intermèdia quan s’usa el controlador WASAPI en mode compartit."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "Obre el panell de configuració de ASIO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Obre el panell de configuració de ASIO per configurar el dispositiu d'encaminament i la memòria intermèdia."
    )
 
 /* Settings > Audio > Output */
@@ -3038,7 +3090,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "El número màxim d'usuaris suportat per RetroArch."
+   "Nombre màxim d'usuaris suportat per RetroArch (cal reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3181,8 +3233,36 @@ MSG_HASH(
    "Ajusta la sensibilitat de l'acceleròmetre."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Sensor d'orientació"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Gira els eixos de l'acceleròmetre i el giroscòpi per coincidir amb l'orientació del dispositiu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automàtic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_0,
+   "0º"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_90,
+   "90º"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_180,
+   "180º"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_270,
+   "270º"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Ajusta la sensibilitat del giroscopi."
+   "Ajusta la sensibilitat del giroscopi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3324,6 +3404,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Canvia les opcions de vibració i resposta hàptica."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Sensors de moviment i llum"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Canvia la configuració de l'acceleròmetre, giroscopi i il·luminació."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -3956,6 +4044,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Aplica el filtre de vídeo (alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Canvia l'estat de funcionament el programari 'Video Filter'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Mostra els FPS (commuta)"
    )
@@ -4489,6 +4585,18 @@ MSG_HASH(
    "Desa els canvis al fitxer de configuració en sortir. Això és útil pels canvis fets en el menú. Sobreescriu el fitxer de configuració, #include's i comentaris no es desen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "Desa la configuració mínima"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Desa només la configuració que difereix de la predeterminada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "Quan s'activa, només desa els valors de configuració que han canviat respecte els valors predeterminats. S'aconsegueix un fitxer de configuració més petit i manipulable."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "Desa els fitxers d'assignació en sortir"
    )
@@ -4594,6 +4702,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Desa automàticament la memòria no volàtil SRAM de manera regular. L'interval es mesura en segons. Si assignes un valor de 0, el desat es desactiva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Estat desat: Interval automàtic"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Desa automàticament un estat a intervals regulars (en segons). Estableix a 0 per desactivar-ho."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Desa automàticament un estat a intervals regulars, mesurats en segons. Això és útil per crear còpies de seguretat periòdiques del teu progrés en el joc, en especial en dispositius que fallen de manera inesperada a causa de la bateria o altres problemes. Estableix a 0 per desactivar-ho."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
@@ -4870,8 +4990,16 @@ MSG_HASH(
    "Fes servir el reproductor integrat"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Mostra els fitxers que son compatibles amb el reproductor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Fes servir el visualitzador d’imatges integrat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Mostra les imatges que son compatibles amb l'explorador de fitxers."
    )
 
 /* Settings > Frame Throttle */
@@ -4890,7 +5018,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Canvia les opcions del comptador de duració de fotogrames.\nNomés en funcionament quan estigui desactivat el vídeo multifil."
+   "Canvia les opcions del comptador de duració de fotogrames.Només en funcionament quan estigui desactivat el vídeo multifil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -4967,28 +5095,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reiniciar després d'utilitzar l'avançament ràpid"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Fes un reinici automàtic després d'un event disruptiu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reinicia el comptador de duració de fotogrames després d'un avançament ràpid."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reiniciar després de carregar un desat ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reinicia el comptador de duració de fotogrames després de carregar un estat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reiniciar després de generar un desat ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reinicia el comptador de duració de fotogrames després de desar un estat."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Esborra la memòria intermèdia de mostres de la \"Freqüència d'actualització de pantalla estimada\" després d'avançar ràpidament, desar o carregar. Aquestes operacions introdueixen mostres de temps que no reflecteixen la cadència normal dels fotogrames i distorsionarien la mesura de la desviació. Neteja optimitzada; no té cap efecte quan l'opció \"Només temps de fotogrames de mostra en estat estable\" està habilitada (cosa que evita la contaminació a l'origen)."
    )
 
 /* Settings > Recording */
@@ -5639,6 +5751,14 @@ MSG_HASH(
    "El comptador de memòria en pantalla s'actualitzarà a la velocitat assignada a fotogrames."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Mostra l'hora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Mostra el temps actual en el format preferit."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Mostra el ping del joc en línia"
    )
@@ -6274,7 +6394,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Mostra el menú «Joc en xarxa»."
+   "Mostra l'entrada 'Joc en xarxa' dins del menú principal o de les llistes de reproducció."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6392,6 +6512,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Mostra informació addicional pels elements del menú."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Mostra missatge de confirmació"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Pregunta per confirmació abans de sortir, reiniciar o tancar el contingut. Si està desactivat, aquestes accions seran immediates."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Mostra la pantalla inicial"
@@ -6413,11 +6541,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Mostra “Reinicia”"
+   "Mostra 'Reiniciar'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Mostra l’opció de reiniciar el contingut."
+   "Mostra l'opció de reiniciar el contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -6425,7 +6553,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Mostra l’opció “Tanca el contingut”."
+   "Mostra l'opció de tancar el contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -6457,7 +6585,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostra les opcions per desfer el desament o càrrega d’estat."
+   "Mostra les opcions per desfer el guardat/carregat d'estats. Si ocultes aquesta opció, podràs desfer els desats o carregats ràpids clicant a RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7169,7 +7297,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Mostra informació sobre el joc que s'està carregat i del progrés de l'usuari.\n'Tots els jocs identificats' mostrarà el resum d'aquells jocs que no tenen assoliments publicats."
+   "Mostra informació sobre el joc que s'està carregat i del progrés de l'usuari. 'Tots els jocs identificats' mostrarà el resum d'aquells jocs que no tenen assoliments publicats."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7646,7 +7774,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Especifica si cal associar elements de la llista de reproducció amb el nucli actual (si existeix).\nAquesta opció s'ignorarà si les subetiquetes a les llistes estan actives."
+   "Especifica si cal associar elements de la llista de reproducció amb el nucli actual (si existeix). Aquesta opció s'ignorarà si les subetiquetes a les llistes estan actives."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7754,7 +7882,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Escull quin tipus de registre del temps de joc es mostra a la llista de reproducció. \nCal activar el registre dins de la configuració."
+   "Escull quin tipus de registre del temps de joc es mostra a la llista de reproducció. Cal activar el registre dins de la configuració."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7873,7 +8001,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Afegeix nou contingut i elimina entrades invàlides amb l'opció 'Escaneig manual'."
+   "Afegeix nou contingut i elimina entrades no vàlides repetint l'última cerca per crear o editar la llista de reproducció."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -7939,7 +8067,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Permet que l'app Discord mostri més informació sobre el contingut que s'està executant. \nNomés funcionarà amb el client d'escriptori de Discord."
+   "Permet que l'app Discord mostri més informació sobre el contingut que s'està executant. Només funcionarà amb el client d'escriptori de Discord."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -7999,6 +8127,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Clau de retransmissió de Facebook Gaming"
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Clau de transmissió de Kick"
    )
 
 /* Settings > Directory */
@@ -8329,7 +8464,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Afegeix aquesta pista d'àudio a un espai de seqüències d'àudio.\nSi no hi ha espai disponible, s'ignorarà."
+   "Afegeix aquesta pista d'àudio a un espai de seqüències d'àudio. Si no hi ha espai disponible, s'ignorarà."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8337,7 +8472,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Afegeix aquesta pista d'àudio a un espai de seqüències d'àudio i reprodueix-la.\nSi no hi ha espai disponible, s'ignorarà."
+   "Afegeix aquesta pista d'àudio a un espai de seqüències d'àudio i reprodueix-la. Si no hi ha espai disponible, s'ignorarà."
    )
 
 /* Netplay */
@@ -8454,11 +8589,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Cerca manual"
+   "Cerca de continguts"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Cerca configurable basada en noms de fitxer de contingut. No cal que el contingut coincideixi amb la base de dades."
+   "Configura la cerca en funció del contingut del nom del fitxer i/o de les coincidències a la base de dades."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
@@ -8524,31 +8659,31 @@ MSG_HASH(
    "Afegir a la mescla i reproduir"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Directori de contingut"
+   "Ubicació del contingut"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "Selecciona un directori on cercar continguts."
+   "Selecciona una carpeta (o fitxer) per escanejar-ne el contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Nom del sistema"
+   "Llista de reprodució objectiu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Especifica un «nom de sistema» amb el qual associar els continguts trobats. Es fa servir per donar nom a la llista de reproducció generada i per identificar-ne les miniatures."
+   "Nom de la llista de reproducció generada, també es fa servir per identificar les miniatures de la llista de reproducció. La configuració automàtica farà servir el mateix nom que la coincidència a la base dades o el nom de la carpeta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Nom de sistema personalitzat"
+   "Nom de la llista de reproducció predeterminada"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Especifica manualment un «nom de sistema» pels continguts trobats. Només es fa servir quan el «Nom de sistema» és «<Personalitzat>»."
+   "Nom de la llista de reproducció predeterminada pel contingut analitzat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
@@ -8849,7 +8984,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Afegeix el contingut a una llista de reproducció."
+   "Afegeix el contingut a la llista de reproducció."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -8857,7 +8992,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Crea una nova llista de reproducció i afegeix aquest element a la nova llista."
+   "Crea una nova llista de reproducció i afegeix aquest contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8881,7 +9016,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Visualitza més informació sobre el contingut."
+   "Mostra més informació sobre aquest contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -8889,7 +9024,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Baixa imatges de captures de pantalla/art de la capsa/pantalla de títol pel contingut actual. Actualitza les miniatures existents."
+   "Descarrega miniatures per aquest contingut. Actualitza les imatges existents."
    )
 
 /* Playlist Item > Set Core Association */
@@ -8942,11 +9077,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Reinicia"
+   "Reiniciar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Reinicia el contingut des de l'inici."
+   "Activa el reinici per programari. Clica el botó Start en el RetroPad per activar el reinici complet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9327,8 +9462,8 @@ MSG_HASH(
    "Comença o continua la cerca de trucs"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Escaneja la memòria per trobar nous trucs."
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "Escaneja la memòria cercant nous trucs."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -9351,6 +9486,10 @@ MSG_HASH(
    "Torna a carregar els trucs específics del joc"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Recarrega tots els trucs existents."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Anomena i desa el fitxer de trucs"
    )
@@ -9363,12 +9502,24 @@ MSG_HASH(
    "Afegeix un nou truc a la part superior"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Sobreposa un truca a la llista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Afegeix un nou truc al final"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Afegeix un truc a la llista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Elimina tots els trucs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Buida la llista de trucs."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9408,6 +9559,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
    "Clica esquerra o dreta per canviar la mida en bits."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
+   "Big Endian: 258 = 0x0102\nLittle Endian: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -9683,6 +9838,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Selecciona un nou disc del sistema de fitxers i afegeix-lo a la llista."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    "Selecciona un nou disc del sistema de fitxers i adjunta-ho a la llista d'índexs.\nNOTA: Aquesta és una opció heretada. Es recomana fer servir llistes M3U per títols que fan servir varis discs."
    )
 
@@ -11357,6 +11516,14 @@ MSG_HASH(
    "Selecciona un tema d'icones per RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Icones d'entrada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Mostra icones en les entrades de menú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    "Icones d'interruptors"
    )
@@ -11407,6 +11574,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
    "Factor d’esvaïment vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Mostra la llista horitzontal"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
@@ -11649,6 +11820,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
    "Manté la barra lateral sempre replegada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Mostra la barra lateral"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Permet la navegació per la barra lateral esquerra i les llistes de reproducció."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -12589,10 +12768,6 @@ MSG_HASH(
    "Comptadors dels nuclis"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "No heu seleccionat cap disc"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Comptadors de la interfície"
    )
@@ -12911,10 +13086,6 @@ MSG_HASH(
    "No s'ha introduït arguments i no hi ha menú integrant, mostrant ajuda..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Introduint disc a la safata"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Esperant al client..."
    )
@@ -13220,14 +13391,6 @@ MSG_HASH(
    "S'ha restablert l'associació del nucli amb l'element de la llista."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disc afegit"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Error en afegir el disc"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Directori de l’aplicació"
    )
@@ -13396,14 +13559,6 @@ MSG_HASH(
    "Desconnecta el dispositiu d’un port vàlid."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "S’ha tancat la safata de disc virtual."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "S’ha expulsat la safata de disc virtual."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "S’està baixant"
    )
@@ -13554,10 +13709,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "No s’han pogut rebre les dades de SRAM de l’amfitrió."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "No s’ha pogut treure el disc de la safata."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13936,10 +14087,6 @@ MSG_HASH(
    "Totes les opcions d'entrada han sigut restablertes."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Disc eliminat de la safata."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Eliminant el contingut temporal"
    )
@@ -14165,7 +14312,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Desfer desat ràpid"
+   "Desfer desat ràpid..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -14206,14 +14353,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Error en calcular la mida de l'àrea de visualització! Se seguirà calculant amb les dades en brut. És possible que hi hagi errors..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Error en obrir la safata de discs virtual."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Error en tancar la safata de discs virtual."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14448,6 +14587,10 @@ MSG_HASH(
    "S’han suprimit tots els trucs."
    )
 MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "S'han recarregat tots els trucs."
+   )
+MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,
    "S’ha afegit un nou truc abans d’aquest."
    )
@@ -14468,8 +14611,48 @@ MSG_HASH(
    "S’ha suprimit el truc."
    )
 MSG_HASH(
+   MSG_DISK_CLOSED,
+   "S’ha tancat la safata de disc virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Error en tancar la safata de discs virtual."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "S’ha expulsat la safata de disc virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Error en obrir la safata de discs virtual."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Disc eliminat de la safata."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "No s’ha pogut treure el disc de la safata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "No heu seleccionat cap disc"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disc afegit"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Error en afegir el disc"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Introduint disc a la safata"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Error en seleccionar el disc."
+   "Error en seleccionar el disc"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14819,6 +15002,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "S'ha canviat la freqüència d'actualització a %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Filtre de vídeo: Activat"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Filtre de vídeo: Desactivat"
+   )
+
 
 /* Lakka */
 

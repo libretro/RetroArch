@@ -232,16 +232,24 @@ MSG_HASH(
    "Abandona la aplicación RetroArch. La opción «Guardar configuración al salir» está activada."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Abandona la aplicación RetroArch. La opción «Guardar configuración al salir» está desactivada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Abandona RetroArch. Si cierras RetroArch de cualquier forma brusca (SIGKILL, etc.) no se guardará la configuración bajo ninguna circunstancia. En sistemas Unix, SIGINT/SIGTERM permite un cierre limpio, lo que guardará la configuración si la opción «Guardar configuración al salir» está activada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Sincronizar ahora"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   "Inicia manualmente la sincronización en la nube."
+   "Sincroniza los datos con la nube manualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
-   "Resolver conflictos: conservar archivos locales"
+   "Resolución de conflictos: conservar archivos locales"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
@@ -249,19 +257,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
-   "Resolver conflictos: conservar archivos del servidor"
+   "Resolución de conflictos: conservar archivos del servidor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Resuelve todos los conflictos descargando los archivos del servidor, reemplazando las copias locales."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Abandona la aplicación RetroArch. La opción «Guardar configuración al salir» está desactivada."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Abandona RetroArch. Si cierras RetroArch de cualquier forma brusca (SIGKILL, etc.) no se guardará la configuración bajo ninguna circunstancia. En sistemas Unix, SIGINT/SIGTERM permite un cierre limpio, lo que guardará la configuración si la opción «Guardar configuración al salir» está activada."
    )
 
 /* Main Menu > Load Core */
@@ -1131,6 +1131,30 @@ MSG_HASH(
    "La contraseña de tu cuenta de almacenamiento en la nube."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID de clave de acceso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "El ID de la clave de acceso de tu cuenta de almacenamiento en la nube."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Clave de acceso secreta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "La clave de acceso secreta de tu cuenta de almacenamiento en la nube."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   "URL de S3"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "La dirección URL del punto de conexión S3 de tu almacenamiento en la nube."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Registros"
    )
@@ -1433,7 +1457,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Selecciona el controlador de vídeo que se utilizará."
+   "Selecciona el controlador de vídeo que se utilizará (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1529,7 +1553,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Selecciona el controlador de audio que se utilizará."
+   "Selecciona el controlador de audio que se utilizará (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1590,7 +1614,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Selecciona el controlador de micrófono que se utilizará."
+   "Selecciona el controlador de micrófono que se utilizará (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1631,11 +1655,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Selecciona el controlador de cámara que se utilizará."
+   "Selecciona el controlador de cámara que se utilizará (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Selecciona el controlador de Bluetooth que se utilizará."
+   "Selecciona el controlador de Bluetooth que se utilizará (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
@@ -1643,7 +1667,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Selecciona el controlador de wifi que se utilizará."
+   "Selecciona el controlador de wifi que se utilizará (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1651,7 +1675,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Selecciona el controlador de ubicación que se utilizará."
+   "Selecciona el controlador de ubicación que se utilizará (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1683,11 +1707,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Selecciona el controlador de grabación que se utilizará."
+   "Selecciona el controlador de grabación que se utilizará (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Selecciona el controlador de MIDI que se utilizará."
+   "Selecciona el controlador de MIDI que se utilizará (es necesario reiniciar)."
    )
 
 /* Settings > Video */
@@ -1743,6 +1767,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Cambia los ajustes de sincronización de vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Aplica el filtro de vídeo. Es posible que el controlador de vídeo no respete este ajuste."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Activar filtro de vídeo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -2038,7 +2070,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Ajusta la frecuencia de actualización vertical de tu pantalla para calcular la velocidad de audio.\nEste valor se ignorará si la opción «Vídeo multihilo» está activada."
+   "Ajusta la frecuencia de actualización vertical de tu pantalla para calcular la velocidad de audio. Este valor se ignorará si la opción «Vídeo multihilo» está activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2408,27 +2440,27 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "Establece el modo de salida HDR, si tu pantalla es compatible."
+   "Establece el modo de salida HDR, si tu pantalla es compatible. Nota: el modo scRGB podría aclarar las máscaras de shaders CRT porque el compositor del SO convierte la imagen a HDR10 una vez se ha aplicado la máscara."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    "Desactivar"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Luminancia máxima"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Brillo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Establece la luminancia máxima (en cd/m²) que puede reproducir tu monitor. Una vez hayas elegido una configuración, no la cambies. Ajusta el brillo mediante la luminosidad de blanco «papel». Para averiguar cuál es la luminancia máxima de tu monitor, visita la web RTings. En aquellas pantallas que tengan activadas las línea de barrido (más abajo), es posible que necesites aumentar este valor (y el del blanco «papel») para poder aumentar el brillo."
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Establece el brillo del menú en cd/m² (nits) al usar una pantalla compatible con HDR. Solo hará efecto si se activa el modo HDR en Ajustes > Vídeo > HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminosidad de blanco «papel»"
+   "Brillo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Una vez hayas configurado la luminancia máxima, utiliza esta opción como ajuste de brillo estándar. Técnicamente, establece la luminancia con la que el blanco de una hoja de papel tendría un texto legible, o la luminancia máxima del rango SDR (rango dinámico estándar)."
+   "Establece el nivel de brillo del HDR en nits. Debes combinar este valor con los ajustes físicos de brillo de tu pantalla. Un punto de partida sería elegir 80 aquí y poner el brillo de la pantalla al máximo. Por otro lado, puedes elegir aquí el número máximo de nits que admite tu pantalla y luego bajar el brillo de la misma hasta llegar al punto adecuado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2503,6 +2535,14 @@ MSG_HASH(
    "La sincronía vertical se mantendrá activada hasta que el rendimiento sea inferior al necesario para mantener la frecuencia de actualización de la pantalla. Puede reducir los tirones provocados al caer el rendimiento por debajo de la velocidad real y mejorar la eficiencia energética. Esta opción no es compatible con el retraso de fotogramas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Sincronizar con líneas de barrido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "Sincroniza la presentación de la imagen con la posición de las líneas de barrido. Reduce la latencia a costa de aumentar las fragmentaciones en la imagen. Es necesario desactivar la sincronía vertical (Vsync)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Retraso de fotogramas"
    )
@@ -2525,6 +2565,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Intenta mantener el retraso de fotogramas objetivo y minimizar la pérdida de fotogramas. Si el retraso de fotogramas es 0 (automático), el punto de partida será un 75 % de la duración de fotogramas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Muestrear duración de fotogramas solo en situaciones estables"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Limita la toma de muestras de la opción Frecuencia estimada del monitor a aquellos fotogramas en los que el contenido se esté ejecutando de forma limpia (fuera de menús, sin estar pausado, sin usar el avance rápido... Una duración en una situación normal). La lectura del diagnóstico será más precisa a costa de una convergencia más lenta nada más cargar un contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2722,6 +2770,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "Asigna el tamaño del búfer intermedio (en fotogramas) al usar el controlador WASAPI en modo compartido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "Abrir panel de control de ASIO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Abre el panel de control del controlador ASIO para configurar el enrutado de dispositivos y los búferes."
    )
 
 /* Settings > Audio > Output */
@@ -3042,7 +3098,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Indica el número máximo de usuarios que puede tener RetroArch."
+   "Establece el número máximo de usuarios que puede tener RetroArch (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3185,8 +3241,20 @@ MSG_HASH(
    "Ajusta la sensibilidad del acelerómetro."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Orientación de sensores"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Rota los ejes del acelerómetro y del giroscopio para que coincidan con la orientación del dispositivo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automático"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Ajusta la sensibilidad del giroscopio."
+   "Ajusta la sensibilidad del giroscopio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3328,6 +3396,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Cambia los ajustes de la respuesta háptica y la vibración."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Sensores de movimiento y luz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Cambia las opciones del acelerómetro, del giroscopio y de iluminación."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -3960,6 +4036,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Aplicar filtro de vídeo (alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Activa o desactiva el filtro de vídeo por software."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Mostrar FPS (alternar)"
    )
@@ -4285,7 +4369,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
-   "Mantén durante"
+   "Mantener pulsación"
    )
 
 /* Settings > Latency */
@@ -4493,6 +4577,18 @@ MSG_HASH(
    "Guarda los cambios en el archivo de configuración en disco al salir. Ideal para cualquier cambio que hagas en el menú. Sobrescribirá el archivo de configuración existente sin preservar los #include y los comentarios."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "Guardar configuración mínima"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Guarda únicamente aquellos ajustes que hayan cambiado respecto a los valores predeterminados."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "Al activar esta opción, se guardarán solo aquellos valores de los ajustes que hayan cambiado respecto a sus valores predeterminados. Producirá un archivo de configuración más pequeño y manejable."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "Guardar archivos de reasignación al salir"
    )
@@ -4598,6 +4694,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Guarda automáticamente la memoria no volátil SRAM a intervalos regulares (en segundos). Esta función se desactiva seleccionando 0."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Guardados rápidos: intervalo de guardados automáticos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Crea automáticamente guardados rápidos a intervalos regulares (en segundos). Introduce 0 para desactivar esta opción."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Crea guardados rápidos automáticamente a intervalos regulares (en segundos). Ideal para crear copias de seguridad de los avances de tus partidas, sobre todo en aquellos dispositivos que puedan cerrarse inesperadamente por quedarse sin batería o por otros problemas. Esta función se desactiva seleccionando 0."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
@@ -4878,8 +4986,16 @@ MSG_HASH(
    "Usar visor de medios integrado"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Muestra en el explorador de archivos los archivos compatibles con el visor de medios."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Usar visor de imágenes integrado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Muestra en el explorador de archivos los archivos compatibles con el visor de imágenes."
    )
 
 /* Settings > Frame Throttle */
@@ -4898,7 +5014,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Cambia los ajustes del contador de duración de fotogramas.\nEste valor solo hará efecto al desactivar el vídeo multihilo."
+   "Cambia los ajustes del contador de duración de fotogramas. Este valor solo hará efecto al desactivar el vídeo multihilo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -4975,28 +5091,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reiniciar tras usar avance rápido"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Autoreiniciar tras producirse disrupciones"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reinicia el contador de duración de fotogramas al usar el avance rápido."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reiniciar tras cargar un guardado rápido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reinicia el contador de duración de fotogramas al cargar un guardado rápido."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reiniciar tras generar un guardado rápido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reinicia el contador de duración de fotogramas al generar un guardado rápido."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Borra el búfer de muestras de la opción Frecuencia estimada del monitor tras utilizar el avance rápido, guardar o cargar rápidamente. Estas operaciones introducen muestras que no reflejan la cadencia de fotogramas normal y alterarían la medición. Es una limpieza de esfuerzo razonable, no surtirá efecto si la opción Muestrear duración de fotogramas solo en situaciones estables está activada (opción que evita la contaminación en su origen)."
    )
 
 /* Settings > Recording */
@@ -5647,6 +5747,14 @@ MSG_HASH(
    "El contador de consumo de memoria en pantalla se actualizará a la velocidad asignada en fotogramas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Mostrar hora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Muestra la hora actual en el formato preferido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Mostrar latencia de red"
    )
@@ -6286,7 +6394,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Muestra el menú Juego en red."
+   "Muestra la opción Juego en red dentro del menú principal o en las listas de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6404,6 +6512,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Muestra información adicional sobre los elementos del menú."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Mostrar ventanas de confirmación"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Pide confirmación para salir, reiniciar o cerrar un contenido. Si desactivas esta opción, estas acciones se llevarán a cabo de forma inmediata."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Mostrar pantalla de inicio"
@@ -6437,7 +6553,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Muestra la opción «Cerrar contenido»."
+   "Muestra la opción que permite cerrar el contenido actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -6469,7 +6585,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Muestra las opciones para deshacer los guardados rápidos y las cargas rápidas."
+   "Muestra las opciones para deshacer los guardados rápidos y las cargas rápidas. Si se oculta esta opción, puedes deshacer los guardados o cargas pulsando RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7181,7 +7297,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Muestra información sobre el juego que se está cargando y el progreso actual del usuario.\n«Todos los juegos identificados» mostrará el resumen de aquellos juegos que no tengan logros publicados."
+   "Muestra información sobre el juego que se está cargando y el progreso actual del usuario. «Todos los juegos identificados» mostrará el resumen de aquellos juegos que no tengan logros publicados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7658,7 +7774,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Indica si se deben asociar elementos de las listas de reproducción con el núcleo actual asociado (si existe).\nEste ajuste se ignorará si se activan las subetiquetas en las listas."
+   "Indica si se deben asociar elementos de las listas de reproducción con el núcleo actual asociado (si existe). Este ajuste se ignorará si se activan las subetiquetas en las listas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7766,7 +7882,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Selecciona el tipo de registro del tiempo de juego que se mostrará en las subetiquetas de las listas de reproducción.\nEs necesario activar el registro correspondiente dentro de las opciones de Guardado."
+   "Selecciona el tipo de registro del tiempo de juego que se mostrará en las subetiquetas de las listas de reproducción. Es necesario activar el registro correspondiente dentro de las opciones de Guardado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7885,7 +8001,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Añade contenidos nuevos y elimina los elementos no válidos repitiendo la última operación de búsqueda manual con la que se creó o modificó la lista de reproducción."
+   "Añade contenidos nuevos y elimina los elementos no válidos repitiendo la última búsqueda de contenidos con la que se creó o modificó la lista de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -7947,7 +8063,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Permite que la aplicación Discord pueda mostrar más información sobre el contenido que estés ejecutando.\nSolo funcionará con el cliente de escritorio de Discord."
+   "Permite que la aplicación Discord pueda mostrar más información sobre el contenido que estés ejecutando. Solo funcionará con el cliente de escritorio de Discord."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8007,6 +8123,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Clave de transmisión de Facebook Gaming"
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Clave de transmisión de Kick"
    )
 
 /* Settings > Directory */
@@ -8337,7 +8460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Agrega esta pista de audio a un espacio de secuencias de audio.\nSi no hay espacios disponibles, se ignorará."
+   "Agrega esta pista de audio a un espacio de secuencias de audio. Si no hay espacios disponibles, se ignorará."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8345,7 +8468,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Agrega esta pista de audio a un espacio de secuencias de audio y la reproduce.\nSi no hay espacios disponibles, se ignorará."
+   "Agrega esta pista de audio a un espacio de secuencias de audio y la reproduce. Si no hay espacios disponibles, se ignorará."
    )
 
 /* Netplay */
@@ -8462,11 +8585,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Búsqueda manual"
+   "Búsqueda de contenidos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Búsqueda configurable basada en nombres de archivos de contenidos. Los contenidos no tienen por qué coincidir con los de la base de datos."
+   "Búsqueda configurable por nombres de archivos o coincidencias en las bases de datos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
@@ -8478,7 +8601,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_METHOD,
-   "Automática, o personalizada con opciones específicas."
+   "Hace que la búsqueda sea automática o la personaliza con opciones concretas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
@@ -8486,7 +8609,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_USE_DB,
-   "«Estricto» solo añadirá los elementos que tengan una entrada en la base de datos. «Laxo» también añadirá aquellos archivos que tengan la extensión correcta, aunque no coincidan sus CRC/números de serie. «DAT personalizado» hará la comprobación a partir de un archivo XML proporcionado por el usuario en vez de la base de datos interna. «Nada» ignorará las bases de datos y utilizará solo las extensiones de los archivos."
+   "«Estricta» solo añadirá los elementos que tengan una entrada en la base de datos. «Laxa» también añadirá aquellos archivos que tengan la extensión correcta, aunque no coincidan sus CRC/números de serie. «DAT personalizado» hará la comprobación a partir de un archivo XML proporcionado por el usuario en vez de la base de datos interna. «No comprobar» ignorará las bases de datos y guiará la búsqueda solo por las extensiones de los archivos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
@@ -8502,7 +8625,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
-   "Los resultados se añadirán a esta lista de reproducción. En el caso de la opción «Automático/Cualquiera», se pueden actualizar varias listas de reproducción de sistemas. El método personalizado sin base de datos de referencia no vinculará los elementos a ninguna base de datos de las listas de reproducción."
+   "Los resultados se añadirán a esta lista de reproducción. En el caso de la opción «Ajuste automático/Cualquiera», se pueden actualizar varias listas de reproducción de sistemas. El método personalizado sin base de datos de referencia no vinculará los elementos a ninguna base de datos de las listas de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
@@ -8510,7 +8633,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
-   "Examina un archivo en vez de un directorio. Debes volver a seleccionar la ubicación del contenido después de cambiar esta opción."
+   "Busca un archivo en vez de un directorio. Debes volver a seleccionar la ubicación del contenido después de cambiar esta opción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
@@ -8518,7 +8641,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
-   "En el caso de las listas de reproducción con nombres personalizados, se utilizará siempre el nombre de la lista de reproducción para buscar miniaturas aunque haya una coincidencia en la base de datos."
+   "En el caso de las listas de reproducción con nombres personalizados, se utilizará siempre el nombre de la lista de reproducción para buscar miniaturas, aunque haya una coincidencia en la base de datos."
    )
 
 /* Import Content > Scan File */
@@ -8532,31 +8655,31 @@ MSG_HASH(
    "Agregar al mezclador y reproducir"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Directorio de contenidos"
+   "Ubicación de contenidos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "Selecciona un directorio donde buscar contenidos."
+   "Selecciona un directorio (o archivo) donde buscar contenidos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Nombre del sistema"
+   "Lista de reproducción de destino"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Indica un «nombre del sistema» a asociar a los contenidos buscados. Se utiliza para nombrar la lista de reproducción generada y para identificar sus miniaturas."
+   "El nombre de la lista de reproducción generada, que también servirá para identificar las miniaturas para la lista. El ajuste automático utilizará el nombre de la coincidencia en la base de datos o del directorio del contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Nombre de sistema personalizado"
+   "Nombre personalizado de la lista de reproducción"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Indica un «nombre del sistema» para los contenidos buscados. Solo se utilizará si la opción Nombre del sistema está configurada a Personalizado."
+   "Indica un nombre personalizado para la lista de reproducción donde irán los contenidos identificados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
@@ -8857,7 +8980,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Agrega el contenido a una lista de reproducción."
+   "Agrega este elemento a una lista de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -8865,7 +8988,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Crea una lista de reproducción nueva y agrega a la misma el elemento actual."
+   "Crea una lista de reproducción nueva y agrega a la misma este elemento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8889,7 +9012,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Muestra más información sobre el contenido."
+   "Muestra más información sobre este contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -8897,7 +9020,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Descarga miniaturas con capturas, carátulas o pantallas de inicio del contenido actual. Actualizará cualquier miniatura ya existente."
+   "Descarga las imágenes de miniaturas para este contenido. Actualizará cualquier imagen ya existente."
    )
 
 /* Playlist Item > Set Core Association */
@@ -8954,7 +9077,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Reinicia el contenido desde el principio. Pulsa Start en el RetroPad para hacer un reinicio completo."
+   "Activa el reinicio por software. Pulsa Start en el RetroPad para activar el reinicio completo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9339,7 +9462,7 @@ MSG_HASH(
    "Iniciar o continuar búsqueda de trucos"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
    "Busca dentro de la memoria para crear trucos nuevos."
    )
 MSG_HASH(
@@ -9363,6 +9486,10 @@ MSG_HASH(
    "Recargar trucos específicos del juego"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Vuelve a cargar todos los trucos existentes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Guardar archivo de trucos como..."
    )
@@ -9375,12 +9502,24 @@ MSG_HASH(
    "Agregar truco nuevo al principio"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Añade un truco al principio de la lista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Agregar truco nuevo al final"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Añade un truco al final de la lista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Eliminar todos los trucos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Borra la lista de trucos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9507,7 +9646,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Agregar %u coincidencias a tu lista"
+   "Agregar %u coincidencias a lista"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -9699,6 +9838,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Selecciona un disco nuevo del sistema de archivos y lo añade a la lista del índice."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    "Selecciona un disco nuevo del sistema de archivos y lo añade a la lista del índice.\nNOTA: Esta es una característica obsoleta. Se recomienda utilizar listas de reproducción M3U con juegos multidisco."
    )
 
@@ -10226,27 +10369,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG,
-   "90 °"
+   "90°"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG,
-   "180 °"
+   "180°"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_270_DEG,
-   "270 °"
+   "270°"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
-   "90 °"
+   "90°"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
-   "180 °"
+   "180°"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
-   "270 °"
+   "270°"
    )
 
 /* Settings Options */
@@ -10689,7 +10832,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
-   "<Automático>"
+   "<Ajuste automático>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
@@ -10709,11 +10852,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
-   "Estricto"
+   "Estricta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
-   "Laxo"
+   "Laxa"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
@@ -10725,19 +10868,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
-   "No compartir"
+   "No comprobar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
-   "<Automático/Cualquiera>"
+   "<Ajuste automático/Cualquiera>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
-   "<Automático/Primera coincidencia>"
+   "<Ajuste automático/Primera coincidencia>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
-   "<Automático/Nombre del sistema>"
+   "<Ajuste automático/Nombre del sistema>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -11409,6 +11552,14 @@ MSG_HASH(
    "Selecciona otro tema de iconos de RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Iconos de elementos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Muestra iconos junto a los elementos de los menús."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    "Iconos de interruptores de sí/no"
    )
@@ -11459,6 +11610,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
    "Fundido vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Mostrar lista horizontal"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
@@ -11701,6 +11856,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
    "Mantener la barra lateral izquierda oculta en todo momento."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Mostrar barra lateral"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Muestra la barra lateral de la izquierda para navegar y acceder a las listas de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -12677,10 +12840,6 @@ MSG_HASH(
    "Contadores de núcleo"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "No se ha seleccionado un disco"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Contadores del front-end"
    )
@@ -12999,10 +13158,6 @@ MSG_HASH(
    "No se presentaron argumentos y no hay menú integrado, mostrando ayuda..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Introduciendo disco en bandeja"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Esperando al cliente..."
    )
@@ -13308,14 +13463,6 @@ MSG_HASH(
    "Se ha restablecido la asociación del núcleo del elemento de la lista."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disco añadido"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Error al añadir el disco"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Directorio de la aplicación"
    )
@@ -13484,14 +13631,6 @@ MSG_HASH(
    "Desconecte el dispositivo desde un puerto válido."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Se ha cerrado la bandeja de disco virtual."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Se ha abierto la bandeja de disco virtual."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Descargando"
    )
@@ -13642,10 +13781,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Error al recibir los datos SRAM del servidor."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Error al expulsar el disco de la bandeja."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14024,10 +14159,6 @@ MSG_HASH(
    "Todas las opciones de reasignaciones de entrada han sido restablecidas."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "El disco ha sido retirado de la bandeja."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Eliminando el contenido temporal"
    )
@@ -14253,7 +14384,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Deshaciendo guardado rápido."
+   "Deshaciendo guardado rápido..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -14294,14 +14425,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "¡Error al calcular el tamaño del área de visualización! Se continuará utilizando datos en bruto. Probablemente no funcionará bien..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Error al abrir la bandeja de discos virtual."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Error al cerrar la bandeja de discos virtual."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14536,6 +14659,10 @@ MSG_HASH(
    "Se han eliminado todos los trucos."
    )
 MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Se han recargado todos los trucos."
+   )
+MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,
    "Se ha añadido el truco nuevo antes de este."
    )
@@ -14556,8 +14683,48 @@ MSG_HASH(
    "Truco eliminado."
    )
 MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Se ha cerrado la bandeja de disco virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Error al cerrar la bandeja de discos virtual."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Se ha abierto la bandeja de disco virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Error al abrir la bandeja de discos virtual."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "El disco ha sido retirado de la bandeja."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Error al expulsar el disco de la bandeja."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "No se ha seleccionado un disco"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disco añadido"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Error al añadir el disco"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Introduciendo disco en bandeja"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Error al asignar disco."
+   "Error al asignar disco"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14911,6 +15078,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Frecuencia de actualización de vídeo cambiada a %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Filtro de vídeo: activado"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Filtro de vídeo: desactivado"
+   )
+
 
 /* Lakka */
 

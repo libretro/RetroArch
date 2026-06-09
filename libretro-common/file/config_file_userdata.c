@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdlib.h>
 #include <file/file_path.h>
-#include <lists/string_list.h>
 
 #include <file/config_file_userdata.h>
 
@@ -30,14 +30,14 @@ int config_userdata_get_float(void *userdata, const char *key_str,
 {
    char key[256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
+   *value = default_value;
    fill_pathname_join_delim(key, usr->prefix[0], key_str, '_', sizeof(key));
    if (config_get_float(usr->conf, key, value))
-      return true;
-   *value = default_value;
+      return 1;
    fill_pathname_join_delim(key, usr->prefix[1], key_str, '_', sizeof(key));
    if (config_get_float(usr->conf, key, value))
-      return true;
-   return false;
+      return 1;
+   return 0;
 }
 
 int config_userdata_get_int(void *userdata, const char *key_str,
@@ -45,14 +45,14 @@ int config_userdata_get_int(void *userdata, const char *key_str,
 {
    char key[256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
+   *value = default_value;
    fill_pathname_join_delim(key, usr->prefix[0], key_str, '_', sizeof(key));
    if (config_get_int(usr->conf, key, value))
-      return true;
-   *value = default_value;
+      return 1;
    fill_pathname_join_delim(key, usr->prefix[1], key_str, '_', sizeof(key));
    if (config_get_int(usr->conf, key, value))
-      return true;
-   return false;
+      return 1;
+   return 0;
 }
 
 int config_userdata_get_hex(void *userdata, const char *key_str,
@@ -60,14 +60,14 @@ int config_userdata_get_hex(void *userdata, const char *key_str,
 {
    char key[256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
+   *value = default_value;
    fill_pathname_join_delim(key, usr->prefix[0], key_str, '_', sizeof(key));
    if (config_get_hex(usr->conf, key, value))
-      return true;
-   *value = default_value;
+      return 1;
    fill_pathname_join_delim(key, usr->prefix[1], key_str, '_', sizeof(key));
    if (config_get_hex(usr->conf, key, value))
-      return true;
-   return false;
+      return 1;
+   return 0;
 }
 
 int config_userdata_get_float_array(void *userdata, const char *key_str,
@@ -77,30 +77,82 @@ int config_userdata_get_float_array(void *userdata, const char *key_str,
    char key[2][256];
    char *str = NULL;
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
-
    fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0]));
    fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1]));
-
    if (     config_get_string(usr->conf, key[0], &str)
          || config_get_string(usr->conf, key[1], &str))
    {
-      unsigned i;
-      struct string_list list = {0};
-      string_list_initialize(&list);
-      string_split_noalloc(&list, str, " ");
-      *values = (float*)calloc(list.size, sizeof(float));
-      for (i = 0; i < list.size; i++)
-         (*values)[i] = (float)strtod(list.elems[i].data, NULL);
-      *out_num_values = (unsigned)list.size;
-      string_list_deinitialize(&list);
+      unsigned count = 0;
+      const char *p = str;
+      char *tok, *end;
+      float *arr;
+
+      /* Count tokens */
+      while (*p)
+      {
+         while (*p == ' ')
+            p++;
+         if (!*p)
+            break;
+         count++;
+         while (*p && *p != ' ')
+            p++;
+      }
+
+      if (count == 0)
+      {
+         free(str);
+         goto use_defaults;
+      }
+
+      arr = (float*)calloc(count, sizeof(float));
+      if (!arr)
+      {
+         free(str);
+         *values         = NULL;
+         *out_num_values = 0;
+         return 0;
+      }
+
+      /* Parse tokens */
+      count = 0;
+      tok   = str;
+      while (*tok)
+      {
+         while (*tok == ' ')
+            tok++;
+         if (!*tok)
+            break;
+         arr[count++] = (float)strtod(tok, &end);
+         tok = end;
+      }
+
+      *values         = arr;
+      *out_num_values = count;
       free(str);
-      return true;
+      return 1;
    }
 
-   *values = (float*)calloc(num_default_values, sizeof(float));
-   memcpy(*values, default_values, sizeof(float) * num_default_values);
-   *out_num_values = num_default_values;
-   return false;
+use_defaults:
+   if (num_default_values > 0 && default_values)
+   {
+      float *arr = (float*)calloc(num_default_values, sizeof(float));
+      if (!arr)
+      {
+         *values         = NULL;
+         *out_num_values = 0;
+         return 0;
+      }
+      memcpy(arr, default_values, sizeof(float) * num_default_values);
+      *values         = arr;
+      *out_num_values = num_default_values;
+   }
+   else
+   {
+      *values         = NULL;
+      *out_num_values = 0;
+   }
+   return 0;
 }
 
 int config_userdata_get_int_array(void *userdata, const char *key_str,
@@ -112,27 +164,64 @@ int config_userdata_get_int_array(void *userdata, const char *key_str,
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
    fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0]));
    fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1]));
-
    if (     config_get_string(usr->conf, key[0], &str)
          || config_get_string(usr->conf, key[1], &str))
    {
-      unsigned i;
-      struct string_list list = {0};
-      string_list_initialize(&list);
-      string_split_noalloc(&list, str, " ");
-      *values = (int*)calloc(list.size, sizeof(int));
-      for (i = 0; i < list.size; i++)
-         (*values)[i] = (int)strtod(list.elems[i].data, NULL);
-      *out_num_values = (unsigned)list.size;
-      string_list_deinitialize(&list);
+      unsigned i, count = 0;
+      const char *p = str;
+
+      /* First pass: count tokens */
+      while (*p)
+      {
+         while (*p == ' ')
+            p++;
+         if (!*p)
+            break;
+         count++;
+         while (*p && *p != ' ')
+            p++;
+      }
+
+      if (count == 0)
+      {
+         free(str);
+         *values         = NULL;
+         *out_num_values = 0;
+         return 1;
+      }
+
+      *values = (int*)calloc(count, sizeof(int));
+      if (!*values)
+      {
+         free(str);
+         *out_num_values = 0;
+         return 1;
+      }
+
+      /* Second pass: parse integers */
+      p = str;
+      i = 0;
+      while (*p && i < count)
+      {
+         char *end;
+         while (*p == ' ')
+            p++;
+         if (!*p)
+            break;
+         (*values)[i++] = (int)strtol(p, &end, 0);
+         p = end;
+      }
+
+      *out_num_values = count;
       free(str);
-      return true;
+      return 1;
    }
 
    *values = (int*)calloc(num_default_values, sizeof(int));
-   memcpy(*values, default_values, sizeof(int) * num_default_values);
-   *out_num_values = num_default_values;
-   return false;
+   if (*values)
+      memcpy(*values, default_values, sizeof(int) * num_default_values);
+   *out_num_values = *values ? num_default_values : 0;
+   return 0;
 }
 
 int config_userdata_get_string(void *userdata, const char *key_str,
@@ -143,16 +232,14 @@ int config_userdata_get_string(void *userdata, const char *key_str,
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
    fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0]));
    fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1]));
-
    if (     config_get_string(usr->conf, key[0], &str)
          || config_get_string(usr->conf, key[1], &str))
    {
       *output = str;
-      return true;
+      return 1;
    }
-
    *output = strdup(default_output);
-   return false;
+   return 0;
 }
 
 void config_userdata_free(void *ptr)

@@ -51,20 +51,9 @@ UI
 
 #include "../ui/drivers/ui_qt.cpp"
 
-#include "../ui/drivers/qt/gridview.cpp"
-#include "../ui/drivers/qt/qt_dialogs.cpp"
-#include "../ui/drivers/qt/qt_widgets.cpp"
-#include "../ui/drivers/qt/qt_playlist.cpp"
-#include "../ui/drivers/qt/qt_downloads.cpp"
-#ifdef HAVE_MENU
-#include "../ui/drivers/qt/qt_options.cpp"
-#include "../ui/drivers/qt/moc_qt_options.cpp"
-#endif
+#include "../ui/drivers/ui_qt_widgets.cpp"
 #include "../ui/drivers/moc_ui_qt.cpp"
-#include "../ui/drivers/qt/moc_gridview.cpp"
-#include "../ui/drivers/qt/moc_ui_qt_load_core_window.cpp"
-#include "../ui/drivers/qt/moc_qt_dialogs.cpp"
-#include "../ui/drivers/qt/moc_qt_widgets.cpp"
+#include "../ui/drivers/moc_ui_qt_widgets.cpp"
 #endif
 
 /*============================================================
@@ -89,9 +78,8 @@ VIDEO DRIVER
 #include "../deps/SPIRV-Cross/spirv_parser.cpp"
 #include "../deps/SPIRV-Cross/spirv_cross_parsed_ir.cpp"
 #ifdef HAVE_SLANG
-#include "../gfx/drivers_shader/glslang_util_cxx.cpp"
 #include "../gfx/drivers_shader/slang_process.cpp"
-#include "../gfx/drivers_shader/slang_reflection.cpp"
+#include "../gfx/drivers_shader/slang_cache.cpp"
 #endif
 #endif
 
@@ -104,20 +92,3 @@ VIDEO DRIVER
 #include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
 #endif
 #endif
-
-/*============================================================
-FONTS
-============================================================ */
-#if defined(HAVE_DISCORD)
-#include "../deps/discord-rpc/src/discord_rpc.cpp"
-#include "../deps/discord-rpc/src/rpc_connection.cpp"
-#include "../deps/discord-rpc/src/serialization.cpp"
-
-#if defined(_WIN32)
-#include "../deps/discord-rpc/src/connection_win.cpp"
-#endif
-#if defined(__unix__) || defined(__APPLE__)
-#include "../deps/discord-rpc/src/connection_unix.cpp"
-#endif
-#endif
-

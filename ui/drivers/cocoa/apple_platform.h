@@ -49,7 +49,8 @@ typedef enum apple_view_type
 
 #if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
 @interface WindowListener : NSResponder<NSWindowDelegate>
-@property (nonatomic) NSWindow* window;
+/* assign (not retain) - WindowListener is a delegate; the window owns it, not vice versa */
+@property (nonatomic, assign) NSWindow *window;
 @end
 #endif
 
@@ -83,10 +84,10 @@ extern id<ApplePlatform> apple_platform;
 extern id apple_platform;
 #endif
 
-#if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 void rarch_start_draw_observer(void);
 void rarch_stop_draw_observer(void);
 
+#if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 #if defined(HAVE_COCOA_METAL)
 @interface MetalLayerView : UIView
 @property (nonatomic, readonly) CAMetalLayer *metalLayer;
@@ -101,10 +102,17 @@ UINavigationControllerDelegate> {
     apple_view_type_t _vt;
 }
 
-@property (nonatomic) UIWindow* window;
-@property (nonatomic) NSString* documentsDirectory;
-@property (nonatomic) int menu_count;
-@property (nonatomic) NSDate *bgDate;
+/* Explicit retain / copy qualifiers so these properties are correct
+ * under MRR as well as ARC.  Under ARC the object-typed property
+ * default is 'strong', which behaves identically to 'retain' here;
+ * under MRR the default is 'assign', which would silently drop the
+ * retain and release the referent at the next autorelease pool
+ * drain.  Spelling the ownership out keeps ui_cocoatouch.m
+ * MRR-buildable in the same spirit as ui_cocoa.m. */
+@property (nonatomic, retain) UIWindow *window;
+@property (nonatomic, copy)   NSString *documentsDirectory;
+@property (nonatomic)         int menu_count;
+@property (nonatomic, retain) NSDate *bgDate;
 
 + (RetroArch_iOS*)get;
 

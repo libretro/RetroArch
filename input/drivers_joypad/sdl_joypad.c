@@ -29,6 +29,7 @@
 
 #define SDL_SUPPORTS_RUMBLE  SDL_VERSION_ATLEAST(2, 0, 9)
 #define SDL_SUPPORTS_SENSORS SDL_VERSION_ATLEAST(2, 0, 14)
+#define SDL_SUPPORTS_HIDAPI_WII SDL_VERSION_ATLEAST(2, 26, 0)
 
 typedef struct _sdl_joypad
 {
@@ -221,6 +222,18 @@ static void sdl_pad_connect(unsigned id)
       RARCH_LOG("[SDL] Falling back to joystick rumble.\n");
    }
 #endif
+#if SDL_SUPPORTS_SENSORS
+   if (pad->controller)
+   {
+      bool has_accel = SDL_GameControllerHasSensor(pad->controller, SDL_SENSOR_ACCEL);
+      bool has_gyro  = SDL_GameControllerHasSensor(pad->controller, SDL_SENSOR_GYRO);
+      if (has_accel || has_gyro)
+         RARCH_LOG("[SDL] Pad #%u: found sensors (accel=%s, gyro=%s).\n",
+               id,
+               has_accel ? "yes" : "no",
+               has_gyro  ? "yes" : "no");
+   }
+#endif
 #else
    pad->num_axes    = SDL_JoystickNumAxes(pad->joypad);
    pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
@@ -261,7 +274,7 @@ static void sdl_joypad_destroy(void)
 
 static void *sdl_joypad_init(void *data)
 {
-   size_t i;
+   unsigned i;
    unsigned num_sticks;
 #ifdef HAVE_SDL2
    uint32_t subsystem           = SDL_INIT_GAMECONTROLLER;
@@ -300,6 +313,10 @@ static void *sdl_joypad_init(void *data)
 #if SDL_SUPPORTS_RUMBLE
    /* enable extended hid reports to support ps4/ps5 rumble over bluetooth */
    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
+#endif
+#if SDL_SUPPORTS_HIDAPI_WII
+   /* enable HIDAPI Wii driver for accelerometer/gyro support */
+   SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
 #endif
 #endif
 

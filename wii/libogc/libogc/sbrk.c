@@ -18,8 +18,8 @@ void* _DEFUN(__libogc_sbrk_r,(ptr,incr),
 			 ptrdiff_t incr)
 {
 	u32 level;
-	char *heap_end = 0;
-	char *prev_heap = 0;
+	char *heap_end;
+	char *prev_heap;
 #if defined(HW_RVL)
 	static char *mem2_start = NULL;
 #endif
@@ -27,6 +27,14 @@ void* _DEFUN(__libogc_sbrk_r,(ptr,incr),
 	_CPU_ISR_Disable(level);
 #if defined(HW_RVL)
 	if(MALLOC_MEM2) {
+		/* NOTE: on the MEM1->MEM2 transition this function returns
+		 * the *start* of the newly-acquired MEM2 region as prev_heap,
+		 * not the previous program break (which was in MEM1). newlib's
+		 * nano-malloc uses the return value as "address of `incr` newly
+		 * available bytes", so this is internally consistent but does
+		 * violate strict POSIX sbrk semantics. Don't swap in a malloc
+		 * layer that relies on prev_heap == old break without rethinking
+		 * this. */
 		// use MEM2 aswell for malloc
 		if(mem2_start==NULL)
 			heap_end = (char*)SYS_GetArenaLo();

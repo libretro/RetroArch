@@ -86,6 +86,14 @@ MSG_HASH(
    "Selecciona quin nucli vas a usar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Descarregar nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Alliberar nucli carregat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Cerca una implementació per a un nucli de libretro. El cercador començarà a buscar en la carpeta que hages triat per al teu directori de nuclis. En cas de trobar-se en blanc, començarà al directori rael.\nSi el directori de nuclis és un directori, el menú usarà aquest com a carpeta inicial. Pel contrari, si és un directori complet, aquest s'iniciarà a la carpeta on es trobe l'arxiu."
    )
@@ -152,6 +160,10 @@ MSG_HASH(
    "Fa aparèixer un menú en forma de la típica finestra de programari d'ordinador."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Desactivar mode Kiosc"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Vore totes les configuracions relacionades amb els ajustos."
    )
@@ -204,8 +216,40 @@ MSG_HASH(
    "Mostra com funciona el programa."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   "Reiniciar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Reiniciar Retroarch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "Tancar RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "Tanca Retroarch. Guardar la configuració a l'eixir està activat."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Tanca Retroarch. Guardar la configuració a l'eixir està desactivat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Tanca RetroArch. Si tanques el programa d'una manera forçada (SIGKILL, etc.) RetroArch no guardarà les configuracions. En sistemes Unix, SIGNIT/SIGTERM permet un tancament net."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Sincronitzar ara"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Inicia manualment la sincronització en el núvol."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Resoldre conflictes: conservar arxius locals"
    )
 
 /* Main Menu > Load Core */
@@ -597,6 +641,14 @@ MSG_HASH(
    "Característiques del processador"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "Arquitectura del processador"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "Nuclis del processador"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Identificador del processador d'accés"
    )
@@ -795,6 +847,10 @@ MSG_HASH(
    "Guardar nova configuració"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Guardar configuració com"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Reiniciar per defecte"
    )
@@ -897,6 +953,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
    "Canvia els ajustos de guardat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Automàtic"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
@@ -1040,16 +1100,8 @@ MSG_HASH(
    "Vídeo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Escull el controlador de vídeo que s'usarà."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "Àudio"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Escull el controlador d'àudio que s'usarà."
    )
 #ifdef HAVE_MICROPHONE
 #endif
@@ -1066,28 +1118,12 @@ MSG_HASH(
    "Càmera"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Escull el controlador de càmera que s'usarà."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Escull el controlador bluetooth que s'usarà."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "Wifi"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Escull el controlador wifi que s'usarà."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Ubicació"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Escull el controlador d'ubicació que s'usarà."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1096,14 +1132,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Enregistrament"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Escull el controlador d'enregistrament que s'usarà."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Escull el controlador MIDI que s'usarà."
    )
 
 /* Settings > Video */
@@ -1349,10 +1377,6 @@ MSG_HASH(
    "Freqüència de refresc vertical de la imatge"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Usat per calcular una velocitat d'àudio idònia segons la freqüència d'actualització d'imatge de la teua pantalla.\nAixò s'ignorarà si l'opció 'Vídeo multifil' es troba activada."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Grau de refresc d'imatge estimat"
    )
@@ -1570,14 +1594,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Luminància màxima"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminància de blanc paper"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -1924,6 +1940,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "Posa en pausa el contingut quan qualssevol controlador es desconnecte."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Selecció automàtica"
+   )
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2201,10 +2221,6 @@ MSG_HASH(
 /* Settings > Frame Throttle */
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Canvia els ajustos del comptador de duració de fotogrames.\nNomés en funcionament quan estiga desactivat el vídeo multifil."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    "Limitar velocitat de fotogrames del menú"
    )
@@ -2218,18 +2234,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reiniciar després d'usar l'avançament ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reiniciar després de carregar un guardat ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reiniciar després de generar un guardat ràpid"
-   )
 
 /* Settings > Recording */
 
@@ -2477,6 +2481,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Facebook Gaming */
 
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -2516,12 +2523,8 @@ MSG_HASH(
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Nom del sistema"
-   )
 
 /* Explore tab */
 MSG_HASH(
@@ -2892,6 +2895,7 @@ MSG_HASH(
    "Error a l'afegir el nucli a la llista 'Nuclis sense continguts': "
    )
 
+
 /* Lakka */
 
 
@@ -2978,4 +2982,8 @@ MSG_HASH(
 
 #endif
 #ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "Xarxa compartida SMB"
+   )
 #endif

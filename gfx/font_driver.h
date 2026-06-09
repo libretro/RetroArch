@@ -35,7 +35,7 @@ typedef struct font_renderer
          float font_size, bool is_threaded);
    void (*free)(void *data, bool is_threaded);
    void (*render_msg)(void *userdata,
-         void *data, const char *msg,
+         void *data, const char *msg, size_t msg_len,
          const struct font_params *params);
    const char *ident;
 
@@ -107,7 +107,8 @@ int font_renderer_create_default(
       const char *font_path, unsigned font_size);
 
 void font_driver_render_msg(void *data,
-      const char *msg, const struct font_params *params, void *font_data);
+      const char *msg, size_t msg_len,
+      const struct font_params *params, void *font_data);
 
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
@@ -143,13 +144,15 @@ int font_driver_get_line_centre_offset(font_data_t *font, float scale);
 extern font_renderer_t gl2_raster_font;
 extern font_renderer_t gl3_raster_font;
 extern font_renderer_t gl1_raster_font;
-extern font_renderer_t d3d9x_win32_font;
 extern font_renderer_t ps2_font;
 extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
 extern font_renderer_t wiiu_font;
 extern font_renderer_t vulkan_raster_font;
 extern font_renderer_t metal_raster_font;
+extern font_renderer_t d3d8_font;
+extern font_renderer_t d3d9_font;
+extern font_renderer_t d3d9_cg_font;
 extern font_renderer_t d3d10_font;
 extern font_renderer_t d3d11_font;
 extern font_renderer_t d3d12_font;
@@ -159,6 +162,7 @@ extern font_renderer_t vga_font;
 extern font_renderer_t sixel_font;
 extern font_renderer_t switch_font;
 extern font_renderer_t rsx_font;
+extern font_renderer_t sdl2_raster_font;
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t stb_unicode_font_renderer;

@@ -303,7 +303,7 @@ static void __dsp_inthandler(u32 nIrq,void *pCtx)
 
 void DSP_Init()
 {
-	u32 level;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	if(__dsp_inited==FALSE) {
 		__dsp_intcb= __dsp_def_taskcb;
@@ -325,7 +325,7 @@ void DSP_Init()
 
 DSPCallback DSP_RegisterCallback(DSPCallback usr_cb)
 {
-	u32 level;
+	u32 level = 0;
 	DSPCallback ret;
 	_CPU_ISR_Disable(level);
 	ret = __dsp_intcb;
@@ -368,7 +368,7 @@ u32 DSP_ReadCPUtoDSP()
 
 void DSP_AssertInt()
 {
-	u32 level;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	_dspReg[5] = (_dspReg[5]&~(DSPCR_AIINT|DSPCR_ARINT|DSPCR_DSPINT))|DSPCR_PIINT;
 	_CPU_ISR_Restore(level);
@@ -377,7 +377,7 @@ void DSP_AssertInt()
 void DSP_Reset()
 {
 	u16 old;
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	old = _dspReg[5];
@@ -387,7 +387,8 @@ void DSP_Reset()
 
 void DSP_Halt()
 {
-	u32 level,old;
+	u32 old;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	old = _dspReg[5];
@@ -397,7 +398,7 @@ void DSP_Halt()
 
 void DSP_Unhalt()
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	_dspReg[5] = (_dspReg[5]&~(DSPCR_AIINT|DSPCR_ARINT|DSPCR_DSPINT|DSPCR_HALT));
@@ -411,7 +412,7 @@ u32 DSP_GetDMAStatus()
 
 dsptask_t* DSP_AddTask(dsptask_t *task)
 {
-	u32 level;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	__dsp_inserttask(task);
 	task->state = DSPTASK_INIT;
@@ -424,7 +425,7 @@ dsptask_t* DSP_AddTask(dsptask_t *task)
 
 void DSP_CancelTask(dsptask_t *task)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	task->flags |= DSPTASK_CANCEL;
@@ -433,7 +434,7 @@ void DSP_CancelTask(dsptask_t *task)
 
 dsptask_t* DSP_AssertTask(dsptask_t *task)
 {
-	u32 level;
+	u32 level = 0;
 	dsptask_t *ret = NULL;
 
 	_CPU_ISR_Disable(level);

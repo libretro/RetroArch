@@ -109,7 +109,7 @@ struct revmodel
 
 static float revmodel_process(struct revmodel *rev, float in)
 {
-   int i;
+   unsigned i;
    float mono_out = 0.0f;
    float mono_in  = in;
    float input    = mono_in * rev->gain;
@@ -125,7 +125,7 @@ static float revmodel_process(struct revmodel *rev, float in)
 
 static void revmodel_update(struct revmodel *rev)
 {
-   int i;
+   unsigned i;
    rev->wet1 = rev->wet * (rev->width / 2.0f + 0.5f);
 
    if (rev->mode >= freezemode)
@@ -187,27 +187,27 @@ static void revmodel_setmode(struct revmodel *rev, float value)
 
 static void revmodel_init(struct revmodel *rev,int srate)
 {
-  unsigned c;
-  static const int comb_lengths[8]    = { 1116,1188,1277,1356,1422,1491,1557,1617 };
-  static const int allpass_lengths[4] = { 225,341,441,556 };
-  double r = srate * (1 / 44100.0);
+   unsigned c;
+   static const int comb_lengths[8]    = { 1116,1188,1277,1356,1422,1491,1557,1617 };
+   static const int allpass_lengths[4] = { 225,341,441,556 };
+   double r = srate * (1 / 44100.0);
 
    for (c = 0; c < numcombs; ++c)
    {
-	   rev->bufcomb[c]      = (float*)malloc(r * comb_lengths[c] * sizeof(float));
-	   rev->combL[c].buffer = rev->bufcomb[c];
-      memset(rev->combL[c].buffer, 0, r * comb_lengths[c] * sizeof(float));
-      rev->combL[c].bufsize=r*comb_lengths[c];
-  }
+      unsigned bufsize         = (unsigned)(r * comb_lengths[c]);
+      rev->bufcomb[c]          = (float*)calloc(bufsize, sizeof(float));
+      rev->combL[c].buffer     = rev->bufcomb[c];
+      rev->combL[c].bufsize    = bufsize;
+   }
 
    for (c = 0; c < numallpasses; ++c)
    {
-	   rev->bufallpass[c]       = (float*)malloc(r * allpass_lengths[c] * sizeof(float));
-	   rev->allpassL[c].buffer  = rev->bufallpass[c];
-      memset(rev->allpassL[c].buffer, 0, r * allpass_lengths[c] * sizeof(float));
-      rev->allpassL[c].bufsize=r*allpass_lengths[c];
+      unsigned bufsize          = (unsigned)(r * allpass_lengths[c]);
+      rev->bufallpass[c]        = (float*)calloc(bufsize, sizeof(float));
+      rev->allpassL[c].buffer   = rev->bufallpass[c];
+      rev->allpassL[c].bufsize  = bufsize;
       rev->allpassL[c].feedback = 0.5f;
-  }
+   }
 
    revmodel_setwet(rev, initialwet);
    revmodel_setroomsize(rev, initialroom);
@@ -224,7 +224,7 @@ struct reverb_data
 
 static void reverb_free(void *data)
 {
-   int i;
+   unsigned i;
    struct reverb_data *rev = (struct reverb_data*)data;
 
    for (i = 0; i < numcombs; i++)
@@ -244,7 +244,7 @@ static void reverb_free(void *data)
 static void reverb_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
-   int i;
+   unsigned i;
    float *out;
    struct reverb_data *rev = (struct reverb_data*)data;
 

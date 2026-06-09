@@ -20,10 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <string.h>
+#include <stdint.h>
+
 #include <boolean.h>
 #include <streams/file_stream.h>
 #include <compat/posix_string.h>
-#include <string/stdstring.h>
 
 #include <formats/rxml.h>
 
@@ -100,6 +102,14 @@ rxml_document_t *rxml_load_document(const char *path)
       return NULL;
 
    len                     = filestream_get_size(file);
+   /* filestream_get_size returns -1 on error.  Pre-patch this
+    * flowed through (size_t)(len + 1) as malloc(0) on 64-bit
+    * (returning a tiny non-NULL block) or as a wrapped value on
+    * 32-bit; either way memory_buffer[len] = '\0' wrote far
+    * out-of-bounds.  Reject negative sizes and any size that
+    * would not fit in size_t on this platform. */
+   if (len < 0 || (uint64_t)len >= (uint64_t)((size_t)-1))
+      goto error;
    memory_buffer           = (char*)malloc((size_t)(len + 1));
    if (!memory_buffer)
       goto error;
@@ -321,7 +331,7 @@ const char *rxml_node_attrib(struct rxml_node *node, const char *attrib)
    struct rxml_attrib_node *attribs = NULL;
    for (attribs = node->attrib; attribs; attribs = attribs->next)
    {
-      if (string_is_equal(attrib, attribs->attrib))
+      if (strcmp(attrib, attribs->attrib) == 0)
          return attribs->value;
    }
 

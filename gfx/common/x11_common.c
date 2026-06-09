@@ -42,7 +42,6 @@
 
 #include <encodings/utf.h>
 #include <compat/strl.h>
-#include <string/stdstring.h>
 
 #ifdef HAVE_DBUS
 #include "dbus_common.h"
@@ -141,6 +140,22 @@ void x11_set_net_wm_fullscreen(Display *dpy, Window win)
          &xev);
 }
 
+/* Set the fullscreen state on the window before it is shown.
+ * On GNOME + X11 (Mutter), fullscreen works properly when the
+ * window carries the fullscreen hint as it is being mapped */
+void x11_set_net_wm_fullscreen_hint(Display *dpy, Window win)
+{
+   Atom states[1]             = {0};
+
+   XA_NET_WM_STATE            = XInternAtom(dpy, "_NET_WM_STATE", False);
+   XA_NET_WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+   states[0]                  = XA_NET_WM_STATE_FULLSCREEN;
+
+   XChangeProperty(dpy, win, XA_NET_WM_STATE, XA_ATOM, 32,
+         PropModeReplace, (const unsigned char*)states,
+         sizeof(states) / sizeof(*states));
+}
+
 /* Try to be nice to tiling WMs if possible. */
 
 void x11_move_window(Display *dpy, Window win, int x, int y,
@@ -209,6 +224,24 @@ void x11_set_window_attr(Display *dpy, Window win)
 static bool xss_screensaver_inhibit(Display *dpy, bool enable)
 {
     int dummy, min, maj;
+    /* Guard against being called with a NULL Display.  This
+     * happens with the SDL2 video driver under HAVE_X11 +
+     * HAVE_XSCRNSAVER builds without HAVE_DBUS: SDL2's
+     * sdl2_set_handles() in gfx/common/sdl2_common.c sets the
+     * display *type* to RARCH_DISPLAY_X11 (so the gate in
+     * x11_suspend_screensaver passes) and routes the SDL-owned
+     * X Display through video_driver_display_set(), but the
+     * file-scope g_x11_dpy here stays at its initial NULL --
+     * it's only assigned in the xvideo / GL / X11-direct init
+     * paths.  libX11's XQueryExtension() then SEGVs at a tiny
+     * offset off the NULL display pointer.  Most desktop builds
+     * never hit this because HAVE_DBUS is on and
+     * dbus_suspend_screensaver() short-circuits before this
+     * line; surfaced by the ASan+UBSan CI workflow's headless
+     * SDL2 smoke (b9777c8 + d967813), where dbus-1 isn't
+     * apt-installed but libXss is. */
+    if (!dpy)
+       return false;
     if (       !XScreenSaverQueryExtension(dpy, &dummy, &dummy)
             || !XScreenSaverQueryVersion(dpy, &maj, &min)
             || (maj < 1)
@@ -219,12 +252,30 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable)
     return true;
 }
 #else
-static bool xss_screensaver_inhibit(Display *dpy, bool enable)
-{
-    (void) dpy;
-    return false;
-}
+static bool xss_screensaver_inhibit(Display *dpy, bool enable) { return false; }
 #endif
+
+/* Probe once for xdg-screensaver and its xset backend dependency.
+ * xdg-screensaver's "X11" backend shells out to xset; if xset is missing
+ * (common on minimal installs / containers / some WMs without
+ * x11-xserver-utils), invoking xdg-screensaver spams stderr with
+ * "xset: not found" and "Illegal number" without us ever knowing why.
+ * Check up front so we can silently no-op instead. */
+static bool xdg_screensaver_probe(void)
+{
+   /* Both are needed: xdg-screensaver itself, and xset which it execs.
+    * `command -v` is a POSIX shell builtin so this works under /bin/sh
+    * on every platform that has system(). Redirecting both streams
+    * keeps the probe silent. */
+   int ret = system("command -v xdg-screensaver >/dev/null 2>&1 && "
+                "command -v xset >/dev/null 2>&1");
+   if (ret == -1 || WEXITSTATUS(ret) != 0)
+   {
+      RARCH_LOG("[X11] xdg-screensaver or xset not available; screensaver suspension disabled.\n");
+      return false;
+   }
+   return true;
+}
 
 static void xdg_screensaver_inhibit(Window wnd)
 {
@@ -279,6 +330,14 @@ bool x11_suspend_screensaver(void *data, bool enable)
     {
        if (xdg_screensaver_available)
        {
+          static bool probed = false;
+          if (!probed)
+          {
+             xdg_screensaver_available = xdg_screensaver_probe();
+             probed = true;
+          }
+          if (!xdg_screensaver_available)
+             return true;
           xdg_screensaver_inhibit(wnd);
           return xdg_screensaver_available;
        }
@@ -411,10 +470,17 @@ static void x11_init_keyboard_lut(void)
       if (x11_keysym_rlut)
          free(x11_keysym_rlut);
 
-      x11_keysym_rlut = (unsigned*)calloc(++x11_keysym_rlut_size, sizeof(unsigned));
-
-      for (map = map_start; map->rk != RETROK_UNKNOWN; map++)
-         x11_keysym_rlut[map->sym] = (enum retro_key)map->rk;
+      /* NULL-check the calloc: the populate loop below dereferences
+       * x11_keysym_rlut[map->sym] unconditionally, so an OOM here
+       * would segfault.  The reader (x11_keysym_lookup, line ~493)
+       * guards with 'if (x11_keysym_rlut && sym < size)', so leaving
+       * the pointer NULL on failure cleanly disables the rlut path
+       * without further damage. */
+      if (!(x11_keysym_rlut = (unsigned*)calloc(++x11_keysym_rlut_size, sizeof(unsigned))))
+         x11_keysym_rlut_size = 0;
+      else
+         for (map = map_start; map->rk != RETROK_UNKNOWN; map++)
+            x11_keysym_rlut[map->sym] = (enum retro_key)map->rk;
    }
    else
       x11_keysym_rlut_size = 0;
@@ -469,48 +535,6 @@ static bool x11_create_input_context(Display *dpy,
    return true;
 }
 
-bool x11_get_metrics(void *data,
-      enum display_metric_types type, float *value)
-{
-   unsigned screen_no      = 0;
-   Display *dpy            = NULL;
-
-   switch (type)
-   {
-      case DISPLAY_METRIC_PIXEL_WIDTH:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayWidth(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_PIXEL_HEIGHT:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayHeight(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_MM_WIDTH:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayWidthMM(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_MM_HEIGHT:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayHeightMM(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_DPI:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = ((((float)DisplayWidth  (dpy, screen_no)) * 25.4)
-               /  (  (float)DisplayWidthMM(dpy, screen_no)));
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_NONE:
-      default:
-         *value = 0;
-         return false;
-   }
-
-   return true;
-}
 
 static enum retro_key x11_translate_keysym_to_rk(unsigned sym)
 {

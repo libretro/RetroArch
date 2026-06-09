@@ -72,14 +72,11 @@ typedef CC_MD5_CTX MD5_CTX;
 #define MD5_Final CC_MD5_Final
 #else
 
-/* Any 32-bit or wider unsigned integer data type will do */
-typedef unsigned int MD5_u32plus;
-
 typedef struct {
-	MD5_u32plus lo, hi;
-	MD5_u32plus a, b, c, d;
+	uint32_t lo, hi;
+	uint32_t a, b, c, d;
 	unsigned char buffer[64];
-	MD5_u32plus block[16];
+	uint32_t block[16];
 } MD5_CTX;
 
 /*

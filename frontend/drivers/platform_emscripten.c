@@ -390,7 +390,8 @@ size_t platform_emscripten_command_read(char **into, size_t max_len)
    return MAIN_THREAD_EM_ASM_INT({
       var next_command = RPE.command_queue.shift();
       var length = lengthBytesUTF8(next_command);
-      if (length > $2) {
+      if (length > $2)
+      {
          err("[CMD] Command too long, skipping", next_command);
          return 0;
       }
@@ -621,9 +622,11 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 #ifndef HAVE_EXTRA_WASMFS
       /* can be removed when the new web player replaces the old one */
       _len = strlcpy(user_path, home, sizeof(user_path));
-      strlcpy(user_path + _len, "/retroarch/userdata", sizeof(user_path) - _len);
+      strlcpy(user_path + _len,
+         "/retroarch/userdata", sizeof(user_path) - _len);
       _len = strlcpy(bundle_path, home, sizeof(bundle_path));
-      strlcpy(bundle_path + _len, "/retroarch/bundle", sizeof(bundle_path) - _len);
+      strlcpy(bundle_path + _len,
+         "/retroarch/bundle", sizeof(bundle_path) - _len);
 #else
       _len = strlcpy(user_path, home, sizeof(user_path));
       strlcpy(user_path + _len, "/retroarch", sizeof(user_path) - _len);
@@ -808,6 +811,14 @@ static void platform_emscripten_mount_filesystems(void)
       backend_t opfs = wasmfs_create_opfs_backend();
       {
          char *parent = strdup(opfs_mount);
+         /* NULL-check strdup: path_parent_dir/strlen on NULL parent
+          * NULL-derefs.  Match the abort() policy used for all
+          * other failures in this boot-time init path. */
+         if (!parent)
+         {
+            printf("[OPFS] out of memory duplicating mount path\n");
+            abort();
+         }
          path_parent_dir(parent, strlen(parent));
          if (!path_mkdir(parent))
          {
@@ -842,6 +853,7 @@ static void platform_emscripten_mount_filesystems(void)
          Where URL may not contain spaces, but PATH may.
          URL segments are relative to BASEURL.
        */
+      size_t __len;
       int max_line_len = 1024;
       if (!(fetch_manifest && fetch_base_dir))
       {
@@ -856,31 +868,60 @@ static void platform_emscripten_mount_filesystems(void)
         abort();
       }
       char *line = calloc(sizeof(char), max_line_len);
-      size_t len = max_line_len;
-      if (getline(&line, &len, file) == -1 || len == 0)
+      /* NULL-check the calloc: getline below receives &line and
+       * will realloc it if needed, but the getline interface
+       * requires the initial pointer to be either NULL (fine)
+       * or a valid malloc'd buffer.  On OOM 'line' stays NULL
+       * which the getline glibc implementation tolerates (it
+       * will allocate itself), but e.g. musl's getline also
+       * tolerates NULL so behaviour is consistent.  However,
+       * if the calloc succeeded and then later in this function
+       * we strdup(line) at line ~869 / line ~899, those would
+       * NULL-deref if line were NULL.  Simplest correct path:
+       * abort on OOM like the other boot-init failures. */
+      if (!line)
+      {
+         printf("[FetchFS] out of memory allocating manifest line buffer\n");
+         abort();
+      }
+      __len = max_line_len;
+      if (getline(&line, &__len, file) == -1 || __len == 0)
          printf("[FetchFS] missing base URL suggest empty manifest, skipping fetch initialization\n");
       else
       {
-         char *base_url = strdup(line);
-         base_url[strcspn(base_url, "\r\n")] = '\0'; // drop newline
-         base_url[len-1] = '\0'; // drop newline
          backend_t fetch = NULL;
-         len = max_line_len;
-         // Don't create fetch backend unless manifest actually has entries
-         while (getline(&line, &len, file) != -1)
+         char *base_url  = strdup(line);
+         /* NULL-check strdup before the two base_url[...] = '\0'
+          * writes below NULL-deref.  FetchFS init is a boot-time
+          * operation on the web build; other init failures in
+          * this function (missing env vars, missing manifest file,
+          * fetch backend construction failure) all abort(), so
+          * match that policy here. */
+         if (!base_url)
          {
+            printf("[FetchFS] out of memory duplicating base URL\n");
+            abort();
+         }
+         base_url[strcspn(base_url, "\r\n")] = '\0'; /* drop newline */
+         base_url[__len-1] = '\0'; /* drop newline */
+         __len = max_line_len;
+         /* Don't create fetch backend unless manifest actually has entries */
+         while (getline(&line, &__len, file) != -1)
+         {
+            int fd; 
+            char fetchfs_path[PATH_MAX];
             if (!fetch)
             {
                fetch = wasmfs_create_fetch_backend(base_url, 16*1024*1024);
-               if(!fetch) {
+               if (!fetch)
+               {
                  printf("[FetchFS] couldn't create fetch backend for %s\n", base_url);
                  abort();
                }
                wasmfs_create_directory(fetch_base_dir, 0777, fetch);
             }
-            char *realfs_path = strstr(line, " "), *url = line;
-            int fd;
-            if (len <= 2 || !realfs_path)
+            char *realfs_path = strchr(line, ' '), *url = line;
+            if (__len <= 2 || !realfs_path)
             {
                printf("[FetchFS] Manifest file has invalid line %s\n",line);
                continue;
@@ -888,11 +929,18 @@ static void platform_emscripten_mount_filesystems(void)
             *realfs_path = '\0';
             realfs_path += 1;
             realfs_path[strcspn(realfs_path, "\r\n")] = '\0';
-            char fetchfs_path[PATH_MAX];
             fill_pathname_join(fetchfs_path, fetch_base_dir, url, sizeof(fetchfs_path));
             /* Make the directories for link path */
             {
                char *parent = strdup(realfs_path);
+               /* NULL-check: same pattern as opfs_mount strdup
+                * above - path_parent_dir/strlen on NULL would
+                * crash, abort to match boot-init policy. */
+               if (!parent)
+               {
+                  printf("[FetchFS] out of memory duplicating realfs path\n");
+                  abort();
+               }
                path_parent_dir(parent, strlen(parent));
                if (!path_mkdir(parent))
                {
@@ -904,6 +952,12 @@ static void platform_emscripten_mount_filesystems(void)
             /* Make the directories for URL path */
             {
                char *parent = strdup(fetchfs_path);
+               /* NULL-check: same pattern, abort on OOM. */
+               if (!parent)
+               {
+                  printf("[FetchFS] out of memory duplicating fetchfs path\n");
+                  abort();
+               }
                path_parent_dir(parent, strlen(parent));
                if (!path_mkdir(parent))
                {
@@ -924,7 +978,7 @@ static void platform_emscripten_mount_filesystems(void)
                printf("[FetchFS] couldn't create link %s to fetch file %s (errno %d)\n", realfs_path, fetchfs_path, errno);
                abort();
             }
-            len = max_line_len;
+            __len = max_line_len;
          }
          free(base_url);
       }
@@ -982,8 +1036,17 @@ int main(int argc, char *argv[])
    pthread_attr_t attr;
    pthread_t thread;
 #endif
-   /* this never gets freed */
+   /* this never gets freed - emscripten_platform_data is held
+    * for the lifetime of the web-build process */
    emscripten_platform_data = (emscripten_platform_data_t *)calloc(1, sizeof(emscripten_platform_data_t));
+   /* NULL-check: the field writes a few lines down
+    * (emscripten_platform_data->browser, ->os, ->...) NULL-deref
+    * on OOM.  This is main() at process entry - if we can't even
+    * allocate the platform state struct there's no viable path
+    * forward; bail with non-zero so the browser shim can surface
+    * the failure. */
+   if (!emscripten_platform_data)
+      return 1;
 
    PlatformEmscriptenGetSystemInfo(&host_browser, &host_os);
    emscripten_platform_data->browser = host_browser;
@@ -1089,6 +1152,7 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                                /* is_narrator_running */
    NULL,                                /* accessibility_speak */
    NULL,                                /* set_gamemode        */
+   NULL, /* get_display_type */
    "emscripten",                        /* ident               */
    NULL                                 /* get_video_driver    */
 };

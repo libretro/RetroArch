@@ -41,7 +41,7 @@
 #include "menu_shader.h"
 #include "../gfx/gfx_animation.h"
 #include "../gfx/gfx_display.h"
-#include "../gfx/gfx_thumbnail_path.h"
+#include "../gfx/gfx_thumbnail.h"
 #include "../gfx/font_driver.h"
 #include "../performance_counters.h"
 
@@ -252,7 +252,7 @@ enum menu_settings_type
    MENU_SETTINGS_INPUT_BEGIN,
    MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 7,
    MENU_SETTINGS_INPUT_DESC_BEGIN,
-   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + ((RARCH_FIRST_CUSTOM_BIND + 8) * MAX_USERS),
+   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + (RARCH_ANALOG_BIND_LIST_END * MAX_USERS),
    MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
    MENU_SETTINGS_INPUT_DESC_KBD_END = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN + (RARCH_MAX_KEYS * MAX_USERS),
    MENU_SETTINGS_REMAPPING_PORT_BEGIN,
@@ -320,6 +320,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_REMAP_FILE_FLUSH,
 
    MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
+   MENU_SETTING_ACTION_STATE_SLOT_RUN,
 
    MENU_SETTINGS_LAST
 };
@@ -438,6 +439,7 @@ typedef struct
       unsigned                unsigned_var;
    } scratchpad;
    unsigned rpl_entry_selection_ptr;
+   int16_t state_slot_run;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Used to cache the type and directory
@@ -546,6 +548,11 @@ struct menu_state
     * since RETRO_ENVIRONMENT_SHUTDOWN will cause
     * RARCH_PATH_CONTENT to be cleared */
    char pending_env_shutdown_content_path[PATH_MAX_LENGTH];
+   /* Path of a configuration file whose load has been deferred
+    * (see MENU_ST_FLAG_PENDING_CONFIG_REPLACE). The actual
+    * config_replace() is performed from runloop_check_state(),
+    * never from within menu iteration */
+   char pending_config_path[PATH_MAX_LENGTH];
 
 #ifdef HAVE_MENU
    char input_dialog_kb_label_setting[256];
@@ -762,6 +769,11 @@ void menu_update_runahead_mode(void);
 
 size_t menu_playlist_random_selection(
       size_t selection, bool is_explore_list);
+
+void menu_dialog_confirm_set(struct menu_state *menu_st,
+      unsigned msg, unsigned cmd);
+void menu_dialog_confirm_clear(struct menu_state *menu_st);
+void menu_dialog_confirm(struct menu_state *menu_st);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

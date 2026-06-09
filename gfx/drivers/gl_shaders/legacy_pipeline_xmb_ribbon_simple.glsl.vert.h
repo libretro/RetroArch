@@ -27,7 +27,8 @@ static const char *stock_vertex_xmb_ribbon_simple_legacy = GLSL(
      vec3 v2 = v;
      v2.x = v2.x + time/2.0;
      v2.z = v.z * 3.0;
-     v.y = -cos((v.x+v.z/3.0+time)*2.0)/10.0 - noise(v2.xyz)/4.0;
-     gl_Position = vec4(v, 1.0);
+     v.y = cos((v.x+v.z/3.0+time)*2.0)/10.0 + noise(v2.xyz)/4.0;
+     v.y = -v.y;
+     gl_Position = vec4(v.xy, 0.0, 1.0);
    }
 );

@@ -125,26 +125,37 @@ static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
 static int GLXExtensionSupported(Display *dpy, const char *ext)
 {
-   const char *ext_string        = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
-   const char *client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
-   const char *pos               = strstr(ext_string, ext);
-   size_t pos_ext_len            = strlen(ext);
+   size_t _len;
+   const char *ext_string;
+   const char *client_extensions;
+   const char *pos;
 
-   if (      pos
-         && (pos == ext_string       || pos[-1] == ' ')
-         && (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
-      )
-      return 1;
+   if (!ext || *ext == '\0')
+      return 0;
 
-   pos                           = strstr(client_extensions, ext);
-   pos_ext_len                   = strlen(ext);
+   _len              = strlen(ext);
+   ext_string        = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
+   client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
 
-   if (
-             pos
-         && (pos == ext_string       || pos[-1] == ' ')
-         && (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
-      )
-      return 1;
+   if (ext_string)
+   {
+      pos = strstr(ext_string, ext);
+      if (      pos
+            && (pos       == ext_string || pos[-1]   == ' ')
+            && (pos[_len] == ' '        || pos[_len] == '\0')
+         )
+         return 1;
+   }
+
+   if (client_extensions)
+   {
+      pos = strstr(client_extensions, ext);
+      if (      pos
+            && (pos       == client_extensions || pos[-1]   == ' ')
+            && (pos[_len] == ' '               || pos[_len] == '\0')
+         )
+         return 1;
+   }
 
    return 0;
 }
@@ -623,6 +634,13 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
+   {
+      /* Give the window a fullscreen hint before it is shown.
+       * This helps GNOME + X11 enter fullscreen properly */
+      x11_set_net_wm_fullscreen_hint(g_x11_dpy, g_x11_win);
+   }
+
+   if (fullscreen)
       x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
@@ -661,6 +679,15 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    }
 
    x11_event_queue_check(&event);
+
+   if (fullscreen)
+   {
+      /* Ask for fullscreen again after the window is visible. Some
+       * GNOME + X11 setups ignore the first request if it happens too
+       * early, which causes RetroArch to only maximise the window */
+      x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
+      XFlush(g_x11_dpy);
+   }
 
    switch (x_api)
    {
@@ -1076,14 +1103,14 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
             BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
 
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
+         else if (string_is_equal(video_driver_get_ident(), "glcore"))
+         {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+         }
          else
          {
-            if (string_is_equal(video_driver_get_ident(), "glcore"))
-            {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-               BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-            }
 #ifdef HAVE_CG
             if (!(x->core_hw_context_enable || x->core_es))
                BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
@@ -1163,7 +1190,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   x11_get_metrics,
+   NULL, /* get_metrics - handled by display server */
    NULL,
    x11_update_title,
    x11_check_window,

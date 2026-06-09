@@ -6,8 +6,7 @@ SRC(
    float4x4 modelViewProj;
    float2 SourceSize;
    float2 OutputSize;
-   float paper_white_nits;   /* 200.0f   */
-   float max_nits;           /* 1000.0f  */
+   float brightness_nits;    /* 200.0f   */
    uint subpixel_layout;     /* 0        */
    float scanlines;          /* 1.0f     */
    uint  expand_gamut;       /* 0        */
@@ -192,13 +191,13 @@ float3 HDR10ToscRGB(float3 hdr10Color)
 }
 /* END Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 
-float3 InverseTonemap(const float3 sdr_linear, const float max_nits, const float paper_white_nits)
+float3 InverseTonemap(const float3 sdr_linear, const float max_nits, const float brightness_nits)
 {
    const float input_val = max(sdr_linear.r, max(sdr_linear.g, sdr_linear.b));
 
    if (input_val < 0.0001f) return sdr_linear;
 
-   const float peak_ratio = max_nits / paper_white_nits;
+   const float peak_ratio = max_nits / brightness_nits;
 
    const float numerator = input_val;
    const float denominator = 1.0f - input_val * (1.0f - (1.0f / peak_ratio));
@@ -286,12 +285,12 @@ float4 To2020(const float4 sdr_linear)
 
 float3 HDR(const float3 sdr_linear)
 {
-   return InverseTonemap(sdr_linear, global.max_nits, global.paper_white_nits);
+   return InverseTonemap(sdr_linear, global.brightness_nits, global.brightness_nits);
 }
 
 float4 HDR(const float4 sdr_linear)
 {
-   const float3 hdr_linear = InverseTonemap(sdr_linear.rgb, global.max_nits, global.paper_white_nits);
+   const float3 hdr_linear = InverseTonemap(sdr_linear.rgb, global.brightness_nits, global.brightness_nits);
 
    return float4(hdr_linear, sdr_linear.a);
 }
@@ -304,7 +303,7 @@ float3 LinearToSignal(const float3 linear_colour)
 
 float3 HDR10(const float3 hdr_linear)
 {
-   const float3 pq_input  = hdr_linear * (global.paper_white_nits / kMaxNitsFor2084);
+   const float3 pq_input  = hdr_linear * (global.brightness_nits / kMaxNitsFor2084);
          
    const float3 hdr10 = LinearToST2084(max(pq_input, 0.0f));
 
@@ -313,7 +312,7 @@ float3 HDR10(const float3 hdr_linear)
 
 float4 HDR10(const float4 hdr_linear)
 {
-   const float3 pq_input  = hdr_linear.rgb * (global.paper_white_nits / kMaxNitsFor2084);
+   const float3 pq_input  = hdr_linear.rgb * (global.brightness_nits / kMaxNitsFor2084);
          
    const float3 hdr10 = LinearToST2084(max(pq_input, 0.0f));
 
@@ -334,117 +333,109 @@ float4 BeamControlPoints(const float beam_attack, const bool falloff)
    return falloff ? kFallOffControlPoints + float4(0.0f, outer_attack, inner_attack, 0.0f) : kAttackControlPoints - float4(0.0f, inner_attack, outer_attack, 0.0f);
 }
 
-float ScanlineColour(const uint channel, 
-                  const float2 tex_coord,
-                  const float2 source_size, 
-                  const float scanline_size, 
-                  const float source_tex_coord_x, 
-                  const float narrowed_source_pixel_offset, 
-                  const float vertical_convergence, 
-                  const float beam_attack, 
-                  const float scanline_min, 
-                  const float scanline_max, 
-                  const float scanline_attack, 
-                  const float vertical_bias) 
+/* Scanline generation in linear Rec.709 space.
+ * Works on all 3 channels at once (returns float3) so that pure Rec.709
+ * primaries have only one non-zero channel — beam width differences
+ * between channels cannot shift chromaticity. */
+float3 ScanlineColour(const float2 tex_coord,
+                  const float2 source_size,
+                  const float scanline_size,
+                  const float source_tex_coord_x,
+                  const float narrowed_source_pixel_offset,
+                  const float vertical_convergence,
+                  const float beam_attack,
+                  const float scanline_min,
+                  const float scanline_max,
+                  const float scanline_attack,
+                  const float vertical_bias)
 {
    const float current_source_position_y  = ((tex_coord.y * source_size.y) - vertical_convergence);
 
    const float center_line                = floor(current_source_position_y) + 0.5f + vertical_bias;
-   
-   /* if (fmod(floor(center_line), 3.0f) != 0.0f) return 0.0f; */
 
    const float distance_to_line           = current_source_position_y - center_line;
-   
-   if (abs(distance_to_line) > 1.5f) return 0.0f;
 
-   const float source_tex_coord_y         = center_line / source_size.y; 
+   if (abs(distance_to_line) > 1.5f) return float3(0.0f, 0.0f, 0.0f);
+
+   const float source_tex_coord_y         = center_line / source_size.y;
 
    const float2 tex_coord_0               = float2(source_tex_coord_x, source_tex_coord_y);
    const float2 tex_coord_1               = float2(source_tex_coord_x + (1.0f / source_size.x), source_tex_coord_y);
 
-   float hdr_channel_0;
-   float hdr_channel_1;
+   /* Sample in linear Rec.709 — beam width driven by linear signal level */
+   const float3 signal_0                  = Sample(tex_coord_0);
+   const float3 signal_1                  = Sample(tex_coord_1);
 
-   if(global.hdr_mode == 2)
+   float3 result = float3(0.0f, 0.0f, 0.0f);
+
+   [unroll]
+   for(int ch = 0; ch < 3; ch++)
    {
-      /* scRGB: no InverseTonemap — just colour convert and gamma encode for scanline sim */
-      hdr_channel_0              = LinearToSignal(To2020(Sample(tex_coord_0)))[channel];
-      hdr_channel_1              = LinearToSignal(To2020(Sample(tex_coord_1)))[channel];
-   }
-   else
-   {
-      hdr_channel_0              = LinearToSignal(HDR(To2020(Sample(tex_coord_0))))[channel];
-      hdr_channel_1              = LinearToSignal(HDR(To2020(Sample(tex_coord_1))))[channel];
-   }
+      const float horiz_interp               = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, signal_0[ch] > signal_1[ch]));
+      const float signal_channel             = lerp(signal_0[ch], signal_1[ch], horiz_interp);
 
-   const float horiz_interp               = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, hdr_channel_0 > hdr_channel_1));  
-   const float hdr_channel                = lerp(hdr_channel_0, hdr_channel_1, horiz_interp);
+      const float signal_strength            = clamp(signal_channel, 0.0f, 1.0f);
 
-   const float physics_signal             = hdr_channel;
+      const float beam_width_adjustment      = (kBeamWidth / scanline_size);
+      const float raw_distance               = abs(distance_to_line) - beam_width_adjustment;
+      const float distance_adjusted          = max(0.0f, raw_distance);
+      const float effective_distance         = distance_adjusted * 2.0f;
 
-   const float signal_strength            = clamp(physics_signal, 0.0f, 2.5f); 
+      float beam_width                       = lerp(scanline_min, scanline_max, signal_strength);
 
-   const float beam_width_adjustment      = (kBeamWidth / scanline_size);
-   const float raw_distance               = abs(distance_to_line) - beam_width_adjustment;
-   const float distance_adjusted          = max(0.0f, raw_distance);
-   const float effective_distance         = distance_adjusted * 2.0f;
+      const float channel_scanline_distance  = clamp(effective_distance / beam_width, 0.0f, 1.0f);
 
-   float beam_width                       = lerp(scanline_min, scanline_max, min(signal_strength, 1.0f));
+      const float4 channel_control_points    = float4(1.0f, 1.0f, signal_strength * scanline_attack, 0.0f);
+      const float luminance                  = Bezier(channel_scanline_distance, channel_control_points);
 
-   if (signal_strength > 1.0f)
-   {
-      beam_width += (signal_strength - 1.0f) * k_crt_bloom_strength; 
+      result[ch] = luminance * signal_channel;
    }
 
-   const float channel_scanline_distance  = clamp(effective_distance / beam_width, 0.0f, 1.0f);
-
-   const float4 channel_control_points    = float4(1.0f, 1.0f, min(signal_strength, 1.0f) * scanline_attack, 0.0f);
-   const float luminance                  = Bezier(channel_scanline_distance, channel_control_points);
-
-   return luminance * hdr_channel;
+   return result;
 }
 
-float GenerateScanline( const uint channel, 
-                        const float2 tex_coord,
-                        const float2 source_size, 
-                        const float scanline_size, 
-                        const float horizontal_convergence, 
-                        const float vertical_convergence, 
-                        const float beam_sharpness, 
-                        const float beam_attack, 
-                        const float scanline_min, 
-                        const float scanline_max, 
-                        const float scanline_attack)
+float3 GenerateScanline( const float2 tex_coord,
+                         const float2 source_size,
+                         const float scanline_size,
+                         const float horizontal_convergence,
+                         const float vertical_convergence,
+                         const float beam_sharpness,
+                         const float beam_attack,
+                         const float scanline_min,
+                         const float scanline_max,
+                         const float scanline_attack)
 {
    const float current_source_position_x      = (tex_coord.x * source_size.x) - horizontal_convergence;
-   const float current_source_center_x        = floor(current_source_position_x) + 0.5f; 
-   const float source_tex_coord_x             = current_source_center_x / source_size.x; 
+   const float current_source_center_x        = floor(current_source_position_x) + 0.5f;
+   const float source_tex_coord_x             = current_source_center_x / source_size.x;
    const float source_pixel_offset            = frac(current_source_position_x);
    const float narrowed_source_pixel_offset   = clamp(((source_pixel_offset - 0.5f) * beam_sharpness) + 0.5f, 0.0f, 1.0f);
 
-   float total_light  = 0.0f;
-
-   total_light += ScanlineColour( channel, tex_coord, source_size, scanline_size, source_tex_coord_x, 
-                                       narrowed_source_pixel_offset, vertical_convergence, beam_attack, 
-                                       scanline_min, scanline_max, scanline_attack, 
-                                       0.0f); 
+   float3 total_light = ScanlineColour( tex_coord, source_size, scanline_size, source_tex_coord_x,
+                                        narrowed_source_pixel_offset, vertical_convergence, beam_attack,
+                                        scanline_min, scanline_max, scanline_attack,
+                                        0.0f);
 
    if(k_crt_bloom_strength > 0.0f)
    {
-      total_light += ScanlineColour( channel, tex_coord, source_size, scanline_size, source_tex_coord_x, 
-                                    narrowed_source_pixel_offset, vertical_convergence, beam_attack, 
-                                    scanline_min, scanline_max, scanline_attack, 
-                                    1.0f);
+      total_light += ScanlineColour( tex_coord, source_size, scanline_size, source_tex_coord_x,
+                                     narrowed_source_pixel_offset, vertical_convergence, beam_attack,
+                                     scanline_min, scanline_max, scanline_attack,
+                                     1.0f);
 
-      total_light += ScanlineColour( channel, tex_coord, source_size, scanline_size, source_tex_coord_x, 
-                                    narrowed_source_pixel_offset, vertical_convergence, beam_attack, 
-                                    scanline_min, scanline_max, scanline_attack, 
-                                    -1.0f);
+      total_light += ScanlineColour( tex_coord, source_size, scanline_size, source_tex_coord_x,
+                                     narrowed_source_pixel_offset, vertical_convergence, beam_attack,
+                                     scanline_min, scanline_max, scanline_attack,
+                                     -1.0f);
    }
 
    return total_light;
-} 
+}
 
+/* Scanlines: generate scanline in linear Rec.709, then convert to output space and apply mask.
+ * HDR10 path: mask in Rec.2020 (output is BT.2020)
+ * scRGB path: mask in Rec.709 (output is scRGB/Rec.709)
+ * Returns fully processed linear colour with mask applied. */
 float3 Scanlines(float2 texcoord)
 {
    const float2 source_size         = global.SourceSize;
@@ -454,49 +445,54 @@ float3 Scanlines(float2 texcoord)
    scanline_coord                   = scanline_coord * float2(1.0f + (k_crt_pin_phase * scanline_coord.y), 1.0f);
    scanline_coord                   = scanline_coord * float2(k_crt_h_size, k_crt_v_size);
    scanline_coord                   = scanline_coord + float2(0.5f, 0.5f);
-   scanline_coord                   = scanline_coord + (float2(k_crt_h_cent, k_crt_v_cent) / output_size); 
+   scanline_coord                   = scanline_coord + (float2(k_crt_h_cent, k_crt_v_cent) / output_size);
 
    const float2 current_position    = texcoord * output_size;
 
-   uint mask = uint(floor(fmod(current_position.x, 4.0f)));
-   uint colour_mask = (k_rgb_mask[global.subpixel_layout] >> (mask * 4)) & 0xF;   
+   uint mask_idx = uint(floor(fmod(current_position.x, 4.0f)));
+   uint colour_mask = (k_rgb_mask[global.subpixel_layout] >> (mask_idx * 4)) & 0xF;
 
    const float scanline_size              = output_size.y / source_size.y;
 
-   const float3 horizontal_convergence   = float3(k_crt_red_horizontal_convergence, k_crt_green_horizontal_convergence, k_crt_blue_horizontal_convergence);
-   const float3 vertical_convergence     = float3(k_crt_red_vertical_convergence, k_crt_green_vertical_convergence, k_crt_blue_vertical_convergence);
-   const float3 beam_sharpness           = float3(k_crt_red_beam_sharpness, k_crt_green_beam_sharpness, k_crt_blue_beam_sharpness);
-   const float3 beam_attack              = float3(k_crt_red_beam_attack, k_crt_green_beam_attack, k_crt_blue_beam_attack);
-   const float3 scanline_min             = float3(k_crt_red_scanline_min, k_crt_green_scanline_min, k_crt_blue_scanline_min);
-   const float3 scanline_max             = float3(k_crt_red_scanline_max, k_crt_green_scanline_max, k_crt_blue_scanline_max);
-   const float3 scanline_attack          = float3(k_crt_red_scanline_attack, k_crt_green_scanline_attack, k_crt_blue_scanline_attack);
+   /* Single GenerateScanline call — all 3 channels at once in linear Rec.709 */
+   float3 scanline_colour = GenerateScanline( scanline_coord,
+                                              source_size.xy,
+                                              scanline_size,
+                                              k_crt_red_horizontal_convergence,
+                                              k_crt_red_vertical_convergence,
+                                              k_crt_red_beam_sharpness,
+                                              k_crt_red_beam_attack,
+                                              k_crt_red_scanline_min,
+                                              k_crt_red_scanline_max,
+                                              k_crt_red_scanline_attack);
 
-   const uint channel_count            = colour_mask & 3;
+   /* Already linear Rec.709 — just clamp negatives */
+   float3 linear_709 = max(scanline_colour, float3(0.0f, 0.0f, 0.0f));
 
-   float3 scanline_colour = float3(0.0f, 0.0f, 0.0f);
-
+   /* Build mask from subpixel layout bitfield */
+   const uint channel_count = colour_mask & 3;
+   float3 mask = float3(0.0f, 0.0f, 0.0f);
    if(channel_count > 0)
    {
-      const uint channel_0             = (colour_mask >> kFirstChannelShift) & 3;
-
-      const float scanline_channel_0   = GenerateScanline(  channel_0,
-                                                            scanline_coord,
-                                                            source_size.xy, 
-                                                            scanline_size, 
-                                                            horizontal_convergence[channel_0], 
-                                                            vertical_convergence[channel_0], 
-                                                            beam_sharpness[channel_0], 
-                                                            beam_attack[channel_0], 
-                                                            scanline_min[channel_0], 
-                                                            scanline_max[channel_0], 
-                                                            scanline_attack[channel_0]);
-
-      scanline_colour =  scanline_channel_0 * kColourMask[channel_0];
+      const uint ch0 = (colour_mask >> kFirstChannelShift) & 3;
+      mask = kColourMask[ch0];
    }
 
-   float3 linear_colour = pow(max(scanline_colour, float3(0.0f, 0.0f, 0.0f)), 2.4f);
-
-   return linear_colour;
+   if(global.hdr_mode == 2)
+   {
+      /* scRGB: convert to Rec.2020 with ExpandGamut, then back to Rec.709 for scRGB,
+       * apply mask in Rec.709 (the output colour space) */
+      float3 linear_2020 = To2020(linear_709);
+      float3 linear_scrgb = mul(k2020to709, linear_2020);
+      return linear_scrgb * mask;
+   }
+   else
+   {
+      /* HDR10: To2020 → InverseTonemap → mask in Rec.2020 (the output colour space) */
+      float3 linear_2020 = To2020(linear_709);
+      float3 hdr_2020 = HDR(linear_2020);
+      return hdr_2020 * mask;
+   }
 }
 
 float4 PSMain(PSInput input) : SV_TARGET
@@ -515,16 +511,11 @@ float4 PSMain(PSInput input) : SV_TARGET
        * Scale by MaxNits / kscRGBWhiteNits because scRGB 1.0 = 80 nits. */
       if((global.scanlines > 0.0f) && (global.OutputSize.y > 240.0f * 4.0f))
       {
-         /* Scanlines() works in Rec.2020 (To2020 with ExpandGamut applied inside).
-          * scRGB units: 1.0 = 80 nits.
-          * Always convert back to Rec.709 for scRGB output.
-          * For Super (gamut 3), To2020 passed through Rec.709 data —
-          * k2020to709 then "interprets" it as Rec.2020, giving maximum boost. */
+         /* Scanlines() returns linear Rec.709 with mask already applied in Rec.709 space.
+          * scRGB units: 1.0 = 80 nits. */
          float3 linear_col = Scanlines(input.texcoord);
 
-         linear_col = mul(k2020to709, linear_col);
-
-         return float4(linear_col * (global.paper_white_nits / kscRGBWhiteNits), 1.0f);
+         return float4(linear_col * (global.brightness_nits / kscRGBWhiteNits), 1.0f);
       }
       else
       {
@@ -537,7 +528,7 @@ float4 PSMain(PSInput input) : SV_TARGET
 
          linear_col = mul(k2020to709, linear_col);
 
-         linear_col *= global.max_nits / kscRGBWhiteNits;
+         linear_col *= global.brightness_nits / kscRGBWhiteNits;
          return float4(linear_col, sdr.a);
       }
    }
@@ -545,6 +536,7 @@ float4 PSMain(PSInput input) : SV_TARGET
    {
       if((global.scanlines > 0.0f) && (global.OutputSize.y > 240.0f * 4.0f))
       {
+         /* Scanlines() returns linear Rec.2020 with InverseTonemap and mask applied */
          return float4(HDR10(Scanlines(input.texcoord)), 1.0f);
       }
       else
@@ -566,4 +558,77 @@ float4 PSMain(PSInput input) : SV_TARGET
       return t0.Sample(s0, input.texcoord);
    }
 };
+
+/* --- Readback path: HDR -> SDR (inverse of the forward composition) ---
+ * Used by the read_viewport screenshot path in the D3D11/D3D12 drivers
+ * to sample the HDR backbuffer (HDR10 PQ or scRGB FP16) and produce
+ * sRGB-encoded bytes that a plain PNG viewer can display correctly.
+ * Mirrors dxgi_hdr_readback_to_bgr24() in gfx/common/dxgi_common.c but
+ * runs on the GPU. */
+
+/* sRGB OETF: linear [0,1] -> sRGB encoded [0,1].  The readback render
+ * target is B8G8R8A8_UNORM (linear), so we apply the encoding ourselves. */
+float3 LinearToSRGB(float3 c)
+{
+   float3 clamped = saturate(c);
+   float3 lo      = clamped * 12.92f;
+   float3 hi      = 1.055f * pow(clamped, 1.0f / 2.4f) - 0.055f;
+   return (clamped <= 0.0031308f) ? lo : hi;
+}
+
+/* Reverse of InverseTonemap(): compresses values above SDR white back
+ * into [0,1] using a hue-preserving operator on the peak channel. */
+float3 Tonemap(const float3 hdr_linear, const float max_nits, const float brightness_nits)
+{
+   const float input_val = max(hdr_linear.r, max(hdr_linear.g, hdr_linear.b));
+   if (input_val < 0.0001f) return hdr_linear;
+   const float peak_ratio = max_nits / brightness_nits;
+   const float k          = 1.0f - (1.0f / peak_ratio);
+   return hdr_linear / max(1.0f + input_val * k, 0.0001f);
+}
+
+/* PQ-encoded BT.2020 HDR10 -> linear BT.709 at paper-white units.
+ * Undoes the forward pass's PQ encode and BT.709->BT.2020 rotation,
+ * and rescales so that SDR paper-white maps back to 1.0. */
+float3 HDR10ToLinear(float3 hdr10, float brightness_nits)
+{
+   float3 linear_2020_10k = ST2084ToLinear(hdr10);
+   float3 linear_709      = mul(k2020to709, linear_2020_10k);
+   /* Forward path multiplied by (brightness_nits / 10000) before PQ
+    * encoding; undo that to bring SDR white back to 1.0. */
+   return linear_709 * (kMaxNitsFor2084 / brightness_nits);
+}
+
+/* Entry point selected by hdr_mode:
+ *   1 = HDR10 PQ backbuffer   -> HDR10ToLinear + Tonemap + sRGB encode
+ *   2 = scRGB FP16 backbuffer -> rescale by (80 / paper_white) + sRGB
+ * The readback RT is B8G8R8A8_UNORM, so we always apply the sRGB OETF. */
+float4 PSMainToSDR(PSInput input) : SV_TARGET
+{
+   float4 src = t0.Sample(s0, input.texcoord);
+   float3 sdr_linear;
+
+   if (global.hdr_mode == 1)
+   {
+      float3 hdr_linear = HDR10ToLinear(src.rgb, global.brightness_nits);
+      sdr_linear        = Tonemap(hdr_linear,
+                                  global.brightness_nits,
+                                  global.brightness_nits);
+   }
+   else if (global.hdr_mode == 2)
+   {
+      /* scRGB: undo forward scale of (brightness_nits / 80).
+       * Negative and >1 values are legal scRGB (wide-gamut / super-white)
+       * and will clamp in LinearToSRGB. */
+      sdr_linear = src.rgb * (kscRGBWhiteNits / global.brightness_nits);
+   }
+   else
+   {
+      /* Passthrough — shouldn't happen on the HDR readback path but
+       * keeps the shader well-defined. */
+      sdr_linear = src.rgb;
+   }
+
+   return float4(LinearToSRGB(sdr_linear), 1.0f);
+}
 )

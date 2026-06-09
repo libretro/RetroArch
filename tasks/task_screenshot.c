@@ -28,7 +28,6 @@
 
 #include <file/file_path.h>
 #include <compat/strl.h>
-#include <string/stdstring.h>
 #include <gfx/video_frame.h>
 
 #ifdef HAVE_RBMP
@@ -100,6 +99,33 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    if (!input)
       return ret;
 
+   /* Fast path: source is already BGR24 and no resampling is
+    * needed, so hand the source buffer directly to the PNG
+    * encoder. rpng_save_image_stream walks rows via `data +=
+    * pitch` with a signed pitch, so a bottom-up source is
+    * encoded top-down for free by starting at the last row and
+    * passing a negative row stride (same trick take_screenshot_raw
+    * uses via screenshot_dump's pitch argument).
+    *
+    * This avoids allocating a second full-frame BGR24 buffer and
+    * the flip-and-copy the scaler would otherwise do between them;
+    * at 4K that is ~48 MiB of allocation and copy per screenshot. */
+   if (     (state->flags & SS_TASK_FLAG_BGR24)
+         &&  state->out_width  == state->width
+         &&  state->out_height == state->height)
+   {
+      ret = rpng_save_image_bgr24(
+            state->filename,
+            input,
+            state->out_width,
+            state->out_height,
+            (unsigned)(-state->pitch)
+            );
+      /* state->out_buffer is NULL in this path (see screenshot_dump);
+       * nothing to free. */
+      return ret;
+   }
+
    if (state->flags & SS_TASK_FLAG_BGR24)
       scaler->in_fmt             = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
@@ -110,8 +136,7 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    video_frame_convert_to_bgr24(
          scaler,
          state->out_buffer,
-         (const uint8_t*)state->frame + ((int)state->height - 1)
-         * state->pitch,
+         input,
          state->width,
          state->height,
          -state->pitch,
@@ -320,15 +345,24 @@ static bool screenshot_dump(
    if (savestate)
    {
       /* Use native core output dimensions */
+      unsigned cache_w = 0, cache_h = 0;
       video_driver_state_t *video_st = video_state_get_ptr();
+      video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
       if (video_st)
       {
-         state->out_width       = (video_st->frame_cache_width  <= 4)
+         state->out_width        = (cache_w <= 4)
                ? video_st->av_info.geometry.base_width
-               : video_st->frame_cache_width;
-         state->out_height      = (video_st->frame_cache_height <= 4)
+               : cache_w;
+         state->out_height       = (cache_h <= 4)
                ? video_st->av_info.geometry.base_height
-               : video_st->frame_cache_height;
+               : cache_h;
+      }
+
+      /* Fallback to display size if smaller than core output */
+      if (state->out_width > width || state->out_height > height)
+      {
+         state->out_width        = width;
+         state->out_height       = height;
       }
 
       state->flags              |= SS_TASK_FLAG_SILENCE;
@@ -352,14 +386,14 @@ static bool screenshot_dump(
       {
          char new_screenshot_dir[DIR_MAX_LENGTH];
 
-         if (!string_is_empty(screenshot_dir))
+         if (screenshot_dir && *screenshot_dir)
          {
             const char *content_dir = path_get(RARCH_PATH_BASENAME);
 
             /* Append content directory name to screenshot
              * path, if required */
             if (    settings->bools.sort_screenshots_by_content_enable
-                && !string_is_empty(content_dir))
+                && content_dir && *content_dir)
             {
                char content_dir_name[DIR_MAX_LENGTH];
                fill_pathname_parent_dir_name(content_dir_name,
@@ -388,7 +422,7 @@ static bool screenshot_dump(
                   return false;
                }
 
-               if (string_is_empty(sysinfo.library_name))
+               if (!sysinfo.library_name || !*sysinfo.library_name)
                   screenshot_name = "RetroArch";
                else
                   screenshot_name = sysinfo.library_name;
@@ -409,7 +443,7 @@ static bool screenshot_dump(
                   sizeof(state->shotname) - _len);
          }
 
-         if (     string_is_empty(new_screenshot_dir)
+         if (     !*new_screenshot_dir
                || settings->bools.screenshots_in_content_dir)
             fill_pathname_basedir(new_screenshot_dir, name_base,
                   sizeof(new_screenshot_dir));
@@ -425,12 +459,22 @@ static bool screenshot_dump(
    }
 
 #if defined(HAVE_RPNG)
-   if (!(buf = (uint8_t*)malloc(width * height * 3)))
+   /* Only allocate the BGR24 output buffer when screenshot_dump_direct
+    * will actually use the scaler. When the source is already BGR24 at
+    * the output dimensions (typical of the viewport read-back path,
+    * take_screenshot_viewport), the encoder walks the source directly
+    * with negative pitch and no intermediate buffer is needed. */
+   if (  !(state->flags & SS_TASK_FLAG_BGR24)
+       || state->out_width  != width
+       || state->out_height != height)
    {
-      free(state);
-      return false;
+      if (!(buf = (uint8_t*)malloc(state->out_width * state->out_height * 3)))
+      {
+         free(state);
+         return false;
+      }
+      state->out_buffer  = buf;
    }
-   state->out_buffer     = buf;
 #endif
 
    if (use_thread)
@@ -455,7 +499,7 @@ static bool screenshot_dump(
       else
 #endif
       {
-         if (!savestate & settings->bools.notification_show_screenshot)
+         if (!savestate && settings->bools.notification_show_screenshot)
             task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
       }
 
@@ -530,6 +574,41 @@ static bool take_screenshot_viewport(
    return false;
 }
 
+/* Read-side callback for take_screenshot_raw: allocate a copy of
+ * the cached frame and stash it in this small POD so the caller
+ * gets a stable pointer it owns.  The copy is necessary because
+ * the screenshot task may run on a worker thread and the
+ * cached_frame's lifetime can end (core close, driver reinit) at
+ * any point after the callback returns.
+ */
+struct ss_raw_copy
+{
+   void    *buffer;
+   unsigned width;
+   unsigned height;
+   size_t   pitch;
+};
+
+static void ss_raw_copy_cb(void *userdata,
+      const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   struct ss_raw_copy *out = (struct ss_raw_copy*)userdata;
+   size_t             size;
+
+   if (!data || !width || !height || !pitch)
+      return;
+
+   size = (size_t)height * pitch;
+   if (!(out->buffer = malloc(size)))
+      return;
+
+   memcpy(out->buffer, data, size);
+   out->width  = width;
+   out->height = height;
+   out->pitch  = pitch;
+}
+
 static bool take_screenshot_raw(
       video_driver_state_t *video_st,
       const char *screenshot_dir,
@@ -538,30 +617,74 @@ static bool take_screenshot_raw(
       bool fullpath, bool use_thread,
       unsigned pixel_format_type)
 {
-   const void *data = video_st->frame_cache_data;
-   unsigned width   = video_st->frame_cache_width;
-   unsigned height  = video_st->frame_cache_height;
-   size_t pitch     = video_st->frame_cache_pitch;
+   const void        *frame_ptr  = NULL;
+   void              *owned      = NULL;   /* heap copy owned by us */
+   unsigned           width      = 0;
+   unsigned           height     = 0;
+   size_t             pitch      = 0;
 
-   if (!data || !width || !height || !pitch)
-      return false;
+   if (userbuf)
+   {
+      /* The supports_read_frame_raw caller path mallocs a fresh
+       * BGR24 buffer via video_driver_read_frame_raw and passes
+       * it here, having also updated frame_cache_* to match.  The
+       * buffer is already an owned snapshot -- no need to re-copy;
+       * just use it.  Ownership transfers to the screenshot task
+       * via the userbuf passthrough (existing cleanup at
+       * task_finished frees state->userbuf). */
+      bool has_pixels = false;
+      if (   !video_driver_cached_frame_info(&width, &height, &pitch,
+                  &has_pixels)
+          || !has_pixels)
+         return false;
+      frame_ptr = userbuf;
+   }
+   else
+   {
+      /* Standard CPU-path screenshot: pull a heap-owned copy of
+       * the cached frame's pixels via the lifetime-safe callback
+       * API.  The screenshot task is deferred onto a worker
+       * thread; without copying we'd risk a UAF if the core
+       * closes or the driver reinit's between this enqueue and
+       * the worker dequeuing it. */
+      struct ss_raw_copy copy = { NULL, 0, 0, 0 };
+      video_driver_cached_frame_read(&copy, ss_raw_copy_cb);
 
-   /* Negative pitch is needed as screenshot takes bottom-up,
-    * but we use top-down.
-    */
-   return screenshot_dump(screenshot_dir,
+      if (!copy.buffer || !copy.width || !copy.height || !copy.pitch)
+      {
+         free(copy.buffer);
+         return false;
+      }
+
+      owned     = copy.buffer;
+      frame_ptr = copy.buffer;
+      width     = copy.width;
+      height    = copy.height;
+      pitch     = copy.pitch;
+   }
+
+   /* Negative pitch is needed as screenshot takes bottom-up, but
+    * we use top-down. */
+   if (screenshot_dump(screenshot_dir,
             name_base,
-            (const uint8_t*)data + (height - 1) * pitch,
+            (const uint8_t*)frame_ptr + (height - 1) * pitch,
             width,
             height,
             (int)(-pitch),
             false,
-            userbuf,
+            owned ? owned : userbuf, /* userbuf: cleanup frees it */
             savestate,
             runloop_flags,
             fullpath,
             use_thread,
-            pixel_format_type);
+            pixel_format_type))
+      return true;
+
+   /* screenshot_dump only takes ownership on success; on failure
+    * we have to free our copy.  The caller-owned userbuf isn't
+    * ours to free here. */
+   free(owned);
+   return false;
 }
 
 static bool take_screenshot_choice(
@@ -598,21 +721,23 @@ static bool take_screenshot_choice(
 
    if (supports_read_frame_raw)
    {
-      const void *old_data         = video_st->frame_cache_data;
-      unsigned old_width           = video_st->frame_cache_width;
-      unsigned old_height          = video_st->frame_cache_height;
-      size_t old_pitch             = video_st->frame_cache_pitch;
-      void *frame_data             = video_driver_read_frame_raw(
-            &old_width, &old_height, &old_pitch);
-
-      video_st->frame_cache_data   = old_data;
-      video_st->frame_cache_width  = old_width;
-      video_st->frame_cache_height = old_height;
-      video_st->frame_cache_pitch  = old_pitch;
+      /* video_driver_read_frame_raw's w/h/p are pure out-params --
+       * the driver writes the dimensions of the buffer it
+       * returns.  On success we publish (frame_data, dims) into
+       * the cache before invoking take_screenshot_raw, which then
+       * pulls dims via cached_frame_info() and uses frame_data
+       * directly as a caller-owned snapshot.  On failure
+       * (frame_data == NULL) we leave the existing cache state
+       * untouched -- cleaner than the previous save-and-restore
+       * dance that mixed old data with new dims. */
+      unsigned w   = 0;
+      unsigned h   = 0;
+      size_t   p   = 0;
+      void *frame_data = video_driver_read_frame_raw(&w, &h, &p);
 
       if (frame_data)
       {
-         video_st->frame_cache_data = frame_data;
+         video_driver_cached_frame_publish(frame_data, w, h, p);
          return take_screenshot_raw(video_st, screenshot_dir,
                name_base, frame_data, savestate, runloop_flags, fullpath, use_thread,
                pixel_format_type);
@@ -647,12 +772,10 @@ bool take_screenshot(
       if (video_gpu_screenshot && !savestate)
          prefer_vp_read           = true;
    }
-
    /* No way to infer screenshot directory. */
-   if (     string_is_empty(screenshot_dir)
-         && string_is_empty(name_base))
+   if (     (!screenshot_dir || !*screenshot_dir)
+         && (!name_base || !*name_base))
       return false;
-
    ret       = take_screenshot_choice(
          video_st,
          screenshot_dir,
@@ -666,10 +789,9 @@ bool take_screenshot(
          (video_st->current_video->read_frame_raw != NULL),
          video_st->pix_fmt
          );
-
    if (       (runloop_flags & RUNLOOP_FLAG_PAUSED)
          && (!(runloop_flags & RUNLOOP_FLAG_IDLE)))
          video_driver_cached_frame();
-
    return ret;
 }
+

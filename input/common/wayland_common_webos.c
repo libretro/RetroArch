@@ -229,17 +229,36 @@ static void wl_registry_handle_global_webos(void *data,
    {
       display_output_t *od   = (display_output_t*)calloc(1, sizeof(*od));
       output_info_t *oi      = (output_info_t*)calloc(1, sizeof(*oi));
-      od->output             = oi;
-      oi->output             = (struct wl_output*)wl_registry_bind(reg,
-         id, &wl_output_interface, MIN(version, 2));
-      oi->global_id          = id;
-      oi->scale              = 1;
-      wl_output_add_listener(oi->output, &output_listener, oi);
-      wl_list_insert(&wl->all_outputs, &od->link);
+      /* NULL-check both callocs: od->output = oi and oi->output/
+       * global_id/scale writes NULL-deref on OOM.  Free whichever
+       * succeeded and skip adding this output.  Mirrors the fix
+       * in the upstream wayland_common.c sibling. */
+      if (!od || !oi)
+      {
+         free(od);
+         free(oi);
+      }
+      else
+      {
+         od->output             = oi;
+         oi->output             = (struct wl_output*)wl_registry_bind(reg,
+            id, &wl_output_interface, MIN(version, 2));
+         oi->global_id          = id;
+         oi->scale              = 1;
+         wl_output_add_listener(oi->output, &output_listener, oi);
+         wl_list_insert(&wl->all_outputs, &od->link);
+      }
    }
    else if (string_is_equal(interface, "wl_seat"))
    {
       seat_info_t *si = calloc(1, sizeof(*si));
+      /* NULL-check: the field writes below NULL-deref on OOM.
+       * Skip this seat - the compositor will re-emit
+       * wl_registry.global if it needs us to retry, and missing
+       * seats are handled gracefully by downstream input
+       * dispatch (no devices reported from that seat). */
+      if (!si)
+         return;
       si->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, MIN(version, 4));
       si->global_id = id;
       si->wl = wl;
@@ -253,32 +272,22 @@ static void wl_registry_handle_global_webos(void *data,
       wl->data_device_manager = (struct wl_data_device_manager*)wl_registry_bind(reg,
          id, &wl_data_device_manager_interface, MIN(version, 1));
    else if (string_is_equal(interface, "wl_shell"))
-   {
       wl->shell = (struct wl_shell*)wl_registry_bind(reg,
          id, &wl_shell_interface, 1);
-   }
    else if (string_is_equal(interface, "wl_webos_shell"))
-   {
       wl->webos_shell = (struct wl_webos_shell*)wl_registry_bind(reg,
          id, &wl_webos_shell_interface, 1);
-   }
 #ifdef HAVE_WEBOS_EXTRA_PROTOS
    else if (string_is_equal(interface, "wl_webos_foreign"))
-   {
       wl->webos_foreign = (struct wl_webos_foreign*)wl_registry_bind(reg,
          id, &wl_webos_foreign_interface, MIN(version, 1));
-   }
    else if (string_is_equal(interface, "wl_webos_surface_group_compositor"))
-   {
       wl->webos_surface_group_compositor = 
          (struct wl_webos_surface_group_compositor*)wl_registry_bind(reg,
          id, &wl_webos_surface_group_compositor_interface, 1);
-   }
    else if (string_is_equal(interface, "wl_webos_input_manager"))
-   {
       wl->webos_input_manager = (struct wl_webos_input_manager*)wl_registry_bind(reg,
          id, &wl_webos_input_manager_interface, 1);
-   }
 #endif
 }
 
@@ -555,7 +564,8 @@ bool gfx_ctx_wl_init_webos(
 
    if (wl->shell_surface == NULL)
    {
-      RARCH_LOG("[wayland/webOS] Can't create shell surface");
+      RARCH_ERR("[wayland/webOS] Can't create shell surface");
+      return false;
    }
 
    wl_shell_surface_set_toplevel(wl->shell_surface);
@@ -565,7 +575,8 @@ bool gfx_ctx_wl_init_webos(
 
    if (wl->webos_shell_surface == NULL)
    {
-      RARCH_LOG("[wayland/webOS] Can't create webos shell surface");
+      RARCH_ERR("[wayland/webOS] Can't create webos shell surface");
+      return false;
    }
 
    wl_webos_shell_surface_add_listener(wl->webos_shell_surface,
@@ -672,27 +683,33 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t *w
 #ifdef HAVE_USERLAND
 static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
 {
-   const char *msg = HLunaServiceMessage(reply);
-   size_t len = msg ? strlen(msg) : 0;
-   char state[32] = {0};
-   char timestamp[64] = {0};
+   char *resp;
+   enum rjson_type t;
+   HContext response_ctx;
+   bool suspend_screensaver;
+   settings_t *settings;
+   rjsonwriter_t *w = NULL;
+   rjson_t *json    = NULL;
+   const char *key  = NULL, *val = NULL;
+   const char *msg        = HLunaServiceMessage(reply);
+   size_t _len            = msg ? strlen(msg) : 0;
+   char state[32]         = {0};
+   char timestamp[64]     = {0};
    const char *clientName = (context && ((HContext*)context)->userdata)
                             ? (const char *)((HContext*)context)->userdata
                             : "";
 
    RARCH_DBG("[LunaRequest] screenSaverCallback: %s\n", msg ? msg : "(null)");
-   if (!msg || !len)
+   if (!msg || !_len)
       return true;
 
-   rjson_t *json = rjson_open_string(msg, len);
-   enum rjson_type t;
-   const char *key = NULL, *val = NULL;
+   json = rjson_open_string(msg, _len);
    while ((t = rjson_next(json)) != RJSON_DONE && t != RJSON_ERROR)
    {
       if (t == RJSON_STRING)
       {
          key = rjson_get_string(json, NULL);
-         t = rjson_next(json);
+         t   = rjson_next(json);
          if (t == RJSON_STRING || t == RJSON_NUMBER)
          {
             val = rjson_get_string(json, NULL);
@@ -708,10 +725,10 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    if (strcmp(state, "Active") != 0)
       return true;
 
-   settings_t *settings = config_get_ptr();
-   bool suspend_screensaver = settings->bools.ui_suspend_screensaver_enable;
+   settings            = config_get_ptr();
+   suspend_screensaver = settings->bools.ui_suspend_screensaver_enable;
 
-   rjsonwriter_t *w = rjsonwriter_open_memory();
+   w                   = rjsonwriter_open_memory();
    rjsonwriter_raw(w, "{", 1);
    rjsonwriter_add_string(w, "clientName");
    rjsonwriter_raw(w, ":", 1);
@@ -726,17 +743,17 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    rjsonwriter_add_string(w, timestamp);
    rjsonwriter_raw(w, "}", 1);
 
-   char *resp = rjsonwriter_get_memory_buffer(w, NULL);
+   resp = rjsonwriter_get_memory_buffer(w, NULL);
    RARCH_DBG("[LunaRequest] responseScreenSaverRequest payload: %s\n", resp);
 
-   HContext response_ctx;
    memset(&response_ctx, 0, sizeof(response_ctx));
    response_ctx.multiple = false;
    response_ctx.pub = true;
    response_ctx.callback = NULL;
 
-   HLunaServiceCall("luna://com.webos.service.tvpower/power/responseScreenSaverRequest",
-                    resp, &response_ctx);
+   HLunaServiceCall(
+      "luna://com.webos.service.tvpower/power/responseScreenSaverRequest",
+      resp, &response_ctx);
 
    rjsonwriter_free(w);
    return true;
@@ -746,6 +763,7 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
 bool gfx_ctx_wl_suppress_screensaver_webos(void *data, bool state)
 {
 #ifdef HAVE_USERLAND
+   char payload[256];
    const char *appId = get_app_id();
    if (!g_screensaver_ctx)
       g_screensaver_ctx = (HContext*)malloc(sizeof(HContext));
@@ -764,7 +782,6 @@ bool gfx_ctx_wl_suppress_screensaver_webos(void *data, bool state)
       g_screensaver_ctx->userdata = client_name;
    }
 
-   char payload[256];
    snprintf(payload, sizeof(payload),
             "{\"clientName\":\"%s\",\"subscribe\":true}",
             (const char *)g_screensaver_ctx->userdata);
@@ -862,7 +879,7 @@ void wl_keyboard_handle_key_webos(void *data,
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
 
-void shutdown_webos_contexts()
+void shutdown_webos_contexts(void)
 {
 #ifdef HAVE_USERLAND
    if (g_register_ctx)

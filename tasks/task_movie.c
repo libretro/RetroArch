@@ -415,7 +415,9 @@ bool movie_stop_record(input_driver_state_t *input_st)
    uint32s_index_print_count_data(movie->blocks);
 #endif
 #endif
-   frame_count = swap_if_big32(movie->frame_counter);
+   if (movie->frame_counter > UINT32_MAX)
+      RARCH_ERR("[Replay] Frame counter too big to fit in 32 bits\n");
+   frame_count = swap_if_big32((uint32_t)movie->frame_counter);
    intfstream_seek(movie->file, REPLAY_HEADER_FRAME_COUNT_INDEX*sizeof(uint32_t), SEEK_SET);
    intfstream_write(movie->file, &frame_count, sizeof(uint32_t));
    bsv_movie_deinit_full(input_st);

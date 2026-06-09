@@ -177,7 +177,7 @@ static void xshm_poke_set_texture_frame(void *data,
 static void xshm_poke_texture_enable(void *data,
       bool enable, bool full_screen) { }
 static void xshm_poke_set_osd_msg(void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params, void *font) { }
 static void xshm_show_mouse(void *data, bool state) { }
 static void xshm_grab_mouse_toggle(void *data) { }
@@ -208,7 +208,7 @@ static video_poke_interface_t xshm_video_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -244,6 +244,8 @@ video_driver_t video_xshm = {
 #endif
    xshm_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

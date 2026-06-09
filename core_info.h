@@ -42,6 +42,16 @@ RETRO_BEGIN_DECLS
 #define CORE_INFO_SAVESTATE_SERIALIZED    2
 #define CORE_INFO_SAVESTATE_DETERMINISTIC 3
 
+/* Bit flags for core_info_t.flags (MEM-2: pack bools) */
+#define CORE_INFO_FLAG_HAS_INFO                    (1 << 0)
+#define CORE_INFO_FLAG_SUPPORTS_NO_GAME            (1 << 1)
+#define CORE_INFO_FLAG_SINGLE_PURPOSE              (1 << 2)
+#define CORE_INFO_FLAG_DATABASE_MATCH_ARCHIVE_MEMBER (1 << 3)
+#define CORE_INFO_FLAG_IS_EXPERIMENTAL             (1 << 4)
+#define CORE_INFO_FLAG_IS_LOCKED                   (1 << 5)
+#define CORE_INFO_FLAG_IS_STANDALONE_EXEMPT        (1 << 6)
+#define CORE_INFO_FLAG_IS_INSTALLED                (1 << 7)
+
 enum core_info_list_qsort_type
 {
    CORE_INFO_LIST_SORT_PATH = 0,
@@ -102,14 +112,7 @@ typedef struct
    core_file_id_t core_file_id; /* ptr alignment */
    size_t firmware_count;
    uint32_t savestate_support_level;
-   bool has_info;
-   bool supports_no_game;
-   bool single_purpose;
-   bool database_match_archive_member;
-   bool is_experimental;
-   bool is_locked;
-   bool is_standalone_exempt;
-   bool is_installed;
+   uint8_t flags;              /* packed bools, see CORE_INFO_FLAG_* */
 } core_info_t;
 
 /* A subset of core_info parameters required for

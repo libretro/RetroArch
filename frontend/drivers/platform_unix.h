@@ -145,6 +145,11 @@ struct android_app
    const ASensor* accelerometerSensor;
    const ASensor* gyroscopeSensor;
    uint64_t sensor_state_mask;
+   unsigned detected_screen_rotation;
+   float    gravity_accum_x;
+   float    gravity_accum_y;
+   unsigned gravity_sample_count;
+   bool     gravity_calibrated;
    char current_ime[NAME_MAX_LENGTH];
    bool input_alive;
    int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
@@ -168,6 +173,8 @@ struct android_app
    jmethodID setScreenOrientation;
    jmethodID getUserLanguageString;
    jmethodID doVibrate;
+   jmethodID doVibrateJoypad;
+   jmethodID doVibrateUSB;
    jmethodID doHapticFeedback;
 
    jmethodID isPlayStoreBuild;
@@ -361,6 +368,10 @@ enum
    var = (*env)->CallBooleanMethod(env, clazz_obj, methodId); \
    JNI_EXCEPTION(env)
 
+#define CALL_BOOLEAN_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
+   var = (*env)->CallBooleanMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+   JNI_EXCEPTION(env)
+
 #define CALL_DOUBLE_METHOD(env, var, clazz_obj, methodId) \
    var = (*env)->CallDoubleMethod(env, clazz_obj, methodId); \
    JNI_EXCEPTION(env)
@@ -374,6 +385,10 @@ extern JNIEnv *jni_thread_getenv(void);
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
 extern struct android_app *g_android;
+
+void frontend_android_get_name(char *s, size_t len);
+
+void frontend_android_get_version_sdk(int32_t *sdk);
 
 bool is_screen_reader_enabled(void);
 

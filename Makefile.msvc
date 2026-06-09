@@ -16,7 +16,6 @@ HAVE_VIDEO_FILTER        := 1
 HAVE_SCREENSHOTS         := 1
 HAVE_REWIND              := 1
 HAVE_AUDIOMIXER          := 1
-HAVE_D3DX                := 1
 HAVE_D3D8                := 0
 HAVE_D3D9                := 1
 HAVE_D3D10               := 1
@@ -71,16 +70,10 @@ HAVE_CORE_INFO_CACHE     := 1
 
 ifeq ($(HAVE_D3D8), 1)
    D3D8_LIBS := -ld3d8
-   ifeq ($(HAVE_D3DX), 1)
-      D3DX8_LIBS := -ld3dx8
-   endif
 endif
 
 ifeq ($(HAVE_D3D9), 1)
    D3D9_LIBS := -ld3d9
-   ifeq ($(HAVE_D3DX), 1)
-      D3DX9_LIBS := -ld3dx9
-   endif
 endif
 
 include Makefile.common

@@ -301,6 +301,9 @@ other than `msg_hash_us.h` will be rejected.
 /* Settings > User > Accounts > Facebook Gaming */
 
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 
@@ -328,7 +331,7 @@ other than `msg_hash_us.h` will be rejected.
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 
 /* Explore tab */
@@ -433,6 +436,7 @@ other than `msg_hash_us.h` will be rejected.
 
 
 /* Notifications */
+
 
 
 

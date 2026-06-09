@@ -47,12 +47,17 @@ typedef struct
    bool is_paused;
 } gx_audio_t;
 
-static volatile gx_audio_t *gx_audio_data = NULL;
-static volatile bool stop_audio           = false;
+/* The three IRQ-shared fields inside gx_audio_t are individually
+ * declared volatile, so the pointer itself does not need to be
+ * volatile-qualified. Doing so would propagate volatile to the 4 KB
+ * `data` member as well, killing any optimisation across the hot
+ * sample-copy path. */
+static gx_audio_t *gx_audio_data = NULL;
+static volatile bool stop_audio  = false;
 
 static void gx_audio_dma_callback(void)
 {
-   gx_audio_t *wa = (gx_audio_t*)gx_audio_data;
+   gx_audio_t *wa = gx_audio_data;
 
    if (stop_audio)
       return;
@@ -77,8 +82,6 @@ static void *gx_audio_init(const char *device,
    if (!wa)
       return NULL;
 
-   gx_audio_data = (gx_audio_t*)wa;
-
    memset(wa, 0, sizeof(*wa));
 
    AIInit(NULL);
@@ -100,22 +103,44 @@ static void *gx_audio_init(const char *device,
    wa->dma_write = BLOCKS - 1;
    DCFlushRange(wa->data, sizeof(wa->data));
    stop_audio    = false;
+
+   /* Publish to the IRQ callback only after the struct is fully
+    * initialised. AIInitDMA arms the DMA engine which is what kicks
+    * the first callback. */
+   gx_audio_data = wa;
+
    AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
    AIStartDMA();
 
    return wa;
 }
 
-/* Wii uses silly R, L, R, L interleaving. */
-static INLINE void gx_audio_copy_swapped(
-      uint32_t *restrict dst,
+/* Wii uses silly R, L, R, L interleaving.
+ * This is *not* an endianness swap - it is a 16/16 rotate to match
+ * the AI hardware's L/R lane order on big-endian PowerPC. */
+static INLINE void gx_audio_lr_swap(
+      uint32_t * restrict dst,
       const uint32_t * restrict src, size_t len)
 {
-   do
+   size_t n4 = len >> 2;
+   /* Unroll the bulk of the copy. CHUNK_FRAMES is 64, so callers
+    * with `to_write == CHUNK_FRAMES` (the common case from gx_audio_write
+    * once the buffer is primed) never touch the tail loop. */
+   while (n4--)
+   {
+      uint32_t s0 = src[0], s1 = src[1], s2 = src[2], s3 = src[3];
+      dst[0] = (s0 >> 16) | (s0 << 16);
+      dst[1] = (s1 >> 16) | (s1 << 16);
+      dst[2] = (s2 >> 16) | (s2 << 16);
+      dst[3] = (s3 >> 16) | (s3 << 16);
+      src   += 4;
+      dst   += 4;
+   }
+   for (len &= 3; len; --len)
    {
       uint32_t s = *src++;
       *dst++ = (s >> 16) | (s << 16);
-   } while (--len);
+   }
 }
 
 static ssize_t gx_audio_write(void *data, const void *buf_, size_t len)
@@ -136,7 +161,7 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t len)
       while ((    wa->dma_write == wa->dma_next
                || wa->dma_write == wa->dma_busy) && !wa->nonblock);
 
-      gx_audio_copy_swapped(wa->data[wa->dma_write] + wa->write_ptr,
+      gx_audio_lr_swap(wa->data[wa->dma_write] + wa->write_ptr,
             buf, to_write);
 
       wa->write_ptr += to_write;
@@ -216,7 +241,8 @@ static size_t gx_audio_write_avail(void *data)
 }
 
 static size_t gx_audio_buffer_size(void *data) { return BLOCKS * CHUNK_SIZE; }
-/* TODO/FIXME - implement/verify? */
+/* Stub: keep returning false, but the audio_driver_t dispatcher
+ * unconditionally derefs ->use_float, so this slot cannot be NULL. */
 static bool gx_audio_use_float(void *data) { return false; }
 
 audio_driver_t audio_gx = {

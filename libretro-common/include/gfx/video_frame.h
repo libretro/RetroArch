@@ -185,17 +185,25 @@ static INLINE void video_frame_convert_to_bgr24(
 static INLINE void video_frame_convert_rgba_to_bgr(
       const void *src_data,
       void *dst_data,
-      unsigned width)
+      unsigned src_pitch,
+      unsigned dst_pitch,
+      unsigned width,
+      unsigned height)
 {
-   unsigned x;
-   uint8_t      *dst  = (uint8_t*)dst_data;
+   unsigned x, y;
+   uint8_t       *dst = (uint8_t*)dst_data;
    const uint8_t *src = (const uint8_t*)src_data;
 
-   for (x = 0; x < width; x++, dst += 3, src += 4)
+   for (y = 0; y < height; y++, dst += dst_pitch, src += src_pitch)
    {
-      dst[0] = src[2];
-      dst[1] = src[1];
-      dst[2] = src[0];
+      uint8_t       *d = dst;
+      const uint8_t *s = src;
+      for (x = 0; x < width; x++, d += 3, s += 4)
+      {
+         d[0] = s[2];
+         d[1] = s[1];
+         d[2] = s[0];
+      }
    }
 }
 

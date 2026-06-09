@@ -20,6 +20,11 @@
 
 #include <boolean.h>
 #include <audio/audio_resampler.h>
+
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
+
 #include "configuration.h"
 #include "gfx/video_defines.h"
 #include "input/input_defines.h"
@@ -372,6 +377,7 @@
 
 /* Video VSYNC (recommended) */
 #define DEFAULT_VSYNC true
+#define DEFAULT_SCANLINE_SYNC false
 
 /* Vulkan specific */
 #define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
@@ -409,6 +415,34 @@
 #define DEFAULT_FRAME_DELAY 0
 #define MAXIMUM_FRAME_DELAY 99
 #define DEFAULT_FRAME_DELAY_AUTO false
+
+/* When true, the frame-time ring buffer that backs the "Estimated
+ * Screen Refresh Rate" diagnostic + the AUTO-apply menu action is
+ * sampled only when the runloop is in a "clean" steady state
+ * (content running, not paused, not in fast-forward, not in
+ * menu-with-paused-libretro, frame time within a sanity envelope
+ * around the expected period).
+ *
+ * Disabled by default to preserve the existing measurement
+ * behaviour and the reset toggles that depend on it.  When
+ * enabled, the deviation in the diagnostic readout becomes a real
+ * signal again (the polluting samples from sleep / menu / save /
+ * load never enter the buffer in the first place), at the cost
+ * of slower convergence after content load. */
+#define DEFAULT_FRAME_TIME_SAMPLE_GATED false
+
+/* When true, drains the 'Estimated Screen Refresh Rate' sample
+ * buffer after fast-forward, save state, or load state -- events
+ * whose timing doesn't reflect normal frame cadence and would
+ * skew the deviation measurement.  Best-effort cleanup for users
+ * who haven't enabled DEFAULT_FRAME_TIME_SAMPLE_GATED (which
+ * prevents the contamination at the source).
+ *
+ * Replaces three separate per-event reset toggles
+ * (frame_time_counter_reset_after_{fastforwarding,load_state,
+ * save_state}).  Defaults to false to match the prior aggregate
+ * behaviour (all three off). */
+#define DEFAULT_FRAME_TIME_COUNTER_AUTO_RESET false
 
 /* Duplicates frames for the purposes of running Shaders at a higher framerate
  * than content framerate. Requires running screen at multiple of 60hz, and
@@ -493,18 +527,23 @@
 /* Choose if the screen will be able to write around the notch or not */
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
 
-#ifdef __APPLE__
-#define DEFAULT_USE_METAL_ARG_BUFFERS (!!__builtin_available(macOS 12, iOS 13, tvOS 12, *))
-#endif
-
 /* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
+
+/* When enabled, shaders compile one pass per frame instead of
+ * stalling for the entire preset.  Disable to force the legacy
+ * synchronous (blocking) shader load path. */
+#if defined(ANDROID)
+#define DEFAULT_SHADER_DEFERRED_LOADING false
+#else
+#define DEFAULT_SHADER_DEFERRED_LOADING true
+#endif
 
 /* HDR output mode: 0 = off, 1 = HDR10, 2 = scRGB */
 #define DEFAULT_VIDEO_HDR_MODE 0
 
-/* The maximum nunmber of nits the actual display can show - needs to be calibrated */
-#define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
+/* Brightness of the SDR menu/overlay when composited into the HDR backbuffer */
+#define DEFAULT_MENU_HDR_BRIGHTNESS_NITS 200.0f
 
 /* The number of nits that paper white is at */
 #define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
@@ -575,6 +614,9 @@
 /* Save configuration file on exit. */
 #define DEFAULT_CONFIG_SAVE_ON_EXIT true
 
+/* Save minimal configuration (only values that differ from defaults). */
+#define DEFAULT_CONFIG_SAVE_MINIMAL false
+
 /* Save active input remap file on exit/close content */
 #define DEFAULT_REMAP_SAVE_ON_EXIT true
 
@@ -593,8 +635,6 @@
 #define DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED false
 
 #define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR false
-
-#define DEFAULT_DISPLAY_KEYBOARD_OVERLAY false
 
 #ifdef HAKCHI
 #define DEFAULT_INPUT_OVERLAY_OPACITY 0.5f
@@ -674,6 +714,7 @@
 #define DEFAULT_OZONE_HEADER_ICON 1
 #define DEFAULT_OZONE_HEADER_SEPARATOR 1
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
+#define DEFAULT_OZONE_SHOW_SIDEBAR true
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false
 #define DEFAULT_OZONE_THUMBNAIL_SCALE_FACTOR 1.0f
 #define DEFAULT_OZONE_FONT_SCALE 0
@@ -736,7 +777,6 @@
 #define DEFAULT_QUICK_MENU_SHOW_LATENCY true
 #define DEFAULT_QUICK_MENU_SHOW_REWIND true
 #define DEFAULT_QUICK_MENU_SHOW_OVERLAYS true
-#define DEFAULT_QUICK_MENU_SHOW_VIDEO_LAYOUT false
 #define DEFAULT_QUICK_MENU_SHOW_CHEATS true
 #define DEFAULT_QUICK_MENU_SHOW_SHADERS true
 #define DEFAULT_QUICK_MENU_SHOW_INFORMATION true
@@ -773,6 +813,7 @@
 #define DEFAULT_MENU_SHOW_CORE_MANAGER_STEAM true
 #endif
 #define DEFAULT_MENU_SHOW_SUBLABELS true
+#define DEFAULT_MENU_SHOW_CONFIRM true
 #define DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE true
 #define DEFAULT_MENU_SCROLL_FAST false
 #define DEFAULT_MENU_SCROLL_DELAY 256
@@ -821,15 +862,17 @@
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 #define DEFAULT_CONTENT_SHOW_VIDEO true
 #endif
-#if defined(HAVE_NETWORKING)
-#if defined(_3DS)
-#define DEFAULT_CONTENT_SHOW_NETPLAY false
-#else
-#define DEFAULT_CONTENT_SHOW_NETPLAY true
-#endif
-#endif
 
 #define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
+
+/* Share 'Import Content' values */
+#if defined(HAVE_NETWORKING)
+#if defined(_3DS)
+#define DEFAULT_CONTENT_SHOW_NETPLAY MENU_ADD_CONTENT_ENTRY_DISPLAY_HIDDEN
+#else
+#define DEFAULT_CONTENT_SHOW_NETPLAY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
+#endif
+#endif
 
 #define DEFAULT_CONTENT_SHOW_PLAYLISTS true
 #define DEFAULT_CONTENT_SHOW_PLAYLIST_TABS true
@@ -842,7 +885,9 @@
 #ifdef HAVE_XMB
 #define DEFAULT_XMB_ANIMATION                      0
 #define DEFAULT_XMB_VERTICAL_FADE_FACTOR           100
+#define DEFAULT_XMB_SHOW_HORIZONTAL_LIST           true
 #define DEFAULT_XMB_SHOW_TITLE_HEADER              true
+#define DEFAULT_XMB_ENTRY_ICONS                    true
 #define DEFAULT_XMB_SWITCH_ICONS                   true
 #define DEFAULT_XMB_CURRENT_MENU_ICON              1
 #define DEFAULT_XMB_TITLE_MARGIN                   3
@@ -905,9 +950,6 @@
 #else
 #define DEFAULT_BLOCK_CONFIG_READ false
 #endif
-
-/* TODO/FIXME - this setting is thread-unsafe right now and can corrupt the stack - default to off */
-#define DEFAULT_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST false
 
 #define DEFAULT_GAME_SPECIFIC_OPTIONS true
 #define DEFAULT_AUTO_OVERRIDES_ENABLE true
@@ -1275,6 +1317,9 @@
 /* Includes displaying the current memory usage/total with FPS/Frames. */
 #define DEFAULT_MEMORY_SHOW false
 
+/* Displays the current time in the preferred format. */
+#define DEFAULT_TIME_SHOW TIME_SHOW_OFF
+
 /* Enables displaying various timing statistics. */
 #define DEFAULT_STATISTICS_SHOW false
 
@@ -1352,10 +1397,6 @@
 /* Require connections only in slave mode */
 #define DEFAULT_NETPLAY_REQUIRE_SLAVES false
 
-/* When being client over netplay, use keybinds for
- * user 1 rather than user 2. */
-#define DEFAULT_NETPLAY_CLIENT_SWAP_INPUT true
-
 #define DEFAULT_NETPLAY_NAT_TRAVERSAL false
 
 #define DEFAULT_NETPLAY_CHECK_FRAMES 600
@@ -1421,6 +1462,16 @@
  * startup if savestate_auto_load is set. */
 #define DEFAULT_SAVESTATE_AUTO_SAVE false
 #define DEFAULT_SAVESTATE_AUTO_LOAD false
+
+/* Automatically saves a savestate at a regular interval.
+ * It is measured in seconds. A value of 0 disables automatic savestate saving. */
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS) || defined(DINGUX)
+/* Disabled by default but can be enabled by user */
+#define DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL 0
+#else
+/* Default to disabled on I/O-constrained platforms */
+#define DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL 0
+#endif
 
 /* Take screenshots for save states */
 #if defined(__x86_64__) || defined(_M_X64)
@@ -1623,13 +1674,7 @@
 
 /* Enables accelerometer/gyroscope/illuminance
  * sensor input, if supported */
-#if defined(ANDROID)
-/* Hardware sensors cause substantial battery
- * drain on Android... */
-#define DEFAULT_INPUT_SENSORS_ENABLE false
-#else
 #define DEFAULT_INPUT_SENSORS_ENABLE true
-#endif
 
 /* Automatically enable game focus when running or
  * resuming content */
@@ -1778,10 +1823,18 @@
 #define DEFAULT_D3D12_GPU_INDEX 0
 #endif
 
+#ifdef HAVE_METAL
+#define DEFAULT_METAL_GPU_INDEX 0
+#endif
+
 #if defined(HAKCHI)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://hakchicloud.com/Libretro_Cores/"
 #elif defined(WEBOS)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://retroarch-cores.webosbrew.org/armv7a/"
+#if defined(__arm__)
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/webos/armv7a/latest/"
+#else
+#define DEFAULT_BUILDBOT_SERVER_URL "http://retroarch-cores.webosbrew.org/aarch64/"
+#endif
 #elif defined(ANDROID)
 #if defined(ANDROID_ARM_V7)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/"
@@ -1866,6 +1919,8 @@
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/linux/x86_64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/linux/x86/latest/"
+#elif defined(__aarch64__)
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/linux/aarch64/latest/"
 #elif defined(__arm__) && __ARM_ARCH == 7 && defined(__ARM_PCS_VFP)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/linux/armhf/latest/"
 #else

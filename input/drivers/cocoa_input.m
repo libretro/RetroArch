@@ -1059,9 +1059,16 @@ static void cocoa_input_grab_mouse(void *data, bool state)
    if (state)
    {
       NSWindow *window      = (BRIDGE NSWindow*)ui_companion_cocoa.get_main_window(nil);
-      CGPoint window_pos    = window.frame.origin;
-      CGSize window_size    = window.frame.size;
-      CGPoint window_center = CGPointMake(window_pos.x + window_size.width / 2.0f, window_pos.y + window_size.height / 2.0f);
+      /* NSWindow's frame method is declared as a plain getter (not
+       * @property) on the 10.5-10.9 SDKs, so dot-syntax fails on
+       * GCC 4.0.  And on 32-bit Darwin, NSPoint and CGPoint are
+       * separate incompatible types — only unified on LP64.  Use
+       * bracket syntax and build a CGPoint from the float fields
+       * directly. */
+      NSRect window_frame   = [window frame];
+      CGPoint window_center = CGPointMake(
+            window_frame.origin.x + window_frame.size.width  / 2.0f,
+            window_frame.origin.y + window_frame.size.height / 2.0f);
       CGWarpMouseCursorPosition(window_center);
    }
 

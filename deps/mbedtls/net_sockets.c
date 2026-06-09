@@ -306,7 +306,8 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
     struct sockaddr_storage client_addr;
 
 #if defined(__socklen_t_defined) || defined(_SOCKLEN_T) ||  \
-    defined(_SOCKLEN_T_DECLARED) || defined(__DEFINED_socklen_t)
+    defined(_SOCKLEN_T_DECLARED) || defined(__DEFINED_socklen_t) || \
+    defined(socklen_t) || (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L)
     socklen_t n = (socklen_t) sizeof( client_addr );
     socklen_t type_len = (socklen_t) sizeof( type );
 #else

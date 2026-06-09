@@ -180,27 +180,17 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
 static bool wgl_has_extension(const char *ext, const char *exts)
 {
-   const char *where = strchr(ext, ' ');
-
-   if (where || *ext == '\0')
+   size_t _len;
+   if (!exts || !ext || *ext == '\0' || strchr(ext, ' '))
       return false;
-
-   if (exts)
+   _len = strlen(ext);
    {
-      const char *terminator = NULL;
-      const char *start      = exts;
-
-      for (;;)
+      const char *start;
+      for (start = exts; (start = strstr(start, ext)); start += _len)
       {
-         if (!(where = strstr(start, ext)))
-            break;
-
-         terminator = where + strlen(ext);
-         if (where == start || *(where - 1) == ' ')
-            if (*terminator == ' ' || *terminator == '\0')
-               return true;
-
-         start = terminator;
+         if (   (start       == exts || start[-1]   == ' ')
+             && (start[_len] == ' '  || start[_len] == '\0'))
+            return true;
       }
    }
    return false;
@@ -785,14 +775,14 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
+         else if (string_is_equal(video_driver_get_ident(), "glcore"))
+         {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+         }
          else
          {
-            if (string_is_equal(video_driver_get_ident(), "glcore"))
-            {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-               BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-            }
 #ifdef HAVE_CG
             if (!(wgl_flags & WGL_FLAG_CORE_HW_CTX_ENABLE))
                BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
@@ -840,8 +830,6 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 
 }
 
-static void gfx_ctx_wgl_get_video_output_prev(void *data) { }
-static void gfx_ctx_wgl_get_video_output_next(void *data) { }
 
 static bool gfx_ctx_wgl_create_surface(void *data)
 {
@@ -863,7 +851,6 @@ static bool gfx_ctx_wgl_destroy_surface(void *data)
 
 /* TODO: maybe create an uwp_mesa_common.c? */
 #ifdef __WINRT__
-
 static void win32_get_video_size(void* data,
    unsigned* width, unsigned* height)
 {
@@ -874,22 +861,10 @@ static void win32_get_video_size(void* data,
    height = uwp_get_height();
 }
 
-void win32_get_video_output_size(void* data, unsigned* width, unsigned* height, char* desc, size_t desc_len)
-{
-   win32_get_video_size(data, width, height);
-}
-
 bool win32_suspend_screensaver(void* data, bool enable)
 {
    return true;
 }
-
-float win32_get_refresh_rate(void* data)
-{
-   return 60.0;
-}
-
-#define win32_get_refresh_rate NULL
 
 HWND win32_get_window(void)
 {
@@ -912,11 +887,11 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_swap_interval,
    gfx_ctx_wgl_set_video_mode,
    win32_get_video_size,
-   win32_get_refresh_rate,
-   win32_get_video_output_size,
-   gfx_ctx_wgl_get_video_output_prev,
-   gfx_ctx_wgl_get_video_output_next,
-   win32_get_metrics,
+   NULL, /* refresh_rate - handled by display server */
+   NULL, /* video_output_size - handled by display server */
+   NULL, /* get_video_output_prev - handled by display server */
+   NULL, /* get_video_output_next - handled by display server */
+   NULL, /* metrics - handled by display server */
    NULL,
    video_driver_update_title,
    win32_check_window,

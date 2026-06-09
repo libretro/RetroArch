@@ -141,13 +141,34 @@ static void reset_IOP()
 bool getMountInfo(char *path, char *mountPoint, char *partition, char *newCWD)
 {
    struct string_list *str_list = string_split(path, ":");
+
    if (str_list->size < 3)
+   {
+      string_list_free(str_list);
       return false;
+   }
 
-   sprintf(partition, "%s:%s", str_list->elems[0].data, str_list->elems[1].data);
-   sprintf(mountPoint, "%s:", str_list->elems[2].data);
-   sprintf(newCWD, "%s%s", mountPoint, str_list->size == 4 ? str_list->elems[3].data : "");
+   /* Build partition string: "device:path" using strlcpy offsets */
+   size_t len = strlcpy(partition, str_list->elems[0].data, 50);
+   if (len < 50) {
+      len += strlcpy(partition + len, ":", 50 - len);
+      if (len < 50)
+         strlcpy(partition + len, str_list->elems[1].data, 50 - len);
+   }
 
+   /* Build mountPoint string: "mount:" using strlcpy offset */
+   len = strlcpy(mountPoint, str_list->elems[2].data, 10);
+   if (len < 10)
+      strlcpy(mountPoint + len, ":", 10 - len);
+
+   /* Build newCWD string using strlcpy offset */
+   len = strlcpy(newCWD, mountPoint, FILENAME_MAX);
+   if (len < FILENAME_MAX)
+      strlcpy(newCWD + len,
+            str_list->size >= 4 ? str_list->elems[3].data : "",
+            FILENAME_MAX - len);
+
+   string_list_free(str_list);
    return true;
 }
 
@@ -271,7 +292,7 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
    create_path_names();
 
 #ifndef IS_SALAMANDER
-   if (!string_is_empty(argv[1]))
+   if (argv[1] && *argv[1])
    {
       static char path[FILENAME_MAX] = {0};
       struct rarch_main_wrap      *args =
@@ -576,6 +597,7 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "ps2",                        /* ident */
    NULL                          /* get_video_driver */
 };

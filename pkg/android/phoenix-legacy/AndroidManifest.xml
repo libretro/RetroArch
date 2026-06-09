@@ -22,7 +22,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="RetroArch"
         android:hasCode="true"
-        android:isGame="true"
+        android:appCategory="game"
         android:banner="@drawable/banner">
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
             <intent-filter>
@@ -37,5 +37,10 @@
             <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
         </activity>
         <activity android:name="com.retroarch.browser.debug.CoreSideloadActivity" android:exported="true"/>
+        <receiver android:name="com.retroarch.browser.receiver.InstalledCoresReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="com.retroarch.QUERY_INSTALLED_CORES" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

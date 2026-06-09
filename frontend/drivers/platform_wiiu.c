@@ -250,7 +250,7 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
       }
       else
 #endif
-      if (!string_is_empty(content))
+      if (content && *content)
       {
          param->argc    = 2;
          param->argv[1] = arg;
@@ -358,6 +358,7 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    NULL,                         /* is_narrator_running            */
    NULL,                         /* accessibility_speak            */
    NULL,                         /* set_gamemode                   */
+   NULL, /* get_display_type */
    "wiiu",                       /* ident                          */
    NULL                          /* get_video_driver               */
 };

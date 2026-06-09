@@ -24,8 +24,8 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
+#include "../../msg_hash_lbl_str.h"
 #include "../../input/input_remapping.h"
-
 #include "../../input/input_driver.h"
 
 #include "../../config.def.h"
@@ -46,6 +46,7 @@ void handle_dbscan_finished(retro_task_t *task,
             NULL, menu_st->userdata);
 }
 
+#ifdef HAVE_LIBRETRODB
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -77,6 +78,7 @@ int action_scan_file(const char *path,
 
    return 0;
 }
+#endif
 
 int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -163,48 +165,61 @@ static int action_scan_input_desc(const char *path,
 {
    const char *menu_label         = NULL;
    unsigned key                   = 0;
-   unsigned inp_desc_user         = 0;
+   unsigned user_idx              = 0;
    struct retro_keybind *target   = NULL;
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
    if (string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST)))
+            MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST_STR))
    {
       settings_t *settings = config_get_ptr();
-      inp_desc_user        = atoi(label);
-      /* Skip 'Device Type', 'Analog to Digital Type' and 'Mapped Port' */
-      key                  = (unsigned)(idx - 3);
-      /* Select the reorderer bind */
-      key                  =
-            (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;
+      int type_begin       = (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
+            ? MENU_SETTINGS_INPUT_DESC_KBD_BEGIN : MENU_SETTINGS_INPUT_DESC_BEGIN;
 
-      if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+      user_idx = (type - type_begin) / RARCH_ANALOG_BIND_LIST_END;
+      key      = (type - type_begin) - RARCH_ANALOG_BIND_LIST_END * user_idx;
+
+      if (     type >= MENU_SETTINGS_INPUT_DESC_BEGIN
             && type <= MENU_SETTINGS_INPUT_DESC_END)
-         settings->uints.input_remap_ids[inp_desc_user][key] = RARCH_UNMAPPED;
+         settings->uints.input_remap_ids[user_idx][key] = RARCH_UNMAPPED;
       else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
             && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
-         settings->uints.input_keymapper_ids[inp_desc_user][key] = RETROK_UNKNOWN;
+         settings->uints.input_keymapper_ids[user_idx][key] = RETROK_UNKNOWN;
 
       return 0;
    }
    else if (string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST)))
+            MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR))
    {
-      unsigned char player_no_str = atoi(&label[1]);
+      size_t first_bind = 0;
+      char port_str     = atoi(&label[1]);
+      menu_entry_t entry;
 
-      inp_desc_user      = (unsigned)(player_no_str - 1);
-      /* This hardcoded value may cause issues if any entries are added on
-         top of the input binds */
-      key                = (unsigned)(idx - 8);
+      user_idx = (unsigned)(port_str - 1);
+
+      /* Skip non-bind menu elements */
+      MENU_ENTRY_INITIALIZE(entry);
+
+      while (first_bind < idx)
+      {
+         menu_entry_get(&entry, 0, first_bind, NULL, false);
+
+         if (entry.setting_type == ST_BIND)
+            break;
+
+         first_bind++;
+      }
+
+      key = (unsigned)(idx - first_bind);
+
       /* Select the reorderer bind */
-      key                =
-            (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;
+      key = (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;
    }
    else
       key = input_config_translate_str_to_bind_id(label);
 
-   target = &input_config_binds[inp_desc_user][key];
+   target = &input_config_binds[user_idx][key];
 
    if (target)
    {
@@ -335,7 +350,7 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
          break;
    }
 
-   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+   if (     type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_SCAN(cbs, action_scan_input_desc);
@@ -365,20 +380,20 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SCAN(cbs, action_scan_input_desc);
             return 0;
          case ST_PATH:
-            if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH)))
+            if (string_is_equal(label, MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR))
             {
                BIND_ACTION_SCAN(cbs, action_scan_video_font_path);
                return 0;
             }
 #ifdef HAVE_XMB
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT)))
+            else if (string_is_equal(label, MENU_ENUM_LABEL_XMB_FONT_STR))
             {
                BIND_ACTION_SCAN(cbs, action_scan_video_xmb_font);
                return 0;
             }
 #endif
 #ifdef HAVE_OZONE
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OZONE_FONT)))
+            else if (string_is_equal(label, MENU_ENUM_LABEL_OZONE_FONT_STR))
             {
                BIND_ACTION_SCAN(cbs, action_scan_video_ozone_font);
                return 0;

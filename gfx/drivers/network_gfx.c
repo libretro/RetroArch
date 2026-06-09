@@ -53,8 +53,8 @@ enum
 typedef struct network
 {
    int fd;
-   unsigned video_width;
-   unsigned video_height;
+   unsigned frame_width;
+   unsigned frame_height;
    unsigned screen_width;
    unsigned screen_height;
    uint16_t port;
@@ -62,6 +62,7 @@ typedef struct network
 } network_video_t;
 
 static unsigned char *network_menu_frame = NULL;
+static size_t network_menu_frame_cap     = 0;
 static unsigned network_menu_width       = 0;
 static unsigned network_menu_height      = 0;
 static unsigned network_menu_pitch       = 0;
@@ -222,11 +223,11 @@ static bool network_gfx_frame(void *data, const void *frame,
 #endif
    }
 
-   if (     (network->video_width  != width)
-         || (network->video_height != height))
+   if (     (network->frame_width  != width)
+         || (network->frame_height != height))
    {
-      network->video_width  = width;
-      network->video_height = height;
+      network->frame_width  = width;
+      network->frame_height = height;
 
       if (network_video_temp_buf)
          free(network_video_temp_buf);
@@ -333,7 +334,7 @@ static bool network_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(network, msg, NULL, NULL);
+      font_driver_render_msg(network, msg, strlen(msg), NULL, NULL);
 
    return true;
 }
@@ -342,17 +343,13 @@ static void network_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) 
 
 static bool network_gfx_alive(void *data)
 {
-   unsigned temp_width      = 0;
-   unsigned temp_height     = 0;
-   bool quit                = false;
-   bool resize              = false;
-   network_video_t *network = (network_video_t*)data;
-
-   video_driver_get_size(&temp_width, &temp_height);
-
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
-
+   /* The video_driver_get_output_size + conditional set_size dance that
+    * used to live here was a copy-paste from d3d8_alive, where the
+    * intermediate win32_check_window call mutates the fetched
+    * size on window resize.  The network driver has no equivalent
+    * windowing step, so the get/set was reading and writing back
+    * the same values -- a pure no-op.  Drop it. */
+   (void)data;
    return true;
 }
 
@@ -371,6 +368,7 @@ static void network_gfx_free(void *data)
       free(network_video_temp_buf);
 
    network_menu_frame     = NULL;
+   network_menu_frame_cap = 0;
    network_video_temp_buf = NULL;
 
    font_driver_free_osd();
@@ -391,32 +389,29 @@ static void network_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   unsigned pitch = width * 2;
+   unsigned pitch = width * (rgb32 ? 4 : 2);
+   size_t   required;
 
-   if (rgb32)
-      pitch = width * 4;
+   if (!frame || !width || !height || !pitch)
+      return;
 
-   if (network_menu_frame)
+   required = (size_t)pitch * (size_t)height;
+
+   if (required > network_menu_frame_cap)
    {
-      free(network_menu_frame);
-      network_menu_frame = NULL;
+      unsigned char *tmp = (unsigned char*)realloc(
+            network_menu_frame, required);
+      if (!tmp)
+         return;                        /* keep previous frame intact */
+      network_menu_frame     = tmp;
+      network_menu_frame_cap = required;
    }
 
-   if (     !network_menu_frame
-         || (network_menu_width  != width)
-         || (network_menu_height != height)
-         || (network_menu_pitch  != pitch))
-      if (pitch && height)
-         network_menu_frame = (unsigned char*)malloc(pitch * height);
-
-   if (network_menu_frame && frame && pitch && height)
-   {
-      memcpy(network_menu_frame, frame, pitch * height);
-      network_menu_width  = width;
-      network_menu_height = height;
-      network_menu_pitch  = pitch;
-      network_menu_bits   = rgb32 ? 32 : 16;
-   }
+   memcpy(network_menu_frame, frame, required);
+   network_menu_width  = width;
+   network_menu_height = height;
+   network_menu_pitch  = pitch;
+   network_menu_bits   = rgb32 ? 32 : 16;
 }
 
 static void network_get_video_output_size(void *data,
@@ -456,7 +451,7 @@ static const video_poke_interface_t network_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -498,6 +493,8 @@ video_driver_t video_network = {
 #endif
    network_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

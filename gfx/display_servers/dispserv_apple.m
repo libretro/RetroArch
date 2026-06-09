@@ -25,10 +25,30 @@
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../configuration.h"
+/* For NSWindowStyleMaskTitled polyfill on pre-10.12 SDKs */
+#include <defines/cocoa_defines.h>
 
 #ifdef OSX
 #import <AppKit/AppKit.h>
+/* <CoreGraphics/CoreGraphics.h> is a 10.8+ umbrella header.
+ * On earlier SDKs (including the 10.5 Leopard SDK used by Xcode 3.1
+ * on PowerPC), the same types are reachable through the
+ * ApplicationServices umbrella. */
+#include <AvailabilityMacros.h>
+#if defined(MAC_OS_X_VERSION_10_8) && \
+    (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
+     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_8)
 #import <CoreGraphics/CoreGraphics.h>
+#else
+#import <ApplicationServices/ApplicationServices.h>
+#endif
+/* RARCH_HAS_CGDISPLAYMODE_API is defined in cocoa_common.h.  The
+ * CGDisplayModeRef family (CGDisplayCopyAllDisplayModes,
+ * CGDisplayModeGetWidth, CGDisplaySetDisplayMode, ...) arrived in
+ * 10.6 Snow Leopard.  The 10.5 SDK only offers the older
+ * CGDisplayAvailableModes / CFDictionaryRef path, which is a
+ * different enough API that we just stub the resolution list on
+ * pre-10.6 targets rather than port to both. */
 #endif
 
 #ifdef OSX
@@ -36,13 +56,15 @@ static bool apple_display_server_set_window_opacity(void *data, unsigned opacity
 {
    settings_t *settings      = config_get_ptr();
    bool windowed_full        = settings->bools.video_windowed_fullscreen;
-   NSWindow *window          = ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
-   if (windowed_full || !window.keyWindow)
+   NSWindow *window          = [((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]) window];
+   if (windowed_full || ![window isKeyWindow])
       return false;
-   window.alphaValue = (CGFloat)opacity / (CGFloat)100.0f;
+   [window setAlphaValue:(CGFloat)opacity / (CGFloat)100.0f];
    return true;
 }
 
+#ifdef RARCH_HAS_CGDISPLAYMODE_API
+/* Uses GCD (dispatch_once) and Obj-C blocks, both 10.6+. */
 static bool apple_display_server_set_window_progress(void *data, int progress, bool finished)
 {
    static NSProgressIndicator *indicator;
@@ -53,35 +75,63 @@ static bool apple_display_server_set_window_progress(void *data, int progress, b
       [iv setImage:[[NSApplication sharedApplication] applicationIconImage]];
       [dockTile setContentView:iv];
 
-      indicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(0, 0, dockTile.size.width, 20)];
-      indicator.indeterminate = NO;
-      indicator.minValue = 0;
-      indicator.maxValue = 100;
-      indicator.doubleValue = 0;
+      indicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(0, 0, [dockTile size].width, 20)];
+      [indicator setIndeterminate:NO];
+      [indicator setMinValue:0];
+      [indicator setMaxValue:100];
+      [indicator setDoubleValue:0];
 
       // Create a custom view for the dock tile
       [iv addSubview:indicator];
+
+      /* This file is compiled under BOTH build systems:
+       *   - qb/top-level Makefile:  MRC (not in the per-file ARC
+       *     override list at Makefile:275 alongside metal.o /
+       *     mfi_joypad.o / coreaudio3.o).
+       *   - pkg/apple/<anyfile>.xcodeproj:  ARC, via griffin_objc.m which
+       *     #include's this file into a TU compiled with
+       *     CLANG_ENABLE_OBJC_ARC=YES (pkg/apple/BaseConfig.xcconfig:182).
+       *
+       * Under MRC, 'iv' is a local +1 from alloc+init.  setContentView:
+       * and addSubview: each retain their own reference, so those are
+       * legitimately owned; the +1 from alloc+init is ours to release
+       * before the local goes out of scope, or it leaks for the app's
+       * lifetime.  Under ARC, the compiler inserts the matching release
+       * at block scope exit automatically.
+       *
+       * RARCH_RELEASE handles both: MRC -> [(x) release], ARC -> ((void)0).
+       * Raw '[iv release]' is a compile error under ARC
+       * ('ARC forbids explicit message send of release') which the
+       * Xcode build would have flagged immediately.
+       *
+       * 'indicator' is intentionally kept +1 - it's a file-scope static
+       * initialised inside dispatch_once, and holding that +1 across
+       * the app lifetime is how we keep it referenced for the
+       * subsequent setDoubleValue / setHidden calls outside the
+       * block. */
+      RARCH_RELEASE(iv);
    });
    if (finished)
-      indicator.doubleValue = (double)-1;
+      [indicator setDoubleValue:(double)-1];
    else
-      indicator.doubleValue = (double)progress;
-   indicator.hidden = finished;
+      [indicator setDoubleValue:(double)progress];
+   [indicator setHidden:finished];
    [[NSApp dockTile] display];
    return true;
 }
+#endif /* RARCH_HAS_CGDISPLAYMODE_API */
 
 static bool apple_display_server_set_window_decorations(void *data, bool on)
 {
    settings_t *settings      = config_get_ptr();
    bool windowed_full        = settings->bools.video_windowed_fullscreen;
-   NSWindow *window          = ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
+   NSWindow *window          = [((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]) window];
    if (windowed_full)
       return false;
    if (on)
-      window.styleMask |= NSWindowStyleMaskTitled;
+      [window setStyleMask:([window styleMask] | NSWindowStyleMaskTitled)];
    else
-      window.styleMask &= ~NSWindowStyleMaskTitled;
+      [window setStyleMask:([window styleMask] & ~NSWindowStyleMaskTitled)];
    return true;
 }
 #endif
@@ -222,6 +272,7 @@ static void *apple_display_server_get_resolution_list(
    double currentRate;
 
 #ifdef OSX
+#ifdef RARCH_HAS_CGDISPLAYMODE_API
    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
    currentRate = CGDisplayModeGetRefreshRate(currentMode);
@@ -304,7 +355,19 @@ static void *apple_display_server_get_resolution_list(
    /* Set length and allocate config array for macOS */
    *len = (unsigned)[configArray count];
    if (!(conf = (struct video_display_config*)calloc(*len, sizeof(struct video_display_config))))
+   {
+      /* displayModes and currentMode are CFRetain'd +1 by their
+       * respective CGDisplayCopy* calls above (~line 250 / 266)
+       * and must be CFRelease'd on every exit path.  The success
+       * return below does this at lines 339-340; the pre-patch
+       * OOM path bypassed both and leaked them until the process
+       * died.  Each is a small CF object (handful of bytes) but
+       * a leak of system-owned Core Graphics state is still
+       * worth plugging. */
+      CFRelease(displayModes);
+      CFRelease(currentMode);
       return NULL;
+   }
 
    for (j = 0; j < *len; j++)
    {
@@ -316,6 +379,33 @@ static void *apple_display_server_get_resolution_list(
    CFRelease(currentMode);
    RARCH_LOG("Found %u display modes on macOS\n", *len);
    return conf;
+#else
+   /* pre-10.6 Leopard/Tiger fallback: CGDisplayModeRef doesn't exist
+    * here and the older CGDisplayAvailableModes API is a different
+    * shape.  Just report the current resolution as a single entry
+    * and skip mode enumeration; resolution-switching isn't supported
+    * on these targets anyway. */
+   CGDirectDisplayID mainDisplayID = CGMainDisplayID();
+   size_t currentWidth             = CGDisplayPixelsWide(mainDisplayID);
+   size_t currentHeight            = CGDisplayPixelsHigh(mainDisplayID);
+
+   *len = 1;
+   if (!(conf = (struct video_display_config*)calloc(1, sizeof(*conf))))
+      return NULL;
+   conf[0].width            = (unsigned)currentWidth;
+   conf[0].height           = (unsigned)currentHeight;
+   conf[0].bpp              = 32;
+   conf[0].refreshrate      = 60;
+   conf[0].refreshrate_float = 60.0f;
+   conf[0].interlaced       = false;
+   conf[0].dblscan          = false;
+   conf[0].idx              = 0;
+   conf[0].current          = true;
+   (void)currentRate;
+   RARCH_LOG("[Video] Legacy macOS: reporting current mode %ux%u only\n",
+         conf[0].width, conf[0].height);
+   return conf;
+#endif /* RARCH_HAS_CGDISPLAYMODE_API */
 #else
    /* iOS/tvOS: Only enumerate refresh rates for current resolution */
    unsigned width, height;
@@ -438,7 +528,7 @@ static enum rotation apple_display_server_get_screen_orientation(void *data)
 
 typedef struct
 {
-#ifdef OSX
+#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
    CGDisplayModeRef original_mode;
    CGDirectDisplayID display_id;
 #endif
@@ -450,12 +540,51 @@ static void *apple_display_server_init(void)
    if (!apple)
       return NULL;
 
-#ifdef OSX
+#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Store original display mode for restoration */
    apple->display_id = CGMainDisplayID();
    apple->original_mode = CGDisplayCopyDisplayMode(apple->display_id);
    RARCH_LOG("[Video] Stored original display mode for restoration\n");
 #endif
+
+   /* Sync the display link to the configured refresh rate.
+    * The display link starts at the display's native rate before
+    * config is parsed, so apply the user's setting now. */
+   {
+      settings_t *settings = config_get_ptr();
+      if (  settings
+         && settings->floats.video_refresh_rate >= 10.0f
+         && settings->floats.video_refresh_rate <= 250.0f)
+      {
+#if defined(IOS)
+         float hz        = settings->floats.video_refresh_rate;
+         CocoaView *view = [CocoaView get];
+         if (view && view.displayLink)
+         {
+            RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
+#if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
+            if (@available(iOS 15, tvOS 15, *))
+               view.displayLink.preferredFrameRateRange =
+                  CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+            else
+#endif
+               view.displayLink.preferredFramesPerSecond = hz;
+         }
+#elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+         float hz        = settings->floats.video_refresh_rate;
+         CocoaView *view = [CocoaView get];
+         if (view)
+         {
+            if (@available(macOS 14, *))
+            {
+               RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
+               view.displayLink.preferredFrameRateRange =
+                  CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+            }
+         }
+#endif
+      }
+   }
 
    return apple;
 }
@@ -466,7 +595,7 @@ static void apple_display_server_destroy(void *data)
    if (!apple)
       return;
 
-#ifdef OSX
+#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Restore original display mode */
    if (apple->original_mode)
    {
@@ -486,12 +615,31 @@ static void apple_display_server_destroy(void *data)
    free(apple);
 }
 
+/* Thin wrappers around cocoa_common.m helpers to match the
+ * video_display_server_t signatures (which take a leading void*).
+ * Shared implementation lives in cocoa_common.m so the poke /
+ * gfx_ctx_driver_t vtables can reach it too - see cocoa_common.h. */
+static float apple_display_server_get_refresh_rate(void *data)
+{
+   return cocoa_get_refresh_rate();
+}
+
+static void apple_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+   cocoa_get_video_output_size(width, height, desc, desc_len);
+}
+
 const video_display_server_t dispserv_apple = {
    apple_display_server_init,
    apple_display_server_destroy,
 #ifdef OSX
    apple_display_server_set_window_opacity,
+#ifdef RARCH_HAS_CGDISPLAYMODE_API
    apple_display_server_set_window_progress,
+#else
+   NULL, /* set_window_progress (needs 10.6+ GCD/blocks) */
+#endif
    apple_display_server_set_window_decorations,
 #else
    NULL, /* set_window_opacity */
@@ -512,6 +660,11 @@ const video_display_server_t dispserv_apple = {
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
 #endif
+   apple_display_server_get_refresh_rate,
+   apple_display_server_get_video_output_size,
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   cocoa_get_metrics,
    NULL, /* get_flags */
    "apple"
 };

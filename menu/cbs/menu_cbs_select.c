@@ -118,7 +118,8 @@ static int action_select_path_use_directory(const char *path,
    return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
 }
 
-static int action_select_core_setting(const char *path, const char *label, unsigned type,
+static int action_select_core_setting(const char *path,
+      const char *label, unsigned type,
       size_t idx, size_t entry_idx)
 {
    return action_ok_core_option_dropdown_list(path, label, type, idx, 0);

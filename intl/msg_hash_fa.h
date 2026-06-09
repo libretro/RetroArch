@@ -1244,10 +1244,6 @@ MSG_HASH(
    "ویدیو"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "درایور درایور ویدیو برای استفاده."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "راه‌انداز OpenGL 1.x. کمترین نگارش موردنیاز: OpenGL 1.1 از شیدرها پشتیبانی نمی‌کند. در صورت امکان از راه‌اندازهای جدیدتر OpenGL استفاده کنید."
    )
@@ -1268,10 +1264,6 @@ MSG_HASH(
    "صدا"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "درایور صدا برای استفاده."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
    "راه‌انداز OpenAL."
    )
@@ -1283,10 +1275,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    "میکروفن"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "راه‌انداز میکروفن برای استفاده."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1318,32 +1306,16 @@ MSG_HASH(
    "دوربین"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "درایور دوربین برای استفاده."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
    "بلوتوث"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "درایور بلوتوث برای استفاده."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "وای فای"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "درایور وایفای برای استفاده."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "جا"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "درایور موقعیت‌یابی برای استفاده."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1360,14 +1332,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "ضبط"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "درایور ضبط برای استفاده."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "درایور MIDI برای استفاده."
    )
 
 /* Settings > Video */
@@ -1718,10 +1682,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "اوج روشنایی"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -1949,10 +1909,6 @@ MSG_HASH(
    "حداکثر کاربرها"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "حداکثر کاربرهای پشتیبانی‌شده در رتروآرچ."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "پیکربندی خودکار"
    )
@@ -2003,6 +1959,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "تنظیم حساسیت اهرمک‌های آنالوگ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "خودکار"
    )
 MSG_HASH(
    MSG_INPUT_BIND_TIMEOUT,
@@ -2456,14 +2416,6 @@ MSG_HASH(
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "نمایش «شروع مجدد»"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "نمایش گزینهٔ شروع مجدد محتوا."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
    "نمایش «آغاز ضبط»"
    )
@@ -2645,6 +2597,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Facebook Gaming */
 
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -2744,12 +2699,8 @@ MSG_HASH(
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "نام سیستم"
-   )
 
 /* Explore tab */
 MSG_HASH(
@@ -2979,10 +2930,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
    "ادامه"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "شروع مجدد"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -3391,6 +3338,7 @@ MSG_HASH(
    MSG_STATE_SLOT,
    "شیار وضعیت"
    )
+
 
 /* Lakka */
 

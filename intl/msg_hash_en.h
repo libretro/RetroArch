@@ -44,12 +44,12 @@ MSG_HASH(
    "Join or host a net-play session."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   "Manually trigger cloud synchronisation."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "Quit RetroArch. Killing the program in any hard way (SIGKILL, etc.) will terminate RetroArch without saving the configuration in any case. On Unix-likes, SIGINT/SIGTERM allows a clean deinitialisation which includes configuration save if enabled."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Manually trigger cloud synchronisation."
    )
 
 /* Main Menu > Load Core */
@@ -152,10 +152,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    "Audio re-sampler driver to use."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Recording driver to use."
    )
 
 /* Settings > Video */
@@ -1245,20 +1241,12 @@ MSG_HASH(
    "Allow the Removal of Entries"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Specify when to tag playlist entries with the currently associated core (if any).\nThis setting is ignored when playlist sub-labels are enabled."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
    "Show Content Specific Icons in History and Favourites"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
    "Show specific icons for each history and favourites playlist entry. Has a variable performance impact."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Select which type of runtime log record to display on playlist sub-labels.\nThe corresponding runtime log must be enabled with the 'Saving' options menu."
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -1307,6 +1295,9 @@ MSG_HASH(
 
 
 /* Settings > User > Accounts > Facebook Gaming */
+
+
+/* Settings > User > Accounts > Kick */
 
 
 /* Settings > Directory */
@@ -1392,12 +1383,8 @@ MSG_HASH(
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Specify a 'system name' with which to associate scanned content. Used to name the system to the generated playlist file and to identify playlist thumbnails."
-   )
 
 /* Explore tab */
 MSG_HASH(
@@ -2115,6 +2102,7 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Sync to exact content frame rate disabled."
    )
+
 
 /* Lakka */
 

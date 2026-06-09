@@ -60,7 +60,7 @@ char *retro_strdup__(const char *orig)
    char *ret   = (char*)malloc(_len);
    if (!ret)
       return NULL;
-   strlcpy(ret, orig, _len);
+   memcpy(ret, orig, _len);
    return ret;
 }
 
@@ -99,5 +99,4 @@ char *retro_strtok_r__(char *str, const char *delim, char **saveptr)
 
    return first;
 }
-
 #endif

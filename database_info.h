@@ -75,8 +75,6 @@ enum database_query_type
 
 typedef struct
 {
-   struct string_list *list;
-   size_t list_ptr;
    enum database_status status;
    enum database_type type;
 } database_info_handle_t;
@@ -139,17 +137,35 @@ typedef struct
    size_t count;
 } database_info_list_t;
 
+/* Field selection flags for database_info_list_new_filtered.
+ * Controls which fields are extracted from each record.
+ * 0 = extract all fields. */
+#define DB_EXTRACT_NAME     (1 << 0)
+#define DB_EXTRACT_CRC      (1 << 1)
+#define DB_EXTRACT_SERIAL   (1 << 2)
+#define DB_EXTRACT_SIZE     (1 << 3)
+#define DB_EXTRACT_MD5      (1 << 4)
+#define DB_EXTRACT_SHA1     (1 << 5)
+
+/* Preset used by the ROM scanner */
+#define DB_EXTRACT_SCAN_FIELDS \
+   (DB_EXTRACT_NAME | DB_EXTRACT_CRC | DB_EXTRACT_SERIAL | DB_EXTRACT_SIZE)
+
 database_info_list_t *database_info_list_new(const char *rdb_path,
       const char *query);
+
+database_info_list_t *database_info_list_new_filtered(const char *rdb_path,
+      const char *query, unsigned fields);
 
 void database_info_list_free(database_info_list_t *list);
 
 database_info_handle_t *database_info_dir_init(const char *dir,
-      enum database_type type, retro_task_t *task,
-      bool show_hidden_files);
+      enum database_type type, char* file_exts,
+      bool show_hidden_files, bool recursive, bool include_archive, 
+      struct string_list **content_list);
 
 database_info_handle_t *database_info_file_init(const char *path,
-      enum database_type type, retro_task_t *task);
+      enum database_type type, retro_task_t *task, struct string_list **content_list);
 
 void database_info_free(database_info_handle_t *handle);
 

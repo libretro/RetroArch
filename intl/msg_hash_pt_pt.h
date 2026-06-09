@@ -1364,10 +1364,6 @@ MSG_HASH(
    "Vídeo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Driver de vídeo a ser usado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "Driver OpenGL 1.x. Versão mínima necessária: OpenGL 1.1. Não suporta shaders. Use drivers OpenGL mais antigos, se possível."
    )
@@ -1464,10 +1460,6 @@ MSG_HASH(
    "Áudio"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Driver de áudio a ser usado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "Driver RSound para sistemas de áudio em rede."
    )
@@ -1525,10 +1517,6 @@ MSG_HASH(
    "Microfone"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Controlador de microfone a utilizar."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Reamostrador de microfone"
    )
@@ -1566,24 +1554,8 @@ MSG_HASH(
    "Câmara"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Driver de câmara a ser usado."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Driver Bluetooth a ser usado."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Driver Wi-Fi a ser usado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Localização"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Driver de localização a ser usado."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -1608,14 +1580,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Gravação de vídeo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Driver de gravação de vídeo a ser usado."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Driver MIDI a ser usado."
    )
 
 /* Settings > Video */
@@ -1808,6 +1772,10 @@ MSG_HASH(
    "Alterne entre estas opções se a imagem não estiver centrada corretamente no ecrã."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Tamanho Horizontal"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
    "Alterne entre estas opções se a imagem não estiver centrada corretamente no ecrã."
    )
@@ -1879,10 +1847,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Taxa de atualização"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Taxa de atualização vertical do ecrã. Usado para calcular uma taxa de entrada de áudio apropriada.\nIsto será ignorado se \"Vídeo segmentado\" estiver ativado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2066,10 +2030,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminosidade de Papel Branco"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -2321,10 +2281,6 @@ MSG_HASH(
    "Número máximo de utilizadores"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Número máximo de utilizadores suportados pelo RetroArch."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Ativar auto-configuração de teclas"
    )
@@ -2339,6 +2295,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
    "LIGADO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automático"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3397,6 +3357,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Facebook Gaming */
 
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -3532,12 +3495,8 @@ MSG_HASH(
    "Adicionar ao misturador e à coleção"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Nome do sistema"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Núcleo padrão"
@@ -3576,24 +3535,12 @@ MSG_HASH(
    "Adicionar à lista de reprodução"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Adiciona o conteúdo a uma lista de reprodução."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Criar nova lista de reprodução"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Cria uma nova lista de reprodução e adiciona a entrada atual à mesma."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Informação"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Ver mais informações sobre o conteúdo."
    )
 
 /* Playlist Item > Set Core Association */
@@ -3622,7 +3569,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Reiniciar"
+   "Reiniciar (reset)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -4639,10 +4586,6 @@ MSG_HASH(
    "O ficheiro já existe. A guardar no buffer de cópia de segurança"
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Colocando o disco na área de notificação"
-   )
-MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Você saiu do jogo"
    )
@@ -4706,10 +4649,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONNECTION_SLOT,
    "Vaga para ligação"
-   )
-MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disco anexado"
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
@@ -4946,10 +4885,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Falha ao receber os dados da SRAM do anfitrião."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Falha ao remover o disco da área de notificações."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -5200,10 +5135,6 @@ MSG_HASH(
    "Remapeamento do ficheiro guardado com sucesso."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Disco removido da área de notificação."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Removendo conteúdo temporário do ficheiro"
    )
@@ -5218,10 +5149,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Gravação do estado antigo restaurada."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Sombreamento: restaurando padrões de pré-definição de sombreamento em"
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
@@ -5340,10 +5267,6 @@ MSG_HASH(
    "Desfez o carregamento do estado."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Desfazendo a gravação do estado"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Desconhecido"
    )
@@ -5460,8 +5383,20 @@ MSG_HASH(
    "Correspondência eliminada."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Falha ao definir o disco."
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Disco removido da área de notificação."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Falha ao remover o disco da área de notificações."
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disco anexado"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Colocando o disco na área de notificação"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -5531,6 +5466,7 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Sincronização com a frequência de fotogramas exata do conteúdo desativada."
    )
+
 
 /* Lakka */
 

@@ -368,47 +368,43 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (!vid)
+   if (!frame)
       return true;
 
    title[0] = '\0';
 
    video_driver_get_window_title(title, sizeof(title));
 
-   if (vid->menu.active)
-   {
+   if (SDL_MUSTLOCK(vid->screen))
+      SDL_LockSurface(vid->screen);
+
+   video_frame_scale(
+         &vid->scaler,
+         vid->screen->pixels,
+         frame,
+         vid->scaler.in_fmt,
+         vid->screen->w,
+         vid->screen->h,
+         vid->screen->pitch,
+         width,
+         height,
+         pitch);
+
 #ifdef HAVE_MENU
-      menu_driver_frame(menu_is_alive, video_info);
-#endif
+   menu_driver_frame(menu_is_alive, video_info);
+
+   if (vid->menu.active)
       SDL_BlitSurface(vid->menu.frame, NULL, vid->screen, NULL);
-   }
-   else
-   {
-      if (SDL_MUSTLOCK(vid->screen))
-         SDL_LockSurface(vid->screen);
+#endif
 
-      video_frame_scale(
-            &vid->scaler,
-            vid->screen->pixels,
-            frame,
-            vid->scaler.in_fmt,
-            vid->screen->w,
-            vid->screen->h,
-            vid->screen->pitch,
-            width,
-            height,
-            pitch);
+   if (msg)
+      sdl_render_msg(vid, vid->screen,
+            msg, vid->screen->w, vid->screen->h, vid->screen->format,
+            video_info->font_msg_pos_x,
+            video_info->font_msg_pos_y);
 
-
-      if (SDL_MUSTLOCK(vid->screen))
-         SDL_UnlockSurface(vid->screen);
-
-      if (msg)
-         sdl_render_msg(vid, vid->screen,
-         msg, vid->screen->w, vid->screen->h, vid->screen->format,
-         video_info->font_msg_pos_x,
-         video_info->font_msg_pos_y);
-   }
+   if (SDL_MUSTLOCK(vid->screen))
+      SDL_UnlockSurface(vid->screen);
 
    if (title[0])
       SDL_WM_SetCaption(title, NULL);
@@ -535,7 +531,7 @@ static const video_poke_interface_t sdl_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -584,6 +580,8 @@ video_driver_t video_sdl = {
 #endif
    sdl_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

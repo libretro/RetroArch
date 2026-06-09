@@ -12,7 +12,7 @@
 #define __TRANSLATION_DRIVER_APPLE_H
 
 #include <stdint.h>
-#include <stdbool.h>
+#include <boolean.h>
 
 #ifdef __cplusplus
 extern "C" {

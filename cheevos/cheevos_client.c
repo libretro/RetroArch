@@ -118,13 +118,13 @@ void rcheevos_get_user_agent(rcheevos_locals_t *locals,
    ptr = s + strlcpy(s, locals->user_agent_prefix, len);
 
    /* if a core is loaded, append its information */
-   if (sysinfo && !string_is_empty(sysinfo->library_name))
+   if (sysinfo && sysinfo->library_name && *sysinfo->library_name)
    {
       char *stop = s + len - 1;
       const char *path = path_get(RARCH_PATH_CORE);
       *ptr++ = ' ';
 
-      if (!string_is_empty(path))
+      if (path && *path)
       {
          append_no_spaces(ptr, stop, path_basename(path));
          path_remove_extension(ptr);
@@ -294,14 +294,50 @@ void rcheevos_client_http_load_response(const rc_api_request_t* request,
    rc_client_server_callback_t callback, void* callback_data)
 {
    char* contents;
+   long  ftell_ret;
    size_t _len = 0;
    FILE* file  = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
 
+   /* NULL-check the fopen: this is a debug-only override path
+    * (only compiled when CHEEVOS_JSON_OVERRIDE is defined) but
+    * a missing or unreadable override file would NULL-deref the
+    * subsequent fseek/ftell/fread calls.  Match the failure
+    * contract used elsewhere in this file by invoking the
+    * callback with a zeroed/empty response so rc_client doesn't
+    * hang waiting for a reply. */
+   if (!file)
+   {
+      callback(NULL, 0, callback_data);
+      return;
+   }
+
    fseek(file, 0, SEEK_END);
-   _len = ftell(file);
+   ftell_ret = ftell(file);
    fseek(file, 0, SEEK_SET);
 
+   /* ftell can return -1 on stream error.  Pre-patch _len was
+    * declared size_t and assigned directly from ftell, so a
+    * negative return became (size_t)-1 == SIZE_MAX, malloc
+    * (SIZE_MAX + 1) wrapped to malloc(0) returning a tiny
+    * non-NULL block, and the subsequent contents[_len] = 0
+    * write at offset SIZE_MAX corrupted the heap. */
+   if (ftell_ret < 0)
+   {
+      fclose(file);
+      callback(NULL, 0, callback_data);
+      return;
+   }
+   _len = (size_t)ftell_ret;
+
    contents = (char*)malloc(_len + 1);
+   /* NULL-check the malloc: without this the contents[_len] = 0
+    * write below and the fread into contents NULL-deref. */
+   if (!contents)
+   {
+      fclose(file);
+      callback(NULL, 0, callback_data);
+      return;
+   }
    fread((void*)contents, 1, _len, file);
    fclose(file);
 
@@ -318,6 +354,19 @@ void rcheevos_client_server_call(const rc_api_request_t* request,
    rcheevos_locals_t *rcheevos_locals   = (rcheevos_locals_t*)get_rcheevos_locals();
    rc_client_http_task_data_t *taskdata = (rc_client_http_task_data_t*)
       malloc(sizeof(rc_client_http_task_data_t));
+
+   /* NULL-check the malloc: the two field writes below NULL-deref
+    * on OOM.  On failure invoke the callback with a zeroed server
+    * response so rc_client doesn't wait forever for a reply it
+    * won't get; matches the zeroed-response convention used in
+    * rcheevos_client_http_task_callback above for failed requests. */
+   if (!taskdata)
+   {
+      rc_api_server_response_t server_response;
+      memset(&server_response, 0, sizeof(server_response));
+      callback(&server_response, callback_data);
+      return;
+   }
 
    taskdata->callback      = callback;
    taskdata->callback_data = callback_data;
@@ -455,6 +504,39 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
    fill_pathname_slash(badge_fullpath, sizeof(badge_fullpath));
    badge_fullname      = badge_fullpath + strlen(badge_fullpath);
    badge_fullname_size = sizeof(badge_fullpath) - (badge_fullname - badge_fullpath);
+
+   /* badge_name is supplied by the achievement server (or, on a
+    * compromised TLS path, an attacker-controlled MITM).
+    * fill_pathname_slash ensures we are anchored under the
+    * badges directory, but if badge_name contains '..', '/', '\\'
+    * or other path-component separators the resulting filesystem
+    * write escapes that directory.  Validate that badge_name is
+    * a single safe filename component (alphanumerics plus '_' and
+    * '-' suffixed by '_lock' on the lock variant); the underscore
+    * is enough because real badge names from the server are
+    * numeric IDs ("12345") or numeric IDs with a "_lock" suffix.
+    * Reject anything else rather than synthesising a sanitised
+    * version, since a bogus badge name from the server is itself
+    * a signal that something is wrong. */
+   {
+      const char *p;
+      bool        ok = (badge_name && *badge_name);
+      for (p = badge_name; ok && *p; p++)
+      {
+         char c = *p;
+         if (!(   (c >= '0' && c <= '9')
+               || (c >= 'a' && c <= 'z')
+               || (c >= 'A' && c <= 'Z')
+               || c == '_' || c == '-'))
+            ok = false;
+      }
+      if (!ok)
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "Rejecting badge with unsafe name.\n");
+         return false;
+      }
+   }
+
    snprintf(badge_fullname, badge_fullname_size, "%s" FILE_PATH_PNG_EXTENSION, badge_name);
 
    if (path_is_valid(badge_fullpath))
@@ -467,6 +549,17 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
 #endif
 
    taskdata = (rc_client_download_task_data_t*)malloc(sizeof(*taskdata));
+   /* NULL-check: the field writes below NULL-deref on OOM, and
+    * task_push_http_transfer_with_user_agent would dispatch a
+    * task callback with a NULL taskdata that
+    * rcheevos_client_download_task_callback dereferences via
+    * callback_data->queue / badge_fullpath.  On OOM return
+    * false - the caller treats this as a download failure and
+    * the queue (if present) continues with the next badge when
+    * prompted, matching the path_is_valid() early-return at
+    * line 473 above. */
+   if (!taskdata)
+      return false;
    taskdata->queue = queue;
    strlcpy(taskdata->badge_fullpath, badge_fullpath, sizeof(taskdata->badge_fullpath));
    strlcpy(taskdata->badge_name, badge_name, sizeof(taskdata->badge_name));
@@ -478,9 +571,9 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
    return true;
 }
 
-void rcheevos_client_download_badge_from_url(const char* url, const char* badge_name)
+bool rcheevos_client_download_badge_from_url(const char* url, const char* badge_name)
 {
-   rcheevos_client_download_badge(NULL, url, badge_name);
+   return rcheevos_client_download_badge(NULL, url, badge_name);
 }
 
 static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
@@ -614,6 +707,15 @@ void rcheevos_client_download_achievement_badges(rc_client_t* client)
    size_t i;
    rc_client_download_queue_t *queue = (rc_client_download_queue_t*)
       calloc(1, sizeof(*queue));
+
+   /* NULL-check the calloc: the five field writes below NULL-deref
+    * on OOM.  Function is void-returning; the user-visible
+    * consequence of skipping on OOM is that badge textures don't
+    * download this session (existing cached badges still display;
+    * missing ones show the default placeholder).  Triggered again
+    * next time the game is loaded. */
+   if (!queue)
+      return;
 
    queue->client = client;
    queue->game   = rc_client_get_game_info(client);

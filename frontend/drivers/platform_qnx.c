@@ -56,7 +56,7 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
 
    getcwd(workdir, sizeof(workdir));
 
-   if (!string_is_empty(workdir))
+   if (workdir && *workdir)
    {
       assets_path[0]               = '\0';
       data_path[0]                 = '\0';
@@ -196,6 +196,7 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode        */
+   NULL, /* get_display_type */
    "qnx",                        /* ident               */
    NULL                          /* get_video_driver    */
 };

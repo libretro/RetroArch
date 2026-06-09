@@ -92,6 +92,10 @@ struct libretro_vfs_implementation_file
    intptr_t smb_fh;
    intptr_t smb_ctx;
 #endif
+#if defined(HAVE_CDROM) && defined(__APPLE__)
+   void *iokit_plugin;   /* IOCFPlugInInterface ** */
+   void *iokit_mmc;      /* MMCDeviceInterface ** */
+#endif
 };
 #endif
 

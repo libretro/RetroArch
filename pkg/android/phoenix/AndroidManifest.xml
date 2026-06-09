@@ -22,7 +22,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:hasCode="true"
-        android:isGame="true"
+        android:appCategory="game"
         android:banner="@drawable/banner"
         android:extractNativeLibs="true"
         android:requestLegacyExternalStorage="true"
@@ -40,6 +40,11 @@
             <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
         </activity>
         <activity android:name="com.retroarch.browser.debug.CoreSideloadActivity" android:exported="true"/>
+        <receiver android:name="com.retroarch.browser.receiver.InstalledCoresReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="com.retroarch.QUERY_INSTALLED_CORES" />
+            </intent-filter>
+        </receiver>
       <provider
         android:name="com.retroarch.browser.provider.RetroDocumentsProvider"
         android:authorities="${applicationId}.documents"

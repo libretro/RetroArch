@@ -15,6 +15,11 @@
 
 #include <compat/strl.h>
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+
+#include <stdlib.h>
 #include <string.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -53,6 +58,7 @@
 #endif
 #include "../../tasks/tasks_internal.h"
 
+#include "../../msg_hash_lbl_str.h"
 #include "../../playlist.h"
 #include "../../runtime_file.h"
 
@@ -123,23 +129,18 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
 #if defined(HAVE_OZONE) || defined(HAVE_MATERIALUI)
    const char *menu_ident                     = menu_driver_ident();
 #endif
-
    if (playlist_show_sublabels)
    {
       /* Search for specified core */
       if (     !core_info_find(core_path, &core_info)
-            || !core_info->supports_no_game)
+            || !(core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))
          return 1;
-
       /* Get corresponding contentless core info entry */
       menu_contentless_cores_get_info(core_info->core_file_id.str,
             &entry);
-
       if (!entry)
          return 1;
-
       /* Determine which info we need to display */
-
       /* > Runtime info is always omitted when using Ozone
        * > Check if required runtime log is enabled */
       if (   ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE)
@@ -151,7 +152,6 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
 #endif
          )
          display_runtime = false;
-
 #ifdef HAVE_MATERIALUI
       /* > License info is always displayed unless
        *   we are using GLUI with runtime info enabled */
@@ -165,7 +165,6 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
          tmp[0  ] = '\n';
          tmp[1  ] = '\0';
       }
-
       if (display_runtime)
       {
          /* Check whether runtime info should be loaded
@@ -178,25 +177,24 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
                   (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
                   playlist_sublabel_last_played_style,
                   menu_timedate_date_separator);
-
          /* Check whether runtime info is valid */
          if (entry->runtime.status == CONTENTLESS_CORE_RUNTIME_VALID)
          {
-            size_t _len = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
-
+            size_t _len = strlcpy(tmp, entry->runtime.runtime_str, sizeof(tmp));
             if (_len < 64 - 1)
             {
                tmp[_len    ] = '\n';
                tmp[_len + 1] = '\0';
-               strlcat(tmp, entry->runtime.last_played_str, sizeof(tmp));
+               _len = strlcpy(tmp + _len + 1, entry->runtime.last_played_str, sizeof(tmp) - _len - 1);
             }
-
-            if (!string_is_empty(tmp))
-               strlcat(s, tmp, len);
+            if (*tmp)
+            {
+               size_t slen = strlen(s);
+               strlcpy(s + slen, tmp, len - slen);
+            }
          }
       }
    }
-
    return 0;
 }
 
@@ -247,7 +245,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_stop_recording,          
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_crt_switchres,             MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_enable,      MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_paper_white_nits,      MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_max_nits,      MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_menu_nits,      MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_expand_gamut,      MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_scanlines,      MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_subpixel_layout,      MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT)
@@ -270,8 +268,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_sync_thumbs,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_sync_system,        MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_driver,             MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_url,                MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_s3_url,             MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_username,           MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_password,           MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_access_key_id,      MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_secret_access_key,  MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_logging_settings_list,         MENU_ENUM_SUBLABEL_LOGGING_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_interface_settings_list,  MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ai_service_settings_list,  MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS)
@@ -302,9 +303,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_settings_list,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_recording_settings_list,       MENU_ENUM_SUBLABEL_RECORDING_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_throttle_settings_list,  MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_time_counter_settings_list,  MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_time_counter_reset_after_fastforwarding,  MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_time_counter_reset_after_load_state,  MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_time_counter_reset_after_save_state,  MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_time_counter_auto_reset,                MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_onscreen_display_settings_list,MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_settings_list,            MENU_ENUM_SUBLABEL_CORE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_information_list_list,         MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST)
@@ -360,6 +359,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_hdr_settings_list,           M
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_output_settings_list,           MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_crt_switchres_settings_list,           MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_suspend_screensaver_enable,    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE)
+#ifdef HAVE_VIDEO_FILTER
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_filter_enable,           MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_scale,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_opacity,          MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_show_decorations, MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS)
@@ -377,6 +379,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_settings_list,           MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_menu_settings_list,           MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_fire_settings_list,     MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_haptic_feedback_settings_list,MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_sensor_settings_list,    MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_latency_settings_list,         MENU_ENUM_SUBLABEL_LATENCY_SETTINGS)
 #ifdef HAVE_BLUETOOTH
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_settings_list,       MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS)
@@ -413,6 +416,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_fps_update_interval,           MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_framecount_show,               MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_memory_show,                   MENU_ENUM_SUBLABEL_MEMORY_SHOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_memory_update_interval,        MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_time_show,                     MENU_ENUM_SUBLABEL_TIME_SHOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_statistics_show,               MENU_ENUM_SUBLABEL_STATISTICS_SHOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_ping_show,             MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_settings,              MENU_ENUM_SUBLABEL_NETPLAY)
@@ -484,6 +488,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ui_companion_toggle,   ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_vrr_runloop_toggle,    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_runahead_toggle,       MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_preempt_toggle,        MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE)
+#ifdef HAVE_VIDEO_FILTER
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_video_filter_toggle,   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fps_toggle,            MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_statistics_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ai_service,            MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE)
@@ -519,6 +526,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_thumbnail_background_enab
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_add_content_list,              MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_frame_delay,             MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_frame_delay_auto,        MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_frame_time_sample_gated, MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_shader_delay,            MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_black_frame_insertion,   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_bfi_dark_frames,         MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES)
@@ -538,6 +546,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_hard_sync_frames,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_threaded,                MENU_ENUM_SUBLABEL_VIDEO_THREADED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings,                      MENU_ENUM_SUBLABEL_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_config_save_on_exit,           MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_config_save_minimal,           MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_save_on_exit,            MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_configuration_settings_list,   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_configurations_list_list,      MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST)
@@ -582,6 +591,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_deadzone,               MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sensor_accelerometer_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sensor_orientation,            MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sensor_gyroscope_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_enable,            MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE)
@@ -594,6 +604,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_allow_dpad,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_rumble_gain,             MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vertical_sync,           MENU_ENUM_SUBLABEL_VIDEO_VSYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_adaptive_vsync,          MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scanline_sync,           MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_allow_rotate,             MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_on_core_shutdown,        MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_category_enable,   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE)
@@ -690,9 +701,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_widgets,                  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_content_animation, MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_autoconfig,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_autoconfig_fails, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS)
-#ifdef HAVE_CHEATS
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_cheats_applied,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED)
-#endif
 #ifdef HAVE_PATCH
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_patch_applied,   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED)
 #endif
@@ -778,6 +786,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run_ahead_frames,              MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_preempt_frames,                MENU_ENUM_SUBLABEL_PREEMPT_FRAMES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_block_timeout,           MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT)
 #ifdef HAVE_CHEATS
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_cheats_applied, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_apply_after_toggle,      MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_apply_after_load,        MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_idx,                     MENU_ENUM_SUBLABEL_CHEAT_IDX)
@@ -823,6 +832,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_file_compression,         MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_file_compression,    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_max_keep,            MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_autosave_interval,             MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_automatic_interval,  MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_max_keep,               MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_checkpoint_interval,    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_checkpoint_deserialize, MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE)
@@ -964,6 +974,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_padding_factor,               
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_header_icon,                       MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_header_separator,                  MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_collapse_sidebar,                  MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_show_sidebar,                      MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_scroll_content_metadata,           MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_thumbnail_scale_factor,            MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_font_scale,                        MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE)
@@ -986,6 +997,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timedate_style,                     
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timedate_date_separator,               MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_battery_level_enable,                  MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_sublabels,                   MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_confirm,                     MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_navigation_wraparound,                 MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_quality,               MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_host,                   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST)
@@ -1104,6 +1116,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_system_directory,                   
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rgui_browser_directory,                MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_use_last_start_directory,              MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_suggest_always,                   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_use_builtin_media_player,              MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_use_builtin_image_viewer,              MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER)
 DEFAULT_SUBLABEL_MACRO(action_bind_dynamic_wallpapers_directory,                   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_thumbnails_directory,                           MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_rgui_config_directory,                          MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY)
@@ -1118,6 +1132,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_options,                       
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_layout,                            MENU_ENUM_SUBLABEL_XMB_LAYOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_icon_theme,                        MENU_ENUM_SUBLABEL_XMB_THEME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_current_menu_icon,                 MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_entry_icons,                       MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_switch_icons,                      MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_shadows_enable,                    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_vertical_thumbnails,               MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS)
@@ -1507,17 +1522,15 @@ static int action_bind_sublabel_core_info_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   if (!list || string_is_empty(list->list[i].label))
+   if (!list || (!list->list[i].label || !*list->list[i].label))
       return 0;
-
-   if (strstr(list->list[i].label, "(md5)"))
    {
       int pos = string_find_index_substring_string(list->list[i].label, "(md5)");
-      strlcpy(s, list->list[i].label + pos, len);
+      if (pos >= 0)
+         strlcpy(s, list->list[i].label + pos, len);
+      else
+         strlcpy(s, list->list[i].label, len);
    }
-   else
-      strlcpy(s, list->list[i].label, len);
-
    return 0;
 }
 
@@ -1617,20 +1630,17 @@ static int action_bind_sublabel_subsystem_load(
       char *s, size_t len)
 {
    unsigned j = 0;
+   size_t _len = 0;
    char buf[PATH_MAX_LENGTH];
-
    buf[0] = '\0';
-
    for (j = 0; j < content_get_subsystem_rom_id(); j++)
    {
-      size_t _len = strlcat(buf, path_basename(content_get_subsystem_rom(j)), sizeof(buf));
+      _len += strlcpy(buf + _len, path_basename(content_get_subsystem_rom(j)), sizeof(buf) - _len);
       if (j != content_get_subsystem_rom_id() - 1)
-         strlcpy(buf + _len, "\n", sizeof(buf) - _len);
+         _len += strlcpy(buf + _len, "\n", sizeof(buf) - _len);
    }
-
-   if (!string_is_empty(buf))
+   if (*buf)
       strlcpy(s, buf, len);
-
    return 0;
 }
 
@@ -1704,13 +1714,31 @@ static int action_bind_sublabel_input_remap_port(
    /* We need the actual frontend port index.
     * This is difficult to obtain here - the only
     * way to get it is to parse the entry label
-    * (input_remap_port_p<port_index+1>) */
-   if (   string_is_empty(entry.label)
-       || (sscanf(entry.label,
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT),
-                  &display_port) != 1)
-       || (display_port >= MAX_USERS + 1))
-      return 0;
+    * (input_remap_port_p<port_index+1>).
+    *
+    * The label format string is "input_remap_port_p%u"
+    * (MENU_ENUM_LABEL_INPUT_REMAP_PORT_STR). Match the literal
+    * prefix and then parse the trailing %u with strtoul to avoid
+    * the per-call strlen()/malloc() overhead some libcs incur on
+    * sscanf. */
+   {
+      static const char prefix[] = "input_remap_port_p";
+      const char       *p;
+      char             *endp;
+      unsigned long     v;
+
+      if (   !*entry.label
+          || !string_starts_with_size(entry.label, prefix,
+                STRLEN_CONST(prefix)))
+         return 0;
+      p = entry.label + STRLEN_CONST(prefix);
+      v = strtoul(p, &endp, 10);
+      if (endp == p)
+         return 0;
+      display_port = (unsigned)v;
+      if (display_port >= MAX_USERS + 1)
+         return 0;
+   }
 
    _len = snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT),
@@ -1740,15 +1768,23 @@ static int action_bind_sublabel_cheat_desc(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset = (type - MENU_SETTINGS_CHEAT_BEGIN);
+   size_t _len          = 0;
+   unsigned cheat_index = (type - MENU_SETTINGS_CHEAT_BEGIN);
 
    if (cheat_manager_state.cheats)
    {
-      /* TODO/FIXME - localize */
-      if (cheat_manager_state.cheats[offset].handler == CHEAT_HANDLER_TYPE_EMU)
-         strlcpy(s, "Emulator-Handled", len);
+      if (cheat_manager_state.cheats[cheat_index].handler == CHEAT_HANDLER_TYPE_EMU)
+      {
+         const char *code = cheat_manager_get_code(cheat_index);
+         _len += strlcpy(s + _len,
+               (code && *code)
+                  ? code
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               len - _len);
+      }
       else
-         strlcpy(s, "RetroArch-Handled", len);
+         _len += snprintf(s + _len, len - _len, "%08X",
+               cheat_manager_state.cheats[cheat_index].address);
    }
 
    return 0;
@@ -1773,22 +1809,22 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
       ": %s (%s)\n"
       "%s: %s (%s)\n"
       "%s: %s ",
-      !string_is_empty(room->retroarch_version)
+      (*room->retroarch_version)
       ? room->retroarch_version
       : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-      (!string_is_empty(room->frontend) &&
-         !string_is_equal_case_insensitive(room->frontend, "N/A"))
+      (*room->frontend
+      && !string_is_equal_case_insensitive(room->frontend, "N/A"))
             ? room->frontend
             : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
       room->corename, room->coreversion,
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT),
-      (!string_is_empty(room->gamename) &&
-         !string_is_equal_case_insensitive(room->gamename, "N/A"))
+      (*room->gamename
+       && !string_is_equal_case_insensitive(room->gamename, "N/A"))
             ? room->gamename
             : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
-   if (     string_is_empty(room->subsystem_name)
+   if (     !*room->subsystem_name
          || string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
       _len += snprintf(s + _len, len - _len, "(%08lX)\n",
             (unsigned long)(unsigned)room->gamecrc);
@@ -1840,19 +1876,22 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
          break;
    }
 
-   *s = '\0';
+   s[0] = '\0';
 
    if (status)
    {
       _len        = strlcpy(buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
             sizeof(buf) - 3);
+      if (_len > sizeof(buf) - 4)
+         _len = sizeof(buf) - 4;
       buf[  _len] = ':';
       buf[++_len] = ' ';
       buf[++_len] = '\0';
-      _len       += strlcpy(buf + _len, status, sizeof(buf) - _len);
+      strlcpy(buf + _len, status, sizeof(buf) - _len);
+      _len        = strlen(buf);
       buf[  _len] = '\n';
       buf[++_len] = '\0';
-      strlcat(s, buf, len);
+      strlcpy(s, buf, len);
    }
 
    if (client->devices)
@@ -1860,8 +1899,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       _len = snprintf(buf, sizeof(buf), "%s:",
          msg_hash_to_str(MSG_NETPLAY_CLIENT_DEVICES));
 
-      /* Ensure that at least one device can be written. */
-      if (_len > 0 && _len < (int)sizeof(buf) - (int)STRLEN_CONST(" 16\n"))
+      if (_len > 0 && _len < sizeof(buf) - STRLEN_CONST(" 16\n"))
       {
          uint32_t device;
          char *buf_written = buf + _len;
@@ -1870,35 +1908,34 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
          {
             if (client->devices & (1 << device))
             {
-               int __len = snprintf(buf_written,
+               int dev_len = snprintf(buf_written,
                      sizeof(buf) - _len,
                      " %u,", (unsigned)(device + 1));
 
-               /* Write nothing on error. */
-               if (__len <= 0)
+               if (dev_len <= 0)
                {
                   _len = -1;
                   break;
                }
 
-               _len += __len;
-               if (_len >= (int)sizeof(buf) - 1)
+               _len += dev_len;
+               if (_len >= sizeof(buf) - 1)
                   break;
 
-               buf_written += __len;
+               buf_written += dev_len;
             }
          }
 
          if (_len > 0)
          {
-            /* Now convert the last comma into a newline. */
             buf_written = strrchr(buf, ',');
             if (buf_written)
             {
                *buf_written++ = '\n';
                *buf_written   = '\0';
 
-               strlcat(s, buf, len);
+               _len = strlen(s);
+               strlcpy(s + _len, buf, len - _len);
             }
          }
       }
@@ -1908,12 +1945,17 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       msg_hash_to_str(MSG_NETPLAY_CHAT_SUPPORTED),
       msg_hash_to_str((client->protocol >= 6) ?
          MENU_ENUM_LABEL_VALUE_YES : MENU_ENUM_LABEL_VALUE_NO));
-   _len  = strlcat(s, buf, len);
-   _len += snprintf(s + _len, len - _len, "%s: %lu",
-      msg_hash_to_str(MSG_NETPLAY_SLOWDOWNS_CAUSED),
-      (unsigned long)client->slowdowns);
+   _len = strlen(s);
+   if (_len < len - 1)
+      strlcpy(s + _len, buf, len - _len);
 
-   if (client->ping >= 0)
+   _len = strlen(s);
+   if (_len < len - 1)
+      _len += snprintf(s + _len, len - _len, "%s: %lu",
+         msg_hash_to_str(MSG_NETPLAY_SLOWDOWNS_CAUSED),
+         (unsigned long)client->slowdowns);
+
+   if (client->ping >= 0 && _len < len - 1)
       snprintf(s + _len, len - _len,
             "\nPing: %u ms", (unsigned)client->ping);
 
@@ -1942,16 +1984,6 @@ static int action_bind_sublabel_playlist_entry(
    unsigned playlist_sublabel_runtime_type   = settings->uints.playlist_sublabel_runtime_type;
    bool content_runtime_log                  = settings->bools.content_runtime_log;
    bool content_runtime_log_aggregate        = settings->bools.content_runtime_log_aggregate;
-   const char *directory_runtime_log         = settings->paths.directory_runtime_log;
-   const char *directory_playlist            = settings->paths.directory_playlist;
-   enum playlist_sublabel_last_played_style_type
-         playlist_sublabel_last_played_style =
-               (enum playlist_sublabel_last_played_style_type)
-                     settings->uints.playlist_sublabel_last_played_style;
-   enum playlist_sublabel_last_played_date_separator_type
-         menu_timedate_date_separator        =
-               (enum playlist_sublabel_last_played_date_separator_type)
-                     settings->uints.menu_timedate_date_separator;
 
    if (!playlist_show_sublabels)
       return 0;
@@ -1981,9 +2013,9 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Only add sublabel if a core is currently assigned
     * > Both core name and core path must be valid */
-   if (     string_is_empty(entry->core_name)
+   if (     (!entry->core_name || !*entry->core_name)
          || string_is_equal(entry->core_name, "DETECT")
-         || string_is_empty(entry->core_path)
+         || (!entry->core_path || !*entry->core_path)
          || string_is_equal(entry->core_path, "DETECT"))
       return 0;
 
@@ -2004,7 +2036,7 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Note: This looks heavy, but each string_is_equal() call will
     * return almost immediately */
-   if (   !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+   if (   !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
        && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))
        && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
        && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB))
@@ -2014,13 +2046,7 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Check whether runtime info should be loaded from log file */
    if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
-      runtime_update_playlist(
-            playlist, playlist_index,
-            directory_runtime_log,
-            directory_playlist,
-            (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
-            playlist_sublabel_last_played_style,
-            menu_timedate_date_separator);
+      runtime_update_playlist(playlist, playlist_index);
 
    /* Check whether runtime info is valid */
    if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
@@ -2041,7 +2067,7 @@ static int action_bind_sublabel_playlist_entry(
          strlcpy(tmp + n, entry->last_played_str, sizeof(tmp) - n);
       }
 
-      if (!string_is_empty(tmp))
+      if (*tmp)
          strlcpy(s + _len, tmp, len - _len);
    }
 
@@ -2059,7 +2085,7 @@ static int action_bind_sublabel_core_options(
 
    /* If this is an options subcategory, fetch
     * the category info string */
-   if (!string_is_empty(category))
+   if (category && *category)
    {
       core_option_manager_t *coreopts = NULL;
 
@@ -2071,10 +2097,10 @@ static int action_bind_sublabel_core_options(
    /* If this isn't a subcategory (or something
     * went wrong...), use top level core options
     * menu sublabel */
-   if (string_is_empty(info))
+   if (!info || !*info)
       info = msg_hash_to_str(MENU_ENUM_SUBLABEL_CORE_OPTIONS);
 
-   if (!string_is_empty(info))
+   if (info && *info)
    {
       strlcpy(s, info, len);
       return 1;
@@ -2094,7 +2120,7 @@ static int action_bind_sublabel_core_option(
    {
       const char *info = core_option_manager_get_info(opt,
             type - MENU_SETTINGS_CORE_OPTION_START, true);
-      if (!string_is_empty(info))
+      if (info && *info)
          strlcpy(s, info, len);
    }
    return 0;
@@ -2147,25 +2173,14 @@ static int action_bind_sublabel_core_backup_entry(
    const char *crc = list->list[i].alt
       ? list->list[i].alt
       : list->list[i].path;
-   /* Set sublabel prefix */
-   size_t _len     = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC), len);
-
+   size_t _len = 0;
+   strlcpy_append(s, len, &_len,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC));
    /* Add CRC string */
-   if (string_is_empty(crc))
-   {
-      s[  _len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '\0';
-   }
+   if (!crc || !*crc)
+      strlcpy_append(s, len, &_len, "00000000");
    else
-      strlcpy(s + _len, crc, len - _len);
-
+      strlcpy_append(s, len, &_len, crc);
    return 1;
 }
 
@@ -2452,6 +2467,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             case RARCH_PREEMPT_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_preempt_toggle);
                return 0;
+#ifdef HAVE_VIDEO_FILTER
+            case RARCH_VIDEO_FILTER_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_video_filter_toggle);
+               return 0;
+#endif
             case RARCH_FPS_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_fps_toggle);
                return 0;
@@ -2902,14 +2922,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_frame_throttle);
             break;
-         case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_frame_time_counter_reset_after_fastforwarding);
-            break;
-         case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_frame_time_counter_reset_after_load_state);
-            break;
-         case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_frame_time_counter_reset_after_save_state);
+         case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_AUTO_RESET:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_frame_time_counter_auto_reset);
             break;
          case MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_recording);
@@ -3195,6 +3209,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_collapse_sidebar);
 #endif
             break;
+         case MENU_ENUM_LABEL_OZONE_SHOW_SIDEBAR:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_show_sidebar);
+#endif
+            break;
          case MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME:
 #ifdef HAVE_OZONE
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_truncate_playlist_name);
@@ -3304,6 +3323,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_current_menu_icon);
 #endif
             break;
+         case MENU_ENUM_LABEL_XMB_ENTRY_ICONS:
+#ifdef HAVE_XMB
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_entry_icons);
+#endif
+            break;
          case MENU_ENUM_LABEL_XMB_SWITCH_ICONS:
 #ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_switch_icons);
@@ -3365,6 +3389,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SAVESTATE_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_list);
+            break;
+         case MENU_ENUM_LABEL_STATE_SLOT_RUN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_load_state);
             break;
          case MENU_ENUM_LABEL_CORE_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_options);
@@ -3693,6 +3720,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_sublabels);
+            break;
+         case MENU_ENUM_LABEL_MENU_SHOW_CONFIRM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_confirm);
             break;
          case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timedate_enable);
@@ -4093,6 +4123,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_autosave_interval);
+            break;
+         case MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_automatic_interval);
             break;
          case MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_replay_checkpoint_interval);
@@ -4689,6 +4722,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_adaptive_vsync);
             break;
+         case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_scanline_sync);
+            break;
          case MENU_ENUM_LABEL_INPUT_TURBO_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_turbo_enable);
             break;
@@ -4730,6 +4766,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sensor_accelerometer_sensitivity);
+            break;
+         case MENU_ENUM_LABEL_INPUT_SENSOR_ORIENTATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sensor_orientation);
             break;
          case MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sensor_gyroscope_sensitivity);
@@ -4942,6 +4981,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);
             break;
+         case MENU_ENUM_LABEL_CONFIG_SAVE_MINIMAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_minimal);
+            break;
          case MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_save_on_exit);
             break;
@@ -4998,6 +5040,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_SUGGEST_ALWAYS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_suggest_always);
             break;
+         case MENU_ENUM_LABEL_USE_BUILTIN_PLAYER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_use_builtin_media_player);
+            break;
+         case MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_use_builtin_image_viewer);
+            break;
          case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_toggle_gamepad_combo);
             break;
@@ -5027,6 +5075,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_frame_delay_auto);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_frame_time_sample_gated);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_DELAY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_shader_delay);
@@ -5109,6 +5160,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_memory_update_interval);
             break;
+         case MENU_ENUM_LABEL_TIME_SHOW:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_time_show);
+            break;
          case MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_views_settings_list);
             break;
@@ -5153,8 +5207,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_hdr_paper_white_nits);
             break;
-         case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_hdr_max_nits);
+         case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_hdr_menu_nits);
             break;
          case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_hdr_expand_gamut);
@@ -5235,12 +5289,21 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CLOUD_SYNC_URL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_url);
             break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_S3_URL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_s3_url);
+            break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_username);
             break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_password);
             break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID:
+           BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_access_key_id);
+           break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY:
+           BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_secret_access_key);
+           break;
          case MENU_ENUM_LABEL_LOGGING_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_logging_settings_list);
             break;
@@ -5405,6 +5468,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_haptic_feedback_settings_list);
             break;
+         case MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_sensor_settings_list);
+            break;
          case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
 #ifdef HAVE_BLUETOOTH
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_settings_list);
@@ -5469,6 +5535,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_suspend_screensaver_enable);
             break;
+#ifdef HAVE_VIDEO_FILTER
+         case MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_filter_enable);
+            break;
+#endif
          case MENU_ENUM_LABEL_VIDEO_SCALE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_scale);
             break;

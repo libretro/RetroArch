@@ -163,7 +163,7 @@ int linux_display::get_available_video_modes()
 		video_modes.push_back(mode);
 		backup_modes.push_back(mode);
 
-		log_verbose("Switchres: [%3ld] %4dx%4d @%3d%s%s %s: ", video_modes.size(), mode.width, mode.height, mode.refresh, mode.interlace ? "i" : "p", mode.type & MODE_DESKTOP ? "*" : "", mode.type & MODE_ROTATED ? "rot" : "");
+		log_verbose("Switchres: [%3zu] %4dx%4d @%3d%s%s %s: ", video_modes.size(), mode.width, mode.height, mode.refresh, mode.interlace ? "i" : "p", mode.type & MODE_DESKTOP ? "*" : "", mode.type & MODE_ROTATED ? "rot" : "");
 		log_mode(&mode);
 	};
 

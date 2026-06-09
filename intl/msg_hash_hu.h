@@ -224,6 +224,14 @@ MSG_HASH(
    "Kilépés a RetroArch alkalmazásból. Konfiguráció mentése kilépéskor: engedélyezve."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Kilépés a RetroArch alkalmazásból. Konfiguráció mentése kilépéskor: letiltva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Kilépés a RetroArch-ból. A program kényszerített bezárása (SIGKILL, stb.) mindenképpen a konfiguráció mentése nélkül állítja le a RetroArch-ot. Unix-hoz hasonló környezetekben a SIGINT/SIGTERM is használható tiszta leállításra, beleértve a konfiguráció mentését, ha az engedélyezett."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Szinkronizálás most"
    )
@@ -246,14 +254,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Minden ütközés feloldása a fájlok letöltésével a szerverről, felülírva a helyi másolatokat."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Kilépés a RetroArch alkalmazásból. Konfiguráció mentése kilépéskor: letiltva."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Kilépés a RetroArch-ból. A program kényszerített bezárása (SIGKILL, stb.) mindenképpen a konfiguráció mentése nélkül állítja le a RetroArch-ot. Unix-hoz hasonló környezetekben a SIGINT/SIGTERM is használható tiszta leállításra, beleértve a konfiguráció mentését, ha az engedélyezett."
    )
 
 /* Main Menu > Load Core */
@@ -1119,6 +1119,26 @@ MSG_HASH(
    "A felhő alapú tárhelyszolgáltatóhoz használt jelszó."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Hozzáférési kulcsazonosító"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "A felhő alapú tárhelyszolgáltatóhoz használt hozzáférési kulcsazonosító."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Titkos hozzáférési kulcs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "A felhő alapú tárhelyszolgáltatóhoz használt titkos hozzáférési kulcs."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "A felhő alapú tárhely S3 végpontjának címe."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Naplózás"
    )
@@ -1421,7 +1441,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "A használt videóillesztő."
+   "A használt videoillesztő (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1521,7 +1541,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "A használt hangillesztő."
+   "A használt hangillesztő (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1582,7 +1602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "A mikrofonhoz használt illesztő."
+   "A használt mikrofon illesztő (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1623,15 +1643,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "A használt kameraillesztő."
+   "A használt kameraillesztő (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "A használt bluetooth illesztő."
+   "A használt Bluetooth illesztő (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "A használt wi-fi illesztő."
+   "A használt Wi-Fi illesztő (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1639,7 +1659,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "A helymeghatározáshoz használt illesztő."
+   "A használt helyadat illesztő (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1671,11 +1691,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "A felvételhez használt eszköz."
+   "A használt felvevő illesztő (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "A használt MIDI illesztő."
+   "A használt MIDI illesztő (újraindítás szükséges)"
    )
 
 /* Settings > Video */
@@ -1731,6 +1751,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "A kép szinkronizációs beállításai."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "A videoszűrő alkalmazása. Ez egy javaslat, amit a videoillesztő nem feltétlenül vesz figyelembe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Videoszűrő engedélyezése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -2026,7 +2054,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "A képernyő függőleges frissítési gyakorisága. A megfelelő hangbemeneti sebesség kiszámítására szolgál.\nEzt a rendszer figyelmen kívül hagyja, ha a \"Többszálas megjelenítés\" engedélyezve van."
+   "A képernyő függőleges frissítési gyakorisága. A megfelelő hangbemeneti sebesség kiszámítására szolgál. Ezt a rendszer figyelmen kívül hagyja, ha a \"Többszálas megjelenítés\" engedélyezve van."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2399,20 +2427,28 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Csúcs-luminancia"
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "HDR kimeneti mód, ha a kijelző támogatja. Figyelem: az scRGB tompíthatja a CRT shader maszkokat mivel az operációs rendszer HDR10-re konvertál, miután a maszkot alkalmazta."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "A csúcsfényerő (cd/m2 egységben), amit a kijelző meg tud jeleníteni. Egyszer kell beállítani, utána a Papírfehér fényerővel lehet a fényességet szabályozni. A csúcsfényerőt az RTings.com oldalról lehet megtudni. Néhány kijelzőn, ha a scanline-ok be vannak kapcsolva, ezt és a papírfehér fényerőt feljebb kell állítani az összfényerő felhúzásához."
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
+   "Ki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Fényerő"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "A menü fényereje cd/m2 (nit) egységben HDR kijelző használatakor. Csak engedélyezett HDR beállítás esetén látható."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Papírfehér luminancia"
+   "Fényerő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Miután a csúcsfényerő be van állítva, ez használható a szokásos fényerő beállításhoz. Műszakilag ez azt a fényerőt jelenti, amit egy fehér papír képvisel, pl. olvasható szöveghez vagy az SDR (Standard Dynamic Range) legnagyobb fényerejéhez."
+   "A HDR fényerő beállítás nit-ben. A kijelző fizikai fényerő beállításaival együtt alkalmazandó. Kezdésnek állítsuk ezt 80-ra és a kijelző fényerejét maximumra, vagy állítsuk ezt a kijelző maximális nit értékére és csökkentsük a kijelző fényerejét, amíg a kijelzés megfelelő nem lesz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2420,11 +2456,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "A kijelző teljes színskálájának használata egy fényesebb, telítetteb képhez. Az eredeti játékhoz hűbb színekhez a PONTOS beállítás javasolt."
+   "A kijelző teljes színskálájának használata egy fényesebb, telítetteb képhez. Az eredeti játékhoz hűbb színekhez a Pontos beállítás javasolt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    "Pontos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "Kiterjesztett"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "Széles"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
+   "Szuper"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
@@ -2475,6 +2523,14 @@ MSG_HASH(
    "A VSync aktív, amíg a teljesítmény a megcélzott képfrissítés alá nem esik. Minimalizálhatja a döcögősséget amikor a teljesítmény nem éri el a valós időt, és energiát takaríthat meg. Nem kompatibilis "
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Scanline szinkronizálás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "A videomegjelenítés szinkronizálása a scanline (letapogatási sor) helyzetéhez. Csökkenti a késleltetés, a tearing nagyobb kockázata mellett. A VSync ki kell legyen kapcsolva."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Képvárakoztatás"
    )
@@ -2497,6 +2553,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Megkísérli a Képvárakoztatás kívánt értékét minimális képkocka eldobással tartani. A kiindulópont a képkocka idejének 3/4-e, ha a Képvárakoztatás értéke 0 (automatikus)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Képkocka idejének mérése csak stabil állapotban"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "A 'Becsült képfrissítési gyakoriság' mérésének korlátozása csak olyan képkockákra, amikor a tartalom tisztán fut (nem menüben, nincs leállítva, nincs előretekerés, és a képkocka ideje az értelmezési tartományon belül van). Így a diagnosztika valós értéket ad, cserébe lassabban éri el az értékét tartalom betöltése után."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2694,6 +2758,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "A köztes puffer mérete (képkockákban), a WASAPI illesztő megosztott módú használata esetén."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "ASIO vezérlőpult megnyitása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Az ASIO meghajtó vezérlőpaneljének megnyitása, az eszköz útválasztás és puffer beállításaihoz."
    )
 
 /* Settings > Audio > Output */
@@ -3018,7 +3090,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "A RetroArch által támogatott felhasználók maximális száma."
+   "A RetroArch által támogatott felhasználók maximális száma (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3161,8 +3233,20 @@ MSG_HASH(
    "A gyorsulásmérő érzékenységének állítása."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Érzékelő tájolása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "A gyorsulásmérő és giroszkóp tengelyeinek elforgatása, hogy az eszköz állásához illeszkedjen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automatikus"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "A giroszkóp érzékenységének állítása."
+   "A giroszkóp érzékenységének állítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3304,6 +3388,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "A tapintható visszajelzés és rezgés beállításai."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Mozgás és fény érzékelők"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "A gyorsulásmérő, giroszkóp, és megvilágításmérő beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -3936,6 +4028,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Videoszűrő alkalmazása (váltógomb)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "A szoftver alapú videoszűrő ki/be kapcsolása."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "FPS megjelenítése (váltógomb)"
    )
@@ -4049,7 +4149,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
-   "Fenntartott eszköz"
+   "A játékos számára fenntartott eszköz"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
@@ -4465,6 +4565,18 @@ MSG_HASH(
    "Változások mentése a konfigurációs fájlba kilépéskor. Hasznos a menüben tett változtatásokhoz. Felülírja a konfigurációs fájlt, az #include direktívák és a kommentek nem őrződnek meg."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "Minimális konfiguráció mentése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Csak az alapértelmezettől eltérő beállítások mentése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "Bekapcsolva csak azok a konfigurációs értékek mentődnek, amiknek az értéke nem az alapértelmezett. Ez kisebb, kezelhetőbb konfigurációs fájlt eredményez."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "Remap fájlok mentése kilépéskor"
    )
@@ -4850,8 +4962,16 @@ MSG_HASH(
    "A beépített médialejátszó használata"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "A médialejátszó által támogatott fájlok megjelenítése a fájlböngészőben."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "A beépített képnézegető használata"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "A képnézegető által támogatott fájlok megjelenítése a fájlböngészőben."
    )
 
 /* Settings > Frame Throttle */
@@ -4867,10 +4987,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Képkocka idejének mérése"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "A képkocka idejének mérését befolyásoló beállítások.\nCsak ha a többszálas megjelenítés ki van kapcsolva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -4946,30 +5062,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Nullázás gyorsítás után"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "A képkocka időmérés nullázása gyorsítás után."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Nullázás játékállás betöltése után"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "A képkocka időmérés nullázása játékállás betöltése után."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Nullázás játékállás mentése után"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "A képkocka időmérés nullázása játékállás mentése után."
-   )
 
 /* Settings > Recording */
 
@@ -6253,10 +6345,6 @@ MSG_HASH(
    "\"Netplay\" látható"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "A 'Netplay' menü megjelenítése."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "\"Előzmények\" látható"
    )
@@ -6434,10 +6522,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "\"Játékállás mentés/töltés visszavonása\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "A játékállás mentés/töltés visszavonásának lehetőségei jelenjenek meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7148,10 +7232,6 @@ MSG_HASH(
    "Összegzés indításkor"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Információ az éppen betöltődő játékról és a felhasználó jelenlegi haladásáról. \"Minden azonosított játék\" beállítás esetén a nyilvános trófeákkal nem rendelkező játékokhoz is mutat összegzést."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Minden azonosított játék"
    )
@@ -7625,10 +7705,6 @@ MSG_HASH(
    "Társított magok megjelenítése a játéklistában"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "A játéklista bejegyzéseinek felcímkézése a jelenleg társított magokkal (ha épp van).\nEz a beállítás hatástalan, ha a játéklista alcimkéi be vannak kapcsolva."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Játéklista alcimkék megjelenítése"
    )
@@ -7731,10 +7807,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Játékidő alcímke a játéklistákhoz"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "A játéklisták alcímkéin megjelenő játékidő fajtája.\nAz ennek megfelelő naplózást engedélyezni kell a \"Mentések\" közt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7853,7 +7925,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Új tartalom hozzáadása és az érvénytelen bejegyzések eltávolítása a játéklista legutóbbi létrehozásához vagy szerkesztéséhez használt \"Kézi beolvasás\" művelet megismétlésével."
+   "Új tartalom hozzáadása és az érvénytelen bejegyzések eltávolítása a játéklista legutóbbi létrehozásához vagy szerkesztéséhez használt \"Tartalom beolvasása\" művelet megismétlésével."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -7918,10 +7990,6 @@ MSG_HASH(
    "Discord állapotüzenetek"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "A Discord alkalmazás több adatot mutat meg az éppen játszott tartalomról.\nCsak a natív asztali klienssel elérhető."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
    "Helymeghatározás engedélyezése"
    )
@@ -7980,6 +8048,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Facebook Gaming stream kulcs"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -8308,16 +8379,8 @@ MSG_HASH(
    "Hozzáadás a keverőhöz"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "A hangsáv hozzáadása egy szabad hangfolyam helyre.\nHa nincs szabad hely, nem történik semmi."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Hozzáadás a keverőhöz és lejátszás"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "A hangsáv hozzáadása egy szabad hangfolyam helyre, és annak elindítása.\nHa nincs szabad hely, nem történik semmi."
    )
 
 /* Netplay */
@@ -8434,11 +8497,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Kézi beolvasás"
+   "Tartalom beolvasása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Konfigurálható beolvasás a tartalom fájlnevei alapján. A tartalom nem kell szerepeljen az adatbázisban."
+   "Konfigurálható beolvasás a tartalom fájlnevei és/vagy az adatbázis illeszkedése alapján."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
@@ -8504,31 +8567,31 @@ MSG_HASH(
    "Hozzáadás a keverőhöz és lejátszás"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Tartalom könyvtára"
+   "Tartalom helye"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "Tartalmak beolvasása ebből a könyvtárból."
+   "Tartalom beolvasása ebből a könyvtárból (vagy fájlból)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Rendszer neve"
+   "A frissítendő játéklista"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "A beolvasott tartalomhoz rendelt \"rendszernév\". A generált játéklista nevéhez és a bélyegképek azonosításához használatos."
+   "A generált játéklista neve, ami a bélyegképek azonosításánál is számít. Az automatikus beállítás ugyanazt a nevet fogja használni, mint az illeszkedő adatbázis, vagy a tartalom könyvtára."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Egyedi rendszernév"
+   "Játéklista egyedi neve"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "A rendszernév kézi megadása a beolvasott tartalomhoz. Csak ha a rendszer neve <Egyedi> értékre van állítva."
+   "A beolvasott tartalom játéklistájának egyedi neve."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
@@ -8828,16 +8891,8 @@ MSG_HASH(
    "Hozzáadás játéklistához"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "A tartalom hozzáadása játéklistához."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Új játéklista létrehozása"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Új játéklista létrehozása és az aktuális elem hozzáadása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8860,16 +8915,8 @@ MSG_HASH(
    "Információ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "További információk a tartalomról."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Bélyegképek letöltése"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Képernyőkép / dobozkép / címképernyő bélyegképeinek letöltése a jelenlegi tartalomhoz. Frissíti a már meglevő bélyegképeket."
    )
 
 /* Playlist Item > Set Core Association */
@@ -8922,11 +8969,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Újraindítás"
+   "Visszaállítás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Tartalom újraindítása. A RetroPad Start gomb hidegindítást eredményez."
+   "Újraindítás előidézése. A RetroPad Start hidegindítást eredményez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9315,7 +9362,7 @@ MSG_HASH(
    "Csalás keresés indítása vagy folytatása"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
    "A memória átfésülése új csalások létrehozásához."
    )
 MSG_HASH(
@@ -9339,6 +9386,10 @@ MSG_HASH(
    "Játékfüggő csalások újratöltése"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Minden létező csalás újratöltése."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Csalás fájl mentése másként"
    )
@@ -9351,12 +9402,24 @@ MSG_HASH(
    "Új csalás hozzáadása az elejére"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Csalás beszúrása a lista elejére."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Új csalás hozzáadása a végére"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Csalás beszúrása a lista végére."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Minden csalás törlése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "A csaláslista ürítése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9672,10 +9735,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Új lemez betöltése"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Új lemez kiválasztása a fájlrendszerből és hozzáadás a listához. \nFigyelem: ez egy régi funkció, ajánlott inkább M3U fájlokat használni a többlemezes címekhez."
    )
 
 /* Quick Menu > Shaders */
@@ -12413,10 +12472,6 @@ MSG_HASH(
    "A mag mérései"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Nincs kiválasztott lemez"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "A frontend mérései"
    )
@@ -12735,10 +12790,6 @@ MSG_HASH(
    "Nem volt paraméter megadva, és nincs beépített menü, súgó megjelenítése..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Lemez behelyezése a tálcába"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Várakozás a kliensre..."
    )
@@ -13044,14 +13095,6 @@ MSG_HASH(
    "A játéklista bejegyzésének társított magja visszaállítva."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Lemez hozzáadva"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Lemez hozzáadása sikertelen"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Alkalmazás könyvtára"
    )
@@ -13140,6 +13183,10 @@ MSG_HASH(
    "A mag nem támogatja a játékállás elmentését."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "A mag nem támogatja a játékállás elmentésének visszavonását."
+   )
+MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
    "A mag nem támogatja a lemezváltást."
    )
@@ -13218,14 +13265,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "Eszköz leválasztása érvényes csatlakozóról."
-   )
-MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Virtuális lemeztálca becsukva."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Virtuális lemeztálca kiadva."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -13382,10 +13421,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "SRAM adatok fogadása a kiszolgálótól sikertelen."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Lemez eltávolítása a lemeztálcából sikertelen."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13760,10 +13795,6 @@ MSG_HASH(
    "A bemenet minden remap módosítása visszaállítva alapértékre."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Lemez eltávolítva a tálcából."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Ideiglenes tartalom fájl eltávolítása"
    )
@@ -13778,10 +13809,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Régebbi mentett játékállás visszaállítva."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Az alapértelmezett shader preset visszaállítva erre"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -13988,10 +14015,6 @@ MSG_HASH(
    "Játékállás betöltése visszavonva."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Játékállás mentés visszavonása folyamatban"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Ismeretlen"
    )
@@ -14030,14 +14053,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "A nézőablak méretének kiszámítása sikertelen! Folytatás nyers adatokkal. Ez valószínűleg nem fog jól működni..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Virtuális lemeztálca kiadása sikertelen."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Virtuális lemeztálca becsukása sikertelen."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14272,6 +14287,10 @@ MSG_HASH(
    "Minden csalás törölve."
    )
 MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Minden csalás újratöltve."
+   )
+MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,
    "Új csalás hozzáadva a jelenlegi elé."
    )
@@ -14292,8 +14311,44 @@ MSG_HASH(
    "Csalás törölve."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Lemez behelyezése sikertelen."
+   MSG_DISK_CLOSED,
+   "Virtuális lemeztálca becsukva."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Virtuális lemeztálca becsukása sikertelen."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Virtuális lemeztálca kiadva."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Virtuális lemeztálca kiadása sikertelen."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Lemez eltávolítva a tálcából."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Lemez eltávolítása a lemeztálcából sikertelen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Nincs kiválasztott lemez"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Lemez hozzáadva"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Lemez hozzáadása sikertelen"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Lemez behelyezése a tálcába"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14651,6 +14706,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "A képfrissítési gyakoriság %s Hz-re változott."
    )
+
 
 /* Lakka */
 

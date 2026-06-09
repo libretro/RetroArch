@@ -86,6 +86,14 @@ MSG_HASH(
    "使用するコアを選択します。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "コアをアンロード"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "ロードされたコアを解放します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Libretro コア実装を参照します。コアディレクトリに設定されているパスがブラウザの開始ディレクトリになります。空白の場合、ルートから開始します。\nコアディレクトリにディレクトリパスが設定されている場合、メニューはそのディレクトリをトップフォルダとして使用し、フルパスが設定されている場合は、そのファイルがあるフォルダから開始します。"
    )
@@ -150,6 +158,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
    "従来のデスクトップメニューを開きます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "キオスクモードを無効化"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -226,6 +238,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "RetroArch を終了します。プログラムを (SIGKILL などで) 強制終了すると、設定を保存せずに RetroArch を終了します。 Unix 系では、SIGINT/SIGTERM を有効にすることで設定の保存を含むクリーンな初期化を可能にします。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "今すぐ同期"
    )
 
 /* Main Menu > Load Core */
@@ -552,6 +568,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "インストール済みコアをロック"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   ""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -1356,10 +1376,6 @@ MSG_HASH(
    "ビデオ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "使用するビデオのドライバです。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x ドライバです。最小要求バージョン: OpenGL 1.1.1。シェーダーに対応していません。可能であれば、後の OpenGL ドライバを使用してください。"
    )
@@ -1456,10 +1472,6 @@ MSG_HASH(
    "オーディオ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "使用するオーディオのドライバです。 "
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "ネットワークオーディオシステム用の RSound ドライバです。"
    )
@@ -1513,10 +1525,6 @@ MSG_HASH(
    "マイク"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "使用するマイクのドライバです。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "マイクリサンプラー"
    )
@@ -1554,24 +1562,8 @@ MSG_HASH(
    "カメラ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "使用するカメラのドライバです。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "使用する Bluetooth のドライバです。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "使用する Wi-Fi のドライバです。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "位置情報"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "使用する位置情報のドライバです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1600,14 +1592,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "録画"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "使用する録画のドライバです。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "使用する MIDI のドライバです。"
    )
 
 /* Settings > Video */
@@ -1919,10 +1903,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "垂直リフレッシュレート"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "画面の垂直リフレッシュレートです。適切なオーディオ入力レートを計算するために使用されます。\n[ビデオのスレッド化] を有効にすると、これは無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2250,14 +2230,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "最大輝度"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "ペーパーホワイト輝度"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    "正確"
@@ -2789,10 +2761,6 @@ MSG_HASH(
    "最大ユーザー数"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "RetroArch が対応する最大ユーザー数です。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    "ポーリングの動作 (再起動が必要)"
    )
@@ -2919,6 +2887,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
    "加速度センサの感度を調整。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "自動"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3586,10 +3558,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    "RetroArch によって認識された物理コントローラーです。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
-   "このプレイヤーの予約デバイス"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
@@ -4265,10 +4233,6 @@ MSG_HASH(
    "フレームタイムカウンター"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "フレームタイムカウンターに影響する設定を変更します。\nビデオのスレッド化が無効化されている場合にのみ有効になります。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "早送り倍率"
    )
@@ -4342,30 +4306,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "早送り後にリセット"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "早送り後にフレームタイムカウンターをリセットします。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "ステートロード後にリセット"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "ステートロード後にフレームタイムカウンターをリセットします。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "ステートセーブ後にリセット"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "ステートセーブ後にフレームタイムカウンターをリセットします。"
-   )
 
 /* Settings > Recording */
 
@@ -5684,20 +5624,8 @@ MSG_HASH(
    "コンテンツの [再開] オプションを表示します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "[再起動] を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "コンテンツの [再起動] オプションを表示します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "[コンテンツを閉じる] を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "[コンテンツを閉じる] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -5726,10 +5654,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "[ステートセーブ/ロードを元に戻す] を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "[ステートロード/セーブを元に戻す] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -6416,10 +6340,6 @@ MSG_HASH(
    "スタートアップ概要"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "ロード中のゲームとユーザーの現在の進捗状況についての情報を表示します。\n[すべての認識されたゲーム] は実績が公開されていないゲームの概要を表示します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "すべての特定されたゲーム"
    )
@@ -6893,10 +6813,6 @@ MSG_HASH(
    "関連付けられたコアを表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "プレイリストエントリーに、現在関連付けられているコア (もしあれば) をタグ付けするタイミングを指定します。\nプレイリストのサブラベルが有効になっている場合、この設定は無視されます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "プレイリストのサブラベルを表示"
    )
@@ -6995,10 +6911,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "プレイリストのサブラベルのプレイ時間"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "サブラベルに表示するプレイ時間の種類を選択します。\n対応するプレイ時間を [保存] オプションメニューで有効にする必要があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7112,10 +7024,6 @@ MSG_HASH(
    "プレイリストをリフレッシュ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "プレイリストの作成または編集で最後に使用した [手動スキャン] 操作を繰り返すことで、新しいコンテンツを追加したり無効なエントリーを削除したりします。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "プレイリストを削除"
    )
@@ -7172,10 +7080,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
    "コアにカメラのアクセスを許可します。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Discord アプリにプレイされたコンテンツについての情報を表示することを許可します。\nネイティブデスクトップクライアントでのみ利用可能です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -7236,6 +7140,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Facebook Gaming ストリームキー"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -7560,16 +7467,8 @@ MSG_HASH(
    "ミキサーに追加"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "このオーディオトラックを利用可能なオーディオストリームスロットに追加します。\n現在利用可能なスロットがない場合は無視されます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "ミキサーに追加して再生"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "このオーディオトラックを利用可能なオーディオストリームスロットに追加して再生します。\n現在利用可能なスロットがない場合は無視されます。"
    )
 
 /* Netplay */
@@ -7685,14 +7584,6 @@ MSG_HASH(
    "データベースと一致するコンテンツがあるかファイルをスキャンします。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "手動スキャン"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "コンテンツのファイル名に基づいて設定可能なスキャンです。コンテンツがデータベースと一致する必要はありません。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "スキャン"
    )
@@ -7708,32 +7599,8 @@ MSG_HASH(
    "ミキサーに追加して再生"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "コンテンツディレクトリ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "コンテンツをスキャンするディレクトリを選択します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "システム名"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "スキャンしたコンテンツに関連付ける [システム名] を指定します。生成されたプレイリストファイルの名前およびプレイリストサムネイルの識別に使用されます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "カスタムシステム名"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "スキャンしたコンテンツの [システム名] を手動で指定します。[システム名] が [カスタム] に設定されている場合にのみ使用されます。"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "デフォルトのコア"
@@ -8032,16 +7899,8 @@ MSG_HASH(
    "プレイリストに追加"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "プレイリストにコンテンツを追加します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "新しいプレイリストを作成"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "新しいプレイリストを作成し、現在のエントリーを追加します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8064,16 +7923,8 @@ MSG_HASH(
    "情報"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "このコンテンツについての詳細を表示します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "サムネイルをダウンロード"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "現在のコンテンツのスクリーンショット/ボックスアート/タイトルスクリーンのサムネイル画像をダウンロードします。既存のサムネイルを更新します。"
    )
 
 /* Playlist Item > Set Core Association */
@@ -8122,7 +7973,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "再起動"
+   "リセット"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -8483,10 +8334,6 @@ MSG_HASH(
    "チート検索を開始または続行"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "メモリをスキャンして新しいチートを作成します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "チートファイルをロード (置換)"
    )
@@ -8568,10 +8415,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
    "ビッグエンディアン"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "ビッグエンディアン: 258 = 0x0102\nリトルエンディアン: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -8656,10 +8499,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "以前の値 -%u (%X ) に等しい"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "マッチした %u 件をリストに追加"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -11521,10 +11360,6 @@ MSG_HASH(
    "コアカウンター"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "ディスクが選択されていません"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "フロントエンドカウンター"
    )
@@ -11843,10 +11678,6 @@ MSG_HASH(
    "引数が指定されておらず、メニューもビルトインされていないため、ヘルプを表示します…"
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "ディスクがトレイに入りました"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "クライアントを待機中..."
    )
@@ -12136,14 +11967,6 @@ MSG_HASH(
    "プレイリストエントリーのコアの関連付けがリセットされました。"
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "ディスクを挿入しました"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "ディスクの追加に失敗しました"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "アプリディレクトリ"
    )
@@ -12304,14 +12127,6 @@ MSG_HASH(
    "デバイスを有効なポートから切断してください"
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "仮想ディスクトレイを閉じました。"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "仮想ディスクトレイを取り出しました。"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "ダウンロード中"
    )
@@ -12450,10 +12265,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "ホストから SRAM データを受信できませんでした。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "トレイからディスクを削除できませんでした。"
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -12788,10 +12599,6 @@ MSG_HASH(
    "すべての入力リマップオプションはデフォルトにリセットされます。"
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "ディスクをトレイから取り出しました。"
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "一時コンテンツファイルを削除中"
    )
@@ -12806,10 +12613,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "以前のステートセーブを復元しました。"
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "シェーダー: デフォルトのシェーダープリセットを復元しています to"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -12988,10 +12791,6 @@ MSG_HASH(
    "ステートロードを取り消しました。"
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "ステートセーブを取り消しています"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "不明"
    )
@@ -13030,14 +12829,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "表示領域サイズの計算に失敗しました! RAW データを引き続き使用します。これはおそらく正常に動作しません…"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "仮想ディスクトレイの取り出しに失敗しました。"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "仮想ディスクトレイを閉じることができませんでした。"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -13292,8 +13083,44 @@ MSG_HASH(
    "チートを削除しました。"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "ディスクの設定に失敗しました。"
+   MSG_DISK_CLOSED,
+   "仮想ディスクトレイを閉じました。"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "仮想ディスクトレイを閉じることができませんでした。"
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "仮想ディスクトレイを取り出しました。"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "仮想ディスクトレイの取り出しに失敗しました。"
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "ディスクをトレイから取り出しました。"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "トレイからディスクを削除できませんでした。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "ディスクが選択されていません"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "ディスクを挿入しました"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "ディスクの追加に失敗しました"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "ディスクがトレイに入りました"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -13611,6 +13438,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "ビデオのリフレッシュレートを %s Hz に変更しました。"
    )
+
 
 /* Lakka */
 

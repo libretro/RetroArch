@@ -25,7 +25,6 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <string/stdstring.h>
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
 
@@ -40,11 +39,11 @@
  * Note: This is a double, so no suffix */
 #define DIAGONAL_PIXELS_1080P 2202.90717008229831581901
 
-#define COLOR_TEXT_ALPHA(color, alpha) (color & 0xFFFFFF00) | alpha
+#define COLOR_TEXT_ALPHA(color, alpha) ((color & 0xFFFFFF00) | (alpha))
 
-#define HEX_R(hex) ((hex >> 16) & 0xFF) * (1.0f / 255.0f)
-#define HEX_G(hex) ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f)
-#define HEX_B(hex) ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f)
+#define HEX_R(hex) (((hex) >> 16) & 0xFF) * (1.0f / 255.0f)
+#define HEX_G(hex) (((hex) >> 8 ) & 0xFF) * (1.0f / 255.0f)
+#define HEX_B(hex) (((hex) >> 0 ) & 0xFF) * (1.0f / 255.0f)
 
 #define COLOR_HEX_TO_FLOAT(hex, alpha) { \
    HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
@@ -84,13 +83,6 @@ enum menu_driver_id_type
    MENU_DRIVER_ID_XMB
 };
 
-enum gfx_display_prim_type
-{
-   GFX_DISPLAY_PRIM_NONE = 0,
-   GFX_DISPLAY_PRIM_TRIANGLESTRIP,
-   GFX_DISPLAY_PRIM_TRIANGLES
-};
-
 enum gfx_display_driver_type
 {
    GFX_VIDEO_DRIVER_GENERIC = 0,
@@ -110,7 +102,8 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_WIIU,
    GFX_VIDEO_DRIVER_GDI,
    GFX_VIDEO_DRIVER_SWITCH,
-   GFX_VIDEO_DRIVER_RSX
+   GFX_VIDEO_DRIVER_RSX,
+   GFX_VIDEO_DRIVER_SDL2
 };
 
 typedef struct gfx_display_ctx_draw gfx_display_ctx_draw_t;
@@ -166,7 +159,6 @@ struct gfx_display_ctx_draw
    float y;
    float rotation;
    float scale_factor;
-   enum gfx_display_prim_type prim_type;
    bool pipeline_active;
 };
 
@@ -248,9 +240,13 @@ void gfx_display_draw_keyboard(
       char *grid[], unsigned id,
       unsigned text_color);
 
+/* Note: coords must outlive the call — its address is stored in
+ * draw->coords and read by the caller's subsequent dispctx->draw().
+ * Callers should declare coords as a stack local alongside draw. */
 void gfx_display_draw_bg(
       gfx_display_t *p_disp,
       gfx_display_ctx_draw_t *draw,
+      struct video_coords *coords,
       void *userdata,
       bool add_opacity, float opacity_override);
 
@@ -293,6 +289,26 @@ bool gfx_display_reset_icon_texture(
       const char *texture_path,
       uintptr_t *item, enum texture_filter_type filter_type,
       unsigned *width, unsigned *height);
+
+/* Platform-adaptive icon/texture loading.
+ *
+ * On platforms where async task-based image loading is detrimental
+ * to performance (e.g. Android with SAF I/O overhead), falls back
+ * to synchronous loading identical to the pre-async behavior.
+ *
+ * All menu drivers and gfx_widgets should call this instead of
+ * task_push_icon_load() directly so that adding a new platform
+ * to the synchronous path requires changing only one place.
+ *
+ * |generation| / |generation_ptr| are only used on the async path
+ * to guard against stale callbacks; on the synchronous path they
+ * are ignored (the load completes before the function returns). */
+bool gfx_display_load_icon(
+      const char *fullpath,
+      bool supports_rgba,
+      uintptr_t *target_texture,
+      uint64_t generation,
+      uint64_t *generation_ptr);
 
 bool gfx_display_reset_textures_list_buffer(
         uintptr_t *item,
@@ -338,6 +354,7 @@ extern gfx_display_ctx_driver_t gfx_display_ctx_wiiu;
 extern gfx_display_ctx_driver_t gfx_display_ctx_gdi;
 extern gfx_display_ctx_driver_t gfx_display_ctx_switch;
 extern gfx_display_ctx_driver_t gfx_display_ctx_rsx;
+extern gfx_display_ctx_driver_t gfx_display_ctx_sdl2;
 
 RETRO_END_DECLS
 

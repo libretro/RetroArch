@@ -39,6 +39,7 @@
 #include "../../core.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../input/input_driver.h"
 
 #if defined(ORBIS)
 #include "../../deps/xxHash/xxhash.h"
@@ -110,6 +111,10 @@ struct shader_uniforms
 
    float core_aspect;
    float core_aspect_rot;
+
+   int gyroscope;
+   int accelerometer;
+   int accelerometer_rest;
 
    int lut_texture[GFX_MAX_TEXTURES];
    unsigned frame_count_mod;
@@ -485,7 +490,7 @@ static bool gl_glsl_compile_program(
       if (!gl_glsl_compile_shader(
                glsl,
                program->vprg,
-               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n",
+               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n",
                program_info->vertex))
       {
          RARCH_ERR("[GLSL] Failed to compile vertex shader #%u.\n", idx);
@@ -500,7 +505,7 @@ static bool gl_glsl_compile_program(
       RARCH_LOG("[GLSL] Found GLSL fragment shader.\n");
       program->fprg = glCreateShader(GL_FRAGMENT_SHADER);
       if (!gl_glsl_compile_shader(glsl, program->fprg,
-               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n",
+               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n",
                program_info->fragment))
       {
          RARCH_ERR("[GLSL] Failed to compile fragment shader #%u.\n", idx);
@@ -597,7 +602,7 @@ static bool gl_glsl_compile_programs(
       /* If we load from GLSLP (preset),
        * load the file here.
        */
-      if (     !string_is_empty(pass->source.path)
+      if (     *pass->source.path
             && !gl_glsl_load_source_path(pass, pass->source.path))
       {
          RARCH_ERR("[GLSL] Failed to load GLSL shader: %s.\n",
@@ -754,8 +759,16 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->original_fps         = gl_glsl_get_uniform(glsl, prog, "OriginalFPS");
    uni->rotation         = gl_glsl_get_uniform(glsl, prog, "Rotation");
    uni->core_aspect      = gl_glsl_get_uniform(glsl, prog, "OriginalAspect");
-   uni->core_aspect_rot  = gl_glsl_get_uniform(glsl, prog, "OriginalAspectRotAted");
+   uni->core_aspect_rot  = gl_glsl_get_uniform(glsl, prog, "OriginalAspectRotated");
 
+   uni->gyroscope             = gl_glsl_get_uniform(glsl, prog, "Gyroscope");
+   uni->accelerometer         = gl_glsl_get_uniform(glsl, prog, "Accelerometer");
+   uni->accelerometer_rest    = gl_glsl_get_uniform(glsl, prog, "AccelerometerRest");
+
+   if (  uni->gyroscope >= 0
+      || uni->accelerometer >= 0
+      || uni->accelerometer_rest >= 0)
+      input_state_get_ptr()->shader_uses_sensors = true;
 
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);
@@ -866,6 +879,7 @@ static void gl_glsl_deinit(void *data)
       return;
 
    gl_glsl_destroy_resources(glsl);
+   input_state_get_ptr()->shader_uses_sensors = false;
 
    free(glsl);
 }
@@ -1053,13 +1067,13 @@ static void *gl_glsl_init(void *data, const char *path)
       enum rarch_shader_type type =
          video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
 
-      if (!string_is_empty(path) && type != RARCH_SHADER_GLSL)
+      if (path && *path && type != RARCH_SHADER_GLSL)
       {
          RARCH_ERR("[GLSL] Invalid shader type, falling back to stock.\n");
          path = NULL;
       }
 
-      if (!string_is_empty(path))
+      if (path && *path)
       {
          bool ret = false;
 
@@ -1132,19 +1146,30 @@ static void *gl_glsl_init(void *data, const char *path)
 #endif
 
    /* Find all aliases we use in our GLSLP and add #defines for them so
-    * that a shader can choose a fallback if we are not using a preset. */
-   *glsl->alias_define = '\0';
-   for (i = 0; i < glsl->shader->passes; i++)
+    * that a shader can choose a fallback if we are not using a preset.
+    *
+    * Track a running offset into alias_define and let snprintf write
+    * directly at that offset; the prior strlcat-in-loop form scanned
+    * the buffer from the start on every iteration to find its end,
+    * giving O(passes^2) total cost. */
    {
-      if (*glsl->shader->pass[i].alias)
+      size_t alias_len   = 0;
+      size_t alias_avail = sizeof(glsl->alias_define);
+      glsl->alias_define[0] = '\0';
+      for (i = 0; i < glsl->shader->passes; i++)
       {
-         char define[128];
-
-         define[0] = '\0';
-
-         snprintf(define, sizeof(define), "#define %s_ALIAS\n",
+         int n;
+         if (!*glsl->shader->pass[i].alias)
+            continue;
+         if (alias_len + 1 >= alias_avail)
+            break;
+         n = snprintf(glsl->alias_define + alias_len,
+               alias_avail - alias_len,
+               "#define %s_ALIAS\n",
                glsl->shader->pass[i].alias);
-         strlcat(glsl->alias_define, define, sizeof(glsl->alias_define));
+         if (n < 0 || (size_t)n >= alias_avail - alias_len)
+            break;
+         alias_len += (size_t)n;
       }
    }
 
@@ -1577,6 +1602,24 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
             glsl->prg[glsl->active_idx].id,
             glsl->shader->parameters[i].id);
       glUniform1f(location, glsl->shader->parameters[i].current);
+   }
+
+   /* Sensor uniforms — values are 0.0 if sensors disabled or not available */
+   {
+      const struct shader_uniforms *uni = &glsl->uniforms[glsl->active_idx];
+      /* Per-frame snapshot cached by input_driver_poll()
+       * on the main thread */
+      input_driver_state_t *input_st   = input_state_get_ptr();
+
+      if (uni->gyroscope >= 0)
+         glUniform3fv(uni->gyroscope, 1,
+               input_st->sensor_gyroscope_cache);
+      if (uni->accelerometer >= 0)
+         glUniform3fv(uni->accelerometer, 1,
+               input_st->sensor_accelerometer_cache);
+      if (uni->accelerometer_rest >= 0)
+         glUniform3fv(uni->accelerometer_rest, 1,
+               input_st->sensor_accelerometer_rest);
    }
 }
 

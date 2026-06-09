@@ -232,20 +232,20 @@ MSG_HASH(
    "退出RetroArch应用。[退出时配置保存] 已启用。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "立即同步"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   "手动触发云同步。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "退出RetroArch应用。[退出时配置保存] 已禁用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "退出 RetroArch。以任何强制方式终止程序（如 SIGKILL 等）均不会保存配置。在类 Unix 系统上，使用 SIGINT 或 SIGTERM 信号可触发正常退出流程，若已启用配置自动保存，则会在退出时保存配置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "立即同步"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "手动触发云同步。"
    )
 
 /* Main Menu > Load Core */
@@ -1432,10 +1432,6 @@ MSG_HASH(
    "视频"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "使用的视频驱动。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x 驱动程序。最低版本要求：OpenGL 1.1。不支持着色器。如果可能，请改用更高版本的 OpenGL 驱动程序。"
    )
@@ -1532,10 +1528,6 @@ MSG_HASH(
    "音频"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "使用的音频驱动。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "RSound 音频驱动。用于网络音频系统。"
    )
@@ -1593,10 +1585,6 @@ MSG_HASH(
    "麦克风"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "要使用的麦克风驱动程序。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "麦克风重采样器"
    )
@@ -1634,28 +1622,12 @@ MSG_HASH(
    "摄像头"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "使用的摄像头驱动。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
    "蓝牙"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "使用的蓝牙驱动。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "使用的 Wi-Fi 驱动。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "定位"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "使用的 GPS 定位驱动。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1684,14 +1656,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "录制"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "使用的录制驱动。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "使用的 MIDI 驱动。"
    )
 
 /* Settings > Video */
@@ -2039,10 +2003,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "垂直刷新率"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "屏幕的垂直刷新率。用于计算适当的音频输入速率。\n如果启用了「视频独立线程」，此选项将被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2410,14 +2370,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "峰值亮度"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "白点亮度"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    "精确"
@@ -2997,10 +2949,6 @@ MSG_HASH(
    "最大用户数"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "支持的最大玩家数量。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    "轮询行为（需要重启）。"
    )
@@ -3137,8 +3085,12 @@ MSG_HASH(
    "调整加速度计的灵敏度。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "自动"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "调整陀螺仪的灵敏度。"
+   "调整陀螺仪的灵敏度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3972,10 +3924,6 @@ MSG_HASH(
    "RetroArch识别的物理控制器。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
-   "为此播放器所保留的设备"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
    "根据预设模式，该控制器将分配给此玩家。"
    )
@@ -4689,10 +4637,6 @@ MSG_HASH(
    "帧计时器"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "更改影响帧时间计数器的设置。\n仅当线程视频禁用时才激活。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "快进倍率"
    )
@@ -4766,30 +4710,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "快进后重置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "快进后重置帧时间计数器。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "加载存档后重置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "加载状态后重置帧时间计数器。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "保存存档后重置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "保存状态后重置帧时间计数器。"
-   )
 
 /* Settings > Recording */
 
@@ -6077,10 +5997,6 @@ MSG_HASH(
    "显示「联机」页"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "显示“网络联机”菜单。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "显示「历史」页"
    )
@@ -6216,20 +6132,8 @@ MSG_HASH(
    "显示「恢复」选项。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "显示「重启」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "显示「重启」选项。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "显示「关闭」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "显示「关闭」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -6258,10 +6162,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "显示「撤消保存/加载状态」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "显示「撤消保存/加载状态」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -6964,10 +6864,6 @@ MSG_HASH(
    "启动摘要"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "显示关于正在加载的游戏和用户当前进度的信息。\n“所有已识别的游戏”将显示没有已发布成就的游戏摘要。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "所有已识别的游戏"
    )
@@ -7441,10 +7337,6 @@ MSG_HASH(
    "在列表中显示绑定的核心"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "指定何时将列表条目绑定当前关联的核心(如果有的话)。\n当显示列表子标签时，此设置会被忽略。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "显示列表副标签"
    )
@@ -7547,10 +7439,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "列表副标签运行时"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "选择游戏列表子标签显示的运行时间记录类型。\n对应的运行时间记录必须通过菜单的「保存」选项启用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7668,10 +7556,6 @@ MSG_HASH(
    "刷新播放列表"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "重复操作“手动扫描”来添加新内容并删除无效条目。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "删除列表"
    )
@@ -7732,10 +7616,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "开启 Discord"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "允许 Discord 应用显示您当前游玩的游戏信息。\n此选项仅适用于官方桌面客户端。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -7804,6 +7684,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Facebook 游戏直播密钥"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -8132,16 +8015,8 @@ MSG_HASH(
    "添加到混音器"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "添加音轨到可用的音频流位。\n如果没有可用的位，将会被忽略。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "添加到混音器并播放"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "添加音轨到可用的音频流位并播放。\n如果没有可用的位，将会被忽略。"
    )
 
 /* Netplay */
@@ -8257,14 +8132,6 @@ MSG_HASH(
    "扫描一个兼容的文件并将其添加到列表"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "手动扫描"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "基于文件名的可配置扫描。不需要匹配数据库。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "扫描"
    )
@@ -8280,32 +8147,8 @@ MSG_HASH(
    "添加到混音器并播放"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "游戏文件夹"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "选择要扫描游戏的文件夹。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "系统名称"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "指定要扫描的游戏关联的「系统名称」。用于命名生成的游戏列表并识别游戏的缩略图。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "自定义系统名称"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "手动指定要扫描的游戏的「系统名称」。仅在「系统名称」设为 <自定义> 时有效。"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "默认核心"
@@ -8604,16 +8447,8 @@ MSG_HASH(
    "添加至列表"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "将内容添加到播放列表中。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "新建播放列表"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "创建一个新的播放列表并添加当前条目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8636,16 +8471,8 @@ MSG_HASH(
    "信息"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "查看该内容的更多相关信息。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "下载缩略图"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "下载当前游戏的截屏/封面/题图图片。如果已下载则更新。"
    )
 
 /* Playlist Item > Set Core Association */
@@ -8698,7 +8525,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "重启"
+   "重置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9087,10 +8914,6 @@ MSG_HASH(
    "开始或继续金手指搜索"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "扫描内存以创建新作弊。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "加载金手指文件 (覆盖)"
    )
@@ -9172,10 +8995,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
    "大字节"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "大端：258 = 0x0102\n小端：258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -9260,10 +9079,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "等于之前 - %u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "将 %u 个匹配添加到列表中"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -12337,10 +12152,6 @@ MSG_HASH(
    "核心计数器"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "未选择光盘"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "前端计数器"
    )
@@ -12659,10 +12470,6 @@ MSG_HASH(
    "未提供参数也没有内建菜单，正在显示帮助..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "正在将光盘放到托盘上"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "正在等待客户端..."
    )
@@ -12968,14 +12775,6 @@ MSG_HASH(
    "游戏列表条目的核心关联已重置。"
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "附加光盘"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "附加光盘失败"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "应用程序文件夹"
    )
@@ -13140,14 +12939,6 @@ MSG_HASH(
    "从有效端口断开设备。"
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "关闭虚拟盘片。"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "弹出虚拟光盘托盘。"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "正在下载"
    )
@@ -13302,10 +13093,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "从主机接收游戏存档数据失败。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "从托盘中移除光盘失败。"
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13680,10 +13467,6 @@ MSG_HASH(
    "所有输入重映射选项已重置为默认值。"
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "从托盘中移除光盘。"
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "移除临时游戏文件"
    )
@@ -13698,10 +13481,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "已恢复旧的状态存储。"
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "重置着色器预设到"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -13904,10 +13683,6 @@ MSG_HASH(
    "已撤销状态加载。"
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "正在撤销保存状态"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "未知"
    )
@@ -13946,14 +13721,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "可视区域尺寸计算失败！将继续使用原始数据，这很可能不会正常工作。"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "弹出虚拟光驱失败。"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "收回虚拟光驱托盘失败。"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14208,8 +13975,44 @@ MSG_HASH(
    "金手指已删除。"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "放置光盘失败."
+   MSG_DISK_CLOSED,
+   "关闭虚拟盘片。"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "收回虚拟光驱托盘失败。"
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "弹出虚拟光盘托盘。"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "弹出虚拟光驱失败。"
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "从托盘中移除光盘。"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "从托盘中移除光盘失败。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "未选择光盘"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "附加光盘"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "附加光盘失败"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "正在将光盘放到托盘上"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14567,6 +14370,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "视频刷新率更改为 %s Hz。"
    )
+
 
 /* Lakka */
 

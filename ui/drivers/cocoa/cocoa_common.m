@@ -17,14 +17,19 @@
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
 
+#include <compat/apple_compat.h>
+#include <string/stdstring.h>
+#include <defines/cocoa_defines.h>
+
 #include "cocoa_common.h"
 #include "apple_platform.h"
 #include "../ui_cocoa.h"
-#include <compat/apple_compat.h>
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
 #include "RetroArchPlaylistManager.h"
+#endif
 
 #ifdef HAVE_COCOATOUCH
-#import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
+#import "../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
 #if TARGET_OS_TV
 #import <TVServices/TVServices.h>
@@ -32,31 +37,32 @@
 #endif
 #if TARGET_OS_IOS
 #import <MobileCoreServices/MobileCoreServices.h>
-#import "../../../menu/menu_cbs.h"
 #endif
 #endif
 
-#include "../../../configuration.h"
-#include "../../../content.h"
-#include "../../../core_info.h"
-#include "../../../defaults.h"
-#include "../../../frontend/frontend.h"
-#include "../../../file_path_special.h"
-#include "../../../menu/menu_cbs.h"
-#include "../../../paths.h"
-#include "../../../retroarch.h"
-#include "../../../tasks/task_content.h"
-#include "../../../verbosity.h"
+#include "../../configuration.h"
+#include "../../content.h"
+#include "../../core_info.h"
+#include "../../defaults.h"
+#include "../../frontend/frontend.h"
+#include "../../file_path_special.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#include "../../menu/menu_cbs.h"
+#include "../../menu/menu_displaylist.h"
+#endif
+
+#include "../../paths.h"
+#include "../../retroarch.h"
+#include "../../tasks/task_content.h"
+#include "../../verbosity.h"
 
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 
-#ifdef HAVE_MENU
-#include "../../menu/menu_driver.h"
-#endif
-
 #ifdef HAVE_MIST
-#include "steam/steam.h"
+#include "../../steam/steam.h"
 #endif
 
 #if IOS
@@ -69,11 +75,33 @@ extern bool RAIsVoiceOverRunning(void)
 #import <AppKit/AppKit.h>
 extern bool RAIsVoiceOverRunning(void)
 {
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
+   /* @available is clang-only (Xcode 7+).  GCC 4.0 rejects the
+    * '@' as a stray token.  isVoiceOverEnabled on NSWorkspace is
+    * 10.13+ anyway, so on older SDKs we skip this block entirely
+    * and fall through to the return below. */
    if (@available(macOS 10.13, *))
       return [[NSWorkspace sharedWorkspace] isVoiceOverEnabled];
+#endif
    return false;
 }
 #endif
+
+#ifdef OSX
+/* <CoreGraphics/CoreGraphics.h> is a 10.8+ umbrella header.  On the
+ * 10.5 Leopard SDK the CGDirectDisplay + kCGDisplayRefreshRate
+ * symbols come in through <ApplicationServices/ApplicationServices.h>.
+ * RARCH_HAS_CGDISPLAYMODE_API (defined in cocoa_common.h) selects
+ * between the 10.6+ CGDisplayMode API and the 10.5 CFDictionaryRef
+ * path inside cocoa_get_refresh_rate below. */
+#if defined(MAC_OS_X_VERSION_10_8) && \
+    (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
+     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_8)
+#import <CoreGraphics/CoreGraphics.h>
+#else
+#import <ApplicationServices/ApplicationServices.h>
+#endif
+#endif /* OSX */
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 id<ApplePlatform> apple_platform;
@@ -100,8 +128,7 @@ static CFRunLoopObserverRef iterate_observer;
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
-   uint32_t runloop_flags;
-   int          ret   = runloop_iterate();
+   int ret = runloop_iterate();
 
    if (ret == -1)
    {
@@ -119,17 +146,13 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
    steam_poll();
 #endif
 
-   runloop_flags = runloop_get_flags();
-#if !TARGET_OS_TV
-   if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
+#if !TARGET_OS_TV && !defined(OSX)
+   if (runloop_get_flags() & RUNLOOP_FLAG_FASTMOTION)
 #endif
       CFRunLoopWakeUp(CFRunLoopGetMain());
 #if TARGET_OS_IOS
    else
       rarch_stop_draw_observer();
-#elif defined(OSX)
-   else if (!(@available(macOS 15.0, *)))
-      CFRunLoopWakeUp(CFRunLoopGetMain());
 #endif
 }
 
@@ -184,8 +207,7 @@ void rarch_stop_draw_observer(void)
    }
 
 #if !TARGET_OS_TV
-   uint32_t runloop_flags = runloop_get_flags();
-   if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
+   if (runloop_get_flags() & RUNLOOP_FLAG_FASTMOTION)
    {
       /* Fast-forward: observer handles all iterations */
       rarch_start_draw_observer();
@@ -201,32 +223,51 @@ void rarch_stop_draw_observer(void)
    CocoaView *view = (BRIDGE CocoaView*)nsview_get_ptr();
    if (!view)
    {
+      /* +new returns +1 owned by the caller.  Autorelease before
+       * handing to nsview_set_ptr, which takes its own retain for
+       * the process-lifetime g_instance slot.  Net result: the
+       * returned pointer obeys the Cocoa +0 "get" convention on
+       * both the first call (where we allocate) and every
+       * subsequent call (where we just read g_instance) - so
+       * callers do not have to guess the retain count.
+       *
+       * RARCH_AUTORELEASE is a statement-only macro (expands to
+       * ((void)0) under ARC and [x autorelease] under MRR), so it
+       * must be called on its own line after the assignment rather
+       * than wrapping the rvalue.  Under ARC the ((void)0) is a
+       * no-op and the strong local's end-of-scope release balances
+       * +new's +1 after g_instance's storeStrong has taken its
+       * own retain; under MRR the explicit autorelease does the
+       * same balancing once the pool drains. */
       view = [CocoaView new];
+      RARCH_AUTORELEASE(view);
       nsview_set_ptr(view);
 #if defined(IOS)
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
+      {
+         float hz = (float)[UIScreen mainScreen].maximumFramesPerSecond;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
-      if (@available(iOS 15.0, tvOS 15.0, *))
-      {
-         /* Use a wide range by default to support ProMotion displays,
-          * the display server will set the exact rate when needed */
-         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(60, 120, 120)];
-      }
-      else
-      {
-         /* iOS 9-14: Use preferredFramesPerSecond as fallback */
-         view.displayLink.preferredFramesPerSecond = 120;
-      }
+         if (@available(iOS 15.0, tvOS 15.0, *))
+            [view.displayLink setPreferredFrameRateRange:
+               CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz)];
+         else
+            view.displayLink.preferredFramesPerSecond = hz;
 #else
-      /* Building with SDK < iOS 15: Use preferredFramesPerSecond */
-      view.displayLink.preferredFramesPerSecond = 120;
+         view.displayLink.preferredFramesPerSecond = hz;
 #endif
+      }
       [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 #elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
       if (@available(macOS 14.0, *))
       {
+         CGDirectDisplayID did = CGMainDisplayID();
+         CGDisplayModeRef mode = CGDisplayCopyDisplayMode(did);
+         float hz = (float)CGDisplayModeGetRefreshRate(mode);
+         CGDisplayModeRelease(mode);
+         if (hz <= 0.0f)
+            hz = 60.0f;
          view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
-         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
+         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
          [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
       }
 #endif
@@ -242,17 +283,10 @@ void rarch_stop_draw_observer(void)
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
    NSArray *array = [NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil];
    [self registerForDraggedTypes:array];
-#endif
 
-#if defined(HAVE_COCOA)
-   ui_window_cocoa_t cocoa_view;
-   cocoa_view.data = (CocoaView*)self;
-#endif
-
-#if defined(OSX)
-    video_driver_display_type_set(RARCH_DISPLAY_OSX);
-    video_driver_display_set(0);
-    video_driver_display_userdata_set((uintptr_t)self);
+   video_driver_display_type_set(RARCH_DISPLAY_OSX);
+   video_driver_display_set(0);
+   video_driver_display_userdata_set((uintptr_t)self);
 #endif
 
 #if TARGET_OS_TV
@@ -835,7 +869,7 @@ void *cocoa_screen_get_chosen(void)
 
     monitor_index        = settings->uints.video_monitor_index;
 
-    if (monitor_index >= screens.count)
+    if (monitor_index >= [screens count])
         return (BRIDGE void*)screens;
     return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
 }
@@ -926,6 +960,143 @@ float cocoa_screen_get_native_scale(void)
 }
 #endif
 
+/* ---------------------------------------------------------------------
+ * Shared display-info helpers - consolidated from:
+ *   gfx/drivers_context/cocoa_gl_ctx.m : *_get_refresh_rate,
+ *                                         *_get_video_output_size
+ *   gfx/drivers_context/cocoa_vk_ctx.m : *_get_refresh_rate,
+ *                                         *_get_video_output_size
+ *   gfx/drivers/metal.m                : metal_get_refresh_rate,
+ *                                         metal_get_video_output_size
+ * Those vtable hooks now each contain a one-line thunk that calls
+ * into these two helpers so there is a single implementation per
+ * Apple platform.  See cocoa_common.h for why all three vtables
+ * still need a registered function.
+ * --------------------------------------------------------------------- */
+
+float cocoa_get_refresh_rate(void)
+{
+#ifdef OSX
+#ifdef RARCH_HAS_CGDISPLAYMODE_API
+   /* macOS 10.6+: CGDisplayMode API. */
+   CGDirectDisplayID main_id = CGMainDisplayID();
+   CGDisplayModeRef  mode    = CGDisplayCopyDisplayMode(main_id);
+   float             rate    = 0.0f;
+   if (mode)
+   {
+      rate = (float)CGDisplayModeGetRefreshRate(mode);
+      CFRelease(mode);
+   }
+   /* CGDisplayModeGetRefreshRate returns 0 on most built-in LCDs;
+    * hand the caller a sane fallback instead of 0 Hz. */
+   return (rate > 0.0f) ? rate : 60.0f;
+#else
+   /* macOS 10.5 Leopard: CGDisplayCopyDisplayMode doesn't exist.
+    * CGDisplayCurrentMode returns a borrowed CFDictionaryRef
+    * (do NOT CFRelease) carrying kCGDisplayRefreshRate.  Deprecated
+    * in 10.6 but the only option on the 10.5 SDK. */
+   CGDirectDisplayID main_id = CGMainDisplayID();
+   CFDictionaryRef   mode    = CGDisplayCurrentMode(main_id);
+   double            rate    = 0.0;
+   if (mode)
+   {
+      CFNumberRef n = (CFNumberRef)CFDictionaryGetValue(
+            mode, kCGDisplayRefreshRate);
+      if (n)
+         CFNumberGetValue(n, kCFNumberDoubleType, &rate);
+   }
+   return (rate > 0.0) ? (float)rate : 60.0f;
+#endif
+#else /* iOS / tvOS */
+   CADisplayLink *dl = [CocoaView get].displayLink;
+   if (dl)
+   {
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
+      if (@available(iOS 15.0, tvOS 15.0, *))
+         return dl.preferredFrameRateRange.preferred;
+#endif
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000 || __TV_OS_VERSION_MAX_ALLOWED >= 100000
+      if (@available(iOS 10.0, tvOS 10.0, *))
+         return dl.preferredFramesPerSecond;
+#endif
+      /* iOS 6 - 9 / tvOS < 10: only frameInterval exists.  It is
+       * the number of screen refreshes between callbacks, so
+       * convert to Hz assuming a 60 Hz panel (accurate for every
+       * pre-iOS-10 device - ProMotion is iPad Pro 2017+). */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+      {
+         NSInteger fi = dl.frameInterval;
+         return 60.0f / (float)(fi > 0 ? fi : 1);
+      }
+#pragma clang diagnostic pop
+   }
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
+   if (@available(iOS 10.3, tvOS 10.2, *))
+      return [UIScreen mainScreen].maximumFramesPerSecond;
+#endif
+   return 60.0f;
+#endif
+}
+
+void cocoa_get_video_output_size(unsigned *width, unsigned *height,
+      char *desc, size_t desc_len)
+{
+#if TARGET_OS_IPHONE
+   UIScreen *screen = [UIScreen mainScreen];
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000 || __TV_OS_VERSION_MAX_ALLOWED >= 90000
+   if (@available(iOS 8.0, tvOS 9.0, *))
+   {
+      /* nativeBounds is physical pixels, orientation-independent. */
+      CGRect b = screen.nativeBounds;
+      *width   = (unsigned)b.size.width;
+      *height  = (unsigned)b.size.height;
+   }
+   else
+#endif
+   {
+      /* iOS 6/7: no nativeBounds.  UIScreen.bounds is in points and
+       * fixed to portrait orientation pre-iOS-8.  Every iOS 6/7-era
+       * device has an integer scale (1x or 2x), so bounds * scale
+       * gives exact physical pixels. */
+      CGRect  b = screen.bounds;
+      CGFloat s = screen.scale; /* UIScreen.scale is iOS 4+ */
+      *width    = (unsigned)(b.size.width  * s);
+      *height   = (unsigned)(b.size.height * s);
+   }
+
+   if (desc && desc_len > 0)
+   {
+      /* cocoa_screen_get_native_scale is already iOS-6 safe: it
+       * uses respondsToSelector:@selector(nativeScale) and falls
+       * back to UIScreen.scale when nativeScale is unavailable. */
+      float s = cocoa_screen_get_native_scale();
+      if (s >= 3.0f)
+         strlcpy(desc, "Super Retina", desc_len);
+      else if (s >= 2.0f)
+         strlcpy(desc, "Retina", desc_len);
+      else
+         strlcpy(desc, "Standard", desc_len);
+   }
+#else
+   /* macOS: CGDisplayPixelsWide/High is 10.0+, safe back to 10.5. */
+   CGDirectDisplayID d = CGMainDisplayID();
+   *width  = (unsigned)CGDisplayPixelsWide(d);
+   *height = (unsigned)CGDisplayPixelsHigh(d);
+
+   if (desc && desc_len > 0)
+   {
+      /* cocoa_screen_get_backing_scale_factor is 10.5-safe: its
+       * pre-10.7 branch returns 1.0f unconditionally. */
+      float s = cocoa_screen_get_backing_scale_factor();
+      if (s >= 2.0f)
+         strlcpy(desc, "Retina", desc_len);
+      else
+         strlcpy(desc, "Standard", desc_len);
+   }
+#endif
+}
+
 void *nsview_get_ptr(void)
 {
 #if defined(OSX)
@@ -936,7 +1107,30 @@ void *nsview_get_ptr(void)
     return (BRIDGE void *)g_instance;
 }
 
-void nsview_set_ptr(CocoaView *p) { g_instance = p; }
+void nsview_set_ptr(CocoaView *p)
+{
+   /* g_instance is the process-lifetime strong reference to the
+    * CocoaView singleton.  Under MRR we must explicitly retain the
+    * new value and release the old one so g_instance owns a
+    * balanced +1 across reassignments.  In practice there is only
+    * one caller (+[CocoaView get] on its first-time path), but the
+    * invariant matters: callers treat [CocoaView get] as a +0 "get"
+    * accessor, and that only holds if g_instance is the one keeping
+    * the view alive.  Under ARC RARCH_RETAIN and RARCH_RELEASE are
+    * no-ops; the static __strong pointer does retain/release via
+    * objc_storeStrong when assigned.
+    *
+    * The (void) cast on RARCH_RETAIN silences -Wunused-value under
+    * ARC, where the macro expands to the bare expression (p); under
+    * MRR it expands to [p retain], where the discarded return value
+    * is conventional and warning-free. */
+   if (g_instance != p)
+   {
+      (void)RARCH_RETAIN(p);
+      RARCH_RELEASE(g_instance);
+      g_instance = p;
+   }
+}
 
 CocoaView *cocoaview_get(void)
 {
@@ -1049,16 +1243,20 @@ bool cocoa_get_metrics(
 config_file_t *open_userdefaults_config_file(void)
 {
    config_file_t *conf = NULL;
-   NSString *backup = [NSUserDefaults.standardUserDefaults stringForKey:@FILE_PATH_MAIN_CONFIG];
+   NSString *backup = [[NSUserDefaults standardUserDefaults] stringForKey:@FILE_PATH_MAIN_CONFIG];
    if ([backup length] > 0)
    {
-      char *str = strdup(backup.UTF8String);
-      conf = config_file_new_from_string(str, path_get(RARCH_PATH_CONFIG));
-      free(str);
-      /* If we are falling back to the NSUserDefaults backup of the config file,
-       * it's likely because the OS has deleted all of our cache, including our
-       * extracted assets. This will cause re-extraction */
-      config_set_int(conf, "bundle_assets_extract_last_version", 0);
+      /* config_file_new_from_string() takes (char*) and mutates it in
+       * place.  -[NSString UTF8String] returns an Apple-owned buffer
+       * that is not writable, so we must strdup() first and free
+       * after. */
+      char *backup_copy = strdup([backup UTF8String]);
+      if (backup_copy)
+      {
+         conf = config_file_new_from_string(backup_copy, path_get(RARCH_PATH_CONFIG));
+         config_set_int(conf, "bundle_assets_extract_last_version", 0);
+         free(backup_copy);
+      }
    }
    return conf;
 }
@@ -1069,7 +1267,7 @@ void write_userdefaults_config_file(void)
                                               encoding:NSUTF8StringEncoding
                                                  error:nil];
    if (conf)
-      [NSUserDefaults.standardUserDefaults setObject:conf forKey:@FILE_PATH_MAIN_CONFIG];
+      [[NSUserDefaults standardUserDefaults] setObject:conf forKey:@FILE_PATH_MAIN_CONFIG];
 }
 
 #if TARGET_OS_TV
@@ -1078,12 +1276,12 @@ static NSDictionary *topshelfDictForEntry(const struct playlist_entry *entry, gf
    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
       @"id": [NSString stringWithUTF8String:entry->path],
       @"title": [NSString stringWithUTF8String:
-                             (string_is_empty(entry->label) ? path_basename(entry->path) : entry->label)],
+                             ((!entry->label || !*entry->label) ? path_basename(entry->path) : entry->label)],
    }];
-   if (!string_is_empty(path_data->content_db_name))
+   if (path_data->content_db_name && *path_data->content_db_name)
    {
       const char *img_name = path_data->content_img;
-      if (!string_is_empty(img_name))
+      if (img_name && *img_name)
          dict[@"img"] = [NSString stringWithFormat:@"https://thumbnails.libretro.com/%s/Named_Boxarts/%s",
                          path_data->content_db_name, img_name];
    }
@@ -1186,6 +1384,7 @@ void cocoa_file_load_with_detect_core(const char *filename)
    }
 }
 
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
 bool cocoa_launch_game_by_filename(NSString *filename)
 {
    core_info_list_t *core_info_list = NULL;
@@ -1196,7 +1395,7 @@ bool cocoa_launch_game_by_filename(NSString *filename)
 
    RARCH_LOG("Launching game by filename: %s\n", [filename UTF8String]);
 
-   // Strategy 1: Try to find game in playlists first (existing behavior)
+   /* Strategy 1: Try to find game in playlists first (existing behavior) */
    RetroArchPlaylistGame *game = [RetroArchPlaylistManager findGameByFilename:filename];
 
    if (game && game.corePath && game.fullPath) {
@@ -1220,7 +1419,7 @@ bool cocoa_launch_game_by_filename(NSString *filename)
       }
    }
 
-   // Strategy 2: Fallback to automatic core detection for non-playlist content
+   /* Strategy 2: Fallback to automatic core detection for non-playlist content */
    RARCH_LOG("Game '%s' not found in playlists, trying automatic core detection\n", [filename UTF8String]);
 
    fill_pathname_expand_special(full_path, [filename UTF8String], sizeof(full_path));
@@ -1231,7 +1430,7 @@ bool cocoa_launch_game_by_filename(NSString *filename)
 
    RARCH_LOG("Found file at path: %s\n", full_path);
 
-   // Get list of compatible cores for this content file
+   /* Get list of compatible cores for this content file */
    core_info_get_list(&core_info_list);
    if (!core_info_list) {
       RARCH_WARN("No core info list available\n");
@@ -1249,31 +1448,37 @@ bool cocoa_launch_game_by_filename(NSString *filename)
 
    path_set(RARCH_PATH_CONTENT, full_path);
 
-   // Strategy 2a: Check if current core supports this content
-   if (!path_is_empty(RARCH_PATH_CORE)) {
+   /* Strategy 2a: Check if current core supports this content */
+   if (!path_is_empty(RARCH_PATH_CORE))
+   {
+      size_t i;
       const char *current_core = path_get(RARCH_PATH_CORE);
-      for (size_t i = 0; i < list_size; i++) {
+      for (i = 0; i < list_size; i++)
+      {
          const core_info_t *info = &core_info[i];
-         if (string_is_equal(current_core, info->path)) {
+         if (string_is_equal(current_core, info->path))
+         {
             RARCH_LOG("Current core '%s' supports this content, using it\n", info->display_name);
             return task_push_load_content_with_current_core_from_companion_ui(
-               NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+                  NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
          }
       }
    }
 
-   // Strategy 2b: If only one compatible core, use it automatically
-   if (list_size == 1) {
+   /* Strategy 2b: If only one compatible core, use it automatically */
+   if (list_size == 1)
+   {
       const core_info_t *info = &core_info[0];
       RARCH_LOG("Only one compatible core found: '%s', using it automatically\n", info->display_name);
       return task_push_load_content_with_new_core_from_companion_ui(
          info->path, full_path, NULL, NULL, NULL, &content_info, NULL, NULL);
    }
 
-   // Strategy 2c: Multiple cores available - use the first one
-   // In a future implementation, this could present a user choice dialog
+   /* Strategy 2c: Multiple cores available - use the first one
+    * In a future implementation, this could present a user choice dialog */
    const core_info_t *info = &core_info[0];
    RARCH_LOG("Multiple cores available, automatically selecting first: '%s'\n", info->display_name);
    return task_push_load_content_with_new_core_from_companion_ui(
       info->path, full_path, NULL, NULL, NULL, &content_info, NULL, NULL);
 }
+#endif /* HAVE_RETROARCH_PLAYLIST_MANAGER */

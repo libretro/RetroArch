@@ -25,6 +25,7 @@
 #include <lists/string_list.h>
 
 #include <libretro.h>
+#include "../gfx/video_defines.h"
 
 RETRO_BEGIN_DECLS
 
@@ -113,6 +114,8 @@ typedef struct frontend_ctx_driver
    bool (*accessibility_speak)(int speed,
          const char* speak_text, int priority);
    bool (*set_gamemode)(bool on);
+
+   enum rarch_display_type (*get_display_type)(void);
 
    const char *ident;
 

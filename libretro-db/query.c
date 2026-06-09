@@ -339,17 +339,30 @@ struct registered_func registered_functions[100] = {
 };
 
 static void query_raise_unknown_function(
-      char *s, size_t _len,
+      char *s, size_t len,
       ssize_t where, const char *name,
-      ssize_t len, const char **err)
+      ssize_t name_len, const char **err)
 {
-   int __len = snprintf(s, _len,
+   size_t off = snprintf(s, len,
          "%" PRIu64 "::Unknown function '",
-         (uint64_t)where
-         );
-   if (len < ((ssize_t)_len - __len - 3))
-      strncpy(s + __len, name, len);
-   strcpy(s + __len + len, "'");
+         (uint64_t)where);
+
+   if (off < len)
+   {
+      size_t remaining = len - off;
+      size_t copy_len  = (size_t)name_len < remaining ? (size_t)name_len : remaining - 1;
+      strlcpy(s + off, name, copy_len + 1);
+      off += copy_len;
+   }
+
+   if (off + 2 <= len)
+   {
+      s[off]     = '\'';
+      s[off + 1] = '\0';
+   }
+   else if (len > 0)
+      s[len - 1] = '\0';
+
    *err = s;
 }
 
@@ -375,10 +388,29 @@ static struct buffer query_parse_integer(
       struct rmsgpack_dom_value *value,
       const char **err)
 {
+   int64_t result = 0;
+   int sign       = 1;
+   bool has_digit = false;
+   size_t idx     = buff.offset;
+
    value->type = RDT_INT;
-   if (sscanf(buff.data + buff.offset,
-            STRING_REP_INT64,
-            (int64_t*)&value->val.int_) == 0)
+
+   if (idx < buff.len && buff.data[idx] == '-')
+   {
+      sign = -1;
+      idx++;
+   }
+   else if (idx < buff.len && buff.data[idx] == '+')
+      idx++;
+
+   while (idx < buff.len && ISDIGIT((int)buff.data[idx]))
+   {
+      has_digit = true;
+      result    = result * 10 + (buff.data[idx] - '0');
+      idx++;
+   }
+
+   if (!has_digit)
    {
       snprintf(s, len,
             "%" PRIu64 "::Expected number",
@@ -387,8 +419,8 @@ static struct buffer query_parse_integer(
    }
    else
    {
-      while (ISDIGIT((int)buff.data[buff.offset]))
-         buff.offset++;
+      value->val.int_ = result * sign;
+      buff.offset      = idx;
    }
 
    return buff;
@@ -750,15 +782,11 @@ static struct buffer query_parse_table(
    unsigned argi = 0;
    struct argument args[QUERY_MAX_ARGS];
    const char *ident_name = NULL;
-
    buff = query_chomp(buff);
    buff = query_expect_char(s, len, buff, '{', err);
-
    if (*err)
       return buff;
-
    buff = query_chomp(buff);
-
    while (!query_peek(buff, "}", STRLEN_CONST("}")))
    {
       if (argi >= QUERY_MAX_ARGS)
@@ -767,59 +795,51 @@ static struct buffer query_parse_table(
          *err = s;
          goto clean;
       }
-
       if (ISALPHA((int)buff.data[buff.offset]))
       {
          buff = query_get_ident(s, len,
                buff, &ident_name, &_len, err);
-
          if (!*err)
          {
             args[argi].a.value.type            = RDT_STRING;
             args[argi].a.value.val.string.len  = (uint32_t)_len;
             args[argi].a.value.val.string.buff = (char*)calloc(
                   _len + 1, sizeof(char));
-
             if (!args[argi].a.value.val.string.buff)
+            {
+               strlcpy(s, "OOM", len);
+               *err = s;
                goto clean;
-
-            strncpy(
+            }
+            strlcpy(
                   args[argi].a.value.val.string.buff,
-                  ident_name, _len);
+                  ident_name, _len + 1);
          }
       }
       else
          buff = query_parse_string(s, len,
                buff, &args[argi].a.value, err);
-
       if (*err)
          goto clean;
-
       args[argi].type = AT_VALUE;
       buff            = query_chomp(buff);
       argi++;
       buff            = query_expect_char(s, len, buff, ':', err);
-
       if (*err)
          goto clean;
-
       buff = query_chomp(buff);
-
       if (argi >= QUERY_MAX_ARGS)
       {
          strlcpy(s, "Too many arguments in function call.", len);
          *err = s;
          goto clean;
       }
-
       buff = query_parse_argument(s, len, buff, &args[argi], err);
-
       if (*err)
          goto clean;
       argi++;
       buff = query_chomp(buff);
       buff = query_expect_char(s, len, buff, ',', err);
-
       if (*err)
       {
          *err = NULL;
@@ -827,32 +847,22 @@ static struct buffer query_parse_table(
       }
       buff = query_chomp(buff);
    }
-
    buff = query_expect_char(s, len, buff, '}', err);
-
    if (*err)
       goto clean;
-
    invocation->func = query_func_all_map;
    invocation->argc = argi;
    invocation->argv = (struct argument*)
       malloc(sizeof(struct argument) * argi);
-
    if (!invocation->argv)
    {
-      s[0] = 'O';
-      s[1] = 'O';
-      s[2] = 'M';
-      s[3] = '\0';
+      strlcpy(s, "Out of memory.", len);
       *err = s;
       goto clean;
    }
-
    memcpy(invocation->argv, args,
          sizeof(struct argument) * argi);
-
    return buff;
-
 clean:
    for (i = 0; i < argi; i++)
       query_argument_free(&args[i]);
@@ -933,7 +943,11 @@ static struct buffer query_parse_method_call(
    invocation->argv = (argi > 0) ? (struct argument*)
       malloc(sizeof(struct argument) * argi) : NULL;
 
-   if (!invocation->argv)
+   /* Gate the OOM branch on 'argi > 0 && !argv' - before this
+    * change a valid zero-arg function call ('foo()') was being
+    * erroneously treated as OOM because argv is legitimately
+    * NULL when argi==0. */
+   if (argi > 0 && !invocation->argv)
    {
       s[0] = 'O';
       s[1] = 'O';
@@ -942,8 +956,9 @@ static struct buffer query_parse_method_call(
       *err = s;
       goto clean;
    }
-   memcpy(invocation->argv, args,
-         sizeof(struct argument) * argi);
+   if (invocation->argv)
+      memcpy(invocation->argv, args,
+            sizeof(struct argument) * argi);
 
    return buff;
 
@@ -1048,4 +1063,132 @@ int libretrodb_query_filter(libretrodb_query_t *q,
    struct invocation inv         = ((struct query *)q)->root;
    struct rmsgpack_dom_value res = inv.func(*v, inv.argc, inv.argv);
    return (res.type == RDT_BOOL && res.val.bool_);
+}
+
+/**
+ * libretrodb_query_get_filter_fields:
+ *
+ * Extract the field names that a compiled table query filters on.
+ * For a query like {crc:or(b"..."), releaseyear:1995}, this returns
+ * pointers to "crc" and "releaseyear".
+ *
+ * Only works for table queries (root.func == query_func_all_map)
+ * where argv[even] entries are AT_VALUE / RDT_STRING field names.
+ *
+ * @q            : Compiled query handle.
+ * @field_names  : Output array of string pointers (not copied — valid
+ *                 for the lifetime of the query).
+ * @field_lens   : Output array of string lengths.
+ * @max_fields   : Capacity of output arrays.
+ *
+ * Returns: number of fields extracted, or 0 if the query structure
+ *          is not a table query or has no extractable field names.
+ */
+int libretrodb_query_get_filter_fields(libretrodb_query_t *q,
+      const char **field_names, uint32_t *field_lens,
+      unsigned max_fields)
+{
+   unsigned i;
+   unsigned count    = 0;
+   struct query *rq  = (struct query *)q;
+
+   if (!rq || !rq->root.func || !rq->root.argv)
+      return 0;
+
+   /* Table queries use query_func_all_map and store field names
+    * at even argv indices: argv[0]="crc", argv[1]=matcher,
+    * argv[2]="year", argv[3]=matcher, etc. */
+   if (rq->root.func != query_func_all_map)
+      return 0;
+
+   for (i = 0; i < rq->root.argc; i += 2)
+   {
+      struct argument *arg = &rq->root.argv[i];
+      if (  arg->type        == AT_VALUE
+         && arg->a.value.type == RDT_STRING
+         && arg->a.value.val.string.buff)
+      {
+         if (count < max_fields)
+         {
+            field_names[count] = arg->a.value.val.string.buff;
+            field_lens[count]  = arg->a.value.val.string.len;
+         }
+         count++;
+      }
+   }
+
+   return count;
+}
+
+/**
+ * libretrodb_query_eval_field:
+ *
+ * Evaluate a single field's query condition inline. For a table query
+ * like {crc:or(b"..."), year:1995}, this finds the condition matching
+ * @field_name and evaluates its matcher against @value.
+ *
+ * @q           : Compiled query handle.
+ * @field_name  : The map key name to evaluate (e.g. "crc").
+ * @field_len   : Length of field_name.
+ * @value       : The parsed DOM value for this field, or NULL to
+ *                just check if the field is in the query.
+ *
+ * Returns:  1 if the condition passes (or field exists when value is NULL),
+ *           0 if the condition fails (mismatch),
+ *          -1 if this field is not in the query (irrelevant).
+ */
+int libretrodb_query_eval_field(libretrodb_query_t *q,
+      const char *field_name, uint32_t field_len,
+      struct rmsgpack_dom_value *value)
+{
+   unsigned i;
+   struct query *rq = (struct query *)q;
+
+   if (!rq || !rq->root.func || !rq->root.argv)
+      return -1;
+
+   if (rq->root.func != query_func_all_map)
+      return -1;
+
+   /* Walk argv pairs: argv[i] = field name, argv[i+1] = matcher */
+   for (i = 0; i + 1 < rq->root.argc; i += 2)
+   {
+      struct argument *key_arg = &rq->root.argv[i];
+      struct argument *val_arg = &rq->root.argv[i + 1];
+
+      if (  key_arg->type              != AT_VALUE
+         || key_arg->a.value.type      != RDT_STRING
+         || key_arg->a.value.val.string.len != field_len)
+         continue;
+
+      if (memcmp(key_arg->a.value.val.string.buff, field_name, field_len) != 0)
+         continue;
+
+      /* Found the matching condition */
+
+      /* If value is NULL, caller just wants to know if this
+       * field is in the query (existence check) */
+      if (!value)
+         return 1;
+
+      /* Evaluate the matcher against the value */
+      if (val_arg->type == AT_VALUE)
+      {
+         struct rmsgpack_dom_value res = func_equals(*value, 1, val_arg);
+         return res.val.bool_ ? 1 : 0;
+      }
+      else
+      {
+         struct rmsgpack_dom_value res = query_func_is_true(
+               val_arg->a.invocation.func(
+                  *value,
+                  val_arg->a.invocation.argc,
+                  val_arg->a.invocation.argv),
+               0, NULL);
+         return res.val.bool_ ? 1 : 0;
+      }
+   }
+
+   /* Field not in query — irrelevant */
+   return -1;
 }

@@ -90,6 +90,7 @@ static void wl_keyboard_handle_leave(void *data,
    memset(wl->input.key_state, 0, sizeof(wl->input.key_state));
 }
 
+#ifndef WEBOS
 static void wl_keyboard_handle_key(void *data,
       struct wl_keyboard *keyboard,
       uint32_t serial,
@@ -133,6 +134,7 @@ static void wl_keyboard_handle_key(void *data,
          input_keymaps_translate_keysym_to_rk(keysym),
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
+#endif
 
 static void wl_keyboard_handle_modifiers(void *data,
       struct wl_keyboard *keyboard,
@@ -595,6 +597,14 @@ static bool wl_current_outputs_add(gfx_ctx_wayland_data_t *wl,
    {
       surface_output_t *os = (surface_output_t*)
          calloc(1, sizeof(surface_output_t));
+      /* NULL-check: the field writes below NULL-deref on OOM.
+       * Skip this output from the current_outputs list; the
+       * subsequent wl_list_for_each traversal in
+       * wl_current_outputs_remove handles a missing entry
+       * gracefully (the loop simply doesn't find a match and
+       * returns false). */
+      if (!os)
+         return false;
       os->output = oi_found;
       wl_list_insert(&wl->current_outputs, &os->link);
       return true;
@@ -749,12 +759,26 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       output_info_t *oi = (output_info_t*)
          calloc(1, sizeof(output_info_t));
 
-      od->output    = oi;
-      oi->global_id = id;
-      oi->output    = (struct wl_output*)wl_registry_bind(reg,
-            id, &wl_output_interface, MIN(version, 2));
-      wl_output_add_listener(oi->output, &output_listener, oi);
-      wl_list_insert(&wl->all_outputs, &od->link);
+      /* NULL-check both callocs: od->output = oi and
+       * oi->global_id = id NULL-deref on OOM.  Free whichever
+       * succeeded (free(NULL) is a no-op) and skip adding this
+       * output to wl->all_outputs - the compositor will re-emit
+       * wl_registry.global if it needs us to retry, and missing
+       * outputs fall back to sensible defaults downstream. */
+      if (!od || !oi)
+      {
+         free(od);
+         free(oi);
+      }
+      else
+      {
+         od->output    = oi;
+         oi->global_id = id;
+         oi->output    = (struct wl_output*)wl_registry_bind(reg,
+               id, &wl_output_interface, MIN(version, 2));
+         wl_output_add_listener(oi->output, &output_listener, oi);
+         wl_list_insert(&wl->all_outputs, &od->link);
+      }
    }
    else if (string_is_equal(interface, xdg_wm_base_interface.name) && found++)
       wl->xdg_shell = (struct xdg_wm_base*)
@@ -809,6 +833,10 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->xdg_toplevel_icon_manager = (struct xdg_toplevel_icon_manager_v1*)
          wl_registry_bind(
             reg, id, &xdg_toplevel_icon_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, xdg_toplevel_tag_manager_v1_interface.name) && found++)
+      wl->xdg_toplevel_tag_manager = (struct xdg_toplevel_tag_manager_v1*)
+         wl_registry_bind(
+            reg, id, &xdg_toplevel_tag_manager_v1_interface, MIN(version, 1));
 
    if (found > 1)
    RARCH_LOG("[Wayland] Registered interface %s at version %u.\n",
@@ -862,11 +890,11 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
       bool null_terminate)
 {
    char temp[PIPE_BUF];
-   void* output_buffer      = NULL;
-   size_t new_buffer_length = 0;
-   ssize_t bytes_read       = 0;
-   size_t pos               = 0;
-   int ready                = wl_ioready(fd, IOR_READ, PIPE_MS_TIMEOUT);
+   void* output_buffer = NULL;
+   size_t _len         = 0;
+   ssize_t bytes_read  = 0;
+   size_t pos          = 0;
+   int ready           = wl_ioready(fd, IOR_READ, PIPE_MS_TIMEOUT);
 
    if (ready == 0)     /* Pipe timeout? */
       bytes_read = -1;
@@ -876,27 +904,48 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
    {
       if ((bytes_read = read(fd, temp, sizeof(temp))) > 0)
       {
-         pos                   = *total_length;
-         *total_length        += bytes_read;
+         pos              = *total_length;
+         *total_length   += bytes_read;
 
          if (null_terminate)
-            new_buffer_length  = *total_length + 1;
+            _len          = *total_length + 1;
          else
-            new_buffer_length  = *total_length;
+            _len          = *total_length;
 
          if (*buffer == NULL)
-            output_buffer      = malloc(new_buffer_length);
+            output_buffer = malloc(_len);
          else
-            output_buffer      = realloc(*buffer, new_buffer_length);
+            output_buffer = realloc(*buffer, _len);
 
          if (output_buffer)
          {
             memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
 
             if (null_terminate)
-               memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
+               memset((uint8_t*)output_buffer + (_len - 1), 0, 1);
 
             *buffer = output_buffer;
+         }
+         else
+         {
+            /* Allocation failed.  Previously this branch silently
+             * dropped the bytes_read data, left *total_length
+             * incremented (so the caller thought the buffer had
+             * grown), and returned a positive bytes_read - the
+             * caller's 'while (wl_read_pipe(...) > 0)' loop then
+             * continued and the next iteration wrote at offset
+             * 'pos = *total_length' which sat past the end of the
+             * still-unchanged *buffer, corrupting whatever lived
+             * there.  On realloc failure *buffer is also left
+             * pointing at the old (smaller) allocation, so the
+             * old data is still valid, but the length accounting
+             * is a lie.
+             *
+             * Restore the invariant by rewinding *total_length
+             * and reporting -1 to the caller so its while-loop
+             * terminates. */
+            *total_length = pos;
+            bytes_read    = -1;
          }
       }
    }
@@ -906,8 +955,7 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
 
 static void *wayland_data_offer_receive(
       struct wl_display *display, struct wl_data_offer *offer,
-      size_t *length,
-      const char* mime_type, bool null_terminate)
+      size_t *length, const char* mime_type, bool null_terminate)
 {
    int pipefd[2];
    void *buffer = NULL;
@@ -937,6 +985,15 @@ static void wl_data_device_handle_data_offer(void *data,
       struct wl_data_device *data_device, struct wl_data_offer *offer)
 {
    data_offer_ctx *offer_data = (data_offer_ctx*)calloc(1, sizeof *offer_data);
+
+   /* NULL-check: the field writes below NULL-deref on OOM.
+    * On failure skip the offer - wl_data_offer_set_user_data
+    * would have attached this pointer for the listener
+    * callbacks to retrieve, so without it the offer just
+    * doesn't get handled by this client.  That's a lost
+    * drag-and-drop operation rather than a crash. */
+   if (!offer_data)
+      return;
 
    offer_data->offer          = offer;
    offer_data->data_device    = data_device;

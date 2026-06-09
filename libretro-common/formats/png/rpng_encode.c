@@ -38,8 +38,8 @@
    goto end; \
 } while (0)
 
-double DEFLATE_PADDING = 1.1;
-int PNG_ROUGH_HEADER = 100;
+static const double DEFLATE_PADDING = 1.1;
+static const int PNG_ROUGH_HEADER  = 100;
 
 static void dword_write_be(uint8_t *buf, uint32_t val)
 {
@@ -145,8 +145,10 @@ static unsigned count_sad(const uint8_t *data, size_t len)
    unsigned cnt = 0;
    for (i = 0; i < len; i++)
    {
-      if (data[i])
-         cnt += abs((int8_t)data[i]);
+      /* Use conditional instead of abs() to avoid undefined behaviour
+       * when the value is -128 (INT8_MIN). */
+      int8_t val = (int8_t)data[i];
+      cnt += val < 0 ? -val : val;
    }
    return cnt;
 }
@@ -202,6 +204,29 @@ static unsigned filter_paeth(uint8_t *target,
    return count_sad(target, width);
 }
 
+/* Size of the per-chunk deflate output buffer.  A screenshot-sized
+ * encode will fill this many times over and produce multiple IDAT
+ * chunks; smaller than zlib's default window (32 KiB) to keep
+ * peak memory low while large enough to amortise chunk-header
+ * overhead (12 bytes per IDAT). */
+#define IDAT_CHUNK_SIZE 16384
+
+/* Emit one IDAT chunk.  `chunk_buf` is laid out as:
+ *     bytes [0..4): length field (filled in here, big-endian)
+ *     bytes [4..8): literal "IDAT"
+ *     bytes [8..8+payload_len): the deflate output produced by
+ *                               this chunk's worth of trans() calls
+ * Matches the layout png_write_idat_string expects. */
+static bool flush_idat_chunk(intfstream_t *intf_s,
+      uint8_t *chunk_buf, size_t payload_len)
+{
+   if (payload_len == 0)
+      return true; /* empty chunk -- nothing to emit, not an error */
+   dword_write_be(chunk_buf + 0, (uint32_t)payload_len);
+   memcpy(chunk_buf + 4, "IDAT", 4);
+   return png_write_idat_string(intf_s, chunk_buf, payload_len + 8);
+}
+
 bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
       unsigned width, unsigned height, signed pitch, unsigned bpp)
 {
@@ -209,19 +234,26 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
    struct png_ihdr ihdr = {0};
    bool ret = true;
    const struct trans_stream_backend *stream_backend = NULL;
-   size_t encode_buf_size  = 0;
-   uint8_t *encode_buf     = NULL;
-   uint8_t *deflate_buf    = NULL;
-   uint8_t *rgba_line      = NULL;
-   uint8_t *up_filtered    = NULL;
-   uint8_t *sub_filtered   = NULL;
-   uint8_t *avg_filtered   = NULL;
-   uint8_t *paeth_filtered = NULL;
-   uint8_t *prev_encoded   = NULL;
-   uint8_t *encode_target  = NULL;
-   void *stream            = NULL;
-   uint32_t total_in       = 0;
-   uint32_t total_out      = 0;
+   uint8_t *rgba_line        = NULL;
+   uint8_t *up_filtered      = NULL;
+   uint8_t *sub_filtered     = NULL;
+   uint8_t *avg_filtered     = NULL;
+   uint8_t *paeth_filtered   = NULL;
+   uint8_t *prev_encoded     = NULL;
+   /* filter_line holds [filter_byte][filtered_row] and is what we
+    * feed into deflate one row at a time. */
+   uint8_t *filter_line      = NULL;
+   /* chunk_buf is the IDAT-chunk staging buffer:
+    *   [0..4):        length field (filled in at flush time)
+    *   [4..8):        "IDAT"
+    *   [8..8+IDAT_CHUNK_SIZE): deflate output */
+   uint8_t *chunk_buf        = NULL;
+   void *stream              = NULL;
+   size_t line_len           = (size_t)width * bpp;
+   /* How many bytes deflate has produced into the current chunk_buf
+    * since the last set_out.  Reset to 0 after every flush_idat_chunk. */
+   size_t chunk_fill         = 0;
+   enum trans_stream_error err = TRANS_STREAM_ERROR_NONE;
 
    if (!intf_s)
       GOTO_END_ERROR();
@@ -231,127 +263,170 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
    if (intfstream_write(intf_s, png_magic, sizeof(png_magic)) != sizeof(png_magic))
       GOTO_END_ERROR();
 
-   ihdr.width = width;
-   ihdr.height = height;
-   ihdr.depth = 8;
+   ihdr.width      = width;
+   ihdr.height     = height;
+   ihdr.depth      = 8;
    ihdr.color_type = bpp == sizeof(uint32_t) ? 6 : 2; /* RGBA or RGB */
    if (!png_write_ihdr_string(intf_s, &ihdr))
       GOTO_END_ERROR();
 
-   encode_buf_size = (width * bpp + 1) * height;
-   encode_buf      = (uint8_t*)malloc(encode_buf_size);
-   if (!encode_buf)
+   /* Per-row scratch.  ~width*bpp each -- trivial compared to the
+    * frame-sized encode_buf the old full-buffer path allocated. */
+   prev_encoded   = (uint8_t*)calloc(1, line_len);
+   rgba_line      = (uint8_t*)malloc(line_len);
+   up_filtered    = (uint8_t*)malloc(line_len);
+   sub_filtered   = (uint8_t*)malloc(line_len);
+   avg_filtered   = (uint8_t*)malloc(line_len);
+   paeth_filtered = (uint8_t*)malloc(line_len);
+   filter_line    = (uint8_t*)malloc(line_len + 1);
+   chunk_buf      = (uint8_t*)malloc(IDAT_CHUNK_SIZE + 8);
+   if (!prev_encoded || !rgba_line || !up_filtered || !sub_filtered
+         || !avg_filtered || !paeth_filtered || !filter_line
+         || !chunk_buf)
       GOTO_END_ERROR();
 
-   prev_encoded = (uint8_t*)calloc(1, width * bpp);
-   if (!prev_encoded)
+   stream = stream_backend->stream_new();
+   if (!stream)
       GOTO_END_ERROR();
 
-   rgba_line      = (uint8_t*)malloc(width * bpp);
-   up_filtered    = (uint8_t*)malloc(width * bpp);
-   sub_filtered   = (uint8_t*)malloc(width * bpp);
-   avg_filtered   = (uint8_t*)malloc(width * bpp);
-   paeth_filtered = (uint8_t*)malloc(width * bpp);
-   if (!rgba_line || !up_filtered || !sub_filtered || !avg_filtered || !paeth_filtered)
-      GOTO_END_ERROR();
+   /* Point deflate's output at our chunk staging area (after the
+    * 8-byte chunk header).  We re-point it every time we flush
+    * a chunk so the driver doesn't need to know the chunk layout. */
+   stream_backend->set_out(stream,
+         chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
 
-   encode_target = encode_buf;
-   for (h = 0; h < height;
-         h++, encode_target += width * bpp, data += pitch)
+   for (h = 0; h < height; h++, data += pitch)
    {
+      uint32_t rd, wn;
+      uint8_t filter;
+      unsigned none_score, up_score, sub_score, avg_score, paeth_score;
+      unsigned min_sad;
+      const uint8_t *chosen_filtered;
+
       if (bpp == sizeof(uint32_t))
          copy_argb_line(rgba_line, (const uint32_t*)data, width);
       else
          copy_bgr24_line(rgba_line, data, width);
 
-      /* Try every filtering method, and choose the method
-       * which has most entries as zero.
+      /* Filter selection unchanged from the previous implementation:
+       * try every filter, pick the one with lowest sum-of-abs-deviation. */
+      none_score  = count_sad(rgba_line, line_len);
+      up_score    = filter_up   (up_filtered,    rgba_line, prev_encoded, width, bpp);
+      sub_score   = filter_sub  (sub_filtered,   rgba_line,               width, bpp);
+      avg_score   = filter_avg  (avg_filtered,   rgba_line, prev_encoded, width, bpp);
+      paeth_score = filter_paeth(paeth_filtered, rgba_line, prev_encoded, width, bpp);
+
+      filter          = 0;
+      min_sad         = none_score;
+      chosen_filtered = rgba_line;
+      if (sub_score < min_sad)   { filter = 1; chosen_filtered = sub_filtered;   min_sad = sub_score;   }
+      if (up_score < min_sad)    { filter = 2; chosen_filtered = up_filtered;    min_sad = up_score;    }
+      if (avg_score < min_sad)   { filter = 3; chosen_filtered = avg_filtered;   min_sad = avg_score;   }
+      if (paeth_score < min_sad) { filter = 4; chosen_filtered = paeth_filtered;                        }
+
+      filter_line[0] = filter;
+      memcpy(filter_line + 1, chosen_filtered, line_len);
+      memcpy(prev_encoded,    rgba_line,       line_len);
+
+      /* Feed this row into deflate. The loop handles the case where
+       * our chunk buffer fills mid-row (BUFFER_FULL): flush IDAT,
+       * point deflate at a fresh output buffer, and keep going.
        *
-       * This is probably not very optimal, but it's very
-       * simple to implement.
-       */
+       * When trans() returns success with err=AGAIN, zlib has
+       * consumed what we gave it but hasn't finalized (no Z_FINISH
+       * was requested) -- that's the normal "ok, send more data
+       * next time" signal.  We break out and feed the next row. */
+      stream_backend->set_in(stream, filter_line, (uint32_t)(line_len + 1));
+      for (;;)
       {
-         unsigned none_score  = count_sad(rgba_line, width * bpp);
-         unsigned up_score    = filter_up(up_filtered, rgba_line, prev_encoded, width, bpp);
-         unsigned sub_score   = filter_sub(sub_filtered, rgba_line, width, bpp);
-         unsigned avg_score   = filter_avg(avg_filtered, rgba_line, prev_encoded, width, bpp);
-         unsigned paeth_score = filter_paeth(paeth_filtered, rgba_line, prev_encoded, width, bpp);
+         bool ok = stream_backend->trans(stream, false, &rd, &wn, &err);
+         chunk_fill += wn;
 
-         uint8_t filter       = 0;
-         unsigned min_sad     = none_score;
-         const uint8_t *chosen_filtered = rgba_line;
-
-         if (sub_score < min_sad)
+         if (ok)
          {
-            filter = 1;
-            chosen_filtered = sub_filtered;
-            min_sad = sub_score;
+            /* All input consumed.  If the output buffer also happens
+             * to be exactly full (avail_in=0 AND avail_out=0 on the
+             * same call, which the trans API reports as success
+             * with AGAIN rather than BUFFER_FULL), flush proactively
+             * -- otherwise the next row's trans() would find
+             * avail_out=0 and error out. */
+            if (chunk_fill >= IDAT_CHUNK_SIZE)
+            {
+               if (!flush_idat_chunk(intf_s, chunk_buf, chunk_fill))
+                  GOTO_END_ERROR();
+               chunk_fill = 0;
+               stream_backend->set_out(stream,
+                     chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
+            }
+            break;
          }
 
-         if (up_score < min_sad)
-         {
-            filter = 2;
-            chosen_filtered = up_filtered;
-            min_sad = up_score;
-         }
+         if (err != TRANS_STREAM_ERROR_BUFFER_FULL)
+            GOTO_END_ERROR();
 
-         if (avg_score < min_sad)
-         {
-            filter = 3;
-            chosen_filtered = avg_filtered;
-            min_sad = avg_score;
-         }
-
-         if (paeth_score < min_sad)
-         {
-            filter = 4;
-            chosen_filtered = paeth_filtered;
-         }
-
-         *encode_target++ = filter;
-         memcpy(encode_target, chosen_filtered, width * bpp);
-
-         memcpy(prev_encoded, rgba_line, width * bpp);
+         /* Output filled mid-row.  chunk_fill should equal
+          * IDAT_CHUNK_SIZE.  Flush and re-point. */
+         if (!flush_idat_chunk(intf_s, chunk_buf, chunk_fill))
+            GOTO_END_ERROR();
+         chunk_fill = 0;
+         stream_backend->set_out(stream,
+               chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
       }
    }
 
-   deflate_buf = (uint8_t*)malloc(encode_buf_size * 2); /* Just to be sure. */
-   if (!deflate_buf)
-      GOTO_END_ERROR();
+   /* All rows consumed.  Drain deflate with Z_FINISH, emitting IDATs
+    * on BUFFER_FULL, final partial on NONE (Z_STREAM_END). */
+   stream_backend->set_in(stream, NULL, 0);
+   for (;;)
+   {
+      uint32_t rd = 0, wn = 0;
+      bool ok = stream_backend->trans(stream, true, &rd, &wn, &err);
+      chunk_fill += wn;
 
-   stream = stream_backend->stream_new();
-
-   if (!stream)
-      GOTO_END_ERROR();
-
-   stream_backend->set_in(
-         stream,
-         encode_buf,
-         (unsigned)encode_buf_size);
-   stream_backend->set_out(
-         stream,
-         deflate_buf + 8,
-         (unsigned)(encode_buf_size * 2));
-
-   if (!stream_backend->trans(stream, true, &total_in, &total_out, NULL))
-      GOTO_END_ERROR();
-
-   memcpy(deflate_buf + 4, "IDAT", 4);
-   dword_write_be(deflate_buf + 0,        ((uint32_t)total_out));
-   if (!png_write_idat_string(intf_s, deflate_buf, ((size_t)total_out + 8)))
-      GOTO_END_ERROR();
+      if (!ok)
+      {
+         /* BUFFER_FULL during flush-drain with avail_in=0 shouldn't
+          * strictly be reachable, but handle defensively. */
+         if (err != TRANS_STREAM_ERROR_BUFFER_FULL)
+            GOTO_END_ERROR();
+         if (!flush_idat_chunk(intf_s, chunk_buf, chunk_fill))
+            GOTO_END_ERROR();
+         chunk_fill = 0;
+         stream_backend->set_out(stream,
+               chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
+         continue;
+      }
+      if (err == TRANS_STREAM_ERROR_AGAIN)
+      {
+         /* Z_OK during Z_FINISH with avail_in=0 means deflate has
+          * more output to emit but our buffer ran out of space.
+          * Flush the full chunk and give it more room. */
+         if (!flush_idat_chunk(intf_s, chunk_buf, chunk_fill))
+            GOTO_END_ERROR();
+         chunk_fill = 0;
+         stream_backend->set_out(stream,
+               chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
+         continue;
+      }
+      /* err == NONE: Z_STREAM_END.  Flush whatever's in the buffer
+       * and we're done.  flush_idat_chunk tolerates chunk_fill==0. */
+      if (!flush_idat_chunk(intf_s, chunk_buf, chunk_fill))
+         GOTO_END_ERROR();
+      break;
+   }
 
    if (!png_write_iend_string(intf_s))
       GOTO_END_ERROR();
+
 end:
-   free(encode_buf);
-   free(deflate_buf);
    free(rgba_line);
    free(prev_encoded);
    free(up_filtered);
    free(sub_filtered);
    free(avg_filtered);
    free(paeth_filtered);
+   free(filter_line);
+   free(chunk_buf);
 
    if (stream_backend)
    {
@@ -403,9 +478,8 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
       unsigned width, unsigned height, signed pitch, uint64_t* bytes)
 {
    bool ret             = false;
-   uint8_t *output      = NULL;
    intfstream_t *intf_s = NULL;
-   size_t _len          = (width * height * 3 * DEFLATE_PADDING) + PNG_ROUGH_HEADER;
+   size_t _len          = (size_t)(width * height * 3 * DEFLATE_PADDING) + PNG_ROUGH_HEADER;
    uint8_t *buf         = (uint8_t*)malloc(_len * sizeof(uint8_t));
    if (!buf)
       GOTO_END_ERROR();
@@ -418,26 +492,29 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
    ret    = rpng_save_image_stream((const uint8_t*)data,
             intf_s, width, height, pitch, 3);
    *bytes = intfstream_get_ptr(intf_s);
-   intfstream_rewind(intf_s);
-   output = (uint8_t*)malloc((size_t)((*bytes)*sizeof(uint8_t)));
-   if (!output)
-      GOTO_END_ERROR();
-   intfstream_read(intf_s, output, *bytes);
+
+   /* Trim the buffer to the actual written size instead of
+    * allocating a second buffer and copying. */
+   if (ret && *bytes > 0)
+   {
+      uint8_t *trimmed = (uint8_t*)realloc(buf, (size_t)*bytes);
+      if (trimmed)
+         buf = trimmed;
+      /* If realloc fails, the original (oversized) buf is still valid */
+   }
 
 end:
-   if (buf)
-      free(buf);
    if (intf_s)
    {
       intfstream_close(intf_s);
       free(intf_s);
    }
-   if (ret == false)
+   if (!ret)
    {
-      if (output)
-         free(output);
+      if (buf)
+         free(buf);
       return NULL;
    }
-   return output;
+   return buf;
 }
 

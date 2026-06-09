@@ -1,0 +1,462 @@
+name: CI Linux libretro-common samples
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples:
+    name: Build and run libretro-common/samples
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential zlib1g-dev clang
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run samples
+        shell: bash
+        working-directory: libretro-common/samples
+        env:
+          # Build samples under AddressSanitizer + UndefinedBehaviorSanitizer.
+          # Most overflow tests under libretro-common/samples (rpng_chunk_
+          # overflow_test, rbmp_test, vfs_read_overflow_test, cdrom_cuesheet
+          # _overflow_test, cdfs_dir_record_test, chd_meta_overflow_test, ...)
+          # use ASan as the regression discriminator for the bound-check
+          # they verify, so make ASan the default for this workflow.  Each
+          # test's Makefile honours SANITIZER= via the conventional opt-in
+          # block (matching samples/tasks/http/Makefile).  Test sources
+          # that don't have the opt-in block treat the variable as
+          # ignored.
+          MAKE_ARGS: "SANITIZER=address,undefined"
+        run: |
+          set -u
+          set -o pipefail
+
+          # Samples whose binary, when invoked with no arguments, runs a
+          # self-contained test and exits 0 on success / non-zero on
+          # failure.  These are built AND executed.
+          declare -a RUN_TARGETS=(
+            compat_fnmatch_test
+            snprintf
+            unbase64_test
+            archive_zip_test
+            archive_zstd_test
+            config_file_test
+            path_resolve_realpath_test
+            fill_pathname_test
+            nbio_test
+            rpng
+            rzip_chunk_size_test
+            net_ifinfo
+            vfs_read_overflow_test
+            cdrom_cuesheet_overflow_test
+            cdfs_dir_record_test
+            chd_meta_overflow_test
+            strlcpy_append_test
+            http_parse_test
+            rjson_test
+            rtga_test
+            rbmp_test
+            rpng_chunk_overflow_test
+            rpng_roundtrip_test
+            word_wrap_overflow_test
+            task_queue_title_error_test
+            tpool_wait_test
+            retro_atomic_test
+            retro_atomic_extern_c_linkage_test
+            retro_atomic_extern_c_linkage_test_cxx
+            retro_spsc_test
+          )
+
+          # Per-binary run command (overrides ./<binary> if present).
+          # config_file_test has pre-existing sample leaks unrelated to
+          # any regression so we disable the ASan leak detector -- if a
+          # real leak shows up elsewhere it will be flagged during build
+          # of ASan-enabled configurations, not here.
+          declare -A RUN_ENV=(
+            [config_file_test]="ASAN_OPTIONS=detect_leaks=0"
+          )
+
+          # Samples that are build-only (either they require command-line
+          # arguments, open network sockets, need extra fixtures, or are
+          # interactive demos).  They are compiled to catch build-time
+          # regressions but not executed.
+          declare -a BUILD_ONLY_DIRS=(
+            formats/xml
+          )
+
+          # Samples that are currently broken at build time on a stock
+          # Ubuntu host and are therefore neither built nor run.
+          declare -a SKIP_DIRS=(
+          )
+
+          is_in() {
+            local needle=$1; shift
+            local h
+            for h in "$@"; do [[ "$h" == "$needle" ]] && return 0; done
+            return 1
+          }
+
+          fails=0
+          builds=0
+          runs=0
+
+          # Collect all Makefile directories (one or two levels deep).
+          mapfile -t MKDIRS < <(find . -name Makefile -printf '%h\n' | sort)
+
+          printf '\n==> %d sample directories found\n' "${#MKDIRS[@]}"
+          for d in "${MKDIRS[@]}"; do printf '    %s\n' "${d#./}"; done
+          printf '\n'
+
+          for d in "${MKDIRS[@]}"; do
+            rel=${d#./}
+            printf '========================================\n'
+            printf '[%s] %s\n' "$(is_in "$rel" "${SKIP_DIRS[@]}" && echo skip || echo build)" "$rel"
+            printf '========================================\n'
+
+            if is_in "$rel" "${SKIP_DIRS[@]}"; then
+              printf '[skip] %s is on the skip list\n\n' "$rel"
+              continue
+            fi
+
+            # Build
+            if ! ( cd "$d" && make clean all $MAKE_ARGS ); then
+              printf '\n::error title=Build failed::%s failed to build\n' "$rel"
+              fails=$((fails+1))
+              continue
+            fi
+            builds=$((builds+1))
+
+            # Skip run for build-only dirs
+            if is_in "$rel" "${BUILD_ONLY_DIRS[@]}"; then
+              printf '[skip-run] %s (build-only list)\n\n' "$rel"
+              continue
+            fi
+
+            # Extract targets from Makefile.  Handles:
+            #   TARGET := foo
+            #   TARGETS = a b c
+            #   TARGET_TEST := foo_test     (second target in same Makefile)
+            #   TARGET_TEST2 := foo_test2   (third target, fourth, ...)
+            mapfile -t targets < <(
+              grep -hE '^(TARGET|TARGETS|TARGET_TEST[0-9]*)[[:space:]]*[:?]?=' "$d/Makefile" \
+              | sed -E 's/^[^=]*=[[:space:]]*//' \
+              | tr -s ' \t' '\n' \
+              | grep -v '^$' \
+              | sort -u
+            )
+
+            for t in "${targets[@]}"; do
+              if ! is_in "$t" "${RUN_TARGETS[@]}"; then
+                printf '[skip-run] %s/%s (not in run allowlist)\n' "$rel" "$t"
+                continue
+              fi
+
+              bin="$d/$t"
+              if [[ ! -x "$bin" ]]; then
+                printf '::error title=Missing binary::%s was in the run allowlist but %s does not exist after build\n' "$t" "$bin"
+                fails=$((fails+1))
+                continue
+              fi
+
+              extra_env=${RUN_ENV[$t]:-}
+
+              printf '\n[run] %s\n' "$bin"
+              if ( cd "$d" && env $extra_env timeout 60 "./$t" ); then
+                printf '[pass] %s\n\n' "$t"
+                runs=$((runs+1))
+              else
+                rc=$?
+                printf '\n::error title=Test failed::%s exited with status %d\n' "$t" "$rc"
+                fails=$((fails+1))
+              fi
+            done
+          done
+
+          printf '========================================\n'
+          printf 'Summary\n'
+          printf '========================================\n'
+          printf '  Built: %d\n' "$builds"
+          printf '  Ran:   %d\n' "$runs"
+          printf '  Failed: %d\n' "$fails"
+
+          if [[ $fails -gt 0 ]]; then
+            exit 1
+          fi
+
+      - name: Compile-test retro_atomic.h from a C++11 TU
+        shell: bash
+        working-directory: libretro-common
+        run: |
+          # The C++11 backend in retro_atomic.h is a fresh code path that
+          # none of the C samples above exercise.  Compile a tiny inline
+          # C++11 TU against the in-tree header to catch regressions like
+          # accidentally re-introducing an extern "C" wrapper around the
+          # std::atomic include, or breaking the __cplusplus / _MSVC_LANG
+          # gate.  This step is build-and-run, single-threaded only -- the
+          # behavioural SPSC stress is already covered by the C test
+          # binary above on this same host, and the C++11 backend bottoms
+          # out through the same libstdc++ __atomic_* builtins.
+          #
+          # Two fixtures share the g++/clang++ x c++11/14/17 sweep:
+          #
+          #   cxx_smoke.cpp            : header included at C++ linkage,
+          #                              the "ordinary" C++ TU shape.
+          #   cxx_smoke_extern_c.cpp   : header included from inside an
+          #                              extern "C" { ... } wrap, the
+          #                              shape ui_qt.cpp uses under
+          #                              !CXX_BUILD.  This is the
+          #                              regression case for the
+          #                              RETRO_BEGIN_DECLS_CXX shield in
+          #                              retro_atomic.h's C++11 backend.
+          #                              The standalone build of the
+          #                              sample at samples/atomic/
+          #                              retro_atomic_extern_c_linkage/
+          #                              covers the same case under the
+          #                              default toolchain; this matrix
+          #                              extends coverage to clang++ and
+          #                              the higher language standards.
+          set -u
+          set -o pipefail
+
+          tmpdir=$(mktemp -d)
+          cat > "$tmpdir/cxx_smoke.cpp" <<'EOF'
+          #include <cstdio>
+          #include <cstddef>
+          #include <retro_atomic.h>
+
+          #if !defined(HAVE_RETRO_ATOMIC) || !defined(RETRO_ATOMIC_LOCK_FREE)
+          #  error "retro_atomic.h: capability flags not set on a C++11 host"
+          #endif
+
+          int main(void) {
+             retro_atomic_int_t  ai;  retro_atomic_int_init(&ai, 0);
+             retro_atomic_size_t as;  retro_atomic_size_init(&as, 0);
+
+             retro_atomic_store_release_int(&ai, 42);
+             retro_atomic_store_release_size(&as, (std::size_t)42);
+
+             int li = retro_atomic_load_acquire_int(&ai);
+             int ls = (int)retro_atomic_load_acquire_size(&as);
+
+             int pi = retro_atomic_fetch_add_int(&ai, 1);
+             int ps = (int)retro_atomic_fetch_add_size(&as, 1);
+
+             retro_atomic_inc_int(&ai);
+             retro_atomic_dec_size(&as);
+
+             int qi = retro_atomic_load_acquire_int(&ai);
+             int qs = (int)retro_atomic_load_acquire_size(&as);
+
+             std::printf("backend: %s\n", RETRO_ATOMIC_BACKEND_NAME);
+
+             bool ok = (li == 42) && (ls == 42)
+                    && (pi == 42) && (ps == 42)
+                    && (qi == 44) && (qs == 42);
+             std::puts(ok ? "ALL OK" : "FAIL");
+             return ok ? 0 : 1;
+          }
+          EOF
+
+          # Regression fixture: include retro_atomic.h from inside an
+          # extern "C" wrap.  Faithful mirror of ui_qt.cpp's pattern.
+          # Pre-fix retro_atomic.h would emit ~80 "template with C
+          # linkage" errors here; the RETRO_BEGIN_DECLS_CXX shield
+          # around <atomic> makes this compile cleanly.
+          cat > "$tmpdir/cxx_smoke_extern_c.cpp" <<'EOF'
+          #include <cstdio>
+          #include <cstddef>
+
+          extern "C" {
+          #include <retro_atomic.h>
+          }
+
+          int main(void) {
+             retro_atomic_int_t ai; retro_atomic_int_init(&ai, 0);
+             retro_atomic_store_release_int(&ai, 7);
+             int v = retro_atomic_load_acquire_int(&ai);
+             std::printf("backend: %s\n", RETRO_ATOMIC_BACKEND_NAME);
+             std::puts(v == 7 ? "ALL OK" : "FAIL");
+             return v == 7 ? 0 : 1;
+          }
+          EOF
+
+          for cxx in g++ clang++; do
+            for std in c++11 c++14 c++17; do
+              for fixture in cxx_smoke cxx_smoke_extern_c; do
+                echo "==> compile-test with $cxx -std=$std ($fixture)"
+                $cxx -std=$std -Wall -Wextra -pedantic -O2 \
+                    -I include \
+                    "$tmpdir/$fixture.cpp" \
+                    -o "$tmpdir/$fixture" \
+                  || { echo "::error title=C++ compile failed::$cxx -std=$std $fixture"; exit 1; }
+                "$tmpdir/$fixture" \
+                  || { echo "::error title=C++ smoke failed::$cxx -std=$std $fixture"; exit 1; }
+              done
+            done
+          done
+
+          rm -rf "$tmpdir"
+
+      - name: Run retro_atomic_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/atomic/retro_atomic_test
+        run: |
+          # The native samples job above runs with GCC and ASan/UBSan.
+          # Clang is the toolchain on every Apple platform, Android NDK
+          # (since r18), Emscripten, and PS4-ORBIS, so a Clang lane is
+          # not optional coverage.  ThreadSanitizer is the strict
+          # validator for this test in particular: it instruments every
+          # atomic load and store and would flag a missing acquire /
+          # release barrier as a race in the 1M-iteration SPSC stress
+          # (a class of bug that x86 TSO would otherwise hide on the
+          # native runner).
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./retro_atomic_test
+
+      - name: Run retro_spsc_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/queues/retro_spsc_test
+        run: |
+          # retro_spsc.c is a lock-free SPSC byte queue built on
+          # retro_atomic.h.  Its correctness contract is acquire-load
+          # / release-store on the head and tail cursors, with the
+          # buffer reads/writes between them ordered by those barriers.
+          # Missing or weakened barriers produce torn data on the
+          # consumer side, observable as content mismatches in the
+          # stress harness AND as TSan-reported races.  The default
+          # ASan/UBSan pass above catches the content mismatches but
+          # not the races; this lane catches both.
+          #
+          # halt_on_error=1 makes TSan exit non-zero on the first race
+          # rather than continuing -- which is what we want for CI:
+          # any race here means the SPSC contract is broken.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./retro_spsc_test
+
+  # Cross-architecture validation lane for retro_atomic_test.
+  #
+  # The samples job above runs on x86_64, which is a strongly-ordered
+  # (TSO) architecture.  retro_atomic.h's contract is that acquire-load
+  # / release-store / acq_rel-RMW emit real barriers on weakly-ordered
+  # SMP targets (ARM, AArch64, PowerPC, MIPS).  An x86_64 host run
+  # cannot exercise that property, because TSO masks reordering bugs
+  # at the hardware level even when the macros emit no barriers at all.
+  #
+  # This job cross-compiles retro_atomic_test for AArch64 and ARMv7 and
+  # runs the binary under qemu-user-static.  qemu-user emulates the
+  # weak memory model faithfully enough to expose missing-barrier bugs
+  # in the SPSC stress test, and is cheap enough to run on every push.
+  #
+  # We deliberately do NOT run the full samples sweep here -- the rest
+  # of the samples don't have architecture-dependent codegen that
+  # warrants the extra CI time.  retro_atomic_test is the one that
+  # benefits from cross-arch coverage.
+  #
+  # Real ARM hardware still beats qemu (see e.g. PostgreSQL's 2025
+  # Win11/ARM64 atomic ordering bug, found only on real silicon),
+  # but qemu catches most categorical errors and is much cheaper than
+  # provisioning ARM runners.
+  retro-atomic-cross:
+    name: Cross-arch retro_atomic_test (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            cc: aarch64-linux-gnu-gcc
+            apt_pkgs: gcc-aarch64-linux-gnu
+            qemu: qemu-aarch64-static
+            sysroot: /usr/aarch64-linux-gnu
+          - arch: armv7
+            cc: arm-linux-gnueabihf-gcc
+            apt_pkgs: gcc-arm-linux-gnueabihf
+            qemu: qemu-arm-static
+            sysroot: /usr/arm-linux-gnueabihf
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential ${{ matrix.apt_pkgs }} qemu-user-static
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build retro_atomic_test for ${{ matrix.arch }}
+        working-directory: libretro-common/samples/atomic/retro_atomic_test
+        run: |
+          set -u
+          set -o pipefail
+          make clean
+          CC=${{ matrix.cc }} make all
+
+      - name: Run retro_atomic_test under qemu-user
+        working-directory: libretro-common/samples/atomic/retro_atomic_test
+        run: |
+          set -u
+          set -o pipefail
+          ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./retro_atomic_test
+
+      - name: Inspect emitted atomic instructions
+        working-directory: libretro-common/samples/atomic/retro_atomic_test
+        run: |
+          set -u
+          set -o pipefail
+          # Spot-check the codegen.  If retro_atomic.h were silently
+          # falling through to a no-barrier backend on this arch, the
+          # asm would be conspicuously missing acquire/release
+          # instructions.  This is a cheap sanity check on top of the
+          # behavioural SPSC test above.
+          ${{ matrix.cc }} -O2 -S \
+              -I../../../include -DHAVE_THREADS \
+              retro_atomic_test.c -o /tmp/retro_atomic_test.s
+          echo
+          echo '== Unique barrier-emitting mnemonics =='
+          case "${{ matrix.arch }}" in
+            aarch64)
+              # Expect: ldar, stlr, and __aarch64_ldadd*_acq_rel libcalls
+              # (or inline ldaddal LSE on +lse builds).
+              pattern='\b(ldar|stlr|ldax|stlx|dmb|ldadd[a-z0-9_]*|swp[a-z0-9_]*|__aarch64_(ldadd|swp)[a-z0-9_]*acq_rel)\b'
+              ;;
+            armv7)
+              # Expect: dmb (data memory barrier) and ldrex/strex pairs.
+              pattern='\b(dmb|ldrex|strex|ldrexb|strexb|ldrexh|strexh)\b'
+              ;;
+          esac
+          mnemonics=$(grep -oE "$pattern" /tmp/retro_atomic_test.s | sort -u)
+          echo "$mnemonics"
+          if [[ -z "$mnemonics" ]]; then
+            echo
+            echo '::error title=No barrier instructions emitted::retro_atomic_test.s contains no acquire/release/barrier mnemonics for ${{ matrix.arch }}; retro_atomic.h may have fallen through to a no-barrier backend.'
+            exit 1
+          fi

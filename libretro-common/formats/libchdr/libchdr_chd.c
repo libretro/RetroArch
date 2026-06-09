@@ -586,19 +586,6 @@ static INLINE uint32_t get_bigendian_uint32_t(const uint8_t *base)
 }
 
 /*-------------------------------------------------
-    put_bigendian_uint32_t - write a uint32_t to
-    the data stream in bigendian order
--------------------------------------------------*/
-
-static INLINE void put_bigendian_uint32_t(uint8_t *base, uint32_t value)
-{
-	base[0] = value >> 24;
-	base[1] = value >> 16;
-	base[2] = value >> 8;
-	base[3] = value;
-}
-
-/*-------------------------------------------------
     put_bigendian_uint24 - write a UINT24 to
     the data stream in bigendian order
 -------------------------------------------------*/
@@ -653,20 +640,6 @@ static INLINE void map_extract(const uint8_t *base, map_entry *entry)
 	entry->crc = get_bigendian_uint32_t(&base[8]);
 	entry->length = get_bigendian_uint16(&base[12]) | (base[14] << 16);
 	entry->flags = base[15];
-}
-
-/*-------------------------------------------------
-    map_assemble - write a single map
-    entry to the datastream
--------------------------------------------------*/
-
-static INLINE void map_assemble(uint8_t *base, map_entry *entry)
-{
-	put_bigendian_uint64_t(&base[0], entry->offset);
-	put_bigendian_uint32_t(&base[8], entry->crc);
-	put_bigendian_uint16(&base[12], entry->length);
-	base[14] = entry->length >> 16;
-	base[15] = entry->flags;
 }
 
 /*-------------------------------------------------
@@ -1659,7 +1632,7 @@ static uint32_t header_guess_unitbytes(chd_file *chd)
 {
 	/* look for hard disk metadata; if found, then the unit size == sector size */
 	char metadata[512];
-	int i0, i1, i2, i3;
+	unsigned int i0, i1, i2, i3;
 	if (chd_get_metadata(chd, HARD_DISK_METADATA_TAG, 0, metadata, sizeof(metadata), NULL, NULL, NULL) == CHDERR_NONE &&
 		sscanf(metadata, HARD_DISK_METADATA_FORMAT, &i0, &i1, &i2, &i3) == 4)
 		return i3;

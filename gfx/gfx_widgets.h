@@ -116,17 +116,14 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_DYING                     = (1 << 4),
    /* Has the timer expired ? if so, should be set to dying */
    DISPWIDG_FLAG_EXPIRED                   = (1 << 5),
-   /* Unfold animation */
-   DISPWIDG_FLAG_UNFOLDED                  = (1 << 6),
-   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7),
    /* Color style */
-   DISPWIDG_FLAG_POSITIVE                  = (1 << 8),
-   DISPWIDG_FLAG_NEGATIVE                  = (1 << 9),
-   DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 10),
-   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11),
-   DISPWIDG_FLAG_CATEGORY_SUCCESS          = (1 << 12),
+   DISPWIDG_FLAG_POSITIVE                  = (1 << 6),
+   DISPWIDG_FLAG_NEGATIVE                  = (1 << 7),
+   DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 8),
+   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 9),
+   DISPWIDG_FLAG_CATEGORY_SUCCESS          = (1 << 10),
    /* Size */
-   DISPWIDG_FLAG_SMALL                     = (1 << 13)
+   DISPWIDG_FLAG_SMALL                     = (1 << 11)
 };
 
 /* There can only be one message animation at a time to
@@ -194,6 +191,22 @@ typedef struct dispgfx_widget
 
 #ifdef HAVE_THREADS
    slock_t* current_msgs_lock;
+   /* Serialises producer and consumer access to msg_queue.
+    * Producers (gfx_widgets_msg_queue_push) can be called from
+    * any thread -- the threaded task system at libretro-common/
+    * queues/task_queue.c runs a worker thread, and several call
+    * paths reach the producer without holding any other lock
+    * (notably gfx/video_driver.c::video_driver_frame, which
+    * releases RUNLOOP_MSG_QUEUE_LOCK before the call).  The
+    * consumer (gfx_widgets_iterate) runs on the main thread
+    * but did not previously serialise its fifo_read against
+    * concurrent producer fifo_writes.  This separates concerns:
+    * current_msgs_lock continues to guard the displayed-message
+    * deque (current_msgs[]); msg_queue_lock guards the FIFO
+    * staging buffer.  Acquired by every fifo_* call site and
+    * by FIFO_*_AVAIL checks where the result is used to gate a
+    * subsequent FIFO operation. */
+   slock_t* msg_queue_lock;
 #endif
    fifo_buffer_t msg_queue;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
@@ -230,7 +243,6 @@ typedef struct dispgfx_widget
    unsigned msg_queue_spacing;
    unsigned msg_queue_rect_start_x;
    unsigned msg_queue_internal_icon_size;
-   unsigned msg_queue_internal_icon_offset;
    unsigned msg_queue_icon_size_x;
    unsigned msg_queue_icon_size_y;
    unsigned msg_queue_icon_offset_y;
@@ -253,6 +265,12 @@ typedef struct dispgfx_widget
    uint8_t flags;
 
    char gfx_widgets_status_text[NAME_MAX_LENGTH];
+   /* Cached strlen of gfx_widgets_status_text, written by the
+    * producer in video_driver.c.  Lets the per-frame widget render
+    * skip a strlen on a string that can be up to NAME_MAX_LENGTH
+    * (256) bytes long when statistics or core status messages are
+    * active.  Zero means the buffer is empty. */
+   size_t gfx_widgets_status_text_len;
    char assets_pkg_dir[DIR_MAX_LENGTH];
    char xmb_path[PATH_MAX_LENGTH];                /* TODO/FIXME - decouple from XMB */
    char ozone_path[PATH_MAX_LENGTH];              /* TODO/FIXME - decouple from Ozone */

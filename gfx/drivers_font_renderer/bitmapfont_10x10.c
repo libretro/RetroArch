@@ -116,7 +116,7 @@ bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language)
          break;
    }
 
-   if (string_is_empty(font_file))
+   if (!font_file || !*font_file)
       goto error;
 
    /* Get font path */

@@ -25,9 +25,9 @@
 #include <boolean.h>
 
 #include <compat/msvc.h>
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
-#include <string/stdstring.h>
 
 #include <encodings/crc32.h>
 
@@ -168,9 +168,38 @@ static enum patch_error bps_apply_patch(
          || (bps_read(&bps) != '1'))
       return PATCH_PATCH_INVALID_HEADER;
 
-   modify_source_size  = bps_decode(&bps);
-   modify_target_size  = bps_decode(&bps);
-   modify_markup_size  = bps_decode(&bps);
+   {
+      uint64_t raw_source = bps_decode(&bps);
+      uint64_t raw_target = bps_decode(&bps);
+      uint64_t raw_markup = bps_decode(&bps);
+
+      /* All three sizes are decoded from attacker-controlled
+       * variable-length integers in the patch file with no
+       * inherent upper bound (each can reach UINT64_MAX).
+       * Three separate sanity checks are required before they
+       * are assigned into size_t locals, where (on 32-bit
+       * targets) values above SIZE_MAX would silently truncate:
+       *  - markup_size is consumed via bps_read below; if it
+       *    exceeds the remaining bytes in modify_data, those
+       *    reads run off the end of the patch buffer.
+       *  - target_size on a 32-bit host would truncate at the
+       *    assignment, producing a smaller-than-expected
+       *    allocation while bps.target_length stays at the raw
+       *    uint64.  Subsequent target_data[output_offset++]
+       *    writes OOB by the truncated delta.  Reject anything
+       *    that won't fit in size_t outright; malloc would have
+       *    failed anyway. */
+      if (raw_markup > modify_length - bps.modify_offset)
+         return PATCH_PATCH_INVALID;
+      if (raw_target > (uint64_t)SIZE_MAX)
+         return PATCH_TARGET_ALLOC_FAILED;
+      if (raw_source > (uint64_t)SIZE_MAX)
+         return PATCH_SOURCE_TOO_SMALL;
+
+      modify_source_size = (size_t)raw_source;
+      modify_target_size = (size_t)raw_target;
+      modify_markup_size = (size_t)raw_markup;
+   }
 
    for (i = 0; i < modify_markup_size; i++)
       bps_read(&bps);
@@ -198,9 +227,27 @@ static enum patch_error bps_apply_patch(
 
       _len          = (_len >> 2) + 1;
 
+      /* Every action mode below performs target_data[output_
+       * offset++] = ... up to _len times.  Pre-this-patch
+       * none of the modes checked output_offset against
+       * bps.target_length, so a malicious .bps could write
+       * arbitrary attacker-chosen bytes past the malloc'd
+       * target_data buffer (heap-buffer-overflow WRITE).
+       * Bound _len against the remaining target capacity
+       * once at the top so each mode below stays in
+       * bounds. */
+      if (   bps.output_offset >= bps.target_length
+          || _len              >  bps.target_length - bps.output_offset)
+         return PATCH_TARGET_INVALID;
+
       switch (mode)
       {
          case SOURCE_READ:
+            /* SOURCE_READ reads from source_data[output_offset]
+             * for the same output_offset range, so the same
+             * bound applies to source_data too. */
+            if (bps.output_offset + _len > bps.source_length)
+               return PATCH_SOURCE_INVALID;
             while (_len--)
             {
                uint8_t data = bps.source_data[bps.output_offset];
@@ -210,6 +257,14 @@ static enum patch_error bps_apply_patch(
             break;
 
          case TARGET_READ:
+            /* TARGET_READ reads _len bytes from modify_data via
+             * bps_read.  The action loop's outer guard only
+             * confirms there is at least one command's worth
+             * of bytes (modify_offset < modify_length - 12);
+             * a long _len plus the 12-byte trailer can read
+             * past modify_length. */
+            if (bps.modify_offset + _len > bps.modify_length - 12)
+               return PATCH_PATCH_INVALID;
             while (_len--)
             {
                uint8_t data = bps_read(&bps);
@@ -232,6 +287,19 @@ static enum patch_error bps_apply_patch(
             if (mode == SOURCE_COPY)
             {
                bps.source_offset += offset;
+               /* Validate the resulting source_offset and the
+                * full read range against source_length.  Pre-
+                * this-patch a malicious offset could push
+                * source_offset past source_length (or, with a
+                * negative offset, underflow it to a huge size_t),
+                * driving source_data[source_offset++] reads
+                * arbitrarily far OOB.  An attacker who can read
+                * past source_data into adjacent heap leaks heap
+                * contents into target_data and the checksum
+                * calculation. */
+               if (   bps.source_offset > bps.source_length
+                   || _len              > bps.source_length - bps.source_offset)
+                  return PATCH_SOURCE_INVALID;
                while (_len--)
                {
                   uint8_t data = bps.source_data[bps.source_offset++];
@@ -242,6 +310,13 @@ static enum patch_error bps_apply_patch(
             else
             {
                bps.target_offset += offset;
+               /* TARGET_COPY both reads from and writes to
+                * target_data; bound the read pointer the same
+                * way as SOURCE_COPY above.  output_offset is
+                * already bounded by the top-of-loop check. */
+               if (   bps.target_offset > bps.target_length
+                   || _len              > bps.target_length - bps.target_offset)
+                  return PATCH_TARGET_INVALID;
                while (_len--)
                {
                   uint8_t data = bps.target_data[bps.target_offset++];
@@ -689,6 +764,16 @@ static enum patch_error xdelta_apply_patch(
    } while (stream.avail_in);
 
    *targetdata = (uint8_t*)malloc(*targetlength);
+   /* NULL-check: xd3_decode_memory writes into *targetdata.
+    * Passing NULL is either a crash or an opaque xdelta error
+    * depending on the library version.  On OOM set
+    * PATCH_TARGET_ALLOC_FAILED to match the explicit ENOSPC
+    * error path below and skip the decode. */
+   if (!*targetdata)
+   {
+      error_patch = PATCH_TARGET_ALLOC_FAILED;
+      goto cleanup_stream;
+   }
    switch (xd3_decode_memory(
            patchdata, patchlen,
            sourcedata, sourcelength,
@@ -759,7 +844,7 @@ static bool try_bps_patch(bool allow_bps, const char *name_bps,
       uint8_t **buf, ssize_t *size)
 {
    if (     allow_bps
-         && !string_is_empty(name_bps)
+         && name_bps
          && path_is_valid(name_bps)
       )
    {
@@ -786,7 +871,7 @@ static bool try_ups_patch(bool allow_ups, const char *name_ups,
       uint8_t **buf, ssize_t *size)
 {
    if (     allow_ups
-         && !string_is_empty(name_ups)
+         && name_ups
          && path_is_valid(name_ups)
       )
    {
@@ -812,7 +897,7 @@ static bool try_ips_patch(bool allow_ips,
       const char *name_ips, uint8_t **buf, ssize_t *size)
 {
    if (     allow_ips
-         && !string_is_empty(name_ips)
+         && name_ips
          && path_is_valid(name_ips)
       )
    {
@@ -839,7 +924,7 @@ static bool try_xdelta_patch(bool allow_xdelta,
 {
 #if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
    if (     allow_xdelta
-            && !string_is_empty(name_xdelta)
+            && name_xdelta
             && path_is_valid(name_xdelta)
            )
    {
@@ -917,6 +1002,23 @@ bool patch_content(
       /* First patch already applied -> index
        * for subsequent patches starts at 1 */
       size_t patch_index     = 1;
+
+      /* NULL-check all four mallocs together: the strlcpy calls
+       * below dereference each buffer, and the loop that follows
+       * does indexed writes into all four.  On OOM free whichever
+       * succeeded (free(NULL) is a no-op) and skip the indexed-
+       * patch scan entirely - returning true matches the behaviour
+       * when no extra indexed patches are found on disk, which is
+       * the expected outcome for nearly all content. */
+      if (   !name_ips_indexed || !name_bps_indexed
+          || !name_ups_indexed || !name_xdelta_indexed)
+      {
+         free(name_ips_indexed);
+         free(name_bps_indexed);
+         free(name_ups_indexed);
+         free(name_xdelta_indexed);
+         return true;
+      }
 
       strlcpy(name_ips_indexed, name_ips, (name_ips_len + 1) * sizeof(char));
       strlcpy(name_bps_indexed, name_bps, (name_bps_len + 1) * sizeof(char));

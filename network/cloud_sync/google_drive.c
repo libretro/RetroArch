@@ -172,11 +172,10 @@ static void gdrive_log_http_failure(const char *context,
    if (data && data->headers)
       for (i = 0; i < data->headers->size; i++)
          RARCH_WARN("%s\n", data->headers->elems[i].data);
+   /* See webdav.c: data->data is sized exactly to data->len.
+    * data->data[data->len] = 0 is a one-byte heap overflow. */
    if (data && data->data)
-   {
-      data->data[data->len] = 0;
-      RARCH_WARN("%s\n", data->data);
-   }
+      RARCH_WARN("%.*s\n", (int)data->len, (const char*)data->data);
 }
 
 /* ========== Encoding Helpers ========== */
@@ -269,8 +268,8 @@ static bool gdrive_json_string(const char *json_data, size_t json_len,
             break;
          case RJSON_STRING:
          {
-            size_t len;
-            const char *str = rjson_get_string(json, &len);
+            size_t __len;
+            const char *str = rjson_get_string(json, &__len);
             if (depth == 1 && is_key)
             {
                matched = string_is_equal(str, key);
@@ -328,8 +327,8 @@ static bool gdrive_json_int(const char *json_data, size_t json_len,
             break;
          case RJSON_STRING:
          {
-            size_t len;
-            const char *str = rjson_get_string(json, &len);
+            size_t __len;
+            const char *str = rjson_get_string(json, &__len);
             if (depth == 1 && is_key)
             {
                matched = string_is_equal(str, key);
@@ -421,8 +420,8 @@ static bool gdrive_extract_first_id(const char *data, size_t len,
             break;
          case RJSON_STRING:
          {
-            size_t slen;
-            const char *str = rjson_get_string(json, &slen);
+            size_t __len;
+            const char *str = rjson_get_string(json, &__len);
             if (is_key)
             {
                strlcpy(key, str, sizeof(key));
@@ -625,12 +624,12 @@ static size_t gdrive_walk_segment(const gdrive_folder_walk_t *walk,
       char *seg, size_t seg_size)
 {
    const char *end = strchr(walk->remaining, '/');
-   size_t len = end
+   size_t _len     = end
       ? (size_t)(end - walk->remaining)
       : strlen(walk->remaining);
    strlcpy(seg, walk->remaining,
-         (len + 1 < seg_size) ? len + 1 : seg_size);
-   return len;
+         (_len + 1 < seg_size) ? _len + 1 : seg_size);
+   return _len;
 }
 
 /* Advance remaining past the current segment */
@@ -653,22 +652,22 @@ static void gdrive_walk_advance(gdrive_folder_walk_t *walk)
 static void gdrive_walk_cache_path(const gdrive_folder_walk_t *walk,
       char *out, size_t out_size)
 {
-   size_t len;
+   size_t _len;
    const char *end;
    if (!walk->remaining)
    {
       strlcpy(out, walk->dir_path, out_size);
       return;
    }
-   end = strchr(walk->remaining, '/');
-   len = end
+   end  = strchr(walk->remaining, '/');
+   _len = end
       ? (size_t)(end - walk->dir_path)
       : (size_t)(walk->remaining - walk->dir_path)
         + strlen(walk->remaining);
-   if (len > 0 && walk->dir_path[len - 1] == '/')
-      len--;
+   if (_len > 0 && walk->dir_path[_len - 1] == '/')
+      _len--;
    strlcpy(out, walk->dir_path,
-         (len + 1 < out_size) ? len + 1 : out_size);
+         (_len + 1 < out_size) ? _len + 1 : out_size);
 }
 
 /* Called after a folder is found or created: cache, advance, continue */
@@ -783,7 +782,7 @@ static void gdrive_folder_search_cb(retro_task_t *task, void *task_data,
 
 static void gdrive_folder_walk_next(gdrive_folder_walk_t *walk)
 {
-   char url[2048];
+   char url[PATH_MAX_LENGTH + 512];
    char segment[256];
    char encoded_segment[PATH_MAX_LENGTH];
    char *headers;
@@ -878,7 +877,7 @@ static void gdrive_search_file(const char *name,
       const char *parent_id,
       retro_task_callback_t cb, void *user_data)
 {
-   char url[2048];
+   char url[PATH_MAX_LENGTH + 512];
    char encoded_name[PATH_MAX_LENGTH];
    char *headers;
 
@@ -1137,7 +1136,7 @@ static bool gdrive_sync_begin(cloud_sync_complete_handler_t cb,
 {
    settings_t *settings = config_get_ptr();
 
-   if (!string_is_empty(settings->arrays.google_drive_refresh_token))
+   if (*settings->arrays.google_drive_refresh_token)
    {
       /* Have a refresh token - use it to get an access token */
       char post_data[4096];
@@ -1342,7 +1341,19 @@ static void gdrive_do_patch(gdrive_cb_state_t *cb_st)
 
    filestream_seek(cb_st->rfile, 0, SEEK_SET);
    len = filestream_get_size(cb_st->rfile);
-   buf = malloc((size_t)(len + 1));
+   /* filestream_get_size returns negative on error; malloc of
+    * (size_t)(len + 1) would wrap or be zero, and the subsequent
+    * filestream_read(rfile, buf, len) would pass a negative size
+    * down.  Bail early on either error or empty file. */
+   if (len <= 0)
+      return;
+   /* NULL-check the malloc before filestream_read / the HTTP
+    * transfer below dereference 'buf'.  On OOM there's no
+    * recoverable action for a PATCH upload of the save/state
+    * file - silently skip this call and let the sync retry on
+    * the next poll. */
+   if (!(buf = malloc((size_t)(len + 1))))
+      return;
    filestream_read(cb_st->rfile, buf, len);
 
    snprintf(url, sizeof(url),
@@ -1356,7 +1367,7 @@ static void gdrive_do_patch(gdrive_cb_state_t *cb_st)
          cb_st->path, (long long)len);
    task_push_http_transfer_with_content(url, "PATCH",
          buf, (size_t)len, "application/octet-stream",
-         true, headers, gdrive_upload_cb, cb_st);
+         true, false, headers, gdrive_upload_cb, cb_st);
    free(buf);
    free(headers);
 }
@@ -1425,7 +1436,7 @@ static void gdrive_update_search_cb(retro_task_t *task, void *task_data,
    else
    {
       /* File doesn't exist - create metadata first, then upload */
-      char json[1024];
+      char json[PATH_MAX_LENGTH + 512];
       char escaped_name[PATH_MAX_LENGTH];
       char *headers;
       gdrive_json_escape(escaped_name, sizeof(escaped_name),

@@ -36,6 +36,7 @@
 RETRO_BEGIN_DECLS
 
 #define PATH_REQUIRED_VFS_VERSION 3
+#define STAT64_REQUIRED_VFS_VERSION 4
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
@@ -119,7 +120,6 @@ const char *path_get_archive_delim(const char *path);
  * after the last slash are considered.
  *
  * Hidden non-leaf function cost:
- * - calls string_is_empty()
  * - calls strrchr
  *
  * @return extension part from the path.
@@ -297,7 +297,7 @@ size_t fill_pathname(char *s, const char *in_path,
  * Hidden non-leaf function cost:
  * - Calls rtime_localtime()
  * - Calls strftime
- * - Calls strlcat
+ * - Calls strlcpy
  *
  **/
 size_t fill_dated_filename(char *s, const char *ext, size_t len);
@@ -318,10 +318,8 @@ size_t fill_dated_filename(char *s, const char *ext, size_t len);
  * Hidden non-leaf function cost:
  * - Calls time
  * - Calls rtime_localtime()
- * - Calls strlcpy 2x
- * - Calls string_is_empty()
+ * - Calls strlcpy (at least once)
  * - Calls strftime
- * - Calls strlcat
  *
  * @return Length of the string copied into @s
  **/
@@ -334,9 +332,8 @@ size_t fill_str_dated_filename(char *s, const char *in_str, const char *ext, siz
  * Find last slash in path. Tries to find
  * a backslash on Windows too which takes precedence
  * over regular slash.
-
- * Hidden non-leaf function cost:
- * - calls strrchr
+ *
+ * Leaf function.
  *
  * @return pointer to last slash/backslash found in @str.
  **/
@@ -409,7 +406,6 @@ size_t fill_pathname_basedir(char *s, const char *in_path, size_t len);
  * The two buffers must not overlap. Removes trailing '/'.
  *
  * Hidden non-leaf function cost:
- * - Calls strdup
  * - Can call strlcpy
  *
  * @return Length of the string copied into @s
@@ -554,9 +550,10 @@ size_t fill_pathname_abbreviated_or_relative(char *s,
  * or directory, and removes any special chars that are
  * unavailable.
  *
- * @returns new string that has been sanitized
+ * @returns newly allocated string that has been sanitized.
+ * Caller is responsible for freeing the returned string.
  **/
-const char *sanitize_path_part(const char *path_part, size_t len);
+char *sanitize_path_part(const char *path_part, size_t len);
 
 /**
  * pathname_conform_slashes_to_os:
@@ -681,7 +678,7 @@ int path_stat(const char *path);
 
 bool path_is_valid(const char *path);
 
-int32_t path_get_size(const char *path);
+int64_t path_get_size(const char *path);
 
 bool is_path_accessible_using_standard_io(const char *path);
 

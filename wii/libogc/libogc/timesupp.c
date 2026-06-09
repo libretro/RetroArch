@@ -101,31 +101,32 @@ u32 diff_nsec(u64 start,u64 end)
 
 void __timesystem_init()
 {
+	u32 level;
+	/* Almost certainly called once at boot before threads exist, but
+	 * the flag check + set was racy. Lock it. */
+	_CPU_ISR_Disable(level);
 	if(!exi_wait_inited) {
 		exi_wait_inited = 1;
+		_CPU_ISR_Restore(level);
 		LWP_InitQueue(&time_exi_wait);
+		return;
 	}
+	_CPU_ISR_Restore(level);
 }
 
 void timespec_subtract(const struct timespec *tp_start,const struct timespec *tp_end,struct timespec *result)
 {
-	struct timespec start_st = *tp_start;
-	struct timespec *start = &start_st;
-	u32 nsecpersec = TB_NSPERSEC;
-
-	if(tp_end->tv_nsec<start->tv_nsec) {
-		int secs = (start->tv_nsec - tp_end->tv_nsec)/nsecpersec+1;
-		start->tv_nsec -= nsecpersec * secs;
-		start->tv_sec += secs;
+	/* Pre-patch had a second normalisation `if` that was
+	 * (a) unreachable for legal timespecs (tv_nsec < 10^9) and
+	 * (b) arithmetically wrong (subtracted a negative quantity).
+	 * Replaced with the textbook form. */
+	if(tp_end->tv_nsec<tp_start->tv_nsec) {
+		result->tv_sec  = tp_end->tv_sec  - tp_start->tv_sec  - 1;
+		result->tv_nsec = tp_end->tv_nsec - tp_start->tv_nsec + TB_NSPERSEC;
+	} else {
+		result->tv_sec  = tp_end->tv_sec  - tp_start->tv_sec;
+		result->tv_nsec = tp_end->tv_nsec - tp_start->tv_nsec;
 	}
-	if((tp_end->tv_nsec - start->tv_nsec)>nsecpersec) {
-		int secs = (start->tv_nsec - tp_end->tv_nsec)/nsecpersec;
-		start->tv_nsec += nsecpersec * secs;
-		start->tv_sec -= secs;
-	}
-
-	result->tv_sec = (tp_end->tv_sec - start->tv_sec);
-	result->tv_nsec = (tp_end->tv_nsec - start->tv_nsec);
 }
 
 unsigned long long timespec_to_ticks(const struct timespec *tp)
@@ -163,6 +164,9 @@ int clock_gettime(struct timespec *tp)
 void _DEFUN(udelay,(us),
 			unsigned us)
 {
+	/* gettime() reads TBR through inline asm flagged __volatile__,
+	 * which is what stops the compiler eliding this loop. Don't
+	 * declassify it without rewriting this function. */
 	unsigned long long start, end;
 	start = gettime();
 	while (1)

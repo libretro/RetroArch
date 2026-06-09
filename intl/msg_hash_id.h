@@ -212,16 +212,16 @@ MSG_HASH(
    "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dinyalakan."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dimatikan."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Sinkronkan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
    "Manual mengaktifkan sinkronisasi awan."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dimatikan."
    )
 
 /* Main Menu > Load Core */
@@ -815,6 +815,14 @@ MSG_HASH(
    "Menyimpan konfigurasi saat ini ke berkas terpisah."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Simpan konfigurasi terkini sebagai file konfigurasi kustom."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Simpan Konfigurasi Utama"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Setel ulang ke Default"
    )
@@ -935,12 +943,52 @@ MSG_HASH(
    "Sinkron: Berkas Sistem"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Ketika diaktifkan, File konfigurasi akan di sinkronisasi ke penyimpanan cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Ketika diaktifkan, File sistem akan disinkronisasikan ke penyimpanan cloud. Ini akan meningkatkan waktu untuk menyinkronkan, Pakai dengan hati - hati."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "Ketika dinonaktifkan, File akan dipindahkan ke folder backup sebelum ditimpa atau dihapus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Mode Sinkronisasi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Otomatis: Sinkronkan saat RetroArch dinyalakan dan saat cores tidak dimuat. Manual: Hanya sinkronkan saat tombol 'Sinkronkan Sekarang' ditekan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Otomatis"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Nama Pengguna"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "Username kamu untuk akun penyimpanan cloud."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    "Kata Sandi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "Password kamu untuk akun penyimpanan cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Kunci Akses Rahasia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Kunci rahasia kamu untuk akun penyimpanan cloud."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -999,8 +1047,20 @@ MSG_HASH(
    "Berkas pangkalan data."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "Video. Pilih ini untuk membuka file ini dengan pemutar video."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "Musik. Pilih ini untuk membuka file ini dengan pemutar musik."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
    "Berkas gambar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Core Libretro. Mempilihkan ini akan rekan core ini ke game."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1152,8 +1212,12 @@ MSG_HASH(
    )
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Driver Video yang digunakan."
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "Driver OpenGL 3.x. Driver ini mengizinkan cores libretro GL untuk digunakan selain cores renderer perangkat lunak. Versi minimum diperlukan: OpenGL 3.2 atau OpenGLES 3.0+. Mendukung format shader slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "Driver Vulkan. Driver ini mengizinkan cores libretro Vulkan untuk digunakan selain cores renderer perangkat lunak. Versi minimum diperlukan: Vulkan 1.0. Mendukung HDR dan shader Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
@@ -1167,10 +1231,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "Suara"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Driver Audio yang digunakan."
-   )
 #ifdef HAVE_MICROPHONE
 #endif
 MSG_HASH(
@@ -1182,24 +1242,8 @@ MSG_HASH(
    "Kamera"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Driver kamera yang digunakan."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Driver Bluetooth yang digunakan."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Driver Wi-Fi yang digunakan."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Lokasi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Driver Lokasi yang digunakan."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -1208,14 +1252,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Rekam"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Driver Rekam yang digunakan."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Driver MIDI yang digunakan."
    )
 
 /* Settings > Video */
@@ -1433,10 +1469,6 @@ MSG_HASH(
    "Laju Penyegaran Vertikal"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Laju penyegaran vertikal layar Anda. Digunakan untuk menghitung laju input audio yang sesuai.\nIni akan diabaikan jika 'Video Berulir' diaktifkan."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Estimasi Laju Penyegaran Layar"
    )
@@ -1642,14 +1674,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Tingkat Serian Layar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Pancaran Cahaya Layar Layaknya Kertas Bacaan"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -2013,10 +2037,6 @@ MSG_HASH(
    "Jumlah Maksimal Pemain"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Jumlah maksimal pemain yang diperbolehkan di RetroArch."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "Ubah Letak Stik Kendali untuk Core Ini"
    )
@@ -2091,6 +2111,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Sesuaikan daya tanggapan stik analok."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Otomatis"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
@@ -2351,10 +2375,6 @@ MSG_HASH(
 
 /* Settings > Input > Port # Controls */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
-   "Perangkat Tempahan untuk Pemain Ini"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
    "Tanpa Tempahan"
@@ -2639,14 +2659,6 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Tampilkan 'Mulai Ulang'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Menampilkan opsi mulai ulang konten."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
    "Tampilkan 'Mulai Siar Alir'"
@@ -2941,10 +2953,6 @@ MSG_HASH(
 
 /* Settings > User > Privacy */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Mengizinkan Discord menampilkan data tentang apa yang dimainkan.\nHanya tersedia dengan klien desktop lokal."
-   )
 
 /* Settings > User > Accounts */
 
@@ -2967,6 +2975,9 @@ MSG_HASH(
 
 
 /* Settings > User > Accounts > Facebook Gaming */
+
+
+/* Settings > User > Accounts > Kick */
 
 
 /* Settings > Directory */
@@ -3075,14 +3086,6 @@ MSG_HASH(
 
 /* Music > Quick Menu */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Tambahkan lintasan audio ini ke slot siaran audio yang tersedia.\nJika saat ini belum ada slot, nanti akan diabaikan."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Tambahkan lintasan audio ini ke slot siaran audio yang tersedia dan putar.\nJika saat ini belum ada slot, nanti akan diabaikan."
-   )
 
 /* Netplay */
 
@@ -3096,12 +3099,8 @@ MSG_HASH(
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Nama Sistem"
-   )
 
 /* Explore tab */
 MSG_HASH(
@@ -3256,10 +3255,6 @@ MSG_HASH(
 
 /* Quick Menu */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Mulai Ulang"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Tutup Konten"
@@ -3791,10 +3786,6 @@ MSG_HASH(
    "Berkas sudah ada. Menyimpan ke dapar cadangan"
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Mengatur cakram di nampan"
-   )
-MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
    "Kawan (peer) Netplay bermain di versi lama RetroArch. Tidak dapat sambung."
    )
@@ -3880,10 +3871,6 @@ MSG_HASH(
    "Dijeda."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Cakram telah dikeluarkan."
-   )
-MSG_HASH(
    MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
    "Mengulang perekaman karena reinsial kandar."
    )
@@ -3914,6 +3901,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
    "Memindai jejaring nirkabel..."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Cakram telah dikeluarkan."
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Mengatur cakram di nampan"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -3947,6 +3942,7 @@ MSG_HASH(
    MSG_PRUNING_CORE_BACKUP_HISTORY,
    "Menghapus cadangan yang usang: "
    )
+
 
 /* Lakka */
 

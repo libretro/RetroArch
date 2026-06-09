@@ -485,6 +485,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Facebook Gaming */
 
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -516,7 +519,7 @@ MSG_HASH(
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 
 /* Explore tab */
@@ -665,6 +668,7 @@ MSG_HASH(
 
 
 /* Notifications */
+
 
 
 
