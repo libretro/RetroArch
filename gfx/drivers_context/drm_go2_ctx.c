@@ -51,6 +51,10 @@
 #include "../common/egl_common.h"
 #endif
 
+#ifdef HAVE_OPENGL
+#include "../common/gl_common.h"
+#endif
+
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
