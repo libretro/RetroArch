@@ -547,7 +547,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Subteno de konservstato"
+   "Subteno de konservostato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -1639,6 +1639,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
    "Pelilo de mikrofona resonpecigado uzota."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "Baritaj filmeroj por mikrofono"
    )
 #endif
 MSG_HASH(
@@ -3226,15 +3230,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-   "Analoga malviva zono"
+   "Analogstanga malviva zono"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
-   "Ignori analogajn stirstangajn movojn sub la valoro de malviva zono."
+   "Ignori analogstangajn movojn sub la valoro de malviva zono."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
-   "Analoga sentemo"
+   "Analogstanga sentemo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
@@ -3246,7 +3250,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
-   "Alĝustigi la sentemon de analogaj stirstangoj."
+   "Alĝustigi la sentemon de analogstangoj."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
@@ -3594,19 +3598,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   "Malebligi maldekstran analogan en menuo"
+   "Malebligi maldekstran analogstangon en menuo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   "Malhelpi la enigon de la maldekstra analoga stirstango en la menuo"
+   "Malhelpi la enigon de la maldekstra analogstango en la menuo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   "Malebligi dekstran analogan en menuo"
+   "Malebligi dekstran analogstangon en menuo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   "Malhelpi la enigon de la dekstra analoga stirstango. Dekstra analoga stirstango ŝanĝas la bildetojn en ludlistoj."
+   "Malhelpi la enigon de la dekstra analogstango en la menuo. Dekstra analogstango ŝanĝas la bildetojn en ludlistoj."
    )
 
 /* Settings > Input > Hotkeys */
@@ -3783,7 +3787,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "Ŝargas konservstaton de la kurante elektita spaco."
+   "Ŝargas konservostaton de la kurante elektita spaco."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
@@ -4149,15 +4153,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-   "Speco de analoga al cifereca"
+   "Speco de bitigilo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "Uzi specifitan analogan stangon por direktokruca enigo. Reĝimoj \"devigi\" transpasas analogan enigon indiĝenan de la kerno."
+   "Uzi specifitan analogstangon por direktokruca enigo. Reĝimoj \"devigi\" transpasas analogan enigon indiĝenan de la kerno."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
-   "Asigni specifitan analogan stangon por la direktokruca enigo.\nSe kerno subtenas indiĝenan analogan, direktokruca asigno estos malebligita krom opcio \"(devigi)\" estas elektita.\nSe direktokruca asigno estas devigita, kerno ricevos nenian analogan enigon de la specifita stango."
+   "Asigni specifitan analogstangon por la direktokruca enigo.\nSe kerno subtenas indiĝenan analogstangon, direktokruca asigno estos malebligita krom opcio \"(devigi)\" estas elektita.\nSe direktokruca asigno estas devigita, kerno ricevos nenian analogan enigon de la specifita stango."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -4165,7 +4169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
-   "La fizika regilo agnoskita de RetroArch."
+   "La fizika regilo, kiel agnoskita de RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
@@ -4181,7 +4185,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
-   ""
+   "Preferata"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
@@ -4208,6 +4212,174 @@ MSG_HASH(
    "Agordi ĉiujn regilojn"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "Asigni ĉiujn direktojn kaj butonojn, unu post la "
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
+   "Reagordi al defaŭltaj regiloj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   "Reagordi la enigajn agordojn al ties defaŭltaj valoroj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+   "Konservi regilan profilon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   "Konservi aŭtomatan konfigurdosieron, kiu estos aplikita aŭtomate kiam ajn ĉi tiu regilo estos denove detektita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
+   "Indekso de muso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "La fizika muso, kiel agnoskita de RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   "Butono B (malsupra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
+   "Butono Y (maldekstra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
+   "Butono Select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
+   "Butono Start"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
+   "Direktokruca supren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
+   "Direktokruca malsupren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
+   "Direktokruca maldekstren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
+   "Direktokruca dekstren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
+   "Butono A (dekstra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
+   "Butono X (supra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
+   "Butono L (ŝultra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
+   "Butono R (ŝultra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
+   "Butono L2 (ĉana)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
+   "Butono R2 (ĉana)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
+   "Butono L3 (analoga)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
+   "Butono R3 (analoga)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+   "Maldekstra analogstango X+ (dekstren)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+   "Maldekstra analogstango X− (maldekstren)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   "Maldekstra analogstango Y+ (malsupren)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+   "Maldekstra analogstango Y− (supren)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+   "Dekstra analogstango X+ (dekstren)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+   "Dekstra analogstango X− (maldekstren)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
+   "Dekstra analogstango Y+ (malsupren)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+   "Dekstra analogstango Y− (supren)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+   "Pafila ĉano"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+   "Pafila ŝargilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
+   "Pafila Akc. A"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
+   "Pafila Akc. B"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
+   "Pafila Akc. C"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
+   "Pafila Start"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
+   "Pafila Select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
+   "Pafil-direktokruca supren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
+   "Pafil-direktokruca malsupren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
+   "Pafil-direktokruca maldekstren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
+   "Pafil-direktokruca dekstren"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Ada aktivigo"
    )
@@ -4218,43 +4390,435 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+   "[Anticipado neebla]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+   "Kuranta kerno estas malkongrua kun anticipado pro manko de subteno de determinisma konservostato."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
+   "Anticipado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+   "Nombro da filmeroj anticipotaj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   "La nombro da filmeroj anticipotaj. Kaŭzas ludaj problemoj, kiel bildaj misprezentoj se la nombro da atendaj filmeroj internaj de la ludo estas superitaj."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "Ruli aldonan kernan logikon por malpliigi respondotempon. \"Reĝimo unuopa ekzemplo\" rulas logikon ĝis posta filmero kaj tiam reŝargas la estantan staton. La \"Reĝimo duopaj ekzemploj\" tenas aktivan unu ekzemplo de la kerno nur por la videa signalo en posta filmero, por eviti problemoj kun la sona stato. La \"Reĝimo antaŭtempaj filmeroj\" rulas la filmerojn antaŭajn kun novaj enigaĵoj kiam ili estu bezonataj por plibonigi rendimenton."
+   )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "Ruli aldonan kernan logikon por malpliigi respondotempon. La reĝimo \"Unuopa ekzemplo\" rulas logikon ĝis posta filmero kaj tiam reŝargas la estantan staton. La reĝimo \"Antaŭtempaj filmeroj\" rulas la filmerojn antaŭajn kun novaj enigaĵoj kiam ili estu bezonataj por plibonigi rendimenton."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "Reĝimo unuopa ekzemplo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "Reĝimo duopa ekzemplo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   "Reĝimo antaŭtempaj filmeroj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+   "Kaŝi avertojn pri anticipado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+   "Kaŝi la avertmesaĝojn, kiuj aperas kiam oni uzas Anticipadon kaj la kerno ne subtenas konservostatojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
+   "Nombro da antaŭtempaj filmeroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
+   "La nombro da filmeroj rerulotajn. Kaŭzas ludadajn problemojn kiel bildaj misprezentoj se la nombro da atendotempaj filmeroj internaj de la ludo estas superata."
+   )
 
 /* Settings > Core */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-   "Enable Hardware Shared Context"
+   "Aparatara kunhavigata kunteksto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+   "Doni al kernoj bildigantaj per aparataro ties propran kuntekston. Tiel oni evitas supozi statajn ŝanĝojn de la aparataro inter filmeroj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
+   "Ebligi al kernoj interŝanĝi la videan pelilon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
+   "Ebligi al kernoj interŝanĝi al videa pelilo, kiu ne estas tiu kurante ŝargita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
+   "Ŝargi lokokupan kernon ĉe kerna fermado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+   "Kelkaj kernoj havas funkcion fermi. Ŝargi lokokupan kernon preventos fermadon de RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   "Kelkaj kernoj povus havi funkcion fermi. Se ĉi tiu opcio estas lasita malebligita, elektado de la procedo fermi farus RetroArch fermiĝi.\nEbligi ĉi tiun opcion ŝargos lokokupan kernon anstataŭe, tiel farante, ke oni restu en la menuon kaj ke RetroArch ne fermiĝu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   "Aŭtomate startigi kernon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "Kategorioj en opcioj de kernoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "Ebligi al kernoj prezenti opciojn en submenuoj bazitaj de kategorioj. NOTU: oni bezonas reŝargi kernon, por ke la ŝanĝoj estu efikaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   "Kaŝmemorigi kernajn informdosierojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
+   "Teni daŭran lokan kaŝmemoron de informoj pri instalitaj kernoj. Multe malpliigas ŝargotempon en platformoj kun malrapida aliro al disko."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "Preterpasi kernajn informojn pri konservostatoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "Specifas ĉu ignori kernajn informojn pri konservostatoj, ebligante eksperimenti kun rilataj funkcioj (anticipi, revolvi, kc)."
    )
 #ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Ĉiam reŝargi kernon ĉe rulante enhavon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Restarti RetroArch kiam lanĉante enhavon, eĉ kiam la postulata kerno jam estas ŝargita. Ĉi tio povas plibonigi stabileco de sistemo, kontraŭ pliigitaj ŝargotempoj."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
+   "Ebligi rotacion"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
+   "Ebligas al kernoj agordi rotacion. Kiam malebligita, postuloj de rotacio estas ignorataj. Utila por agordaĵoj, kiuj permane rotacias la ekranon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   "Administri kernojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
+   "Realigi eksterretajn funkcitenadajn taskojn sur instalitaj kernoj (restaŭrkopii, restarigi, forigi, kc.) kaj vidi kernajn informojn."
+   )
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+   "Administri kernojn"
+   )
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
+   "Instali aŭ malinstali kernojn distribuitaj per Steam."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
+   "Instali kernon"
+)
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+   "Malinstali kernon"
+)
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
+   "Montri \"Administri kernojn\""
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+   "Montri la opcion \"Administri kernojn\" en la ĉefa menuo."
+)
 
+MSG_HASH(
+   MSG_CORE_STEAM_INSTALLING,
+   "Instalante kernon: "
+)
 
+MSG_HASH(
+   MSG_CORE_STEAM_UNINSTALLED,
+   "La kerno malinstalos kiam forlasante RetroArch."
+)
 
+MSG_HASH(
+   MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
+   "La kerno estas elŝutata."
+)
 #endif
 /* Settings > Configuration */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
+   "Konservi konfiguraĵon ĉe forlaso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
+   "Konservi ŝanĝojn sur la konfigurdosieron ĉe forlaso."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
+   "Konservi ŝanĝojn sur la konfigurdosieron ĉe eliro. Utila por ŝanĝoj faritaj en la menuo. Superskribas la konfigurdosieron sen konservi komentojn kaj liniojn kun #include."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "Konservi minimuman konfiguron"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Konservi nur agordojn, kiuj malsamas de la defaŭltaĵojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "Kiam ebligita, konservas nur konfiguraĵojn, kiuj estas ŝanĝitaj el siaj defaŭltaj valoroj. Tio rezultas en pli malgranda, pli administrebla konfigurdosiero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "Konservi reasignajn dosierojn ĉe forlaso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "Konservi ŝanĝojn sur ajnan aktivan enigreasigan dosieron kiam fermante enhavon aŭ forlasante RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
+   "Ŝargi kernajn opciojn specifaj al enhavo aŭtomate"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-   "Enable customized core options by default at startup."
+   "Ŝargi tajloritajn kernajn opciojn defaŭlte ĉe starto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
+   "Ŝargi transpasontaj dosieroj aŭtomate"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-   "Enable customized configuration by default at startup."
+   "Ŝargi tajloritan konfiguraĵon ĉe starto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
+   "Ŝargi reasignajn dosierojn aŭtomate"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-   "Enable customized controls by default at startup."
+   "Ŝargi tajloritajn regilojn ĉe starto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Ŝargi komencajn disk-indeksajn dosierojn aŭtomate"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+   "Ŝargi ombrigilajn antaŭagordojn aŭtomate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
+   "Uzi ĉiean dosieron pri kernaj opcioj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
+   "Konservi ĉiujn kernajn opciojn sur dosieron de ĝeneralaj agordoj (retroarch-core-options.cfg). Kiam malebligite, opcioj por ĉiu kerno estos konservita sur aparta dosiero aŭ dosierujo specifa al kerno en la dosierujo de konfiguraĵoj de RetroArch"
    )
 
 /* Settings > Saving */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+   "Konservdosieroj: ordigi ilin en dosierujojn laŭ nomo de kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
+   "Ordigi konservdosierojn en dosierujoj nomitaj laŭ la kerno uzata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   "Konservostatoj: ordigi ilin en dosierujojn laŭ nomo de kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+   "Ordigi konservostatojn en dosierujojn nomitaj laŭ la kerno uzata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Konservdosieroj: ordigi ilin en dosierujojn laŭ dosierujo de enhavo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Ordigi konservdosieroj en dosierujojn nomitaj laŭ la dosierujoj, en kiu la enhavo estas lokita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Konservostatoj: ordigi ilin en dosierujojn laŭ dosierujo de enhavo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Ordigi konservostatojn en dosierujojn nomitajn laŭ la dosierujo, en kiu la enhavoj estas lokitaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+   "Konservdosieroj: ne anstataŭigi SaveRAM ĉe ŝargado de konservostato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
+   "Malhelpi al SaveRAM esti anstataŭigita kiam ŝargante konservostatojn. Povus okazigi cimozajn ludojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+   "Konservdosieroj: intervalo de aŭtomate konservi SaveRAM"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+   "Aŭtomate konservi la energi-nedependa SaveRAM ĉe regularaj intervaloj (je sekundoj)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   "Aŭtomate konservi la energi-nedependa SRAM ĉe regularaj intervaloj. Ĉi tio estas malebligita defaŭlte krom agordite alikaze. La intervalo estas mezurita je sekundoj. Valoro 0 malebligas aŭtomatan konservadon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Konservostatoj: aŭtomata intervalo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Aŭtomate konservi staton ĉe regularaj intervaloj (je sekundoj). Agordu al 0 por malebligi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Aŭtomate konservi staton ĉe regularaj intervaloj. Ĉi tio estas malebligita defaŭlte krom agordite alikaze. La intervalo estas mezurita je sekundoj. Valoro 0 malebligas aŭtomatan konservadon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Reludadoj: intervalo de kontrolpunktoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Aŭtomate marki la ludstaton dum surbendigo de reludado ĉe regularaj intervaloj (je sekundoj)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Aŭtomate konservas la ludstaton dum surbendigo de reludado. Ĉi tio estas malebligita defaŭlte krom agordite alikaze. La intervalo estas mezurita je sekundoj. Valoro 0 malebligas surbendigon de kontrolpunktoj."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Ĉu malseriigi kontrolpunktojn stokitajn en reludadoj dum regulara ludado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Reludadoj: malseriigo de kontrolpunktoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+   "Konservstatoj: pliigi indekson aŭtomate"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
+   "Antaŭ ol konservante staton, la indekso de konservostato estas aŭtomate pliigita. Kiam ŝargante enhavon, la indekso estos agordita je la plej alta ekzistanta indekso."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Reludadoj: pliigi indekson aŭtomate"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "Antaŭ ol farante reludadon, la indekso de reludadoj estas aŭtomate pliigita. Kiam ŝargante enhavon, la indekso estos agordita al la plej alta inekso."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Konservostatoj: maksimuma aŭtomata pliigon konservota"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Limigi la nombron da konservostatoj, kiuj estos kreitaj kiam la opcio \"Aŭtomate pliigi indekson\" estu ebligita. Se la limo estus superita kiam konservante novan staton, la ekzistanta stato kun la plej malalta indekso estu forigita. Valoro 0 signifas, ke la surbendigo de statoj ne estos limigita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Reludadojː maksimuma aŭtomata pliigo konservota"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Limigi la nombron da reludadoj, kiuj estos kreitaj kiam la opcio \"Aŭtomate pliigi indekson\" estu ebligita. Se la limo estus superita kiam surbendigante novan reludadon, la ekzistanta reludado kun la plej malalta indekso estu forigita. Valoro 0 signifas, ke la surbendigo de reludadoj ne estos limigita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+   "Konservostatoj: aŭtomate konservi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "Aŭtomate krei novan konservostaton kiam enhavon estas fermata. Ĉi tiu konservostato estas ŝargata ĉe startigo se \"aŭtomate ŝargi\" estas ebligita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Konservostatoj: aŭtomate ŝargi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+   "Aŭtomate ŝargi la aŭtomatan konservostaton ĉe startigo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+   "Konservostato: bildetoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   "Montri bildetojn de konservostatoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   "Konservdosiero: densigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
+   "Skribi energi-nedependajn dosierojn de SaveRAM en arĥivita formato. Draste malpliigas la dosiergrandon kontraŭ (neglektinde) pliigitaj tempoj de konservado kaj ŝargado.\nNur aplikiĝas al kernoj, kiuj ebligas konservadon per la norma interfaco de SaveRam de libretro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "Konservostato: densigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+   "Skribi konservostatajn dosierojn en arĥivita formato. Draste malpliigas la dosiergrandon kontraŭ pliigitaj tempoj de konservado kaj ŝargado."
+   )
 
 /* Settings > Logging */
 
