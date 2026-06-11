@@ -48,7 +48,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "Videoj"
+   "Videaĵoj"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
@@ -338,11 +338,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   "Videoj"
+   "Videaĵoj"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   "Jam luditaj videoj aperos ĉi tie."
+   "Jam luditaj videaĵoj aperos ĉi tie."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
@@ -571,7 +571,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "Noto: la opcio \"Sistemdosieroj estas en Enhavdosierujo\" estas ebligita."
+   "Noto: la opcio \"Sistemaj dosieroj estas en enhava dosierujo\" estas ebligita."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
@@ -1569,7 +1569,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Sona pelilo uzota. Bezonas restartigo."
+   "Sona pelilo uzota. Bezonas restartigon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1946,7 +1946,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
-   "Uzi argumentajn bufrojn de Metal (bezonas rekomencon)"
+   "Uzi argumentajn bufrojn de Metal (bezonas restartigon)"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
@@ -2029,7 +2029,7 @@ MSG_HASH(
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Optimumigi por la GamePad de Wii U (bezonas rekomencon)"
+   "Optimumigi por la GamePad de Wii U (bezonas restartigon)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
@@ -2441,7 +2441,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Stuci superskanadon (bezonas rekomenciĝon)"
+   "Stuci superskanadon (bezonas restartigon)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -3114,11 +3114,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Maksimuma kvanto da uzantoj subtenataj de RetroArch. Bezonas rekomencon."
+   "Maksimuma kvanto da uzantoj subtenataj de RetroArch. Bezonas restartigon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Sondada konduto (bezonas rekomencon)"
+   "Sondada konduto (bezonas restartigon)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3155,7 +3155,7 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Malebligi fulmoklavojn de Windows (bezonas rekomencon)"
+   "Malebligi fulmoklavojn de Windows (bezonas restartigon)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
@@ -3697,7 +3697,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESET,
-   "Rekomencigi la kurantan enhavon ekde la komenco."
+   "Restartigi la kurantan enhavon ekde la komenco."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
@@ -4221,7 +4221,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
-   "Reagordi la enigajn agordojn al ties defaŭltaj valoroj."
+   "Rekomencigi la enigajn agordojn al ties defaŭltaj valoroj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
@@ -4514,7 +4514,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
-   "Restarti RetroArch kiam lanĉante enhavon, eĉ kiam la postulata kerno jam estas ŝargita. Ĉi tio povas plibonigi stabileco de sistemo, kontraŭ pliigitaj ŝargotempoj."
+   "Restartigi RetroArch kiam lanĉante enhavon, eĉ kiam la postulata kerno jam estas ŝargita. Ĉi tio povas plibonigi stabilecon de sistemo, kontraŭ pliigitaj ŝargotempoj."
    )
 #endif
 MSG_HASH(
@@ -4677,7 +4677,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Konservdosieroj: ordigi ilin en dosierujojn laŭ dosierujo de enhavo"
+   "Konservdosieroj: ordigi ilin en dosierujojn laŭ enhava dosierujo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -4685,7 +4685,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Konservostatoj: ordigi ilin en dosierujojn laŭ dosierujo de enhavo"
+   "Konservostatoj: ordigi ilin en dosierujojn laŭ enhava dosierujo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -4819,16 +4819,200 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Skribi konservostatajn dosierojn en arĥivita formato. Draste malpliigas la dosiergrandon kontraŭ pliigitaj tempoj de konservado kaj ŝargado."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Konservdosieroj: skribi en enhavan dosierujon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Uzi la enhavan dosierujon kiel konservdosiera dosierujo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Konservostatoj: skribi en enhavan dosierujon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Uzi enhavan dosierujon kiel konservostata dosierujo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Sistemaj dosieroj estas en enhava dosierujo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Uzi enhavan dosierujon kiel dosierujo de sistemo/BIOS."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Ekrankopioj: ordigi en dosierujoj laŭ enhava dosierujo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Ordigi ekrankopiojn en dosierujojn nomitajn laŭ la dosierujo, en kiu la enhavo estas lokita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Ekrankopioj: skribi en enhavan dosierujon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Uzi enhavan dosierujon kiel ekrankopia dosierujo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "Ekrankopioj: uzi grafikan procesoron"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Ekrankopioj kaptas materialon ombrigita per grafika procesoro se eble."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+   "Konservi plenumtempan protokolon (laŭ kerno)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+   "Registri kiom longe ĉiu ero de enhavo estas ruliginta, kun registroj separitaj laŭ kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+   "Konservi plenumtempan protokolon (kolektite)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+   "Registri kiom longe ĉiu ero de enhavo estas ruliginta, registritaj kiel la kolektita totalo de ĉiuj kernoj."
+   )
 
 /* Settings > Logging */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
+   "Protokola malkoncizeco"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
-   "Enable or disable logging to the terminal."
+   "Protokoli eventojn en terminalon aŭ dosieron."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
+   "Protokola nivelo de fasado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
+   "Agordi protokolan nivelon por la fasado. Se protokola nivelo postulita de la fasado estas sub ĉi tiu valoro, ĝi estas ignorata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
+   "Protokola nivelo de kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
+   "Agordi protokolan nivelon por kernoj. Se protokola nivelo postulita de kerno estas sub ĉi tiu valoro, ĝi estas ignorita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
+   "Agordi protokolan nivelon por kernoj de libretro (GET_LOG_INTERFACE). Se protokola nivelo postulita de kerno de libretro estas sub nivelo libretro_log, ĝi estas ignorita. Protokoloj de DEBUG ĉiam estas ignoritaj krom reĝimo malkonciza estas aktivigita (--verbose).\nDEBUG = 0\nINFO = 1\nWARN = 2\nERROR = 3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
+   "0 (cimspuraĵoj)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_INFO,
+   "1 (informoj)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
+   "2 (avertoj)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR,
+   "3 (eraroj)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+   "Protokoli sur dosieron"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+   "Redirekti sistemajn protokolajn mesaĝojn al dosiero. Bezonas, ke \"Protokola malkoncizeco\" estu ebligita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+   "Tempindiki protokolajn dosierojn."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
+   "Kiam protokolante dosieron, redirekti eligon de ĉiu sesio de RetroArch al nova tempindikita dosiero. Se malebligite, protokolo estas superskribita ĉiufoje, kiam RetroArch estas startigita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
+   "Rendimentaj nombriloj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
+   "Rendimentaj nombriloj por RetroArch kaj kernoj. Nombrilaj datumoj povas helpi determini sistemajn ŝtopiĝojn kaj fajnigi rendimenton."
    )
 
 /* Settings > File Browser */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
+   "Montri kaŝitajn dosierojn kaj dosierujojn."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
+   "Montri kaŝitajn dosierojn kaj dosierujojn en la dosieresplorilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "Filtri nekonatajn kromaĵojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "Filtri dosierojn montratajn en la dosieresplorilo laŭ subtenataj kromaĵoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+   "Filtri laŭ kuranta kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   "Filtri dosierojn montrataj en dosieresplorilo laŭ kuranta kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
+   "Memori laste uzatan komencan dosierujon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
+   "Malfermi dosieresplorilon ĉe la laste uzata loko, kiam ŝargante enhavon de la komenca dosierujo. Noto: Loko estos rekomencigate al defaŭlto kiam restartigante RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   "Ĉiam sugesti kernojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Sugesti disponeblajn kernojn eĉ kiam kerno estas permane ŝargita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "Uzi integritan aŭdvidludilon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Montri dosierojn subtenatajn de la aŭdvidludilo en la dosieresplorilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "Uzi integritan bildmontrilon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Montri dosierojn subtenatajn de la bildmontrilo en dosieresplorilo."
+   )
 
 /* Settings > Frame Throttle */
 
@@ -4836,22 +5020,226 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    "Revolvi"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
+   "Ŝanĝi agordojn pri revolvado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
+   "Nombrilo de daŭro de filmeroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+   "Ŝanĝi agordojn influantajn la nombrilo de daŭro de filmeroj. Nur aktiva kiam fadenigita video estas malebligita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
+   "Rapidpluiga rapido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+   "La maksimuma rapido, je kiu enhavo estos rulita kiam uzante rapidpluigon (ekz. 5.0× por enhavo je 60 fps = limo de 300 fps). Se agordite je 0.0×, la rapidpluiga rapido estas senlima."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
+   "La maksimuma rapido, je kiu enhavo estos rulita kiam uzante rapidpluigon. Ekz. 5.0× por enhavo je 60 fps = limo de 300 fps. RetroArch haltetos por certigi, ke la maksimuma rapido ne estos superita. Ne dependu de tio, ke ĉi tiu limo estu perfekte preciza."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   "Rapidpluiga preterpaso de filmeroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "Preterpasi filmeroj laŭ la rapidpluiga rapido. Ĉi tio konservas energion kaj ebligas la uzon de filmerlimigo de ekstera liveranto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+   "Malrapidpluiga rapido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+   "La rapido, je kiu enhavo estos ludata kiam uzante malrapidpluigon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   "Trafik-limigi menuan filmerrapidon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   "Certigas, ke la filmerrapido estu limigita dum ene de la menuo."
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-   "Rewind Enable"
+   "Subteno de revolvado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_ENABLE,
+   "Reirigi al antaŭa punkto en ĵusa ludado. Ĉi tio draste influas la rendimenton kiam ludante."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
+   "Filmeroj revolvotaj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
+   "La nombro da filmeroj revolvotaj per paŝo. Pli altaj valoroj pliigas la revolvrapidon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+   "Grando de revolva bufro (MB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+   "La kvanto da memoro (je MB) rezervota por la revolva bufro. Pliigi ĉi tion pliigos la kvanton da revolva historio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
+   "Paŝo de grando de revolva bufro (je MB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
+   "Ĉiam, kiam la valoro de la grando de revolva bufro estas pliigita aŭ malpliigita, ĝi ŝanĝiĝos per ĉi tia kvanto."
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Aŭtomate rekomencigi post interrompaj eventoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Viŝas la specimenan bufron de la opcio \"Pritaksita ekrana ofteco de aktualigo\" post rapidpluigi, konservi statojn aŭ ŝargi statojn. Ĉi tiaj operacioj enigas tempajn specimenojn, kiuj ne imitas la kadencon de normalaj filmeroj kaj ŝanĝus la mezuron de devio. Estas viŝo de plej bona eforto, kiu ne havos efikon kiam la opcio \"Specimenigi filmeran tempon nur en stabila stato\" estas ebligita (kio preventas la kontaminon ekde la fonto)."
+   )
 
 /* Settings > Recording */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+   "Surbendiga kvalito"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   "Tajlorita"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
+   "Malalta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+   "Mezalta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
+   "Alta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   "Senperda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
+   "WebM (rapida)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
+   "WebM (altkvalita)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+   "Propra surbendiga konfiguro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+   "Surbendigaj fadenoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   "Surbendigi post filtroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+   "Kapti la bildon post filtriloj (sed ne ombrigiloj) estas aplikitaj. La videaĵo aspektos ĝuste kiel tio, kion vi vidas en via ekrano."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
+   "Surbendigi post grafika procesoro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
+   "Surbendigi la eligon de materialo ombrigita per grafika procesoro se eble."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+   "Elsenda reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   "Loka"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   "Propra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   "Elsenda kvalito"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   "Propra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   "Malalta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   "Mezalta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
+   "Alta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+   "Tajlorita elsenda konfiguro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+   "Elsendaĵa titolo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAMING_URL,
+   "Elsendaĵa URL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+   "Konektejo UDP por la elsendaĵo"
+   )
 
 /* Settings > On-Screen Display */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
+   "Surekrana surmetaĵo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+   "Alĝustigi nigrajn randojn kaj surekranajn regilojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   "Videa aranĝo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   "Alĝustigi videan aranĝon."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
@@ -5338,6 +5726,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
    "Retro Achievements"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
+   "Surekrana surmetaĵo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
