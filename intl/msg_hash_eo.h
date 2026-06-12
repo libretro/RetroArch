@@ -1264,7 +1264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   "Limigo de filmertrafikon"
+   "Limigo de filmertrafiko"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
@@ -5240,35 +5240,723 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
    "Alĝustigi videan aranĝon."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   "Surekranaj sciigoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   "Alĝustigi surekranaj sciigoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "Videbleco de sciigoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "Baskuligi la videblecojn de specifaj specoj de sciigoj."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
+   "Montri surmetaĵon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+   "Surmetaĵojn estas uzataj por randoj kaj surekranaj regiloj."
+   )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "Montri la surmetaĵon malantaŭe, anstataŭ antaŭe, de la menuo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
+   "Kaŝi surmetaĵon en menuo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+   "Kaŝi la surmetaĵon dum ene de la menuo, kaj montri ĝin denove kiam elirante el la menuo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "Kaŝu interkovro dum konekto de ludregilo"
+   "Kaŝi surmetaĵon kiam regilo estas konektita"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Kaŝi la suremtaĵon kiam fizika regilo estas konektita en konektejo 1, kaj montri ĝin denove kiam la regilo estas malkonektita."
    )
 #if defined(ANDROID)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+   "Kaŝi la surmetaĵon kiam fizika regilo estas konektita en konektejo 1. Surmetaĵo ne estos aŭtomate restarigita kiam regilo estas malkonektita."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   "Montri enigojn en surmetaĵon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
+   "Montri registritajn enigojn sur la surekrana surmetaĵo. \"Tuŝitaj\" emfazas surmetaĵajn elementojn prematajn aŭ alklakatajn. \"Fizikaj (regilo)\" emfazas verajn enigojn transdonitajn al kernoj, ĝenerale de konektita regilo aŭ klavaro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "Tuŝitaj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   "Fizikaj (regilo)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "Montri enigojn de konektejo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "Elekti la konektejon de la enigaparato por kontroli kiam \"Montri enigojn en surmetaĵon\" estas agordita al \"Fizikaj (regilo)\""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   "Montri musindikilon kun surmetaĵo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   "Montri la musindikilon kiam uzante surekranan surmetaĵon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+   "Aŭtomate turni surmetaĵon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+   "Se subtenata de kuranta surmetaĵo, aŭtomate turni aranĝon, por ke ĝi kongruu kun orientigo aŭ proporcio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "Aŭtomate skali surmetaĵon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "Aŭtomate alĝustigi skalon de surmetaĵo kaj spaco inter uzantinterfacaj elementoj por kongrui kun ekrana proporcio. Produktas plej bonajn rezultojn kun regilaj surmetaĵojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "Sentemo de direktokruca diagonalo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "Alĝustigi la grandon de diagonalaj zonoj. Agordi al 100% por simetrio de la 8 direktoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "Sentemo de surmeteco de la butonoj A, B, X kaj Y."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "Alĝustigi la grandon de zonoj en la kvarbutona figuro. Agordi al 100% por simetrio de la 8 direktoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Zono recentrigi analogstango."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analogstanga enigo estos relativa al unua tuŝo se premita ene de ĉi tiu zono."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY,
+   "Surmetaĵo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   "Aŭtomate ŝargi preferatan surmetaĵon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Preferi ŝargi surmetaĵojn bazante sur sistema nomo antaŭ uzante la defaŭltan antaŭagordon. Estos ignorita se transpaso estas agordita por la surmetaĵa antaŭagordo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
+   "Surmetaĵa maldiafaneco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
+   "Maldiafaneco de ĉiuj uzantinterfacaj elementoj de la surmetaĵo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
+   "Surmetaĵa antaŭagordo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+   "Elekti surmetaĵon de dosieresplorilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   "Surmetaĵa skalo (horizontala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "Skalo de ĉiuj uzantinterfacaj elementoj de la surmetaĵo kiam uzante horizontalajn ekranajn orientigojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Alĝustigo de surmetaĵa proporcio (horizontala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Apliki korektfaktoron de bilda proporcio al la surmetaĵo kiam uzante horizontalajn ekranajn orientigojn. Pozitivaj valoroj pliigas (kaj negativaj valoroj malpliigas) efektivan larĝon de surmetaĵo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Horizontala distanco de surmetaĵo (horizontala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Se subtenate de kuranta antaŭagordo, alĝustigi la spacon inter uzantinterfacaj elementoj en la dekstra kaj maldekstra duonoj de surmetaĵo kiam uzante horizontalajn ekranajn orientigojn. Pozitivaj valoroj pliigas (kaj negativaj valoroj malpliigas) la distancon inter la du duonoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Vertikala distanco de surmetaĵo (horizontala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Se subtenate de kuranta antaŭagordo, alĝustigi la spacon inter uzantinterfacaj elementoj en la supra kaj malsupra duonoj de surmetaĵo kiam uzante horizontalajn ekranajn orientigojn. Pozitivaj valoroj pliigas (kaj negativaj valoroj malpliigas) la distancon inter la du duonoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Deŝovo X de surmetaĵo (horizontala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Horizontala deŝovo de surmetaĵo kiam uzante horizontalajn ekranajn orientigojn. Pozitivaj valoroj movas surmetaĵon dekstren; negativaj valoroj, maldekstren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Deŝovo Y de surmetaĵo (horizontala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Vertikala deŝovo de surmetaĵo kiam uzante horizontalajn ekranajn orientigojn. Pozitivaj valoroj movas surmetaĵon supren; negativaj valoroj, malsupren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   "Surmetaĵa skalo (vertikala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   "Skalo de ĉiuj uzantinterfacaj elementoj de la surmetaĵo kiam uzante vertikalajn ekranajn orientigojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Alĝustigo de surmetaĵa proporcio (vertikala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Apliki korektfaktoron de bilda proporcio al la surmetaĵo kiam uzante vertikalajn ekranajn orientigojn. Pozitivaj valoroj pliigas (kaj negativaj valoroj malpliigas) efektivan alton de surmetaĵo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Horizontala distanco de surmetaĵo (vertikala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Se subtenate de kuranta antaŭagordo, alĝustigi la spacon inter uzantinterfacaj elementoj en la dekstra kaj maldekstra duonoj de surmetaĵo kiam uzante vertikalajn ekranajn orientigojn. Pozitivaj valoroj pliigas (kaj negativaj valoroj malpliigas) la distancon inter la du duonoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Vertikala distanco de surmetaĵo (vertikala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Se subtenate de kuranta antaŭagordo, alĝustigi la spacon inter uzantinterfacaj elementoj en la supra kaj malsupra duonoj de surmetaĵo kiam uzante vertikalajn ekranajn orientigojn. Pozitivaj valoroj pliigas (kaj negativaj valoroj malpliigas) la distancon inter la du duonoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   "Deŝovo X de surmetaĵo (vertikala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "Horizontala deŝovo de surmetaĵo kiam uzante vertikalajn ekranajn orientigojn. Pozitivaj valoroj movas surmetaĵon dekstren; negativaj valoroj, maldekstren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Deŝovo Y de surmetaĵo (vertikala)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Vertikala deŝovo de surmetaĵo kiam uzante vertikalajn ekranajn orientigojn. Pozitivaj valoroj movas surmetaĵon supren; negativaj valoroj, malsupren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "Klavara surmetaĵo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "Elekti kaj alĝustigi klavaran surmetaĵon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "Ebligi surmetaĵojn de \"lightgun\", muso kaj montrilo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "Uzi ajnajn tuŝenigojn ne premantajn surmetaĵajn regilojn por krei montrilaparatan enigon por la kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "Surmetaĵo de \"lightgun\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "Konfiguri enigon de \"lightgun\" sendita de la surmetaĵo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   "Musa surmetaĵo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "Konfiguri musenigon senditan de la surmetaĵo. Noto: 1-, 2- kaj 3-fingraj tuŝetoj sendas maldekstran, dekstran kaj mezan butonajn klakojn."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "Antaŭagordo de klavara surmetaĵo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "Elekti klavaran surmetaĵon de dosieresplorilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Aŭtomate skali klavaran surmetaĵon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Alĝustigi klavaran surmetaĵon al ĝia originala proporcio. Malebligi por etendi ĝin al ekrano."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "Maldiafaneco de klavara surmetaĵo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   "Maldiafaneco de ĉiuj uzantinterfacaj elementoj de la klavara surmetaĵo."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Konektejo de \"lightgun\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Agordi la kernan konektejon por ricevi enigon de la \"lightgun\" de la surmetaĵo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
+   "Ajna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Premi la ĉanon ĉe tuŝo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Sendi ĉanan enigon per montrila enigo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Ĉanprema prokrasto (filmeroj)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Prokrasti ĉanan enigon por doni tempon al la montrilo por moviĝi. Ĉi tiu prokrasto ankaŭ estas uzata por atendi por la ĝusta plurtuŝa konto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "2-tuŝa enigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "Elekti enigon sendotan kiam du montriloj estas surekrane. Ĉanprema prokrasto devas esti pli ol 0 por distingi inter enigoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "3-tuŝa enigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "Elekti enigon sendotan kiam tri montriloj estas surekrane. Ĉanprema prokrasto devas esti pli ol 0 por distingi inter enigoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "4-tuŝa enigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "Elekti enigon sendotan kiam kvar montriloj estas surekrane. Ĉanprema prokrasto devas esti pli ol nul por distingi inter enigoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "Ebligi celi eksterekrane"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "Ebligi celi eksterlime. Malebligi por alĝustigi eksterekranajn celadojn al la enlima rando."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "Musrapido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
+   "Alĝustigi la moviĝrapido de la montrilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Daŭre premi por treni"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Daŭre premi la ekranon por komenci teni butonon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Sojlo por daŭre premi (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Alĝustigi la tempon tenante la ekranon bezonatan por daŭra premo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Duoble tuŝeti por treni"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Duoble tuŝeti la ekranon por komenci teni butonon ĉe la dua tuŝeto. Pliigas respondotempon de musklakoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Sojlo por duoble tuŝeti (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Alĝustigi la disponeblan tempon inter tuŝetoj kiam detektante duoblan tuŝeton."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Sojlo ŝovumi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Alternativa 2-tuŝa enigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Uzi duan tuŝon kvazaŭ musbutono kiam regante la montrilon."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Alĝustigi la permesatan movrangon kiam detektante daŭran premon aŭ tuŝeton. Esprimita kiel procento de la pli malgranda dimensio de la ekrano."
+   )
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
+   "Surekranaj sciigoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
+   "Montri surekranajn sciigojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+   "Grafikaj fenestraĵoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
+   "Uzi ornamitajn animaciojn, sciigojn, indikilojn kaj regilojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+   "Skali grafikajn fenestraĵojn aŭtomate"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
+   "Aŭtomate regrandigi ornamitajn sciigojn, indikilojn kaj regilojn laŭ kuranta menua skalo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "Transpasi skalon de grafikaj fenestraĵoj (plenekrane)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "Apliki permanan skalan faktoron, kiu transpasos al la grafikaj fenestraĵoj en plenekrana reĝimo. Nur aplikiĝas kiam la opcio \"Skali grafikajn fenestraĵojn aŭtomate\" estas malebligita. Povas esti uzata por pliigi aŭ malpliigi la grandon de ornamitajn sciigojn, indikilojn kaj regilojn sendepende de la menuo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "Transpasi skalon de grafikaj fenestraĵoj (enfenestre)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "Apliki permanan skalan faktoron, kiu transpasos al la grafikaj fenestraĵoj en enfenestra reĝimo. Nur aplikiĝas kiam la opcio \"Skali grafikajn fenestraĵojn aŭtomate\" estas malebligita. Povas esti uzata por pliigi aŭ malpliigi la grandon de ornamitajn sciigojn, indikilojn kaj regilojn sendepende de la menuo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FPS_SHOW,
+   "Montri filmer-rapidon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FPS_SHOW,
+   "Montri la kurantajn filmerojn per sekundo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
+   "Intervalo ĝisdatigi filmer-rapidon (je filmeroj)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
+   "La filmer-rapida nombrilo estos ĝisdatigita je la intervalo je filmeroj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
+   "Montri filmer-konton"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
+   "Montri la kurantan filmer-konton surekrane."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+   "Montri statistikojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+   "Montri surekranajn teĥnikajn statistikojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+   "Montri memoruzadon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_SHOW,
+   "Montri la uzatan kaj totalan kvantojn de memoro en la sistemo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
+   "Intervalo ĝisdatigi memoruzadon (je filmeroj)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
+   "La memoruzada nombrilo estos ĝisdatigita je la intervalo je filmeroj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Montri tempon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Montri la kurantan tempon laŭ la preferata formato."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   "Montri retludan respondotempon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   "Montri la respondotempon de la kuranta retludejo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Sciigo kiam ŝargante enhavon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Montri maldaŭran animacio por indiki, ke enhavo estas ŝargata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+   "Sciigoj de enigaj konektoj (aŭtomata konfiguro)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Sciigoj de enigaj eraroj (aŭtomata konfiguro)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "Trompkodaj sciigoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "Montri surekranan mesaĝon kiam trompkodoj estas aplikataj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "Flikaĵaj sciigoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "Montri surekranan mesaĝon kiam \"soft-patching\" ROM-ojn."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Montri surekranan mesaĝon kiam oni eraras konfiguri enigaparatojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
+   "Scriigoj pri ŝargo de eniga reasignado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
+   "Montri surekranan mesaĝon kiam ŝargante enig-reasignajn dosierojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "Sciigoj pri ŝargo de konfiguraĵa transpaso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "Montri surekranan mesaĝon kiam ŝargante dosierojn por transpasi konfiguraĵoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "Sciigoj pri restarigo de komenca disko"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "Montri surekranan mesaĝon kiam aŭtomate restarante ĉe lanĉo la laste uzatan diskon de plurdiska enhavo ŝargitan per ludlistoj M3U."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Sciigoj pri kontrolo de diskoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Montri surekranan mesaĝon kiam enmetante aŭ elĵetante diskojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   "Sciigoj pri konservostato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "Montri surekranan mesaĝon kiam konservante kaj ŝargante statojn."
+   )
+MSG_HASH( /* FIXME: Rename config key and msg hash */
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Sciigoj pri limigo de filmertrafiko"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Montri surekranan indikilon kiam rapidpluigo, malrapidpluigo aŭ revolvo estas aktivaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
+   "Sciigoj pri ekrankopioj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
+   "Montri surekranan mesaĝon kiam farante ekrankopiojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "Daŭro de sciigo pri ekrankopio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "Difini la daŭro de la surekrana mesaĝo pri ekrankopio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
+   "Normala"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   "Rapida"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   "Tre rapida"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   "Tuja"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "Fulmoluma efiko de ekrankopio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "Montri efikon de blanka fulmolumo surekrane kun la dezirata daŭro kiam farante ekrankopion."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   "Jes (normala)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
+   "Jes (rapida)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Sciigoj pri ofteco de aktualigo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Montri surekranan mesaĝon kiam agordante la ofteco de aktualigo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Aldonaj retludaj sciigoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Montri malneprajn retludajn surekranajn mesaĝojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Sciigoj nur en menuo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Montri sciigojn nur kiam la menuo estas malfermita."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
-   "Onscreen Notification Font"
+   "Sciiga tiparo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+   "Elekti la tiparon por surekranaj sciigoj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-   "Onscreen Notification Size"
+   "Sciiga grando"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Specifi la tipargrandon je punktoj. Kiam fenestraĵoj estas uzataj, ĉi tiu grando nur influas surekranajn statistikaĵojn."
    )
 
 /* Settings > User Interface */
@@ -5330,6 +6018,14 @@ MSG_HASH(
 
 /* Settings > User Interface > Views > Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
+   "Montri \"limigon de filmertrafiko\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
+   "Montri agordojn pri \"limigo de filmertrafiko\"."
+   )
 
 
 /* Settings > User Interface > Appearance */
