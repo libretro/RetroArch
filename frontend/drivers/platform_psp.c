@@ -142,7 +142,18 @@ static void frontend_psp_get_env_settings(int *argc, char *argv[],
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
    /* for PSP, use uppercase directories, and no trailing slashes
       otherwise mkdir fails */
-   strlcpy(user_path, "ms0:/PSP/RETROARCH", sizeof(user_path));
+   /* Derive the user data root from the storage device RetroArch was
+      launched from (such as "ms0:/" or "ef0:/" on PSP Go). That way user 
+      data follows the binary instead of being hardcoded to ms0: */
+   if (strlen(eboot_path) >= 5 && eboot_path[4] == '/')
+   {
+      strlcpy(user_path, eboot_path, sizeof(user_path));
+      user_path[5] = '\0';
+   }
+   else
+      strlcpy(user_path, "ms0:/", sizeof(user_path));
+   strlcat(user_path, "PSP/RETROARCH", sizeof(user_path));
+   RARCH_LOG("[PSP]: Using %s for user data.\n", user_path);
 
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], argv[0],
       sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
