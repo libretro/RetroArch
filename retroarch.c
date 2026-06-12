@@ -1591,7 +1591,7 @@ void drivers_init(
 #ifdef HAVE_VIDEO_FILTER
       video_driver_filter_free();
 #endif
-      video_st->frame_cache_data  = NULL;
+      video_driver_cached_frame_invalidate();
       if (!video_driver_init_internal(&video_is_threaded,
                verbosity_enabled))
          retroarch_fail(1, "video_driver_init_internal()");
@@ -1904,7 +1904,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       video_st->context_lock      = NULL;
 #endif
       video_st->data              = NULL;
-      video_st->frame_cache_data  = NULL;
+      video_driver_cached_frame_invalidate();
    }
 
    if (flags & DRIVER_AUDIO_MASK)
@@ -1969,7 +1969,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
                        );
    video_st->record_gpu_buffer          = NULL;
    video_st->current_video              = NULL;
-   video_st->frame_cache_data           = NULL;
+   video_driver_cached_frame_invalidate();
 
    /* Audio */
    audio_state_get_ptr()->flags        &= ~AUDIO_FLAG_ACTIVE;
@@ -2043,6 +2043,11 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             (double)audio_output_sample_rate / audio_st->input;
 
             driver_adjust_system_rates(runloop_st, video_st, settings);
+
+            /* driver_adjust_system_rates may have updated audio_st->input
+             * for the new refresh rate; recompute the DRC threshold so
+             * it tracks one frame's worth of samples at the new rate. */
+            audio_driver_update_drc_threshold(audio_st);
          }
          break;
       case RARCH_DRIVER_CTL_FIND_FIRST:
@@ -2787,26 +2792,10 @@ static void ram_state_to_file(void)
       command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 }
 
-/**
- * Compute DJB2 hash of a short string, lowercasing ASCII on the fly.
- * Assumes ext points to a valid, short (extension-length) string.
- */
-static INLINE uint32_t djb2_calculate_lower(const char *s)
-{
-   uint32_t h = 5381;
-   for (; *s; s++)
-   {
-      unsigned char c = (unsigned char)*s;
-      /* Branchless ASCII tolower: set bit 5 if uppercase letter */
-      c |= ((unsigned int)c - 'A' < 26u) ? 0x20 : 0x00;
-      h = (h << 5) + h + c;
-   }
-   return h;
-}
-
 enum rarch_content_type path_is_media_type(const char *path)
 {
    const char *ext;
+   char ext_lower[16];
 
    if (!path || !*path)
       return RARCH_CONTENT_NONE;
@@ -2841,9 +2830,21 @@ enum rarch_content_type path_is_media_type(const char *path)
    if (!ext || !*ext)
       return RARCH_CONTENT_NONE;
 
-   /* Hash the extension directly, lowercasing during hashing —
-    * eliminates strlcpy, string_to_lower, and the stack buffer. */
-   switch (msg_hash_to_file_type(djb2_calculate_lower(ext)))
+   /* Lowercase the extension into a tiny stack buffer so the
+    * value-table lookup matches the lowercase entries regardless
+    * of what case the filesystem returned (e.g. "MP4" vs "mp4").
+    * Real file extensions are short; truncate at 15 chars. */
+   {
+      size_t i;
+      for (i = 0; i < sizeof(ext_lower) - 1 && ext[i]; i++)
+      {
+         unsigned char c = (unsigned char)ext[i];
+         ext_lower[i] = (c >= 'A' && c <= 'Z') ? (char)(c | 0x20) : (char)c;
+      }
+      ext_lower[i] = '\0';
+   }
+
+   switch (msg_hash_to_file_type(ext_lower))
    {
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case FILE_TYPE_OGM:
@@ -3180,7 +3181,17 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          input_overlay_init();
 #endif
+	 break;
+      case CMD_EVENT_VIDEO_FILTER_INIT:
+      {
+#ifdef HAVE_VIDEO_FILTER
+         const enum retro_pixel_format
+            video_driver_pix_fmt       = video_st->pix_fmt;
+         settings_t  *settings      = config_get_ptr();
+         video_driver_init_filter(video_driver_pix_fmt, settings);
+#endif
          break;
+      }
       case CMD_EVENT_CHEAT_INDEX_PLUS:
 #ifdef HAVE_CHEATS
          cheat_manager_index_next();
@@ -3551,6 +3562,24 @@ bool command_event(enum event_command cmd, void *data)
               runloop_st->pending_windowed_scale))
             return false;
          break;
+      case CMD_VIDEO_FILTER_TOGGLE:
+         {
+#ifdef HAVE_VIDEO_FILTER
+            const char *_msg;
+            /* Allow video filter toggle only when there is an active core. */
+            if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+               break;
+            settings->bools.video_filter_enable = !(settings->bools.video_filter_enable);
+            _msg =
+               settings->bools.video_filter_enable ?
+               msg_hash_to_str(MSG_VIDEO_FILTER_ENABLE_ON) :
+               msg_hash_to_str(MSG_VIDEO_FILTER_ENABLE_OFF);
+
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
+         }
+         break;
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_st->flags & MENU_ST_FLAG_ALIVE)
@@ -3729,11 +3758,10 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_SCREENSHOTS
          {
             const char *dir_screenshot      = settings->paths.directory_screenshot;
-            video_driver_state_t *video_st  = video_state_get_ptr();
             if (!take_screenshot(dir_screenshot,
                      runloop_st->runtime_content_path_basename,
                      false,
-                     video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                     video_driver_cached_frame_is_hw_render(),
                      false,
                      true))
                return false;
@@ -3755,8 +3783,8 @@ bool command_event(enum event_command cmd, void *data)
             ram_state_to_file();
 
             /* Save auto state */
-            if (settings->bools.savestate_auto_save &&
-                runloop_st->current_core_type != CORE_TYPE_DUMMY)
+            if (     settings->bools.savestate_auto_save
+                  && runloop_st->current_core_type != CORE_TYPE_DUMMY)
                command_event_save_auto_state();
 
             /* Save last selected disk index, if required */
@@ -3873,15 +3901,21 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_QUIT, NULL);
             break;
          }
+
          /* Closing content via hotkey requires toggling menu
           * and resetting the position later on to prevent
           * going to empty Quick Menu */
          if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
-         {
-            menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
-            menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
-         }
+
+         menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+         menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
+
+#if defined(HAVE_GFX_WIDGETS)
+         /* Remove stale notifications after reinit */
+         dispwidget_get_ptr()->flags &= ~DISPGFX_WIDGET_FLAG_PERSISTING;
+#endif
+
 #else
          command_event(CMD_EVENT_QUIT, NULL);
 #endif
@@ -4123,6 +4157,7 @@ bool command_event(enum event_command cmd, void *data)
 
             ol->index                      = ol->next_index;
             ol->active                     = &ol->overlays[ol->index];
+            ((struct overlay *)ol->active)->viewport_override_logged = false;
 
             input_overlay_opacity          = (ol->flags & INPUT_OVERLAY_IS_OSK)
                   ? settings->floats.input_osk_overlay_opacity
@@ -4380,6 +4415,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Save auto state */
             if (     runloop_st
                   && (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+                  && !(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
                   && settings->bools.savestate_auto_save)
             {
                command_event_save_auto_state();
@@ -6195,6 +6231,8 @@ int rarch_main(int argc, char *argv[], void *data)
       }
    }
 
+   if (getenv("APPID") == NULL)
+      setenv("APPID", WEBOS_APP_ID, 0);
    /* compatibility with webOS 3 - 5 */
    if (getenv("EGL_PLATFORM") == NULL)
       setenv("EGL_PLATFORM", "wayland", 0);
@@ -8151,9 +8189,14 @@ bool retroarch_main_init(int argc, char *argv[])
                if (frontend && frontend->get_os)
                {
                   frontend->get_os(osbuf, sizeof(osbuf), &major, &minor);
+#ifdef __aarch64__
+                  const char *arch = " (64-bit)";
+#else
+                  const char *arch = " (32-bit)";
+#endif
                   _len += snprintf(str_output + _len, sizeof(str_output) - _len,
-                        FILE_PATH_LOG_INFO " Running on: %s\n",
-                        osbuf);
+                     FILE_PATH_LOG_INFO " Running on: %s%s\n",
+                     osbuf, arch);
                }
             }
          }
@@ -8290,9 +8333,35 @@ bool retroarch_main_init(int argc, char *argv[])
          "location driver", verbosity_enabled);
 #ifdef HAVE_MENU
    {
-      if (!(menu_st->driver_ctx = menu_driver_find_driver(settings,
-                  "menu driver", verbosity_enabled)))
+      const menu_ctx_driver_t *menu_ctx_new = menu_driver_find_driver(
+            settings, "menu driver", verbosity_enabled);
+      if (!menu_ctx_new)
          retroarch_fail(1, "menu_driver_find_driver()");
+
+      /* If a menu driver instance is already allocated and the
+       * selected menu driver has changed since that instance was
+       * created - e.g. a configuration file specifying a different
+       * 'menu_driver' has just been loaded at runtime - the stale
+       * instance must be torn down here, while menu_st->driver_ctx
+       * still references the *old* driver (so that the correct
+       * free()/context_destroy() handlers are invoked on the old
+       * handle).
+       *
+       * Otherwise menu_driver_init() would skip (re)initialisation
+       * - because driver_data is non-NULL - and invoke the new
+       * driver's context_reset() on the old driver's handle,
+       * dereferencing it as the wrong type (crash). */
+      if (     menu_st->driver_data
+            &&  menu_st->driver_ctx
+            && (menu_st->driver_ctx != menu_ctx_new))
+      {
+         uint16_t menu_data_own = (menu_st->flags & MENU_ST_FLAG_DATA_OWN);
+         menu_st->flags        &= ~MENU_ST_FLAG_DATA_OWN;
+         menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
+         menu_st->flags        |= menu_data_own;
+      }
+
+      menu_st->driver_ctx = menu_ctx_new;
    }
 #endif
    /* Enforce stored brightness if needed */
@@ -8914,6 +8983,11 @@ bool retroarch_main_quit(void)
    /* Restore video driver before saving */
    video_driver_restore_cached(settings);
 
+   /* Restore original refresh rate, if it has been changed
+    * automatically in SET_SYSTEM_AV_INFO */
+   if (video_st->video_refresh_rate_original)
+      video_display_server_restore_refresh_rate();
+
 #if !defined(HAVE_DYNAMIC)
    {
       /* Salamander sets RUNLOOP_FLAG_SHUTDOWN_INITIATED prior, so we need to handle it separately */
@@ -8944,11 +9018,6 @@ bool retroarch_main_quit(void)
       discord_st->inited         = false;
    }
 #endif
-
-   /* Restore original refresh rate, if it has been changed
-    * automatically in SET_SYSTEM_AV_INFO */
-   if (video_st->video_refresh_rate_original)
-      video_display_server_restore_refresh_rate();
 
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {

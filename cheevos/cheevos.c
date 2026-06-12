@@ -479,8 +479,7 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
          if (take_screenshot(path_directory_screenshot,
             shotname,
             true,
-            video_st->frame_cache_data
-            && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+            video_driver_cached_frame_is_hw_render(),
             false,
             true))
             CHEEVOS_LOG(RCHEEVOS_TAG

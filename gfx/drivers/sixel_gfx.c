@@ -117,7 +117,7 @@ static const struct font_glyph *sixel_font_get_glyph(
 static void sixel_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *_params) { }
 
 font_renderer_t sixel_font = {
@@ -495,7 +495,7 @@ static bool sixel_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(sixel, msg, NULL, NULL);
+      font_driver_render_msg(sixel, msg, strlen(msg), NULL, NULL);
 
    return true;
 }

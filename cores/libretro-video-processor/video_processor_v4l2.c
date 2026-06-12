@@ -614,7 +614,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
 
       if (strcmp(video_capture_resolution, "auto") != 0)
       {
-         strcpy(splitresolution, video_capture_resolution);
+         strlcpy(splitresolution, video_capture_resolution, sizeof(splitresolution));
          token = strtok(splitresolution, "x");
          info->geometry.base_width  = info->geometry.max_width = video_format.fmt.pix.width = atoi(token);
          token = strtok(NULL, "x");
@@ -1288,7 +1288,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       /* Applied set resolution if not set to auto */
       if (strcmp(video_capture_resolution, "auto") != 0)
       {
-         strcpy(splitresolution, video_capture_resolution);
+         strlcpy(splitresolution, video_capture_resolution, sizeof(splitresolution));
          token = strtok(splitresolution, "x");
          fmt.fmt.pix.width = atoi(token);
          token = strtok(NULL, "x");

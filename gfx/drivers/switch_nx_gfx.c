@@ -300,7 +300,7 @@ font->font_driver->get_glyph(font->font_data, '?');
 static void switch_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float x, y, scale;
@@ -752,12 +752,12 @@ static bool switch_frame(void *data, const void *frame,
    if (statistics_show && !sw->smooth)
    {
       if (osd_params)
-         font_driver_render_msg(sw, video_info->stat_text,
+         font_driver_render_msg(sw, video_info->stat_text, video_info->stat_text_len,
                osd_params, NULL);
    }
 
    if (msg)
-      font_driver_render_msg(sw, msg, NULL, NULL);
+      font_driver_render_msg(sw, msg, strlen(msg), NULL, NULL);
 
    framebufferEnd(&sw->fb);
 

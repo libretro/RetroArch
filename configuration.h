@@ -200,6 +200,7 @@ typedef struct settings
 
       unsigned fps_update_interval;
       unsigned memory_update_interval;
+      unsigned video_time_show;
 
       unsigned input_block_timeout;
 
@@ -242,6 +243,7 @@ typedef struct settings
       unsigned rewind_granularity;
       unsigned rewind_buffer_size_step;
       unsigned autosave_interval;
+      unsigned savestate_automatic_interval;
       unsigned replay_checkpoint_interval;
       unsigned replay_max_keep;
       unsigned savestate_max_keep;
@@ -332,6 +334,7 @@ typedef struct settings
       unsigned menu_scroll_delay;
       unsigned menu_content_show_add_entry;
       unsigned menu_content_show_contentless_cores;
+      unsigned menu_content_show_netplay;
       unsigned menu_screensaver_timeout;
       unsigned menu_screensaver_animation;
       unsigned menu_remember_selection;
@@ -564,6 +567,7 @@ typedef struct settings
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
       char facebook_stream_key[PATH_MAX_LENGTH];
+      char kick_stream_key[PATH_MAX_LENGTH];
       char discord_app_id[PATH_MAX_LENGTH];
       char ai_service_url[PATH_MAX_LENGTH];
 
@@ -677,6 +681,7 @@ typedef struct settings
       bool video_ctx_scaling;
       bool video_force_aspect;
       bool video_frame_delay_auto;
+      bool video_frame_time_sample_gated;
       bool video_crop_overscan;
       bool video_aspect_ratio_auto;
       bool video_dingux_ipu_keep_aspect;
@@ -701,6 +706,7 @@ typedef struct settings
       bool video_framecount_show;
       bool video_memory_show;
       bool video_msg_bgcolor_enable;
+      bool video_filter_enable;
 #ifdef _3DS
       bool video_3ds_lcd_bottom;
 #endif
@@ -790,9 +796,7 @@ typedef struct settings
 #endif
 
       /* Frame time counter */
-      bool frame_time_counter_reset_after_fastforwarding;
-      bool frame_time_counter_reset_after_load_state;
-      bool frame_time_counter_reset_after_save_state;
+      bool frame_time_counter_auto_reset;
 
       /* Menu */
       bool menu_enable_widgets;
@@ -824,6 +828,7 @@ typedef struct settings
       bool menu_battery_level_enable;
       bool menu_core_enable;
       bool menu_show_sublabels;
+      bool menu_show_confirm;
       bool menu_dynamic_wallpaper_enable;
       bool menu_mouse_enable;
       bool menu_pointer_enable;
@@ -879,7 +884,9 @@ typedef struct settings
       bool menu_rgui_switch_icons;
       bool menu_rgui_particle_effect_screensaver;
       bool menu_xmb_shadows_enable;
+      bool menu_xmb_show_horizontal_list;
       bool menu_xmb_show_title_header;
+      bool menu_xmb_entry_icons;
       bool menu_xmb_switch_icons;
       bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
@@ -888,7 +895,6 @@ typedef struct settings
       bool menu_content_show_images;
       bool menu_content_show_music;
       bool menu_content_show_video;
-      bool menu_content_show_netplay;
       bool menu_content_show_history;
       bool menu_content_show_playlists;
       bool menu_content_show_playlist_tabs;
@@ -1152,6 +1158,7 @@ typedef struct settings
       bool vibrate_on_keypress;
       bool enable_device_vibration;
       bool ozone_collapse_sidebar;
+      bool ozone_show_sidebar;
       bool ozone_truncate_playlist_name;
       bool ozone_sort_after_truncate_playlist_name;
       bool ozone_scroll_content_metadata;

@@ -1468,10 +1468,6 @@ MSG_HASH(
    "Відео"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Драйвер відео для використання."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x драйвер. Рекомендована мінімальна версія: OpenGL 1.1. Не підтримує шейдери. При можливості, використовуйте пізніші версії драйвера OpenGL."
    )
@@ -1568,10 +1564,6 @@ MSG_HASH(
    "Звук"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Драйвер звуку для використання."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "Драйвер RSound для мережевих аудіосистем."
    )
@@ -1629,10 +1621,6 @@ MSG_HASH(
    "Мікрофон"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Драйвер мікрофону для використання."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Ре семплер мікрофона"
    )
@@ -1670,24 +1658,8 @@ MSG_HASH(
    "Камера"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Драйвер камери для використання."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Драйвер Bluetooth для використання."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Драйвер Wi-Fi для використання."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Місцеперебування"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Драйвер місцеперебування для використання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1716,14 +1688,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Запис"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Драйвер запису для використання."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Драйвер MIDI для використання."
    )
 
 /* Settings > Video */
@@ -2071,10 +2035,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Частота вертикального оновлення"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Частота вертикального оновлення екрана. Використовується для вираховування потрібної частоти вхідного сигналу звуку. \nІгнорується, якщо ввімкнено «Виокремлене відео»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -3099,10 +3059,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Максимальна кількість користувачів"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Максимальна кількість користувачів, яких підтримує RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4977,10 +4933,6 @@ MSG_HASH(
    "Кількість кадрів"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Змінити параметри, що впливають на лічильник часу кадру.\nАктивно, лише коли потокове відео вимкнено."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "Частота перемотування"
    )
@@ -5054,30 +5006,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Скинути після Швидкого Вперед"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Скидання лічильника часу кадру після швидкого переходу."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Скинути після завантаження"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Скидання лічильника часу кадру після завантаження стану."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Скинути після збереження стану"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Скидання лічильника кадрів після збереження стану."
-   )
 
 /* Settings > Recording */
 
@@ -6333,10 +6261,6 @@ MSG_HASH(
    "Показати 'Netplay'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Показати меню 'Netplay'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Показати \"Історія\""
    )
@@ -6506,10 +6430,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Показати 'Скасувати збереження/Завантаження'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Показувати опції скасування збереження/завантаження."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7200,10 +7120,6 @@ MSG_HASH(
    "Змінити відображення повідомлень та екранних елементів. Не вдалося відключити функціональність."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Показує інформацію про гру, що завантажується, і поточний прогрес користувача.\nУ розділі «Усі ідентифіковані ігри» відображатиметься підсумок для ігор, у яких немає опублікованих досягнень."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Всі ідентифіковані ігри"
    )
@@ -7669,10 +7585,6 @@ MSG_HASH(
    "Показувати пов'язані ядра у плейлісті"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Укажіть, коли позначати записи списку відтворення поточним пов’язаним ядром (якщо є).\nЦей параметр ігнорується, якщо ввімкнено підмітки списку відтворення."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Показати підмітки списку відтворення"
    )
@@ -7775,10 +7687,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Runtime списку відтворювання під-мітки"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Виберіть, який тип запису журналу виконання відображатиметься у вкладених мітках списку відтворення.\nВідповідний журнал виконання має бути ввімкнено в меню параметрів «Збереження»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7962,10 +7870,6 @@ MSG_HASH(
    "Rich Presence Discord"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Дозволити додатку Discord показувати дані про відтворений вміст.\nДоступно лише з нативним настільним клієнтом."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
    "Дозволити відслідковувати місцезнаходження"
    )
@@ -8032,6 +7936,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Ігровий ключ потоку Facebook"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -8360,16 +8267,8 @@ MSG_HASH(
    "Додати до Мікшеру"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Додати цю аудіо-доріжку до доступного аудіопотоку.\nЯкщо немає доступних слотів, то цю точку буде проігноровано."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Додати до Мікшеру та Грати"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Додати цю аудіо-доріжку до доступного аудіопотоку.\nЯкщо немає доступних слотів, то цю точку буде проігноровано."
    )
 
 /* Netplay */
@@ -8828,16 +8727,8 @@ MSG_HASH(
    "Додати до списку відтворення"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Додавання вмісту до списку відтворення."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Створити новий список відтворення"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Створити новий список відтворення та додати до нього поточний запис."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8860,16 +8751,8 @@ MSG_HASH(
    "Інформація"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Переглянути більше інформації про вміст."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Завантажити ескізи"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Завантажити мініатюри скріншотів/заголовків екрану для поточного вмісту. Оновлює всі наявні мініатюри."
    )
 
 /* Playlist Item > Set Core Association */
@@ -12721,10 +12604,6 @@ MSG_HASH(
    "Основні лічильники"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Не вибрано жодного диску"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Лічильники на сайті"
    )
@@ -13035,10 +12914,6 @@ MSG_HASH(
    "Аргументи не постачаються і немає вбудованого в меню, не показуючи допомоги..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Налаштування диска в лотку"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Очікування клієнта..."
    )
@@ -13344,14 +13219,6 @@ MSG_HASH(
    "Асоціація з кольоровим списком була скинута."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Додати диск"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Не вдалося додати диск"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Каталог додатків"
    )
@@ -13516,14 +13383,6 @@ MSG_HASH(
    "Від'єднайте пристрій від правильного порту."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Фильований віртуальний дисковий лоток."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Віртуальний дисковий лоток."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Завантаження"
    )
@@ -13678,10 +13537,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Не вдалося отримати оперативну пам'ять даних хоста."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Не вдалося видалити диск з лотка."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14060,10 +13915,6 @@ MSG_HASH(
    "Параметри всіх даних перерахунків скинуті до типових значень."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Видалено диск із лотка."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Видалення тимчасового файлу вмісту"
    )
@@ -14078,10 +13929,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Відновлено старий стан збереження."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Власники: відновлення заводських налаштувань пресету за замовчуванням"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14292,10 +14139,6 @@ MSG_HASH(
    "Стан вивантаження."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Скасувати збереження стану"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Невідомий"
    )
@@ -14334,14 +14177,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Не вдалося обчислити розмір огляду! Буде продовжити використання необроблених даних. Швидше за все, це не працюватиме вірно..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Не вдалося виключити віртуальний дисковий лоток."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Не вдалося закрити віртуальний диск лотку."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14592,8 +14427,44 @@ MSG_HASH(
    "Чит видалено"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Не вдалося застосувати диск."
+   MSG_DISK_CLOSED,
+   "Фильований віртуальний дисковий лоток."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Не вдалося закрити віртуальний диск лотку."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Віртуальний дисковий лоток."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Не вдалося виключити віртуальний дисковий лоток."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Видалено диск із лотка."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Не вдалося видалити диск з лотка."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Не вибрано жодного диску"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Додати диск"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Не вдалося додати диск"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Налаштування диска в лотку"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14951,6 +14822,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Частоту оновлення відео змінено на %s Гц."
    )
+
 
 /* Lakka */
 

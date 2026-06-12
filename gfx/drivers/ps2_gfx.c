@@ -374,7 +374,7 @@ static void ps2_font_render_message(
 
 static void ps2_font_render_msg(
       void *userdata,
-      void* data, const char* msg,
+      void* data, const char* msg, size_t msg_len,
       const struct font_params *params)
 {
    float x, y, scale, drop_mod, drop_alpha;
@@ -952,11 +952,11 @@ static bool ps2_frame(void *data, const void *frame,
    else if (statistics_show)
    {
       if (osd_params)
-         font_driver_render_msg(ps2, video_info->stat_text, osd_params, NULL);
+         font_driver_render_msg(ps2, video_info->stat_text, video_info->stat_text_len, osd_params, NULL);
    }
 
    if (msg)
-      font_driver_render_msg(ps2, msg, NULL, NULL);
+      font_driver_render_msg(ps2, msg, strlen(msg), NULL, NULL);
 
    if (gsGlobal->DoubleBuffering == GS_SETTING_OFF)
    {
@@ -1104,13 +1104,13 @@ static void ps2_set_texture_enable(void *data, bool enable, bool fullscreen)
    ps2->menuVisible = enable;
 }
 
-static void ps2_set_osd_msg(void *data, const char *msg,
+static void ps2_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    ps2_video_t *ps2 = (ps2_video_t *)data;
 
    if (ps2)
-      font_driver_render_msg(data, msg, params, font);
+      font_driver_render_msg(data, msg, msg_len, params, font);
 }
 
 static bool ps2_get_hw_render_interface(void *data,

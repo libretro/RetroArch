@@ -222,14 +222,14 @@ static void d3dkmt_init(void)
    video_driver_scanline_init();
 }
 
-unsigned d3dkmt_scanline_get(void)
+int d3dkmt_scanline_get(void)
 {
    if (pD3DKMTGetScanLine)
    {
       if (pD3DKMTGetScanLine(&d3dkmt_adapter.sl) == STATUS_SUCCESS)
          return d3dkmt_adapter.sl.ScanLine;
    }
-   return 0;
+   return -1;
 }
 #endif /* HAVE_D3DKMT */
 

@@ -273,6 +273,31 @@ typedef struct
    retro_time_t last_flush_time;
    /* Exponential moving average */
    retro_time_t avg_flush_delta;
+
+   /* Rate-limit state for the DRC compute.
+    *
+    * The DRC ratio is updated approximately once per game-frame's worth
+    * of submitted samples rather than once per audio_driver_sample_batch
+    * call. Cores that submit a single batch per retro_run see DRC fire
+    * once per frame as before. Cores that submit N sub-frame batches
+    * per retro_run see DRC fire approximately once per frame (when the
+    * cumulative samples cross the threshold) instead of N times per
+    * frame. This:
+    *   - removes (N-1) per-call audio->write_avail calls (a syscall on
+    *     ALSA/WASAPI/Pulse/PipeWire backends; cheap on CoreAudio)
+    *   - stabilises the resampler ratio (the DRC was designed around
+    *     a once-per-frame time constant; per-batch updates sample
+    *     write_avail at sub-frame phase, adding noise to the loop)
+    *
+    * drc_threshold_int16s is recomputed by audio_driver_update_drc_threshold
+    * from the current input sample rate and av_info.timing.fps whenever
+    * audio_driver_init_internal runs (which is also where the input
+    * rate gets set, and where SET_SYSTEM_AV_INFO drives reinit). This
+    * keeps the "one frame's worth" target accurate at any output sample
+    * rate (48 kHz, 96 kHz, 192 kHz, ...) and any content fps. */
+   double   cached_rate_adjust;        /* last computed factor; default 1.0 */
+   size_t   samples_since_drc;         /* int16 samples submitted since last update */
+   size_t   drc_threshold_int16s;      /* one frame's worth of stereo int16 at the current rate */
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);
@@ -453,6 +478,18 @@ extern audio_driver_t audio_rwebaudio;
 extern audio_driver_t audio_audioworklet;
 
 audio_driver_state_t *audio_state_get_ptr(void);
+
+/**
+ * audio_driver_update_drc_threshold:
+ *
+ * Recompute drc_threshold_int16s for the current sample rate / fps.
+ * Called from audio_driver_init_internal whenever audio is initialized
+ * or reinitialised (which covers SET_SYSTEM_AV_INFO and output-rate
+ * setting changes), and from refresh-rate change paths in retroarch.c
+ * that update audio_driver_state_t::input without driving a full audio
+ * reinit.
+ **/
+void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
 
 const char *audio_driver_get_ident(void);
 

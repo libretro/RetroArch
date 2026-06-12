@@ -242,6 +242,34 @@
 
 #if HAVE_GAME_AI
 #include "ai/game_ai.h"
+
+/* Context for the cached_frame_read callback that dispatches into
+ * game_ai_think.  Lets the per-frame GameAI processing pull from
+ * the cached frame through the lifetime-safe API instead of
+ * touching frame_cache_data directly. */
+struct game_ai_think_ctx
+{
+   bool                    override_p1;
+   bool                    override_p2;
+   bool                    show_debug;
+   enum retro_pixel_format pix_fmt;
+};
+
+static void runloop_game_ai_think_cb(void *userdata,
+      const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   struct game_ai_think_ctx *ctx = (struct game_ai_think_ctx*)userdata;
+   if (!ctx)
+      return;
+   game_ai_think(
+         ctx->override_p1,
+         ctx->override_p2,
+         ctx->show_debug,
+         data,
+         width, height, pitch,
+         ctx->pix_fmt);
+}
 #endif
 
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
@@ -3960,7 +3988,7 @@ static bool core_unload_game(void)
 
    video_driver_free_hw_context();
 
-   video_st->frame_cache_data     = NULL;
+   video_driver_cached_frame_invalidate();
 
    if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
    {
@@ -3980,7 +4008,7 @@ static bool core_unload_game(void)
 }
 
 static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
-      bool frame_time_counter_reset_after_fastforwarding,
+      bool frame_time_counter_auto_reset,
       float fastforward_ratio_default,
       bool audio_fastforward_mute)
 {
@@ -4031,7 +4059,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
       /* Reset frame time counter when toggling
        * fast-forward off, if required */
       if ( !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-          && frame_time_counter_reset_after_fastforwarding)
+          && frame_time_counter_auto_reset)
          video_st->frame_time_count = 0;
 
       /* Ensure fast forward widget is disabled when
@@ -4106,7 +4134,7 @@ void runloop_event_deinit_core(void)
       input_st->core_gyro_rate       = 0;
    }
 
-   video_st->frame_cache_data  = NULL;
+   video_driver_cached_frame_invalidate();
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
@@ -4122,7 +4150,7 @@ void runloop_event_deinit_core(void)
    if (runloop_st->fastmotion_override.pending)
    {
       runloop_apply_fastmotion_override(runloop_st,
-            settings->bools.frame_time_counter_reset_after_fastforwarding,
+            settings->bools.frame_time_counter_auto_reset,
             settings->floats.fastforward_ratio,
             settings->bools.audio_fastforward_mute
             );
@@ -4814,15 +4842,6 @@ bool runloop_event_init_core(
    /* Set core environment */
    runloop_st->current_core.retro_set_environment(runloop_environment_cb);
 
-#ifdef HAVE_MENU
-   /* Early return for playlist entry savestate menu paths */
-   {
-      struct menu_state *menu_st = menu_state_get_ptr();
-      if (menu_st && menu_st->flags & MENU_ST_FLAG_PRETEND_CORE_INIT)
-         return false;
-   }
-#endif
-
    /* Load any input remap files
     * > Note that we always cache the current global
     *   input settings when initialising a core
@@ -4834,10 +4853,33 @@ bool runloop_event_init_core(
    input_remapping_cache_global_config();
 #ifdef HAVE_CONFIGFILE
    if (auto_remaps_enable)
+   {
+      /* Reset the in-memory remap state before searching for
+       * tier files. The unload paths in runloop_event_deinit_core
+       * and CMD_EVENT_UNLOAD_CORE only call set_defaults when a
+       * REMAPS_*_ACTIVE flag is set or a remapfile name is cached;
+       * unsaved per-port edits made via the Quick Menu set neither,
+       * so the per-port input_remap_ids arrays survive content
+       * close. Without this reset, those stale edits leak into the
+       * next session even when no remap file is present.
+       *
+       * Placed at the content-load call site rather than inside
+       * config_load_remap itself, so the menu remap-file deletion
+       * path (menu_cbs_ok.c) is unaffected: deleting a non-active
+       * tier file while a higher-priority tier is active continues
+       * to leave the active tier in place, and deleting the active
+       * tier still falls back to the next-priority tier as before.
+       *
+       * If a tier file is found below, input_remapping_load_file()
+       * calls set_defaults() itself before applying the file's
+       * bindings, so this reset is harmless on the found-file
+       * path. */
+      input_remapping_set_defaults(false);
       config_load_remap(dir_input_remapping, &runloop_st->system);
+   }
 #endif
 
-   video_st->frame_cache_data              = NULL;
+   video_driver_cached_frame_invalidate();
 
    runloop_st->current_core.retro_init();
    runloop_st->current_core.flags         |= RETRO_CORE_FLAG_INITED;
@@ -5928,6 +5970,7 @@ static enum runloop_state_enum runloop_check_state(
    }
 
    /* Check quit hotkey */
+   if (!(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE))
    {
       static bool quit_key     = false;
       static bool old_quit_key = false;
@@ -5997,7 +6040,7 @@ static enum runloop_state_enum runloop_check_state(
             if (!take_screenshot(settings->paths.directory_screenshot,
                      screenshot_path,
                      false,
-                     video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                     video_driver_cached_frame_is_hw_render(),
                      fullpath,
                      false))
             {
@@ -6192,6 +6235,23 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Iterate the menu driver for one frame. */
 
+#ifdef HAVE_CONFIGFILE
+      /* If a configuration file load was requested on the previous
+       * frame, perform it now - before the menu is iterated and while
+       * no menu list/driver pointers are held on the stack.
+       * config_replace() triggers a full driver/menu reinit (and may
+       * free and recreate the menu driver), so it must never run from
+       * within menu iteration. Exit afterwards to start the next frame
+       * with a freshly (re)built menu. */
+      if (menu_st->flags & MENU_ST_FLAG_PENDING_CONFIG_REPLACE)
+      {
+         bool config_save_on_exit = settings->bools.config_save_on_exit;
+         menu_st->flags          &= ~MENU_ST_FLAG_PENDING_CONFIG_REPLACE;
+         config_replace(config_save_on_exit, menu_st->pending_config_path);
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+      }
+#endif
+
       /* If the user had requested that the Quick Menu
        * be spawned during the previous frame, do this now
        * and exit the function to go to the next frame. */
@@ -6305,6 +6365,96 @@ static enum runloop_state_enum runloop_check_state(
          menu_st->flags &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
       }
+      else if ((menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
+            || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
+      {
+         menu_list_t *menu_list    = menu_st->entries.list;
+         file_list_t *menu_stack   = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+         const char *deferred_path = menu ? menu->deferred_path : NULL;
+         const char *flush_target  = MENU_ENUM_LABEL_MAIN_MENU_STR;
+         size_t stack_offset       = 1;
+         unsigned i                = 0;
+         bool reset_navigation     = true;
+
+         /* Loop backwards through the menu stack to
+          * find a known reference point */
+         while (menu_stack && (menu_stack->size >= stack_offset))
+         {
+            const char *parent_label = menu_stack->list[
+               menu_stack->size - stack_offset].label;
+
+            if (!parent_label || !*parent_label)
+               continue;
+
+            /* If core was launched via a playlist or Explore, flush
+             * to playlist entry menu */
+            if (     (  string_is_equal(parent_label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
+                     || string_is_equal(parent_label, MENU_ENUM_LABEL_EXPLORE_TAB_STR))
+                  && deferred_path && *deferred_path
+               )
+            {
+               if (string_is_equal(parent_label, MENU_ENUM_LABEL_EXPLORE_TAB_STR))
+                  flush_target = MENU_ENUM_LABEL_EXPLORE_TAB_STR;
+               else
+                  flush_target = MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR;
+               break;
+            }
+            /* If core was launched via 'Contentless Cores' menu,
+             * flush to 'Contentless Cores' menu */
+            else if (   string_is_equal(parent_label,
+                           MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB_STR)
+                     || string_is_equal(parent_label,
+                           MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST_STR))
+            {
+               flush_target     = parent_label;
+               reset_navigation = false;
+               break;
+            }
+
+            stack_offset++;
+         }
+
+         if (!(menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
+            command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+         menu_entries_flush_stack(flush_target, 0);
+         /* An annoyance - some menu drivers (Ozone...) set
+          * MENU_ST_FLAG_PREVENT_POPULATE in awkward
+          * places, which can cause breakage here when flushing
+          * the menu stack. We therefore have to unset
+          * MENU_ST_FLAG_PREVENT_POPULATE */
+         menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+
+         /* Single-click playlist return */
+         if (settings->bools.input_menu_singleclick_playlists && reset_navigation)
+         {
+            size_t new_selection = menu_st->selection_ptr;
+            menu_entries_pop_stack(&new_selection, 0, 0);
+            menu_st->selection_ptr = new_selection;
+            reset_navigation = false;
+         }
+
+         /* Ozone requires thumbnail refreshing */
+         if (menu_st->driver_ctx && menu_st->driver_ctx->refresh_thumbnail_image)
+            menu_st->driver_ctx->refresh_thumbnail_image(
+                  menu_st->userdata, i);
+
+         if (reset_navigation)
+            menu_st->selection_ptr = 0;
+
+         menu_st->flags &= ~(MENU_ST_FLAG_PENDING_CLOSE_CONTENT
+                           | MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH);
+         menu_st->pending_env_shutdown_content_path[0] = '\0';
+
+         /* Reload core on launch failure if manually loaded */
+         if (     !path_is_empty(RARCH_PATH_CORE_LAST)
+               && !(menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE))
+         {
+            menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
+            menu_st->flags |= MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH;
+         }
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+      }
       else if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
                settings, action, current_time))
       {
@@ -6315,6 +6465,32 @@ static enum runloop_state_enum runloop_check_state(
          }
          else
             retroarch_menu_running_finished(false);
+      }
+
+      /* Handle pending core reload separately after menu driver iterate */
+      if (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
+      {
+#ifdef HAVE_DYNAMIC
+         const char *a = path_get(RARCH_PATH_CORE_LAST);
+#endif
+         menu_st->flags &= ~MENU_ST_FLAG_PENDING_RELOAD_CORE;
+
+#ifdef HAVE_DYNAMIC
+         if (a && *a)
+         {
+            content_ctx_info_t content_info = {0};
+            if (task_push_load_new_core(a,
+                        NULL,
+                        &content_info,
+                        CORE_TYPE_PLAIN,
+                        NULL, NULL))
+            {
+               menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                               |  MENU_ST_FLAG_PREVENT_POPULATE;
+            }
+         }
+#endif
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
       }
 
       if (focused || !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
@@ -6382,7 +6558,20 @@ static enum runloop_state_enum runloop_check_state(
       old_input                 = current_bits;
       old_action                = action;
 
-      if (!focused || (runloop_st->flags & RUNLOOP_FLAG_IDLE))
+      /* Handle dialog confirmed event */
+      if (menu_st->dialog_st.pending_cmd != CMD_EVENT_NONE)
+      {
+         /* Event also wants to resume */
+         if (!command_event(menu_st->dialog_st.pending_cmd, NULL))
+            command_event(CMD_EVENT_RESUME, NULL);
+
+         menu_dialog_confirm_clear(menu_st);
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+      }
+
+      if (     !focused
+            || (runloop_st->flags & RUNLOOP_FLAG_IDLE)
+            || (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
    else
@@ -6765,7 +6954,7 @@ static enum runloop_state_enum runloop_check_state(
    if (runloop_st->fastmotion_override.pending)
    {
       runloop_apply_fastmotion_override(runloop_st,
-            settings->bools.frame_time_counter_reset_after_fastforwarding,
+            settings->bools.frame_time_counter_auto_reset,
             settings->floats.fastforward_ratio,
             settings->bools.audio_fastforward_mute);
       runloop_st->fastmotion_override.pending = false;
@@ -6805,7 +6994,7 @@ static enum runloop_state_enum runloop_check_state(
       if (check2)
       {
          bool audio_fastforward_mute = settings->bools.audio_fastforward_mute;
-         bool frame_time_counter_reset_after_ffwd = settings->bools.frame_time_counter_reset_after_fastforwarding;
+         bool frame_time_counter_auto_reset = settings->bools.frame_time_counter_auto_reset;
          if (input_st->flags & INP_FLAG_NONBLOCKING)
          {
             input_st->flags                     &= ~INP_FLAG_NONBLOCKING;
@@ -6829,7 +7018,7 @@ static enum runloop_state_enum runloop_check_state(
          /* Reset frame time counter when toggling
           * fast-forward off, if required */
          if ( !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-             && frame_time_counter_reset_after_ffwd)
+             && frame_time_counter_auto_reset)
             video_st->frame_time_count  = 0;
       }
 
@@ -7118,6 +7307,11 @@ static enum runloop_state_enum runloop_check_state(
          RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
          RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
 
+#ifdef HAVE_VIDEO_FILTER
+   /* Check Video Filter hotkey */
+   HOTKEY_CHECK(RARCH_VIDEO_FILTER_TOGGLE, CMD_VIDEO_FILTER_TOGGLE, true, NULL);
+#endif
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Check shader hotkeys */
    HOTKEY_CHECK3(
@@ -7275,6 +7469,7 @@ int runloop_iterate(void)
    bool cheevos_enable                    = settings->bools.cheevos_enable;
 #endif
    bool audio_sync                        = settings->bools.audio_sync;
+   bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st            = discord_state_get_ptr();
 
@@ -7373,6 +7568,8 @@ int runloop_iterate(void)
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
+         if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+            return -1;
 #ifdef HAVE_NETWORKING
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
@@ -7425,6 +7622,23 @@ int runloop_iterate(void)
          /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
          if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
             return 0;
+         /* When content is actively running behind the menu (menu_pause_libretro
+          * is off), core_run() -> audio_driver_write() already paces the iterate
+          * loop at the audio buffer's drain rate -- i.e. the core's natural fps.
+          * Layering the refresh-rate retro_sleep() throttle below on top of that
+          * is redundant double-pacing, and retro_sleep() resolves to OS Sleep()
+          * whose granularity is ~15 ms on Windows by default -- coarser than
+          * typical audio low-water marks, so the sleep overshoots and stutters
+          * audio.  Defer pacing to the audio backpressure path. */
+         else if (   audio_sync
+                  && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
+         {
+            /* Make sure no stale frame_limit_minimum_time from a prior
+             * iteration (e.g. just before menu_pause_libretro was toggled
+             * off) leaks into the sleep block below. */
+            runloop_st->frame_limit_minimum_time = 0;
+            goto end;
+         }
          else if ((  (settings->bools.video_vsync)
                   || (settings->bools.video_scanline_sync && video_st->scanline[SCANLINE_NEXT]))
                && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED))
@@ -7517,6 +7731,10 @@ int runloop_iterate(void)
    if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
       autosave_unlock();
 #endif
+
+   /* Check if we should save state automatically */
+   if (savestate_automatic_enable)
+      content_save_state_automatic();
 
 end:
    if (vrr_runloop_enable)
@@ -7979,7 +8197,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = &runloop_state;
 
-   video_st->frame_cache_data     = NULL;
+   video_driver_cached_frame_invalidate();
 
 #ifdef HAVE_RUNAHEAD
    runahead_set_load_content_info(runloop_st, load_info);
@@ -8114,7 +8332,13 @@ void core_reset(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
    video_driver_state_t *video_st = video_state_get_ptr();
-   video_st->frame_cache_data     = NULL;
+
+   /* Drop video-driver caches of core-owned GPU resources before
+    * retro_reset() is allowed to destroy them. No-op on software
+    * cores or on drivers that do not implement the hook. */
+   video_driver_invalidate_hw_render_cache();
+
+   video_driver_cached_frame_invalidate();
    runloop_st->current_core.retro_reset();
 }
 
@@ -8154,16 +8378,27 @@ void core_run(void)
 #ifdef HAVE_GAME_AI
    {
       settings_t *settings           = config_get_ptr();
-      video_driver_state_t *video_st = video_state_get_ptr();
-      game_ai_think(
-            settings->bools.game_ai_override_p1,
-            settings->bools.game_ai_override_p2,
-            settings->bools.game_ai_show_debug,
-            video_st->frame_cache_data,
-            video_st->frame_cache_width,
-            video_st->frame_cache_height,
-            video_st->frame_cache_pitch,
-            video_st->pix_fmt);
+      bool override_p1               = settings->bools.game_ai_override_p1;
+      bool override_p2               = settings->bools.game_ai_override_p2;
+      bool show_debug                = settings->bools.game_ai_show_debug;
+
+      /* Skip the call entirely when no GameAI feature is active for this
+       * frame. Avoids per-frame indirect dispatch into the loaded GameAI
+       * library (game_ai_lib_set_show_debug) that game_ai_think runs
+       * unconditionally when an AI has been instantiated. */
+      if (override_p1 || override_p2 || show_debug)
+      {
+         video_driver_state_t *video_st = video_state_get_ptr();
+         struct game_ai_think_ctx ctx;
+         ctx.override_p1 = override_p1;
+         ctx.override_p2 = override_p2;
+         ctx.show_debug  = show_debug;
+         ctx.pix_fmt     = video_st->pix_fmt;
+         /* Same-thread access (we're on the runloop thread, same as
+          * the producer), but route through cached_frame_read for
+          * lifecycle correctness once the field becomes private. */
+         video_driver_cached_frame_read(&ctx, runloop_game_ai_think_cb);
+      }
    }
 #endif
 

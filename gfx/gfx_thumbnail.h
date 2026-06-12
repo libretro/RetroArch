@@ -182,7 +182,8 @@ enum gfx_thumbnail_shadow_type
 enum gfx_thumbnail_flags
 {
    GFX_THUMB_FLAG_FADE_ACTIVE = (1 << 0),
-   GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1)
+   GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1),
+   GFX_THUMB_FLAG_BG_ONLY     = (1 << 2)
 };
 
 /* Holds all runtime parameters associated with

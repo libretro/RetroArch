@@ -52,7 +52,10 @@ enum menu_state_flags
    MENU_ST_FLAG_PENDING_RELOAD_CORE         = (1 << 12),
    MENU_ST_FLAG_PENDING_STARTUP_PAGE        = (1 << 13),
    MENU_ST_FLAG_BLOCK_ALL_INPUT             = (1 << 14),
-   MENU_ST_FLAG_PRETEND_CORE_INIT           = (1 << 15)
+   /* When enabled, a configuration file load (full driver/menu
+    * reinit) has been requested and will be performed on the next
+    * frame, outside of menu iteration */
+   MENU_ST_FLAG_PENDING_CONFIG_REPLACE      = (1 << 15)
 };
 
 enum menu_scroll_mode
@@ -73,6 +76,7 @@ enum action_iterate_type
    ITERATE_TYPE_DEFAULT = 0,
    ITERATE_TYPE_HELP,
    ITERATE_TYPE_INFO,
+   ITERATE_TYPE_CONFIRM,
    ITERATE_TYPE_BIND
 };
 
@@ -595,6 +599,11 @@ struct menu_dialog
 {
    unsigned              current_id;
    enum menu_dialog_type current_type;
+   unsigned              confirm_msg;
+   unsigned              confirm_cmd;
+   unsigned              pending_cmd;
+   bool                  confirm_hover_ok;
+   bool                  confirm_hover_back;
    bool                  pending_push;
 };
 

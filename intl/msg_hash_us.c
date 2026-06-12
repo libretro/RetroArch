@@ -55,6 +55,12 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS), len);
              break;
+          case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR), len);
+             break;
+          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND), len);
+             break;
           case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS), len);
              break;
@@ -138,9 +144,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY), len);
-             break;
-          case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR), len);
              break;
           case MENU_ENUM_LABEL_CORE_LIST:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CORE_LIST), len);

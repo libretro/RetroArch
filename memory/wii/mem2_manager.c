@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdint.h>
 #include <malloc.h>
 #include <unistd.h>
 
@@ -47,8 +48,8 @@ static INLINE uint32_t __lwp_heap_blocksize(heap_block *block)
 static uint32_t __lwp_heap_block_size(heap_cntrl *theheap, void *ptr)
 {
    heap_block *block;
-   uint32_t dsize, level;
-   (void)level;
+   uint32_t dsize;
+   uint32_t level = 0;
 
    _CPU_ISR_Disable(level);
    block = __lwp_heap_usrblockat(ptr);
@@ -70,8 +71,9 @@ static heap_cntrl gx_mem2_heap;
 
 bool gx_init_mem2(void)
 {
-   void *heap_ptr;
-   uint32_t level, size;
+   void    *heap_ptr;
+   uint32_t size;
+   uint32_t level = 0;
    _CPU_ISR_Disable(level);
 
    /* BIG NOTE: MEM2 on the Wii is 64MB, but a portion
@@ -99,28 +101,33 @@ bool gx_init_mem2(void)
    return true;
 }
 
-void *_mem2_memalign(uint8_t align, uint32_t size)
+static void *_mem2_memalign(uint8_t align, uint32_t size)
 {
    if (size == 0)
+      return NULL;
+   /* The underlying lwp_heap is initialised with pg_size==32, so any
+    * allocation it returns is already 32-byte aligned. Honour stricter
+    * requests by rejecting them rather than silently downgrading to 32. */
+   if (align > 32)
       return NULL;
    return __lwp_heap_allocate(&gx_mem2_heap, size);
 }
 
-void *_mem2_malloc(uint32_t size)
+static void *_mem2_malloc(uint32_t size)
 {
    return _mem2_memalign(32, size);
 }
 
-void _mem2_free(void *ptr)
+static void _mem2_free(void *ptr)
 {
    if (ptr)
       __lwp_heap_free(&gx_mem2_heap, ptr);
 }
 
-void *_mem2_realloc(void *ptr, uint32_t newsize)
+static void *_mem2_realloc(void *ptr, uint32_t newsize)
 {
    uint32_t size;
-   void *newptr = NULL;
+   void    *newptr;
 
    if (!ptr)
       return _mem2_malloc(newsize);
@@ -131,7 +138,7 @@ void *_mem2_realloc(void *ptr, uint32_t newsize)
       return NULL;
    }
 
-   size = __lwp_heap_block_size(&gx_mem2_heap, ptr);
+   size   = __lwp_heap_block_size(&gx_mem2_heap, ptr);
 
    if (size > newsize)
       size = newsize;
@@ -147,46 +154,71 @@ void *_mem2_realloc(void *ptr, uint32_t newsize)
    return newptr;
 }
 
-void *_mem2_calloc(uint32_t num, uint32_t size)
+static void *_mem2_calloc(uint32_t num, uint32_t size)
 {
-   void *ptr = _mem2_malloc(num * size);
+   uint32_t total;
+   void    *ptr;
+
+   /* Standard calloc semantics: detect num*size wrap. */
+   if (size != 0 && num > (UINT32_MAX / size))
+      return NULL;
+
+   total = num * size;
+   ptr   = _mem2_malloc(total);
 
    if (!ptr)
       return NULL;
 
-   memset(ptr, 0, num * size);
+   memset(ptr, 0, total);
    return ptr;
 }
 
-char *_mem2_strdup(const char *s)
+static char *_mem2_strdup(const char *s)
 {
-    char *ptr = NULL;
+   char  *ptr;
+   size_t _len;
 
-    if (s)
-    {
-        size_t _len = strlen(s) + 1;
-        ptr         = _mem2_calloc(1, _len);
+   if (!s)
+      return NULL;
 
-        if (ptr)
-            memcpy(ptr, s, _len);
-    }
+   _len = strlen(s) + 1;
+   /* _mem2_malloc rather than _mem2_calloc: the memcpy below fills
+    * the whole buffer, so the zero-pass would be wasted. */
+   ptr  = _mem2_malloc(_len);
 
-    return ptr;
+   if (ptr)
+      memcpy(ptr, s, _len);
+
+   return ptr;
 }
 
-char *_mem2_strndup(const char *s, size_t n)
+static char *_mem2_strndup(const char *s, size_t n)
 {
-    char *ptr = NULL;
+   char  *ptr;
+   size_t actual;
 
-    if (s)
-    {
-        int _len = n + 1;
-        ptr      = _mem2_calloc(1, _len);
+   if (!s)
+      return NULL;
 
-        if (ptr)
-            memcpy(ptr, s, _len);
-    }
-    return ptr;
+   /* Pre-patch bug: the implementation was
+    *    int _len = n + 1;
+    *    ptr      = _mem2_calloc(1, _len);
+    *    if (ptr) memcpy(ptr, s, _len);
+    * which (a) memcpy-read past s when strlen(s) < n (UB), and
+    * (b) left ptr without a NUL terminator when strlen(s) >= n
+    * because the calloc-supplied terminator at offset n was
+    * overwritten by s[n] from the memcpy. Use strnlen and copy
+    * only what we actually have, then terminate explicitly. */
+   actual = strnlen(s, n);
+   ptr    = _mem2_malloc(actual + 1);
+
+   if (ptr)
+   {
+      memcpy(ptr, s, actual);
+      ptr[actual] = '\0';
+   }
+
+   return ptr;
 }
 
 uint32_t gx_mem2_used(void)
@@ -233,7 +265,10 @@ __attribute__ ((used)) void *__wrap_memalign(size_t a, size_t len)
    void *p = __real_memalign(a, len);
    if (p != 0)
       return p;
-   return _mem2_memalign(a, len);
+   /* _mem2_memalign now takes a uint8_t and rejects alignments > 32
+    * rather than silently downgrading. Anything larger than that can
+    * only come from MEM1 anyway, so leave it as NULL on the MEM2 path. */
+   return _mem2_memalign((uint8_t)a, len);
 }
 
 __attribute__ ((used)) void __wrap_free(void *p)

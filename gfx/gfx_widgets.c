@@ -1561,6 +1561,9 @@ static void gfx_widgets_draw_regular_msg(
       /* For warnings and errors, flip the 'i' upside down so it becomes '!' */
       bool invert_y = (msg->flags & (  DISPWIDG_FLAG_CATEGORY_WARNING
                                      | DISPWIDG_FLAG_CATEGORY_ERROR)) != 0;
+      float radians = (invert_y ? M_PI : 0.0f);
+      float cosine  = cosf(radians);
+      float sine    = sinf(radians);
 
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
@@ -1576,9 +1579,9 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->msg_queue_rect_start_x
                   + (p_dispwidget->msg_queue_height / 10.0f),
             video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y,
-            0.0f, /* rad                         */
-            (invert_y ? -1.0f : 1.0f), /* cosine */
-            0.0f, /* sine(rad)  = sine(0) = 0.0f */
+            radians,
+            cosine,
+            sine,
             msg_queue_info);
 
       if (dispctx && dispctx->blend_end)
@@ -1595,6 +1598,7 @@ bool gfx_widgets_visible(void *data)
    bool framecount_show           = video_info->framecount_show;
    bool memory_show               = video_info->memory_show;
    bool core_status_msg_show      = video_info->core_status_msg_show;
+   bool time_show                 = video_info->time_show;
    uint32_t video_flags           = video_info->video_st_flags;
    bool widgets_is_paused         = (video_flags & VIDEO_FLAG_WIDGETS_PAUSED) != 0;
    bool widgets_is_fastmotion     = (video_flags & VIDEO_FLAG_WIDGETS_FASTMOTION) != 0;
@@ -1615,7 +1619,11 @@ bool gfx_widgets_visible(void *data)
       return true;
 #endif
 
-   if (fps_show || framecount_show || memory_show || core_status_msg_show)
+   if (     fps_show
+         || framecount_show
+         || memory_show
+         || core_status_msg_show
+         || time_show)
       return true;
 
    if (     widgets_is_paused
@@ -1649,6 +1657,8 @@ void gfx_widgets_frame(void *data)
    bool framecount_show             = video_info->framecount_show;
    bool memory_show                 = video_info->memory_show;
    bool core_status_msg_show        = video_info->core_status_msg_show;
+   bool time_show                   = video_info->time_show;
+   bool onscreen_panels             = fps_show || framecount_show || memory_show || core_status_msg_show || time_show;
    void *userdata                   = video_info->userdata;
    unsigned video_width             = video_info->width;
    unsigned video_height            = video_info->height;
@@ -1826,24 +1836,37 @@ void gfx_widgets_frame(void *data)
    }
 #endif
 
-   /* Status Text (FPS, framecount, memory, core status message) */
-   if (     fps_show
-         || framecount_show
-         || memory_show
-         || core_status_msg_show
-         )
+   /* On-Screen Panels (FPS, framecount, memory, core status message, time) */
+   if (onscreen_panels)
    {
-      const char *txt      = *p_dispwidget->gfx_widgets_status_text == '\0'
-         ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-         : p_dispwidget->gfx_widgets_status_text;
+      const char *txt;
+      size_t      txt_len;
+      int         txt_width;
+      int         total_width;
+      int         status_txt_x;
 
-      int txt_width        = font_driver_get_message_width(
+      if (*p_dispwidget->gfx_widgets_status_text == '\0')
+      {
+         /* Rare fallback when no panel content is set this frame. */
+         txt     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+         txt_len = strlen(txt);
+      }
+      else
+      {
+         /* Length was cached by the producer in video_driver.c —
+          * no per-frame strlen on a string that can be up to 256
+          * bytes long. */
+         txt     = p_dispwidget->gfx_widgets_status_text;
+         txt_len = p_dispwidget->gfx_widgets_status_text_len;
+      }
+
+      txt_width    = font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            txt, strlen(txt), 1.0f);
-      int total_width       = txt_width
+            txt, txt_len, 1.0f);
+      total_width  = txt_width
          + p_dispwidget->simple_widget_padding * 2;
 
-      int status_txt_x     = top_right_x_advance
+      status_txt_x = top_right_x_advance
          - p_dispwidget->simple_widget_padding - txt_width;
       /* Ensure that left hand side of text does
        * not bleed off the edge of the screen */
@@ -1889,9 +1912,7 @@ void gfx_widgets_frame(void *data)
             video_height,
             p_dispwidget->gfx_widgets_icons_textures[
             MENU_WIDGETS_ICON_PAUSED],
-            (fps_show
-             ? p_dispwidget->simple_widget_height
-             : 0),
+            (onscreen_panels ? p_dispwidget->simple_widget_height : 0),
             top_right_x_advance,
             MSG_PAUSED);
 
@@ -1905,7 +1926,7 @@ void gfx_widgets_frame(void *data)
             video_height,
             p_dispwidget->gfx_widgets_icons_textures[
             MENU_WIDGETS_ICON_FAST_FORWARD],
-            (fps_show ? p_dispwidget->simple_widget_height : 0),
+            (onscreen_panels ? p_dispwidget->simple_widget_height : 0),
             top_right_x_advance,
             MSG_FAST_FORWARD);
 
@@ -1919,7 +1940,7 @@ void gfx_widgets_frame(void *data)
             video_height,
             p_dispwidget->gfx_widgets_icons_textures[
             MENU_WIDGETS_ICON_REWIND],
-            (fps_show ? p_dispwidget->simple_widget_height : 0),
+            (onscreen_panels ? p_dispwidget->simple_widget_height : 0),
             top_right_x_advance,
             MSG_REWINDING);
 
@@ -1934,7 +1955,7 @@ void gfx_widgets_frame(void *data)
             video_height,
             p_dispwidget->gfx_widgets_icons_textures[
             MENU_WIDGETS_ICON_SLOW_MOTION],
-            (fps_show ? p_dispwidget->simple_widget_height : 0),
+            (onscreen_panels ? p_dispwidget->simple_widget_height : 0),
             top_right_x_advance,
             MSG_SLOW_MOTION);
       (void)top_right_x_advance;

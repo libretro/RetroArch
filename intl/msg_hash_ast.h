@@ -964,16 +964,8 @@ MSG_HASH(
    "Videu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "El controlador de videu que va usase."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "Audiu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "El controlador d'audiu que va usase."
    )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
@@ -986,16 +978,8 @@ MSG_HASH(
    "Cámara"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "El controlador de cámara que va usase."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Llocalización"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "El controlador de llocalización que va usase."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1004,14 +988,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Grabación"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "El controlador de grabación que va usase."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "El controlador MIDI que va usase."
    )
 
 /* Settings > Video */
@@ -1381,10 +1357,6 @@ MSG_HASH(
    "Usuarios máximos"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "El númberu máximu d'usuarios compatibles con RetroArch."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "Remapiar los controles esti nucleu"
    )
@@ -1591,6 +1563,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
    "Guardar la configuración al colar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Guarda namás la configuración que s'estreme de la predeterminada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
@@ -2310,10 +2286,6 @@ MSG_HASH(
    "Presencia arriquecida de Discord"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Permite que l'aplicación Discord amuese datos tocante al conteníu que ta en reproducción.\nEsta función namás ta disponible pal veceru nativu d'ordenador."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
    "Permitir la llocalización"
    )
@@ -2368,6 +2340,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Clave d'emisión de Facebook Gaming"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -4060,14 +4035,6 @@ MSG_HASH(
    "Apagando…"
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Hebo un error al espulsar la bandexa de discos virtual."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Hebo un error al zarrar la bandexa de discos virtual."
-   )
-MSG_HASH(
    MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    "La contraseña ye incorreuta."
    )
@@ -4082,6 +4049,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Desaniciáronse toles trampes."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Hebo un error al zarrar la bandexa de discos virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Hebo un error al espulsar la bandexa de discos virtual."
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -4103,6 +4078,7 @@ MSG_HASH(
    MSG_CORE_UNLOCK_FAILED,
    "Hebo un error al desbloquiar el nucleu: "
    )
+
 
 /* Lakka */
 

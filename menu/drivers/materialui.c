@@ -99,6 +99,12 @@
 /* Animation defines */
 #define MUI_ANIM_DURATION_SCROLL (166.66667f)
 #define MUI_ANIM_DURATION_SCROLL_RESET (83.333333f)
+#define MUI_OVERSCROLL_RESISTANCE 0.35f
+#define MUI_OVERSCROLL_MAX_FRACTION 0.25f
+#define MUI_OVERSCROLL_SPRING_STIFFNESS 70.0f
+#define MUI_OVERSCROLL_SPRING_DAMPING 14.0f
+#define MUI_OVERSCROLL_STOP_DISTANCE 0.5f
+#define MUI_OVERSCROLL_STOP_VELOCITY 5.0f
 /* According to Material UI specifications, animations
  * that affect a large portion of the screen should
  * have a duration of between 250ms and 300ms. This
@@ -588,7 +594,8 @@ enum materialui_handle_flags
    MUI_FLAG_SCROLLBAR_DRAGGED               = (1 << 26),
    MUI_FLAG_NAVBAR_MENU_NAVIGATION_WRAPPED  = (1 << 27),
    MUI_FLAG_COL_DIVIDER_IS_LIST_BG          = (1 << 28),
-   MUI_FLAG_FIRST_FRAME                     = (1 << 29)
+   MUI_FLAG_OVERSCROLL_ACTIVE               = (1 << 29),
+   MUI_FLAG_FIRST_FRAME                     = (1 << 30)
 };
 
 typedef struct materialui_handle
@@ -707,6 +714,8 @@ typedef struct materialui_handle
    float thumbnail_stream_delay;
    float fullscreen_thumbnail_alpha;
    float touch_feedback_alpha;
+   float overscroll_velocity;
+   float overscroll_target;
    int16_t pointer_start_x;
    int16_t pointer_start_y;
    bool transition_alpha_lock;
@@ -2577,7 +2586,7 @@ static void materialui_update_savestate_thumbnail_image(void *data)
             &mui->thumbnails.savestate,
             config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
 
-   mui->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
+   mui->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
 }
 
 static void materialui_context_reset_textures(materialui_handle_t *mui)
@@ -2700,9 +2709,12 @@ static void materialui_draw_thumbnail(
                   mui->colors.thumbnail_background,
                   NULL);
 
+            if (thumbnail->flags & GFX_THUMB_FLAG_BG_ONLY)
+               break;
+
             /* Icon */
             gfx_display_set_alpha(
-                  mui->colors.missing_thumbnail_icon, alpha);
+                  mui->colors.missing_thumbnail_icon, alpha * 0.5f);
 
             materialui_draw_icon(
                   userdata, p_disp,
@@ -2796,19 +2808,29 @@ static void materialui_render_messagebox(
       void *userdata,
       unsigned video_width,
       unsigned video_height,
-      int y_centre, const char *msg)
+      int y_centre,
+      const char *msg,
+      math_matrix_4x4 *mymat)
 {
    int i;
-   int x                    = 0;
-   int y                    = 0;
-   int usable_width         = 0;
-   int longest_width        = 0;
-   int line_count           = 0;
-   size_t wrapped_len       = 0;
+   int x                      = 0;
+   int y                      = 0;
+   int usable_width           = 0;
+   int longest_width          = 0;
+   int line_count             = 0;
+   int slice_x                = 0;
+   int slice_y                = 0;
+   int slice_w                = 0;
+   int slice_h                = 0;
+   size_t wrapped_len         = 0;
    char wrapped_msg[MENU_LABEL_MAX_LENGTH];
    const char *lines[64];
    int lengths[64];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
+
    wrapped_msg[0] = '\0';
+
    /* Sanity check */
    if (  (!msg || !*msg)
        || !mui
@@ -2861,13 +2883,27 @@ static void materialui_render_messagebox(
    {
       if (lengths[i] > 0)
       {
-         int width     = font_driver_get_message_width(
+         int msg_width     = font_driver_get_message_width(
                mui->font_data.list.font,
                lines[i], lengths[i], 1.0f);
-         longest_width = (width > longest_width) ?
-               width : longest_width;
+         longest_width = (msg_width > longest_width)
+               ? msg_width : longest_width;
       }
    }
+
+   /* Narrow font can make the box too narrow for Back & OK */
+   if (confirm_dialog && longest_width < (int)video_width / 4)
+      longest_width = video_width / 4;
+
+   slice_x                 = x - longest_width / 2.0 - mui->margin * 2.0;
+   slice_y                 = y - mui->margin * 2.0;
+   slice_w                 = longest_width + mui->margin * 4.0;
+   slice_h                 = mui->font_data.list.line_height * line_count + mui->margin * 4.0;
+
+   /* Extra room for confirm buttons */
+   if (confirm_dialog)
+      slice_h             += (mui->font_data.list.line_height + mui->margin) * 2;
+
    /* Draw message box background */
    gfx_display_set_alpha(
          mui->colors.surface_background, mui->transition_alpha);
@@ -2876,10 +2912,10 @@ static void materialui_render_messagebox(
          userdata,
          video_width,
          video_height,
-         x - longest_width / 2.0 - mui->margin * 2.0,
-         y - mui->margin * 2.0,
-         longest_width + mui->margin * 4.0,
-         mui->font_data.list.line_height * line_count + mui->margin * 4.0,
+         slice_x,
+         slice_y,
+         slice_w,
+         slice_h,
          video_width,
          video_height,
          mui->colors.surface_background,
@@ -2895,6 +2931,156 @@ static void materialui_render_messagebox(
                   + mui->font_data.list.line_ascender,
                video_width, video_height, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
+   }
+
+   if (confirm_dialog)
+   {
+      float frame_color[16]                  = {
+            0.5f, 0.5f, 0.5f, 0.1f,
+            0.5f, 0.5f, 0.5f, 0.1f,
+            0.5f, 0.5f, 0.5f, 0.1f,
+            0.5f, 0.5f, 0.5f, 0.1f,
+      };
+      gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
+      const char *str_back                   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK);
+      const char *str_ok                     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK);
+      unsigned str_back_width                = font_driver_get_message_width(mui->font_data.list.font, str_back, strlen(str_back), 1.0f);
+      unsigned str_ok_width                  = font_driver_get_message_width(mui->font_data.list.font, str_ok, strlen(str_ok), 1.0f);
+      float scale_factor                     = mui->last_scale_factor;
+      float icon_size                        = 50 * scale_factor;
+      float icon_padding                     = 10 * scale_factor;
+      float icon_x                           = x - (slice_w / 2) + icon_size + (icon_padding * 2);
+      float icon_y                           = video_height - y + (slice_h / 2) - icon_size - (icon_padding * 2);
+      float label_y                          = icon_y + ((mui->font_data.list.line_height + mui->margin) / 1.75f);
+      int cursor_x                           = icon_x - icon_padding;
+      int cursor_y                           = icon_y - icon_padding;
+      int cursor_w                           = icon_size + (icon_padding * 4) + str_back_width;
+      int cursor_h                           = icon_size + (icon_padding * 2);
+
+      gfx_display_set_alpha(mui->colors.list_icon, 0.25f);
+
+      /* Back */
+      if (     mui->pointer.x >= cursor_x
+            && mui->pointer.x <= cursor_x + cursor_w
+            && mui->pointer.y >= cursor_y
+            && mui->pointer.y <= cursor_y + cursor_h)
+      {
+         menu_st->dialog_st.confirm_hover_back = true;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               cursor_x,
+               cursor_y,
+               cursor_w,
+               cursor_h,
+               video_width,
+               video_height,
+               frame_color,
+               NULL);
+      }
+      else
+         menu_st->dialog_st.confirm_hover_back = false;
+
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      materialui_draw_icon(
+            userdata, p_disp,
+            video_width,
+            video_height,
+            (unsigned)icon_size,
+            mui->textures.list[MUI_TEXTURE_BACK],
+            icon_x,
+            icon_y,
+            0.0f,
+            1.0f,
+            mui->colors.list_icon,
+            mymat);
+
+      gfx_display_draw_text(
+            mui->font_data.list.font,
+            str_back,
+            icon_x + icon_size + icon_padding,
+            label_y,
+            video_width,
+            video_height,
+            mui->colors.list_text,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+
+      /* OK */
+      icon_x  += slice_w - (icon_size * 2) - (icon_padding * 8) - mui->margin - str_ok_width;
+
+      cursor_x = icon_x - icon_padding;
+      cursor_w = icon_size + (icon_padding * 4) + str_ok_width;
+
+      if (     mui->pointer.x >= cursor_x
+            && mui->pointer.x <= cursor_x + cursor_w
+            && mui->pointer.y >= cursor_y
+            && mui->pointer.y <= cursor_y + cursor_h)
+      {
+         menu_st->dialog_st.confirm_hover_ok = true;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               cursor_x,
+               cursor_y,
+               cursor_w,
+               cursor_h,
+               video_width,
+               video_height,
+               frame_color,
+               NULL);
+      }
+      else
+         menu_st->dialog_st.confirm_hover_ok = false;
+
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      materialui_draw_icon(
+            userdata, p_disp,
+            video_width,
+            video_height,
+            (unsigned)icon_size,
+            mui->textures.list[MUI_TEXTURE_CHECKMARK],
+            icon_x,
+            icon_y,
+            0.0f,
+            1.0f,
+            mui->colors.list_icon,
+            mymat);
+
+      gfx_display_draw_text(
+            mui->font_data.list.font,
+            str_ok,
+            icon_x + icon_size + icon_padding,
+            label_y,
+            video_width,
+            video_height,
+            mui->colors.list_text,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
+      gfx_display_set_alpha(mui->colors.list_icon, mui->transition_alpha);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 }
 
@@ -3412,6 +3598,98 @@ static float materialui_get_scroll(materialui_handle_t *mui,
    return selection_centre - view_centre;
 }
 
+static INLINE float materialui_get_scroll_y_max(
+      materialui_handle_t *mui, unsigned height,
+      unsigned header_height)
+{
+   float scroll_y_max = mui->content_height - (float)height +
+         (float)header_height + (float)mui->nav_bar_layout_height +
+         (float)mui->status_bar.height;
+
+   return (scroll_y_max > 0.0f) ? scroll_y_max : 0.0f;
+}
+
+static INLINE float materialui_get_overscroll_max(
+      materialui_handle_t *mui, unsigned height,
+      unsigned header_height)
+{
+   float view_height = (float)height - (float)header_height -
+         (float)mui->nav_bar_layout_height - (float)mui->status_bar.height;
+
+   return (view_height > 0.0f) ?
+         view_height * MUI_OVERSCROLL_MAX_FRACTION : 0.0f;
+}
+
+static INLINE float materialui_apply_overscroll(
+      float scroll_y, float scroll_y_max, float overscroll_max)
+{
+   if (scroll_y < 0.0f)
+   {
+      scroll_y *= MUI_OVERSCROLL_RESISTANCE;
+
+      if (scroll_y < -overscroll_max)
+         scroll_y = -overscroll_max;
+   }
+   else if (scroll_y > scroll_y_max)
+   {
+      scroll_y = scroll_y_max +
+            ((scroll_y - scroll_y_max) * MUI_OVERSCROLL_RESISTANCE);
+
+      if (scroll_y > scroll_y_max + overscroll_max)
+         scroll_y = scroll_y_max + overscroll_max;
+   }
+
+   return scroll_y;
+}
+
+static INLINE float materialui_clamp_scroll(
+      float scroll_y, float scroll_y_max)
+{
+   if (scroll_y < 0.0f)
+      return 0.0f;
+
+   if (scroll_y > scroll_y_max)
+      return scroll_y_max;
+
+   return scroll_y;
+}
+
+static INLINE float materialui_abs_float(float value)
+{
+   return (value < 0.0f) ? -value : value;
+}
+
+static void materialui_update_overscroll_spring(
+      materialui_handle_t *mui, float target, float delta_time)
+{
+   float delta_time_sec;
+   float displacement;
+   float acceleration;
+
+   if (delta_time <= 0.0f)
+      return;
+
+   delta_time_sec = delta_time / 1000.0f;
+
+   /* Prevent a long frame from injecting excessive energy. */
+   if (delta_time_sec > 0.033333f)
+      delta_time_sec = 0.033333f;
+
+   displacement              = mui->scroll_y - target;
+   acceleration              = (-MUI_OVERSCROLL_SPRING_STIFFNESS * displacement) -
+         (MUI_OVERSCROLL_SPRING_DAMPING * mui->overscroll_velocity);
+   mui->overscroll_velocity += acceleration * delta_time_sec;
+   mui->scroll_y            += mui->overscroll_velocity * delta_time_sec;
+
+   if (   (materialui_abs_float(mui->scroll_y - target) < MUI_OVERSCROLL_STOP_DISTANCE)
+       && (materialui_abs_float(mui->overscroll_velocity) < MUI_OVERSCROLL_STOP_VELOCITY))
+   {
+      mui->scroll_y             = target;
+      mui->overscroll_velocity  = 0.0f;
+      mui->flags               &= ~MUI_FLAG_OVERSCROLL_ACTIVE;
+   }
+}
+
 /* Returns true if specified entry is currently
  * displayed on screen */
 static INLINE bool materialui_entry_onscreen(
@@ -3480,7 +3758,10 @@ static INLINE void materialui_kill_scroll_animation(
    menu_input->pointer.y_accel     = 0.0f;
 
    mui->flags                     &= ~MUI_FLAG_SCROLL_ANIMATION_ACTIVE;
+   mui->flags                     &= ~MUI_FLAG_OVERSCROLL_ACTIVE;
    mui->scroll_animation_selection = 0;
+   mui->overscroll_velocity        = 0.0f;
+   mui->overscroll_target          = 0.0f;
 }
 
 /* ==============================
@@ -3850,7 +4131,9 @@ static void materialui_render(void *data,
       bool is_idle)
 {
    size_t i;
-   float bottom;
+   float scroll_y_max;
+   float overscroll_max;
+   bool list_drag_active;
    /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
     * On some platforms (e.g. 32-bit x86 without SSE),
     * gcc can produce inconsistent floating point results
@@ -3863,6 +4146,7 @@ static void materialui_render(void *data,
    settings_t *settings       = config_get_ptr();
    materialui_handle_t *mui   = (materialui_handle_t*)data;
    gfx_display_t *p_disp      = disp_get_ptr();
+   gfx_animation_t *p_anim    = anim_get_ptr();
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
    menu_input_t *menu_input   = &menu_st->input_state;
@@ -3978,6 +4262,15 @@ static void materialui_render(void *data,
    /* Need to adjust/range-check scroll position first,
     * otherwise cannot determine correct entry index for
     * MENU_ENTRIES_CTL_SET_START */
+   scroll_y_max    = materialui_get_scroll_y_max(mui, height, header_height);
+   overscroll_max  = materialui_get_overscroll_max(mui, height, header_height);
+   list_drag_active =
+            (mui->pointer.type != MENU_POINTER_DISABLED)
+         && (!(mui->flags & MUI_FLAG_SCROLLBAR_DRAGGED))
+         && (!(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS))
+         && (mui->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+         && (mui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED);
+
    if (mui->pointer.type != MENU_POINTER_DISABLED)
    {
       /* If user is dragging the scrollbar, scroll
@@ -4004,21 +4297,39 @@ static void materialui_render(void *data,
             mui->scroll_y = 0.0f;
       }
       /* If fullscreen thumbnail view is enabled,
-       * scrolling is disabled - otherwise, just apply
-       * normal pointer acceleration */
+       * scrolling is disabled - otherwise, follow active
+       * touch drags directly and use acceleration for
+       * post-release inertial scrolling */
       else if (!(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS))
-         mui->scroll_y -= mui->pointer.y_accel;
+      {
+         if (   (mui->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+             && (mui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
+         {
+            mui->flags              &= ~MUI_FLAG_OVERSCROLL_ACTIVE;
+            mui->overscroll_velocity = 0.0f;
+            mui->scroll_y = materialui_apply_overscroll(
+                  mui->pointer_start_scroll_y -
+                  (float)(mui->pointer.y - mui->pointer_start_y),
+                  scroll_y_max, overscroll_max);
+         }
+         else
+            mui->scroll_y -= mui->pointer.y_accel;
+      }
    }
 
-   if (mui->scroll_y < 0.0f)
-      mui->scroll_y = 0.0f;
+   if (   !list_drag_active
+      && (mui->flags & MUI_FLAG_OVERSCROLL_ACTIVE))
+      materialui_update_overscroll_spring(
+            mui, materialui_clamp_scroll(mui->overscroll_target, scroll_y_max),
+            p_anim->delta_time);
 
-   bottom = mui->content_height - (float)height + (float)header_height +
-         (float)mui->nav_bar_layout_height + (float)mui->status_bar.height;
-   if (mui->scroll_y > bottom)
-      mui->scroll_y = bottom;
+   if (   !list_drag_active
+       && (!(mui->flags & MUI_FLAG_OVERSCROLL_ACTIVE)))
+      mui->scroll_y = materialui_clamp_scroll(mui->scroll_y, scroll_y_max);
 
-   if (mui->content_height < (height - header_height - mui->nav_bar_layout_height - mui->status_bar.height))
+   if (   !list_drag_active
+       && (!(mui->flags & MUI_FLAG_OVERSCROLL_ACTIVE))
+       && (mui->content_height < (height - header_height - mui->nav_bar_layout_height - mui->status_bar.height)))
       mui->scroll_y = 0.0f;
 
    /* Loop over all entries */
@@ -4377,8 +4688,7 @@ static void materialui_render_menu_entry_default(
       entry_value          = entry->value;
    entry_type              = entry->type;
 
-   entry_file_type         = msg_hash_to_file_type(
-         msg_hash_calculate(entry_value));
+   entry_file_type         = msg_hash_to_file_type(entry_value);
    entry_value_type        = materialui_get_entry_value_type(
          mui, entry_value, entry->flags & MENU_ENTRY_FLAG_CHECKED,
          entry_type, entry_file_type, entry->setting_type);
@@ -5334,8 +5644,7 @@ static void materialui_render_menu_entry_savestate_list(
 
    entry_value             = entry->value;
    entry_type              = entry->type;
-   entry_file_type         = msg_hash_to_file_type(
-         msg_hash_calculate(entry_value));
+   entry_file_type         = msg_hash_to_file_type(entry_value);
    entry_value_type        = materialui_get_entry_value_type(
          mui, entry_value, entry->flags & MENU_ENTRY_FLAG_CHECKED,
          entry_type, entry_file_type, entry->setting_type);
@@ -7840,6 +8149,11 @@ static void materialui_update_scrollbar(materialui_handle_t *mui,
    /* > Apply vertical padding to improve visual appearance */
    mui->scrollbar.y += (int)mui->scrollbar.width;
 
+   /* > Ensure overscroll does not move the scrollbar
+    *   outside the list region */
+   if (mui->scrollbar.y < (int)header_height + (int)mui->scrollbar.width)
+      mui->scrollbar.y = (int)header_height + (int)mui->scrollbar.width;
+
    /* > Ensure we don't fall off the bottom of the screen... */
    if (mui->scrollbar.y > y_max)
       mui->scrollbar.y = y_max;
@@ -8096,7 +8410,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
-            video_height / 4, msg);
+            video_height / 4, msg,
+            &mymat);
 
       /* Draw onscreen keyboard */
       {
@@ -8139,7 +8454,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
-            video_height / 2, mui->msgbox);
+            video_height / 2, mui->msgbox,
+            &mymat);
       mui->msgbox[0] = '\0';
 
       /* Flush message box text
@@ -9374,6 +9690,8 @@ static void materialui_animate_scroll(materialui_handle_t *mui,
 
    /* Kill any existing scroll animation */
    gfx_animation_kill_by_tag(&animation_tag);
+   mui->flags              &= ~MUI_FLAG_OVERSCROLL_ACTIVE;
+   mui->overscroll_velocity = 0.0f;
 
    /* mui->scroll_y will be modified by the animation
     * > Set scroll acceleration to zero to minimise
@@ -10745,6 +11063,10 @@ static int materialui_pointer_down(void *userdata,
    if (!mui)
       return -1;
 
+   /* Any active scroll animation would otherwise fight
+    * direct list dragging */
+   materialui_kill_scroll_animation(mui, menu_st);
+
    /* Get initial pointer location and scroll position */
    mui->pointer_start_x        = x;
    mui->pointer_start_y        = y;
@@ -10819,10 +11141,6 @@ static int materialui_pointer_down(void *userdata,
          return 0;
 
       /* User has 'selected' scrollbar */
-
-      /* > Kill any existing scroll animation
-       *   and reset scroll acceleration */
-      materialui_kill_scroll_animation(mui, menu_st);
 
       /* > Enable dragging */
       mui->flags |= MUI_FLAG_SCROLLBAR_DRAGGED;
@@ -10909,8 +11227,7 @@ static int materialui_pointer_up_swipe_horz_default(
          else
             entry_value          = last_entry.value;
          entry_type                     = last_entry.type;
-         entry_file_type                = msg_hash_to_file_type(
-               msg_hash_calculate(entry_value));
+         entry_file_type                = msg_hash_to_file_type(entry_value);
          entry_value_type               = materialui_get_entry_value_type(
                mui, entry_value, last_entry.flags & MENU_ENTRY_FLAG_CHECKED,
                entry_type, entry_file_type, entry->setting_type);
@@ -11002,6 +11319,8 @@ static int materialui_pointer_up(void *userdata,
    menu_list_t *menu_list     = menu_st->entries.list;
    size_t entries_end         = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
    materialui_handle_t *mui   = (materialui_handle_t*)userdata;
+   float scroll_y_max;
+   float scroll_y_target;
 
    if (!mui)
       return -1;
@@ -11042,6 +11361,18 @@ static int materialui_pointer_up(void *userdata,
 
    width  = mui->last_width;
    height = mui->last_height;
+
+   scroll_y_max    = materialui_get_scroll_y_max(mui, height, header_height);
+   scroll_y_target = materialui_clamp_scroll(mui->scroll_y, scroll_y_max);
+
+   if (mui->scroll_y != scroll_y_target)
+   {
+      mui->overscroll_velocity    = -mui->pointer.y_accel * 60.0f;
+      mui->overscroll_target      = scroll_y_target;
+      menu_input->pointer.y_accel = 0.0f;
+      mui->flags                 |= MUI_FLAG_OVERSCROLL_ACTIVE;
+      return 0;
+   }
 
    switch (gesture)
    {
@@ -11985,6 +12316,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_TWITCH_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_KICK_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_BLUETOOTH_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_WIFI_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_NETWORK_SETTINGS_STR)

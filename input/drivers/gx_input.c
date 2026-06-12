@@ -123,17 +123,11 @@ static int16_t rvl_input_state(
             int16_t x                   = gx->mouse[joy_idx].x_abs;
             int16_t y                   = gx->mouse[joy_idx].y_abs;
 
-#if 1
-            /* TODO/FIXME - is this necessary? */
-            video_driver_get_viewport_info(&vp);
-
-            vp.x                        = 0;
-            vp.y                        = 0;
-            vp.width                    = 0;
-            vp.height                   = 0;
-            vp.full_width               = 0;
-            vp.full_height              = 0;
-#endif
+            /* Pre-patch had a video_driver_get_viewport_info(&vp)
+             * call here, immediately followed by six lines that
+             * zeroed every field it populated. Net effect was the
+             * zero-initialiser above. The call dispatched through
+             * the video vtable on every lightgun query - delete it. */
 
             if (video_driver_translate_coord_viewport_wrap(&vp, x, y,
                         &res_x, &res_y, &res_screen_x, &res_screen_y))
@@ -243,7 +237,8 @@ static void rvl_input_poll(void *data)
    {
       int count = rvl_count_mouse(gx);
 
-      if (gx && count > 0)
+      /* The outer `if (gx && gx->mouse)` already established gx != NULL. */
+      if (count > 0)
       {
          unsigned i;
          if (count != gx->mouse_max)
@@ -267,21 +262,24 @@ static void rvl_input_poll(void *data)
             }
             else
             {
-               unsigned i;
+               int old_max   = gx->mouse_max;
                gx->mouse     = tmp;
                gx->mouse_max = count;
 
-               for (i = 0; i < gx->mouse_max; i++)
-               {
-                  gx->mouse[i].x_last = 0;
-                  gx->mouse[i].y_last = 0;
-               }
+               /* realloc-grow does NOT zero the new tail.
+                * Zero only the freshly-added entries so that the
+                * subsequent x_last = x_abs read does not pick up
+                * uninitialised heap data. Existing entries keep
+                * their last known position across hot-plug. */
+               if (count > old_max)
+                  memset(&gx->mouse[old_max], 0,
+                        (count - old_max) * sizeof(gx_input_mouse_t));
             }
          }
 
          if (gx->mouse)
          {
-            for (i = 0; i < gx->mouse_max; i++)
+            for (i = 0; i < (unsigned)gx->mouse_max; i++)
             {
                gx->mouse[i].x_last = gx->mouse[i].x_abs;
                gx->mouse[i].y_last = gx->mouse[i].y_abs;

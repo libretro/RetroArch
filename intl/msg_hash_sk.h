@@ -1437,7 +1437,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Použiť ovládač videa."
+   "Aký ovládač videa použiť. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1537,7 +1537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Použiť ovládač zvuku."
+   "Aký ovládač zvuku použiť. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1598,7 +1598,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Ovládač mikrofónu, ktorý bude použitý."
+   "Aký ovládač mikrofónu použiť. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1639,15 +1639,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Použiť ovládač kamery."
+   "Aký ovládač kamery použiť. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Používaný ovládač Bluetooth."
+   "Aký ovládač bluetooth použiť. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Používaný ovládač Wi-Fi."
+   "Aký ovládač Wi-Fi použiť. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1655,7 +1655,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Použiť ovládač polohy."
+   "Aký ovládač polohy použiť. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -1683,11 +1683,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Použiť ovládač nahrávania."
+   "Aký ovládač nahrávania použiť. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Použiť ovládač MIDI."
+   "Aký ovládač MIDI použiť. (Vyžaduje reštart)"
    )
 
 /* Settings > Video */
@@ -1739,6 +1739,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Zmena nastavenia synchronizácie videa."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Použiť video filter. Ide o odporúčanie, ktoré ovládač grafickej karty nemusí nutne rešpektovať."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Povoliť video filter"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -2014,7 +2022,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikálna obnovovacia frekvencia obrazovky. Použije sa na výpočet vhodného vzorkovania vstupu audia.\nIgnorované, ak je povolené 'Vláknové video'."
+   "Vertikálna obnovovacia frekvencia obrazovky. Použije sa na výpočet vhodného vzorkovania vstupu audia. Ignorované, ak je povolené 'Vláknové video'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2493,6 +2501,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Pokúsi sa udržať požadovaný cieľ 'Frame Delay' a minimalizovať vynechané snímky. Východiskový bod je 3/4 času snímky, keď je 'Frame Delay' 0 (Auto)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Vzorkovať frame time len v stabilnom stave"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Obmedzí vzorkovanie 'Odhadovanej Miery Obnovenia Obrazovky' len na snímky, kde obsah beží čisto (nie menu, nie pozastavené, nie rýchly posun vpred, frame time v rozumných medziach). Diagnostický údaj sa tak stane reálnym signálom za cenu pomalšej konvergencie po načítaní obsahu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -3018,7 +3034,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Maximálny počet užívateľov podporovaný v RetroArch."
+   "Maximálny počet používateľov podporovaných RetroArchom. (Vyžaduje reštart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3952,6 +3968,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Použiť video filter (prepnúť)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Prepne zapnutie softvérového video filtra."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Zobraziť FPS (prepnúť)"
    )
@@ -4600,6 +4624,18 @@ MSG_HASH(
    "Automaticky uloží non-volatile SRAM v pravidelnom intervale. V predvolenom nastavení je vypnuté, ak nie je nastavené inak. Interval sa meria v sekundách. Hodnota 0 vypne automatické ukladanie."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Save State: Automatický interval"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Automaticky uloží stav v pravidelnom intervale (v sekundách). Nastav na 0 pre vypnutie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Automaticky ukladá stav v pravidelnom intervale meranom v sekundách. Je to užitočné na vytváranie pravidelných záloh tvojho herného postupu, najmä na zariadeniach, ktoré sa môžu nečakane vypnúť kvôli batérii alebo iným problémom. Hodnota 0 túto funkciu vypne."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
    "Replay: interval kontrolných bodov"
    )
@@ -4906,7 +4942,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Zmení nastavenia ovplyvňujúce počítadlo času snímky.\nAktívne iba pri vypnutom vláknovom videu."
+   "Zmení nastavenia ovplyvňujúce počítadlo času snímky. Aktívne iba pri vypnutom vláknovom videu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -4983,28 +5019,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Resetovať po rýchlom posune vpred"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Automatické vynulovanie po rušivých udalostiach"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Resetuje počítadlo času snímky po rýchlom posune vpred."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Resetovať po načítaní stavu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Resetuje počítadlo času snímky po načítaní stavu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Resetovať po uložení stavu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Resetuje počítadlo času snímky po uložení stavu."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Vymaže vyrovnávaciu pamäť vzoriek 'Odhadovanej Miery Obnovenia Obrazovky' po rýchlom posune vpred, uložení alebo načítaní stavu. Tieto operácie zavádzajú časové vzorky, ktoré neodrážajú normálnu kadenciu snímok a skreslili by meranie odchýlky. Čistenie podľa najlepších možností; nemá účinok, keď je zapnuté 'Vzorkovať frame time len v stabilnom stave' (čo zabráni kontaminácii priamo pri zdroji)."
    )
 
 /* Settings > Recording */
@@ -5663,6 +5683,14 @@ MSG_HASH(
    "Zobrazenie použitia pamäte sa bude aktualizovať v nastavenom intervale v snímkach."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Zobraziť čas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Zobraziť aktuálny čas v preferovanom formáte."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Zobraziť netplay ping"
    )
@@ -6306,7 +6334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Zobraziť menu 'Netplay'."
+   "Zobraziť položku „Netplay“ v hlavnom menu alebo v zoznamoch skladieb."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6424,6 +6452,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Zobraziť dodatočné informácie pre položky menu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Zobraziť potvrdzovacie okná"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Pýtať si potvrdenie pred ukončením, resetovaním alebo zatvorením obsahu. Keď je vypnuté, tieto akcie sa vykonajú okamžite."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Zobraziť štartovaciu obrazovku"
@@ -6489,7 +6525,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Zobraziť možnosti pre vrátenie uloženia/načítania stavu."
+   "Zobraziť možnosti vrátenia uloženia/načítania stavu. Štart na RetroPade spustí vrátenie uloženia/načítania, keď je skryté."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7197,7 +7233,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Zobrazí informácie o načítavanej hre a aktuálnom postupe používateľa.\n'Všetky identifikované hry' zobrazí súhrn aj pre hry bez zverejnených achievementov."
+   "Zobrazuje informácie o načítavanej hre a aktuálnom postupe používateľa. 'Všetky identifikované hry' zobrazí súhrn aj pre hry bez zverejnených úspechov."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7674,7 +7710,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Určiť, kedy označiť položky zoznamu skladieb aktuálne priradeným core (ak nejaký).\nToto nastavenie sa ignoruje pri zapnutých pod-popisoch zoznamu skladieb."
+   "Určiť, kedy označiť položky zoznamu skladieb aktuálne priradeným core (ak nejaký). Toto nastavenie sa ignoruje pri zapnutých pod-popisoch zoznamu skladieb."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7782,7 +7818,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Vyberte, aký typ záznamu logu času behu sa má zobraziť v pod-popisoch zoznamu skladieb.\nZodpovedajúci log času behu musí byť povolený cez menu možností 'Ukladanie'."
+   "Vyberte, aký typ záznamu logu času behu sa má zobraziť v pod-popisoch zoznamu skladieb. Zodpovedajúci log času behu musí byť povolený cez menu možností 'Ukladanie'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7963,7 +7999,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Umožní aplikácii Discord zobrazovať údaje o prehrávanom obsahu.\nDostupné iba s natívnym desktop klientom."
+   "Umožní aplikácii Discord zobrazovať údaje o prehrávanom obsahu. Dostupné iba s natívnym desktop klientom."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8027,6 +8063,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Facebook Gaming stream key"
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Kľúč streamu Kick"
    )
 
 /* Settings > Directory */
@@ -8357,7 +8400,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Pridá túto zvukovú stopu do dostupného slotu zvukového streamu.\nAk momentálne nie sú dostupné žiadne sloty, ignoruje sa."
+   "Pridá túto zvukovú stopu do dostupného slotu zvukového streamu. Ak momentálne nie sú dostupné žiadne sloty, ignoruje sa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8365,7 +8408,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Pridá túto zvukovú stopu do dostupného slotu zvukového streamu a prehrá ju.\nAk momentálne nie sú dostupné žiadne sloty, ignoruje sa."
+   "Pridá túto zvukovú stopu do voľného slotu zvukového streamu a prehrá ju. Ak momentálne nie je k dispozícii žiadny slot, bude ignorovaná."
    )
 
 /* Netplay */
@@ -8463,10 +8506,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
    "Skenuje adresár pre obsah, ktorý zodpovedá databáze."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
-   "<Prehľadať tento adresár>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
@@ -8877,7 +8916,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Pridať obsah do zoznamu skladieb."
+   "Pridať túto položku do hracieho zoznamu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -8885,7 +8924,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Vytvoriť nový zoznam skladieb a pridať doň aktuálnu položku."
+   "Vytvoriť nový hrací zoznam a pridať sem túto položku."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8909,7 +8948,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Zobraziť viac informácií o obsahu."
+   "Zobraziť viac informácií o tomto obsahu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -8917,7 +8956,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Stiahnuť screenshot/obal/náhľady titulnej obrazovky pre aktuálny obsah. Aktualizuje existujúce náhľady."
+   "Stiahnuť obrázky miniatúr pre tento obsah. Aktualizuje existujúce obrázky."
    )
 
 /* Playlist Item > Set Core Association */
@@ -9462,6 +9501,10 @@ MSG_HASH(
    "Endianita vyššieho bitu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
+   "Big Endian: 258 = 0x0102\nLittle Endian: 258 = 0x0201"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "Hľadať hodnoty v pamäti"
    )
@@ -9735,6 +9778,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Vyber nový disk zo súborového systému a pridaj ho do zoznamu indexov."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    "Vyberte nový disk zo systému súborov a pridajte ho do zoznamu indexov.\nPOZNÁMKA: Toto je staršia funkcia. Pre tituly s viacerými diskami sa odporúča použiť M3U zoznamy skladieb."
    )
 
@@ -10392,24 +10439,8 @@ MSG_HASH(
    "Bez zdroja"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
-   "<Použiť tento adresár>"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
    "Vyberte toto pre nastavenie ako adresár."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-   "<adresár obsahu>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-   "<Predvolené>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-   "<Žiadne>"
    )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_RETROKEYBOARD,
@@ -10442,10 +10473,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
    "Dolu + Select"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
-   "<Zakázané>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
@@ -10490,10 +10517,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_PORT_16,
    "Všetko"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,
-   "<zakázané>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
@@ -10708,18 +10731,6 @@ MSG_HASH(
    "Obsah"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
-   "<adresár obsahu>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
-   "<Vlastné>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
-   "<Neurčené>"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
    "Plne automatické"
    )
@@ -10746,10 +10757,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
    "Žiadne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
-   "<Vlastné>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
@@ -11305,6 +11312,14 @@ MSG_HASH(
    "Vyberte inú tému ikon pre RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Ikony položiek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Kresliť ikony pre položky ponuky."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    "Vymeniť ikony"
    )
@@ -11355,6 +11370,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
    "Faktor vertikálneho prelínania"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Zobraziť vodorovný zoznam"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
@@ -11589,6 +11608,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
    "Mať ľavý bočný panel vždy zbalený."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Zobraziť bočný panel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Povoliť navigáciu v ľavom bočnom paneli a zoznamy skladieb."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -12002,10 +12029,6 @@ MSG_HASH(
    "Téma:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
-   "<Predvolené systémom>"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
    "Tmavý"
    )
@@ -12096,10 +12119,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
    "Informácie o jadre"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
-   "<Opýtať sa>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
@@ -12342,10 +12361,6 @@ MSG_HASH(
    "Vybrať priečinok"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE,
-   "<viac>"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    "Chyba pri aktualizácii položky zoznamu."
    )
@@ -12495,10 +12510,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
    "Počítadlá jadra"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Nezistil sa disk"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
@@ -12811,10 +12822,6 @@ MSG_HASH(
    "Neboli zadané žiadne argumenty a nie je vstavaná ponuka, zobrazuje sa pomocník..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Vkladanie disku do mechaniky"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Čaká sa na klienta..."
    )
@@ -13120,14 +13127,6 @@ MSG_HASH(
    "Priradenie jadra k položke zoznamu bolo obnovené."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disk pripojený"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Pripojenie disku zlyhalo"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Adresár aplikácie"
    )
@@ -13296,14 +13295,6 @@ MSG_HASH(
    "Odpojte zariadenie z platného portu."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Virtuálna mechanika disku zatvorená."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Virtuálna mechanika disku otvorená."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Sťahovanie"
    )
@@ -13454,10 +13445,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Nepodarilo sa prijať dáta SRAM od hostiteľa."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Nepodarilo sa odstrániť disk z mechaniky."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13836,10 +13823,6 @@ MSG_HASH(
    "Všetky možnosti remapu vstupu obnovené na predvolené."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Disk odstránený z mechaniky."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Odstraňuje sa dočasný súbor obsahu"
    )
@@ -13853,7 +13836,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shadery: obnovuje sa predvolená predvoľba shaderu na"
+   "Shadery: Obnovuje sa predvolená predvoľba shaderu na"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14061,7 +14044,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Vracia sa uložený stav"
+   "Vracia sa uložený stav..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -14102,14 +14085,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Výpočet veľkosti zobrazenia zlyhal! Bude sa pokračovať s nespracovanými dátami. Toto pravdepodobne nebude fungovať správne..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Nepodarilo sa otvoriť virtuálnu mechaniku disku."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Nepodarilo sa zatvoriť virtuálnu mechaniku disku."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14368,8 +14343,48 @@ MSG_HASH(
    "Cheat vymazaný."
    )
 MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Virtuálna mechanika disku zatvorená."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Nepodarilo sa zatvoriť virtuálnu mechaniku disku."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Virtuálna mechanika disku otvorená."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Nepodarilo sa otvoriť virtuálnu mechaniku disku."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Disk odstránený z mechaniky."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Nepodarilo sa odstrániť disk z mechaniky."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Nezistil sa disk"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disk pripojený"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Pripojenie disku zlyhalo"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Vkladanie disku do mechaniky"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Nepodarilo sa nastaviť disk."
+   "Nepodarilo sa nastaviť disk"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14727,6 +14742,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Obnovovacia frekvencia videa zmenená na %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Video filter: Povoliť"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Video filter: Zakázať"
+   )
+
 
 /* Lakka */
 

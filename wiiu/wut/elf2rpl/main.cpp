@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include <zlib.h>
+#include "crc32.h"
 #include "elf.h"
 
 #pragma pack(push, 1)

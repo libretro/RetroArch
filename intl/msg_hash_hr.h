@@ -665,6 +665,10 @@ MSG_HASH(
    "Mediji"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Performanse"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
    "Zvuk"
    )
@@ -763,6 +767,10 @@ MSG_HASH(
 
 /* Settings > Video > Scaling */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   "Pametno"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Omjer slike"
@@ -1075,6 +1083,9 @@ MSG_HASH(
 
 
 /* Settings > User > Accounts > Facebook Gaming */
+
+
+/* Settings > User > Accounts > Kick */
 
 
 /* Settings > Directory */
@@ -1401,6 +1412,7 @@ MSG_HASH(
 
 
 /* Notifications */
+
 
 
 

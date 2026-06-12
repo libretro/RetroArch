@@ -548,6 +548,11 @@ struct menu_state
     * since RETRO_ENVIRONMENT_SHUTDOWN will cause
     * RARCH_PATH_CONTENT to be cleared */
    char pending_env_shutdown_content_path[PATH_MAX_LENGTH];
+   /* Path of a configuration file whose load has been deferred
+    * (see MENU_ST_FLAG_PENDING_CONFIG_REPLACE). The actual
+    * config_replace() is performed from runloop_check_state(),
+    * never from within menu iteration */
+   char pending_config_path[PATH_MAX_LENGTH];
 
 #ifdef HAVE_MENU
    char input_dialog_kb_label_setting[256];
@@ -764,6 +769,11 @@ void menu_update_runahead_mode(void);
 
 size_t menu_playlist_random_selection(
       size_t selection, bool is_explore_list);
+
+void menu_dialog_confirm_set(struct menu_state *menu_st,
+      unsigned msg, unsigned cmd);
+void menu_dialog_confirm_clear(struct menu_state *menu_st);
+void menu_dialog_confirm(struct menu_state *menu_st);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

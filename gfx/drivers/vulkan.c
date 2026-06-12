@@ -406,6 +406,12 @@ typedef struct
    unsigned dirty_x_min, dirty_y_min;
    unsigned dirty_x_max, dirty_y_max;
 
+   /* Recycled fence used by vulkan_raster_font_flush to scope
+    * the wait for the atlas upload submission. Lazy-created on
+    * first use; reset on subsequent uses to avoid per-frame
+    * vkCreateFence/vkDestroyFence churn. */
+   VkFence upload_fence;
+
    bool needs_update;
 } vulkan_raster_t;
 
@@ -1536,19 +1542,38 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                submit_info.signalSemaphoreCount = 0;
                submit_info.pSignalSemaphores    = NULL;
 
-#ifdef HAVE_THREADS
-               slock_lock(vk->context->queue_lock);
-#endif
-               vkQueueSubmit(vk->context->queue,
-                     1, &submit_info, VK_NULL_HANDLE);
+               {
+                  /* Wait only on this submission, not the entire
+                   * queue, and release queue_lock immediately after
+                   * submit so other threads can proceed in parallel
+                   * with the transfer. If fence creation fails, fall
+                   * back to a queue drain for correct synchronisation. */
+                  VkFence fence = VK_NULL_HANDLE;
+                  VkFenceCreateInfo fence_info;
+                  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+                  fence_info.pNext = NULL;
+                  fence_info.flags = 0;
+                  vkCreateFence(vk->context->device,
+                        &fence_info, NULL, &fence);
 
-               /* TODO: Very crude, but texture uploads only happen
-                * during init, so waiting for GPU to complete transfer
-                * and blocking isn't a big deal. */
-               vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
-               slock_unlock(vk->context->queue_lock);
+                  slock_lock(vk->context->queue_lock);
 #endif
+                  vkQueueSubmit(vk->context->queue,
+                        1, &submit_info, fence);
+                  if (fence == VK_NULL_HANDLE)
+                     vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+                  slock_unlock(vk->context->queue_lock);
+#endif
+
+                  if (fence != VK_NULL_HANDLE)
+                  {
+                     vkWaitForFences(vk->context->device,
+                           1, &fence, VK_TRUE, UINT64_MAX);
+                     vkDestroyFence(vk->context->device, fence, NULL);
+                  }
+               }
 
                vkFreeCommandBuffers(vk->context->device,
                      vk->staging_pool, 1, &staging);
@@ -1707,8 +1732,6 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
  */
 static void vulkan_set_viewport(void *data, unsigned vp_width,
       unsigned vp_height, bool force_full, bool allow_rotate);
-static bool vulkan_is_mapped_swapchain_texture_ptr(const vk_t* vk,
-      const void* ptr);
 
 #ifdef HAVE_OVERLAY
 static void vulkan_overlay_free(vk_t *vk);
@@ -1868,11 +1891,13 @@ static void gfx_display_vk_draw_pipeline(
    }
 
    t += 0.01f;
-   /* Wrap to maintain float precision over long sessions.
-    * Period of 2*pi*100 ensures trig-based shader animations
-    * (sin(t), cos(t)) cycle seamlessly. */
-   if (t > 628.0f)
-      t = fmodf(t, 628.318530f);
+   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
+    * exactly representable up to t ~ 167772 (where 0.5*ulp first
+    * exceeds 0.01), so 65536 has wide margin and wraps roughly
+    * every 30 h of cumulative menu time, making the discontinuity
+    * effectively unobservable. */
+   if (t > 65536.0f)
+      t -= 65536.0f;
 }
 #endif
 
@@ -2133,6 +2158,8 @@ static void vulkan_font_free(void *data, bool is_threaded)
       font->font_driver->free(font->font_data);
 
    vkQueueWaitIdle(font->vk->context->queue);
+   if (font->upload_fence != VK_NULL_HANDLE)
+      vkDestroyFence(font->vk->context->device, font->upload_fence, NULL);
    vulkan_destroy_texture(
          font->vk->context->device, &font->texture);
    vulkan_destroy_texture(
@@ -2228,7 +2255,7 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
 static void vulkan_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float line_height;
@@ -2305,7 +2332,7 @@ static void vulkan_font_render_msg(
     * Line scan below discovers actual length; this uses strlen
     * only for the allocation upper bound. */
    {
-      size_t max_glyphs = strlen(msg);
+      size_t max_glyphs = msg_len;
       if (drop_x || drop_y)
          max_glyphs *= 2;
 
@@ -2512,9 +2539,11 @@ static void vulkan_font_render_msg(
     */
 
    /* Upload dirty atlas region to the GPU before the draw.
-    * Use a dedicated staging command buffer with vkQueueWaitIdle
-    * to guarantee the transfer is complete before the fragment
-    * shader samples the atlas in the main command buffer. */
+    * Use a dedicated staging command buffer with a recycled
+    * per-submit fence to guarantee the transfer is complete
+    * before the fragment shader samples the atlas in the main
+    * command buffer, without serialising the entire queue or
+    * holding queue_lock across the wait. */
    if (font->needs_update)
    {
       struct vk_texture *dynamic_tex = &font->texture_optimal;
@@ -2641,27 +2670,50 @@ static void vulkan_font_render_msg(
 
             vkEndCommandBuffer(staging_cmd);
 
+            {
+               /* Lazy-create the recycled fence on first use;
+                * subsequent uses reset it. If creation has failed
+                * previously (or fails now), fall back to a queue
+                * drain so we still have correct synchronisation. */
+               VkFence fence = font->upload_fence;
+               if (fence == VK_NULL_HANDLE)
+               {
+                  VkFenceCreateInfo fence_info;
+                  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+                  fence_info.pNext = NULL;
+                  fence_info.flags = 0;
+                  vkCreateFence(vk->context->device,
+                        &fence_info, NULL, &font->upload_fence);
+                  fence = font->upload_fence;
+               }
+               else
+                  vkResetFences(vk->context->device, 1, &fence);
+
+               submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+               submit_info.pNext                = NULL;
+               submit_info.waitSemaphoreCount   = 0;
+               submit_info.pWaitSemaphores      = NULL;
+               submit_info.pWaitDstStageMask    = NULL;
+               submit_info.commandBufferCount   = 1;
+               submit_info.pCommandBuffers      = &staging_cmd;
+               submit_info.signalSemaphoreCount = 0;
+               submit_info.pSignalSemaphores    = NULL;
+
 #ifdef HAVE_THREADS
-            slock_lock(vk->context->queue_lock);
+               slock_lock(vk->context->queue_lock);
+#endif
+               vkQueueSubmit(vk->context->queue,
+                     1, &submit_info, fence);
+               if (fence == VK_NULL_HANDLE)
+                  vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+               slock_unlock(vk->context->queue_lock);
 #endif
 
-            submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submit_info.pNext                = NULL;
-            submit_info.waitSemaphoreCount   = 0;
-            submit_info.pWaitSemaphores      = NULL;
-            submit_info.pWaitDstStageMask    = NULL;
-            submit_info.commandBufferCount   = 1;
-            submit_info.pCommandBuffers      = &staging_cmd;
-            submit_info.signalSemaphoreCount = 0;
-            submit_info.pSignalSemaphores    = NULL;
-            vkQueueSubmit(vk->context->queue,
-                  1, &submit_info, VK_NULL_HANDLE);
-
-            vkQueueWaitIdle(vk->context->queue);
-
-#ifdef HAVE_THREADS
-            slock_unlock(vk->context->queue_lock);
-#endif
+               if (fence != VK_NULL_HANDLE)
+                  vkWaitForFences(vk->context->device,
+                        1, &fence, VK_TRUE, UINT64_MAX);
+            }
 
             vkFreeCommandBuffers(vk->context->device,
                   vk->staging_pool, 1, &staging_cmd);
@@ -3947,11 +3999,14 @@ static void vulkan_init_textures(vk_t *vk)
 static void vulkan_deinit_textures(vk_t *vk)
 {
    int i;
-   video_driver_state_t *video_st = video_state_get_ptr();
-   /* Avoid memcpying from a destroyed/unmapped texture later on. */
-   const void *cached_frame       = video_st->frame_cache_data;
-   if (vulkan_is_mapped_swapchain_texture_ptr(vk, cached_frame))
-      video_st->frame_cache_data  = NULL;
+   /* Invalidate the cached frame unconditionally before destroying
+    * the swapchain textures.  The new API's lifetime lock blocks
+    * here if an off-thread consumer is mid-read of pixels that
+    * may live in one of those mapped textures, so the destroy
+    * below cannot race a reader.  Cheaper and simpler than the
+    * previous conditional check (which only covered the
+    * synchronous case via a pointer-in-mapped-range test). */
+   video_driver_cached_frame_invalidate();
 
    vkDestroySampler(vk->context->device, vk->samplers.nearest,        NULL);
    vkDestroySampler(vk->context->device, vk->samplers.linear,         NULL);
@@ -4768,6 +4823,49 @@ static void vulkan_set_signal_semaphore(void *handle, VkSemaphore semaphore)
 {
    vk_t *vk = (vk_t*)handle;
    vk->hw.signal_semaphore = semaphore;
+}
+
+/* Drop every reference the frontend holds to core-owned GPU objects.
+ *
+ * Called immediately before core_reset(). Vulkan-context cores
+ * typically destroy and recreate their renderer inside retro_reset(), 
+ * which invalidates the VkImage/VkImageView whose handles are cached 
+ * in vk->hw.image, plus any per-frame semaphores still referenced 
+ * via vk->hw.semaphores[] and vk->hw.signal_semaphore.
+ *
+ * vkDeviceWaitIdle ensures the previous frame's submit, which may
+ * still hold these handles in waitSemaphores or in descriptor sets
+ * bound by the filter chain, has fully retired before we let
+ * retro_reset() free them.
+ *
+ * After this returns, vulkan_frame()'s "vk->hw.image && ..." gate
+ * will fail and the existing fallback path will substitute the
+ * driver's default black texture for one frame, until the core's
+ * first post-reset retro_run() calls set_image() with fresh
+ * resources. */
+static void vulkan_invalidate_hw_render_cache(void *data)
+{
+   vk_t *vk = (vk_t*)data;
+
+   if (!vk || !(vk->flags & VK_FLAG_HW_ENABLE))
+      return;
+
+   if (vk->context && vk->context->device)
+   {
+#ifdef HAVE_THREADS
+      slock_lock(vk->context->queue_lock);
+#endif
+      vkDeviceWaitIdle(vk->context->device);
+#ifdef HAVE_THREADS
+      slock_unlock(vk->context->queue_lock);
+#endif
+   }
+
+   vk->hw.image            = NULL;
+   vk->hw.num_semaphores   = 0;
+   vk->hw.signal_semaphore = VK_NULL_HANDLE;
+   vk->hw.num_cmd          = 0;
+   vk->flags              &= ~VK_FLAG_HW_VALID_SEMAPHORE;
 }
 
 static void vulkan_init_hw_render(vk_t *vk)
@@ -6830,7 +6928,7 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          if (osd_params)
             font_driver_render_msg(vk,
-                  stat_text,
+                  stat_text, video_info->stat_text_len,
                   osd_params, NULL);
       }
 #endif
@@ -6841,7 +6939,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
       if (message_visible)
-          font_driver_render_msg(vk, msg, NULL, NULL);
+          font_driver_render_msg(vk, msg, strlen(msg), NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
       if (widgets_active)
@@ -7393,19 +7491,6 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
    return true;
 }
 
-static bool vulkan_is_mapped_swapchain_texture_ptr(const vk_t* vk,
-      const void* ptr)
-{
-   int i;
-   for (i = 0; i < (int) vk->num_swapchain_images; i++)
-   {
-      if (ptr == vk->swapchain[i].texture.mapped)
-         return true;
-   }
-
-   return false;
-}
-
 static bool vulkan_get_hw_render_interface(void *data,
       const struct retro_hw_render_interface **iface)
 {
@@ -7874,13 +7959,37 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       if (!is_idle)
          video_driver_cached_frame();
 
+      {
+         /* Wait specifically on the frame submission that recorded
+          * the readback copy.  vulkan_frame attaches its fence at
+          * swapchain_fences[current_frame_index] and sets the
+          * matching swapchain_fences_signalled[] entry to true, so
+          * waiting on that fence guarantees the readback copy
+          * recorded into vk->cmd has completed -- without draining
+          * the entire queue or holding queue_lock across the wait.
+          *
+          * If the fence is not yet signalled (extremely early in
+          * startup, or the is_idle path where no new submission
+          * happened on this slot), fall back to a queue drain so
+          * synchronisation remains correct. */
+         unsigned slot       = vk->context->current_frame_index;
+         VkFence frame_fence = vk->context->swapchain_fences[slot];
+
+         if (     frame_fence != VK_NULL_HANDLE
+               && vk->context->swapchain_fences_signalled[slot])
+            vkWaitForFences(vk->context->device, 1,
+                  &frame_fence, VK_TRUE, UINT64_MAX);
+         else
+         {
 #ifdef HAVE_THREADS
-      slock_lock(vk->context->queue_lock);
+            slock_lock(vk->context->queue_lock);
 #endif
-      vkQueueWaitIdle(vk->context->queue);
+            vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
-      slock_unlock(vk->context->queue_lock);
+            slock_unlock(vk->context->queue_lock);
 #endif
+         }
+      }
 
       if (!staging->memory)
       {
@@ -8359,6 +8468,7 @@ video_driver_t video_vulkan = {
    vulkan_shader_load_begin,
    vulkan_shader_load_step,
 #ifdef HAVE_GFX_WIDGETS
-   vulkan_gfx_widgets_enabled
+   vulkan_gfx_widgets_enabled,
 #endif
+   vulkan_invalidate_hw_render_cache
 };

@@ -470,6 +470,42 @@ static int action_start_state_slot(
    return 0;
 }
 
+static int action_start_state_load(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings       = config_get_ptr();
+
+   if (settings->bools.quick_menu_show_undo_save_load_state)
+      return action_start_state_slot(path, label, type, idx, entry_idx);
+   else
+   {
+      if (generic_action_ok_command(CMD_EVENT_UNDO_LOAD_STATE) == -1)
+         return -1;
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+   }
+
+   return 0;
+}
+
+static int action_start_state_save(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings       = config_get_ptr();
+
+   if (settings->bools.quick_menu_show_undo_save_load_state)
+      return action_start_state_slot(path, label, type, idx, entry_idx);
+   else
+   {
+      if (generic_action_ok_command(CMD_EVENT_UNDO_SAVE_STATE) == -1)
+         return -1;
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+   }
+
+   return 0;
+}
+
 static int action_start_replay_slot(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -1017,8 +1053,10 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_START(cbs, action_start_core_set_standalone_exempt);
             break;
          case MENU_SETTING_ACTION_SAVESTATE:
+            BIND_ACTION_START(cbs, action_start_state_save);
+            break;
          case MENU_SETTING_ACTION_LOADSTATE:
-            BIND_ACTION_START(cbs, action_start_state_slot);
+            BIND_ACTION_START(cbs, action_start_state_load);
             break;
          case MENU_SETTING_ACTION_PLAYREPLAY:
          case MENU_SETTING_ACTION_RECORDREPLAY:

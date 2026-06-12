@@ -54,6 +54,9 @@ bool content_load_state(const char* path, bool load_to_backup_buffer, bool autol
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path, bool save_to_disk);
 
+/* Automatically save a state if the interval has elapsed. */
+bool content_save_state_automatic(void);
+
 /* Save an automatic savestate to disk. */
 bool content_auto_save_state(const char *path);
 

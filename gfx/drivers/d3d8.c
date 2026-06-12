@@ -1495,7 +1495,7 @@ static void d3d8_font_render_line(
 
 static void d3d8_font_render_msg(
       void *userdata, void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float x, y, scale, drop_mod, drop_alpha;
@@ -2448,13 +2448,13 @@ static void d3d8_apply_state_changes(void *data)
       d3d->should_resize = true;
 }
 
-static void d3d8_set_osd_msg(void *data, const char *msg,
+static void d3d8_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    d3d8_video_t          *d3d = (d3d8_video_t*)data;
 
    IDirect3DDevice8_BeginScene(d3d->dev);
-   font_driver_render_msg(d3d, msg, params, font);
+   font_driver_render_msg(d3d, msg, msg_len, params, font);
    IDirect3DDevice8_EndScene(d3d->dev);
 }
 
@@ -2911,7 +2911,7 @@ static bool d3d8_frame(void *data, const void *frame,
    else if (statistics_show)
    {
       if (osd_params)
-         font_driver_render_msg(d3d, stat_text,
+         font_driver_render_msg(d3d, stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
    }
 #endif
@@ -2971,7 +2971,7 @@ static bool d3d8_frame(void *data, const void *frame,
       /* d3d8_font_render_msg wraps its own BeginScene/EndScene
        * around each DrawPrimitiveUP, matching the per-draw scene
        * convention used by gfx_display_d3d8_draw. */
-      font_driver_render_msg(d3d, msg, NULL, NULL);
+      font_driver_render_msg(d3d, msg, strlen(msg), NULL, NULL);
    }
 
    video_driver_update_title(NULL);

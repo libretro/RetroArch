@@ -1868,12 +1868,24 @@ static struct pcm *pcm_open_by_name(const char *name,
       const struct pcm_config *config)
 {
   unsigned int card, device;
+  const char  *p;
+  char        *endp;
   if ((name[0] != 'h')
    || (name[1] != 'w')
    || (name[2] != ':'))
     return NULL;
 
-  if (sscanf(&name[3], "%u,%u", &card, &device) != 2)
+  /* Parse "<card>,<device>" without sscanf (it strlen()s and
+   * mallocs internally on some libcs). strtoul skips leading
+   * whitespace and stops at the first non-digit, matching the
+   * semantics of "%u,%u". */
+  p      = &name[3];
+  card   = (unsigned int)strtoul(p, &endp, 10);
+  if (endp == p || *endp != ',')
+    return NULL;
+  p      = endp + 1;
+  device = (unsigned int)strtoul(p, &endp, 10);
+  if (endp == p)
     return NULL;
 
   return pcm_open(card, device, flags, config);
@@ -2164,7 +2176,24 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
       return NULL;
 
    if (devicestr)
-      sscanf(devicestr, "%u,%u", &card, &device);
+   {
+      /* Parse "<card>,<device>" without sscanf. Matches the prior
+       * behavior of best-effort parsing: card/device retain their
+       * defaults (0) if the string is malformed. */
+      char *endp;
+      unsigned long v = strtoul(devicestr, &endp, 10);
+      if (endp != devicestr)
+      {
+         card = (unsigned int)v;
+         if (*endp == ',')
+         {
+            const char *p = endp + 1;
+            v = strtoul(p, &endp, 10);
+            if (endp != p)
+               device = (unsigned int)v;
+         }
+      }
+   }
 
    RARCH_LOG("[TINYALSA] Using card: %u, device: %u.\n", card, device);
 
