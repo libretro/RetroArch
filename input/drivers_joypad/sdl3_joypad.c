@@ -3,6 +3,7 @@
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Higor Euripedes
  *  Copyright (C)      2023 - Carlo Refice
+ *  Copyright (C)      2026 - Rob Loach
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -17,12 +18,16 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <SDL3/SDL.h>
 
-#include "../input_driver.h"
+#include <streams/file_stream.h>
+#include <file/file_path.h>
 
+#include "../input_driver.h"
+#include "../../configuration.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
@@ -34,6 +39,8 @@ typedef struct _sdl3_joypad
    unsigned        num_axes;
    unsigned        num_buttons;
    unsigned        num_hats;
+   uint16_t        rumble_gain; /* 0-100 */
+   uint16_t        rumble[2];   /* raw magnitude per retro_rumble_effect (strong/weak) */
 } sdl3_joypad_t;
 
 /* TODO/FIXME - static globals */
@@ -56,13 +63,13 @@ static uint8_t sdl3_joypad_get_button(sdl3_joypad_t *pad, unsigned button)
    if (pad->gamepad)
       return (uint8_t)SDL_GetGamepadButton(pad->gamepad, (SDL_GamepadButton)button);
    else if (pad->joypad)
-      return (uint8_t)SDL_GetJoystickButton(pad->joypad, button);
+      return (uint8_t)SDL_GetJoystickButton(pad->joypad, (int)button);
    return 0;
 }
 
 static uint8_t sdl3_joypad_get_hat(sdl3_joypad_t *pad, unsigned hat)
 {
-   /* Gamepads always have num_hats=0; this is only reached for raw joysticks. */
+   /* Gamepads don't have hats, so we can pass this in directly for the Joystick. */
    return SDL_GetJoystickHat(pad->joypad, hat);
 }
 
@@ -73,6 +80,15 @@ static int16_t sdl3_joypad_get_axis(sdl3_joypad_t *pad, unsigned axis)
    else if (pad->joypad)
       return SDL_GetJoystickAxis(pad->joypad, (int)axis);
    return 0;
+}
+
+static bool sdl3_joypad_set_rumble_gain(unsigned pad, unsigned gain)
+{
+   if (pad >= MAX_USERS)
+      return false;
+
+   sdl3_joypads[pad].rumble_gain = (gain > 100) ? 100 : gain;
+   return true;
 }
 
 static void sdl3_joypad_connect(SDL_JoystickID jid)
@@ -147,6 +163,13 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
    pad->gamepad = gamepad;
    pad->joypad  = joypad;
 
+   /* Seed the rumble gain from the saved setting so it applies on connect. */
+   {
+      settings_t *settings = config_get_ptr();
+      if (settings)
+         sdl3_joypad_set_rumble_gain((unsigned int)slot, settings->uints.input_rumble_gain);
+   }
+
    if (gamepad)
    {
       vendor  = SDL_GetGamepadVendor(gamepad);
@@ -165,7 +188,8 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
 
    input_autoconfigure_connect(
          sdl3_joypad_name(slot),
-         NULL, NULL,
+         NULL,
+         SDL_GetJoystickPath(joypad),
          sdl_joypad.ident,
          slot,
          vendor,
@@ -229,9 +253,43 @@ static void sdl3_joypad_destroy(void)
    SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
 }
 
+/**
+ * Attempts to load SDL_GameControllerDB from the autoconfig directory.
+ *
+ * @return The number of loaded configs.
+ * @see https://github.com/mdqinc/SDL_GameControllerDB
+ */
+static int sdl3_joypad_load_gamecontrollerdb(void)
+{
+   settings_t *settings = config_get_ptr();
+   char path[PATH_MAX_LENGTH];
+   void *buf = NULL;
+   int64_t len = 0;
+   int num_mappings = 0;
+   SDL_IOStream *io;
+
+   if (settings == NULL || settings->paths.directory_autoconfig[0] == '\0')
+      return 0;
+
+   fill_pathname_join_special(path, settings->paths.directory_autoconfig, "sdl3/gamecontrollerdb.cfg", sizeof(path));
+   if (filestream_read_file(path, &buf, &len) == 0 || len == 0)
+      return 0;
+
+   io = SDL_IOFromConstMem(buf, (size_t)len);
+   num_mappings = SDL_AddGamepadMappingsFromIO(io, true);
+   if (num_mappings >= 0)
+      RARCH_LOG("[SDL3] Loaded %d gamepad mappings from \"%s\".\n", num_mappings, path);
+   else
+      RARCH_WARN("[SDL3] Failed to load gamepad mappings from \"%s\": %s.\n", path, SDL_GetError());
+   free(buf);
+   return num_mappings;
+}
+
+/**
+ * Initializes the SDL3 Joypad system, and loads the GameController DB.
+ */
 static void *sdl3_joypad_init(void *data)
 {
-   int i, count = 0;
    SDL_InitFlags sdl_subsystem_flags = SDL_WasInit(0);
 
    if (sdl_subsystem_flags == 0)
@@ -247,7 +305,8 @@ static void *sdl3_joypad_init(void *data)
 
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
 
-   /* Joystick connected events are triggered after load, so no need to initialize them here. */
+   /* Load SDL_GameControllerDB, so that we have the controller mappings. */
+   sdl3_joypad_load_gamecontrollerdb();
 
    return (void*)-1;
 }
@@ -338,32 +397,30 @@ static int16_t sdl3_joypad_state(
       unsigned port)
 {
    int i;
-   int16_t ret            = 0;
-   uint16_t port_idx      = joypad_info->joy_idx;
-   sdl3_joypad_t *pad;
+   int16_t ret = 0;
+   uint16_t port_idx = joypad_info->joy_idx;
 
    if (port_idx >= MAX_USERS)
       return 0;
 
-   pad = &sdl3_joypads[port_idx];
-   if (!pad->joypad)
+   if (!sdl3_joypads[port_idx].joypad)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
       /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint64_t joykey = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey : joypad_info->auto_binds[i].joykey;
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
 
       if (
                (uint16_t)joykey != NO_BTN
-            && sdl3_joypad_button_state(pad, (uint16_t)joykey)
+            && sdl3_joypad_button_state(&sdl3_joypads[port_idx], (uint16_t)joykey)
          )
          ret |= (1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(sdl3_joypad_axis_state(pad, joyaxis))
+            ((float)abs(sdl3_joypad_axis_state(&sdl3_joypads[port_idx], joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -392,17 +449,15 @@ static void sdl3_joypad_poll(void)
    }
 
    SDL_UpdateGamepads();
-   /* Discard all remaining joystick/gamepad input events (axis, button, hat,
-    * etc.) - we sample state directly via SDL_GetGamepadAxis / SDL_GetJoystickButton
-    * and don't need the event copies piling up in the queue. */
-   SDL_FlushEvents(SDL_EVENT_JOYSTICK_AXIS_MOTION, SDL_EVENT_GAMEPAD_REMAPPED);
+
+   /* Flush all remaining gamepad/joystick input events, since we handle it directly. */
+   SDL_FlushEvents(SDL_EVENT_JOYSTICK_AXIS_MOTION, SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED);
 }
 
 static bool sdl3_joypad_set_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   uint16_t low  = 0;
-   uint16_t high = 0;
+   uint16_t low, high;
 
    if (pad >= MAX_USERS)
       return false;
@@ -410,15 +465,18 @@ static bool sdl3_joypad_set_rumble(unsigned pad,
    switch (effect)
    {
       case RETRO_RUMBLE_STRONG:
-         low  = strength;
-         break;
       case RETRO_RUMBLE_WEAK:
-         high = strength;
          break;
       default:
          return false;
    }
 
+   /* Send both effects, while not clobbering the other effect. */
+   sdl3_joypads[pad].rumble[effect] = strength;
+   low  = (uint16_t)((sdl3_joypads[pad].rumble[RETRO_RUMBLE_STRONG] * sdl3_joypads[pad].rumble_gain) / 100);
+   high = (uint16_t)((sdl3_joypads[pad].rumble[RETRO_RUMBLE_WEAK] * sdl3_joypads[pad].rumble_gain) / 100);
+
+   /* The frontend re-issues rumble every frame, so just use an arbitrary duration. */
    if (sdl3_joypads[pad].gamepad)
       return SDL_RumbleGamepad(sdl3_joypads[pad].gamepad, low, high, 5000);
    else if (sdl3_joypads[pad].joypad)
@@ -430,10 +488,10 @@ static bool sdl3_joypad_set_rumble(unsigned pad,
 /**
  * Enables or disables a sensor on the specified gamepad.
  *
- * @param pad    Index of the gamepad.
+ * @param pad Index of the gamepad.
  * @param action Sensor action to perform (enable/disable gyroscope or accelerometer).
- * @param rate   Requested sensor update rate (unused).
- * @return       true if the sensor state was set successfully, false otherwise.
+ * @param rate Requested sensor update rate (unused).
+ * @return true if the sensor state was set successfully, false otherwise.
  */
 static bool sdl3_joypad_set_sensor_state(unsigned pad,
    enum retro_sensor_action action, unsigned rate)
@@ -516,13 +574,16 @@ static bool sdl3_joypad_get_sensor_input(unsigned pad, unsigned id, float *value
    return true;
 }
 
+/**
+ * Queries whether or not the joypad is still connected.
+ *
+ * We check against the NULL state of the joypad, since that is managed
+ * by the event poll. SDL_GamepadConnected() or SDL_JoystickConnected()
+ * would be redundant.
+ */
 static bool sdl3_joypad_query_pad(unsigned pad)
 {
-   if (pad >= MAX_USERS || !sdl3_joypads[pad].joypad)
-      return false;
-   if (sdl3_joypads[pad].gamepad)
-      return SDL_GamepadConnected(sdl3_joypads[pad].gamepad);
-   return SDL_JoystickConnected(sdl3_joypads[pad].joypad);
+   return pad < MAX_USERS && sdl3_joypads[pad].joypad != NULL;
 }
 
 input_device_driver_t sdl_joypad = {
@@ -535,9 +596,9 @@ input_device_driver_t sdl_joypad = {
    sdl3_joypad_axis,
    sdl3_joypad_poll,
    sdl3_joypad_set_rumble,
-   NULL, /* set_rumble_gain */
+   sdl3_joypad_set_rumble_gain,
    sdl3_joypad_set_sensor_state,
    sdl3_joypad_get_sensor_input,
    sdl3_joypad_name,
-   "sdl3", /* TODO: Rename all the SDL Controller Drivers to "sdl"? You can't use them at the same time anyway, and it will fix autoconfigs. */
+   "sdl3",
 };
