@@ -71,13 +71,6 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
 
-/* The button/axis indices below are the numeric values of the
- * SDL_GamepadButton / SDL_GamepadAxis enums (the SDL3 driver reports gamepad
- * state via those enums). They MUST be written as literals: these autoconfig
- * strings are assembled by the preprocessor's '#' operator, which stringifies
- * an enum name rather than evaluating it - e.g. SDL_GAMEPAD_BUTTON_DPAD_RIGHT
- * would become the text "SDL_GAMEPAD_BUTTON_DPAD_RIGHT", which strtoull()
- * parses as button 0, collapsing every bind onto the same button. */
 #define SDL3_DEFAULT_BINDS \
 DECL_BTN_EX(a,           1, "Right Face Button")   /* SDL_GAMEPAD_BUTTON_EAST           */ \
 DECL_BTN_EX(b,           0, "Bottom Face Button")  /* SDL_GAMEPAD_BUTTON_SOUTH          */ \
