@@ -32,10 +32,6 @@
 #include <wiiu/pad_strings.h>
 #endif
 
-#ifdef HAVE_SDL3
-#include <SDL3/SDL.h>
-#endif
-
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
 #define DECL_BTN_EX(btn, bind, name) "input_" #btn "_btn = " #bind "\ninput_" #btn "_btn_label = \"" name "\"\n"
 #define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
