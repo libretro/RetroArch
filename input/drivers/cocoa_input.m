@@ -33,6 +33,9 @@
 
 #include "../drivers_keyboard/keyboard_event_apple.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
+#if TARGET_OS_IPHONE
+#include "../../ui/drivers/cocoa/apple_platform.h"
+#endif
 #include "../../ui/ui_companion_driver.h"
 
 #ifdef HAVE_COREMOTION
@@ -320,6 +323,12 @@ void apple_input_keyboard_event(bool down,
    bool keyboard_gamepad_enable = settings->bools.input_keyboard_gamepad_enable;
    bool small_keyboard_enable   = settings->bools.input_small_keyboard_enable;
    unsigned original_code       = code;
+
+   if (ios_keyboard_active())
+   {
+      apple_input_keyboard_reset();
+      return;
+   }
 
    if (keyboard_gamepad_enable)
    {
