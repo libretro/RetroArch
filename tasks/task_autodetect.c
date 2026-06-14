@@ -45,14 +45,6 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 
-enum autoconfig_handle_flags
-{
-   AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
-   AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1),
-   AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF = (1 << 2),
-   AUTOCONF_FLAG_HAS_STANDARD_MAPPING   = (1 << 3) /* When enabled, will avoid looking up the autoconfig. */
-};
-
 typedef struct
 {
    char *dir_autoconfig;
@@ -873,9 +865,24 @@ bool input_autoconfigure_connect(
       unsigned pid)
 {
    return input_autoconfigure_connect_ex(name, display_name, phys,
-         driver, port, vid, pid, false);
+         driver, port, vid, pid, 0);
 }
 
+/**
+ * Queues an asynchronous task to autoconfigure a newly connected device.
+ *
+ * @param name Device name reported by the driver, used for name-based profile matching. May be NULL.
+ * @param display_name Human-readable name, or NULL to use the matched profile.
+ * @param phys Physical location string (e.g. USB path), or NULL.
+ * @param driver Joypad driver identifier (e.g. "sdl3", "udev").
+ * @param port Input port to configure (0 .. MAX_INPUT_DEVICES-1).
+ * @param vid USB vendor ID, or 0 if unknown.
+ * @param pid USB product ID, or 0 if unknown.
+ * @param flags An enum autoconfig_handle_flags bitmask seeding the initial state.
+ *
+ * @return true if the autoconfigure task was queued, false otherwise.
+ * @see input_autoconfigure_connect()
+ */
 bool input_autoconfigure_connect_ex(
       const char *name,
       const char *display_name,
@@ -884,7 +891,7 @@ bool input_autoconfigure_connect_ex(
       unsigned port,
       unsigned vid,
       unsigned pid,
-      bool has_standard_mapping)
+      uint8_t flags)
 {
    task_finder_data_t find_data;
    retro_task_t *task                     = NULL;
@@ -926,14 +933,13 @@ bool input_autoconfigure_connect_ex(
    autoconfig_handle->device_info.joypad_driver[0] = '\0';
    autoconfig_handle->device_info.autoconfigured   = false;
    autoconfig_handle->device_info.name_index       = 0;
+   autoconfig_handle->flags                        = flags;
    if (autoconfig_enabled)
       autoconfig_handle->flags |= AUTOCONF_FLAG_AUTOCONFIG_ENABLED;
    if (!notification_show_autoconfig)
       autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
    if (!notification_show_autoconfig_fails)
       autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF;
-   if (has_standard_mapping)
-      autoconfig_handle->flags |= AUTOCONF_FLAG_HAS_STANDARD_MAPPING;
    autoconfig_handle->dir_autoconfig               = NULL;
    autoconfig_handle->dir_driver_autoconfig        = NULL;
    autoconfig_handle->autoconfig_file              = NULL;

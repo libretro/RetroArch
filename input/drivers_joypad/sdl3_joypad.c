@@ -43,8 +43,19 @@ typedef struct _sdl3_joypad
    uint16_t        rumble[2];   /* raw magnitude per retro_rumble_effect (strong/weak) */
 } sdl3_joypad_t;
 
-/* TODO/FIXME - static globals */
+/**
+ * The static global for the active joypads.
+ *
+ * @todo Move away from static globals.
+ */
 static sdl3_joypad_t sdl3_joypads[MAX_USERS];
+
+/**
+ * Determines whether or not the default gamepad mappings were loaded.
+ *
+ * @see SDL_GameControllerAddMappingsFromFile()
+ */
+static bool sdl3_joypad_mappings_loaded;
 
 static const char *sdl3_joypad_name(unsigned pad)
 {
@@ -194,7 +205,7 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
          slot,
          vendor,
          product,
-         gamepad != NULL); /* Gamepads have standard mapping definitions */
+         (sdl3_joypad_mappings_loaded && gamepad != NULL) ? AUTOCONF_FLAG_HAS_STANDARD_MAPPING : 0);
 
    if (gamepad)
    {
@@ -242,6 +253,7 @@ static void sdl3_joypad_disconnect(SDL_JoystickID jid)
 
 static void sdl3_joypad_destroy(void)
 {
+
    for (int i = 0; i < MAX_USERS; i++)
    {
       if (sdl3_joypads[i].gamepad)
@@ -251,6 +263,11 @@ static void sdl3_joypad_destroy(void)
    }
 
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
+
+   /* Unload any of the mappings. */
+   SDL_ReloadGamepadMappings();
+   sdl3_joypad_mappings_loaded = false;
+
    SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
 }
 
@@ -280,8 +297,10 @@ static int sdl3_joypad_load_gamecontrollerdb(void)
 
    io = SDL_IOFromConstMem(buf, (size_t)len);
    num_mappings = SDL_AddGamepadMappingsFromIO(io, true);
-   if (num_mappings >= 0)
+   if (num_mappings >= 0) {
       RARCH_LOG("[SDL3] Loaded %d gamepad mappings from \"%s\".\n", num_mappings, path);
+      sdl3_joypad_mappings_loaded = true;
+   }
    else
       RARCH_WARN("[SDL3] Failed to load gamepad mappings from \"%s\": %s.\n", path, SDL_GetError());
    free(buf);
@@ -306,9 +325,9 @@ static void *sdl3_joypad_init(void *data)
          return NULL;
    }
 
+   /* Set the initial state of the joypad system. */
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
-
-   /* Load SDL_GameControllerDB, so that we have the controller mappings. */
+   sdl3_joypad_mappings_loaded = false;
    sdl3_joypad_load_gamecontrollerdb();
 
    return (void*)-1;

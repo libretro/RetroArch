@@ -267,6 +267,20 @@ void *savefile_ptr_get(void);
 void path_init_savefile_new(void);
 
 /* Autoconfigure tasks */
+
+/**
+ * Flags controlling how a device is autoconfigured.
+ *
+ * @see input_autoconfigure_connect_ex()
+ */
+enum autoconfig_handle_flags
+{
+   AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
+   AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1),
+   AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF = (1 << 2),
+   AUTOCONF_FLAG_HAS_STANDARD_MAPPING   = (1 << 3) /* Device has a known, authoritative mapping, so fallback profiles are treated as matches. */
+};
+
 void input_autoconfigure_blissbox_override_handler(
       int vid, int pid, char *device_name, size_t len);
 bool input_autoconfigure_connect(
@@ -285,7 +299,7 @@ bool input_autoconfigure_connect_ex(
       unsigned port,
       unsigned vid,
       unsigned pid,
-      bool has_standard_mapping);
+      uint8_t flags);
 bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
 
