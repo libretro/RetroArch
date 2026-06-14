@@ -49,7 +49,8 @@ enum autoconfig_handle_flags
 {
    AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
    AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1),
-   AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF = (1 << 2)
+   AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF = (1 << 2),
+   AUTOCONF_FLAG_HAS_STANDARD_MAPPING   = (1 << 3) /* When enabled, will avoid looking up the autoconfig. */
 };
 
 typedef struct
@@ -768,6 +769,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
           * below).  A stack buffer of matching size sidesteps both
           * issues. */
          char name_backup[sizeof(autoconfig_handle->device_info.name)];
+         bool fallback_matched;
 
          strlcpy(name_backup, autoconfig_handle->device_info.name,
                sizeof(name_backup));
@@ -776,15 +778,15 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
                fallback_device_name,
                sizeof(autoconfig_handle->device_info.name));
 
-         /* This is not a genuine match - leave
-          * match_found set to 'false' regardless
-          * of the outcome */
-         input_autoconfigure_scan_config_files_internal(
-               autoconfig_handle);
+         /* Apply the fallback built-in profile. */
+         fallback_matched = input_autoconfigure_scan_config_files_internal(autoconfig_handle);
 
          strlcpy(autoconfig_handle->device_info.name,
                name_backup,
                sizeof(autoconfig_handle->device_info.name));
+
+         if (fallback_matched && (autoconfig_handle->flags & AUTOCONF_FLAG_HAS_STANDARD_MAPPING))
+            match_found = true;
       }
    }
 
@@ -870,6 +872,20 @@ bool input_autoconfigure_connect(
       unsigned vid,
       unsigned pid)
 {
+   return input_autoconfigure_connect_ex(name, display_name, phys,
+         driver, port, vid, pid, false);
+}
+
+bool input_autoconfigure_connect_ex(
+      const char *name,
+      const char *display_name,
+      const char *phys,
+      const char *driver,
+      unsigned port,
+      unsigned vid,
+      unsigned pid,
+      bool has_standard_mapping)
+{
    task_finder_data_t find_data;
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
@@ -916,6 +932,8 @@ bool input_autoconfigure_connect(
       autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
    if (!notification_show_autoconfig_fails)
       autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF;
+   if (has_standard_mapping)
+      autoconfig_handle->flags |= AUTOCONF_FLAG_HAS_STANDARD_MAPPING;
    autoconfig_handle->dir_autoconfig               = NULL;
    autoconfig_handle->dir_driver_autoconfig        = NULL;
    autoconfig_handle->autoconfig_file              = NULL;

@@ -186,14 +186,15 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
       product = SDL_GetJoystickProduct(joypad);
    }
 
-   input_autoconfigure_connect(
+   input_autoconfigure_connect_ex(
          sdl3_joypad_name(slot),
          NULL,
          SDL_GetJoystickPath(joypad),
          sdl_joypad.ident,
          slot,
          vendor,
-         product);
+         product,
+         gamepad != NULL); /* Gamepads have standard mapping definitions */
 
    if (gamepad)
    {
@@ -272,8 +273,10 @@ static int sdl3_joypad_load_gamecontrollerdb(void)
       return 0;
 
    fill_pathname_join_special(path, settings->paths.directory_autoconfig, "sdl3/gamecontrollerdb.cfg", sizeof(path));
-   if (filestream_read_file(path, &buf, &len) == 0 || len == 0)
+   if (filestream_read_file(path, &buf, &len) == 0 || len == 0) {
+      RARCH_WARN("[SDL3] Failed to load gamepad mappings from \"%s\".\n", path);
       return 0;
+   }
 
    io = SDL_IOFromConstMem(buf, (size_t)len);
    num_mappings = SDL_AddGamepadMappingsFromIO(io, true);

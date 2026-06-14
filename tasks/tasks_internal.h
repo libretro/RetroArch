@@ -277,6 +277,15 @@ bool input_autoconfigure_connect(
       unsigned port,
       unsigned vid,
       unsigned pid);
+bool input_autoconfigure_connect_ex(
+      const char *name,
+      const char *display_name,
+      const char *phys,
+      const char *driver,
+      unsigned port,
+      unsigned vid,
+      unsigned pid,
+      bool has_standard_mapping);
 bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
 
