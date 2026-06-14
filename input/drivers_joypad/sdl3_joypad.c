@@ -105,6 +105,11 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
    SDL_Gamepad  *gamepad = NULL;
    SDL_Joystick *joypad  = NULL;
 
+   /* Protect against connecting an already connected device. */
+   for (i = 0; i < MAX_USERS; i++)
+      if (sdl3_joypads[i].jid == jid)
+         return;
+
    /* Connect to the device. */
    if (SDL_IsGamepad(jid))
    {
@@ -180,9 +185,8 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
       product = SDL_GetGamepadProduct(gamepad);
 
       /* Ensure the player index matches the slot. */
-      if (SDL_GetGamepadPlayerIndex(gamepad) != slot) {
+      if (SDL_GetGamepadPlayerIndex(gamepad) != slot)
          SDL_SetGamepadPlayerIndex(gamepad, (int)slot);
-      }
    }
    else
    {
@@ -219,9 +223,13 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
    }
    else
    {
-      pad->num_axes    = SDL_GetNumJoystickAxes(joypad);
-      pad->num_buttons = SDL_GetNumJoystickButtons(joypad);
-      pad->num_hats    = SDL_GetNumJoystickHats(joypad);
+      /* These can return -1 on error, so protect accordingly. */
+      int num_axes     = SDL_GetNumJoystickAxes(joypad);
+      int num_buttons  = SDL_GetNumJoystickButtons(joypad);
+      int num_hats     = SDL_GetNumJoystickHats(joypad);
+      pad->num_axes    = (num_axes    > 0) ? (unsigned)num_axes    : 0;
+      pad->num_buttons = (num_buttons > 0) ? (unsigned)num_buttons : 0;
+      pad->num_hats    = (num_hats    > 0) ? (unsigned)num_hats    : 0;
    }
 }
 
@@ -280,7 +288,8 @@ static int sdl3_joypad_load_gamecontrollerdb(void)
       return 0;
 
    fill_pathname_join_special(path, settings->paths.directory_autoconfig, "sdl3/gamecontrollerdb.cfg", sizeof(path));
-   if (filestream_read_file(path, &buf, &len) == 0 || len == 0) {
+   if (filestream_read_file(path, &buf, &len) == 0 || len == 0)
+   {
       RARCH_WARN("[SDL3] Failed to load gamepad mappings from \"%s\".\n", path);
       return 0;
    }
@@ -316,6 +325,19 @@ static void *sdl3_joypad_init(void *data)
    /* Set the initial state of the joypad system. */
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
    sdl3_joypad_load_gamecontrollerdb();
+
+   /* Ensure we know about any already connected devices. */
+   {
+      int i;
+      int num_joysticks = 0;
+      SDL_JoystickID *joysticks = SDL_GetJoysticks(&num_joysticks);
+      if (joysticks)
+      {
+         for (i = 0; i < num_joysticks; i++)
+            sdl3_joypad_connect(joysticks[i]);
+         SDL_free(joysticks);
+      }
+   }
 
    return (void*)-1;
 }
