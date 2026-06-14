@@ -50,13 +50,6 @@ typedef struct _sdl3_joypad
  */
 static sdl3_joypad_t sdl3_joypads[MAX_USERS];
 
-/**
- * Determines whether or not the default gamepad mappings were loaded.
- *
- * @see SDL_GameControllerAddMappingsFromFile()
- */
-static bool sdl3_joypad_mappings_loaded;
-
 static const char *sdl3_joypad_name(unsigned pad)
 {
    if (pad >= MAX_USERS || !sdl3_joypads[pad].jid)
@@ -205,7 +198,7 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
          slot,
          vendor,
          product,
-         (sdl3_joypad_mappings_loaded && gamepad != NULL) ? AUTOCONF_FLAG_HAS_STANDARD_MAPPING : 0);
+         gamepad ? AUTOCONF_FLAG_HAS_STANDARD_MAPPING : 0); /* An open SDL_Gamepad always has a normalized mapping */
 
    if (gamepad)
    {
@@ -266,7 +259,6 @@ static void sdl3_joypad_destroy(void)
 
    /* Unload any of the mappings. */
    SDL_ReloadGamepadMappings();
-   sdl3_joypad_mappings_loaded = false;
 
    SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
 }
@@ -286,7 +278,9 @@ static int sdl3_joypad_load_gamecontrollerdb(void)
    int num_mappings = 0;
    SDL_IOStream *io;
 
-   if (settings == NULL || settings->paths.directory_autoconfig[0] == '\0')
+   if (     settings == NULL
+         || !settings->bools.input_autodetect_enable
+         || settings->paths.directory_autoconfig[0] == '\0')
       return 0;
 
    fill_pathname_join_special(path, settings->paths.directory_autoconfig, "sdl3/gamecontrollerdb.cfg", sizeof(path));
@@ -297,10 +291,8 @@ static int sdl3_joypad_load_gamecontrollerdb(void)
 
    io = SDL_IOFromConstMem(buf, (size_t)len);
    num_mappings = SDL_AddGamepadMappingsFromIO(io, true);
-   if (num_mappings >= 0) {
+   if (num_mappings >= 0)
       RARCH_LOG("[SDL3] Loaded %d gamepad mappings from \"%s\".\n", num_mappings, path);
-      sdl3_joypad_mappings_loaded = true;
-   }
    else
       RARCH_WARN("[SDL3] Failed to load gamepad mappings from \"%s\": %s.\n", path, SDL_GetError());
    free(buf);
@@ -327,7 +319,6 @@ static void *sdl3_joypad_init(void *data)
 
    /* Set the initial state of the joypad system. */
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
-   sdl3_joypad_mappings_loaded = false;
    sdl3_joypad_load_gamecontrollerdb();
 
    return (void*)-1;
