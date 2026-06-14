@@ -429,7 +429,7 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
          {
             char *ptr;
             uint32_t flags = setting->flags;
-            *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
+            *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 0);
             if (flags & SD_FLAG_HAS_RANGE)
             {
                float min   = setting->min;
@@ -451,7 +451,7 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
          {
             uint32_t flags = setting->flags;
             char *end;
-            unsigned long long parsed = strtoull(value, &end, 10);
+            unsigned long long parsed = strtoull(value, &end, 0);
             if (end != value && *end == '\0')
                *setting->value.target.sizet = (size_t)parsed;
             if (flags & SD_FLAG_HAS_RANGE)
@@ -529,7 +529,7 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
       if (*ptr >= '0' && *ptr <= '9')
       {
          char *end            = NULL;
-         unsigned long value  = strtoul(str, &end, 10);
+         unsigned long value  = strtoul(str, &end, 0);
          /* Ensure entire string was consumed and value fits in unsigned */
          if (end && *end == '\0' && value <= UINT_MAX)
          {
