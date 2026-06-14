@@ -174,7 +174,7 @@ static bool slang_process_reflection(
    std::unordered_map<std::string, slang_texture_semantic_map> texture_semantic_map;
    std::unordered_map<std::string, slang_texture_semantic_map> texture_semantic_uniform_map;
 
-   for (i = 0; i <= pass_number; i++)
+   for (i = 0; i < shader_info->passes; i++)
    {
       if (!*shader_info->pass[i].alias)
          continue;
