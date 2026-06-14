@@ -256,10 +256,6 @@ static void sdl3_joypad_destroy(void)
    }
 
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
-
-   /* Unload any of the mappings. */
-   SDL_ReloadGamepadMappings();
-
    SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
 }
 
