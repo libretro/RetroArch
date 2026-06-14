@@ -278,7 +278,12 @@ enum autoconfig_handle_flags
    AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
    AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1),
    AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF = (1 << 2),
-   AUTOCONF_FLAG_HAS_STANDARD_MAPPING   = (1 << 3) /* Device has a known, authoritative mapping, so fallback profiles are treated as matches. */
+   /**
+    * Device has a known, authoritative mapping, so fallback profiles are treated as matches.
+    *
+    * This is used in the SDL3 driver, for instance, where mappings are provided directly.
+    */
+   AUTOCONF_FLAG_HAS_STANDARD_MAPPING = (1 << 3)
 };
 
 void input_autoconfigure_blissbox_override_handler(
