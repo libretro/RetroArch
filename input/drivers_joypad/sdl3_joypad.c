@@ -186,7 +186,28 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
 
       /* Ensure the player index matches the slot. */
       if (SDL_GetGamepadPlayerIndex(gamepad) != slot)
-         SDL_SetGamepadPlayerIndex(gamepad, (int)slot);
+         SDL_SetGamepadPlayerIndex(gamepad, slot);
+
+      /* Set the LED to match the player number. */
+      switch (slot) {
+         case 0: SDL_SetGamepadLED(gamepad, 255, 0, 0); break;
+         case 1: SDL_SetGamepadLED(gamepad, 0, 0, 255); break;
+         case 2: SDL_SetGamepadLED(gamepad, 0, 255, 0); break;
+         case 3: SDL_SetGamepadLED(gamepad, 255, 255, 0); break;
+         case 4: SDL_SetGamepadLED(gamepad, 255, 0, 255); break;
+         case 5: SDL_SetGamepadLED(gamepad, 0, 255, 255); break;
+         case 6: SDL_SetGamepadLED(gamepad, 255, 128, 0); break;
+         case 7: SDL_SetGamepadLED(gamepad, 255, 255, 255); break;
+         case 8: SDL_SetGamepadLED(gamepad, 128, 0, 255); break;
+         case 9: SDL_SetGamepadLED(gamepad, 0, 128, 255); break;
+         case 10: SDL_SetGamepadLED(gamepad, 128, 255, 0); break;
+         case 11: SDL_SetGamepadLED(gamepad, 255, 0, 128); break;
+         case 12: SDL_SetGamepadLED(gamepad, 128, 0, 0); break;
+         case 13: SDL_SetGamepadLED(gamepad, 0, 128, 0); break;
+         case 14: SDL_SetGamepadLED(gamepad, 0, 0, 128); break;
+         case 15: SDL_SetGamepadLED(gamepad, 128, 128, 128); break;
+         default: SDL_SetGamepadLED(gamepad, 0, 0, 0); break;
+      }
    }
    else
    {
@@ -240,8 +261,10 @@ static void sdl3_joypad_disconnect(SDL_JoystickID jid)
       if (sdl3_joypads[i].jid != jid)
          continue;
 
-      if (sdl3_joypads[i].gamepad)
+      if (sdl3_joypads[i].gamepad) {
+         SDL_SetGamepadPlayerIndex(sdl3_joypads[i].gamepad, -1);
          SDL_CloseGamepad(sdl3_joypads[i].gamepad);
+      }
       else if (sdl3_joypads[i].joypad)
          SDL_CloseJoystick(sdl3_joypads[i].joypad);
 
