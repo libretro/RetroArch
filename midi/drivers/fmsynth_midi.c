@@ -127,7 +127,8 @@ typedef struct
    uint32_t age;          /* note_counter at allocation (older = lower)     */
    uint8_t  is_noise;     /* percussion noise hit                           */
    uint8_t  held;         /* note-off deferred by the sustain pedal         */
-   float    lfo_phase;    /* per-voice vibrato LFO phase, in cycles         */
+   float    lfo_phase;    /* mod-wheel vibrato LFO phase, in cycles         */
+   float    plfo_phase;   /* per-patch tremolo/vibrato LFO phase, in cycles */
    uint8_t  active;       /* voice is in use (stage != OFF)                 */
    uint8_t  channel;      /* owning MIDI channel 0..15                      */
    uint8_t  note;         /* MIDI note number 0..127                        */
@@ -388,6 +389,7 @@ static void fmsynth_note_on(fmsynth_t *fm,
    v->is_noise   = 0;
    v->held       = 0;
    v->lfo_phase  = 0.0f;
+   v->plfo_phase = 0.0f;
    v->drum_dec   = 0.0f;
    v->drum_index = 0.0f;
 
@@ -624,6 +626,13 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
          unsigned ncar      = 0;
          int      first_car = 0;
          float    inv_car;
+         /* per-patch tremolo/vibrato LFO (libfmsynth-style, one LFO/voice) */
+         float    plfo_inc = pt->lfo_rate / rate;
+         float    trem     = pt->lfo_trem;
+         float    vibp     = pt->lfo_vib * FMSYNTH_SEMI_TO_RATE;
+         int      has_lfo  = (pt->lfo_rate > 0.0f
+                          && (pt->lfo_trem > 0.0f || pt->lfo_vib > 0.0f))
+                          ? 1 : 0;
          unsigned o;
 
          if (kscale < FMSYNTH_KEY_SCALE_MIN) kscale = FMSYNTH_KEY_SCALE_MIN;
@@ -655,6 +664,7 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
          {
             float pmul = 1.0f;
             float smp  = 0.0f;
+            float plfo = 0.0f;
             unsigned j;
             int alloff = 1;
 
@@ -664,6 +674,14 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
                            * FMSYNTH_SEMI_TO_RATE;
                v->lfo_phase += lfo_inc;
                if (v->lfo_phase >= 1.0f) v->lfo_phase -= 1.0f;
+            }
+
+            if (has_lfo)
+            {
+               plfo = fmsynth_sine(v->plfo_phase);
+               v->plfo_phase += plfo_inc;
+               if (v->plfo_phase >= 1.0f) v->plfo_phase -= 1.0f;
+               pmul += vibp * plfo;             /* patch vibrato */
             }
 
             /* note-off gates every operator into release */
@@ -725,6 +743,8 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
             }
 
             smp *= inv_car * vgain;
+            if (trem > 0.0f)
+               smp *= (1.0f + trem * plfo);     /* patch tremolo */
             out[n * 2]     += smp * panL;
             out[n * 2 + 1] += smp * panR;
 

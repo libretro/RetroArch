@@ -98,6 +98,9 @@ typedef struct
    fmsynth_op_t op[FMSYNTH_OPS];
    unsigned char algorithm;  /* FMSYNTH_ALG_*                      */
    float         feedback;   /* top-operator self-feedback (0..~1) */
+   float         lfo_rate;   /* per-voice LFO rate in Hz (0 = off) */
+   float         lfo_trem;   /* tremolo (amplitude) depth 0..~0.3  */
+   float         lfo_vib;    /* vibrato (pitch) depth in semitones */
 } fmsynth_patch_t;
 
 /* Convenience: a faithful 2-op patch (operator 1 modulates operator 0). */
@@ -106,7 +109,7 @@ typedef struct
        { (mratio), (mindex), (ma), (md), (ms), 0.40f },         \
        { 1.0f, 0.0f, 0.01f, 0.1f, 0.0f, 0.1f },                 \
        { 1.0f, 0.0f, 0.01f, 0.1f, 0.0f, 0.1f } },               \
-     FMSYNTH_ALG_TWO_OP, 0.0f }
+     FMSYNTH_ALG_TWO_OP, 0.0f, 0.0f, 0.0f, 0.0f }
 
 /* ---- 16 GM family templates (index = GM program >> 3) ------------------ */
 static const fmsynth_patch_t fmsynth_family[16] =
@@ -120,7 +123,7 @@ static const fmsynth_patch_t fmsynth_family[16] =
        { 2.0f, 0.4f, 0.005f,0.05f,0.95f,0.06f },
        { 3.0f, 0.25f,0.005f,0.05f,0.95f,0.06f },
        { 4.0f, 0.18f,0.005f,0.05f,0.95f,0.06f } },
-     FMSYNTH_ALG_ADDITIVE, 0.0f },
+     FMSYNTH_ALG_ADDITIVE, 0.0f, 6.0f, 0.10f, 0.0f },   /* slow Leslie-ish tremolo */
    /* 3  Guitar */
    FMSYNTH_2OP(1.0f, 1.1f, 0.002f,0.40f,0.10f,0.25f, 0.001f,0.25f,0.15f),
    /* 4  Bass */
@@ -130,7 +133,7 @@ static const fmsynth_patch_t fmsynth_family[16] =
        { 1.0f,  0.45f, 0.090f,0.20f,0.80f,0.40f },
        { 2.005f,0.70f, 0.090f,0.25f,0.80f,0.40f },
        { 3.0f,  0.30f, 0.110f,0.25f,0.75f,0.40f } },
-     FMSYNTH_ALG_DUAL_STACK, 0.0f },
+     FMSYNTH_ALG_DUAL_STACK, 0.0f, 5.0f, 0.07f, 0.12f }, /* gentle string vibrato+tremolo */
    /* 6  Ensemble */
    FMSYNTH_2OP(1.0f, 0.6f, 0.060f,0.20f,0.85f,0.30f, 0.070f,0.20f,0.80f),
    /* 7  Brass - stack-plus with bite, light feedback */
@@ -138,7 +141,7 @@ static const fmsynth_patch_t fmsynth_family[16] =
        { 1.0f, 0.9f, 0.035f,0.12f,0.75f,0.18f },
        { 1.0f, 1.1f, 0.040f,0.12f,0.70f,0.18f },
        { 2.0f, 0.8f, 0.050f,0.15f,0.65f,0.20f } },
-     FMSYNTH_ALG_STACK_PLUS, 0.35f },
+     FMSYNTH_ALG_STACK_PLUS, 0.35f, 5.5f, 0.05f, 0.10f }, /* brass vibrato */
    /* 8  Reed */
    FMSYNTH_2OP(1.0f, 1.0f, 0.020f,0.10f,0.85f,0.12f, 0.030f,0.10f,0.75f),
    /* 9  Pipe */
@@ -148,7 +151,7 @@ static const fmsynth_patch_t fmsynth_family[16] =
        { 1.0f, 1.2f, 0.010f,0.12f,0.70f,0.15f },
        { 2.0f, 1.0f, 0.020f,0.15f,0.60f,0.20f },
        { 1.0f, 0.0f, 0.01f, 0.1f, 0.0f, 0.1f } },
-     FMSYNTH_ALG_STACK_PLUS, 0.30f },
+     FMSYNTH_ALG_STACK_PLUS, 0.30f, 6.0f, 0.0f, 0.15f },  /* lead vibrato */
    /* 11 Synth Pad */
    FMSYNTH_2OP(1.0f, 0.5f, 0.200f,0.30f,0.80f,0.50f, 0.220f,0.30f,0.75f),
    /* 12 Synth Effects */
