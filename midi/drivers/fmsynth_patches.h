@@ -13,77 +13,163 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* fmsynth_patches.h: GM program -> 2-operator FM parameter mapping.
+/* fmsynth_patches.h: GM program -> 4-operator FM parameter mapping.
  *
  * This is DATA, reconstructed from the General MIDI program layout and the
- * OPL/GENMIDI instrument conventions (operator ratios, modulation depth,
- * envelope shapes). No instrument sample data is embedded; every timbre is
- * produced by the FM engine from these parameters, so the table is small,
+ * OPL/DX-style FM conventions (operator ratios, modulation depth, envelopes,
+ * routing algorithms). No instrument sample data is embedded; every timbre
+ * is produced by the FM engine from these parameters, so the table is small,
  * license-clean and dependency-free.
  *
- * The 128 GM programs fall into 16 families of 8. v1 assigns one credible
- * FM template per family; per-program refinement (e.g. distinguishing a
- * Rhodes from a grand within the Piano family) is pure ear-tuning against
- * the already-working engine and can be layered on as per-program overrides
- * in fmsynth_patch_for_program() without touching the engine.
+ * The engine is 4-operator with selectable routing "algorithms" (an idea
+ * taken from flexible-routing FM designs such as Themaister's libfmsynth and
+ * the classic 4-op Yamaha chips). Each operator has its own frequency ratio,
+ * output level (amplitude for carriers, modulation index in carrier cycles
+ * for modulators) and ADSR envelope.
+ *
+ * Most GM families are expressed as a faithful 2-operator subset (algorithm
+ * FMSYNTH_ALG_TWO_OP, operators 2 and 3 silent), preserving the prior sound;
+ * a few families (e.g. electric piano, strings, brass) use 3-4 operators to
+ * show the wider palette. Per-program refinement layers on as overrides in
+ * fmsynth_patch_for_program() without touching the engine.
  */
 
 #ifndef FMSYNTH_PATCHES_H
 #define FMSYNTH_PATCHES_H
 
-/* One 2-op FM patch. Times are in seconds; sustain levels are 0..1. */
-typedef struct
-{
-   float mod_ratio;   /* modulator freq / carrier freq (1.0 = harmonic)    */
-   float mod_index;   /* peak modulation depth, in carrier cycles          */
-   float c_atk;       /* carrier amplitude envelope                        */
-   float c_dec;
-   float c_sus;
-   float c_rel;
-   float m_atk;       /* modulator-index envelope (timbre evolution)       */
-   float m_dec;
-   float m_sus;       /* fraction of mod_index held during sustain         */
-} fmsynth_patch_t;
+#define FMSYNTH_OPS       4
+#define FMSYNTH_NUM_ALGS  8
 
-/* ---- 16 GM family templates -------------------------------------------
- * Index = GM program >> 3. These are deliberately broad-but-musical; the
- * point of v1 is that each family is recognizably different (a pad is not
- * a brass stab), not that every one of 128 programs is perfect.
- * fields: ratio index  c_atk c_dec c_sus c_rel  m_atk m_dec m_sus
- * --------------------------------------------------------------------- */
-static const fmsynth_patch_t fmsynth_family[16] =
+/* Routing algorithms. modmask[op] is a bitmask of operators that modulate
+ * 'op'; only higher-indexed operators may modulate lower ones (the engine
+ * evaluates operators 3..0 each sample). carmask is the set of operators
+ * summed to the audio output. Feedback is applied to the top operator. */
+enum
 {
-   /* 0  Piano            */ { 1.0f, 1.4f, 0.002f, 0.45f, 0.20f, 0.20f, 0.001f, 0.30f, 0.25f },
-   /* 1  Chromatic Perc   */ { 3.5f, 2.2f, 0.001f, 0.35f, 0.00f, 0.15f, 0.001f, 0.18f, 0.10f },
-   /* 2  Organ            */ { 1.0f, 0.6f, 0.005f, 0.05f, 0.95f, 0.06f, 0.005f, 0.05f, 0.90f },
-   /* 3  Guitar           */ { 1.0f, 1.1f, 0.002f, 0.40f, 0.10f, 0.25f, 0.001f, 0.25f, 0.15f },
-   /* 4  Bass             */ { 1.0f, 0.9f, 0.003f, 0.30f, 0.35f, 0.20f, 0.002f, 0.20f, 0.30f },
-   /* 5  Strings          */ { 1.0f, 0.45f,0.080f, 0.20f, 0.85f, 0.30f, 0.090f, 0.20f, 0.80f },
-   /* 6  Ensemble         */ { 1.0f, 0.6f, 0.060f, 0.20f, 0.85f, 0.30f, 0.070f, 0.20f, 0.80f },
-   /* 7  Brass            */ { 1.0f, 1.3f, 0.030f, 0.10f, 0.80f, 0.15f, 0.050f, 0.12f, 0.70f },
-   /* 8  Reed             */ { 1.0f, 1.0f, 0.020f, 0.10f, 0.85f, 0.12f, 0.030f, 0.10f, 0.75f },
-   /* 9  Pipe             */ { 1.0f, 0.35f,0.030f, 0.08f, 0.90f, 0.10f, 0.040f, 0.10f, 0.85f },
-   /* 10 Synth Lead       */ { 1.0f, 1.5f, 0.005f, 0.10f, 0.85f, 0.10f, 0.010f, 0.12f, 0.70f },
-   /* 11 Synth Pad        */ { 1.0f, 0.5f, 0.200f, 0.30f, 0.80f, 0.50f, 0.220f, 0.30f, 0.75f },
-   /* 12 Synth Effects    */ { 1.5f, 1.2f, 0.050f, 0.30f, 0.60f, 0.40f, 0.060f, 0.30f, 0.55f },
-   /* 13 Ethnic           */ { 1.0f, 1.0f, 0.002f, 0.40f, 0.10f, 0.25f, 0.001f, 0.25f, 0.15f },
-   /* 14 Percussive       */ { 2.0f, 2.0f, 0.001f, 0.30f, 0.00f, 0.15f, 0.001f, 0.15f, 0.05f },
-   /* 15 Sound Effects    */ { 1.0f, 0.8f, 0.050f, 0.40f, 0.50f, 0.40f, 0.050f, 0.30f, 0.50f }
+   FMSYNTH_ALG_SERIAL4 = 0, /* 3->2->1->0, carrier 0 (deep FM)              */
+   FMSYNTH_ALG_TWO_OP,      /* 1->0, carrier 0 (classic 2-op; 2,3 silent)   */
+   FMSYNTH_ALG_DUAL_STACK,  /* (3->2)+(1->0), carriers 0,2                  */
+   FMSYNTH_ALG_STACK_PLUS,  /* (3->2->1)+0, carriers 0,1                    */
+   FMSYNTH_ALG_BRANCH,      /* 3->1, (1,2)->0, carrier 0                    */
+   FMSYNTH_ALG_ADDITIVE,    /* 0+1+2+3 all carriers (additive/organ)        */
+   FMSYNTH_ALG_THREE_CAR,   /* (3->2)+1+0, carriers 0,1,2                   */
+   FMSYNTH_ALG_Y_INTO_ONE   /* (2->1)+3 ->0, carrier 0                      */
 };
 
-/* Resolve a GM program number (0..127) to an FM patch. Per-program overrides
- * for iconic instruments go here as a switch before the family fallback. */
+static const unsigned char fmsynth_alg_mod[FMSYNTH_NUM_ALGS][FMSYNTH_OPS] =
+{
+   /* op:        0          1          2      3  */
+   /* SERIAL4 */ { 1<<1,      1<<2,      1<<3,  0 },
+   /* TWO_OP  */ { 1<<1,      0,         0,     0 },
+   /* DUALSTK */ { 1<<1,      0,         1<<3,  0 },
+   /* STACK+  */ { 0,         1<<2,      1<<3,  0 },
+   /* BRANCH  */ { (1<<1)|(1<<2), 1<<3,  0,     0 },
+   /* ADDITIVE*/ { 0,         0,         0,     0 },
+   /* 3CAR    */ { 0,         0,         1<<3,  0 },
+   /* Y_INTO1 */ { (1<<1)|(1<<3), 1<<2,  0,     0 }
+};
+
+static const unsigned char fmsynth_alg_car[FMSYNTH_NUM_ALGS] =
+{
+   /* SERIAL4 */ 1<<0,
+   /* TWO_OP  */ 1<<0,
+   /* DUALSTK */ (1<<0)|(1<<2),
+   /* STACK+  */ (1<<0)|(1<<1),
+   /* BRANCH  */ 1<<0,
+   /* ADDITIVE*/ (1<<0)|(1<<1)|(1<<2)|(1<<3),
+   /* 3CAR    */ (1<<0)|(1<<1)|(1<<2),
+   /* Y_INTO1 */ 1<<0
+};
+
+/* One FM operator. Times in seconds; sus level 0..1. 'level' is amplitude
+ * for a carrier, or modulation index (in carrier cycles) for a modulator. */
+typedef struct
+{
+   float ratio;   /* frequency ratio to the played note */
+   float level;   /* carrier amplitude OR modulator index */
+   float atk;
+   float dec;
+   float sus;
+   float rel;
+} fmsynth_op_t;
+
+typedef struct
+{
+   fmsynth_op_t op[FMSYNTH_OPS];
+   unsigned char algorithm;  /* FMSYNTH_ALG_*                      */
+   float         feedback;   /* top-operator self-feedback (0..~1) */
+} fmsynth_patch_t;
+
+/* Convenience: a faithful 2-op patch (operator 1 modulates operator 0). */
+#define FMSYNTH_2OP(mratio, mindex, ca, cd, cs, cr, ma, md, ms) \
+   { { { 1.0f, 1.0f, (ca), (cd), (cs), (cr) },                  \
+       { (mratio), (mindex), (ma), (md), (ms), 0.40f },         \
+       { 1.0f, 0.0f, 0.01f, 0.1f, 0.0f, 0.1f },                 \
+       { 1.0f, 0.0f, 0.01f, 0.1f, 0.0f, 0.1f } },               \
+     FMSYNTH_ALG_TWO_OP, 0.0f }
+
+/* ---- 16 GM family templates (index = GM program >> 3) ------------------ */
+static const fmsynth_patch_t fmsynth_family[16] =
+{
+   /* 0  Piano  - 2-op bright decay */
+   FMSYNTH_2OP(1.0f, 1.4f, 0.002f,0.45f,0.20f,0.20f, 0.001f,0.30f,0.25f),
+   /* 1  Chromatic Perc - inharmonic bell (3.5 ratio) */
+   FMSYNTH_2OP(3.5f, 2.2f, 0.001f,0.35f,0.00f,0.15f, 0.001f,0.18f,0.10f),
+   /* 2  Organ - additive 4-carrier (drawbar-ish) */
+   { { { 1.0f, 0.6f, 0.005f,0.05f,0.95f,0.06f },
+       { 2.0f, 0.4f, 0.005f,0.05f,0.95f,0.06f },
+       { 3.0f, 0.25f,0.005f,0.05f,0.95f,0.06f },
+       { 4.0f, 0.18f,0.005f,0.05f,0.95f,0.06f } },
+     FMSYNTH_ALG_ADDITIVE, 0.0f },
+   /* 3  Guitar */
+   FMSYNTH_2OP(1.0f, 1.1f, 0.002f,0.40f,0.10f,0.25f, 0.001f,0.25f,0.15f),
+   /* 4  Bass */
+   FMSYNTH_2OP(1.0f, 0.9f, 0.003f,0.30f,0.35f,0.20f, 0.002f,0.20f,0.30f),
+   /* 5  Strings - dual stack for a richer, detuned-ish swell */
+   { { { 1.0f,  0.85f, 0.080f,0.20f,0.85f,0.30f },
+       { 1.0f,  0.45f, 0.090f,0.20f,0.80f,0.40f },
+       { 2.005f,0.70f, 0.090f,0.25f,0.80f,0.40f },
+       { 3.0f,  0.30f, 0.110f,0.25f,0.75f,0.40f } },
+     FMSYNTH_ALG_DUAL_STACK, 0.0f },
+   /* 6  Ensemble */
+   FMSYNTH_2OP(1.0f, 0.6f, 0.060f,0.20f,0.85f,0.30f, 0.070f,0.20f,0.80f),
+   /* 7  Brass - stack-plus with bite, light feedback */
+   { { { 1.0f, 1.0f, 0.030f,0.10f,0.80f,0.15f },
+       { 1.0f, 0.9f, 0.035f,0.12f,0.75f,0.18f },
+       { 1.0f, 1.1f, 0.040f,0.12f,0.70f,0.18f },
+       { 2.0f, 0.8f, 0.050f,0.15f,0.65f,0.20f } },
+     FMSYNTH_ALG_STACK_PLUS, 0.35f },
+   /* 8  Reed */
+   FMSYNTH_2OP(1.0f, 1.0f, 0.020f,0.10f,0.85f,0.12f, 0.030f,0.10f,0.75f),
+   /* 9  Pipe */
+   FMSYNTH_2OP(1.0f, 0.35f,0.030f,0.08f,0.90f,0.10f, 0.040f,0.10f,0.85f),
+   /* 10 Synth Lead - serial 3-op for a fat, evolving lead */
+   { { { 1.0f, 1.0f, 0.005f,0.10f,0.85f,0.10f },
+       { 1.0f, 1.2f, 0.010f,0.12f,0.70f,0.15f },
+       { 2.0f, 1.0f, 0.020f,0.15f,0.60f,0.20f },
+       { 1.0f, 0.0f, 0.01f, 0.1f, 0.0f, 0.1f } },
+     FMSYNTH_ALG_STACK_PLUS, 0.30f },
+   /* 11 Synth Pad */
+   FMSYNTH_2OP(1.0f, 0.5f, 0.200f,0.30f,0.80f,0.50f, 0.220f,0.30f,0.75f),
+   /* 12 Synth Effects */
+   FMSYNTH_2OP(1.5f, 1.2f, 0.050f,0.30f,0.60f,0.40f, 0.060f,0.30f,0.55f),
+   /* 13 Ethnic */
+   FMSYNTH_2OP(1.0f, 1.0f, 0.002f,0.40f,0.10f,0.25f, 0.001f,0.25f,0.15f),
+   /* 14 Percussive - inharmonic */
+   FMSYNTH_2OP(2.0f, 2.0f, 0.001f,0.30f,0.00f,0.15f, 0.001f,0.15f,0.05f),
+   /* 15 Sound Effects */
+   FMSYNTH_2OP(1.0f, 0.8f, 0.050f,0.40f,0.50f,0.40f, 0.050f,0.30f,0.50f)
+};
+
+/* Resolve a GM program (0..127) to a patch. Per-program overrides for iconic
+ * instruments go here as a switch before the family fallback. */
 static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
 {
    return &fmsynth_family[(program & 0x7F) >> 3];
 }
 
-/* ---- GM percussion (MIDI channel 10) -----------------------------------
- * Channel-10 notes are sounds, not pitches. kind: 0 = unused (fall back to
- * a short noise burst), 1 = pitched FM hit, 2 = filtered-noise hit. 'pitch'
- * is a fixed Hz for FM hits. A representative subset of the GM drum map is
- * filled; the rest default to a neutral noise tick.
- * --------------------------------------------------------------------- */
+/* ---- GM channel-10 percussion map -------------------------------------- */
+
 #define FMSYNTH_DRUM_FM    1
 #define FMSYNTH_DRUM_NOISE 2
 
@@ -157,4 +243,4 @@ static const fmsynth_drum_t *fmsynth_drum_for_note(uint8_t note)
    return &fmsynth_drums[note - FMSYNTH_DRUM_LO];
 }
 
-#endif /* FMSYNTH_PATCHES_H */
+#endif

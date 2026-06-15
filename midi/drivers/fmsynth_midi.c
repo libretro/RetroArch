@@ -110,11 +110,15 @@
 typedef struct
 {
    const fmsynth_patch_t *patch; /* melodic FM patch; NULL for percussion   */
-   float    car_phase;   /* carrier phase, in cycles [0,1)                  */
-   float    mod_phase;    /* modulator phase, in cycles [0,1)               */
+   float    car_phase;   /* carrier phase, in cycles [0,1)  (percussion)    */
+   float    mod_phase;    /* modulator phase, in cycles [0,1) (percussion)  */
+   float    op_phase[FMSYNTH_OPS]; /* per-operator phase (melodic)          */
+   float    op_env[FMSYNTH_OPS];   /* per-operator envelope level [0,1]     */
+   float    op_out[FMSYNTH_OPS];   /* last per-operator output (mod/ feedbk)*/
+   int      op_stage[FMSYNTH_OPS]; /* per-operator FMSYNTH_ENV_* stage      */
    float    base_inc;     /* carrier phase increment/sample (note pitch)    */
-   float    env;          /* current carrier envelope level [0,1]           */
-   int      stage;        /* FMSYNTH_ENV_* carrier envelope stage           */
+   float    env;          /* primary-carrier env level (voice-steal metric) */
+   int      stage;        /* FMSYNTH_ENV_* note gate (ATTACK.. / RELEASE)   */
    float    mod_env;      /* current modulator-index envelope level [0,1]   */
    int      mod_stage;    /* FMSYNTH_ENV_* modulator envelope stage         */
    float    drum_dec;     /* percussion amp decay/sample (patch==NULL)      */
@@ -392,8 +396,16 @@ static void fmsynth_note_on(fmsynth_t *fm,
    }
    else
    {
+      unsigned o;
       v->patch    = fmsynth_patch_for_program(fm->program[channel]);
       v->base_inc = fmsynth_note_inc(note, fm->output_rate);
+      for (o = 0; o < FMSYNTH_OPS; o++)
+      {
+         v->op_phase[o] = 0.0f;
+         v->op_env[o]   = 0.0f;
+         v->op_out[o]   = 0.0f;
+         v->op_stage[o] = FMSYNTH_ENV_ATTACK;
+      }
    }
 }
 
@@ -567,83 +579,65 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
 
       if (v->patch)
       {
-         /* ---- melodic 2-op FM with per-patch envelopes ---- */
+         /* ---- melodic 4-operator FM with selectable algorithm ---- */
          const fmsynth_patch_t *pt = v->patch;
-         float rate  = (float)fm->output_rate;
+         float rate   = (float)fm->output_rate;
          /* keyboard scaling: scale decay/release by note pitch */
          float kscale = (float)pow(2.0,
                ((double)v->note - 60.0) * (double)FMSYNTH_KEY_SCALE);
-         float c_atk;
-         float c_dec;
-         float c_rel;
-         float m_atk;
-         float m_dec;
-         /* velocity -> brightness: harder hits open the FM index */
+         /* velocity -> brightness: harder hits open modulator depth */
          float vbright = (1.0f - FMSYNTH_VEL_BRIGHT_DEPTH)
                        + FMSYNTH_VEL_BRIGHT_DEPTH * ((float)v->velocity / 127.0f);
          /* mod-wheel (CC1) vibrato: depth in semitones, LFO step per sample */
          float vib_depth = ((float)fm->mod_wheel[ch] / 127.0f)
                          * FMSYNTH_VIBRATO_SEMI;
          float lfo_inc   = FMSYNTH_VIBRATO_HZ / rate;
+         unsigned alg    = pt->algorithm < FMSYNTH_NUM_ALGS
+                         ? pt->algorithm : 0;
+         unsigned carmask= fmsynth_alg_car[alg];
+         float    fb     = pt->feedback;
+         float    op_inc[FMSYNTH_OPS];
+         float    lev[FMSYNTH_OPS];
+         float    a_r[FMSYNTH_OPS];
+         float    d_r[FMSYNTH_OPS];
+         float    r_r[FMSYNTH_OPS];
+         float    susl[FMSYNTH_OPS];
+         unsigned ncar      = 0;
+         int      first_car = 0;
+         float    inv_car;
+         unsigned o;
 
          if (kscale < FMSYNTH_KEY_SCALE_MIN) kscale = FMSYNTH_KEY_SCALE_MIN;
          if (kscale > FMSYNTH_KEY_SCALE_MAX) kscale = FMSYNTH_KEY_SCALE_MAX;
-         c_atk = 1.0f / (fmsynth_maxf(pt->c_atk, 0.0005f) * rate);
-         c_dec = kscale * (1.0f - pt->c_sus)
-               / (fmsynth_maxf(pt->c_dec, 0.0005f) * rate);
-         c_rel = kscale * (pt->c_sus > 0.0f ? pt->c_sus : 1.0f)
-               / (fmsynth_maxf(pt->c_rel, 0.0005f) * rate);
-         m_atk = 1.0f / (fmsynth_maxf(pt->m_atk, 0.0005f) * rate);
-         m_dec = kscale * (1.0f - pt->m_sus)
-               / (fmsynth_maxf(pt->m_dec, 0.0005f) * rate);
 
-         mod_inc = car_inc * pt->mod_ratio;
+         for (o = 0; o < FMSYNTH_OPS; o++)
+         {
+            const fmsynth_op_t *op = &pt->op[o];
+            op_inc[o] = car_inc * op->ratio;
+            lev[o]    = op->level;
+            if (!(carmask & (1u << o)))
+               lev[o] *= vbright;           /* brightness on modulators */
+            susl[o]   = op->sus;
+            a_r[o]    = 1.0f / (fmsynth_maxf(op->atk, 0.0005f) * rate);
+            d_r[o]    = kscale * (1.0f - op->sus)
+                      / (fmsynth_maxf(op->dec, 0.0005f) * rate);
+            r_r[o]    = kscale * (op->sus > 0.0f ? op->sus : 1.0f)
+                      / (fmsynth_maxf(op->rel, 0.0005f) * rate);
+            if (carmask & (1u << o))
+            {
+               if (ncar == 0) first_car = (int)o;
+               ncar++;
+            }
+         }
+         if (ncar == 0) ncar = 1;
+         inv_car = 1.0f / (float)ncar;
 
          for (n = 0; n < frames; n++)
          {
-            float m;
-            float s;
-            float idx;
             float pmul = 1.0f;
-
-            switch (v->stage)
-            {
-               case FMSYNTH_ENV_ATTACK:
-                  v->env += c_atk;
-                  if (v->env >= 1.0f) { v->env = 1.0f; v->stage = FMSYNTH_ENV_DECAY; }
-                  break;
-               case FMSYNTH_ENV_DECAY:
-                  v->env -= c_dec;
-                  if (v->env <= pt->c_sus) { v->env = pt->c_sus; v->stage = FMSYNTH_ENV_SUSTAIN; }
-                  break;
-               case FMSYNTH_ENV_RELEASE:
-                  v->env -= c_rel;
-                  if (v->env <= 0.0f) { v->env = 0.0f; v->stage = FMSYNTH_ENV_OFF; v->active = 0; }
-                  break;
-               default:
-                  break;
-            }
-
-            switch (v->mod_stage)
-            {
-               case FMSYNTH_ENV_ATTACK:
-                  v->mod_env += m_atk;
-                  if (v->mod_env >= 1.0f) { v->mod_env = 1.0f; v->mod_stage = FMSYNTH_ENV_DECAY; }
-                  break;
-               case FMSYNTH_ENV_DECAY:
-                  v->mod_env -= m_dec;
-                  if (v->mod_env <= pt->m_sus) { v->mod_env = pt->m_sus; v->mod_stage = FMSYNTH_ENV_SUSTAIN; }
-                  break;
-               default:
-                  break;
-            }
-
-            idx = pt->mod_index * v->mod_env * vbright;
-            m   = fmsynth_sine(v->mod_phase) * idx;
-            s   = fmsynth_sine(v->car_phase + m) * v->env * vgain;
-
-            out[n * 2]     += s * panL;
-            out[n * 2 + 1] += s * panR;
+            float smp  = 0.0f;
+            unsigned j;
+            int alloff = 1;
 
             if (vib_depth > 0.0f)
             {
@@ -653,13 +647,75 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
                if (v->lfo_phase >= 1.0f) v->lfo_phase -= 1.0f;
             }
 
-            v->car_phase += car_inc * pmul;
-            v->mod_phase += mod_inc * pmul;
-            if (v->car_phase >= 1.0f) v->car_phase -= 1.0f;
-            if (v->mod_phase >= 1.0f) v->mod_phase -= 1.0f;
+            /* note-off gates every operator into release */
+            if (v->stage == FMSYNTH_ENV_RELEASE)
+            {
+               for (j = 0; j < FMSYNTH_OPS; j++)
+                  if (v->op_stage[j] != FMSYNTH_ENV_OFF
+                   && v->op_stage[j] != FMSYNTH_ENV_RELEASE)
+                     v->op_stage[j] = FMSYNTH_ENV_RELEASE;
+            }
 
-            if (!v->active)
+            /* evaluate operators high->low so modulators precede carriers */
+            for (j = FMSYNTH_OPS; j-- > 0; )
+            {
+               float modin = 0.0f;
+               unsigned mm = fmsynth_alg_mod[alg][j];
+               unsigned k;
+
+               for (k = j + 1; k < FMSYNTH_OPS; k++)
+                  if (mm & (1u << k))
+                     modin += v->op_out[k];
+               if (j == FMSYNTH_OPS - 1 && fb > 0.0f)
+                  modin += fb * v->op_out[j];        /* top-op feedback */
+
+               switch (v->op_stage[j])
+               {
+                  case FMSYNTH_ENV_ATTACK:
+                     v->op_env[j] += a_r[j];
+                     if (v->op_env[j] >= 1.0f)
+                     { v->op_env[j] = 1.0f; v->op_stage[j] = FMSYNTH_ENV_DECAY; }
+                     break;
+                  case FMSYNTH_ENV_DECAY:
+                     v->op_env[j] -= d_r[j];
+                     if (v->op_env[j] <= susl[j])
+                     { v->op_env[j] = susl[j]; v->op_stage[j] = FMSYNTH_ENV_SUSTAIN; }
+                     break;
+                  case FMSYNTH_ENV_RELEASE:
+                     v->op_env[j] -= r_r[j];
+                     if (v->op_env[j] <= 0.0f)
+                     { v->op_env[j] = 0.0f; v->op_stage[j] = FMSYNTH_ENV_OFF; }
+                     break;
+                  default:
+                     break;
+               }
+
+               v->op_out[j] = fmsynth_sine(v->op_phase[j] + modin)
+                            * lev[j] * v->op_env[j];
+
+               v->op_phase[j] += op_inc[j] * pmul;
+               if (v->op_phase[j] >= 1.0f)      v->op_phase[j] -= 1.0f;
+               else if (v->op_phase[j] < 0.0f)  v->op_phase[j] += 1.0f;
+
+               if (carmask & (1u << j))
+               {
+                  smp += v->op_out[j];
+                  if (v->op_stage[j] != FMSYNTH_ENV_OFF)
+                     alloff = 0;
+               }
+            }
+
+            smp *= inv_car * vgain;
+            out[n * 2]     += smp * panL;
+            out[n * 2 + 1] += smp * panR;
+
+            v->env = v->op_env[first_car];      /* voice-steal metric */
+            if (alloff)
+            {
+               v->active = 0;
+               v->stage  = FMSYNTH_ENV_OFF;
                break;
+            }
          }
       }
       else
