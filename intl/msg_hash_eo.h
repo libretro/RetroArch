@@ -7085,9 +7085,81 @@ MSG_HASH(
 
 /* Settings > AI Service */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
+   "Eligo de AI-servo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   "Montri tradukon kiel teksta surmetaĵo (Bilda reĝimo), ludi kiel parolsintezo (Parolo) aŭ uzi sisteman rakontiston kiel NVDA (Rakontisto)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "AI-serva datumtraktejo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "Elekti la tradukan datumtraktejo (\"backend\") uzota. HTTP uzas foran servilon ĉe la konfigurita URL. Apple uzas suraparatan OCR kaj tradukadon (macOS/iOS)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   "AI-serva URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
+   "URL je http:// indikanta al la traduka servo uzota."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
+   "AI-servo ebligita"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
+   "Ebligi AI-servon, kiu estos rulata kiam la AI-serva fulmoklavo estu premita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
+   "Paŭzi dum tradukado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
+   "Paŭzi kernon dum ekrano estas tradukata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
+   "Fontlingvo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
+   "La lingvo, de kiu la servo tradukos. Se agordite al \"Defaŭlta\", ĝi provos aŭtomate detekti la lingvon. Agordi ĝin al specifa lingvo faros la tradukon pli preciza."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
+   "Cellingvo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
+   "La lingvo al kiu la servo tradukos. \"Defaŭlta\" estas la angla."
+   )
 
 /* Settings > Accessibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+   "Alirebleca ebligo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   "Ebligi parolsintezon por helpi je menua navigacio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "Parolsinteza rapido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   ""
+   )
 
 /* Settings > Power Management */
 
@@ -7095,11 +7167,55 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   "Enable Achievements"
+   "Akiroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+   "Gajni akirojn en klasikaj ludoj. Por pli da informoj, vizitu 'https://retroachievements.org'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Malfacilega reĝimo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Malebligas trompojn, revolvadon, malrapidpluigon kaj ŝargadon de konservostatoj. Akiroj gajnitaj en malfacilega reĝimo estas unike markitaj, por ke oni povu monti al aliaj tion, kion oni akiris sen imitilhelpaj funkcioj. Ŝalti ĉi tiun agordon dum ruliĝo restartigos la ludon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+   "Ĉampionejoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
+   "Riĉa ĉeesto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+   "Periode sendi kuntekstan ludan informon al la retejo RetroAchievements. Havas nenian efikon se \"Malfacilega reĝimo\" estas ebligita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
+   "Akiraj insignoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
+   "Montri insignojn en la Akirolisto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+   "Provi neoficialajn akirojn"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-   "Enable or disable unofficial achievements and/or beta features for testing purposes."
+   "Uzi neoficialajn akirojn kaj/aŭ betaj funkcioj pro testaj celoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Malŝlosa sono"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Ludi sonon kiam akiro estas malŝlosita."
    )
 
 /* Settings > Achievements > Appearance */
@@ -7163,6 +7279,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Retro Achievements"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "Gajni akirojn en klasikaj ludoj. Por pli da informoj, vizitu 'https://retroachievements.org'."
    )
 
 /* Settings > User > Accounts > RetroAchievements */
