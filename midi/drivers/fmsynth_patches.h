@@ -150,8 +150,8 @@ static const fmsynth_patch_t fmsynth_family[16] =
        OPMP(1.0f, 1.1f,       0.001f, 0.06f,0.35f, 1.0f,0.0f, 0.25f),
        OP6X },
      { { 0, 1, 1.0f } }, 1, 0.0f },
-   /* 4  Bass */
-   FMSYNTH_2OP(1.0f, 0.9f, 0.003f,0.30f,0.35f,0.20f, 0.002f,0.20f,0.30f),
+   /* 4  Bass - fingered electric: warm, fundamental-strong */
+   FMSYNTH_2OP(1.0f, 0.7f, 0.004f,0.25f,0.32f,0.22f, 0.002f,0.18f,0.25f),
    /* 5  Strings - two stacks panned L/R, gentle vibrato + detune shimmer */
    { { OPCL(1.0f,  0.85f,-0.30f, 0.080f,0.20f,0.85f,0.30f, 0.06f,0.12f),
        OPM (1.0f,  0.45f,        0.090f,0.20f,0.80f,0.40f),
@@ -271,6 +271,17 @@ static const fmsynth_patch_t fmsynth_xylophone =
    { { 0, 1, 1.0f } }, 1, 0.0f
 };
 
+/* Synth bass (GM 38, 39): bright, punchy and fully sustained where the
+ * fingered default is warm and decaying; the modulator self-feedback gives
+ * the buzzy synth-bass edge. */
+static const fmsynth_patch_t fmsynth_synth_bass =
+{
+   { OPC(1.0f, 1.0f, 0.0f, 0.002f, 0.10f, 0.85f, 0.10f),
+     OPM(1.0f, 1.25f,       0.002f, 0.10f, 0.80f, 0.15f),
+     OP6X },
+   { { 0, 1, 1.0f }, { 1, 1, 0.12f } }, 2, 0.0f
+};
+
 static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
 {
    program &= 0x7F;
@@ -283,6 +294,8 @@ static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
       case 13: return &fmsynth_xylophone;
       case 29: /* overdriven guitar */
       case 30: return &fmsynth_dist_guitar;
+      case 38: /* synth bass 1 */
+      case 39: return &fmsynth_synth_bass;
       default: break;
    }
    return &fmsynth_family[program >> 3];
