@@ -46,7 +46,7 @@
 #import "GCDWebServerErrorResponse.h"
 #import "GCDWebServerFileResponse.h"
 
-#define kXMLParseOptions (XML_PARSE_NONET | XML_PARSE_RECOVER | XML_PARSE_NOBLANKS | XML_PARSE_COMPACT | XML_PARSE_NOWARNING | XML_PARSE_NOERROR)
+#define kXMLParseOptions (XML_PARSE_NOENT | XML_PARSE_NONET | XML_PARSE_RECOVER | XML_PARSE_NOBLANKS | XML_PARSE_COMPACT | XML_PARSE_NOWARNING | XML_PARSE_NOERROR)
 
 typedef NS_ENUM(NSInteger, DAVProperties) {
   kDAVProperty_ResourceType = (1 << 0),
