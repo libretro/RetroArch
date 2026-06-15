@@ -943,6 +943,9 @@ AUDIO
 #ifdef HAVE_SL
 #include "../audio/drivers/opensl.c"
 #endif
+#ifdef __OHOS__
+#include "../audio/drivers/ohaud.c"
+#endif
 
 #ifdef HAVE_PIPEWIRE
 #include "../audio/drivers/pipewire.c"

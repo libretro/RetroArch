@@ -168,6 +168,9 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_SL
    &audio_opensl,
 #endif
+#ifdef __OHOS__
+   &audio_ohaudio,
+#endif
 #ifdef HAVE_ROAR
    &audio_roar,
 #endif
