@@ -90,6 +90,10 @@ typedef struct
 #define OPC(r,a,p, at,dc,su,rl) \
    { (r),0.0f,(a),(p), {1.0f,(su),(su)}, {(at),(dc),0.0f}, (rl), \
      60.0f,0.5f,0.5f, 0.6f,1.0f, 0.0f,0.0f, 1 }
+/* carrier with a fixed Hz detune (offset) - used for ensemble chorus */
+#define OPCO(r,off,a,p, at,dc,su,rl) \
+   { (r),(off),(a),(p), {1.0f,(su),(su)}, {(at),(dc),0.0f}, (rl), \
+     60.0f,0.5f,0.5f, 0.6f,1.0f, 0.0f,0.0f, 1 }
 #define OPM(r,a, at,dc,su,rl) \
    { (r),0.0f,(a),0.0f, {1.0f,(su),(su)}, {(at),(dc),0.0f}, (rl), \
      60.0f,0.5f,0.5f, 1.0f,1.0f, 0.0f,0.0f, 0 }
@@ -139,8 +143,13 @@ static const fmsynth_patch_t fmsynth_family[16] =
        OPM (3.0f,  0.30f,        0.110f,0.25f,0.75f,0.40f),
        OP4X },
      { { 0, 1, 1.0f }, { 2, 3, 1.0f } }, 2, 5.0f },
-   /* 6  Ensemble */
-   FMSYNTH_2OP(1.0f, 0.6f, 0.060f,0.20f,0.85f,0.30f, 0.070f,0.20f,0.80f),
+   /* 6  Ensemble - two voices detuned +/-0.4 Hz, panned wide for chorus */
+   { { OPCO(1.0f, -0.4f, 0.55f, -0.25f, 0.060f,0.20f,0.85f,0.30f),
+       OPM (1.0f,  0.6f,         0.070f,0.20f,0.80f,0.40f),
+       OPCO(1.0f, +0.4f, 0.55f, +0.25f, 0.060f,0.20f,0.85f,0.30f),
+       OPM (1.0f,  0.6f,         0.070f,0.20f,0.80f,0.40f),
+       OP4X },
+     { { 0, 1, 1.0f }, { 2, 3, 1.0f } }, 2, 0.0f },
    /* 7  Brass - 3-deep stack into two carriers, feedback, vibrato */
    { { OPCL(1.0f, 1.0f, 0.0f, 0.030f,0.10f,0.80f,0.15f, 0.05f,0.10f),
        OPCL(1.0f, 0.9f, 0.0f, 0.035f,0.12f,0.75f,0.18f, 0.05f,0.10f),
@@ -159,8 +168,13 @@ static const fmsynth_patch_t fmsynth_family[16] =
        OPM (2.0f, 1.0f,       0.020f,0.15f,0.60f,0.20f),
        OPX,OPX,OPX,OPX,OPX },
      { { 0, 1, 1.0f }, { 1, 2, 1.0f }, { 2, 2, 0.30f } }, 3, 6.0f },
-   /* 11 Synth Pad */
-   FMSYNTH_2OP(1.0f, 0.5f, 0.200f,0.30f,0.80f,0.50f, 0.220f,0.30f,0.75f),
+   /* 11 Synth Pad - two voices detuned +/-0.6 Hz, soft and wide */
+   { { OPCO(1.0f, -0.6f, 0.55f, -0.30f, 0.200f,0.30f,0.80f,0.50f),
+       OPM (1.0f,  0.5f,         0.220f,0.30f,0.75f,0.50f),
+       OPCO(1.0f, +0.6f, 0.55f, +0.30f, 0.200f,0.30f,0.80f,0.50f),
+       OPM (1.0f,  0.5f,         0.220f,0.30f,0.75f,0.50f),
+       OP4X },
+     { { 0, 1, 1.0f }, { 2, 3, 1.0f } }, 2, 0.0f },
    /* 12 Synth Effects */
    FMSYNTH_2OP(1.5f, 1.2f, 0.050f,0.30f,0.60f,0.40f, 0.060f,0.30f,0.55f),
    /* 13 Ethnic */
