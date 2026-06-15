@@ -57,7 +57,12 @@
 #define FMSYNTH_MOD_RATIO    1.0f   /* modulator freq / carrier freq        */
 #define FMSYNTH_MOD_INDEX    0.55f  /* modulation depth, in carrier cycles  */
 #define FMSYNTH_MASTER_GAIN  0.16f  /* headroom for polyphony               */
-#define FMSYNTH_PITCHBEND_SEMI 2.0f /* +/- bend range in semitones          */
+#define FMSYNTH_PITCHBEND_SEMI 2.0f /* default +/- bend range in semitones  */
+
+/* Mod-wheel (CC1) vibrato: a per-voice pitch LFO. */
+#define FMSYNTH_VIBRATO_HZ     5.5f
+#define FMSYNTH_VIBRATO_SEMI   0.5f  /* max depth at full mod wheel          */
+#define FMSYNTH_SEMI_TO_RATE   0.05776f /* small-signal 2^(x/12)-1 per semi  */
 
 /* GM percussion lives on MIDI channel 10 (0-based index 9). */
 #define FMSYNTH_DRUM_CHANNEL 9
@@ -110,6 +115,8 @@ typedef struct
    uint32_t rng;          /* per-voice noise LCG state (percussion)         */
    uint32_t age;          /* note_counter at allocation (older = lower)     */
    uint8_t  is_noise;     /* percussion noise hit                           */
+   uint8_t  held;         /* note-off deferred by the sustain pedal         */
+   float    lfo_phase;    /* per-voice vibrato LFO phase, in cycles         */
    uint8_t  active;       /* voice is in use (stage != OFF)                 */
    uint8_t  channel;      /* owning MIDI channel 0..15                      */
    uint8_t  note;         /* MIDI note number 0..127                        */
@@ -124,6 +131,11 @@ typedef struct
    uint8_t  expression[FMSYNTH_NUM_CHANNELS];/* CC11  expression             */
    uint8_t  pan[FMSYNTH_NUM_CHANNELS];       /* CC10  pan                    */
    uint16_t pitch_bend[FMSYNTH_NUM_CHANNELS];/* 14-bit, 0x2000 = centre      */
+   uint8_t  sustain[FMSYNTH_NUM_CHANNELS];   /* CC64  pedal: 0/1             */
+   uint8_t  mod_wheel[FMSYNTH_NUM_CHANNELS]; /* CC1   vibrato depth 0..127   */
+   uint8_t  bend_range[FMSYNTH_NUM_CHANNELS];/* RPN 0,0 bend range, semitones*/
+   uint8_t  rpn_msb[FMSYNTH_NUM_CHANNELS];   /* selected RPN MSB (0x7F=null) */
+   uint8_t  rpn_lsb[FMSYNTH_NUM_CHANNELS];   /* selected RPN LSB (0x7F=null) */
    unsigned output_rate;                     /* synth render rate in Hz      */
    float    atk_rate;                        /* envelope increments/sample   */
    float    dec_rate;
@@ -321,7 +333,12 @@ static void fmsynth_note_on(fmsynth_t *fm,
    {
       v = fmsynth_find_voice(fm, channel, note);
       if (v)
-         v->stage = FMSYNTH_ENV_RELEASE;
+      {
+         if (fm->sustain[channel])
+            v->held = 1;                      /* defer until pedal up */
+         else
+            v->stage = FMSYNTH_ENV_RELEASE;
+      }
       return;
    }
 
@@ -339,6 +356,8 @@ static void fmsynth_note_on(fmsynth_t *fm,
    v->mod_stage  = FMSYNTH_ENV_ATTACK;
    v->rng        = 0x2545f491u ^ ((uint32_t)note * 2654435761u);
    v->is_noise   = 0;
+   v->held       = 0;
+   v->lfo_phase  = 0.0f;
    v->drum_dec   = 0.0f;
    v->drum_index = 0.0f;
 
@@ -375,7 +394,12 @@ static void fmsynth_note_off(fmsynth_t *fm, uint8_t channel, uint8_t note)
 {
    fmsynth_voice_t *v = fmsynth_find_voice(fm, channel, note);
    if (v)
-      v->stage = FMSYNTH_ENV_RELEASE;
+   {
+      if (fm->sustain[channel])
+         v->held = 1;                         /* defer until pedal up */
+      else
+         v->stage = FMSYNTH_ENV_RELEASE;
+   }
 }
 
 static void fmsynth_all_notes_off(fmsynth_t *fm, uint8_t channel)
@@ -434,9 +458,34 @@ static void fmsynth_handle_message(fmsynth_t *fm,
             uint8_t val = (uint8_t)(data[2] & 0x7F);
             switch (cc)
             {
+               case 1:   fm->mod_wheel[channel]  = val; break;
                case 7:   fm->volume[channel]     = val; break;
                case 10:  fm->pan[channel]        = val; break;
                case 11:  fm->expression[channel] = val; break;
+               case 6:   /* Data Entry MSB: targets the selected RPN */
+                  if (fm->rpn_msb[channel] == 0 && fm->rpn_lsb[channel] == 0)
+                     fm->bend_range[channel] = (uint8_t)(val ? val : 1);
+                  break;
+               case 64:  /* sustain pedal */
+                  if (val >= 64)
+                     fm->sustain[channel] = 1;
+                  else
+                  {
+                     unsigned k;
+                     fm->sustain[channel] = 0;
+                     for (k = 0; k < FMSYNTH_MAX_VOICES; k++)
+                     {
+                        fmsynth_voice_t *hv = &fm->voices[k];
+                        if (hv->active && hv->channel == channel && hv->held)
+                        {
+                           hv->held  = 0;
+                           hv->stage = FMSYNTH_ENV_RELEASE;
+                        }
+                     }
+                  }
+                  break;
+               case 100: fm->rpn_lsb[channel]     = val; break;
+               case 101: fm->rpn_msb[channel]     = val; break;
                case 120: /* all sound off    */
                case 123: /* all notes off    */
                   fmsynth_all_notes_off(fm, channel);
@@ -490,9 +539,9 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
       any   = 1;
       ch    = v->channel;
 
-      /* Pitch bend (constant across this block). */
+      /* Pitch bend (constant across this block), RPN-configurable range. */
       bend  = ((float)fm->pitch_bend[ch] - 8192.0f) / 8192.0f
-            * FMSYNTH_PITCHBEND_SEMI;
+            * (float)fm->bend_range[ch];
       bend  = (float)pow(2.0, (double)bend / 12.0);
       car_inc = v->base_inc * bend;
 
@@ -525,6 +574,10 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
          /* velocity -> brightness: harder hits open the FM index */
          float vbright = (1.0f - FMSYNTH_VEL_BRIGHT_DEPTH)
                        + FMSYNTH_VEL_BRIGHT_DEPTH * ((float)v->velocity / 127.0f);
+         /* mod-wheel (CC1) vibrato: depth in semitones, LFO step per sample */
+         float vib_depth = ((float)fm->mod_wheel[ch] / 127.0f)
+                         * FMSYNTH_VIBRATO_SEMI;
+         float lfo_inc   = FMSYNTH_VIBRATO_HZ / rate;
 
          mod_inc = car_inc * pt->mod_ratio;
 
@@ -533,6 +586,7 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
             float m;
             float s;
             float idx;
+            float pmul = 1.0f;
 
             switch (v->stage)
             {
@@ -573,8 +627,16 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
             out[n * 2]     += s * panL;
             out[n * 2 + 1] += s * panR;
 
-            v->car_phase += car_inc;
-            v->mod_phase += mod_inc;
+            if (vib_depth > 0.0f)
+            {
+               pmul = 1.0f + vib_depth * fmsynth_sine(v->lfo_phase)
+                           * FMSYNTH_SEMI_TO_RATE;
+               v->lfo_phase += lfo_inc;
+               if (v->lfo_phase >= 1.0f) v->lfo_phase -= 1.0f;
+            }
+
+            v->car_phase += car_inc * pmul;
+            v->mod_phase += mod_inc * pmul;
             if (v->car_phase >= 1.0f) v->car_phase -= 1.0f;
             if (v->mod_phase >= 1.0f) v->mod_phase -= 1.0f;
 
@@ -689,6 +751,11 @@ static void *fmsynth_midi_init(const char *input, const char *output)
       fm->expression[i] = 127;
       fm->pan[i]        = 64;
       fm->pitch_bend[i] = 0x2000;
+      fm->sustain[i]    = 0;
+      fm->mod_wheel[i]  = 0;
+      fm->bend_range[i] = (uint8_t)FMSYNTH_PITCHBEND_SEMI; /* GM default +/-2 */
+      fm->rpn_msb[i]    = 0x7F;  /* null RPN until explicitly selected     */
+      fm->rpn_lsb[i]    = 0x7F;
    }
 
    return fm;
