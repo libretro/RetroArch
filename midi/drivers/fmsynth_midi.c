@@ -531,11 +531,13 @@ static void *fmsynth_midi_init(const char *input, const char *output)
    fmsynth_t *fm;
    unsigned i;
 
-   /* This driver provides output only; reject input requests. */
-   if (input)
-      return NULL;
-   if (!output)
-      return NULL;
+   /* Output-only software synth. 'input' is ignored, and 'output' must NOT
+    * be required for construction: the selected output device only gates
+    * the frontend's output_enabled flag. Failing here when output is "Off"
+    * would abort midi_driver_init, free the device list, and leave the
+    * synth impossible to select (empty MIDI Output menu). */
+   (void)input;
+   (void)output;
 
    fm = (fmsynth_t*)calloc(1, sizeof(*fm));
    if (!fm)
@@ -574,7 +576,10 @@ static bool fmsynth_midi_set_input(void *p, const char *input)
 
 static bool fmsynth_midi_set_output(void *p, const char *output)
 {
-   return p != NULL && output != NULL;
+   /* Accept both selecting "FM Synth" and disabling (NULL): whether output
+    * is actually produced is gated by the frontend's output_enabled. */
+   (void)output;
+   return p != NULL;
 }
 
 static bool fmsynth_midi_read(void *p, midi_event_t *event)
