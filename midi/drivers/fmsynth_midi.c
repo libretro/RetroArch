@@ -62,6 +62,22 @@
 /* GM percussion lives on MIDI channel 10 (0-based index 9). */
 #define FMSYNTH_DRUM_CHANNEL 9
 
+/* Velocity -> brightness: how much harder hits open up the FM index.
+ * idx scales between (1-DEPTH) and 1.0 across velocity 0..127. */
+#define FMSYNTH_VEL_BRIGHT_DEPTH 0.65f
+
+/* Schroeder reverb (4 comb + 2 allpass). Buffers are sized for the highest
+ * common output rate; per-rate lengths are scaled from the 44.1k tunings and
+ * clamped to these maxima. */
+#define FMSYNTH_COMB_MAX     6144
+#define FMSYNTH_ALLPASS_MAX  2048
+#define FMSYNTH_REVERB_FB    0.84f   /* comb feedback (room size)            */
+#define FMSYNTH_REVERB_DAMP  0.20f   /* high-frequency damping in feedback   */
+#define FMSYNTH_REVERB_WET   0.22f   /* wet mix added on top of dry          */
+#define FMSYNTH_REVERB_GAIN  0.015f  /* input scaling into the comb bank     */
+#define FMSYNTH_REVERB_TAIL  1.6f    /* seconds the tail is serviced after   */
+                                     /* the last voice ends                  */
+
 /* Envelope stages. */
 #define FMSYNTH_ENV_OFF      0
 #define FMSYNTH_ENV_ATTACK   1
@@ -92,6 +108,7 @@ typedef struct
    float    drum_dec;     /* percussion amp decay/sample (patch==NULL)      */
    float    drum_index;   /* percussion FM index (pitched hits)             */
    uint32_t rng;          /* per-voice noise LCG state (percussion)         */
+   uint32_t age;          /* note_counter at allocation (older = lower)     */
    uint8_t  is_noise;     /* percussion noise hit                           */
    uint8_t  active;       /* voice is in use (stage != OFF)                 */
    uint8_t  channel;      /* owning MIDI channel 0..15                      */
@@ -112,6 +129,17 @@ typedef struct
    float    dec_rate;
    float    rel_rate;
    float    sustain_level;
+   uint32_t note_counter;                    /* monotonic, for voice age     */
+
+   /* Schroeder reverb state. */
+   float    comb_buf[4][FMSYNTH_COMB_MAX];
+   float    comb_store[4];
+   int      comb_len[4];
+   int      comb_idx[4];
+   float    allpass_buf[2][FMSYNTH_ALLPASS_MAX];
+   int      allpass_len[2];
+   int      allpass_idx[2];
+   long     reverb_tail;                     /* samples of tail left to run  */
 } fmsynth_t;
 
 /* ---- shared sine table (read-only after init) -------------------------- */
@@ -160,6 +188,65 @@ static float fmsynth_note_inc(uint8_t note, unsigned rate)
    return (float)(freq / (double)rate);
 }
 
+/* Schroeder reverb tunings at 44.1kHz (Freeverb-derived), scaled per rate. */
+static void fmsynth_reverb_init(fmsynth_t *fm, unsigned rate)
+{
+   static const int comb44[4]    = { 1116, 1188, 1277, 1356 };
+   static const int allpass44[2] = {  556,  441 };
+   double scale = (double)rate / 44100.0;
+   unsigned c;
+
+   for (c = 0; c < 4; c++)
+   {
+      int len = (int)(comb44[c] * scale);
+      if (len < 1) len = 1;
+      if (len > FMSYNTH_COMB_MAX) len = FMSYNTH_COMB_MAX;
+      fm->comb_len[c]   = len;
+      fm->comb_idx[c]   = 0;
+      fm->comb_store[c] = 0.0f;
+      memset(fm->comb_buf[c], 0, sizeof(fm->comb_buf[c]));
+   }
+   for (c = 0; c < 2; c++)
+   {
+      int len = (int)(allpass44[c] * scale);
+      if (len < 1) len = 1;
+      if (len > FMSYNTH_ALLPASS_MAX) len = FMSYNTH_ALLPASS_MAX;
+      fm->allpass_len[c] = len;
+      fm->allpass_idx[c] = 0;
+      memset(fm->allpass_buf[c], 0, sizeof(fm->allpass_buf[c]));
+   }
+}
+
+/* Process one mono sample through the reverb; returns the wet signal. */
+static float fmsynth_reverb(fmsynth_t *fm, float x)
+{
+   float in  = x * FMSYNTH_REVERB_GAIN;
+   float out = 0.0f;
+   unsigned c;
+
+   for (c = 0; c < 4; c++)
+   {
+      float y = fm->comb_buf[c][fm->comb_idx[c]];
+      fm->comb_store[c] = y * (1.0f - FMSYNTH_REVERB_DAMP)
+                        + fm->comb_store[c] * FMSYNTH_REVERB_DAMP;
+      fm->comb_buf[c][fm->comb_idx[c]] = in + fm->comb_store[c] * FMSYNTH_REVERB_FB;
+      if (++fm->comb_idx[c] >= fm->comb_len[c])
+         fm->comb_idx[c] = 0;
+      out += y;
+   }
+   /* comb outputs summed in 'out'; run that through the allpass chain. */
+   for (c = 0; c < 2; c++)
+   {
+      float bufout = fm->allpass_buf[c][fm->allpass_idx[c]];
+      float y      = -out + bufout;
+      fm->allpass_buf[c][fm->allpass_idx[c]] = out + bufout * 0.5f;
+      if (++fm->allpass_idx[c] >= fm->allpass_len[c])
+         fm->allpass_idx[c] = 0;
+      out = y;   /* series: feed into the next allpass stage */
+   }
+   return out;
+}
+
 /* Recompute envelope increments for the current output rate. Called at init
  * and whenever audio_driver.c updates the rate (commit 3). */
 static void fmsynth_set_rate(fmsynth_t *fm, unsigned rate)
@@ -171,6 +258,7 @@ static void fmsynth_set_rate(fmsynth_t *fm, unsigned rate)
    fm->dec_rate      = 0.45f / (0.060f * (float)rate); /* 60ms decay   */
    fm->rel_rate      = 0.55f / (0.090f * (float)rate); /* 90ms release */
    fm->sustain_level = 0.55f;
+   fmsynth_reverb_init(fm, rate);
 }
 
 /* ---- voice allocation -------------------------------------------------- */
@@ -191,14 +279,36 @@ static fmsynth_voice_t *fmsynth_find_voice(fmsynth_t *fm,
 static fmsynth_voice_t *fmsynth_alloc_voice(fmsynth_t *fm)
 {
    unsigned i;
+   fmsynth_voice_t *best = NULL;
+
+   /* 1: a free voice. */
    for (i = 0; i < FMSYNTH_MAX_VOICES; i++)
    {
       if (!fm->voices[i].active)
          return &fm->voices[i];
    }
-   /* No free voice: steal voice 0 (a real allocator with age/priority
-    * comes with the synthesis commit). */
-   return &fm->voices[0];
+
+   /* 2: the quietest voice already in its release stage. */
+   for (i = 0; i < FMSYNTH_MAX_VOICES; i++)
+   {
+      fmsynth_voice_t *v = &fm->voices[i];
+      if (v->stage == FMSYNTH_ENV_RELEASE)
+      {
+         if (!best || v->env < best->env)
+            best = v;
+      }
+   }
+   if (best)
+      return best;
+
+   /* 3: no releasing voice; steal the oldest. */
+   for (i = 0; i < FMSYNTH_MAX_VOICES; i++)
+   {
+      fmsynth_voice_t *v = &fm->voices[i];
+      if (!best || v->age < best->age)
+         best = v;
+   }
+   return best ? best : &fm->voices[0];
 }
 
 static void fmsynth_note_on(fmsynth_t *fm,
@@ -217,6 +327,7 @@ static void fmsynth_note_on(fmsynth_t *fm,
 
    v             = fmsynth_alloc_voice(fm);
    v->active     = 1;
+   v->age        = ++fm->note_counter;
    v->channel    = channel;
    v->note       = note;
    v->velocity   = velocity;
@@ -411,6 +522,9 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
          float m_atk = 1.0f / (fmsynth_maxf(pt->m_atk, 0.0005f) * rate);
          float m_dec = (1.0f - pt->m_sus)
                      / (fmsynth_maxf(pt->m_dec, 0.0005f) * rate);
+         /* velocity -> brightness: harder hits open the FM index */
+         float vbright = (1.0f - FMSYNTH_VEL_BRIGHT_DEPTH)
+                       + FMSYNTH_VEL_BRIGHT_DEPTH * ((float)v->velocity / 127.0f);
 
          mod_inc = car_inc * pt->mod_ratio;
 
@@ -452,7 +566,7 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
                   break;
             }
 
-            idx = pt->mod_index * v->mod_env;
+            idx = pt->mod_index * v->mod_env * vbright;
             m   = fmsynth_sine(v->mod_phase) * idx;
             s   = fmsynth_sine(v->car_phase + m) * v->env * vgain;
 
@@ -503,6 +617,25 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
                break;
          }
       }
+   }
+
+   /* Keep servicing the reverb for a tail after the last voice ends so it
+    * rings out instead of being cut off. */
+   if (any)
+      fm->reverb_tail = (long)(FMSYNTH_REVERB_TAIL * (float)fm->output_rate);
+
+   if (fm->reverb_tail > 0)
+   {
+      for (n = 0; n < frames; n++)
+      {
+         float l   = out[n * 2];
+         float r   = out[n * 2 + 1];
+         float wet = fmsynth_reverb(fm, (l + r) * 0.5f);
+         out[n * 2]     = l + wet * FMSYNTH_REVERB_WET;
+         out[n * 2 + 1] = r + wet * FMSYNTH_REVERB_WET;
+      }
+      fm->reverb_tail -= (long)frames;
+      return true;
    }
 
    return any != 0;
