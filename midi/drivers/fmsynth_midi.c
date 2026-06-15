@@ -96,6 +96,14 @@
 #define FMSYNTH_REVERB_SPREAD 23     /* right-channel delay offset (Freeverb) */
                                      /* the last voice ends                  */
 
+/* Output stage: a DC blocker (one-pole high-pass, FMSYNTH_DC_HZ corner) clears
+ * the small DC the self-feedback operators inject, and a soft clipper keeps
+ * dense polyphony from hard-clipping. The clipper is transparent (identity)
+ * below +/-FMSYNTH_CLIP_T and curves smoothly toward +/-1.0 above it, so
+ * normal playing is untouched and only loud stacks are gently limited. */
+#define FMSYNTH_DC_HZ        8.0f
+#define FMSYNTH_CLIP_T       0.75f
+
 /* Envelope stages. */
 #define FMSYNTH_ENV_OFF      0
 #define FMSYNTH_ENV_ATTACK   1
@@ -173,6 +181,11 @@ typedef struct
    int      allpass_len[2][2];
    int      allpass_idx[2][2];
    long     reverb_tail;                     /* samples of tail left to run  */
+
+   /* Output stage: DC blocker coefficient and per-channel filter memory. */
+   float    dc_r;                            /* high-pass pole (rate-scaled) */
+   float    dc_x[2];                         /* previous input  per channel  */
+   float    dc_y[2];                         /* previous output per channel  */
 } fmsynth_t;
 
 /* ---- shared sine table (read-only after init) -------------------------- */
@@ -210,6 +223,18 @@ static float fmsynth_sine(float cycles)
 static float fmsynth_maxf(float a, float b)
 {
    return a > b ? a : b;
+}
+
+/* Soft clipper: identity within +/-FMSYNTH_CLIP_T, then a tanh knee that
+ * asymptotes to +/-1.0 so the output can never exceed unity. Transparent at
+ * normal levels; only loud polyphony is gently compressed. */
+static float fmsynth_softclip(float x)
+{
+   const float t = FMSYNTH_CLIP_T;
+   const float k = 1.0f - FMSYNTH_CLIP_T;
+   if (x >  t) return  (t + k * (float)tanh((double)((x - t) / k)));
+   if (x < -t) return -(t + k * (float)tanh((double)((-x - t) / k)));
+   return x;
 }
 
 /* Carrier phase increment (cycles/sample) for a MIDI note at 'rate' Hz. */
@@ -318,6 +343,9 @@ static void fmsynth_set_rate(fmsynth_t *fm, unsigned rate)
    fm->dec_rate      = 0.45f / (0.060f * (float)rate); /* 60ms decay   */
    fm->rel_rate      = 0.55f / (0.090f * (float)rate); /* 90ms release */
    fm->sustain_level = 0.55f;
+   /* one-pole high-pass corner -> pole position for the output DC blocker */
+   fm->dc_r          = (float)exp(-2.0 * 3.14159265358979323846
+                     * (double)FMSYNTH_DC_HZ / (double)rate);
    fmsynth_reverb_init(fm, rate);
 }
 
@@ -818,7 +846,23 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
          out[n * 2 + 1] = r + wetR * FMSYNTH_REVERB_WET;
       }
       fm->reverb_tail -= (long)frames;
-      return true;
+      any = 1;                                /* output stage must still run */
+   }
+
+   /* Output stage: DC blocker then soft clip, on both channels, every frame.
+    * Runs over the whole block (including the reverb tail) so DC introduced by
+    * self-feedback operators is removed and dense chords cannot hard-clip. */
+   for (n = 0; n < frames; n++)
+   {
+      unsigned ch2;
+      for (ch2 = 0; ch2 < 2; ch2++)
+      {
+         float x = out[n * 2 + ch2];
+         float y = x - fm->dc_x[ch2] + fm->dc_r * fm->dc_y[ch2];
+         fm->dc_x[ch2] = x;
+         fm->dc_y[ch2] = y;
+         out[n * 2 + ch2] = fmsynth_softclip(y);
+      }
    }
 
    return any != 0;
