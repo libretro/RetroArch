@@ -88,6 +88,7 @@
 #define FMSYNTH_REVERB_WET   0.22f   /* wet mix added on top of dry          */
 #define FMSYNTH_REVERB_GAIN  0.015f  /* input scaling into the comb bank     */
 #define FMSYNTH_REVERB_TAIL  1.6f    /* seconds the tail is serviced after   */
+#define FMSYNTH_REVERB_SPREAD 23     /* right-channel delay offset (Freeverb) */
                                      /* the last voice ends                  */
 
 /* Envelope stages. */
@@ -155,14 +156,14 @@ typedef struct
    float    sustain_level;
    uint32_t note_counter;                    /* monotonic, for voice age     */
 
-   /* Schroeder reverb state. */
-   float    comb_buf[4][FMSYNTH_COMB_MAX];
-   float    comb_store[4];
-   int      comb_len[4];
-   int      comb_idx[4];
-   float    allpass_buf[2][FMSYNTH_ALLPASS_MAX];
-   int      allpass_len[2];
-   int      allpass_idx[2];
+   /* Schroeder reverb state (stereo: [0]=left, [1]=right). */
+   float    comb_buf[2][4][FMSYNTH_COMB_MAX];
+   float    comb_store[2][4];
+   int      comb_len[2][4];
+   int      comb_idx[2][4];
+   float    allpass_buf[2][2][FMSYNTH_ALLPASS_MAX];
+   int      allpass_len[2][2];
+   int      allpass_idx[2][2];
    long     reverb_tail;                     /* samples of tail left to run  */
 } fmsynth_t;
 
@@ -212,37 +213,44 @@ static float fmsynth_note_inc(uint8_t note, unsigned rate)
    return (float)(freq / (double)rate);
 }
 
-/* Schroeder reverb tunings at 44.1kHz (Freeverb-derived), scaled per rate. */
+/* Schroeder reverb tunings at 44.1kHz (Freeverb-derived), scaled per rate.
+ * The right channel's delays are offset by FMSYNTH_REVERB_SPREAD samples so
+ * the two networks decorrelate and the tail spreads across the stereo field. */
 static void fmsynth_reverb_init(fmsynth_t *fm, unsigned rate)
 {
    static const int comb44[4]    = { 1116, 1188, 1277, 1356 };
    static const int allpass44[2] = {  556,  441 };
    double scale = (double)rate / 44100.0;
+   unsigned ch;
    unsigned c;
 
-   for (c = 0; c < 4; c++)
+   for (ch = 0; ch < 2; ch++)
    {
-      int len = (int)(comb44[c] * scale);
-      if (len < 1) len = 1;
-      if (len > FMSYNTH_COMB_MAX) len = FMSYNTH_COMB_MAX;
-      fm->comb_len[c]   = len;
-      fm->comb_idx[c]   = 0;
-      fm->comb_store[c] = 0.0f;
-      memset(fm->comb_buf[c], 0, sizeof(fm->comb_buf[c]));
-   }
-   for (c = 0; c < 2; c++)
-   {
-      int len = (int)(allpass44[c] * scale);
-      if (len < 1) len = 1;
-      if (len > FMSYNTH_ALLPASS_MAX) len = FMSYNTH_ALLPASS_MAX;
-      fm->allpass_len[c] = len;
-      fm->allpass_idx[c] = 0;
-      memset(fm->allpass_buf[c], 0, sizeof(fm->allpass_buf[c]));
+      int spread = (ch == 1) ? FMSYNTH_REVERB_SPREAD : 0;
+      for (c = 0; c < 4; c++)
+      {
+         int len = (int)((comb44[c] + spread) * scale);
+         if (len < 1) len = 1;
+         if (len > FMSYNTH_COMB_MAX) len = FMSYNTH_COMB_MAX;
+         fm->comb_len[ch][c]   = len;
+         fm->comb_idx[ch][c]   = 0;
+         fm->comb_store[ch][c] = 0.0f;
+         memset(fm->comb_buf[ch][c], 0, sizeof(fm->comb_buf[ch][c]));
+      }
+      for (c = 0; c < 2; c++)
+      {
+         int len = (int)((allpass44[c] + spread) * scale);
+         if (len < 1) len = 1;
+         if (len > FMSYNTH_ALLPASS_MAX) len = FMSYNTH_ALLPASS_MAX;
+         fm->allpass_len[ch][c] = len;
+         fm->allpass_idx[ch][c] = 0;
+         memset(fm->allpass_buf[ch][c], 0, sizeof(fm->allpass_buf[ch][c]));
+      }
    }
 }
 
-/* Process one mono sample through the reverb; returns the wet signal. */
-static float fmsynth_reverb(fmsynth_t *fm, float x)
+/* Process one mono input sample through reverb channel 'ch' (0=L,1=R). */
+static float fmsynth_reverb(fmsynth_t *fm, float x, int ch)
 {
    float in  = x * FMSYNTH_REVERB_GAIN;
    float out = 0.0f;
@@ -250,22 +258,23 @@ static float fmsynth_reverb(fmsynth_t *fm, float x)
 
    for (c = 0; c < 4; c++)
    {
-      float y = fm->comb_buf[c][fm->comb_idx[c]];
-      fm->comb_store[c] = y * (1.0f - FMSYNTH_REVERB_DAMP)
-                        + fm->comb_store[c] * FMSYNTH_REVERB_DAMP;
-      fm->comb_buf[c][fm->comb_idx[c]] = in + fm->comb_store[c] * FMSYNTH_REVERB_FB;
-      if (++fm->comb_idx[c] >= fm->comb_len[c])
-         fm->comb_idx[c] = 0;
+      float y = fm->comb_buf[ch][c][fm->comb_idx[ch][c]];
+      fm->comb_store[ch][c] = y * (1.0f - FMSYNTH_REVERB_DAMP)
+                            + fm->comb_store[ch][c] * FMSYNTH_REVERB_DAMP;
+      fm->comb_buf[ch][c][fm->comb_idx[ch][c]] =
+         in + fm->comb_store[ch][c] * FMSYNTH_REVERB_FB;
+      if (++fm->comb_idx[ch][c] >= fm->comb_len[ch][c])
+         fm->comb_idx[ch][c] = 0;
       out += y;
    }
    /* comb outputs summed in 'out'; run that through the allpass chain. */
    for (c = 0; c < 2; c++)
    {
-      float bufout = fm->allpass_buf[c][fm->allpass_idx[c]];
+      float bufout = fm->allpass_buf[ch][c][fm->allpass_idx[ch][c]];
       float y      = -out + bufout;
-      fm->allpass_buf[c][fm->allpass_idx[c]] = out + bufout * 0.5f;
-      if (++fm->allpass_idx[c] >= fm->allpass_len[c])
-         fm->allpass_idx[c] = 0;
+      fm->allpass_buf[ch][c][fm->allpass_idx[ch][c]] = out + bufout * 0.5f;
+      if (++fm->allpass_idx[ch][c] >= fm->allpass_len[ch][c])
+         fm->allpass_idx[ch][c] = 0;
       out = y;   /* series: feed into the next allpass stage */
    }
    return out;
@@ -803,11 +812,13 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
    {
       for (n = 0; n < frames; n++)
       {
-         float l   = out[n * 2];
-         float r   = out[n * 2 + 1];
-         float wet = fmsynth_reverb(fm, (l + r) * 0.5f);
-         out[n * 2]     = l + wet * FMSYNTH_REVERB_WET;
-         out[n * 2 + 1] = r + wet * FMSYNTH_REVERB_WET;
+         float l    = out[n * 2];
+         float r    = out[n * 2 + 1];
+         float mono = (l + r) * 0.5f;
+         float wetL = fmsynth_reverb(fm, mono, 0);
+         float wetR = fmsynth_reverb(fm, mono, 1);
+         out[n * 2]     = l + wetL * FMSYNTH_REVERB_WET;
+         out[n * 2 + 1] = r + wetR * FMSYNTH_REVERB_WET;
       }
       fm->reverb_tail -= (long)frames;
       return true;
