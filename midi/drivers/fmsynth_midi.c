@@ -104,12 +104,17 @@
 #define FMSYNTH_DC_HZ        8.0f
 #define FMSYNTH_CLIP_T       0.75f
 
-/* Envelope stages. */
+/* Envelope stages: three linear ramps to the operator's targets, then a held
+ * sustain at the final target, then release. (Percussion reuses OFF/RELEASE.) */
 #define FMSYNTH_ENV_OFF      0
-#define FMSYNTH_ENV_ATTACK   1
-#define FMSYNTH_ENV_DECAY    2
-#define FMSYNTH_ENV_SUSTAIN  3
-#define FMSYNTH_ENV_RELEASE  4
+#define FMSYNTH_ENV_STAGE0   1
+#define FMSYNTH_ENV_STAGE1   2
+#define FMSYNTH_ENV_STAGE2   3
+#define FMSYNTH_ENV_SUSTAIN  4
+#define FMSYNTH_ENV_RELEASE  5
+/* Back-compat aliases for the percussion path's note gate. */
+#define FMSYNTH_ENV_ATTACK   FMSYNTH_ENV_STAGE0
+#define FMSYNTH_ENV_DECAY    FMSYNTH_ENV_STAGE1
 
 /* MIDI status nibbles (high nibble of a channel-voice status byte). */
 #define MIDI_NOTE_OFF        0x80
@@ -665,7 +670,6 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
           * envelope/LFO updates with a tight per-sample oscillator+matrix loop. */
          const fmsynth_patch_t *pt = v->patch;
          float rate    = (float)fm->output_rate;
-         float kbase   = (float)v->note - 60.0f;
          float velf    = (float)v->velocity / 127.0f;
          float vg      = ((float)fm->volume[ch]     / 127.0f)
                        * ((float)fm->expression[ch] / 127.0f)
@@ -677,10 +681,8 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
          float mw_semi = ((float)fm->mod_wheel[ch] / 127.0f) * FMSYNTH_VIBRATO_SEMI;
          float inc0[FMSYNTH_OPS];
          float amp0[FMSYNTH_OPS];
-         float a_r[FMSYNTH_OPS];
-         float d_r[FMSYNTH_OPS];
-         float r_r[FMSYNTH_OPS];
-         float susl[FMSYNTH_OPS];
+         float eslope[FMSYNTH_OPS][3];   /* per-stage envelope ramp / sample */
+         float erel[FMSYNTH_OPS];        /* release ramp magnitude / sample  */
          float cpanL[FMSYNTH_OPS];
          float cpanR[FMSYNTH_OPS];
          int   first_car = -1;
@@ -689,18 +691,27 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
          for (o = 0; o < FMSYNTH_OPS; o++)
          {
             const fmsynth_op_t *op = &pt->op[o];
-            float ksc    = (float)pow(2.0, (double)(kbase * op->key_scale));
+            float dn     = (float)v->note - op->ks_mid;
+            float ksc    = (dn >= 0.0f)
+                         ? (float)pow(2.0, (double)(dn / 12.0f * op->ks_high))
+                         : (float)pow(2.0, (double)(dn / 12.0f * op->ks_low));
             float velfac = (1.0f - op->vel_sens) + op->vel_sens * velf;
+            float t0     = op->env_target[0];
+            float t1     = op->env_target[1];
+            float t2     = op->env_target[2];
             if (ksc < FMSYNTH_KEY_SCALE_MIN) ksc = FMSYNTH_KEY_SCALE_MIN;
             if (ksc > FMSYNTH_KEY_SCALE_MAX) ksc = FMSYNTH_KEY_SCALE_MAX;
-            inc0[o] = car_inc * op->ratio;
+            inc0[o] = car_inc * op->ratio + op->offset / rate;
             amp0[o] = op->amp * velfac;
-            susl[o] = op->sus;
-            a_r[o]  = 1.0f / (fmsynth_maxf(op->atk, 0.0005f) * rate);
-            d_r[o]  = ksc * (1.0f - op->sus)
-                    / (fmsynth_maxf(op->dec, 0.0005f) * rate);
-            r_r[o]  = ksc * (op->sus > 0.0f ? op->sus : 1.0f)
-                    / (fmsynth_maxf(op->rel, 0.0005f) * rate);
+            /* attack ramp runs at note rate; decays and release scale w/ pitch */
+            eslope[o][0] =       (t0 - 0.0f)
+                         / (fmsynth_maxf(op->env_time[0], 0.0005f) * rate);
+            eslope[o][1] = ksc * (t1 - t0)
+                         / (fmsynth_maxf(op->env_time[1], 0.0005f) * rate);
+            eslope[o][2] = ksc * (t2 - t1)
+                         / (fmsynth_maxf(op->env_time[2], 0.0005f) * rate);
+            erel[o]      = ksc *  t2
+                         / (fmsynth_maxf(op->release,     0.0005f) * rate);
             if (op->carrier)
             {
                float pp = op->pan + chpan;
@@ -737,35 +748,51 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
                while (v->lfo_phase >= 1.0f) v->lfo_phase -= 1.0f;
                for (o = 0; o < FMSYNTH_OPS; o++)
                {
+                  const fmsynth_op_t *op = &pt->op[o];
+                  int   stg = v->op_stage[o];
+                  float env = v->op_env[o];
                   float fscale;
                   if (v->stage == FMSYNTH_ENV_RELEASE
-                   && v->op_stage[o] != FMSYNTH_ENV_OFF)
-                     v->op_stage[o] = FMSYNTH_ENV_RELEASE;
-                  switch (v->op_stage[o])
+                   && stg != FMSYNTH_ENV_OFF && stg != FMSYNTH_ENV_RELEASE)
+                     stg = FMSYNTH_ENV_RELEASE;
+                  switch (stg)
                   {
-                     case FMSYNTH_ENV_ATTACK:
-                        v->op_env[o] += a_r[o] * (float)step;
-                        if (v->op_env[o] >= 1.0f)
-                        { v->op_env[o] = 1.0f; v->op_stage[o] = FMSYNTH_ENV_DECAY; }
+                     case FMSYNTH_ENV_STAGE0:
+                        env += eslope[o][0] * (float)step;
+                        if ((eslope[o][0] >= 0.0f) ? (env >= op->env_target[0])
+                                                   : (env <= op->env_target[0]))
+                        { env = op->env_target[0]; stg = FMSYNTH_ENV_STAGE1; }
                         break;
-                     case FMSYNTH_ENV_DECAY:
-                        v->op_env[o] -= d_r[o] * (float)step;
-                        if (v->op_env[o] <= susl[o])
-                        { v->op_env[o] = susl[o]; v->op_stage[o] = FMSYNTH_ENV_SUSTAIN; }
+                     case FMSYNTH_ENV_STAGE1:
+                        env += eslope[o][1] * (float)step;
+                        if ((eslope[o][1] >= 0.0f) ? (env >= op->env_target[1])
+                                                   : (env <= op->env_target[1]))
+                        { env = op->env_target[1]; stg = FMSYNTH_ENV_STAGE2; }
+                        break;
+                     case FMSYNTH_ENV_STAGE2:
+                        env += eslope[o][2] * (float)step;
+                        if ((eslope[o][2] >= 0.0f) ? (env >= op->env_target[2])
+                                                   : (env <= op->env_target[2]))
+                        { env = op->env_target[2]; stg = FMSYNTH_ENV_SUSTAIN; }
+                        break;
+                     case FMSYNTH_ENV_SUSTAIN:
+                        env = op->env_target[2];
                         break;
                      case FMSYNTH_ENV_RELEASE:
-                        v->op_env[o] -= r_r[o] * (float)step;
-                        if (v->op_env[o] <= 0.0f)
-                        { v->op_env[o] = 0.0f; v->op_stage[o] = FMSYNTH_ENV_OFF; }
+                        env -= erel[o] * (float)step;
+                        if (env <= 0.0f) { env = 0.0f; stg = FMSYNTH_ENV_OFF; }
                         break;
-                     default: break;
+                     default:
+                        break;
                   }
-                  v->op_amp[o]   = amp0[o] * v->op_env[o]
-                                 * (1.0f + pt->op[o].lfo_amp * lfo);
-                  fscale         = 1.0f + (pt->op[o].lfo_freq + mw_semi)
-                                 * FMSYNTH_SEMI_TO_RATE * lfo;
+                  v->op_env[o]   = env;
+                  v->op_stage[o] = stg;
+                  v->op_amp[o]   = amp0[o] * env * (1.0f + op->lfo_amp * lfo);
+                  fscale         = 1.0f
+                     + (op->lfo_freq + op->mod_sens * mw_semi)
+                     * FMSYNTH_SEMI_TO_RATE * lfo;
                   v->op_inc_c[o] = inc0[o] * fscale;
-                  if (pt->op[o].carrier && v->op_stage[o] != FMSYNTH_ENV_OFF)
+                  if (op->carrier && stg != FMSYNTH_ENV_OFF)
                      alloff = 0;
                }
                if (alloff)

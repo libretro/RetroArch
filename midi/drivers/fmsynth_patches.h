@@ -36,23 +36,31 @@
 #define FMSYNTH_OPS       8   /* operators per voice (libfmsynth parity)     */
 #define FMSYNTH_MAX_CONN  12  /* non-zero modulation-matrix cells per patch  */
 
-/* One FM operator. Times in seconds; sus 0..1. 'amp' is carrier amplitude or
- * (for a modulator) its output level, which the modulation matrix then scales
- * into the target operator's phase, in carrier cycles. */
+/* One FM operator - the full libfmsynth per-operator parameter set.
+ * The amplitude envelope is three linear ramps to successive targets
+ * (reached over env_time[i] seconds), then it holds at env_target[2]
+ * (sustain) until note-off and ramps to zero over 'release'. This is a
+ * superset of ADSR (attack = ramp to target[0], decay = ramp to target[1],
+ * etc.). 'offset' adds a fixed Hz on top of the ratio-derived frequency
+ * for detuned/inharmonic voices. Keyboard scaling speeds the envelope above
+ * the breakpoint note (ks_high) and slows it below (ks_low). */
 typedef struct
 {
-   float ratio;       /* frequency ratio to the played note            */
-   float amp;         /* output level (carrier amplitude / mod source) */
-   float pan;         /* carrier pan, -1 = left .. +1 = right          */
-   float atk;
-   float dec;
-   float sus;
-   float rel;
-   float vel_sens;    /* velocity -> level sensitivity, 0..1           */
-   float key_scale;   /* keyboard rate scaling exponent (per octave)   */
-   float lfo_amp;     /* voice-LFO -> amplitude (tremolo) depth        */
-   float lfo_freq;    /* voice-LFO -> frequency (vibrato) depth, semis */
-   unsigned char carrier; /* 1 = summed to output                      */
+   float ratio;          /* frequency multiplier of the played note      */
+   float offset;         /* fixed frequency offset in Hz                 */
+   float amp;            /* output level (carrier amp / modulation depth)*/
+   float pan;            /* carrier pan, -1 = left .. +1 = right          */
+   float env_target[3];  /* the three successive envelope levels          */
+   float env_time[3];    /* seconds to reach each target                  */
+   float release;        /* seconds from sustain back to zero             */
+   float ks_mid;         /* keyboard-scaling breakpoint (MIDI note)       */
+   float ks_low;         /* envelope-rate factor / octave below break     */
+   float ks_high;        /* envelope-rate factor / octave above break     */
+   float vel_sens;       /* velocity -> level sensitivity, 0..1           */
+   float mod_sens;       /* mod-wheel -> this operator's vibrato depth     */
+   float lfo_amp;        /* voice-LFO -> amplitude (tremolo) depth        */
+   float lfo_freq;       /* voice-LFO -> frequency (vibrato) depth, semis */
+   unsigned char carrier;/* 1 = summed to output                          */
 } fmsynth_op_t;
 
 /* One cell of the modulation matrix: operator 'from' modulates operator 'to'
@@ -72,18 +80,29 @@ typedef struct
    float          lfo_rate;  /* per-voice LFO rate in Hz (0 = off)  */
 } fmsynth_patch_t;
 
-/* Operator constructors keep the family table readable.
- * KEY_SCALE 0.0417 ~ doubles decay/release every two octaves. */
+/* Operator constructors keep the family table readable. They expand the
+ * familiar (attack, decay, sustain, release) shorthand onto the 3-target
+ * envelope - target {1, sus, sus} over times {atk, dec, 0} then release -
+ * so existing timbres are unchanged while the richer parameters stay
+ * available to hand-written patches. Keyboard scaling defaults to a 60-note
+ * breakpoint with a 0.5/octave factor either side (the old behaviour);
+ * mod-wheel sensitivity defaults to full so vibrato still responds. */
 #define OPC(r,a,p, at,dc,su,rl) \
-   { (r),(a),(p), (at),(dc),(su),(rl), 0.6f, 0.0417f, 0.0f, 0.0f, 1 }
+   { (r),0.0f,(a),(p), {1.0f,(su),(su)}, {(at),(dc),0.0f}, (rl), \
+     60.0f,0.5f,0.5f, 0.6f,1.0f, 0.0f,0.0f, 1 }
 #define OPM(r,a, at,dc,su,rl) \
-   { (r),(a),0.0f, (at),(dc),(su),(rl), 1.0f, 0.0417f, 0.0f, 0.0f, 0 }
+   { (r),0.0f,(a),0.0f, {1.0f,(su),(su)}, {(at),(dc),0.0f}, (rl), \
+     60.0f,0.5f,0.5f, 1.0f,1.0f, 0.0f,0.0f, 0 }
 /* LFO-bearing carrier / modulator (tremolo la, vibrato lf semitones) */
 #define OPCL(r,a,p, at,dc,su,rl, la,lf) \
-   { (r),(a),(p), (at),(dc),(su),(rl), 0.6f, 0.0417f, (la),(lf), 1 }
+   { (r),0.0f,(a),(p), {1.0f,(su),(su)}, {(at),(dc),0.0f}, (rl), \
+     60.0f,0.5f,0.5f, 0.6f,1.0f, (la),(lf), 1 }
 #define OPML(r,a, at,dc,su,rl, la,lf) \
-   { (r),(a),0.0f, (at),(dc),(su),(rl), 1.0f, 0.0417f, (la),(lf), 0 }
-#define OPX  { 1.0f,0.0f,0.0f, 0.01f,0.1f,0.0f,0.1f, 0.0f,0.0417f,0.0f,0.0f, 0 }
+   { (r),0.0f,(a),0.0f, {1.0f,(su),(su)}, {(at),(dc),0.0f}, (rl), \
+     60.0f,0.5f,0.5f, 1.0f,1.0f, (la),(lf), 0 }
+#define OPX \
+   { 1.0f,0.0f,0.0f,0.0f, {0.0f,0.0f,0.0f}, {0.01f,0.1f,0.0f}, 0.1f, \
+     60.0f,0.5f,0.5f, 0.0f,0.0f, 0.0f,0.0f, 0 }
 #define OP2X OPX,OPX
 #define OP4X OPX,OPX,OPX,OPX
 #define OP6X OPX,OPX,OPX,OPX,OPX,OPX
