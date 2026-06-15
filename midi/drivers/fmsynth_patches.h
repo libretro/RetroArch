@@ -240,6 +240,37 @@ static const fmsynth_patch_t fmsynth_dist_guitar =
    { { 0, 1, 1.0f }, { 1, 1, 0.45f } }, 2, 0.0f
 };
 
+/* Vibraphone (GM 11): metallic 5:1 partial that rings (sustains) while held,
+ * with the rotating-disc tremolo that defines the instrument (LFO -> amplitude
+ * at ~5 Hz). */
+static const fmsynth_patch_t fmsynth_vibraphone =
+{
+   { OPCL(1.0f, 1.0f, 0.0f, 0.002f, 0.30f, 0.45f, 0.60f, 0.20f,0.0f),
+     OPM (5.0f, 0.5f,        0.002f, 0.30f, 0.30f, 0.50f),
+     OP6X },
+   { { 0, 1, 1.0f } }, 1, 5.0f
+};
+
+/* Marimba (GM 12): wooden, harmonic (a 4:1 overtone), fast two-stage decay
+ * to silence - tonal where the bell default is inharmonic. */
+static const fmsynth_patch_t fmsynth_marimba =
+{
+   { OPCP(1.0f, 1.0f, 0.0f, 0.001f, 0.10f,0.30f, 0.8f,0.0f, 0.15f),
+     OPMP(4.0f, 0.8f,       0.001f, 0.05f,0.30f, 0.4f,0.0f, 0.15f),
+     OP6X },
+   { { 0, 1, 1.0f } }, 1, 0.0f
+};
+
+/* Xylophone (GM 13): harder and brighter than marimba (3:1 overtone), very
+ * fast decay. */
+static const fmsynth_patch_t fmsynth_xylophone =
+{
+   { OPCP(1.0f, 1.0f, 0.0f, 0.001f, 0.06f,0.25f, 0.5f,0.0f, 0.12f),
+     OPMP(3.0f, 1.2f,       0.001f, 0.03f,0.30f, 0.25f,0.0f, 0.12f),
+     OP6X },
+   { { 0, 1, 1.0f } }, 1, 0.0f
+};
+
 static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
 {
    program &= 0x7F;
@@ -247,6 +278,9 @@ static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
    {
       case 6:  return &fmsynth_harpsichord;
       case 7:  return &fmsynth_clavinet;
+      case 11: return &fmsynth_vibraphone;
+      case 12: return &fmsynth_marimba;
+      case 13: return &fmsynth_xylophone;
       case 29: /* overdriven guitar */
       case 30: return &fmsynth_dist_guitar;
       default: break;
