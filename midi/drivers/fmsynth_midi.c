@@ -805,7 +805,19 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
             }
             v->lfo_ctr--;
 
-            /* ---- per sample: modulation matrix, then oscillator bank ---- */
+            /* ---- per sample: modulation matrix, then oscillator bank ----
+             * This is phase modulation (the DX7 form): the matrix output is
+             * added to each operator's phase at lookup, not integrated into
+             * it. libfmsynth's README describes phase-integration FM instead,
+             * but the two are the SAME synthesis - they yield identical Bessel
+             * sideband spectra for a given modulation index. They differ only
+             * in parameterisation: PM's index is the phase deviation and is
+             * independent of pitch (consistent timbre across the keyboard),
+             * whereas integrated FM's index is deviation/modulator-frequency,
+             * so matching it would mean scaling every depth by the modulator
+             * frequency (same result, more work) or, unscaled, brightening low
+             * notes wildly and risking DC drift on the feedback operators.
+             * PM is kept deliberately; the patch depths are calibrated for it. */
             for (o = 0; o < FMSYNTH_OPS; o++) modin[o] = 0.0f;
             for (c = 0; c < pt->nconn; c++)
                modin[pt->conn[c].to] +=
