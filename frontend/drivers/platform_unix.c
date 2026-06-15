@@ -4043,10 +4043,17 @@ static void OnSurfaceCreatedCB(OH_NativeXComponent *component, void *window)
     g_ohos->window = window;
     OH_NativeXComponent_ExpectedRateRange frameRateRange;
     frameRateRange.min = 60;      // min fps 60fps
-    frameRateRange.max = 60;      // max fps 60fps
-    frameRateRange.expected = 60; // expected fps 60fps
+    frameRateRange.max = 120;      // max fps 60fps
+    frameRateRange.expected = 120; // expected fps 60fps
 
     OH_NativeXComponent_SetExpectedFrameRateRange(component, &frameRateRange);
+    uint64_t width;
+    uint64_t height;
+    OH_NativeXComponent_GetXComponentSize(component, window, &width, &height);
+    g_ohos->content_rect.changed = true;
+    g_ohos->content_rect.width   = width;
+    g_ohos->content_rect.height  = height;
+    
 }
 
 static void OnSurfaceChangedCB(OH_NativeXComponent *component, void *window)
