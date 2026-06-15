@@ -603,6 +603,7 @@ midi_driver_t *midi_drivers[]   = {
 #ifdef HAVE_COREMIDI
    &midi_coremidi,
 #endif
+   &midi_fmsynth,
    &midi_null
 };
 
@@ -735,6 +736,21 @@ static bool midi_driver_init_io_buffers(void)
    rarch_midi_drv_output_event.data_size = 0;
 
    return true;
+}
+
+bool midi_driver_synth_active(void)
+{
+   return midi_drv
+       && midi_drv->render
+       && rarch_midi_drv_data
+       && rarch_midi_drv_data != (void*)-1;
+}
+
+bool midi_driver_render_audio(float *out, size_t frames, unsigned rate)
+{
+   if (!midi_driver_synth_active())
+      return false;
+   return midi_drv->render(rarch_midi_drv_data, out, frames, rate);
 }
 
 static void midi_driver_free(void)
