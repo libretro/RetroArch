@@ -145,8 +145,11 @@ static const fmsynth_patch_t fmsynth_family[16] =
        OPCL(4.0f, 0.18f,+0.15f, 0.005f,0.05f,0.95f,0.06f, 0.10f,0.0f),
        OP4X },
      { { 0, 0, 0.0f } }, 0, 6.0f },
-   /* 3  Guitar */
-   FMSYNTH_2OP(1.0f, 1.1f, 0.002f,0.40f,0.10f,0.25f, 0.001f,0.25f,0.15f),
+   /* 3  Guitar - acoustic/clean pluck: two-stage decay to silence */
+   { { OPCP(1.0f, 1.0f, 0.0f, 0.003f, 0.12f,0.35f, 2.0f,0.0f, 0.20f),
+       OPMP(1.0f, 1.1f,       0.001f, 0.06f,0.35f, 1.0f,0.0f, 0.25f),
+       OP6X },
+     { { 0, 1, 1.0f } }, 1, 0.0f },
    /* 4  Bass */
    FMSYNTH_2OP(1.0f, 0.9f, 0.003f,0.30f,0.35f,0.20f, 0.002f,0.20f,0.30f),
    /* 5  Strings - two stacks panned L/R, gentle vibrato + detune shimmer */
@@ -226,6 +229,17 @@ static const fmsynth_patch_t fmsynth_clavinet =
    { { 0, 1, 1.0f } }, 1, 0.0f
 };
 
+/* Overdriven / distortion guitar (GM 29, 30): unlike the acoustic family
+ * default these sustain rather than decay, and the modulator self-feedback
+ * supplies the buzzy harmonic grit of an overdriven amp. */
+static const fmsynth_patch_t fmsynth_dist_guitar =
+{
+   { OPC(1.0f, 1.0f, 0.0f, 0.005f, 0.30f, 0.80f, 0.25f),
+     OPM(1.0f, 1.6f,       0.005f, 0.25f, 0.75f, 0.30f),
+     OP6X },
+   { { 0, 1, 1.0f }, { 1, 1, 0.45f } }, 2, 0.0f
+};
+
 static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
 {
    program &= 0x7F;
@@ -233,6 +247,8 @@ static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
    {
       case 6:  return &fmsynth_harpsichord;
       case 7:  return &fmsynth_clavinet;
+      case 29: /* overdriven guitar */
+      case 30: return &fmsynth_dist_guitar;
       default: break;
    }
    return &fmsynth_family[program >> 3];
