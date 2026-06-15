@@ -176,8 +176,11 @@ static const fmsynth_patch_t fmsynth_family[16] =
      4, 5.5f },
    /* 8  Reed */
    FMSYNTH_2OP(1.0f, 1.0f, 0.020f,0.10f,0.85f,0.12f, 0.030f,0.10f,0.75f),
-   /* 9  Pipe */
-   FMSYNTH_2OP(1.0f, 0.35f,0.030f,0.08f,0.90f,0.10f, 0.040f,0.10f,0.85f),
+   /* 9  Pipe - flute: nearly pure tone with a gentle player's vibrato */
+   { { OPCL(1.0f, 1.0f, 0.0f, 0.030f,0.08f,0.90f,0.12f, 0.0f,0.12f),
+       OPM (1.0f, 0.35f,       0.040f,0.10f,0.85f,0.18f),
+       OP6X },
+     { { 0, 1, 1.0f } }, 1, 5.0f },
    /* 10 Synth Lead - serial stack, feedback, vibrato */
    { { OPCL(1.0f, 1.0f, 0.0f, 0.005f,0.10f,0.85f,0.10f, 0.0f,0.15f),
        OPM (1.0f, 1.2f,       0.010f,0.12f,0.70f,0.15f),
@@ -282,6 +285,65 @@ static const fmsynth_patch_t fmsynth_synth_bass =
    { { 0, 1, 1.0f }, { 1, 1, 0.12f } }, 2, 0.0f
 };
 
+/* Church organ (GM 19): full additive pipe organ - more ranks (octave, fifth
+ * and a brighter rank), a slow swell instead of the drawbar's instant attack,
+ * each rank slightly detuned for the breathing pipe chorus, and no tremolo. */
+static const fmsynth_patch_t fmsynth_church_organ =
+{
+   { OPCO(1.0f,  0.00f, 0.55f, -0.15f, 0.07f,0.05f,0.95f,0.25f),
+     OPCO(2.0f, +0.25f, 0.45f, +0.12f, 0.08f,0.05f,0.95f,0.25f),
+     OPCO(3.0f, -0.30f, 0.30f, -0.10f, 0.09f,0.05f,0.95f,0.25f),
+     OPCO(4.0f, +0.35f, 0.22f, +0.15f, 0.10f,0.05f,0.95f,0.25f),
+     OPCO(6.0f, -0.40f, 0.15f, -0.05f, 0.11f,0.05f,0.95f,0.25f),
+     OPX,OPX,OPX },
+   { { 0, 0, 0.0f } }, 0, 0.0f
+};
+
+/* Accordion (GM 21, 23): two reedy voices in a musette detune (+/-0.5 Hz),
+ * the ratio-2 modulator giving the bright reed buzz. */
+static const fmsynth_patch_t fmsynth_accordion =
+{
+   { OPCO(1.0f, -0.5f, 0.6f, -0.20f, 0.03f,0.05f,0.92f,0.15f),
+     OPM (2.0f,  0.5f,         0.03f,0.05f,0.88f,0.20f),
+     OPCO(1.0f, +0.5f, 0.6f, +0.20f, 0.03f,0.05f,0.92f,0.15f),
+     OPM (2.0f,  0.5f,         0.03f,0.05f,0.88f,0.20f),
+     OP4X },
+   { { 0, 1, 1.0f }, { 2, 3, 1.0f } }, 2, 0.0f
+};
+
+/* Brass section (GM 61): two detuned brass voices panned wide for the section
+ * spread, a slower swell than a solo brass and self-feedback for the rasp. */
+static const fmsynth_patch_t fmsynth_brass_section =
+{
+   { OPCO(1.0f, -0.5f, 0.7f, -0.30f, 0.05f,0.10f,0.80f,0.18f),
+     OPM (1.0f,  1.0f,         0.06f,0.12f,0.75f,0.20f),
+     OPCO(1.0f, +0.5f, 0.7f, +0.30f, 0.05f,0.10f,0.80f,0.18f),
+     OPM (1.0f,  1.0f,         0.06f,0.12f,0.75f,0.20f),
+     OP4X },
+   { { 0, 1, 1.0f }, { 1, 1, 0.30f }, { 2, 3, 1.0f }, { 3, 3, 0.30f } },
+   4, 0.0f
+};
+
+/* Synth brass (GM 62, 63): bright, punchy and fully sustained, feedback grit. */
+static const fmsynth_patch_t fmsynth_synth_brass =
+{
+   { OPC(1.0f, 1.0f, 0.0f, 0.010f, 0.10f, 0.85f, 0.12f),
+     OPM(1.0f, 1.4f,        0.020f, 0.12f, 0.80f, 0.18f),
+     OP6X },
+   { { 0, 1, 1.0f }, { 1, 1, 0.22f } }, 2, 0.0f
+};
+
+/* Clarinet (GM 71): a closed cylindrical pipe, so its tone is dominated by
+ * odd harmonics. A ratio-2 modulator places the FM sidebands on the odd
+ * harmonics of the note, giving the hollow, woody clarinet colour. */
+static const fmsynth_patch_t fmsynth_clarinet =
+{
+   { OPC(1.0f, 1.0f, 0.0f, 0.020f, 0.05f, 0.90f, 0.10f),
+     OPM(2.0f, 1.1f,        0.030f, 0.05f, 0.85f, 0.15f),
+     OP6X },
+   { { 0, 1, 1.0f } }, 1, 0.0f
+};
+
 static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
 {
    program &= 0x7F;
@@ -292,10 +354,17 @@ static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
       case 11: return &fmsynth_vibraphone;
       case 12: return &fmsynth_marimba;
       case 13: return &fmsynth_xylophone;
+      case 19: return &fmsynth_church_organ;
+      case 21: /* accordion */
+      case 23: return &fmsynth_accordion;       /* tango accordion */
       case 29: /* overdriven guitar */
       case 30: return &fmsynth_dist_guitar;
       case 38: /* synth bass 1 */
       case 39: return &fmsynth_synth_bass;
+      case 61: return &fmsynth_brass_section;
+      case 62: /* synth brass 1 */
+      case 63: return &fmsynth_synth_brass;
+      case 71: return &fmsynth_clarinet;
       default: break;
    }
    return &fmsynth_family[program >> 3];
