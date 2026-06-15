@@ -274,8 +274,27 @@ static float fmsynth_reverb(fmsynth_t *fm, float x)
  * and whenever audio_driver.c updates the rate (commit 3). */
 static void fmsynth_set_rate(fmsynth_t *fm, unsigned rate)
 {
+   unsigned old = fm->output_rate;
    if (rate == 0)
       rate = 44100;
+   /* base_inc (freq/rate) and drum_dec (1/(time*rate)) are baked per voice
+    * at note-on from the rate in force then. If the output rate changes
+    * afterwards - including the common case of a note arriving on the very
+    * first frame, before audio_driver.c has supplied the real rate - rescale
+    * any active voices by old/new so their pitch and decay stay correct. */
+   if (old != 0 && old != rate)
+   {
+      float s = (float)old / (float)rate;
+      unsigned i;
+      for (i = 0; i < FMSYNTH_MAX_VOICES; i++)
+      {
+         if (fm->voices[i].active)
+         {
+            fm->voices[i].base_inc *= s;
+            fm->voices[i].drum_dec *= s;
+         }
+      }
+   }
    fm->output_rate   = rate;
    fm->atk_rate      = 1.0f  / (0.004f * (float)rate); /* 4ms attack   */
    fm->dec_rate      = 0.45f / (0.060f * (float)rate); /* 60ms decay   */
