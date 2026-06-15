@@ -64,6 +64,11 @@
 #define FMSYNTH_VIBRATO_SEMI   0.5f  /* max depth at full mod wheel          */
 #define FMSYNTH_SEMI_TO_RATE   0.05776f /* small-signal 2^(x/12)-1 per semi  */
 
+/* Envelopes and the per-voice LFO are updated at "control rate", once every
+ * FMSYNTH_CONTROL samples (libfmsynth uses 32); the tight per-sample loop in
+ * between only runs the oscillator bank and the modulation matrix. */
+#define FMSYNTH_CONTROL        32
+
 /* GM percussion lives on MIDI channel 10 (0-based index 9). */
 #define FMSYNTH_DRUM_CHANNEL 9
 
@@ -115,8 +120,11 @@ typedef struct
    float    mod_phase;    /* modulator phase, in cycles [0,1) (percussion)  */
    float    op_phase[FMSYNTH_OPS]; /* per-operator phase (melodic)          */
    float    op_env[FMSYNTH_OPS];   /* per-operator envelope level [0,1]     */
-   float    op_out[FMSYNTH_OPS];   /* last per-operator output (mod/ feedbk)*/
+   float    op_out[FMSYNTH_OPS];   /* last per-operator output (matrix)     */
    int      op_stage[FMSYNTH_OPS]; /* per-operator FMSYNTH_ENV_* stage      */
+   float    op_amp[FMSYNTH_OPS];   /* control-rate effective amplitude      */
+   float    op_inc_c[FMSYNTH_OPS]; /* control-rate effective phase increment*/
+   int      lfo_ctr;      /* samples until next control-rate update          */
    float    base_inc;     /* carrier phase increment/sample (note pitch)    */
    float    env;          /* primary-carrier env level (voice-steal metric) */
    int      stage;        /* FMSYNTH_ENV_* note gate (ATTACK.. / RELEASE)   */
@@ -429,6 +437,7 @@ static void fmsynth_note_on(fmsynth_t *fm,
       unsigned o;
       v->patch    = fmsynth_patch_for_program(fm->program[channel]);
       v->base_inc = fmsynth_note_inc(note, fm->output_rate);
+      v->lfo_ctr  = 0;            /* force a control update on first sample */
       for (o = 0; o < FMSYNTH_OPS; o++)
       {
          v->op_phase[o] = 0.0f;
@@ -609,161 +618,149 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
 
       if (v->patch)
       {
-         /* ---- melodic 4-operator FM with selectable algorithm ---- */
+         /* ---- melodic FM: 8 operators, free modulation matrix ----
+          * Modelled on libfmsynth: per-operator envelope, velocity, keyboard
+          * scaling and LFO depth; any-to-any modulation (including self) via
+          * the sparse connection matrix; per-carrier panning; and control-rate
+          * envelope/LFO updates with a tight per-sample oscillator+matrix loop. */
          const fmsynth_patch_t *pt = v->patch;
-         float rate   = (float)fm->output_rate;
-         /* keyboard scaling: scale decay/release by note pitch */
-         float kscale = (float)pow(2.0,
-               ((double)v->note - 60.0) * (double)FMSYNTH_KEY_SCALE);
-         /* velocity -> brightness: harder hits open modulator depth */
-         float vbright = (1.0f - FMSYNTH_VEL_BRIGHT_DEPTH)
-                       + FMSYNTH_VEL_BRIGHT_DEPTH * ((float)v->velocity / 127.0f);
-         /* mod-wheel (CC1) vibrato: depth in semitones, LFO step per sample */
-         float vib_depth = ((float)fm->mod_wheel[ch] / 127.0f)
-                         * FMSYNTH_VIBRATO_SEMI;
-         float lfo_inc   = FMSYNTH_VIBRATO_HZ / rate;
-         unsigned alg    = pt->algorithm < FMSYNTH_NUM_ALGS
-                         ? pt->algorithm : 0;
-         unsigned carmask= fmsynth_alg_car[alg];
-         float    fb     = pt->feedback;
-         float    op_inc[FMSYNTH_OPS];
-         float    lev[FMSYNTH_OPS];
-         float    a_r[FMSYNTH_OPS];
-         float    d_r[FMSYNTH_OPS];
-         float    r_r[FMSYNTH_OPS];
-         float    susl[FMSYNTH_OPS];
-         unsigned ncar      = 0;
-         int      first_car = 0;
-         float    inv_car;
-         /* per-patch tremolo/vibrato LFO (libfmsynth-style, one LFO/voice) */
-         float    plfo_inc = pt->lfo_rate / rate;
-         float    trem     = pt->lfo_trem;
-         float    vibp     = pt->lfo_vib * FMSYNTH_SEMI_TO_RATE;
-         int      has_lfo  = (pt->lfo_rate > 0.0f
-                          && (pt->lfo_trem > 0.0f || pt->lfo_vib > 0.0f))
-                          ? 1 : 0;
+         float rate    = (float)fm->output_rate;
+         float kbase   = (float)v->note - 60.0f;
+         float velf    = (float)v->velocity / 127.0f;
+         float vg      = ((float)fm->volume[ch]     / 127.0f)
+                       * ((float)fm->expression[ch] / 127.0f)
+                       * FMSYNTH_MASTER_GAIN;
+         float pan01   = (float)fm->pan[ch] / 127.0f;
+         float chpan   = pan01 * 2.0f - 1.0f;            /* -1..+1 channel pan */
+         float lfo_rate= pt->lfo_rate > 0.0f ? pt->lfo_rate : FMSYNTH_VIBRATO_HZ;
+         float lfo_inc = lfo_rate / rate;
+         float mw_semi = ((float)fm->mod_wheel[ch] / 127.0f) * FMSYNTH_VIBRATO_SEMI;
+         float inc0[FMSYNTH_OPS];
+         float amp0[FMSYNTH_OPS];
+         float a_r[FMSYNTH_OPS];
+         float d_r[FMSYNTH_OPS];
+         float r_r[FMSYNTH_OPS];
+         float susl[FMSYNTH_OPS];
+         float cpanL[FMSYNTH_OPS];
+         float cpanR[FMSYNTH_OPS];
+         int   first_car = -1;
          unsigned o;
-
-         if (kscale < FMSYNTH_KEY_SCALE_MIN) kscale = FMSYNTH_KEY_SCALE_MIN;
-         if (kscale > FMSYNTH_KEY_SCALE_MAX) kscale = FMSYNTH_KEY_SCALE_MAX;
 
          for (o = 0; o < FMSYNTH_OPS; o++)
          {
             const fmsynth_op_t *op = &pt->op[o];
-            op_inc[o] = car_inc * op->ratio;
-            lev[o]    = op->level;
-            if (!(carmask & (1u << o)))
-               lev[o] *= vbright;           /* brightness on modulators */
-            susl[o]   = op->sus;
-            a_r[o]    = 1.0f / (fmsynth_maxf(op->atk, 0.0005f) * rate);
-            d_r[o]    = kscale * (1.0f - op->sus)
-                      / (fmsynth_maxf(op->dec, 0.0005f) * rate);
-            r_r[o]    = kscale * (op->sus > 0.0f ? op->sus : 1.0f)
-                      / (fmsynth_maxf(op->rel, 0.0005f) * rate);
-            if (carmask & (1u << o))
+            float ksc    = (float)pow(2.0, (double)(kbase * op->key_scale));
+            float velfac = (1.0f - op->vel_sens) + op->vel_sens * velf;
+            if (ksc < FMSYNTH_KEY_SCALE_MIN) ksc = FMSYNTH_KEY_SCALE_MIN;
+            if (ksc > FMSYNTH_KEY_SCALE_MAX) ksc = FMSYNTH_KEY_SCALE_MAX;
+            inc0[o] = car_inc * op->ratio;
+            amp0[o] = op->amp * velfac;
+            susl[o] = op->sus;
+            a_r[o]  = 1.0f / (fmsynth_maxf(op->atk, 0.0005f) * rate);
+            d_r[o]  = ksc * (1.0f - op->sus)
+                    / (fmsynth_maxf(op->dec, 0.0005f) * rate);
+            r_r[o]  = ksc * (op->sus > 0.0f ? op->sus : 1.0f)
+                    / (fmsynth_maxf(op->rel, 0.0005f) * rate);
+            if (op->carrier)
             {
-               if (ncar == 0) first_car = (int)o;
-               ncar++;
+               float pp = op->pan + chpan;
+               float a;
+               if (pp < -1.0f) pp = -1.0f;
+               if (pp >  1.0f) pp =  1.0f;
+               a = (pp + 1.0f) * 0.5f * 1.5707963267948966f;
+               cpanL[o] = (float)cos((double)a);
+               cpanR[o] = (float)sin((double)a);
+               if (first_car < 0) first_car = (int)o;
             }
+            else { cpanL[o] = 0.0f; cpanR[o] = 0.0f; }
          }
-         if (ncar == 0) ncar = 1;
-         inv_car = 1.0f / (float)ncar;
+         if (first_car < 0) first_car = 0;
 
          for (n = 0; n < frames; n++)
          {
-            float pmul = 1.0f;
-            float smp  = 0.0f;
-            float plfo = 0.0f;
+            float modin[FMSYNTH_OPS];
+            float newout[FMSYNTH_OPS];
+            float sL = 0.0f;
+            float sR = 0.0f;
+            unsigned c;
             unsigned j;
-            int alloff = 1;
 
-            if (vib_depth > 0.0f)
+            /* ---- control rate: advance envelopes + LFO every FMSYNTH_CONTROL ---- */
+            if (v->lfo_ctr <= 0)
             {
-               pmul = 1.0f + vib_depth * fmsynth_sine(v->lfo_phase)
-                           * FMSYNTH_SEMI_TO_RATE;
-               v->lfo_phase += lfo_inc;
-               if (v->lfo_phase >= 1.0f) v->lfo_phase -= 1.0f;
-            }
-
-            if (has_lfo)
-            {
-               plfo = fmsynth_sine(v->plfo_phase);
-               v->plfo_phase += plfo_inc;
-               if (v->plfo_phase >= 1.0f) v->plfo_phase -= 1.0f;
-               pmul += vibp * plfo;             /* patch vibrato */
-            }
-
-            /* note-off gates every operator into release */
-            if (v->stage == FMSYNTH_ENV_RELEASE)
-            {
-               for (j = 0; j < FMSYNTH_OPS; j++)
-                  if (v->op_stage[j] != FMSYNTH_ENV_OFF
-                   && v->op_stage[j] != FMSYNTH_ENV_RELEASE)
-                     v->op_stage[j] = FMSYNTH_ENV_RELEASE;
-            }
-
-            /* evaluate operators high->low so modulators precede carriers */
-            for (j = FMSYNTH_OPS; j-- > 0; )
-            {
-               float modin = 0.0f;
-               unsigned mm = fmsynth_alg_mod[alg][j];
-               unsigned k;
-
-               for (k = j + 1; k < FMSYNTH_OPS; k++)
-                  if (mm & (1u << k))
-                     modin += v->op_out[k];
-               if (j == FMSYNTH_OPS - 1 && fb > 0.0f)
-                  modin += fb * v->op_out[j];        /* top-op feedback */
-
-               switch (v->op_stage[j])
+               int   step   = FMSYNTH_CONTROL;
+               int   alloff = 1;
+               float lfo;
+               if ((size_t)step > frames - n) step = (int)(frames - n);
+               lfo = fmsynth_sine(v->lfo_phase);
+               v->lfo_phase += lfo_inc * (float)step;
+               while (v->lfo_phase >= 1.0f) v->lfo_phase -= 1.0f;
+               for (o = 0; o < FMSYNTH_OPS; o++)
                {
-                  case FMSYNTH_ENV_ATTACK:
-                     v->op_env[j] += a_r[j];
-                     if (v->op_env[j] >= 1.0f)
-                     { v->op_env[j] = 1.0f; v->op_stage[j] = FMSYNTH_ENV_DECAY; }
-                     break;
-                  case FMSYNTH_ENV_DECAY:
-                     v->op_env[j] -= d_r[j];
-                     if (v->op_env[j] <= susl[j])
-                     { v->op_env[j] = susl[j]; v->op_stage[j] = FMSYNTH_ENV_SUSTAIN; }
-                     break;
-                  case FMSYNTH_ENV_RELEASE:
-                     v->op_env[j] -= r_r[j];
-                     if (v->op_env[j] <= 0.0f)
-                     { v->op_env[j] = 0.0f; v->op_stage[j] = FMSYNTH_ENV_OFF; }
-                     break;
-                  default:
-                     break;
-               }
-
-               v->op_out[j] = fmsynth_sine(v->op_phase[j] + modin)
-                            * lev[j] * v->op_env[j];
-
-               v->op_phase[j] += op_inc[j] * pmul;
-               if (v->op_phase[j] >= 1.0f)      v->op_phase[j] -= 1.0f;
-               else if (v->op_phase[j] < 0.0f)  v->op_phase[j] += 1.0f;
-
-               if (carmask & (1u << j))
-               {
-                  smp += v->op_out[j];
-                  if (v->op_stage[j] != FMSYNTH_ENV_OFF)
+                  float fscale;
+                  if (v->stage == FMSYNTH_ENV_RELEASE
+                   && v->op_stage[o] != FMSYNTH_ENV_OFF)
+                     v->op_stage[o] = FMSYNTH_ENV_RELEASE;
+                  switch (v->op_stage[o])
+                  {
+                     case FMSYNTH_ENV_ATTACK:
+                        v->op_env[o] += a_r[o] * (float)step;
+                        if (v->op_env[o] >= 1.0f)
+                        { v->op_env[o] = 1.0f; v->op_stage[o] = FMSYNTH_ENV_DECAY; }
+                        break;
+                     case FMSYNTH_ENV_DECAY:
+                        v->op_env[o] -= d_r[o] * (float)step;
+                        if (v->op_env[o] <= susl[o])
+                        { v->op_env[o] = susl[o]; v->op_stage[o] = FMSYNTH_ENV_SUSTAIN; }
+                        break;
+                     case FMSYNTH_ENV_RELEASE:
+                        v->op_env[o] -= r_r[o] * (float)step;
+                        if (v->op_env[o] <= 0.0f)
+                        { v->op_env[o] = 0.0f; v->op_stage[o] = FMSYNTH_ENV_OFF; }
+                        break;
+                     default: break;
+                  }
+                  v->op_amp[o]   = amp0[o] * v->op_env[o]
+                                 * (1.0f + pt->op[o].lfo_amp * lfo);
+                  fscale         = 1.0f + (pt->op[o].lfo_freq + mw_semi)
+                                 * FMSYNTH_SEMI_TO_RATE * lfo;
+                  v->op_inc_c[o] = inc0[o] * fscale;
+                  if (pt->op[o].carrier && v->op_stage[o] != FMSYNTH_ENV_OFF)
                      alloff = 0;
                }
+               if (alloff)
+               {
+                  v->active = 0;
+                  v->stage  = FMSYNTH_ENV_OFF;
+                  break;
+               }
+               v->lfo_ctr = step;
             }
+            v->lfo_ctr--;
 
-            smp *= inv_car * vgain;
-            if (trem > 0.0f)
-               smp *= (1.0f + trem * plfo);     /* patch tremolo */
-            out[n * 2]     += smp * panL;
-            out[n * 2 + 1] += smp * panR;
-
-            v->env = v->op_env[first_car];      /* voice-steal metric */
-            if (alloff)
+            /* ---- per sample: modulation matrix, then oscillator bank ---- */
+            for (o = 0; o < FMSYNTH_OPS; o++) modin[o] = 0.0f;
+            for (c = 0; c < pt->nconn; c++)
+               modin[pt->conn[c].to] +=
+                  pt->conn[c].depth * v->op_out[pt->conn[c].from];
+            for (j = 0; j < FMSYNTH_OPS; j++)
             {
-               v->active = 0;
-               v->stage  = FMSYNTH_ENV_OFF;
-               break;
+               newout[j] = fmsynth_sine(v->op_phase[j] + modin[j]) * v->op_amp[j];
+               v->op_phase[j] += v->op_inc_c[j];
+               if (v->op_phase[j] >= 1.0f)      v->op_phase[j] -= 1.0f;
+               else if (v->op_phase[j] < 0.0f)  v->op_phase[j] += 1.0f;
+               if (pt->op[j].carrier)
+               {
+                  sL += newout[j] * cpanL[j];
+                  sR += newout[j] * cpanR[j];
+               }
             }
+            for (o = 0; o < FMSYNTH_OPS; o++) v->op_out[o] = newout[o];
+
+            out[n * 2]     += sL * vg;
+            out[n * 2 + 1] += sR * vg;
+
+            v->env = v->op_env[first_car];     /* voice-steal metric */
          }
       }
       else

@@ -13,145 +13,133 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* fmsynth_patches.h: GM program -> 4-operator FM parameter mapping.
+/* fmsynth_patches.h: GM program -> FM parameter mapping.
  *
- * This is DATA, reconstructed from the General MIDI program layout and the
- * OPL/DX-style FM conventions (operator ratios, modulation depth, envelopes,
- * routing algorithms). No instrument sample data is embedded; every timbre
- * is produced by the FM engine from these parameters, so the table is small,
- * license-clean and dependency-free.
+ * The engine is modelled on Themaister's libfmsynth (MIT): up to 8 operators
+ * with a free modulation matrix (any operator may modulate any other, even
+ * itself), per-operator envelope, velocity sensitivity, keyboard scaling, a
+ * per-voice sine LFO modulating both amplitude (tremolo) and frequency
+ * (vibrato), and per-carrier stereo panning. Rather than store a dense 8x8
+ * matrix per patch (verbose under C89), the modulation routing is held as a
+ * sparse connection list - the same information, one entry per non-zero
+ * matrix cell.
  *
- * The engine is 4-operator with selectable routing "algorithms" (an idea
- * taken from flexible-routing FM designs such as Themaister's libfmsynth and
- * the classic 4-op Yamaha chips). Each operator has its own frequency ratio,
- * output level (amplitude for carriers, modulation index in carrier cycles
- * for modulators) and ADSR envelope.
- *
- * Most GM families are expressed as a faithful 2-operator subset (algorithm
- * FMSYNTH_ALG_TWO_OP, operators 2 and 3 silent), preserving the prior sound;
- * a few families (e.g. electric piano, strings, brass) use 3-4 operators to
- * show the wider palette. Per-program refinement layers on as overrides in
- * fmsynth_patch_for_program() without touching the engine.
+ * This is DATA only: no instrument samples are embedded, every timbre is
+ * produced by the engine from these parameters, so the table is small,
+ * license-clean and dependency-free. Most GM families use 2-4 operators;
+ * unused operators have amp 0 and cost nothing audible.
  */
 
 #ifndef FMSYNTH_PATCHES_H
 #define FMSYNTH_PATCHES_H
 
-#define FMSYNTH_OPS       4
-#define FMSYNTH_NUM_ALGS  8
+#define FMSYNTH_OPS       8   /* operators per voice (libfmsynth parity)     */
+#define FMSYNTH_MAX_CONN  12  /* non-zero modulation-matrix cells per patch  */
 
-/* Routing algorithms. modmask[op] is a bitmask of operators that modulate
- * 'op'; only higher-indexed operators may modulate lower ones (the engine
- * evaluates operators 3..0 each sample). carmask is the set of operators
- * summed to the audio output. Feedback is applied to the top operator. */
-enum
-{
-   FMSYNTH_ALG_SERIAL4 = 0, /* 3->2->1->0, carrier 0 (deep FM)              */
-   FMSYNTH_ALG_TWO_OP,      /* 1->0, carrier 0 (classic 2-op; 2,3 silent)   */
-   FMSYNTH_ALG_DUAL_STACK,  /* (3->2)+(1->0), carriers 0,2                  */
-   FMSYNTH_ALG_STACK_PLUS,  /* (3->2->1)+0, carriers 0,1                    */
-   FMSYNTH_ALG_BRANCH,      /* 3->1, (1,2)->0, carrier 0                    */
-   FMSYNTH_ALG_ADDITIVE,    /* 0+1+2+3 all carriers (additive/organ)        */
-   FMSYNTH_ALG_THREE_CAR,   /* (3->2)+1+0, carriers 0,1,2                   */
-   FMSYNTH_ALG_Y_INTO_ONE   /* (2->1)+3 ->0, carrier 0                      */
-};
-
-static const unsigned char fmsynth_alg_mod[FMSYNTH_NUM_ALGS][FMSYNTH_OPS] =
-{
-   /* op:        0          1          2      3  */
-   /* SERIAL4 */ { 1<<1,      1<<2,      1<<3,  0 },
-   /* TWO_OP  */ { 1<<1,      0,         0,     0 },
-   /* DUALSTK */ { 1<<1,      0,         1<<3,  0 },
-   /* STACK+  */ { 0,         1<<2,      1<<3,  0 },
-   /* BRANCH  */ { (1<<1)|(1<<2), 1<<3,  0,     0 },
-   /* ADDITIVE*/ { 0,         0,         0,     0 },
-   /* 3CAR    */ { 0,         0,         1<<3,  0 },
-   /* Y_INTO1 */ { (1<<1)|(1<<3), 1<<2,  0,     0 }
-};
-
-static const unsigned char fmsynth_alg_car[FMSYNTH_NUM_ALGS] =
-{
-   /* SERIAL4 */ 1<<0,
-   /* TWO_OP  */ 1<<0,
-   /* DUALSTK */ (1<<0)|(1<<2),
-   /* STACK+  */ (1<<0)|(1<<1),
-   /* BRANCH  */ 1<<0,
-   /* ADDITIVE*/ (1<<0)|(1<<1)|(1<<2)|(1<<3),
-   /* 3CAR    */ (1<<0)|(1<<1)|(1<<2),
-   /* Y_INTO1 */ 1<<0
-};
-
-/* One FM operator. Times in seconds; sus level 0..1. 'level' is amplitude
- * for a carrier, or modulation index (in carrier cycles) for a modulator. */
+/* One FM operator. Times in seconds; sus 0..1. 'amp' is carrier amplitude or
+ * (for a modulator) its output level, which the modulation matrix then scales
+ * into the target operator's phase, in carrier cycles. */
 typedef struct
 {
-   float ratio;   /* frequency ratio to the played note */
-   float level;   /* carrier amplitude OR modulator index */
+   float ratio;       /* frequency ratio to the played note            */
+   float amp;         /* output level (carrier amplitude / mod source) */
+   float pan;         /* carrier pan, -1 = left .. +1 = right          */
    float atk;
    float dec;
    float sus;
    float rel;
+   float vel_sens;    /* velocity -> level sensitivity, 0..1           */
+   float key_scale;   /* keyboard rate scaling exponent (per octave)   */
+   float lfo_amp;     /* voice-LFO -> amplitude (tremolo) depth        */
+   float lfo_freq;    /* voice-LFO -> frequency (vibrato) depth, semis */
+   unsigned char carrier; /* 1 = summed to output                      */
 } fmsynth_op_t;
+
+/* One cell of the modulation matrix: operator 'from' modulates operator 'to'
+ * with the given depth (in carrier cycles). to == from is self-feedback. */
+typedef struct
+{
+   unsigned char to;
+   unsigned char from;
+   float         depth;
+} fmsynth_conn_t;
 
 typedef struct
 {
-   fmsynth_op_t op[FMSYNTH_OPS];
-   unsigned char algorithm;  /* FMSYNTH_ALG_*                      */
-   float         feedback;   /* top-operator self-feedback (0..~1) */
-   float         lfo_rate;   /* per-voice LFO rate in Hz (0 = off) */
-   float         lfo_trem;   /* tremolo (amplitude) depth 0..~0.3  */
-   float         lfo_vib;    /* vibrato (pitch) depth in semitones */
+   fmsynth_op_t   op[FMSYNTH_OPS];
+   fmsynth_conn_t conn[FMSYNTH_MAX_CONN];
+   unsigned char  nconn;     /* active entries in conn[]            */
+   float          lfo_rate;  /* per-voice LFO rate in Hz (0 = off)  */
 } fmsynth_patch_t;
 
-/* Convenience: a faithful 2-op patch (operator 1 modulates operator 0). */
-#define FMSYNTH_2OP(mratio, mindex, ca, cd, cs, cr, ma, md, ms) \
-   { { { 1.0f, 1.0f, (ca), (cd), (cs), (cr) },                  \
-       { (mratio), (mindex), (ma), (md), (ms), 0.40f },         \
-       { 1.0f, 0.0f, 0.01f, 0.1f, 0.0f, 0.1f },                 \
-       { 1.0f, 0.0f, 0.01f, 0.1f, 0.0f, 0.1f } },               \
-     FMSYNTH_ALG_TWO_OP, 0.0f, 0.0f, 0.0f, 0.0f }
+/* Operator constructors keep the family table readable.
+ * KEY_SCALE 0.0417 ~ doubles decay/release every two octaves. */
+#define OPC(r,a,p, at,dc,su,rl) \
+   { (r),(a),(p), (at),(dc),(su),(rl), 0.6f, 0.0417f, 0.0f, 0.0f, 1 }
+#define OPM(r,a, at,dc,su,rl) \
+   { (r),(a),0.0f, (at),(dc),(su),(rl), 1.0f, 0.0417f, 0.0f, 0.0f, 0 }
+/* LFO-bearing carrier / modulator (tremolo la, vibrato lf semitones) */
+#define OPCL(r,a,p, at,dc,su,rl, la,lf) \
+   { (r),(a),(p), (at),(dc),(su),(rl), 0.6f, 0.0417f, (la),(lf), 1 }
+#define OPML(r,a, at,dc,su,rl, la,lf) \
+   { (r),(a),0.0f, (at),(dc),(su),(rl), 1.0f, 0.0417f, (la),(lf), 0 }
+#define OPX  { 1.0f,0.0f,0.0f, 0.01f,0.1f,0.0f,0.1f, 0.0f,0.0417f,0.0f,0.0f, 0 }
+#define OP2X OPX,OPX
+#define OP4X OPX,OPX,OPX,OPX
+#define OP6X OPX,OPX,OPX,OPX,OPX,OPX
+
+/* A faithful 2-operator patch (operator 1 modulates operator 0). */
+#define FMSYNTH_2OP(mr, mi, ca,cd,cs,cr, ma,md,ms) \
+   { { OPC(1.0f, 1.0f, 0.0f, (ca),(cd),(cs),(cr)),  \
+       OPM((mr), (mi), (ma),(md),(ms),0.40f),       \
+       OP6X },                                       \
+     { { 0, 1, 1.0f } }, 1, 0.0f }
 
 /* ---- 16 GM family templates (index = GM program >> 3) ------------------ */
 static const fmsynth_patch_t fmsynth_family[16] =
 {
-   /* 0  Piano  - 2-op bright decay */
+   /* 0  Piano */
    FMSYNTH_2OP(1.0f, 1.4f, 0.002f,0.45f,0.20f,0.20f, 0.001f,0.30f,0.25f),
-   /* 1  Chromatic Perc - inharmonic bell (3.5 ratio) */
+   /* 1  Chromatic Perc - inharmonic bell */
    FMSYNTH_2OP(3.5f, 2.2f, 0.001f,0.35f,0.00f,0.15f, 0.001f,0.18f,0.10f),
-   /* 2  Organ - additive 4-carrier (drawbar-ish) */
-   { { { 1.0f, 0.6f, 0.005f,0.05f,0.95f,0.06f },
-       { 2.0f, 0.4f, 0.005f,0.05f,0.95f,0.06f },
-       { 3.0f, 0.25f,0.005f,0.05f,0.95f,0.06f },
-       { 4.0f, 0.18f,0.005f,0.05f,0.95f,0.06f } },
-     FMSYNTH_ALG_ADDITIVE, 0.0f, 6.0f, 0.10f, 0.0f },   /* slow Leslie-ish tremolo */
+   /* 2  Organ - 4 additive carriers, slow tremolo, gently spread */
+   { { OPCL(1.0f, 0.6f, -0.15f, 0.005f,0.05f,0.95f,0.06f, 0.10f,0.0f),
+       OPCL(2.0f, 0.4f, +0.10f, 0.005f,0.05f,0.95f,0.06f, 0.10f,0.0f),
+       OPCL(3.0f, 0.25f,-0.10f, 0.005f,0.05f,0.95f,0.06f, 0.10f,0.0f),
+       OPCL(4.0f, 0.18f,+0.15f, 0.005f,0.05f,0.95f,0.06f, 0.10f,0.0f),
+       OP4X },
+     { { 0, 0, 0.0f } }, 0, 6.0f },
    /* 3  Guitar */
    FMSYNTH_2OP(1.0f, 1.1f, 0.002f,0.40f,0.10f,0.25f, 0.001f,0.25f,0.15f),
    /* 4  Bass */
    FMSYNTH_2OP(1.0f, 0.9f, 0.003f,0.30f,0.35f,0.20f, 0.002f,0.20f,0.30f),
-   /* 5  Strings - dual stack for a richer, detuned-ish swell */
-   { { { 1.0f,  0.85f, 0.080f,0.20f,0.85f,0.30f },
-       { 1.0f,  0.45f, 0.090f,0.20f,0.80f,0.40f },
-       { 2.005f,0.70f, 0.090f,0.25f,0.80f,0.40f },
-       { 3.0f,  0.30f, 0.110f,0.25f,0.75f,0.40f } },
-     FMSYNTH_ALG_DUAL_STACK, 0.0f, 5.0f, 0.07f, 0.12f }, /* gentle string vibrato+tremolo */
+   /* 5  Strings - two stacks panned L/R, gentle vibrato + detune shimmer */
+   { { OPCL(1.0f,  0.85f,-0.30f, 0.080f,0.20f,0.85f,0.30f, 0.06f,0.12f),
+       OPM (1.0f,  0.45f,        0.090f,0.20f,0.80f,0.40f),
+       OPCL(2.005f,0.70f,+0.30f, 0.090f,0.25f,0.80f,0.40f, 0.06f,0.12f),
+       OPM (3.0f,  0.30f,        0.110f,0.25f,0.75f,0.40f),
+       OP4X },
+     { { 0, 1, 1.0f }, { 2, 3, 1.0f } }, 2, 5.0f },
    /* 6  Ensemble */
    FMSYNTH_2OP(1.0f, 0.6f, 0.060f,0.20f,0.85f,0.30f, 0.070f,0.20f,0.80f),
-   /* 7  Brass - stack-plus with bite, light feedback */
-   { { { 1.0f, 1.0f, 0.030f,0.10f,0.80f,0.15f },
-       { 1.0f, 0.9f, 0.035f,0.12f,0.75f,0.18f },
-       { 1.0f, 1.1f, 0.040f,0.12f,0.70f,0.18f },
-       { 2.0f, 0.8f, 0.050f,0.15f,0.65f,0.20f } },
-     FMSYNTH_ALG_STACK_PLUS, 0.35f, 5.5f, 0.05f, 0.10f }, /* brass vibrato */
+   /* 7  Brass - 3-deep stack into two carriers, feedback, vibrato */
+   { { OPCL(1.0f, 1.0f, 0.0f, 0.030f,0.10f,0.80f,0.15f, 0.05f,0.10f),
+       OPCL(1.0f, 0.9f, 0.0f, 0.035f,0.12f,0.75f,0.18f, 0.05f,0.10f),
+       OPM (1.0f, 1.1f,       0.040f,0.12f,0.70f,0.18f),
+       OPM (2.0f, 0.8f,       0.050f,0.15f,0.65f,0.20f),
+       OP4X },
+     { { 0, 2, 1.0f }, { 1, 2, 0.6f }, { 2, 3, 1.0f }, { 3, 3, 0.35f } },
+     4, 5.5f },
    /* 8  Reed */
    FMSYNTH_2OP(1.0f, 1.0f, 0.020f,0.10f,0.85f,0.12f, 0.030f,0.10f,0.75f),
    /* 9  Pipe */
    FMSYNTH_2OP(1.0f, 0.35f,0.030f,0.08f,0.90f,0.10f, 0.040f,0.10f,0.85f),
-   /* 10 Synth Lead - serial 3-op for a fat, evolving lead */
-   { { { 1.0f, 1.0f, 0.005f,0.10f,0.85f,0.10f },
-       { 1.0f, 1.2f, 0.010f,0.12f,0.70f,0.15f },
-       { 2.0f, 1.0f, 0.020f,0.15f,0.60f,0.20f },
-       { 1.0f, 0.0f, 0.01f, 0.1f, 0.0f, 0.1f } },
-     FMSYNTH_ALG_STACK_PLUS, 0.30f, 6.0f, 0.0f, 0.15f },  /* lead vibrato */
+   /* 10 Synth Lead - serial stack, feedback, vibrato */
+   { { OPCL(1.0f, 1.0f, 0.0f, 0.005f,0.10f,0.85f,0.10f, 0.0f,0.15f),
+       OPM (1.0f, 1.2f,       0.010f,0.12f,0.70f,0.15f),
+       OPM (2.0f, 1.0f,       0.020f,0.15f,0.60f,0.20f),
+       OPX,OPX,OPX,OPX,OPX },
+     { { 0, 1, 1.0f }, { 1, 2, 1.0f }, { 2, 2, 0.30f } }, 3, 6.0f },
    /* 11 Synth Pad */
    FMSYNTH_2OP(1.0f, 0.5f, 0.200f,0.30f,0.80f,0.50f, 0.220f,0.30f,0.75f),
    /* 12 Synth Effects */
@@ -164,13 +152,10 @@ static const fmsynth_patch_t fmsynth_family[16] =
    FMSYNTH_2OP(1.0f, 0.8f, 0.050f,0.40f,0.50f,0.40f, 0.050f,0.30f,0.50f)
 };
 
-/* Resolve a GM program (0..127) to a patch. Per-program overrides for iconic
- * instruments go here as a switch before the family fallback. */
 static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
 {
    return &fmsynth_family[(program & 0x7F) >> 3];
 }
-
 /* ---- GM channel-10 percussion map -------------------------------------- */
 
 #define FMSYNTH_DRUM_FM    1
