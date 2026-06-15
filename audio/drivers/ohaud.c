@@ -28,6 +28,7 @@
 
 #define OHAUDIO_CHANNELS        2
 #define OHAUDIO_BYTES_PER_FRAME (OHAUDIO_CHANNELS * sizeof(int16_t))
+#define OHAUDIO_WAIT_TIMEOUT_US 50000
 
 typedef struct ohaudio
 {
@@ -37,6 +38,8 @@ typedef struct ohaudio
    scond_t *cond;
    size_t buffer_size;
    bool is_paused;
+   bool is_interrupted;
+   bool is_shutting_down;
    bool nonblock;
 } ohaudio_t;
 
@@ -66,12 +69,73 @@ static int32_t ohaudio_write_cb(OH_AudioRenderer *renderer,
    return 0;
 }
 
+static void ohaudio_interrupt_cb(OH_AudioRenderer *renderer,
+      void *user_data, OH_AudioInterrupt_ForceType type,
+      OH_AudioInterrupt_Hint hint)
+{
+   ohaudio_t *oha = (ohaudio_t*)user_data;
+   bool should_start = false;
+
+   (void)type;
+
+   if (!oha)
+      return;
+
+   slock_lock(oha->lock);
+
+   switch (hint)
+   {
+      case AUDIOSTREAM_INTERRUPT_HINT_RESUME:
+      case AUDIOSTREAM_INTERRUPT_HINT_UNDUCK:
+      case AUDIOSTREAM_INTERRUPT_HINT_UNMUTE:
+         oha->is_interrupted = false;
+         oha->is_paused      = false;
+         should_start         = hint == AUDIOSTREAM_INTERRUPT_HINT_RESUME;
+         break;
+      case AUDIOSTREAM_INTERRUPT_HINT_PAUSE:
+      case AUDIOSTREAM_INTERRUPT_HINT_STOP:
+      case AUDIOSTREAM_INTERRUPT_HINT_MUTE:
+         oha->is_interrupted = true;
+         oha->is_paused      = true;
+         fifo_clear(oha->fifo);
+         break;
+      case AUDIOSTREAM_INTERRUPT_HINT_DUCK:
+      case AUDIOSTREAM_INTERRUPT_HINT_NONE:
+      default:
+         break;
+   }
+
+   scond_signal(oha->cond);
+   slock_unlock(oha->lock);
+
+   if (should_start
+         && OH_AudioRenderer_Start(renderer) != AUDIOSTREAM_SUCCESS)
+   {
+      slock_lock(oha->lock);
+      oha->is_interrupted = true;
+      oha->is_paused      = true;
+      scond_signal(oha->cond);
+      slock_unlock(oha->lock);
+   }
+
+   RARCH_LOG("[OHAudio] Interrupt event: type=%d hint=%d.\n",
+         (int)type, (int)hint);
+}
+
 static void ohaudio_free(void *data)
 {
    ohaudio_t *oha = (ohaudio_t*)data;
 
    if (!oha)
       return;
+
+   if (oha->lock && oha->cond)
+   {
+      slock_lock(oha->lock);
+      oha->is_shutting_down = true;
+      scond_signal(oha->cond);
+      slock_unlock(oha->lock);
+   }
 
    if (oha->renderer)
    {
@@ -148,6 +212,9 @@ static void *ohaudio_init(const char *device, unsigned rate,
    if ((res = OH_AudioStreamBuilder_SetRendererCallback(builder, callbacks, oha))
          != AUDIOSTREAM_SUCCESS)
       goto error;
+   if ((res = OH_AudioStreamBuilder_SetRendererInterruptCallback(builder,
+               ohaudio_interrupt_cb, oha)) != AUDIOSTREAM_SUCCESS)
+      goto error;
    if ((res = OH_AudioStreamBuilder_GenerateRenderer(builder, &oha->renderer))
          != AUDIOSTREAM_SUCCESS)
       goto error;
@@ -177,13 +244,19 @@ error:
 static bool ohaudio_stop(void *data)
 {
    ohaudio_t *oha = (ohaudio_t*)data;
+   bool paused;
 
    if (!oha || !oha->renderer)
       return false;
 
-   oha->is_paused = OH_AudioRenderer_Pause(oha->renderer)
-      == AUDIOSTREAM_SUCCESS;
-   return oha->is_paused;
+   paused = OH_AudioRenderer_Pause(oha->renderer) == AUDIOSTREAM_SUCCESS;
+
+   slock_lock(oha->lock);
+   oha->is_paused = paused;
+   scond_signal(oha->cond);
+   slock_unlock(oha->lock);
+
+   return paused;
 }
 
 static bool ohaudio_start(void *data, bool is_shutdown)
@@ -198,14 +271,23 @@ static bool ohaudio_start(void *data, bool is_shutdown)
    if (OH_AudioRenderer_Start(oha->renderer) != AUDIOSTREAM_SUCCESS)
       return false;
 
-   oha->is_paused = false;
+   slock_lock(oha->lock);
+   oha->is_paused      = false;
+   oha->is_interrupted = false;
+   scond_signal(oha->cond);
+   slock_unlock(oha->lock);
+
    return true;
 }
 
 static bool ohaudio_alive(void *data)
 {
    ohaudio_t *oha = (ohaudio_t*)data;
-   return oha && !oha->is_paused;
+
+   if (!oha)
+      return false;
+
+   return !oha->is_paused && !oha->is_interrupted && !oha->is_shutting_down;
 }
 
 static void ohaudio_set_nonblock_state(void *data, bool state)
@@ -232,6 +314,12 @@ static ssize_t ohaudio_write(void *data, const void *buf, size_t len)
       size_t write_size;
 
       slock_lock(oha->lock);
+      if (oha->is_paused || oha->is_interrupted || oha->is_shutting_down)
+      {
+         slock_unlock(oha->lock);
+         return 0;
+      }
+
       write_size = FIFO_WRITE_AVAIL(oha->fifo);
       if (write_size > len)
          write_size = len;
@@ -248,11 +336,17 @@ static ssize_t ohaudio_write(void *data, const void *buf, size_t len)
       size_t write_size;
 
       slock_lock(oha->lock);
+      if (oha->is_paused || oha->is_interrupted || oha->is_shutting_down)
+      {
+         slock_unlock(oha->lock);
+         break;
+      }
+
       write_size = FIFO_WRITE_AVAIL(oha->fifo);
 
       if (!write_size)
       {
-         scond_wait(oha->cond, oha->lock);
+         scond_wait_timeout(oha->cond, oha->lock, OHAUDIO_WAIT_TIMEOUT_US);
          slock_unlock(oha->lock);
          continue;
       }
@@ -282,7 +376,8 @@ static size_t ohaudio_write_avail(void *data)
       return 0;
 
    slock_lock(oha->lock);
-   val = FIFO_WRITE_AVAIL(oha->fifo);
+   val = (oha->is_paused || oha->is_interrupted || oha->is_shutting_down)
+      ? 0 : FIFO_WRITE_AVAIL(oha->fifo);
    slock_unlock(oha->lock);
 
    return val;
