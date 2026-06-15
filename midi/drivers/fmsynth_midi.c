@@ -71,6 +71,13 @@
  * idx scales between (1-DEPTH) and 1.0 across velocity 0..127. */
 #define FMSYNTH_VEL_BRIGHT_DEPTH 0.65f
 
+/* Keyboard scaling (libfmsynth-style): higher notes decay/release faster,
+ * lower notes ring longer, like real instruments. Decay/release rates are
+ * multiplied by 2^((note-60)*FMSYNTH_KEY_SCALE), clamped to a sane span. */
+#define FMSYNTH_KEY_SCALE      0.0417f  /* ~doubles per 2 octaves            */
+#define FMSYNTH_KEY_SCALE_MIN  0.5f
+#define FMSYNTH_KEY_SCALE_MAX  2.5f
+
 /* Schroeder reverb (4 comb + 2 allpass). Buffers are sized for the highest
  * common output rate; per-rate lengths are scaled from the 44.1k tunings and
  * clamped to these maxima. */
@@ -563,14 +570,14 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
          /* ---- melodic 2-op FM with per-patch envelopes ---- */
          const fmsynth_patch_t *pt = v->patch;
          float rate  = (float)fm->output_rate;
-         float c_atk = 1.0f / (fmsynth_maxf(pt->c_atk, 0.0005f) * rate);
-         float c_dec = (1.0f - pt->c_sus)
-                     / (fmsynth_maxf(pt->c_dec, 0.0005f) * rate);
-         float c_rel = (pt->c_sus > 0.0f ? pt->c_sus : 1.0f)
-                     / (fmsynth_maxf(pt->c_rel, 0.0005f) * rate);
-         float m_atk = 1.0f / (fmsynth_maxf(pt->m_atk, 0.0005f) * rate);
-         float m_dec = (1.0f - pt->m_sus)
-                     / (fmsynth_maxf(pt->m_dec, 0.0005f) * rate);
+         /* keyboard scaling: scale decay/release by note pitch */
+         float kscale = (float)pow(2.0,
+               ((double)v->note - 60.0) * (double)FMSYNTH_KEY_SCALE);
+         float c_atk;
+         float c_dec;
+         float c_rel;
+         float m_atk;
+         float m_dec;
          /* velocity -> brightness: harder hits open the FM index */
          float vbright = (1.0f - FMSYNTH_VEL_BRIGHT_DEPTH)
                        + FMSYNTH_VEL_BRIGHT_DEPTH * ((float)v->velocity / 127.0f);
@@ -578,6 +585,17 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
          float vib_depth = ((float)fm->mod_wheel[ch] / 127.0f)
                          * FMSYNTH_VIBRATO_SEMI;
          float lfo_inc   = FMSYNTH_VIBRATO_HZ / rate;
+
+         if (kscale < FMSYNTH_KEY_SCALE_MIN) kscale = FMSYNTH_KEY_SCALE_MIN;
+         if (kscale > FMSYNTH_KEY_SCALE_MAX) kscale = FMSYNTH_KEY_SCALE_MAX;
+         c_atk = 1.0f / (fmsynth_maxf(pt->c_atk, 0.0005f) * rate);
+         c_dec = kscale * (1.0f - pt->c_sus)
+               / (fmsynth_maxf(pt->c_dec, 0.0005f) * rate);
+         c_rel = kscale * (pt->c_sus > 0.0f ? pt->c_sus : 1.0f)
+               / (fmsynth_maxf(pt->c_rel, 0.0005f) * rate);
+         m_atk = 1.0f / (fmsynth_maxf(pt->m_atk, 0.0005f) * rate);
+         m_dec = kscale * (1.0f - pt->m_sus)
+               / (fmsynth_maxf(pt->m_dec, 0.0005f) * rate);
 
          mod_inc = car_inc * pt->mod_ratio;
 
