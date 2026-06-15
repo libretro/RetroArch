@@ -429,7 +429,7 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
          {
             char *ptr;
             uint32_t flags = setting->flags;
-            *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
+            *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 0);
             if (flags & SD_FLAG_HAS_RANGE)
             {
                float min   = setting->min;
@@ -451,7 +451,7 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
          {
             uint32_t flags = setting->flags;
             char *end;
-            unsigned long long parsed = strtoull(value, &end, 10);
+            unsigned long long parsed = strtoull(value, &end, 0);
             if (end != value && *end == '\0')
                *setting->value.target.sizet = (size_t)parsed;
             if (flags & SD_FLAG_HAS_RANGE)
@@ -529,7 +529,7 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
       if (*ptr >= '0' && *ptr <= '9')
       {
          char *end            = NULL;
-         unsigned long value  = strtoul(str, &end, 10);
+         unsigned long value  = strtoul(str, &end, 0);
          /* Ensure entire string was consumed and value fits in unsigned */
          if (end && *end == '\0' && value <= UINT_MAX)
          {
@@ -623,7 +623,6 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
 
    menu_input_dialog_end();
 }
-
 
 static int setting_generic_action_ok_linefeed(
       rarch_setting_t *setting, size_t idx, bool wraparound)
@@ -3257,7 +3256,7 @@ static size_t setting_get_string_representation_password(
 {
    if (setting)
    {
-      if (   setting->value.target.string 
+      if (   setting->value.target.string
           && setting->value.target.string[0] != '\0')
          return strlcpy(s, "********", len);
       if (config_get_ptr()->arrays.cheevos_token[0])
@@ -12788,17 +12787,22 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address,
-                  CHEAT_ADDRESS,
-                  setting_uint_action_left_with_refresh,
-                  setting_uint_action_right_with_refresh,
+            CONFIG_UINT(
+                  list, list_info,
+                  &cheat_manager_state.working_cheat.address,
+                  MENU_ENUM_LABEL_CHEAT_ADDRESS,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
                   0,
-                  &setting_get_string_representation_hex_and_uint,
-                  0,
-                  (cheat_manager_state.total_memory_size == 0)
-                  ? 0
-                  : (cheat_manager_state.total_memory_size - 1),
-                  1);
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info,
+                  0,  (cheat_manager_state.total_memory_size == 0) ? 0 : (cheat_manager_state.total_memory_size - 1), 1, true, true);
+            (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_hex_and_uint;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
 
             max_bit_position = (cheat_manager_state.working_cheat.memory_search_size < 3) ? 255 : 0;
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address_mask,

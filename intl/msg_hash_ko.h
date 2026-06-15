@@ -7680,7 +7680,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-   "실행목록을 볼 때 미리보기가 없을 경우 자동으로 다운로드합니다. 퍼포먼스에 큰 영향을 줄 수 있습니다."
+   "실행목록을 볼 때 미리보기가 없을 경우 자동으로 다운로드합니다. 성능에 큰 영향을 줄 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
@@ -9019,8 +9019,16 @@ MSG_HASH(
    "실행목록에 추가"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "이 항목을 실행목록에 추가합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "새 실행목록 만들기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "새로운 실행목록을 만들고 이 항목을 새 실행목록에 추가합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -9043,8 +9051,16 @@ MSG_HASH(
    "정보"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INFORMATION,
+   "이 콘텐츠에 대한 자세한 정보를 확인합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "미리보기 다운로드"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "이 콘텐츠의 미리보기 이미지를 다운로드합니다. 기존 이미지가 존재할 경우 덮어씌워집니다."
    )
 
 /* Playlist Item > Set Core Association */
