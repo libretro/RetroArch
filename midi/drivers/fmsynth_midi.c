@@ -207,16 +207,28 @@ static void fmsynth_init_sine(void)
    fmsynth_sine_ready = 1;
 }
 
-/* Look up sin(2*pi*cycles); 'cycles' may be any value (wrapped via mask). */
+/* Look up sin(2*pi*cycles); 'cycles' may be any value (wrapped via mask).
+ * Linearly interpolates between adjacent table entries: at 2048 points the
+ * raw lookup floor is only ~55 dB, and because modulator quantization noise
+ * turns into FM sidebands, interpolation (which lifts this past ~85 dB) is
+ * well worth one extra fetch and a lerp per operator. */
 static float fmsynth_sine(float cycles)
 {
-   int idx;
+   float pos;
+   float frac;
+   float a;
+   float b;
+   int   idx;
    /* reduce to [0,1) without fmod: keep only the fractional part */
    cycles -= (float)((int)cycles);
    if (cycles < 0.0f)
       cycles += 1.0f;
-   idx = (int)(cycles * (float)FMSYNTH_SINE_SIZE) & FMSYNTH_SINE_MASK;
-   return fmsynth_sine_tbl[idx];
+   pos  = cycles * (float)FMSYNTH_SINE_SIZE;
+   idx  = (int)pos;
+   frac = pos - (float)idx;
+   a    = fmsynth_sine_tbl[idx & FMSYNTH_SINE_MASK];
+   b    = fmsynth_sine_tbl[(idx + 1) & FMSYNTH_SINE_MASK];
+   return a + (b - a) * frac;
 }
 
 /* max of two floats (used to floor envelope times) */
