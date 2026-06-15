@@ -152,9 +152,44 @@ static const fmsynth_patch_t fmsynth_family[16] =
    FMSYNTH_2OP(1.0f, 0.8f, 0.050f,0.40f,0.50f,0.40f, 0.050f,0.30f,0.50f)
 };
 
+/* ---- per-program overrides ---------------------------------------------
+ * The family table groups 8 GM programs per timbre, which is too coarse for
+ * a few instruments whose family default is plainly wrong. Programs listed
+ * here use a dedicated patch; everything else falls back to its family. The
+ * switch makes it trivial to add more as they are voiced by ear.
+ *
+ * These voicings follow standard FM principles (plucked = no sustain, an odd
+ * carrier:modulator ratio for a hollow/reedy colour) and are starting points
+ * meant to be refined on real hardware, not finished instruments. */
+
+/* Harpsichord (GM 6): plucked, bright, hollow 3:1 colour, no sustain. */
+static const fmsynth_patch_t fmsynth_harpsichord =
+{
+   { OPC(1.0f, 1.0f, 0.0f, 0.001f, 0.50f, 0.00f, 0.12f),
+     OPM(3.0f, 1.3f,       0.001f, 0.35f, 0.00f, 0.12f),
+     OP6X },
+   { { 0, 1, 1.0f } }, 1, 0.0f
+};
+
+/* Clavi (GM 7): percussive electric pluck, buzzy 1:1, very short sustain. */
+static const fmsynth_patch_t fmsynth_clavinet =
+{
+   { OPC(1.0f, 1.0f, 0.0f, 0.001f, 0.30f, 0.05f, 0.10f),
+     OPM(1.0f, 1.6f,       0.001f, 0.20f, 0.10f, 0.10f),
+     OP6X },
+   { { 0, 1, 1.0f } }, 1, 0.0f
+};
+
 static const fmsynth_patch_t *fmsynth_patch_for_program(unsigned program)
 {
-   return &fmsynth_family[(program & 0x7F) >> 3];
+   program &= 0x7F;
+   switch (program)
+   {
+      case 6:  return &fmsynth_harpsichord;
+      case 7:  return &fmsynth_clavinet;
+      default: break;
+   }
+   return &fmsynth_family[program >> 3];
 }
 /* ---- GM channel-10 percussion map -------------------------------------- */
 
