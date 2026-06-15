@@ -94,6 +94,16 @@ typedef struct
 #define OPCO(r,off,a,p, at,dc,su,rl) \
    { (r),(off),(a),(p), {1.0f,(su),(su)}, {(at),(dc),0.0f}, (rl), \
      60.0f,0.5f,0.5f, 0.6f,1.0f, 0.0f,0.0f, 1 }
+/* struck/plucked carrier: two-stage decay (fast d1 then slow tail d2),
+ * approximating the double-exponential decay of a real string. */
+#define OPCP(r,a,p, at, d1t,d1, d2t,d2, rl) \
+   { (r),0.0f,(a),(p), {1.0f,(d1),(d2)}, {(at),(d1t),(d2t)}, (rl), \
+     60.0f,0.5f,0.5f, 0.6f,1.0f, 0.0f,0.0f, 1 }
+/* struck/plucked modulator: two-stage brightness decay (bright attack, the
+ * FM index falling faster than amplitude so the tail mellows). */
+#define OPMP(r,a, at, d1t,d1, d2t,d2, rl) \
+   { (r),0.0f,(a),0.0f, {1.0f,(d1),(d2)}, {(at),(d1t),(d2t)}, (rl), \
+     60.0f,0.5f,0.5f, 1.0f,1.0f, 0.0f,0.0f, 0 }
 #define OPM(r,a, at,dc,su,rl) \
    { (r),0.0f,(a),0.0f, {1.0f,(su),(su)}, {(at),(dc),0.0f}, (rl), \
      60.0f,0.5f,0.5f, 1.0f,1.0f, 0.0f,0.0f, 0 }
@@ -121,8 +131,11 @@ typedef struct
 /* ---- 16 GM family templates (index = GM program >> 3) ------------------ */
 static const fmsynth_patch_t fmsynth_family[16] =
 {
-   /* 0  Piano */
-   FMSYNTH_2OP(1.0f, 1.4f, 0.002f,0.45f,0.20f,0.20f, 0.001f,0.30f,0.25f),
+   /* 0  Piano - two-stage decay to silence, brightness mellows on the tail */
+   { { OPCP(1.0f, 1.0f, 0.0f, 0.002f, 0.18f,0.42f, 4.0f,0.0f, 0.18f),
+       OPMP(1.0f, 1.4f,       0.001f, 0.08f,0.40f, 1.5f,0.0f, 0.35f),
+       OP6X },
+     { { 0, 1, 1.0f } }, 1, 0.0f },
    /* 1  Chromatic Perc - inharmonic bell */
    FMSYNTH_2OP(3.5f, 2.2f, 0.001f,0.35f,0.00f,0.15f, 0.001f,0.18f,0.10f),
    /* 2  Organ - 4 additive carriers, slow tremolo, gently spread */
