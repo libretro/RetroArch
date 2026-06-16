@@ -277,6 +277,22 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 
+/**
+ * @brief Open a Content Downloader category list
+ *
+ * Fetches the remote 'cores/.index-dirs' index and pushes the list of
+ * content sub-folders to the menu.
+ *
+ * @param path Path of the originating menu entry (unused for this list)
+ * @param label Label of the originating menu entry (unused for this list)
+ * @param type Type of the originating menu entry
+ * @param idx Index of the originating menu entry
+ * @param entry_idx Entry index of the originating menu entry
+ * @return 0 on success
+ */
+int action_ok_core_content_dirs_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 void input_keyboard_mapping_bits(unsigned mode, unsigned key);
 
 unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsigned port);
