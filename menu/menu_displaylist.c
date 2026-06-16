@@ -380,7 +380,7 @@ static int filebrowser_parse(
          for (j = 0; j < search_terms->size; j++)
          {
             const char *search_term = search_terms->terms[j];
-            if (search_term && *search_term 
+            if (search_term && *search_term
                 && !strcasestr(file_path, search_term))
             {
                skip_entry = true;
@@ -416,7 +416,7 @@ static int filebrowser_parse(
                   ? FILE_TYPE_VIDEO_FONT
                   : (enum msg_file_type)type_default;
 
-            if (   type == DISPLAYLIST_CORES_DETECTED 
+            if (   type == DISPLAYLIST_CORES_DETECTED
                 && path_is_compressed_file(file_path))
                file_type = FILE_TYPE_CARCHIVE;
             break;
@@ -2803,6 +2803,17 @@ static int create_string_list_rdb_entry_int(
    return 0;
 }
 
+static char* month_str_to_uint(unsigned month)
+{
+   char *months[12] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+   if (month < 1 || month > 12)
+   {
+      RARCH_WARN("Found invalid month number in database entry, got %d\n", month);
+      return NULL;
+   }
+   return months[month];
+}
+
 static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       menu_displaylist_info_t *info,
       bool show_advanced_settings,
@@ -3060,8 +3071,16 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       RDB_ENTRY_INT(edge_magazine_issue,  MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE)
 
-      RDB_ENTRY_INT(releasemonth,        MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH,
-                                          MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH)
+      if (db_info_entry->releasemonth)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH),
+                  month_str_to_uint(db_info_entry->releasemonth), info->path, info->list) == -1)
+            goto error;
+      }
+
       RDB_ENTRY_INT(releaseyear,         MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_YEAR,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR)
 
@@ -3961,17 +3980,17 @@ static int menu_displaylist_parse_horizontal_content_actions(
                         || string_ends_with_size(menu_st->thumbnail_path_data->system, "_history",
                               menu_st->thumbnail_path_data->system_len, STRLEN_CONST("_history"));
 
-                  /* An annoyance: if the user navigates to the 
-                   * information menu, then to the database entry, 
+                  /* An annoyance: if the user navigates to the
+                   * information menu, then to the database entry,
                    * the thumbnail system will be changed.
-                   * This breaks the above 'remove_entry_enabled' 
-                   * check for the history and favorites playlists. 
-                   * We therefore have to check the playlist file 
+                   * This breaks the above 'remove_entry_enabled'
+                   * check for the history and favorites playlists.
+                   * We therefore have to check the playlist file
                    * name as well... */
                   if (   !remove_entry_enabled
                       && settings->bools.quick_menu_show_information
                       && (playlist_file && *playlist_file))
-                     remove_entry_enabled = 
+                     remove_entry_enabled =
                            string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY)
                         || string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES);
                }
@@ -5112,7 +5131,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       if (core_info_find(core_path, &core_info))
       {
-         core_supports_no_game = (core_info->flags 
+         core_supports_no_game = (core_info->flags
                                 & CORE_INFO_FLAG_SUPPORTS_NO_GAME);
          if (core_info->display_name && *core_info->display_name)
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
@@ -9768,8 +9787,8 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = (gfx_widgets && !cheevos_autopad);
                      break;
                   case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H:
-                     build_list[i].checked = ((gfx_widgets && !cheevos_autopad) && 
-                     !(cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER || 
+                     build_list[i].checked = ((gfx_widgets && !cheevos_autopad) &&
+                     !(cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER ||
                         cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER));
                      break;
                   default:
@@ -15492,7 +15511,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (settings->bools.menu_show_load_core)
                      {
 #ifdef HAVE_DYNAMIC
-                        if (    sys_info->info.library_name 
+                        if (    sys_info->info.library_name
                             && *sys_info->info.library_name)
                         {
                            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
