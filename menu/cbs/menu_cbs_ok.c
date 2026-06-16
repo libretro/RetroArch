@@ -5480,7 +5480,16 @@ void cb_generic_download(retro_task_t *task,
    {
       retro_task_t *decompress_task = NULL;
       void *frontend_userdata       = task->frontend_userdata;
+      char extract_dir[PATH_MAX_LENGTH];
       task->frontend_userdata       = NULL;
+
+      /* Content from the Content Downloader is saved into a category
+       * sub-directory. Make sure to extract it to the same directory. */
+      if (transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD)
+      {
+         fill_pathname_basedir(extract_dir, output_path, sizeof(extract_dir));
+         dir_path = extract_dir;
+      }
 
       decompress_task = (retro_task_t*)task_push_decompress(
             output_path,
@@ -5531,6 +5540,8 @@ static int action_ok_download_generic(const char *path,
    char s2[PATH_MAX_LENGTH];
    char s3[PATH_MAX_LENGTH];
    file_transfer_t *transf      = NULL;
+   /* The subdirectory where the file will be downloaded to. */
+   const char *content_subdir   = NULL;
    bool suppress_msg            = false;
    retro_task_callback_t cb     = cb_generic_download;
    settings_t *settings         = config_get_ptr();
@@ -5561,6 +5572,8 @@ static int action_ok_download_generic(const char *path,
                MIN((size_t)(end - menu_label + 1), sizeof(s)));
             else
                strlcpy(s, menu_label, sizeof(s));
+            /* Figure out the subdirectory from the given path, using the label. */
+            content_subdir = path_basename(s);
          }
          break;
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
@@ -5620,7 +5633,19 @@ static int action_ok_download_generic(const char *path,
    if (!transf)
       return 0;
    transf->enum_idx = enum_idx;
-   strlcpy(transf->path, path, sizeof(transf->path));
+
+   /* When there is a content sub-directory, prefix the local
+    * path with the same category path. Otherwise, just grab
+    * the path. */
+   if (content_subdir && *content_subdir)
+   {
+      char rel_path[PATH_MAX_LENGTH];
+      fill_pathname_join_special(rel_path, content_subdir, path,
+            sizeof(rel_path));
+      strlcpy(transf->path, rel_path, sizeof(transf->path));
+   }
+   else
+      strlcpy(transf->path, path, sizeof(transf->path));
 
    if (string_is_equal(path, s))
       net_http_urlencode_full(s3, s, sizeof(s3));

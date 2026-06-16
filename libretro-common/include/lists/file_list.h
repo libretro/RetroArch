@@ -105,6 +105,19 @@ void file_list_free_actiondata(const file_list_t *list, size_t idx);
 void file_list_set_alt_at_offset(file_list_t *list, size_t index,
       const char *alt);
 
+/**
+ * @brief sets the label of the entry at the given offset
+ *
+ * The previous label (if any) is freed and replaced with a copy of
+ * the supplied string.
+ *
+ * @param list The list containing the entry
+ * @param index Offset of the entry whose label should be set
+ * @param label Label to copy into the entry
+ */
+void file_list_set_label_at_offset(file_list_t *list, size_t index,
+      const char *label);
+
 void file_list_sort_on_alt(file_list_t *list);
 
 void file_list_sort_on_type(file_list_t *list);
