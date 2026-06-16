@@ -5527,6 +5527,35 @@ finish:
       RARCH_LOG("[Updater] Download \"%s\".\n",
             (transf ? transf->path : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
 
+      /* Content Downloader: Mark downloaded content label with a "[#]". */
+      if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD)
+      {
+         struct menu_state *menu_st = menu_state_get_ptr();
+         const char *menu_label = NULL;
+         menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+
+         if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR))
+         {
+            menu_list_t *menu_list     = menu_st->entries.list;
+            file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+            const char *filename       = path_basename(transf->path);
+
+            if (selection_buf && filename && *filename)
+            {
+               size_t i;
+               for (i = 0; i < selection_buf->size; i++)
+               {
+                  const char *entry_path = selection_buf->list[i].path;
+                  if (entry_path && string_is_equal(entry_path, filename))
+                  {
+                     file_list_set_label_at_offset(selection_buf, i, "[#]");
+                     break;
+                  }
+               }
+            }
+         }
+      }
+
 #ifdef HAVE_DISCORD
       if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
          discord_avatar_set_ready(true);
