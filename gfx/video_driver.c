@@ -3213,7 +3213,6 @@ void video_driver_cached_frame(void)
 {
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
    recording_state_t *recording_st= recording_state_get_ptr();
-   video_driver_state_t *video_st = &video_driver_st;
    void             *recording    = recording_st->data;
    struct retro_callbacks *cbs    = &runloop_st->retro_ctx;
 
@@ -3277,7 +3276,6 @@ bool video_driver_cached_frame_info(
       unsigned *width, unsigned *height, size_t *pitch,
       bool *has_cpu_pixels)
 {
-   video_driver_state_t *video_st = &video_driver_st;
    const void           *data;
    bool                  has_frame;
 
@@ -3314,7 +3312,6 @@ void video_driver_cached_frame_read(
                  const void *data,
                  unsigned width, unsigned height, size_t pitch))
 {
-   video_driver_state_t *video_st = &video_driver_st;
    const void           *data;
    unsigned              width    = 0;
    unsigned              height   = 0;
@@ -3350,7 +3347,6 @@ void video_driver_cached_frame_read(
 
 bool video_driver_cached_frame_is_hw_render(void)
 {
-   video_driver_state_t *video_st = &video_driver_st;
    bool                  is_hw;
    cached_frame_lock_acquire();
    is_hw =    frame_cache_data
@@ -3368,7 +3364,6 @@ bool video_driver_cached_frame_is_hw_render(void)
 void video_driver_cached_frame_publish(
       const void *data, unsigned width, unsigned height, size_t pitch)
 {
-   video_driver_state_t *video_st = &video_driver_st;
    cached_frame_lock_acquire();
    if (data)
       frame_cache_data = data;
@@ -3387,7 +3382,6 @@ void video_driver_cached_frame_publish(
  * after this returns. */
 void video_driver_cached_frame_invalidate(void)
 {
-   video_driver_state_t *video_st = &video_driver_st;
    cached_frame_lock_acquire();
    frame_cache_data   = NULL;
    frame_cache_width  = 0;

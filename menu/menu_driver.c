@@ -6396,7 +6396,6 @@ void menu_driver_toggle(
    bool video_vsync                   = false;
    bool video_frame_delay_auto        = false;
 #ifdef HAVE_VIDEO_FILTER
-   bool video_filter_enable           = true;
 #endif
 
    if (settings)
@@ -7609,7 +7608,6 @@ int generic_menu_entry_action(
    struct menu_state *menu_st     = &menu_driver_state;
    const menu_ctx_driver_t
       *menu_driver_ctx            = menu_st->driver_ctx;
-   menu_handle_t  *menu           = menu_st->driver_data;
    settings_t   *settings         = config_get_ptr();
    void *menu_userdata            = menu_st->userdata;
    bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;

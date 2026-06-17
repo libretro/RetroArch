@@ -662,7 +662,6 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t len)
    if (task && state)
    {
       settings_t *settings  = config_get_ptr();
-      video_driver_state_t *video_st = video_state_get_ptr();
 
       strlcpy(state->path, path, sizeof(state->path));
       state->data           = data;
@@ -1230,7 +1229,6 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
 {
    settings_t     *settings        = config_get_ptr();
    retro_task_t       *task        = task_init();
-   video_driver_state_t *video_st  = video_state_get_ptr();
    save_task_state_t *state        = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
@@ -1352,7 +1350,6 @@ static void task_push_load_and_save_state(const char *path, void *data,
 {
    retro_task_t      *task        = NULL;
    settings_t        *settings    = config_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr();
    save_task_state_t *state       = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
@@ -1470,7 +1467,6 @@ bool content_auto_save_state(const char *path)
 #ifdef HAVE_SCREENSHOTS
    if (settings->bools.savestate_thumbnail_enable)
    {
-      video_driver_state_t *video_st = video_state_get_ptr();
       const char *dir_screenshot = settings->paths.directory_screenshot;
       bool validfb = video_driver_cached_frame_is_hw_render();
 
@@ -1634,7 +1630,6 @@ bool content_load_state(const char *path,
 {
    retro_task_t       *task        = NULL;
    save_task_state_t *state        = NULL;
-   video_driver_state_t *video_st  = video_state_get_ptr();
    settings_t *settings            = config_get_ptr();
 
    if (!core_info_current_supports_savestate())
