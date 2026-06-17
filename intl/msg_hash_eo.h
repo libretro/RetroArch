@@ -237,7 +237,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Forlasi RetroArch. Ĉesigi la programon per ajna severa maniero (SIGKILL, kc) ĉesigos RetroArch sen konservi la konfiguraĵon ajnakaze. En Uniks-similaj sistemoj, SIGINT/SIGTERM ebligas puran forlason, kio inkluzivas konfiguran konservon se ebligita."
+   "Forlasi RetroArch. Ĉesigi la programon per ajna severa maniero (SIGKILL, kc) ĉesigos RetroArch sen konservi la konfiguraĵon ajnakaze. En Uniks-similaj sistemoj, SIGINT/SIGTERM permesas puran forlason, kio inkluzivas konfiguran konservon se ebligita."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
@@ -1473,15 +1473,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
-   "Pelilo de OpenGL 2.x. Ĉi tiu pelilo ebligas al kernoj de libretro GL esti uzataj aldone al kernoj bildigitaj per programaro. Minimuma versio bezonata: OpenGL 2.0 aŭ OpenGLES 2.0. Subtenas la formaton de ombrigilo GLSL. Anstataŭe, uzu pelilon glcore se eble."
+   "Pelilo de OpenGL 2.x. Ĉi tiu pelilo permesas al kernoj de libretro GL esti uzataj aldone al kernoj bildigitaj per programaro. Minimuma versio bezonata: OpenGL 2.0 aŭ OpenGLES 2.0. Subtenas la formaton de ombrigilo GLSL. Anstataŭe, uzu pelilon glcore se eble."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
-   "Pelilo de OpenGL 3.x. Ĉi tiu pelilo ebligas al kernoj de libretro GL esti uzataj aldone al kernoj bildigataj per programaro. Minimuma versio bezonata: OpenGL 3.2 aŭ OpenGLES 3.0+. Subtenas la formaton de ombrigilo Slang."
+   "Pelilo de OpenGL 3.x. Ĉi tiu pelilo permesas al kernoj de libretro GL esti uzataj aldone al kernoj bildigataj per programaro. Minimuma versio bezonata: OpenGL 3.2 aŭ OpenGLES 3.0+. Subtenas la formaton de ombrigilo Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
-   "Pelilo de Vulkan. Ĉi tiu pelilo ebligas al kernoj de libretro Vulkan esti uzataj aldone al kernoj bildigataj per programaro. Minimuma versio bezonata: Vulkan 1.0. Subtenas ombrigilojn HDR kaj Slang."
+   "Pelilo de Vulkan. Ĉi tiu pelilo permesas al kernoj de libretro Vulkan esti uzataj aldone al kernoj bildigataj per programaro. Minimuma versio bezonata: Vulkan 1.0. Subtenas ombrigilojn HDR kaj Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
@@ -2620,7 +2620,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
-   "Sinkronigi la filmer-oftecon laŭ la enhavo. Ĉi tiu opcio egalas al devigi rapidon de ×1 dum ankoraŭ ebligante rapidpluigon. Ne estos dekliniĝoj el la ofteco de aktualigo postulata de la kerno, nek dinamika rego de ofteco de sono."
+   "Sinkronigi la filmer-oftecon laŭ la enhavo. Ĉi tiu opcio egalas al devigi rapidon de ×1 dum ankoraŭ permesante rapidpluigon. Ne estos dekliniĝoj el la ofteco de aktualigo postulata de la kerno, nek dinamika rego de ofteco de sono."
    )
 
 /* Settings > Audio */
@@ -2761,7 +2761,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   "Ebligi al la pelilo de WASAPI preni ekskluzivan regon de la sonaparato. Se malebligite, ĝi uzos la kunhavigita reĝimo."
+   "Permesi al la pelilo de WASAPI preni ekskluzivan regon de la sonaparato. Se malebligite, ĝi uzos la kunhavigita reĝimo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -2887,7 +2887,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-   "Ebligi al RetroArch preni ekskluzivan regadon de la mikrofona aparato kiam uzante la mikrofonan pelilon WASAPI. Se malebligite, RetroArch uzos la kunhavigatan reĝimon anstataŭe."
+   "Permesi al RetroArch ekskluzive regi la mikrofonan aparaton kiam uzante la mikrofonan pelilon WASAPI. Se malebligite, RetroArch uzos la kunhavigatan reĝimon anstataŭe."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
@@ -3387,7 +3387,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
-   "Ebligi direktojn de la direktkruco por \"Turbo\""
+   "Permesi direktojn de la direktkruco por \"Turbo\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
@@ -3542,7 +3542,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "Ebligi al ĉiuj uzantoj regi la menuon. Se malebligita, nur Uzanto 1 povas regi la menuon."
+   "Permesi al ĉiuj uzantoj regi la menuon. Se malebligita, nur Uzanto 1 povas regi la menuon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
@@ -3554,7 +3554,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
-   "Ebligi reeniri el sekcioj"
+   "Permesi reeniri el sekcioj"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
@@ -3617,7 +3617,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "Kiam asignita, la klavo \"Ebligi fulmoklavojn\" devas esti tenata antaŭ ol ajnaj aliaj fulmoklavoj estu agnoskitaj. Ebligas al regilaj butonoj esti asignitaj al fulmoklavaj funkcioj sen influi normalan enigon. Asigni la modifilon nur al regilo ne necesigos ĝin por klavaraj fulmoklavoj, kaj inverse, sed ambaŭ modifiloj funkcias por ambaŭ aparatoj."
+   "Kiam asignita, la klavo \"Ebligi fulmoklavojn\" devas esti tenata antaŭ ol ajnaj aliaj fulmoklavoj estu agnoskitaj. Permesas al regilaj butonoj esti asignitaj al fulmoklavaj funkcioj sen influi normalan enigon. Asigni la modifilon nur al regilo ne necesigos ĝin por klavaraj fulmoklavoj, kaj inverse, sed ambaŭ modifiloj funkcias por ambaŭ aparatoj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
@@ -3629,7 +3629,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   "Aldoni prokraston je filmeroj antaŭ ol normala enigo estu barita post premi la asignitan klavon \"Ebligi fulmoklavojn\". Ebligas, ke normala enigo de la klavo \"Ebligi fulmoklavojn\" estu kaptita kiam ĝi estas asignita al alia ago (ekz. \"Select\" de RetroPad)."
+   "Aldoni prokraston je filmeroj antaŭ ol normala enigo estu barita post premi la asignitan klavon \"Ebligi fulmoklavojn\". Permesas, ke normala enigo de la klavo \"Ebligi fulmoklavojn\" estu kaptita kiam ĝi estas asignita al alia ago (ekz. \"Select\" de RetroPad)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
@@ -4457,11 +4457,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
-   "Ebligi al kernoj interŝanĝi la videan pelilon"
+   "Permesi al kernoj interŝanĝi la videan pelilon"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
-   "Ebligi al kernoj interŝanĝi al videa pelilo, kiu ne estas tiu kurante ŝargita."
+   "Permesi al kernoj interŝanĝi al videa pelilo, kiu ne estas tiu kurante ŝargita."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
@@ -4485,7 +4485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
-   "Ebligi al kernoj prezenti opciojn en submenuoj bazitaj de kategorioj. NOTU: oni bezonas reŝargi kernon, por ke la ŝanĝoj estu efikaj."
+   "Permesi al kernoj prezenti opciojn en submenuoj bazitaj de kategorioj. NOTO: oni bezonas reŝargi kernon, por ke la ŝanĝoj estu efikaj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -4501,7 +4501,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Specifas ĉu ignori kernajn informojn pri konservostatoj, ebligante eksperimenti kun rilataj funkcioj (anticipi, revolvi, kc)."
+   "Specifas ĉu ignori kernajn informojn pri konservostatoj, permesante eksperimenti kun rilataj funkcioj (anticipi, revolvi, kc)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4515,11 +4515,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
-   "Ebligi rotacion"
+   "Permesi rotacion"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
-   "Ebligas al kernoj agordi rotacion. Kiam malebligita, postuloj de rotacio estas ignorataj. Utila por agordaĵoj, kiuj permane rotacias la ekranon."
+   "Permesas al kernoj agordi rotacion. Kiam malebligita, postuloj de rotacio estas ignorataj. Utila por agordaĵoj, kiuj permane rotacias la ekranon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
@@ -5046,7 +5046,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Preterpasi filmeroj laŭ la rapidpluiga rapido. Ĉi tio konservas energion kaj ebligas la uzon de filmerlimigo de ekstera liveranto."
+   "Preterpasi filmeroj laŭ la rapidpluiga rapido. Ĉi tio konservas energion kaj permesas la uzon de filmerlimigo de ekstera liveranto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -5606,11 +5606,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
-   "Ebligi celi eksterekrane"
+   "Permesi celi eksterekrane"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
-   "Ebligi celi eksterlime. Malebligi por alĝustigi eksterekranajn celadojn al la enlima rando."
+   "Permesi celi eksterlime. Malebligi por alĝustigi eksterekranajn celadojn al la enlima rando."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
@@ -6131,7 +6131,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "Ebligi al menuo esti regata per muso."
+   "Permesi al menuo esti regata per muso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -6139,7 +6139,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Ebligi al menuo esti regata per tuŝekrano."
+   "Permesi al menuo esti regata per tuŝekrano."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
@@ -7548,19 +7548,179 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
-   "Ebligi paŭzi"
+   "Permesi paŭzi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Ebligi al ludantoj paŭzi dum retludado."
+   "Permesi al ludantoj paŭzi dum retludado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+   "Permesi sklavreĝimajn klientojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+   "Permesi konektojn en sklava reĝimo. Sklavreĝimaj klientoj bezonas tre malmulte da risurcoj je ĉiu flanko, sed grave influos la retan respondotempon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
+   "Malpermesi nesklavreĝimajn klientojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
+   "Malpermesi konektojn ne en sklavreĝimo. Ne rekomendata krom por tre rapidaj retoj kun tre malpotencaj maŝinoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
+   "Retludaj kontrolaj filmeroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+   "La ofteco (je filmeroj), per kiu retludado kontrolos, ke la gastiganto kaj kliento estsa sinkronigitaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
+   "La ofteco je filmeroj, per kiu retludado kontrolos, ke la gastiganto kaj kliento estsa sinkronigitaj. Kun la plej multo el kernoj, ĉi tiu valoro havas nenian videblan efikon kaj povas esti ignorata. Kun nedeterminismaj kernoj, ĉi tiu valoro determinas kiel ofte la retludaj samtavolanoj estos sinkronigitaj. Kun cimozaj kernoj, agordante ĉi tio je ajna valoro krom nul kaŭzos gravajn rendimentajn problemojn. Agordu ĝin al nul por plenumi neniom da kontroloj. Ĉi tiu valaoro nur estas uzata en [...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "Eniga respondotempaj filmeroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "La nombro da filmeroj de eniga respondotempo uzota de retludado por kaŝi reta respondotempo. Malpliigas bildan misprezenton kaj faras retludado malpli procesor-intensa, kontraŭ rimarkinda eniga atendotempo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "La nombro da filmeroj de eniga respondotempo uzota de retludado por kaŝi reta respondotempo. \nKiam retludante, ĉi tiu opcio prokrastas lokan enigon, por ke la filmero rulata estu pli proksima al la filmeroj ricevataj de la reto. Ĉi tio malpliigas bildan misprezenton kaj faras retludado malpli procesor-intensa, sed kontraŭ rimarkinda eniga atendotempo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "Filmera rango de eniga respondotempo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "La rango da filmeroj de eniga respondotempo, kiuj povus esti uzata por kaŝi retludan respondotempon. Malpliigas bildan misprezenton kaj faras retludadon malpli procesor-intensa, kontraŭ neprognozebla eniga atendotempo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "La rango da filmeroj de eniga respondotempo, kiuj povus esti uzata por kaŝi retludan respondotempon.\nSe agordite, retludado alĝustigos la nombron da filmeroj de eniga respondotempo dinamike por ekvilibrigi procesoran tempon, enigan respondotempon kaj retludan respondotempon. Ĉi tio malpliigas bildan misprezenton kaj faras retludadon malpli procesor-intensa, kontraŭ neprognozebla eniga atendotempo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+   "Retluda NAT-trairo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
+   "Kiam gastigante, provi aŭskulti konektojn de la publika interreto, uzante UPnP aŭ similaj teĥnologioj por eskapi LAN-ojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+   "Cifereceniga kunhavigo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+   "Postuli aparaton %u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
+   "Postuli ludi kun la donata enigaparaton."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
+   "Retaj komandoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
+   "Retkomanda konektejo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
+   "Reta RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
+   "Baza konektejo de reta RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
+   "Reta RetroPad de uzanto %d"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
+   "Komandoj stdin"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
-   "Enable stdin command interface."
+   "Interfaco de komandoj stdin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+   "Laŭpete elŝuti bildetojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+   "Aŭtomate elŝuti mankantajn bildetojn superflugante ludlistojn. Havas gravan rendimentan influon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   "Ĝisdatigilaj agordoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
+   "Aliri kernĝisdatigilajn agordojn."
    )
 
 /* Settings > Network > Updater */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
+   "URL de kernoj de \"buildbot\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
+   "URL al kerna ĝisdatigila dosierujo sur la \"buildbot\" de libretro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
+   "URL de havaĵoj de \"buildbot\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
+   "URL al dosierujo de havaĵa ĝisdatigilo en la \"buildbot\" de libretro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+   "Aŭtomate elpreni elŝutitan arĥivon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+   "Post elŝuti, aŭtomate elpreni dosierojn enhavatajn en la elŝutitaj arĥivojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "Montri eksperimentajn kernojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "Inkluzivi \"eksperimentajn\" kernojn en la kernelŝutila listo. Ĉi tiuj tipe estas nur por programadaj kaj testaj celoj, kaj ne estas rekomendataj por ĝenerala uzo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
+   "Restaŭrkopiaj kernoj kiam ĝisdatigante"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
+   "Aŭtomate krei restaŭrkopion de ajnaj instalitaj kernoj kiam plenumante enretan ĝisdatigon. Ebligas facilan ŝanĝomalfaron de funkcianta kerno se ĝisdatigo prezentas regreson."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "Historia grando de kerna restaŭrkopio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "Specifi kiom da aŭtomate generitaj restaŭrkopioj teni por ĉiu instalita kerno. Kiam ĉi tiu limo estas atingita, krei novan restaŭrkopion per enreta ĝisdatigo forigos la plej malnova restaŭrkopion. Permana kernaj restaŭrkopioj estas neinfluataj de ĉi tiu agordo."
+   )
 
 /* Settings > Playlists */
 
@@ -7570,58 +7730,438 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-   "Enable or disable recent playlist for games, images, music, and videos."
+   "Konservi ludliston de laste uzitaj ludoj, bildoj, muziko kaj videaĵoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
+   "Historia grando"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+   "Limigi la nombron da eroj en ĵusa ludlisto por ludoj, bildoj, muziko kaj videaĵoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
+   "Preferataj grando"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   "Limigi la nombron da eroj en la \"Preferata\" ludlisto. Kiam lia limigo estas atingita, novaj aldonoj estos konservataj ĝis malnovaj eroj estas forigitaj. Agordi je valoro -1 permesas \"senlimaj\" eroj.\nAVERTO: Redukti la valoron forigos ekzistantajn erojn!"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+   "Permesi renomi erojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+   "Permesi renomadon de ludlistaj eroj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
+   "Permesi forigi erojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
+   "Permesi, ke ludlistaj eroj estu forigitaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+   "Ordigi ludlistojn alfabete"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
+   "Ordigi enhavajn ludlistojn laŭ alfabeta ordo, ekskluzivante la ludlistojn \"Historio\", \"Bildoj\", \"Muziko\" kaj \"Videaĵoj\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+   "Konservi ludlistojn uzante malnovan formaton"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
+   "Skribi ludlistojn uzante evitindan plattekstan formaton. Kiam malebligita, ludlistoj estas formatigitaj laŭ JSON."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
+   "Densigi ludlistojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
+   "Arĥivi ludlistajn datumojn kiam skribante al disko. Malpliigas dosiergrandon kaj ŝargotempojn kontraŭ (neglektinda) pliigo de procesora uzo. Povas esti uzata kun ludlistoj laŭ la nova aŭ la malnova formato."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   "Montri asociigitajn kernojn en ludlistoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   "Specifi kiam etikedi ludlistajn erojn kun la kurante asociigitan kerno (se ajna). Ĉi tiu agordo estas ignorata kiam ludlistaj subetikedoj estas ebligitaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
+   "Montri ludlistajn subetikedojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
+   "Montri aldonajn informojn por ĉiu ludlista ero, kiel la kuranta kerna asociigo kaj rultempo (se disponebla). Havas varieman rendimentan influon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+   "Montri piktogramojn specifajn al enhavo en Historio kaj Preferataj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   "Montri specifajn piktogramojn por ĉiu ero de la ludlistoj Historio kaj Preferataj. Havas varieman rendimentan influon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+   "Kerno:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
+   "Rultempo:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
+   "Laste ludita:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "Fojoj luditaj:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
+   "sekundo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "sekundoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE,
+   "minuto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_PLURAL,
+   "minutoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE,
+   "horo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
+   "horoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
+   "tago"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
+   "tagoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
+   "semajno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_PLURAL,
+   "semajnoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_SINGLE,
+   "monato"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_PLURAL,
+   "monatoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
+   "jaro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
+   "jaroj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
+   "antaŭe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
+   "Montri indekson de ludlista ero"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
+   "Montri erajn numerojn kiam vidante ludlistojn. Montroformato dependas de la kurante elektita menua pelilo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   "Rultempo de ludlista subetikedo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   "Elekti kian rultempan protokolon montri sur ludlistaj subetikedoj. La kongruanta rultempa protokolo devas esti ebligita per la menuo pri opcioj \"Konservado\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   "Data kaj tempa stilo por \"Laste ludita\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   "Agordi la stilon de la dato kaj tempo montrataj por la tempindikan informon de \"Laste ludita\". Opcioj \"(A.M./P.M.)\" havos malgrandan rendimentan influon sur kelkaj platformoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   "Proksimuma arĥiva kongruado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   "Kiam serĉante ludlistojn por eroj asociigitaj kun densigitaj dosieroj, kongruu nur la arĥiva nomo anstataŭ [dosiernnomo]+[enhavo]. Ebligu ĉi tion por eviti duobligi eroj de enhava historio kiam ŝargante densigitajn dosierojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+   "Skani sen kerna kongruo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+   "Permesi al enhavo esti skanata kaj aldonita al ludlisto sen kerno instalita subtenanta ĝin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Skanado kontrolas CRC sur eblaj duoblaĵoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "Kelkfoje ISO-j duobligas serinumeroj, aparte kun titoloj PSP/PSN. Dependante sole de la serinumero kelkfoje povas kaŭzi, ke la skanilo metu enhavon en la malĝusta sistemo. Ĉi tio aldonas kontrolon CRC, kio plimalrapidigas skanadon nemalmulte, sed povas esti pli preciza."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   "Administri ludlistojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+   "Plenumi bontenadajn taskojn sur ludlistoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   "Porteblaj ludlistoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
+   "Kiam ebligite, kaj la dosierujo \"Dosieresplorilo\" ankaŭ estas elektita, la kuranta valoro de parametro \"Dosieresplorilo\" estas konservata en la ludlisto. Kiam la ludlisto estas ŝargata en alia sistemo, kie la sama opcio estas ebligita, la valoro de la parametro \"Dosieresplorilo\" estas komparita kun la ludlista valoro; se malsama, la dosierindikoj de la ludlistaj eroj estas aŭtomate alĝustigitaj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
+   "Uzi dosiernomojn por bildetaj kongruado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
+   "Kiam ebligita, ĝi serĉos bildetojn laŭ la dosiernomo de la ero, anstataŭ ĝia etikedo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Permesi ĉiujn subtenatajn bildospecojn por bildetoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Kiam ebligita, povas esti aldonitaj lokaj bildetoj de ĉiuj bildospecoj subtenataj de RetroArch (kiel jpeg). Povus havi malpli gravan rendimentan influon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Administri"
    )
 
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
+   "Defaŭlta kerno"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+   "Specifi kernon uzotan kiam lanĉante enhavon per ludlista ero, al kiu mankas asocio kun ekzistanta kerno."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
    "Rekomencigi kernajn asociojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
+   "Forigi asociojn de ekzistanta kerno por ĉiuj ludlistaj eroj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+   "Reĝimo por montri etikedojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+   "Ŝanĝi kiel la enhavaj etikedoj estas montrataj en ĉi tiu ludlisto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
+   "Ordiga metodo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
+   "Determini kiel eroj estas ordigitaj en ĉi tiu ludlisto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+   "Purigi ludliston"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+   "Kontroli kernajn asociojn kaj forigi nevalidajn kaj duobligitajn erojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Refreŝigi ludliston"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Aldoni novan enhavon kaj forigi nevalidajn erojn ripetante la operacion skani enhavon laste uzata por krei aŭ redakti la ludliston."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Forigi ludliston"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   "Forigi ludliston de dosiersistemo."
+   )
 
 /* Settings > User */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
+   "Privateco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   "Ŝanĝi privatecajn agordojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+   "Kontoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
+   "Administri kurante konfiguritajn kontojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
+   "Uzantnomo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
+   "Enigu vian uzantomon ĉi tie. Ĉi tio estos uzata por retludaj sesioj kaj aliaj aferoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   "Lingvo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+   "Agordi la lingvon de la uzantinterfaco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
+   "Tradukas la menuon kaj ĉiujn surekranajn mesaĝojn laŭ la lingvo, kiun vi elektis ĉi tie. Bezonas rekomencigo por ke la ŝanĝoj aplikiĝu.\nKompletiĝo de tradukado estas montrata apud ĉiu opcio. Kaze de manko de traduko por menua ero, ni retropaŝas al la angla."
+   )
 
 /* Settings > User > Privacy */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-   "Enable Discord"
+   MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   "Permesi kameraon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
+   "Permesi al kernoj aliri al la kamerao."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
+   "Permesi al la aplikaĵo Discord montri datumojn pri la enhavo ludita. Nur disponebla kun la indiĝena labortabla kliento."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
+   "Permesi lokon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
+   "Permesi al kernoj aliri al via lokon."
    )
 
 /* Settings > User > Accounts */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Retro Achievements"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Gajni akirojn en klasikaj ludoj. Por pli da informoj, vizitu 'https://retroachievements.org'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "Ensalutaj detajloj por via konto de RetroAchievements. Vizitu retroachievements.org kaj ensalutu por senkosta konto.\nPost kiam vi finos registrante, vi devos enigi la uzantnomon kaj pasvorton en RetroArch."
    )
 
 /* Settings > User > Accounts > RetroAchievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+   "Uzantnomo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
+   "Enigi la uzantnomon de via konto de RetroAchievements."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
+   "Pasvorto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
+   "Enigi la pasvorton de via konto de RetroAchievements. Maksimuma longo: 255 signoj."
+   )
 
 /* Settings > User > Accounts > YouTube */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   "Elsenda klavo de YouTube"
+   )
 
 /* Settings > User > Accounts > Twitch */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
+   "Elsenda klavo de Twitch"
+   )
 
 /* Settings > User > Accounts > Facebook Gaming */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+   "Elsenda klavo de Facebook Gaming"
+   )
 
 /* Settings > User > Accounts > Kick */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Elsenda klavo de Kick"
+   )
 
 /* Settings > Directory */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
+   "Sistemo/BIOS"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
+   "BIOS-oj, praŝargaj ROM-oj kaj aliaj dosieroj specifaj de sistemo estas stokitaj en ĉi tiu dosierujo."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    "Elŝutaĵoj"
@@ -7673,6 +8213,10 @@ MSG_HASH(
 
 /* Import Content > Content Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
+   "Defaŭlta kerno"
+   )
 
 /* Explore tab */
 
@@ -7999,6 +8543,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    "Forigi ludliston"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
+   "Kerno:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
