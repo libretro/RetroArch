@@ -3556,7 +3556,9 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_LOAD_STATE_SLOT:
-         configuration_set_int(settings, settings->ints.state_slot, (int)data);
+         /* This changes the currently selected savestate slot */
+         const int load_slot = *(const int *)data;
+         configuration_set_int(settings, settings->ints.state_slot, load_slot);
 
          if (!handle_load_state_command_event())
             return false;
@@ -3716,7 +3718,9 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_SAVE_STATE_SLOT:
-         configuration_set_int(settings, settings->ints.state_slot, (int)data);
+         /* This changes the currently selected savestate slot */
+         const int save_slot = *(const int *)data;
+         configuration_set_int(settings, settings->ints.state_slot, save_slot);
 
          if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
             return false;

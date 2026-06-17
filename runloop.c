@@ -347,6 +347,10 @@ static void runloop_game_ai_think_cb(void *userdata,
 #define PERF_LOG_FMT "[PERF] Avg (%s): %llu ticks, %llu runs.\n"
 #endif
 
+static const int direct_state_slots[10] = {
+   0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+};
+
 static runloop_state_t runloop_state      = {0};
 
 /* GLOBAL POINTER GETTERS */
@@ -5597,8 +5601,8 @@ static bool display_menu_libretro(
    { \
       if (settings->ints.savestate_max_direct_slot >= num) \
       { \
-         HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT ## num ## _KEY, CMD_EVENT_SAVE_STATE_SLOT, true, (void*)num); \
-         HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT ## num ## _KEY, CMD_EVENT_LOAD_STATE_SLOT, true, (void*)num); \
+         HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT ## num ## _KEY, CMD_EVENT_SAVE_STATE_SLOT, true, &direct_state_slots[num]); \
+         HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT ## num ## _KEY, CMD_EVENT_LOAD_STATE_SLOT, true, &direct_state_slots[num]); \
       } \
    } \
 

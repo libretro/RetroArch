@@ -3887,7 +3887,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT0_KEY,
-   "Loads a saved state from slot 0."
+   "Loads a saved state from slot 0. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_SLOT1_KEY,
@@ -3895,7 +3895,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT1_KEY,
-   "Loads a saved state from slot 1."
+   "Loads a saved state from slot 1. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_SLOT2_KEY,
@@ -3903,7 +3903,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT2_KEY,
-   "Loads a saved state from slot 2."
+   "Loads a saved state from slot 2. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_SLOT3_KEY,
@@ -3911,7 +3911,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT3_KEY,
-   "Loads a saved state from slot 3."
+   "Loads a saved state from slot 3. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_SLOT4_KEY,
@@ -3919,7 +3919,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT4_KEY,
-   "Loads a saved state from slot 4."
+   "Loads a saved state from slot 4. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_SLOT5_KEY,
@@ -3927,7 +3927,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT5_KEY,
-   "Loads a saved state from slot 5."
+   "Loads a saved state from slot 5. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_SLOT6_KEY,
@@ -3935,7 +3935,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT6_KEY,
-   "Loads a saved state from slot 6."
+   "Loads a saved state from slot 6. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_SLOT7_KEY,
@@ -3943,7 +3943,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT7_KEY,
-   "Loads a saved state from slot 7."
+   "Loads a saved state from slot 7. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_SLOT8_KEY,
@@ -3951,7 +3951,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT8_KEY,
-   "Loads a saved state from slot 8."
+   "Loads a saved state from slot 8. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_SLOT9_KEY,
@@ -3959,7 +3959,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT9_KEY,
-   "Loads a saved state from slot 9."
+   "Loads a saved state from slot 9. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
@@ -3975,7 +3975,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT0_KEY,
-   "Saves a state to slot 0."
+   "Saves a state to slot 0. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_SLOT1_KEY,
@@ -3983,7 +3983,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT1_KEY,
-   "Saves a state to slot 1."
+   "Saves a state to slot 1. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_SLOT2_KEY,
@@ -3991,7 +3991,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT2_KEY,
-   "Saves a state to slot 2."
+   "Saves a state to slot 2. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_SLOT3_KEY,
@@ -3999,7 +3999,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT3_KEY,
-   "Saves a state to slot 3."
+   "Saves a state to slot 3. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_SLOT4_KEY,
@@ -4007,7 +4007,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT4_KEY,
-   "Saves a state to slot 4."
+   "Saves a state to slot 4. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_SLOT5_KEY,
@@ -4015,7 +4015,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT5_KEY,
-   "Saves a state to slot 5."
+   "Saves a state to slot 5. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_SLOT6_KEY,
@@ -4023,7 +4023,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT6_KEY,
-   "Saves a state to slot 6."
+   "Saves a state to slot 6. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_SLOT7_KEY,
@@ -4031,7 +4031,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT7_KEY,
-   "Saves a state to slot 7."
+   "Saves a state to slot 7. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_SLOT8_KEY,
@@ -4039,7 +4039,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT8_KEY,
-   "Saves a state to slot 8."
+   "Saves a state to slot 8. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_SLOT9_KEY,
@@ -4047,7 +4047,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT9_KEY,
-   "Saves a state to slot 9."
+   "Saves a state to slot 9. This changes the currently selected slot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
