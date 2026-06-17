@@ -86,9 +86,12 @@
 - (void)requestCameraAuthorizationWithCompletion:(void (^)(BOOL granted))completion {
     RARCH_LOG("[Camera] Checking camera authorization status...\n");
 
-    AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+    /* AVCaptureDevice authorization gating exists on macOS 10.14+ (and iOS 7+).
+     * Earlier macOS had no camera TCC prompt, so access is implicitly granted. */
+    if (@available(macOS 10.14, *)) {
+        AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
 
-    switch (status) {
+        switch (status) {
         case AVAuthorizationStatusAuthorized: {
             RARCH_LOG("[Camera] Camera access already authorized.\n");
             completion(YES);
@@ -123,6 +126,11 @@
             completion(NO);
             break;
         }
+        }
+    } else {
+        /* Pre-10.14 macOS: no camera authorization API; access is implicit. */
+        RARCH_LOG("[Camera] Authorization API unavailable on this OS; assuming granted.\n");
+        completion(YES);
     }
 }
 
@@ -610,11 +618,16 @@ static void *avfoundation_init(const char *device, uint64_t caps,
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     __block BOOL granted = NO;
     RARCH_LOG("[Camera] Requesting camera authorization synchronously.\n");
-    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL g) {
-        granted = g;
-        dispatch_semaphore_signal(sema);
-    }];
-    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    if (@available(macOS 10.14, *)) {
+        [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL g) {
+            granted = g;
+            dispatch_semaphore_signal(sema);
+        }];
+        dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    } else {
+        /* Pre-10.14 macOS: no authorization gate; access is implicit. */
+        granted = YES;
+    }
     if (!granted)
     {
         RARCH_ERR("[Camera] Camera access not authorized.\n");
