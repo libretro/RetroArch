@@ -213,6 +213,12 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
    return generic_action_ok_network(path, label, type, idx, entry_idx, _id); \
 }
 
+#define DEFAULT_ACTION_OK_LIST_NON_STATIC(funcname, _id) \
+int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
+{ \
+   return generic_action_ok_network(path, label, type, idx, entry_idx, _id); \
+}
+
 #define DEFAULT_ACTION_OK_DOWNLOAD(funcname, _id) \
 static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
 { \
@@ -5297,7 +5303,7 @@ static int generic_action_ok_network(const char *path,
 }
 
 DEFAULT_ACTION_OK_LIST(action_ok_core_content_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST)
-DEFAULT_ACTION_OK_LIST(action_ok_core_content_dirs_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST)
+DEFAULT_ACTION_OK_LIST_NON_STATIC(action_ok_core_content_dirs_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST)
 DEFAULT_ACTION_OK_LIST(action_ok_core_system_files_list, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_LIST)
 DEFAULT_ACTION_OK_LIST(action_ok_lakka_list, MENU_ENUM_LABEL_CB_LAKKA_LIST)
 
@@ -5480,7 +5486,16 @@ void cb_generic_download(retro_task_t *task,
    {
       retro_task_t *decompress_task = NULL;
       void *frontend_userdata       = task->frontend_userdata;
+      char extract_dir[PATH_MAX_LENGTH];
       task->frontend_userdata       = NULL;
+
+      /* Content from the Content Downloader is saved into a category
+       * sub-directory. Make sure to extract it to the same directory. */
+      if (transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD)
+      {
+         fill_pathname_basedir(extract_dir, output_path, sizeof(extract_dir));
+         dir_path = extract_dir;
+      }
 
       decompress_task = (retro_task_t*)task_push_decompress(
             output_path,
@@ -5512,6 +5527,35 @@ finish:
       RARCH_LOG("[Updater] Download \"%s\".\n",
             (transf ? transf->path : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
 
+      /* Content Downloader: Mark downloaded content label with a "[#]". */
+      if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD)
+      {
+         struct menu_state *menu_st = menu_state_get_ptr();
+         const char *menu_label = NULL;
+         menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+
+         if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR))
+         {
+            menu_list_t *menu_list     = menu_st->entries.list;
+            file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+            const char *filename       = path_basename(transf->path);
+
+            if (selection_buf && filename && *filename)
+            {
+               size_t i;
+               for (i = 0; i < selection_buf->size; i++)
+               {
+                  const char *entry_path = selection_buf->list[i].path;
+                  if (entry_path && string_is_equal(entry_path, filename))
+                  {
+                     file_list_set_label_at_offset(selection_buf, i, "[#]");
+                     break;
+                  }
+               }
+            }
+         }
+      }
+
 #ifdef HAVE_DISCORD
       if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
          discord_avatar_set_ready(true);
@@ -5531,6 +5575,8 @@ static int action_ok_download_generic(const char *path,
    char s2[PATH_MAX_LENGTH];
    char s3[PATH_MAX_LENGTH];
    file_transfer_t *transf      = NULL;
+   /* The subdirectory where the file will be downloaded to. */
+   const char *content_subdir   = NULL;
    bool suppress_msg            = false;
    retro_task_callback_t cb     = cb_generic_download;
    settings_t *settings         = config_get_ptr();
@@ -5561,6 +5607,8 @@ static int action_ok_download_generic(const char *path,
                MIN((size_t)(end - menu_label + 1), sizeof(s)));
             else
                strlcpy(s, menu_label, sizeof(s));
+            /* Figure out the subdirectory from the given path, using the label. */
+            content_subdir = path_basename(s);
          }
          break;
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
@@ -5620,7 +5668,19 @@ static int action_ok_download_generic(const char *path,
    if (!transf)
       return 0;
    transf->enum_idx = enum_idx;
-   strlcpy(transf->path, path, sizeof(transf->path));
+
+   /* When there is a content sub-directory, prefix the local
+    * path with the same category path. Otherwise, just grab
+    * the path. */
+   if (content_subdir && *content_subdir)
+   {
+      char rel_path[PATH_MAX_LENGTH];
+      fill_pathname_join_special(rel_path, content_subdir, path,
+            sizeof(rel_path));
+      strlcpy(transf->path, rel_path, sizeof(transf->path));
+   }
+   else
+      strlcpy(transf->path, path, sizeof(transf->path));
 
    if (string_is_equal(path, s))
       net_http_urlencode_full(s3, s, sizeof(s3));

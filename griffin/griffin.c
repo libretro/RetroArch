@@ -979,6 +979,8 @@ MIDI
 #include "../midi/drivers/coremidi.c"
 #endif
 
+#include "../midi/drivers/fmsynth_midi.c"
+
 /*============================================================
 DRIVERS
 ============================================================ */
