@@ -166,6 +166,7 @@ struct GameEntity: AppEntity, Identifiable {
          self.displayRepresentation = DisplayRepresentation(
             title: "\(title)",
             subtitle: LocalizedStringResource(stringLiteral: subtitle),
+            image: nil,
             synonyms: self.synonyms.map { LocalizedStringResource(stringLiteral: $0) }
          )
       } else {
