@@ -3,7 +3,6 @@
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2013-2014 - Steven Crowe
- *  Copyright (C) 2025 - Giovanni Myhre
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1221,7 +1220,6 @@ static INLINE void android_input_poll_event_type_motion(
       android_input_t *android, AInputEvent *event,
       int port, int source)
 {
-   /* C89: All variable declarations at function start */
    int getaction, action;
    size_t motion_ptr;
    int64_t event_time_ms;
@@ -1274,24 +1272,23 @@ static INLINE void android_input_poll_event_type_motion(
    /* ===== STYLUS EVENT PROCESSING ===== */
    if (is_stylus)
    {
-      /* Record stylus activity for overlay auto-hide (runloop.c reads this).
-       * Set on every stylus event (hover/move/down/up/side-button) before any
-       * early return so the pen's physical presence always refreshes the timer. */
-      g_android_stylus_last_event_ns = (int64_t)cpu_features_get_time_usec() * 1000;
-
       settings = config_get_ptr();
       if (!settings)
          return;
-      
-      /* Check if stylus support is globally disabled */
+
       if (!settings->bools.input_stylus_enable)
       {
 #ifdef DEBUG_ANDROID_INPUT
          RARCH_LOG("[RA Input] Stylus support disabled - ignoring stylus event\n");
 #endif
-         return; /* Treat stylus events as if they never happened */
+         return;
       }
-      
+
+      /* Refresh overlay auto-hide timer (runloop.c reads this). Done after the
+       * enable gate so a user who disabled S-Pen does not have their overlay
+       * auto-hidden by a passing pen. */
+      g_android_stylus_last_event_ns = (int64_t)cpu_features_get_time_usec() * 1000;
+
       /* Get stylus settings once for all cases */
       require_contact = settings->bools.input_stylus_require_contact_for_click;
 
@@ -1465,7 +1462,7 @@ static INLINE void android_input_poll_event_type_motion(
             /* Calculate pressure threshold from user setting (1-100 -> 0.0248-0.0000) */
             /* Higher sensitivity value = lower threshold = more sensitive */
             /* At max sensitivity (100), threshold is 0 = instant click on contact */
-            pressure_threshold = 0.0f + ((100 - settings->uints.input_stylus_pressure_sensitivity) * 0.00025f);
+            pressure_threshold = (100 - (int)settings->uints.input_stylus_pressure_sensitivity) * 0.00025f;
             tip_down = tip_touching && (pressure > pressure_threshold);
 
             /* Get button state */
@@ -1613,8 +1610,9 @@ static INLINE void android_input_poll_event_type_motion(
             break;
       }
    }
-   /* ===== FINGER/TOUCH EVENT PROCESSING ===== */
-   else if (is_finger || !is_stylus)
+   /* ===== FINGER/TOUCH EVENT PROCESSING =====
+    * Reached only when is_stylus is false. */
+   else
    {
       /* Check hover guard - drop phantom touches near recent stylus hover */
       if ((action == AMOTION_EVENT_ACTION_DOWN || action == AMOTION_EVENT_ACTION_MOVE) &&
