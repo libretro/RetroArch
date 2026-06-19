@@ -581,8 +581,8 @@ static bool d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
       unsigned width, height;
 
       texture->desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-      width                    = texture->desc.Width  >> 5;
-      height                   = texture->desc.Height >> 5;
+      width                    = texture->desc.Width;
+      height                   = texture->desc.Height;
 
       while ((width > 1) || (height > 1))
       {
@@ -3866,8 +3866,11 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
       }
 
       RARCH_DBG("[D3D11] Updating framebuffer size %ux%u.\n", width, height);
+	  
+	  bool last_pass = i == (d3d11->shader_preset->passes - 1);
 
-      if (     (i != (d3d11->shader_preset->passes - 1))
+      if (     !last_pass
+			|| pass->feedback
             || (width  != d3d11->vp.width)
             || (height != d3d11->vp.height))
       {
@@ -3879,6 +3882,17 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
          d3d11->pass[i].rt.desc.Height    = height;
          d3d11->pass[i].rt.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
          d3d11->pass[i].rt.desc.Format    = glslang_format_to_dxgi(d3d11->pass[i].semantics.format);
+		 
+		 if (!last_pass)
+		 {
+			/* mipmap refers to the input of the pass */ 
+		    struct video_shader_pass* nextPass = &d3d11->shader_preset->pass[i + 1];
+		    if (nextPass && nextPass->mipmap)
+		    {
+		       d3d11->pass[i].rt.desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+		    }
+		 }
+		 
          d3d11_release_texture(&d3d11->pass[i].rt);
          d3d11_init_texture(d3d11->device, &d3d11->pass[i].rt);
 
@@ -4428,6 +4442,9 @@ static bool d3d11_gfx_frame(
             context->lpVtbl->Draw(context, 4, 0);
          else
             context->lpVtbl->Draw(context, 4, 4);
+		
+		 if (d3d11->pass[i].rt.desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+			context->lpVtbl->GenerateMips( context, d3d11->pass[i].rt.view);
 
          texture = &d3d11->pass[i].rt;
       }
