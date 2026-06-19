@@ -9487,53 +9487,637 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-   "Load Cheat File"
+   "Ŝargi trompdosieron (anstataŭigi)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   "Load a cheat file."
+   "Ŝargi trompdosieron kaj anstataŭigi ekzistantajn trompojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
+   "Ŝargi trompdosieron (postaldoni)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
+   "Ŝargi trompdosieron kaj postaldoni al ekzistantaj trompoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
+   "Reŝargi ludspecifajn trompojn."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Reŝargi ĉiujn ekzistantajn trompojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
+   "Konservi trompdosieron kiel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
+   "Konservi kurantajn trompojn kiel trompdosiero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
+   "Aldoni novan trompon supren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Antaŭaldoni trompon al la listo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
+   "Aldoni novan trompon malsupren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Postaldoni trompon al la listo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
+   "Forigi ĉiujn trompojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Viŝi la listo de trompoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+   "Aŭtomate aplikiĝi trompojn dum ŝargo de ludo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
+   "Aŭtomate aplikiĝi trompojn kiam ludo ŝargiĝas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+   "Apliki post ŝalti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+   "Apliki trompon tuj post ŝalti."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
-   "Apply Cheat Changes"
+   "Apliki ŝanĝojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+   "Ŝanĝoj de trompo efikiĝos tuje."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT,
+   "Trompo"
    )
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+   "Komencigi aŭ rekomencigi serĉo de trompoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
+   "Premu dekstren aŭ maldekstren por ŝanĝi la bitgrandon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
+   "Pezkomenca"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
+   "Pezkomenca: 258 = 0x0102, pezfina: 258 = 0x0201"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
+   "Priserĉi memoron por valoroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
+   "Premu dekstren aŭ maldekstren por ŝanĝi la valorojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
+   "Egala al %u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
+   "Priserĉi memoron por valoroj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
+   "Malpli ol antaŭe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
+   "Priserĉi memoron por valoroj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
+   "Malpli ol aŭ egala al antaŭe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
+   "Priserĉi memoron por valoroj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
+   "Pli granda ol antaŭe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
+   "Priserĉi memoron por valoroj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
+   "Pli granda ol aŭ egala al antaŭe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
+   "Priserĉi memoron por valoroj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
+   "Egala al antaŭe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
+   "Priserĉi memoron por valoroj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
+   "Ne egala al antaŭe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
+   "Priserĉi memoron por valoroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
+   "Premu dekstren aŭ maldekstren por ŝanĝi la valorojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
+   "Egala al antaŭe +%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
+   "Priserĉi memoron por valoroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
+   "Premu dekstren aŭ maldekstren por ŝanĝi la valorojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
+   "Egala al antaŭe −%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "Aldoni %u kongruojn al la listo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
+   "Forigi kongruon #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
+   "Krei kodan kongruon #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
+   "Adreson de kongruo: %08X Masko: %02X"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
+   "Trompdosiero (anstataŭigi)"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Append) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
+   "Trompdosiero (postaldoni)"
+   )
 
 /* Quick Menu > Cheats > Cheat Details */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
+   "Detajloj de trompo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_IDX,
+   "Indekso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_IDX,
+   "Pozicio de trompo en listo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
+   ""
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    "Priskribo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
+   "Traktilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
+   "Memora serĉogrando"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
+   "Speco"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
+   "Valoro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
+   "Memoradreso"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
+   "Foliumi adreson: %08X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
+   "Memoradresa masko"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+   "Adresa bitmasko kiam memora serĉogrando < 8 bitoj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+   "Nombro da iteracioj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+   "La nombro da fojoj, ke la trompo estos aplikita. Uzu kun la aliaj du opcioj pri iteracio por influi grandajn memorareojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   "Pliigi adreson ĉiu iteracio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   "Post ĉiu iteracio, la \"Memoradreso\" estos pliigita per ĉi tiu nombro oble la \"Memora serĉogrando\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+   "Pliigi valoron ĉiu iteracio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+   "Post ĉiu iteracio, la \"Valoro\" estos pliigita per ĉi tiu kvanto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
+   "Vibri kiam memoro..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
+   "Vibra valoro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
+   "Vibrigi konektejon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
+   "Ĉefa vibra daŭro (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
+   "Akcesora vibra forto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
+   "Akcesora vibra daŭro (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
+   "Kodo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
+   "Aldoni novan trompon post ĉi tiu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
+   "Aldoni novan trompon antaŭ ĉi tiu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
+   "Kopi ĉi tiun trompon posten"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
+   "Kopi ĉi tiun trompon antaŭen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
+   "Forigi ĉi tiun trompon"
    )
 
 /* Quick Menu > Disc Control */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Indekso de kuranta disko"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Elekti kurantan diskon el listo de disponeblaj kopioj. Virtuala diskpleto povas daŭri fermita."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Elĵeti diskon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+   "Malfermi virtualan diskpleton."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   "Enmeti diskon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   "Fermi virtualan diskpleton."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+   "Ŝargi novan diskon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Elekti novan diskon el la dosiersistemo kaj postaldoni ĝin en la indeksolisto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
+   "Elekti novan diskon el la dosiersistemo kaj postaldoni ĝin en la indeksolisto.\nNOTO: Ĉi tio estas malnova funkcio. Oni anstataŭe rekomendas uzi ludlistojn M3U por plurdiskaj titoloj."
+   )
 
 /* Quick Menu > Shaders */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+   "Videaj ombrigiloj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+   "Ebligi videombrigilan ĉenstablon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+   "Kontroli ŝanĝojn en ombrigilaj dosieroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
+   "Aŭtomate apliki ŝanĝojn faritaj al ombrigildosieroj sur disko."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   "Kontroli ombrigildosierojn por novaj ŝanĝoj. Post konservado de ŝanĝoj al ombrigilo sur disko, ĝi aŭtomate estos denove tradukita kaj aplikita al la enhavo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Memori laste uzitan ombrigilan dosierujon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Malfermi dosieresplorilon ĉe la laste uzata dosierujo kiam ŝargante ombrigilajn antaŭagordojn kaj aplikojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
+   "Ŝargi antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
+   "Ŝargi ombrigilan antaŭagordon. La ombrigila ĉenstablo automate agordiĝos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
+   "Ŝargi ombrigilan antaŭagordon rekte. La ombrigila menuo estas ĝisdatigita laŭe.\nLa skalfaktoro montrita en la menuo nur estas fidinda se la antaŭagordo uzas simplajn skalmetodojn (ekz. fontskaladon, saman skalfaktoron por X/Y)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "Antaŭaldoni antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "Antaŭaldoni antaŭagordon al la kurante ŝargita antaŭagordo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "Postaldoni antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "Postaldoni antaŭagordon al la kurante ŝargita antaŭagordo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Administri antaŭagordoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Konservi aŭ forigi ombrigilajn antaŭagordojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Aktiva antaŭagordan dosieron"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "La kurante ombrigila antaŭagordo uzata."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
-   "Apply Shader Changes"
+   "Apliki ŝanĝojn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+   "Ŝanĝoj al la ombrigila konfiguraĵo efikos tuje. Uzu ĉi tion se vi ŝanĝis la kvanton da ombrigilaj aplikoj, filtrado, skalo de FBO, kc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
+   "Post ŝanĝado de ombrigilaj agordoj (kiel kvanto da ombrigilaj aplikoj, filtrado, skalo de FBO), uzu ĉi tion por apliki la ŝanĝojn.\nLa ŝanĝo de ĉi tiaj ombrigilaj agordoj estas operacio iom multekosta, do ĝi devas esti farata eksplicite.\nKiam oni aplikas ombrigilojn, la ombrigilaj agordoj estas konservataj en portempa dosiero (retroarch.slangp/.cgp/.glslp) kaj ŝargitaj. La dosiero daŭras post kiam oni forlasas RetroArch kaj estas konservata en la Ombrigila dosierujo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
-   "Preview Shader Parameters"
+   "Ombrigilaj parametroj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
+   "Modifi la kurantan ombrigilon rekte. Ŝanĝoj ne estos konservataj en la antaŭagorddosiero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
+   "Ombrigilaj aplikoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
+   "Pliigas aŭ malpliigas la kvanton da aplikoj de ombrigilaj ĉenstabloj. Apartaj ombrigiloj povas esti ligitaj al ĉiu ĉenstablo, kaj konfiguri sian skalon kaj filtradon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
+   "RetroArch permesas miksi multajn ombrigilojn kun arbitraj ombrigilaj aplikoj, kun propraj aparataraj filtroj kaj skalfaktoroj.\nĈi tiu opcio specifas la nombron da ombrigilaj aplikoj uzotaj. Se oni agordas ĉi tion al 0, kaj uzas Apliki ombrigilajn ŝanĝojn, oni uzas \"malplenan\" ombrigilon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER,
+   "Ombrigilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
+   "Dosierindiko al ombrigilo. Ĉiuj ombrigiloj devas esti samspeca (tio estas. Cg, GLSL aŭ Slang). Agordi Ombrigilan dosierujon por agordi kie la dosieresplorilo komencas serĉi ombrigilojn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILTER,
+   "Filtrilo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
+   "Aparatara filtrilo por ĉi tiu apliko. Se \"Defaŭlta\" estas agordita, filtrilo estos ĉu \"Lineara\" ĉu \"Plej proksima\", depende de la agordo \"Dulineara filtrado\" en la agordoj Video."
+  )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCALE,
+   "Skalo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
+   "Skalo por ĉi tiu apliko. La skalfaktoro akumuliĝas, tio estas 2x por la unua apliko kaj 2x por la dua apliko rezultos en totala skalo 4x.\nSe estas skalfaktoro por la lasta apliko, la rezulto estas etendita plenekranen kun la defaŭlta filtrilo, depende de la agordo Dulineara filtrado en la agordoj Video.\nSe estas agordita al \"Defaŭlta\", ĉu skalo 1x, ĉu etendi plenekranen estos uzata depende ĉu ĝi estas la lasta apliko, ĉu ne."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Simplaj anatŭagordoj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Konservi ombrigilan antaŭagordon, kiu havas ligon al la originala antaŭagordo ŝargita kaj inkluzivas nur la parametraj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Konservi kurantan antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Konservi la kurantan ombrigilan antaŭagordon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+   "Konservi antaŭagordon kiel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+   "Konservi la kurantajn ombrigilajn agordojn kiel nova ombrigila antaŭagordo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "Konservi ĉiean antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "Konservi la kurantajn ombrigilajn agordojn kiel la defaŭlta ĉiea agordo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "Konservi kernan antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "Konservi la kurantajn ombrigilajn agordojn kiel la defaŭltaj por ĉi tiu kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "Konservi enhavdosierujan antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "Konservi la kurantajn ombrigilajn agordojn kiel la defaŭltaj por ĉiuj dosieroj en la kuranta enhava dosierujo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "Konservi ludan antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "Konservi la kurantajn ombrigilajn agordojn kiel la defaŭltaj agordoj por la enhavo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
+   "Neniaj aŭtomataj ombrigilaj antaŭagordoj trovitaj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "Forigi ĉiean antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "Forigi la ĉiean antaŭagordon, uzata de ĉiuj enhavoj kaj ĉiuj kernoj."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "Forigi kernan antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "Forigi la kernan antaŭagordon, uzata de ĉiuj enhavoj rulataj per la kurante ŝargita kerno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "Forigi enhavdosierujan antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "Forigi la enhavdosierujan antaŭagordon, kiu estas uzata de ĉiu enhavo en la kurante funkcianta dosierujo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "Forigi ludan antaŭagordon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "Forigi la ludan antaŭagordon, kiu estas uzata nur por la specifa ludo priparolata."
+   )
 
 /* Quick Menu > Shaders > Shader Parameters */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
+   "Neniaj ombrigilaj parametroj"
+   )
 
 /* Quick Menu > Overrides */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
+   "Aktiva transpasdosiero"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
+   "La kurante transpasdosiero uzata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
+   "Ŝargi transpasdosieron"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Konservi kernajn transpasojn"
@@ -9554,6 +10138,10 @@ MSG_HASH(
 
 /* Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLED,
+   ""
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 
@@ -9737,6 +10325,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
    "Movie playback ended."
+   )
+MSG_HASH(
+   MSG_SHADER,
+   "Ombrigilo"
    )
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
