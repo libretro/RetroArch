@@ -21004,7 +21004,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (     memcmp(settings->arrays.menu_driver, "glui", 5) == 0
+         if (     memcmp(settings->arrays.menu_driver, "rgui", 5) == 0
                || memcmp(settings->arrays.menu_driver, "xmb", 4) == 0
                || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
          {
