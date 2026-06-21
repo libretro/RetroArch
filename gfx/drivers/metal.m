@@ -4384,7 +4384,7 @@ typedef struct MTLALIGN(16)
    id<MTLTexture> _src; /* source texture */
    bool _srcDirty;
 
-   id<MTLSamplerState> _samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
+   id<MTLSamplerState> _samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX][2];
    struct video_shader *_shader;
 
    engine_t _engine;
@@ -4507,15 +4507,25 @@ typedef struct MTLALIGN(16)
       sd.rAddressMode        = sd.sAddressMode;
       sd.minFilter           = MTLSamplerMinMagFilterLinear;
       sd.magFilter           = MTLSamplerMinMagFilterLinear;
+      sd.mipFilter           = MTLSamplerMipFilterNotMipmapped;
 
       id<MTLSamplerState> ss = [_context.device newSamplerStateWithDescriptor:sd];
-      _samplers[RARCH_FILTER_LINEAR][i] = ss;
+      _samplers[RARCH_FILTER_LINEAR][i][0] = ss;
+      
+      sd.mipFilter           = MTLSamplerMipFilterLinear;
+      ss = [_context.device newSamplerStateWithDescriptor:sd];
+      _samplers[RARCH_FILTER_LINEAR][i][1] = ss;
 
       sd.minFilter           = MTLSamplerMinMagFilterNearest;
       sd.magFilter           = MTLSamplerMinMagFilterNearest;
+      sd.mipFilter           = MTLSamplerMipFilterNotMipmapped;
 
       ss                     = [_context.device newSamplerStateWithDescriptor:sd];
-      _samplers[RARCH_FILTER_NEAREST][i] = ss;
+      _samplers[RARCH_FILTER_NEAREST][i][0] = ss;
+      
+      sd.mipFilter           = MTLSamplerMipFilterNearest;
+      ss = [_context.device newSamplerStateWithDescriptor:sd];
+      _samplers[RARCH_FILTER_NEAREST][i][1] = ss;
    }
 }
 
@@ -4525,9 +4535,15 @@ typedef struct MTLALIGN(16)
    for (i = 0; i < RARCH_WRAP_MAX; i++)
    {
       if (smooth)
-         _samplers[RARCH_FILTER_UNSPEC][i] = _samplers[RARCH_FILTER_LINEAR][i];
+      {
+         _samplers[RARCH_FILTER_UNSPEC][i][0] = _samplers[RARCH_FILTER_LINEAR][i][0];
+         _samplers[RARCH_FILTER_UNSPEC][i][1] = _samplers[RARCH_FILTER_LINEAR][i][1];
+      }
       else
-         _samplers[RARCH_FILTER_UNSPEC][i] = _samplers[RARCH_FILTER_NEAREST][i];
+      {
+         _samplers[RARCH_FILTER_UNSPEC][i][0] = _samplers[RARCH_FILTER_NEAREST][i][0];
+         _samplers[RARCH_FILTER_UNSPEC][i][1] = _samplers[RARCH_FILTER_NEAREST][i][1];
+      }
    }
 }
 
@@ -4812,7 +4828,8 @@ typedef struct MTLALIGN(16)
          int binding        = texture_sem->binding;
          id<MTLTexture> tex = (__bridge id<MTLTexture>)*(void **)texture_sem->texture_data;
          textures[binding]  = tex;
-         samplers[binding]  = _samplers[texture_sem->filter][texture_sem->wrap];
+         
+         samplers[binding]  = _samplers[texture_sem->filter][texture_sem->wrap][tex.mipmapLevelCount > 1 ? 1 : 0];
          texture_sem++;
       }
 
@@ -4827,7 +4844,17 @@ typedef struct MTLALIGN(16)
       [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 
       if (!backBuffer)
+      {
          [rce endEncoding];
+         
+         if (_engine.pass[i].rt.view.mipmapLevelCount > 1)
+         {
+            id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
+            [bce generateMipmapsForTexture:(_engine.pass[i].rt.view)];
+            [bce endEncoding];
+            bce = nil;
+         }
+      }
 
       _texture = _engine.pass[i].rt.view;
    }
@@ -4931,6 +4958,7 @@ typedef struct MTLALIGN(16)
 
       if (   (!lastPass)
           || forceAllocForHDR
+          || shader_pass->feedback
           || (width  != _viewport->width)
           || (height != _viewport->height)
           || fmt != MTLPixelFormatBGRA8Unorm)
@@ -4939,13 +4967,24 @@ typedef struct MTLALIGN(16)
          _engine.pass[i].viewport.height = height;
          _engine.pass[i].viewport.znear  = 0.0;
          _engine.pass[i].viewport.zfar   = 1.0;
+         
+         bool useMipMap = false;
+         if (!lastPass)
+         {
+           /* mipmap refers to the input of the pass */
+            struct video_shader_pass *nextPass = &_shader->pass[i + 1];
+            if (nextPass && nextPass->mipmap)
+               useMipMap = true;
+         }
 
-         MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:fmt
-            width:width height:height mipmapped:false];
-         td.storageMode = MTLStorageModePrivate;
+         MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:fmt width:width height:height mipmapped:(useMipMap ? YES : NO)];
+        // td.storageMode = MTLStorageModePrivate;
          td.usage       = MTLTextureUsageShaderRead
                         | MTLTextureUsageRenderTarget;
-
+         
+         if (useMipMap)
+            td.mipmapLevelCount = [self getMipLevels:(unsigned)width height:(unsigned)height];
+         
          [self _initTexture:&_engine.pass[i].rt withDescriptor:td];
 
          if (shader_pass->feedback)
@@ -4991,6 +5030,21 @@ typedef struct MTLALIGN(16)
    }
 
    free(shader);
+}
+
+- (unsigned)getMipLevels:(unsigned)_width height:(unsigned)_height
+{
+   unsigned levels = 0;
+   unsigned size = _width > _height ? _width : _height;
+   if (!size)
+      size = 1;
+   
+   while(size)
+   {
+      size >>= 1;
+      levels++;
+   }
+   return levels;
 }
 
 - (BOOL)setShaderFromPath:(NSString *)path
@@ -5242,6 +5296,8 @@ typedef struct MTLALIGN(16)
             shader->pass[i].source.string.fragment = NULL;
          }
       }
+      
+      id<MTLBlitCommandEncoder> bce = [_context.blitCommandBuffer blitCommandEncoder];
 
       for (i = 0; i < shader->luts; i++)
       {
@@ -5253,20 +5309,32 @@ typedef struct MTLALIGN(16)
 
          if (!image_texture_load(&image, shader->lut[i].path))
             return NO;
+         
+         bool mipmapped = shader->lut[i].mipmap;
 
          MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
-             width:image.width height:image.height
-             mipmapped:shader->lut[i].mipmap];
+             width:image.width height:image.height mipmapped:(mipmapped ? YES : NO)];
+         
          td.usage                 = MTLTextureUsageShaderRead;
+         
+         if (mipmapped)
+            td.mipmapLevelCount = [self getMipLevels:image.width height:image.height];
+         
          [self _initTexture:&_engine.luts[i] withDescriptor:td];
 
          [_engine.luts[i].view replaceRegion:MTLRegionMake2D(0, 0, image.width, image.height)
                                  mipmapLevel:0 withBytes:image.pixels
                                  bytesPerRow:4 * image.width];
 
-         /* TODO/FIXME (sgc): generate mip maps */
+         if (mipmapped)
+            [bce generateMipmapsForTexture:_engine.luts[i].view];
+         
          image_texture_free(&image);
       }
+      [bce endEncoding];
+      [_context.commandBuffer commit];
+      [_context.commandBuffer waitUntilCompleted];
+      
       _shader = shader;
       shader = nil;
    }
