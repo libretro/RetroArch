@@ -347,6 +347,10 @@ static void runloop_game_ai_think_cb(void *userdata,
 #define PERF_LOG_FMT "[PERF] Avg (%s): %llu ticks, %llu runs.\n"
 #endif
 
+static const int direct_state_slots[10] = {
+   0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+};
+
 static runloop_state_t runloop_state      = {0};
 
 /* GLOBAL POINTER GETTERS */
@@ -5592,6 +5596,15 @@ static bool display_menu_libretro(
 }
 #endif
 
+#define DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(num) \
+   { \
+      if (settings->ints.savestate_max_direct_slot >= num) \
+      { \
+         HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT ## num ## _KEY, CMD_EVENT_SAVE_STATE_SLOT, true, &direct_state_slots[num]); \
+         HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT ## num ## _KEY, CMD_EVENT_LOAD_STATE_SLOT, true, &direct_state_slots[num]); \
+      } \
+   } \
+
 #define HOTKEY_CHECK(cmd1, cmd2, cond, cond2) \
    { \
       static bool old_pressed                   = false; \
@@ -7282,6 +7295,18 @@ static enum runloop_state_enum runloop_check_state(
    /* Check save state hotkeys */
    HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE, true, NULL);
    HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE, true, NULL);
+
+   /* There may be a better way to do this - fix it up if so */
+   DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(0);
+   DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(1);
+   DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(2);
+   DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(3);
+   DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(4);
+   DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(5);
+   DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(6);
+   DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(7);
+   DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(8);
+   DIRECT_SAVESTATE_SLOT_HOTKEY_CHECKS(9);
 
    /* Check VRR runloop hotkey */
    HOTKEY_CHECK(RARCH_VRR_RUNLOOP_TOGGLE, CMD_EVENT_VRR_RUNLOOP_TOGGLE, true, NULL);
