@@ -2549,6 +2549,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS, false);
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
 #endif
+   SETTING_BOOL("input_android_system_keyboard", &settings->bools.input_android_system_keyboard, true, DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD, false);
 
 
 
@@ -9821,7 +9822,7 @@ bool input_remapping_save_file(const char *path)
          {
             if (remap_id == RARCH_UNMAPPED)
             {
-               if (!runloop_st->system.input_desc_btn[i][j] 
+               if (!runloop_st->system.input_desc_btn[i][j]
                 || !*runloop_st->system.input_desc_btn[i][j])
                   config_unset(conf, _ident);
                else
