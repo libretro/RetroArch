@@ -8353,6 +8353,10 @@ unsigned menu_displaylist_build_list(
                 MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
                 PARSE_ACTION, true) == 0)
                 count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                MENU_ENUM_LABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                PARSE_ONLY_BOOL, true) == 0)
+                count++;
 #endif
 
 #ifdef HAVE_LIBNX

@@ -1043,6 +1043,30 @@ void input_keyboard_line_append(
 void input_keyboard_line_clear(input_driver_state_t *input_st);
 void input_keyboard_line_free(input_driver_state_t *input_st);
 
+#ifdef ANDROID
+/**
+ * android_keyboard_start:
+ * @buffer_ptr               : Pointer to the keyboard line buffer.
+ * @size_ptr                 : Pointer to the keyboard line size.
+ * @ptr_ptr                  : Pointer to the keyboard line cursor.
+ * @label                    : Hint shown on the keyboard, or NULL.
+ * @cb                       : Line complete callback function.
+ * @userdata                 : Userdata passed to the callback.
+ *
+ * Raises the native Android (IME) keyboard for menu text entry, made to
+ * mirror the iOS ios_keyboard_* hooks. Swaps the custom on-screen keyboard
+ * for the system soft keyboard, enabling paste and password managers.
+ * Implemented in input/drivers/android_input.c.
+ *
+ * Returns: true if the keyboard was shown.
+ **/
+bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
+      size_t *ptr_ptr, const char *label,
+      input_keyboard_line_complete_t cb, void *userdata);
+bool android_keyboard_active(void);
+void android_keyboard_end(void);
+#endif
+
 /**
  * input_keyboard_start_line:
  * @userdata                 : Userdata.

@@ -16586,6 +16586,23 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+#ifdef ANDROID
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_android_system_keyboard,
+                  MENU_ENUM_LABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                  DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
+
             {
                /* Auto (0) uses gravity detection, only available on Android.
                 * Non-Android defaults to 1 (0° neutral). */

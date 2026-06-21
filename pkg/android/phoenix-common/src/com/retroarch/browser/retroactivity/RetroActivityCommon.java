@@ -43,6 +43,11 @@ import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.Surface;
 import android.view.WindowManager;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.app.UiModeManager;
 import android.os.BatteryManager;
 import android.os.Build;
@@ -52,6 +57,10 @@ import android.os.Vibrator;
 import android.os.VibrationEffect;
 import android.os.VibratorManager;
 import android.util.Log;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.EditText;
+import android.widget.TextView;
 
 
 import java.io.File;
@@ -960,7 +969,116 @@ public class RetroActivityCommon extends NativeActivity
     PlayCoreManager.getInstance().deleteCore(coreName);
   }
 
+  /////////////// System (IME) keyboard ///////////////
 
+  /* A near-invisible EditText that proxies the system soft keyboard for the
+   * menu's text entry, so users get clipboard paste and password managers
+   * (which the built-in on-screen keyboard cannot offer). Committed/pasted
+   * text is forwarded to native via onSystemKeyboardInput(). */
+  private EditText keyboardEditText;
+  private boolean  keyboardActive;
+  private boolean  keyboardSuppressWatcher;
+
+  /**
+   * Raises the native system keyboard for menu text entry.
+   *
+   * Called from native code (the menu on-screen keyboard path). Runs the
+   * UI work on the UI thread.
+   *
+   * @param label       Hint shown in the keyboard field, or null.
+   * @param initialText Text to pre-fill the field with, or null.
+   */
+  public void showKeyboard(final String label, final String initialText) {
+    runOnUiThread(new Runnable() {
+      @Override public void run() {
+        if (keyboardEditText == null) {
+          keyboardEditText = new EditText(RetroActivityCommon.this) {
+            @Override public boolean onKeyPreIme(int keyCode, KeyEvent event) {
+              /* BACK while the keyboard is up = dismiss without confirming. */
+              if (keyCode == KeyEvent.KEYCODE_BACK
+                    && event.getAction() == KeyEvent.ACTION_UP
+                    && keyboardActive) {
+                hideKeyboard();
+                onSystemKeyboardInput(null, true);
+                return true;
+              }
+              return super.onKeyPreIme(keyCode, event);
+            }
+          };
+          keyboardEditText.setSingleLine(true);
+          keyboardEditText.setImeOptions(EditorInfo.IME_ACTION_DONE
+                | EditorInfo.IME_FLAG_NO_EXTRACT_UI
+                | EditorInfo.IME_FLAG_NO_FULLSCREEN);
+          keyboardEditText.setAlpha(0.0f);
+
+          keyboardEditText.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void afterTextChanged(Editable s) {
+              if (keyboardActive && !keyboardSuppressWatcher)
+                onSystemKeyboardInput(s.toString(), false);
+            }
+          });
+
+          keyboardEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+              if (actionId == EditorInfo.IME_ACTION_DONE
+                    || actionId == EditorInfo.IME_ACTION_GO
+                    || actionId == EditorInfo.IME_ACTION_SEARCH
+                    || actionId == EditorInfo.IME_ACTION_NEXT
+                    || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                String text = v.getText().toString();
+                hideKeyboard();
+                onSystemKeyboardInput(text, true);
+                return true;
+              }
+              return false;
+            }
+          });
+
+          addContentView(keyboardEditText, new ViewGroup.LayoutParams(1, 1));
+        }
+
+        keyboardActive = true;
+        keyboardSuppressWatcher = true;
+        keyboardEditText.setText(initialText != null ? initialText : "");
+        keyboardEditText.setSelection(keyboardEditText.getText().length());
+        keyboardSuppressWatcher = false;
+        if (label != null)
+          keyboardEditText.setHint(label);
+        keyboardEditText.setVisibility(View.VISIBLE);
+        keyboardEditText.setFocusable(true);
+        keyboardEditText.setFocusableInTouchMode(true);
+        keyboardEditText.requestFocus();
+
+        InputMethodManager imm = (InputMethodManager)
+              getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null)
+          imm.showSoftInput(keyboardEditText, InputMethodManager.SHOW_FORCED);
+      }
+    });
+  }
+
+  /**
+   * Dismisses the system keyboard.
+   *
+   * Called from native code and after the user confirms or cancels.
+   */
+  public void hideKeyboard() {
+    runOnUiThread(new Runnable() {
+      @Override public void run() {
+        if (keyboardEditText == null)
+          return;
+        keyboardActive = false;
+        InputMethodManager imm = (InputMethodManager)
+              getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null)
+          imm.hideSoftInputFromWindow(keyboardEditText.getWindowToken(), 0);
+        keyboardEditText.clearFocus();
+        keyboardEditText.setVisibility(View.GONE);
+      }
+    });
+  }
 
   /////////////// JNI methods ///////////////
 
@@ -989,6 +1107,14 @@ public class RetroActivityCommon extends NativeActivity
    * Called when the user grants access to a Storage Access Framework tree.
    */
   public native void safTreeAdded(String tree);
+
+  /**
+   * Forwards system-keyboard text to native menu input.
+   *
+   * @param text     Current text, or null to cancel (keyboard dismissed).
+   * @param finished true when the user confirmed (Done/Enter) or cancelled.
+   */
+  public native void onSystemKeyboardInput(String text, boolean finished);
 
 
 
