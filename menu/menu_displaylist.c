@@ -5267,7 +5267,7 @@ static unsigned menu_displaylist_parse_content_information(
 
             if (*tmp)
                if (menu_entries_append(info_list, tmp,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PLAY_COUNT),
+                     MENU_ENUM_LABEL_CONTENT_INFO_PLAY_COUNT_STR,
                      MENU_ENUM_LABEL_CONTENT_INFO_PLAY_COUNT,
                      0, 0, 0, NULL))
                   count++;
