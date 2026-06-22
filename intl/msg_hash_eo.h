@@ -165,7 +165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "Montri ĉiujn agordojn rilatantajn kun konfiguro."
+   "Montri ĉiujn agordojn rilatajn kun konfiguro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -268,7 +268,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "Elŝuiti kernon"
+   "Elŝuti kernon"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
@@ -1818,7 +1818,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   ""
+   "Enmetas nigrajn filmerojn inter filmeroj por plibonigita mov-klareco. Uzu nur la opcion designitan por la kuranta ofteco de aktualigo de via ekrano. Ne uzota por oftecoj de aktualigo, kiuj ne estas obloj de 60Hz, kiel 144Hz, 165Hz, kc. Ne kombinu ĝin kun permut-intervalo > 1, subfilmeroj, bildera prokrasto aŭ sinkronigi al filmerrapido de ĝusta enhavo. Estas bone lasante la VRR de sistemo, sed ne eblas uzi tiun agordon. Se vi rimarkas AJNAN tempan konservon de bildo, vi devus malebligi je 120[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
@@ -1838,7 +1838,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "AVERTO: Rapida flagro povus kaŭzi bilda daŭro (\"image presistence\") en kelkaj ekranoj. Uzu ĝin je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subfilmeroj dividante la ekrano supren vertikale kaj bildigante ĉiu parto de la ekrano laŭ kiom da subfilmeroj estas."
+   "AVERTO: Rapida flagro povus kaŭzi bildan daŭron (\"image presistence\") en kelkaj ekranoj. Uzu ĝin je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subfilmeroj dividante la ekrano supren vertikale kaj bildigante ĉiu parto de la ekrano laŭ kiom da subfilmeroj estas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
@@ -1922,11 +1922,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
-   "Apliki videan filtrilon funkciiganta de CPU. Povas multe influi rendimenton. Kelkaj videaj filtriloj povas funkcii nur por kernoj, kiuj uzas 32-bitan aŭ 16-bitan koloradon. Dinamike ligitaj videfiltrilaj bibliotekoj estas elekteblaj."
+   "Apliki videan filtrilon funkciigantan de CPU. Povas multe influi rendimenton. Kelkaj videaj filtriloj povas funkcii nur por kernoj, kiuj uzas 32-bitan aŭ 16-bitan koloradon. Dinamike ligitaj videfiltrilaj bibliotekoj estas elekteblaj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
-   "Apliki videan filtrilon funkciiganta de CPU. Povas multe influi rendimenton. Kelkaj videaj filtriloj povas funkcii nur por kernoj, kiuj uzas 32-bitan aŭ 16-bitan koloradon. Integritaj videfiltrilaj bibliotekoj estas elekteblaj."
+   "Apliki videan filtrilon funkciigantan de CPU. Povas multe influi rendimenton. Kelkaj videaj filtriloj povas funkcii nur por kernoj, kiuj uzas 32-bitan aŭ 16-bitan koloradon. Integritaj videfiltrilaj bibliotekoj estas elekteblaj."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -3122,7 +3122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "Influas kiel enigsondado estas farata en RetroArch.\nFrua - Enigsondado estas plenumigita antaŭ ol la filmero estas prilaborita.\nNormala - Enigsondado estas plenumigita kiam la sondado estas postulita.\nMalfrua - Enigsondado estas plenumigita ĉe la unua postulo de stato per filmero.\nAgordante ĝin je \"Frua\" aŭ \"Malfrua\" povas rezulti en malpli da respondotempo, dependante de via konfiguro. Ĝi estos ignorata kiam uzante retludo."
+   "Influas kiel enigsondado estas farata en RetroArch.\nFrua - Enigsondado estas plenumigita antaŭ ol la filmero estas prilaborita.\nNormala - Enigsondado estas plenumigita kiam la sondado estas postulita.\nMalfrua - Enigsondado estas plenumigita ĉe la unua postulo de stato per filmero.\nAgordante ĝin je \"Frua\" aŭ \"Malfrua\" povas rezulti en malpli da respondotempo, dependante de via konfiguro. Ĝi estos ignorata kiam uzante retludon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -4757,7 +4757,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
-   "Antaŭ ol farante reludadon, la indekso de reludadoj estas aŭtomate pliigita. Kiam ŝargante enhavon, la indekso estos agordita al la plej alta inekso."
+   "Antaŭ ol farante reludadon, la indekso de reludadoj estas aŭtomate pliigita. Kiam ŝargante enhavon, la indekso estos agordita al la plej alta indekso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
@@ -6749,7 +6749,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   "Montri la opcion \"Agordi kernan asocion\" kiam enhavo ne estas ruliĝanta."
+   "Montri la opcion \"Agordi kernan asocion\" kiam enhavo ne ruliĝas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
@@ -6757,7 +6757,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   "Montri la opcion \"Rekomencigi kernan asocion\" kiam enhavo ne estas ruliĝanta."
+   "Montri la opcion \"Rekomencigi kernan asocion\" kiam enhavo ne ruliĝas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
@@ -6765,7 +6765,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   "Montri la opcion \"Elŝuti bildetojn\" kiam enhavo ne estas ruliĝanta."
+   "Montri la opcion \"Elŝuti bildetojn\" kiam enhavo ne ruliĝas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
@@ -7424,7 +7424,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   ""
+   "Direkti retludajn konektojn trans peranta servilo. Utila se la gastiganto estas trans fajroŝirmilo aŭ havas problemojn de NAT/UPnP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -7746,7 +7746,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Limigi la nombron da eroj en la \"Preferata\" ludlisto. Kiam lia limigo estas atingita, novaj aldonoj estos konservataj ĝis malnovaj eroj estas forigitaj. Agordi je valoro -1 permesas \"senlimaj\" eroj.\nAVERTO: Redukti la valoron forigos ekzistantajn erojn!"
+   "Limigi la nombron da eroj en la \"Preferata\" ludlisto. Kiam la limigo estas atingita, novaj aldonoj estos konservataj ĝis malnovaj eroj estas forigitaj. Agordi je valoro -1 permesas \"senlimaj\" eroj.\nAVERTO: Redukti la valoron forigos ekzistantajn erojn!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -8755,7 +8755,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
-   "Kiam ebligita, ĉiu ekzistanta ludlisto estos forigita antaŭ skanante enhavon. Kiam malebligite, ekzistantaj ludlistaj eroj estas konservataj kaj nur enhavo kurante mankanta de la ludlisto estos aldonita."
+   "Kiam ebligita, ĉiu ekzistanta ludlisto estos forigita antaŭ skanado de enhavo. Kiam malebligite, ekzistantaj ludlistaj eroj estas konservataj kaj nur enhavo kurante mankanta de la ludlisto estos aldonita."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
@@ -13124,12 +13124,24 @@ MSG_HASH(
    "Neniuj ludlistoj trovitaj"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
+   "Kongruanta enhavo trovita"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
+   "Malsukcesis trovi kongruantan enhavon per CRC aŭ dosiernomo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATUS,
+   "Stato"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
-   "System BGM Enable"
+   "Sistema fonmuziko"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
-   "help"
+   "Helpo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
@@ -13138,14 +13150,534 @@ MSG_HASH(
 
 /* Discord Status */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
+   "Enluda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
+   "Enluda (paŭzita)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+   "Ludante"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
+   "Paŭzita"
+   )
 
 /* Notifications */
 
+MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+   "Retludo komencos kiam enhavo estas ŝargita."
+   )
+MSG_HASH(
+   MSG_NETPLAY_NEED_CONTENT_LOADED,
+   "Enhavo devas esti ŝargita antaŭ komenci retludon."
+   )
+MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   ""
+   )
+MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   "Via grafika pelilo ne estas kongrua kun la kuranta videa pelilo en RetroArch, retropaŝante al la pelilo %s. Bonvolu rekomencigi RetroArch, por ke la ŝanĝoj efikiĝu."
+   )
+MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
+   "Sukcesis instali kernon"
+   )
+MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
+   "Malsukcesis instali kernon"
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
+   "Premu dekstren kvin fojojn por forigi ĉiujn trompojn."
+   )
+MSG_HASH(
+   MSG_AUDIO_MIXER_VOLUME,
+   "Ĉiea sonmiksila volumeno"
+   )
+MSG_HASH(
+   MSG_NETPLAY_LAN_SCAN_COMPLETE,
+   "Kompleta retluda skanado."
+   )
+MSG_HASH(
+   MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
+   "Pardonu, nerealigite: kernoj, kiuj ne demandas enhavon, ne povas partopreni en retludo."
+   )
+MSG_HASH(
+   MSG_NATIVE,
+   "Indiĝena"
+   )
+MSG_HASH(
+   MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
+   "Nekonata retluda komando ricevita"
+   )
+MSG_HASH(
+   MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
+   "Dosiero jam ekzistas. Konservante al restaŭrkopia bufro."
+   )
+MSG_HASH(
+   MSG_GOT_CONNECTION_FROM,
+   "Ricevis konekton de: \"%s\""
+   )
+MSG_HASH(
+   MSG_GOT_CONNECTION_FROM_NAME,
+   "Ricevis konekton de: \"%s (%s)\""
+   )
+MSG_HASH(
+   MSG_PUBLIC_ADDRESS,
+   "Retluda konekteja mapado sukcesa"
+   )
+MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "Ekstera reto havas privatan aŭ kunhavigatan adreson. Konsideru uzi relajsan servilon."
+   )
+MSG_HASH(
+   MSG_UPNP_FAILED,
+   "Mapado de retluda konektejo UPnP malsukcesis"
+   )
+MSG_HASH(
+   MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
+   "Neniu argumentoj provizitaj kaj neniu menuo integrita, montrante helpon..."
+   )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Atendante klienton..."
    )
+MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Via ĉambro ne estas konektebla de la interreto."
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
+   "Vi forlasis la ludon"
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
+   "Vi aliĝis kiel ludanto %u"
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+   "Vi aliĝis kun enigaparatoj %.*s"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLAYER_S_LEFT,
+   "Ludanto %.*s forlasis la ludon"
+   )
+MSG_HASH(
+   MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+   "%.*s aliĝis kiel ludanto %u"
+   )
+MSG_HASH(
+   MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+   "%.*s aliĝis kun enigaparatoj %.*s"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d ludanto(j)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d ludanto(j) (%d spektanta(j))"
+   )
+MSG_HASH(
+   MSG_NETPLAY_NOT_RETROARCH,
+   "Retluda konektoprovo malsukcesis ĉar la samtavolano ne rulas RetroArch, aŭ rulas malnovan version de RetroArch."
+   )
+MSG_HASH(
+   MSG_NETPLAY_OUT_OF_DATE,
+   "Retluda samtavolano rulas malnovan version de RetroArch. Ne eblas konekti."
+   )
+MSG_HASH(
+   MSG_NETPLAY_DIFFERENT_VERSIONS,
+   "AVERTO: Retluda samtavolano rulas malsaman version de RetroArch. Se problemoj okazas, uzu la saman version."
+   )
+MSG_HASH(
+   MSG_NETPLAY_DIFFERENT_CORES,
+   "Retluda samtavolano rulas malsaman kernon. Ne eblas konekti."
+   )
+MSG_HASH(
+   MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+   ""
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENDIAN_DEPENDENT,
+   "Ĉi tiu kerno ne subtenas retludadon inter ĉi tiuj platformoj"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLATFORM_DEPENDENT,
+   "Ĉi tiu kerno ne subtenas retludadon inter malsamaj platformoj"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_PASSWORD,
+   "Enigi retludan servilan pasporton:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Enigi reludan babilejan mesaĝon:"
+   )
+MSG_HASH(
+   MSG_DISCORD_CONNECTION_REQUEST,
+   "Ĉu vi volas ebligi konekton de uzanto:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_INCORRECT_PASSWORD,
+   "Malĝusta pasvorto"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   "\"%s\" malkonektiĝis"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SERVER_HANGUP,
+   "Retluda kliento malkonektiĝis"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_HANGUP,
+   "Retludado malkonektiĝinta"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
+   "Vi ne rajtas ludi"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
+   "Ne ekzistas liberaj ludantaj spacoj"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
+   "La enigaparatoj postulataj ne estas disponeblaj"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY,
+   "Ne povas ŝanĝi al luda reĝimo"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PEER_PAUSED,
+   "Retluda samtavolano \"%s\" paŭzita"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CHANGED_NICK,
+   "Via kromnomo ŝanĝiĝis al \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Kliento forpelita: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Malsukcesis forpeli klienton: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "Kliento forbarita: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "Malsukcesis forbari klienton: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Ludante"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Spektante"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Aparatoj"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CHAT_SUPPORTED,
+   "Babilejo subtenata"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SLOWDOWNS_CAUSED,
+   "Malrapidigoj kaŭzitaj"
+   )
 
+MSG_HASH(
+   MSG_AUDIO_VOLUME,
+   "Sona volumeno"
+   )
+MSG_HASH(
+   MSG_AUTODETECT,
+   "Aŭtomate detekti"
+   )
+MSG_HASH(
+   MSG_CAPABILITIES,
+   "Kapabloj"
+   )
+MSG_HASH(
+   MSG_CONNECTING_TO_NETPLAY_HOST,
+   "Konekti al retluda gastiganto"
+   )
+MSG_HASH(
+   MSG_CONNECTING_TO_PORT,
+   "Konektante al konektejo"
+   )
+MSG_HASH(
+   MSG_CONNECTION_SLOT,
+   "Konekteja spaco"
+   )
+MSG_HASH(
+   MSG_FETCHING_CORE_LIST,
+   "Venigante kernoliston..."
+   )
+MSG_HASH(
+   MSG_CORE_LIST_FAILED,
+   "Ricevo de kernolisto malsukcesis!"
+   )
+MSG_HASH(
+   MSG_LATEST_CORE_INSTALLED,
+   "Plej lasta versio jam instalita: "
+   )
+MSG_HASH(
+   MSG_UPDATING_CORE,
+   "Ĝisdatigante kernon: "
+   )
+MSG_HASH(
+   MSG_DOWNLOADING_CORE,
+   "Elŝueltante kernon: "
+   )
+MSG_HASH(
+   MSG_EXTRACTING_CORE,
+   "Eltirante kernon: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLED,
+   "Kerno instalita: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Malsukcesis instali kernon: "
+   )
+MSG_HASH(
+   MSG_SCANNING_CORES,
+   "Skanante kernojn..."
+   )
+MSG_HASH(
+   MSG_CHECKING_CORE,
+   "Kontrolante kernon: "
+   )
+MSG_HASH(
+   MSG_ALL_CORES_UPDATED,
+   "Ĉiuj instalitaj kernoj estas ĝisdataj"
+   )
+MSG_HASH(
+   MSG_ALL_CORES_SWITCHED_PFD,
+   "Ĉiuj subtenataj kernoj ŝanĝiĝis al versioj de Play Store"
+   )
+MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "Kernoj ĝisdatigitaj: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "Kernoj preterlasitaj: "
+   )
+MSG_HASH(
+   MSG_CORE_UPDATE_DISABLED,
+   "Kernĝisdatigo malebligita - kerno estas ŝlosita: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_RESETTING_CORES,
+   "Rekomencigante kernoj: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CORES_RESET,
+   "Kernoj rekomencigitaj: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
+   "Purigante ludliston: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   ""
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Refreŝigo malsukcesis - ludlisto ne enhavas validan skanregistron: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Refreŝigo malsukcesis - nevalida/mankanta enhava dosierujo: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "Refreŝigo malsukcesis - nevalida/mankanta sistema nomo: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "Refreŝigo malsukcesis - nevalida kerno: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "Refreŝigo malsukcesis - nevalida/mankanta ludmaŝina DAT-dosiero: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "Refreŝigo malsukcesis - ludmaŝina DAT-dosiero tre granda (nesufiĉa memoro): "
+   )
+MSG_HASH(
+   MSG_ADDED_TO_FAVORITES,
+   ""
+   )
+MSG_HASH(
+   MSG_ADD_TO_FAVORITES_FAILED,
+   "Malsukcesis aldoni preferatan: ludlisto plena"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Aldonita al ludlisto"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Malsukcesis aldoni al ludlisto: ludlisto plena"
+   )
+MSG_HASH(
+   MSG_SET_CORE_ASSOCIATION,
+   "Kerno agordita: "
+   )
+MSG_HASH(
+   MSG_RESET_CORE_ASSOCIATION,
+   "Asocio de kerno de la ludlista ero estis rekomencigita."
+   )
+MSG_HASH(
+   MSG_APPLICATION_DIR,
+   "Aplikacia dosierujo"
+   )
+MSG_HASH(
+   MSG_APPLYING_CHEAT,
+   ""
+   )
+MSG_HASH(
+   MSG_APPLYING_PATCH,
+   "Aplikante flikaĵon: %s"
+   )
+MSG_HASH(
+   MSG_APPLYING_SHADER,
+   "Aplikante ombrigilon"
+   )
+MSG_HASH(
+   MSG_AUDIO_MUTED,
+   "Sono silentigita."
+   )
+MSG_HASH(
+   MSG_AUDIO_UNMUTED,
+   "Sono malsilentigita"
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+   "Eraro konservante regilprofilon."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Regilprofilo konservita kiel \"%s\"."
+   )
+MSG_HASH(
+   MSG_AUTOSAVE_FAILED,
+   ""
+   )
+MSG_HASH(
+   MSG_AUTO_SAVE_STATE_TO,
+   "Aŭtomate konservi staton en"
+   )
+MSG_HASH(
+   MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   "Komencigante komand-interfacon en konektejo"
+   )
+MSG_HASH(
+   MSG_BYTES,
+   "bajtoj"
+   )
+MSG_HASH(
+   MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+   "Ne povis subkompreni novan konfiguran dosierindikon. Uzu kurantan tempon."
+   )
+MSG_HASH(
+   MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
+   "Komparante kun konataj magiaj nombroj..."
+   )
+MSG_HASH(
+   MSG_COMPILED_AGAINST_API,
+   "Kompilita kontraŭ API"
+   )
+MSG_HASH(
+   MSG_CONFIG_DIRECTORY_NOT_SET,
+   "Konfigura dosierujo ne estas agordita. Ne povas konservi novan konfiguraĵon."
+   )
+MSG_HASH(
+   MSG_CONNECTED_TO,
+   "Konektita kun"
+   )
+MSG_HASH(
+   MSG_CONTENT_CRC32S_DIFFER,
+   "Enhavaj CRC32-oj malsamas. Ne povas uzi malsamaj ludoj."
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "Gastiganto rulas malsaman ludon."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "Via respondotempon estas tro alta por ĉi tiu gastiganto."
+   )
+MSG_HASH(
+   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
+   "Preterlasis ŝargadon de enhavo. Realigo ŝargos ĝin."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Kerno ne subtenas konservostatojn."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "Kerno ne subtenas malfaron de konservostatoj."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "Kerno ne subtenas regadon de diskoj."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+   "Dosiero de kernaj opcioj kreita sukcese."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
+   "Dosiero de kernaj opcioj forigita sukcese."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_RESET,
+   "Ĉiuj kernaj opcioj rekomencigitaj al defaŭlto."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "Kernaj opcioj konservitaj en:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Malsukcesis konservi kernajn opciojn en:"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
+   "Ne povis trovi ajnan sekvan pelilon"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+   "Ne povis trovi kongruan sistemon."
+   )
 MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
    "CRC32 checksum mismatch between content file and saved content checksum in replay file header) replay highly likely to desync on playback."
