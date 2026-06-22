@@ -380,7 +380,7 @@ static int filebrowser_parse(
          for (j = 0; j < search_terms->size; j++)
          {
             const char *search_term = search_terms->terms[j];
-            if (search_term && *search_term 
+            if (search_term && *search_term
                 && !strcasestr(file_path, search_term))
             {
                skip_entry = true;
@@ -416,7 +416,7 @@ static int filebrowser_parse(
                   ? FILE_TYPE_VIDEO_FONT
                   : (enum msg_file_type)type_default;
 
-            if (   type == DISPLAYLIST_CORES_DETECTED 
+            if (   type == DISPLAYLIST_CORES_DETECTED
                 && path_is_compressed_file(file_path))
                file_type = FILE_TYPE_CARCHIVE;
             break;
@@ -3961,17 +3961,17 @@ static int menu_displaylist_parse_horizontal_content_actions(
                         || string_ends_with_size(menu_st->thumbnail_path_data->system, "_history",
                               menu_st->thumbnail_path_data->system_len, STRLEN_CONST("_history"));
 
-                  /* An annoyance: if the user navigates to the 
-                   * information menu, then to the database entry, 
+                  /* An annoyance: if the user navigates to the
+                   * information menu, then to the database entry,
                    * the thumbnail system will be changed.
-                   * This breaks the above 'remove_entry_enabled' 
-                   * check for the history and favorites playlists. 
-                   * We therefore have to check the playlist file 
+                   * This breaks the above 'remove_entry_enabled'
+                   * check for the history and favorites playlists.
+                   * We therefore have to check the playlist file
                    * name as well... */
                   if (   !remove_entry_enabled
                       && settings->bools.quick_menu_show_information
                       && (playlist_file && *playlist_file))
-                     remove_entry_enabled = 
+                     remove_entry_enabled =
                            string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY)
                         || string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES);
                }
@@ -5112,7 +5112,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       if (core_info_find(core_path, &core_info))
       {
-         core_supports_no_game = (core_info->flags 
+         core_supports_no_game = (core_info->flags
                                 & CORE_INFO_FLAG_SUPPORTS_NO_GAME);
          if (core_info->display_name && *core_info->display_name)
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
@@ -5267,7 +5267,7 @@ static unsigned menu_displaylist_parse_content_information(
 
             if (*tmp)
                if (menu_entries_append(info_list, tmp,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PLAY_COUNT),
+                     MENU_ENUM_LABEL_CONTENT_INFO_PLAY_COUNT_STR,
                      MENU_ENUM_LABEL_CONTENT_INFO_PLAY_COUNT,
                      0, 0, 0, NULL))
                   count++;
@@ -9768,8 +9768,8 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = (gfx_widgets && !cheevos_autopad);
                      break;
                   case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H:
-                     build_list[i].checked = ((gfx_widgets && !cheevos_autopad) && 
-                     !(cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER || 
+                     build_list[i].checked = ((gfx_widgets && !cheevos_autopad) &&
+                     !(cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER ||
                         cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER));
                      break;
                   default:
@@ -11222,12 +11222,11 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,              PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,    PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,                  PARSE_ONLY_UINT, true},
-               {MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL,      PARSE_ONLY_UINT, true},
-               {MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,               PARSE_ONLY_BOOL, true},
 #if defined(HAVE_ZLIB)
                {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,              PARSE_ONLY_BOOL, true},
 #endif
+               {MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,                  PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,  PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL, true},
@@ -11237,6 +11236,7 @@ unsigned menu_displaylist_build_list(
 #if defined(HAVE_ZLIB)
                {MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,         PARSE_ONLY_BOOL, true},
 #endif
+               {MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL,       PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP,                 PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_REPLAY_AUTO_INDEX,                  PARSE_ONLY_BOOL, true},
@@ -13688,6 +13688,38 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   menu->core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT,
                   true);
 
+            /* Mark entries with "[#]" if the file already exists in the
+             * download directory (core assets folder + category sub-folder). */
+            {
+               char content_dir[PATH_MAX_LENGTH];
+               const char *core_assets = settings->paths.directory_core_assets;
+               content_dir[0] = '\0';
+
+               if (core_assets && *core_assets && info->path && *info->path)
+               {
+                  const char *category = path_basename(info->path);
+                  if (category && *category)
+                     fill_pathname_join_special(content_dir, core_assets,
+                           category, sizeof(content_dir));
+               }
+
+               if (*content_dir)
+               {
+                  size_t i;
+                  for (i = 0; i < count; i++)
+                  {
+                     char chk_path[PATH_MAX_LENGTH];
+                     const char *fname = info->list->list[i].path;
+                     if (!fname || !*fname)
+                        continue;
+                     fill_pathname_join_special(chk_path, content_dir, fname,
+                           sizeof(chk_path));
+                     if (path_is_valid(chk_path))
+                        file_list_set_label_at_offset(info->list, i, "[#]");
+                  }
+               }
+            }
+
             if (count == 0)
                menu_entries_append(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
@@ -15492,7 +15524,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (settings->bools.menu_show_load_core)
                      {
 #ifdef HAVE_DYNAMIC
-                        if (    sys_info->info.library_name 
+                        if (    sys_info->info.library_name
                             && *sys_info->info.library_name)
                         {
                            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,

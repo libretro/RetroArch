@@ -985,6 +985,9 @@ ifeq ($(HAVE_COREMIDI), 1)
    LIBS += -framework CoreMIDI
 endif
 
+# In-process FM synth MIDI driver (no external dependency, all platforms)
+OBJ += midi/drivers/fmsynth_midi.o
+
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)

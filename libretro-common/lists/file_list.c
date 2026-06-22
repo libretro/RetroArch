@@ -226,6 +226,16 @@ static void file_list_get_label_at_offset(const file_list_t *list, size_t idx,
       *label = list->list[idx].label;
 }
 
+void file_list_set_label_at_offset(file_list_t *list, size_t idx,
+      const char *label)
+{
+   if (!list || !label)
+      return;
+   if (list->list[idx].label)
+      free(list->list[idx].label);
+   list->list[idx].label = strdup(label);
+}
+
 void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt)
 {

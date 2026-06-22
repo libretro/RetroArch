@@ -29,6 +29,7 @@ SET_BUILD_ID          ?= 0
 #########################
 
 APP_PACKAGE_NAME ?= com.retroarch.webos
+ARES_PACKAGE_ARGS ?=
 IPK_VERSION := $(shell grep '#define PACKAGE_VERSION' version.all | sed -E 's/.*"([0-9]+\.[0-9]+\.[0-9]+)".*/\1/')
 
 WEBOS = 1
@@ -281,12 +282,18 @@ endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
+ifeq ($(findstring arm64,$(ARCH)),arm64)
+  IPK_TITLE := RetroArch (64-bit)
+else
+  IPK_TITLE := RetroArch
+endif
+
 define APPINFO
 {
     "id": "$(APP_PACKAGE_NAME)",
     "version": "$(IPK_VERSION)",
     "vendor": "webosbrew.org",
-    "title": "RetroArch",
+    "title": "$(IPK_TITLE)",
     "icon": "icon160.png",
     "main": "retroarch",
     "iconColor": "#333333",
@@ -396,7 +403,7 @@ endif
 ifneq ($(DEBUG), 1)
 	$(STRIP) webos/dist/$(TARGET)
 endif
-	cd webos && ares-package dist
+	cd webos && ares-package dist $(ARES_PACKAGE_ARGS)
 ifeq ($(REPACK_64_IPK_FOR_MENU), 1)
 	./webos/patch-aarch64-in-ipk.sh webos/$(APP_PACKAGE_NAME)_$(IPK_VERSION)_$(IPK_ARCH).ipk
 	rm webos/$(APP_PACKAGE_NAME)_$(IPK_VERSION)_$(IPK_ARCH).ipk

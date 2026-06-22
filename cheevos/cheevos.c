@@ -469,7 +469,6 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
       if (shotname)
       {
          const char *path_directory_screenshot = settings->paths.directory_screenshot;
-         video_driver_state_t* video_st = video_state_get_ptr();;
          snprintf(shotname, shotname_len, "%s/%s-cheevo-%u",
             path_directory_screenshot,
             path_basename(path_get(RARCH_PATH_BASENAME)),

@@ -239,8 +239,6 @@ static int16_t x_input_state(
                int id_plus_key       = 0;
                unsigned id_minus     = 0;
                unsigned id_plus      = 0;
-               int16_t pressed_minus = 0;
-               int16_t pressed_plus  = 0;
                int16_t ret           = 0;
                bool id_plus_valid    = false;
                bool id_minus_valid   = false;

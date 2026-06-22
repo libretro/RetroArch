@@ -965,7 +965,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       /* Parse viewport override (optional) */
       strlcpy(conf_key + _len, "_viewport", sizeof(conf_key) - _len);
-      RARCH_DBG("[Overlay] Checking for viewport key: %s\n", conf_key);
+
       if (config_get_array(conf, conf_key, tmp_str, sizeof(tmp_str)))
       {
          char cfg_vp_buf[256];

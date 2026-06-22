@@ -295,6 +295,78 @@ static void task_screenshot_callback(retro_task_t *task,
 }
 #endif
 
+/**
+ * screenshot_rotate:
+ *
+ * Copies rotated @source image to @target
+ * according to @rotate_type 'enum video_rotation_type'.
+ **/
+static void screenshot_rotate(
+      uint32_t *target,
+      uint32_t *source,
+      size_t size,
+      unsigned *width,
+      unsigned *height,
+      size_t *pitch,
+      uint8_t rotate_type)
+{
+   int x, y;
+   int bpp           = *pitch / *width;
+   int source_width  = *width;
+   int source_height = *height;
+   int source_pitch  = *pitch;
+   int target_width  = source_width;
+   int target_height = source_height;
+   int target_pitch  = source_pitch;
+
+   /* 90deg dimension flip */
+   if (     rotate_type == VIDEO_ROTATION_90_DEG
+         || rotate_type == VIDEO_ROTATION_270_DEG)
+   {
+      target_width  = source_height;
+      target_height = source_width;
+      target_pitch  = target_width * bpp;
+   }
+
+   for (y = 0; y < target_height; y++)
+   {
+      for (x = 0; x < target_pitch; x++)
+      {
+         int pixel_source = (y * source_width) + x;
+         int pixel_target = (y * target_width) + x;
+
+         switch (rotate_type)
+         {
+            default:
+            case VIDEO_ROTATION_NORMAL:
+               break;
+            case VIDEO_ROTATION_90_DEG:
+               pixel_source = ((target_height - 1 - y) + (x * source_width));
+               break;
+            case VIDEO_ROTATION_180_DEG:
+               pixel_source = ((target_height - 1 - y) * target_width) + (target_width - 1 - x);
+               break;
+            case VIDEO_ROTATION_270_DEG:
+               pixel_source = y + ((target_width - 1 - x) * source_width);
+               break;
+         }
+
+         if (     pixel_source < 0
+               || pixel_target < 0
+               || pixel_source > (int)size / bpp
+               || pixel_target > (int)size / bpp)
+            continue;
+
+         *(target + pixel_target) = *(source + pixel_source);
+      }
+   }
+
+   /* Replace source values with target values */
+   *width  = target_width;
+   *height = target_height;
+   *pitch  = target_pitch;
+}
+
 /* Take frame bottom-up. */
 static bool screenshot_dump(
       const char *screenshot_dir,
@@ -661,6 +733,30 @@ static bool take_screenshot_raw(
       width     = copy.width;
       height    = copy.height;
       pitch     = copy.pitch;
+
+      /* Rotate the buffer according to core SET_ROTATION */
+      {
+         runloop_state_t *runloop_st   = runloop_state_get_ptr();
+         rarch_system_info_t *sys_info = &runloop_st->system;
+
+         if (sys_info && sys_info->rotation)
+         {
+            uint32_t *buf = NULL;
+            uint8_t bpp   = pitch / width;
+            size_t size   = width * height * bpp;
+
+            if ((buf = (uint32_t*)calloc(1, size)))
+            {
+               screenshot_rotate(buf, copy.buffer, size,
+                     &width, &height, &pitch,
+                     sys_info->rotation);
+               memcpy(copy.buffer, buf, size);
+
+               free(buf);
+               buf = NULL;
+            }
+         }
+      }
    }
 
    /* Negative pitch is needed as screenshot takes bottom-up, but
