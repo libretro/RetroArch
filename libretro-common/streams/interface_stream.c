@@ -43,12 +43,6 @@ struct intfstream_internal
    struct
    {
       memstream_t *fp;
-      struct
-      {
-         uint8_t *data;
-         uint64_t size;
-      } buf;
-      bool writable;
    } memory;
 #ifdef HAVE_CHD
    struct
@@ -76,7 +70,7 @@ int64_t intfstream_get_size(intfstream_internal_t *intf)
       case INTFSTREAM_FILE:
          return filestream_get_size(intf->file.fp);
       case INTFSTREAM_MEMORY:
-         return intf->memory.buf.size;
+         return memstream_get_size(intf->memory.fp);
       case INTFSTREAM_CHD:
 #ifdef HAVE_CHD
         return chdstream_get_size(intf->chd.fp);
@@ -94,34 +88,6 @@ int64_t intfstream_get_size(intfstream_internal_t *intf)
    return 0;
 }
 
-bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
-{
-   if (!intf || !info)
-      return false;
-
-   switch (intf->type)
-   {
-      case INTFSTREAM_FILE:
-         break;
-      case INTFSTREAM_MEMORY:
-         intf->memory.buf.data = info->memory.buf.data;
-         intf->memory.buf.size = info->memory.buf.size;
-
-         memstream_set_buffer(intf->memory.buf.data,
-               intf->memory.buf.size);
-         break;
-      case INTFSTREAM_CHD:
-#ifdef HAVE_CHD
-#endif
-         break;
-      case INTFSTREAM_RZIP:
-         /* Unsupported */
-         return false;
-   }
-
-   return true;
-}
-
 bool intfstream_open(intfstream_internal_t *intf, const char *path,
       unsigned mode, unsigned hints)
 {
@@ -136,7 +102,6 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
             return false;
          break;
       case INTFSTREAM_MEMORY:
-         intf->memory.fp = memstream_open(intf->memory.writable);
          if (!intf->memory.fp)
             return false;
          break;
@@ -225,10 +190,7 @@ void *intfstream_init(intfstream_info_t *info)
 
    intf->type            = info->type;
    intf->file.fp         = NULL;
-   intf->memory.buf.data = NULL;
-   intf->memory.buf.size = 0;
    intf->memory.fp       = NULL;
-   intf->memory.writable = false;
 #ifdef HAVE_CHD
    intf->chd.track       = 0;
    intf->chd.fp          = NULL;
@@ -242,12 +204,7 @@ void *intfstream_init(intfstream_info_t *info)
       case INTFSTREAM_FILE:
          break;
       case INTFSTREAM_MEMORY:
-         intf->memory.writable = info->memory.writable;
-         if (!intfstream_resize(intf, info))
-         {
-            free(intf);
-            return NULL;
-         }
+         intf->memory.fp = memstream_open(info->memory.buf.data, info->memory.buf.size, info->memory.writable);
          break;
       case INTFSTREAM_CHD:
 #ifdef HAVE_CHD
