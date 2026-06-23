@@ -880,6 +880,11 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
    return &_uniforms;
 }
 
+- (Uniforms *)uniformsNoRotate
+{
+   return &_uniformsNoRotate;
+}
+
 #pragma mark - HDR
 
 - (bool)hdrEnabled
@@ -4342,6 +4347,7 @@ typedef struct texture
 typedef struct MTLALIGN(16)
 {
    matrix_float4x4 mvp;
+   matrix_float4x4 mvp_last_pass;
 
    struct
    {
@@ -4881,6 +4887,9 @@ typedef struct MTLALIGN(16)
       memset(&_engine.pass[i].feedback, 0, sizeof(_engine.pass[i].feedback));
    }
 
+   _engine.mvp_last_pass = _context.uniformsNoRotate->projectionMatrix;
+   int rot = retroarch_get_rotation();
+   
    width  = (NSUInteger)_size.width;
    height = (NSUInteger)_size.height;
 
@@ -4897,7 +4906,7 @@ typedef struct MTLALIGN(16)
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               width = (NSUInteger)(_viewport->width * shader_pass->fbo.scale_x);
+               width = (NSUInteger)((rot % 2 ? _viewport->height : _viewport->width) * shader_pass->fbo.scale_x);
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -4918,7 +4927,7 @@ typedef struct MTLALIGN(16)
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               height = (NSUInteger)(_viewport->height * shader_pass->fbo.scale_y);
+               height = (NSUInteger)((rot % 2 ? _viewport->width : _viewport->height) * shader_pass->fbo.scale_y);
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -4934,8 +4943,8 @@ typedef struct MTLALIGN(16)
       }
       else if (i == (_shader->passes - 1))
       {
-         width  = _viewport->width;
-         height = _viewport->height;
+         width  = rot % 2 ? _viewport->height : _viewport->width;
+         height = rot % 2 ? _viewport->width : _viewport->height;
       }
 
       /* Updating framebuffer size */
@@ -4992,6 +5001,14 @@ typedef struct MTLALIGN(16)
       }
       else
       {
+         if (rot % 2)
+         {
+             NSUInteger tmp = width;
+             width = height;
+             height = tmp;
+         }
+         
+         _engine.mvp_last_pass = _context.uniforms->projectionMatrix;
          _engine.pass[i].rt.size_data.x = width;
          _engine.pass[i].rt.size_data.y = height;
          _engine.pass[i].rt.size_data.z = 1.0f / width;
@@ -5085,7 +5102,7 @@ typedef struct MTLALIGN(16)
       for (i = 0; i < shader->passes; source = &_engine.pass[i++].rt)
       {
          matrix_float4x4 *mvp = (i == shader->passes-1)
-            ? &_context.uniforms->projectionMatrix
+            ? &_engine.mvp_last_pass
             : &_engine.mvp;
 
          /* clang-format off */
