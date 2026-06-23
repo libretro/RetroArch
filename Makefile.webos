@@ -282,12 +282,18 @@ endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
+ifeq ($(findstring arm64,$(ARCH)),arm64)
+  IPK_TITLE := RetroArch (64-bit)
+else
+  IPK_TITLE := RetroArch
+endif
+
 define APPINFO
 {
     "id": "$(APP_PACKAGE_NAME)",
     "version": "$(IPK_VERSION)",
     "vendor": "webosbrew.org",
-    "title": "RetroArch",
+    "title": "$(IPK_TITLE)",
     "icon": "icon160.png",
     "main": "retroarch",
     "iconColor": "#333333",
