@@ -95,7 +95,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "Foliumu por libretron kernon. Kien la retumilo komenciĝas dependas de via Kerna Dosieruja vojo. Se ĝi estus malplena, ĝi komenciĝus en radiko. \nSe Kerna Dosierujo estus dosierujo, la menuo uzus tion por la plej supra dosierujo. Se la Kerna Dosierujo estus plena, ĝi komenciĝus en la dosierujo, kiu la dosiero estas."
+   "Foliumi por kernon de libretro. Kie la foliumilo komenciĝas dependas de via Kerna Dosieruja vojo. Se ĝi estus malplena, ĝi komenciĝus en radiko. \nSe Kerna dosierujo estas dosierujo, la menuo uzos tion kiel la plej supra dosierujo. Se la Kerna dosierujo estas plena dosierindiko, ĝi komenciĝos en la dosierujo, kie la dosiero estas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -107,7 +107,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "Foliumu por enhavo. Por ŝarĝi enhavon, vi bezonas 'Kernon' por uzi, kaj enhavan dosieron. \nPor kontroli, kie la menuo ekfoliumas por enhavoj, elektu 'Dosieran Retumilan Dosierujon'. Se ĝi ne elektus, ĝi komenciĝus en Radiko.\nLa retumilo filtros por etendaĵoj por la plej freŝa kerno, kiu elektis en 'Ŝarĝi Kernon', kaj uzos tiun kernon, kiam enhavo ŝarĝiĝos."
+   "Foliumi por enhavo. Por ŝargi enhavon, oni bezonas \"Kernon\" uzota, kaj enhavdosieron. \nPor regi, kie la menuo ekfoliumas por enhavoj, elektu \"Dosieresplorilan dosierujon\". Se ĝi ne estas agordita, ĝi komenciĝos en radiko.\nLa foliumilo filtros kontraŭ kromaĵoj por la plej freŝa kerno agordita en \"Ŝargi kernon\", kaj uzos tiun kernon, kiam enhavo ŝargiĝos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -1565,7 +1565,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Sona pelilo uzota. Bezonas restartigon."
+   "Sonpelilo uzota. Bezonas restartigon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -2804,11 +2804,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "Transpasi la defaŭltan sonan aparaton, kiun la sonan pelilon uzas. Ĉi tiu dependas de la pelilo."
+   "Transpasi la defaŭltan sonaparaton, kiun la sonpelilo uzas. Ĉi tio dependas de la pelilo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   "Transpasi la defaŭltan sonan aparaton, kiun la sona pelilo uzas. Ĉi tio dependas de la pelilo."
+   "Transpasi la defaŭltan sonaparaton, kiun la sonpelilo uzas. Ĉi tio dependas de la pelilo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
@@ -2832,7 +2832,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Maksimuma sona respondotempo je milisekundoj. La pelilo celas konservi kurantan respondotempon en 50% de ĉi tiu valoro. Eblas, ke ĉi tio ne estu respektata se la sona pelilo ne povas provizi la agorditan respondotempon."
+   "Maksimuma sona respondotempo je milisekundoj. La pelilo celas konservi kurantan respondotempon en 50% de ĉi tiu valoro. Eblas, ke ĉi tio ne estu respektata se la sonpelilo ne povas provizi la agorditan respondotempon."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -13679,36 +13679,1264 @@ MSG_HASH(
    "Ne povis trovi kongruan sistemon."
    )
 MSG_HASH(
+   MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
+   "Ne povis trovi validan datumtrakon"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "Ne povis malfermi datumtrakon"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_CONTENT_FILE,
+   "Ne povis legi enhavdosieron"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_MOVIE_HEADER,
+   "Ne povis legi filmokapon."
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
+   "Ne povis legi staton de filmo."
+   )
+MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
-   "CRC32 checksum mismatch between content file and saved content checksum in replay file header) replay highly likely to desync on playback."
+   "Malkongruo de kontrolsumoj CRC32 inter enhavdosiero kaj tiu de la konservita enhavo en reluda dosierkapo. Estas tre probabla, ke la reludo malsinkroniĝu ĉe reludado."
+   )
+MSG_HASH(
+   MSG_CUSTOM_TIMING_GIVEN,
+   "Propra tempomezurado donita"
+   )
+MSG_HASH(
+   MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
+   "Maldensigo jam progresanta."
+   )
+MSG_HASH(
+   MSG_DECOMPRESSION_FAILED,
+   "Maldensigo malsukcesis."
+   )
+MSG_HASH(
+   MSG_DETECTED_VIEWPORT_OF,
+   "Detektis vidujon de"
+   )
+MSG_HASH(
+   MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
+   "Ne trovis validan enhavan flikaĵon."
+   )
+MSG_HASH(
+   MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+   "Malkonekti aparaton de valida konektejo."
+   )
+MSG_HASH(
+   MSG_DOWNLOADING,
+   "Elŝutante"
+   )
+MSG_HASH(
+   MSG_INDEX_FILE,
+   "indekso"
+   )
+MSG_HASH(
+   MSG_DOWNLOAD_FAILED,
+   "Elŝutado malsukcesis"
    )
 MSG_HASH(
    MSG_ERROR,
    "Eraro"
    )
 MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
+   "Kerno de libretro bezonas enhavon, sed nenio estis provizita."
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
+   "Kerno de libretro bezonas specialan enhavon, sed nenia estis provizita."
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
+   "Kerno ne subtenas VFS, kaj frakasis ŝargi de loka kopio"
+   )
+MSG_HASH(
+   MSG_ERROR_PARSING_ARGUMENTS,
+   "Eraro sintakse analizante argumentojn."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
+   "Eraro konservante dosieron de kernaj opcioj."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_CORE_OPTIONS_FILE,
+   "Eraro forigante dosieron de kernaj opcioj."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_REMAP_FILE,
+   "Eraro konservante reasignan dosieron."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_REMAP_FILE,
+   "Eraro forigante reasignan dosieron."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_SHADER_PRESET,
+   "Eraro konservante ombrigilan antaŭagordon."
+   )
+MSG_HASH(
+   MSG_EXTERNAL_APPLICATION_DIR,
+   "Ekstera aplikaĵa dosierujo"
+   )
+MSG_HASH(
+   MSG_EXTRACTING,
+   "Eltirante"
+   )
+MSG_HASH(
+   MSG_EXTRACTING_FILE,
+   "Eltirante dosieron"
+   )
+MSG_HASH(
+   MSG_FAILED_SAVING_CONFIG_TO,
+   "Malsukcesis konservante en"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
+   "Malsukcesis akcepti envenantan spektanton."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
+   "Malsukcesis asigni memoron por flikita enhavo..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER,
+   "Malsukcesis apliki ombrigilon."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   "Malsukcesis apliki ombrigilan antaŭagordon:"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_BIND_SOCKET,
+   "Malsukcesis ligi konekt-interfacon."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   "Malsukcesis krei la dosierujon."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+   "Malsukcesis eltiri enhavon el densigita dosiero"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
+   "Malsukcesis akiri kromnomon de kliento."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "Malsukcesis ŝargi."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "Malsukcesis ŝargi enhavon."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Malsukcesis ŝargi de ludlisto."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "Malsukcesis ŝargi filmdosieron."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_OVERLAY,
+   "Malsukcesis ŝargi surmetaĵon."
+   )
+MSG_HASH(
+   MSG_OSK_OVERLAY_NOT_SET,
+   "Klavara surmetaĵo ne estas agordita."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_STATE,
+   "Malsukcesis ŝargi staton de"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
+   "Malsukcesis malfermi kernon de libretro"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_PATCH,
+   "Malsukcesis fliki"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
+   "Malsukcesis ricevi kapon de kliento."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME,
+   "Malsukcesis ricevi kromnomon."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
+   "Malsukcesis ricevi kromnomon de gastiganto."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
+   "Malsukcesis ricevi kromnoman grandon de gastiganto."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
+   "Malsukcesis ricevi SRAM-datumojn de gastiganto."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
+   "Malsukcesis forigi portempan dosieron"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_SRAM,
+   "Malsukcesis konservi SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "Malsukcesis ŝargi SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_STATE_TO,
+   "Malsukcesis konservi staton en"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME,
+   "Malsukcesis sendi kromnomon."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_SIZE,
+   "Malsukcesis sendi kromnoman grandon."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
+   "Malsukcesis sendi kromnomon al kliento."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
+   "Malsukcesis sendi kromnomon al gastiganto."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
+   "Malsukcesis sendi SRAM-datumojn al kliento."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_AUDIO_DRIVER,
+   "Malsukcesis startigi sonpelilon. Daŭros sen sono."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_MOVIE_RECORD,
+   "Malsukcesis komencigi filman surbendigon."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_RECORDING,
+   "Malsukcesis komencigi surbendigon."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_TAKE_SCREENSHOT,
+   "Malsukcesis krei ekrankopion."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNDO_LOAD_STATE,
+   "Malsukcesis malfari ŝargon de stato."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNDO_SAVE_STATE,
+   "Malsukcesis malfari konservon de stato."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNMUTE_AUDIO,
+   "Malsukcesis malsilentigi sonon."
+   )
+MSG_HASH(
+   MSG_FATAL_ERROR_RECEIVED_IN,
+   "Neriparebla eraro ricevita en"
+   )
+MSG_HASH(
+   MSG_FILE_NOT_FOUND,
+   "Dosiero ne trovita"
+   )
+MSG_HASH(
+   MSG_FOUND_AUTO_SAVESTATE_IN,
+   "Trovis aŭtomatan konservostaton en"
+   )
+MSG_HASH(
+   MSG_FOUND_DISK_LABEL,
+   "Trovis diskan etikedon"
+   )
+MSG_HASH(
+   MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
+   "Trovis unuan datumtrakon en dosiero"
+   )
+MSG_HASH(
+   MSG_FOUND_LAST_STATE_SLOT,
+   "Trovis lastan statan spacon"
+   )
+MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Trovis lastan reludan spacon"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Ne de kuranta surbendigo"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Ne kongrua kun reludo"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Ne povis ŝargi futuran staton dum ludado"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Malĝusta templinia eraro dum ludado"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Malĝusta templinio; anstataŭigante surbendigon"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "Serĉante reen"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "Malsukcesis serĉante reen"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "Serĉante antaŭen"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "Malsukcesis serĉante antaŭen"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME,
+   "Serĉo kompletigita"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "Serĉo malsukcesis"
+   )
+MSG_HASH(
+   MSG_FOUND_SHADER,
+   "Trovis ombrigilon"
+   )
+MSG_HASH(
+   MSG_FRAMES,
+   "Filmeroj"
+   )
+MSG_HASH(
+   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "Ludspecifaj kernaj opcioj trovitaj en"
+   )
+MSG_HASH(
+   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "Dosierspecifaj kernaj opcioj trovitaj en"
+   )
+MSG_HASH(
+   MSG_GOT_INVALID_DISK_INDEX,
+   "Ricevis nevalidan diskan indekson."
+   )
+MSG_HASH(
+   MSG_GRAB_MOUSE_STATE,
+   "Preni musan staton"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_ON,
+   "\"Koncentriĝi en ludo\" ŝaltita"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_OFF,
+   "\"Koncentriĝi en ludo\" malŝaltita"
+   )
+MSG_HASH(
+   MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
+   "Kerno de libretro estas bildigita per aparataro. Surbendigoj ankaŭ devas havi ombrigiloj aplikitaj."
+   )
+MSG_HASH(
+   MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
+   "Ŝveligita kontrolsumo ne kongruis kun CRC32."
+   )
+MSG_HASH(
+   MSG_INPUT_CHEAT,
+   "Enigi "
+   )
+MSG_HASH(
+   MSG_INPUT_CHEAT_FILENAME,
+   "Enigi trompan dosiernomon"
+   )
+MSG_HASH(
+   MSG_INPUT_PRESET_FILENAME,
+   "Enigi antaŭagordan dosiernomon"
+   )
+MSG_HASH(
+   MSG_INPUT_OVERRIDE_FILENAME,
+   "Enigi transpasan dosiernomon"
+   )
+MSG_HASH(
+   MSG_INPUT_REMAP_FILENAME,
+   ""
+   )
+MSG_HASH(
+   MSG_INPUT_RENAME_ENTRY,
+   "Renomi titolon"
+   )
+MSG_HASH(
+   MSG_INTERFACE,
+   "Interfaco"
+   )
+MSG_HASH(
+   MSG_INTERNAL_STORAGE,
+   "Interna konservejo"
+   )
+MSG_HASH(
+   MSG_REMOVABLE_STORAGE,
+   "Demetebla konservejo"
+   )
+MSG_HASH(
+   MSG_INVALID_NICKNAME_SIZE,
+   "Nevalida kromnoma grando."
+   )
+MSG_HASH(
+   MSG_IN_BYTES,
+   "je bajtoj"
+   )
+MSG_HASH(
+   MSG_IN_MEGABYTES,
+   "je megabajtoj"
+   )
+MSG_HASH(
+   MSG_IN_GIGABYTES,
+   "je gigabajtoj"
+   )
+MSG_HASH(
+   MSG_LIBRETRO_ABI_BREAK,
+   "estas kompilita kontraŭ malsama versio de libretro ol ĉi tiu realigo de libretro."
+   )
+MSG_HASH(
+   MSG_LIBRETRO_FRONTEND,
+   "Fasado de libretro"
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Ŝargita stato de spaco: %d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Ŝargita stato de spaco: Aŭtomata."
+   )
+MSG_HASH(
+   MSG_LOADING,
+   "Ŝargante"
+   )
+MSG_HASH(
+   MSG_FIRMWARE,
+   "Mankas unu aŭ pli da mikroprogramaraj dosieroj"
+   )
+MSG_HASH(
+   MSG_LOADING_CONTENT_FILE,
+   "Ŝargante enhavan dosieron"
+   )
+MSG_HASH(
+   MSG_LOADING_HISTORY_FILE,
+   "Ŝargante historian dosieron"
+   )
+MSG_HASH(
+   MSG_LOADING_FAVORITES_FILE,
+   "Ŝargante dosieron de preferataj"
+   )
+MSG_HASH(
+   MSG_LOADING_STATE,
+   "Ŝargante staton"
+   )
+MSG_HASH(
+   MSG_MEMORY,
+   "Memoro"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Enigreluda filmdosiero ne estas valida dosiero REPLAY."
+   )
+MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-   "Movie format seems to have a different serializer version. Will most likely fail."
+   "Enigreluda filma formato ŝajnas havi malsaman seriigan version. Ĝi plej verŝajne malsukcesos."
    )
 MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
-   "Movie playback ended."
+   "Ludado de enigreluda filmo finiĝis."
+   )
+MSG_HASH(
+   MSG_MOVIE_RECORD_STOPPED,
+   "Haltante filman surbendigon."
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED,
+   "Malsukcesis pravalorizo de retludo."
+   )
+MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Kerno ne subtenas retludon."
+   )
+MSG_HASH(
+   MSG_NO_CONTENT_STARTING_DUMMY_CORE,
+   "Nenia enhavo, startigante lokokupan kernon."
+   )
+MSG_HASH(
+   MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
+   "Ankoraŭ nenia konservostaton estas anstataŭigita."
+   )
+MSG_HASH(
+   MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+   "Ankoraŭ neniu stato estas ŝargita."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ERROR_SAVING,
+   "Eraro konservante transpasojn."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ERROR_REMOVING,
+   "Eraro forigante transpasojn."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+   "Sukcesis konservi transpasojn."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   "Sukcesis forigi transpasojn."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   "Sukcesis malŝargi transpasojn."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_NOT_SAVED,
+   "Nenio konservota. Transpasoj ne konservitaj."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Ne konservante. Transpasoj aktivas."
+   )
+MSG_HASH(
+   MSG_PAUSED,
+   "Paŭzitaj."
+   )
+MSG_HASH(
+   MSG_READING_FIRST_DATA_TRACK,
+   "Legante unuan datumtrakon..."
+   )
+MSG_HASH(
+   MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
+   "Surbendigo finiĝis pro regrandigo."
+   )
+MSG_HASH(
+   MSG_RECORDING_TO,
+   "Surbendigante en"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_CHEATFILE_TO,
+   "Alidirektante trompdosieron al"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVEFILE_TO,
+   "Alidirectante konservdosieron al"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVESTATE_TO,
+   "Alidirektante konservostaton al"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
+   "Sukcesis konservi reasigndoseieron."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+   "Sukcesis forigi reasigndosieron."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_RESET,
+   "Ĉiu opcioj pri eniga reasigno rekomenciĝis al defaŭlto."
+   )
+MSG_HASH(
+   MSG_REMOVING_TEMPORARY_CONTENT_FILE,
+   "Forigante portempan enhavdosieron"
    )
 MSG_HASH(
    MSG_RESET,
    "Rekomencigi"
    )
 MSG_HASH(
+   MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+   "Rekomencante registron pro la repravalorizo de pelilo."
+   )
+MSG_HASH(
+   MSG_RESTORED_OLD_SAVE_STATE,
+   "Restarigis malnovan konservostaton"
+   )
+MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Ombrigiloj: restarigante defaŭltan ombrigilan antaŭagordon al"
+   )
+MSG_HASH(
+   MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
+   "Reagordante konservdosiera dosierujo al"
+   )
+MSG_HASH(
+   MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
+   "Reagordante konservostata dosierujo al"
+   )
+MSG_HASH(
+   MSG_REWINDING,
+   "Revolvante."
+   )
+MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Bufra kapacito nesufiĉa."
+   )
+MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   ""
+   )
+MSG_HASH(
+   MSG_REWIND_INIT,
+   "Pravalorizante revolvan bufron kun grando"
+   )
+MSG_HASH(
+   MSG_REWIND_INIT_FAILED,
+   "Malsukcesis pravalorizi revolvan bufron. Revolvado estos malebligita."
+   )
+MSG_HASH(
+   MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
+   "Realigo uzas fadenigitan sonon. Ne povas uzi revolvadon."
+   )
+MSG_HASH(
+   MSG_REWIND_REACHED_END,
+   "Atingis finon de revolva bufro."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Konservis konfiguraĵon en"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Konservis staton en spacon: %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Konservis staton en spacon: Aŭtomata"
+   )
+MSG_HASH(
+   MSG_SAVED_SUCCESSFULLY_TO,
+   "Sukcesis konservi en"
+   )
+MSG_HASH(
+   MSG_SAVING_RAM_TYPE,
+   "Konservante RAM-specon"
+   )
+MSG_HASH(
+   MSG_SAVING_STATE,
+   "Konservante staton"
+   )
+MSG_HASH(
+   MSG_SCANNING,
+   "Skanante"
+   )
+MSG_HASH(
+   MSG_SCANNING_OF_DIRECTORY_FINISHED,
+   "Finis skanadon de dosierujo."
+   )
+MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Malsukcesis skani, nenia datumbazo trovita"
+   )
+MSG_HASH(
+   MSG_SENDING_COMMAND,
+   "Sendante komandon"
+   )
+MSG_HASH(
+   MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
+   "Pluraj flikaĵoj estas eksplicite difinitaj, ignorante ĉiuj..."
+   )
+MSG_HASH(
    MSG_SHADER,
    "Ombrigilo"
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+   "Sukcesis konservi ombrigilan antaŭagordon."
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION,
+   "Malrapidpluigo."
+   )
+MSG_HASH(
+   MSG_FAST_FORWARD,
+   "Rapidpluigo"
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION_REWIND,
+   "Malrapidpluiga revolvo."
+   )
+MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Preterpasante ŝargo de SRAM."
+   )
+MSG_HASH(
+   MSG_SRAM_WILL_NOT_BE_SAVED,
+   "SRAM ne estos konservita."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Barante ansatataŭigo de SRAM"
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_PLAYBACK,
+   "Komencante ludado de filmo."
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_RECORD_TO,
+   "Komencante surbendigi filmon en"
+   )
+MSG_HASH(
+   MSG_STATE_SIZE,
+   "Stata grando"
+   )
+MSG_HASH(
+   MSG_STATE_SLOT,
+   "Stata spaco"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Reluda spaco"
+   )
+MSG_HASH(
+   MSG_TAKING_SCREENSHOT,
+   "Kreante ekrankopion."
+   )
+MSG_HASH(
+   MSG_SCREENSHOT_SAVED,
+   "Ekrankopio konservita"
+   )
+MSG_HASH(
+   MSG_ACHIEVEMENT_UNLOCKED,
+   "Akiro malŝlosita"
+   )
+MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Rara akiro malŝlosita"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Ĉampioneja provo komencita"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Ĉampioneja provo malsukcesita"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Sendis %s por %s" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "Rango: %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "Plej alta: %s" /* Best: [value] */
+   )
+MSG_HASH(
+   MSG_CHANGE_THUMBNAIL_TYPE,
+   "Ŝanĝi bildetospecon"
+   )
+MSG_HASH(
+   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   "Plenekranaj bildetoj"
+   )
+MSG_HASH(
+   MSG_TOGGLE_CONTENT_METADATA,
+   "Ŝalti metadatumojn"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_AVAILABLE,
+   "Nenia bildeto disponebla"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Ĉiuj eblaj elŝutoj de bildetoj jam estis provitaj por ĉi tiu ludlista ero."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_QUIT,
+   "Premu denove por forlasi..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Premu denove por fermi enhavon..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Premu denove por rekomencigi..."
+   )
+MSG_HASH(
+   MSG_TO,
+   "en"
+   )
+MSG_HASH(
+   MSG_UNDID_LOAD_STATE,
+   "Malfari ŝargi staton."
+   )
+MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Malfari konservi staton..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
    "Nekonata"
    )
 MSG_HASH(
+   MSG_UNPAUSED,
+   "Malpaŭzita."
+   )
+MSG_HASH(
+   MSG_UNRECOGNIZED_COMMAND,
+   "Neagnoskita komando \"%s\" ricevita.\n"
+   )
+MSG_HASH(
+   MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
+   "Uzante kernan nomon por nova konfiguraĵo."
+   )
+MSG_HASH(
+   MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
+   "Uzante lokokupan kernon de libretro. Preterlasante surbendigon."
+   )
+MSG_HASH(
+   MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+   "Konektu aparaton de valida konektejo."
+   )
+MSG_HASH(
+   MSG_VALUE_REBOOTING,
+   "Restartigante..."
+   )
+MSG_HASH(
+   MSG_VALUE_SHUTTING_DOWN,
+   "Fermante..."
+   )
+MSG_HASH(
+   MSG_VERSION_OF_LIBRETRO_API,
+   "Versio de libretro API"
+   )
+MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-   "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
+   "Kalkulo de viduja grando malsukcesis! Ĝi daŭros uzante krudajn datumojn. Ĉi tio eble ne funkcios ĝuste..."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Aŭtomate ŝargante konservostaton de"
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "Malsukcesis aŭtomate ŝargante konservostaton de \"%s\"."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "Sukcesis aŭtomate ŝargante konservostaton de \"%s\"."
+   )
+MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s konfigurita en konektejo %u"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s malkonektita el konektejo %u"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) ne konfigurita"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) ne konfigurita, uzante retrodefaŭltaĵon"
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Serĉo de Bluetooth kompletita."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Forigis kupladon. Rekomencigi RetroArch por konekti/kupli denove."
+   )
+MSG_HASH(
+   MSG_WIFI_SCAN_COMPLETE,
+   "Serĉo de Wi-Fi kompletita."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Serĉante aparatojn de bluetooth..."
+   )
+MSG_HASH(
+   MSG_SCANNING_WIRELESS_NETWORKS,
+   "Serĉante sendratajn retojn..."
+   )
+MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "Ebligante Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISABLING_WIRELESS,
+   "Malebligante Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "Malkonektante Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_NETPLAY_LAN_SCANNING,
+   "Serĉante retludajn gastigantojn..."
+   )
+MSG_HASH(
+   MSG_PREPARING_FOR_CONTENT_SCAN,
+   "Preparante enhavan serĉon..."
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+   "Enigi pasvorton"
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   "Ĝusta pasvorto."
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+   "Malĝusta pasvorto."
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD,
+   "Enigi pasvorton"
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
+   "Ĝusta pasvorto."
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
+   "Malĝusta pasvorto."
+   )
+MSG_HASH(
+   MSG_CONFIG_OVERRIDE_LOADED,
+   "Konfigura transpaso ŝargita."
+   )
+MSG_HASH(
+   MSG_GAME_REMAP_FILE_LOADED,
+   "Luda reasigndosiero ŝargita."
+   )
+MSG_HASH(
+   MSG_DIRECTORY_REMAP_FILE_LOADED,
+   "Enhavdosieruja reasigndosiero ŝargita."
+   )
+MSG_HASH(
+   MSG_CORE_REMAP_FILE_LOADED,
+   "Kerna reasigndosiero ŝargita."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Opcioj pri eniga reasignado konservitaj en:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Malsukcesis konservi opciojn pri eniga reasignado en:"
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "Anticipado ebligita. Respondotempaj filmeroj forigitaj: %u"
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "Anticipado ebligita kun akcesora ekzemplo. Respondotempaj filmeroj forigitaj: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "Anticipado forigita."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Anticipado estis malebligita ĉar ĉi tiu kerno ne subtenas konservostatojn."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "Anticipado nedisponebla ĉar ĉi tiu kerno ne subtenas determinisman konservostaton."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   "Malsukcesis konservi staton. Anticipado estis malebligita."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   "Malsukcesis ŝargi staton. Anticipado estis malebligita."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "Malsukcesis krei duan ekzemplon. Anticipadon nun nur uzos unu ekzemplon."
+   )
+MSG_HASH(
+   MSG_PREEMPT_ENABLED,
+   "Akaparaj filmeroj ebligitaj. Respondotempaj filmeroj forigitaj: %u."
+   )
+MSG_HASH(
+   MSG_PREEMPT_DISABLED,
+   "Akaparaj filmeroj malebligitaj."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Akaparaj filmeroj estis malebligitaj ĉar ĉi tiu kerno ne subtenas konservostatojn."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
+   "Akaparaj filmeroj nedisponeblaj ĉar ĉi tiu kerno ne subtenas determinismajn konservostatojn."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_ALLOCATE,
+   "Malsukcesis asigni memoron por akaparaj filmeroj."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_SAVE_STATE,
+   "Malsukcesis konservi staton. Akaparaj filmeroj estis malebligitaj."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_LOAD_STATE,
+   "Malsukcesis ŝargi staton. Akaparaj filmeroj estis malebligitaj."
+   )
+MSG_HASH(
+   MSG_SCANNING_OF_FILE_FINISHED,
+   "Finis serĉon de dosiero."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_SUCCESS,
+   "Sukcesis komenci serĉon de trompoj."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_FAIL,
+   "Malsukcesis komenci serĉon de trompoj."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   "Serĉo ne estis pravalorizita/komencita."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_FOUND_MATCHES,
+   "Nova kongrua kalkulo = %u"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "Aldonis %u kongruojn."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "Malsukcesis aldoni kongruojn."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "Kreis kodon de kongruo."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "Malsukcesis krei kodon."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "Forigis kongruon."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
+   "Ne sufiĉe da spaco. La maksimuma nombro da samtempaj trompoj estas 100."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_TOP_SUCCESS,
+   "Nova trompo aldonita al la plej supro de la listo."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+   "Nova trompo aldonita al la malsupro de la listo."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_ALL_SUCCESS,
+   "Forigis ĉiujn trompojn."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Reŝargis ĉiujn trompojn."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BEFORE_SUCCESS,
+   "Nova trompo aldonita antaŭ ol ĉi tiu."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_AFTER_SUCCESS,
+   "Nova trompo aldonita post ĉi tiu."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_BEFORE_SUCCESS,
+   "Trompo kopiita antaŭ ol ĉi tiu."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_AFTER_SUCCESS,
+   "Trompo kopiita post ĉi tiu."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_SUCCESS,
+   "Trompo forigita."
+   )
+MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Fermis virtualan diskpleton."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Malsukcesis fermi virtualan diskpleton."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Elĵetis virtualan diskpleton."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Malsukcesis elĵeti virtualan diskpleton."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Forigis diskon el pleton."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Malsukcesis forigi diskon el pleto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Neniu disko elektita"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Postaldonita disko"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Malsukcesis postaldoni diskon"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Agordante diskon en pleto"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Malsukcesis agordante diskon"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Malsukcesis agordante laste uzatan diskon."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Malsukcesis konektante al kliento."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Malsukcesis konekti al gastiganto."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Retluda gastiganto plena."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Vi estas forbarita de ĉi tiu gastiganto."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Malsukcesis ricevi kapon de gastiganto."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: ensalutita kiel \"%s\"."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
+   "Oni devas paŭzi aŭ malebligi malfacilegan reĝimon de akiroj por ŝargi statojn."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE,
+   "Oni devas paŭzi aŭ malebligi malfacilegan reĝimon de akiroj por ŝargi konservaĵojn de srm."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+   "Konservostato estis ŝargita. Malfacilega reĝimo de akiroj estis malebligita por la kuranta sesio."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
+   "Trompo estis aktivigita. Malfacilega reĝimo de akiroj estis malebligita por la kuranta sesio."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "Malfacilega reĝimo de akiroj ŝanĝita de gastiganto."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "Retluda gastiganto bezonas esti ĝisdatigita. Malfacilega reĝimo de akiroj estis malebligita por la kuranta sesio."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_MASTERED_GAME,
+   "Mastrumis %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_COMPLETED_GAME,
+   "Kompletigis %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Malfacilega reĝimo de akiroj ebligita, konservostato kaj revolvado estis malebligitaj."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Ĉi tiu ludo havas neniujn akirojn."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Ĉiuj %d akiroj aktivigitaj por ĉi tiu sesio"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "Aktivigis %d neoficialaj akiroj"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Vi havas %d de %d akiroj malŝlositaj"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d nesubtenata(j)"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "Detektis nesubtenatajn akirojn. Bonvolu provi malsaman kernon aŭ ĝisdatigi RetroArch."
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Spektante %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "Malfacilega paŭzita. Permana prokrasta agordo de videaj filmeroj ne ebligita."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Malfacilega paŭzita. Interŝanĝo de intervalo de vsync super 1 ne ebligita."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Malfacilega paŭzita. Enmeto de nigraj filmeroj ne ebligita."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Malfacilega paŭzita. Agordo ne ebligita: %s=%s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_NORMAL,
