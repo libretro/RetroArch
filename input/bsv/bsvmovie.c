@@ -1035,6 +1035,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       size_t last_pos        = handle->frame_pos[(MAX(handle->frame_counter,2)-2) & handle->frame_mask];
       size_t cur_pos         = intfstream_tell(handle->file);
       uint32_t back_distance = swap_if_big32((uint32_t)(cur_pos-last_pos));
+      intfstream_seek(handle->file, 0, SEEK_CUR);
       /* write backref */
       intfstream_write(handle->file, &back_distance, sizeof(uint32_t));
       /* write key events, frame is over */
