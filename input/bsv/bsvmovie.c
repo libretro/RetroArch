@@ -1569,7 +1569,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
    size_t superblock_count     = state_size / superblock_byte_size + (state_size % superblock_byte_size != 0);
    uint32_t *superblock_buf    = (uint32_t*)calloc(superblock_size, sizeof(uint32_t));
    uint8_t *padded_block       = NULL;
-   intfstream_t *out_stream    = intfstream_open_writable_memory(output,
+   intfstream_t *out_stream    = intfstream_open_memory(output,
          RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE,
          output_capacity);
    bool can_compare_saves = movie->cur_save_valid && movie->last_save
@@ -1641,7 +1641,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
             rmsgpack_write_int(out_stream, BSV_IFRAME_NEW_BLOCK_TOKEN);
             rmsgpack_write_int(out_stream, found_block.index);
             /* Cast is fine, a single block can't be super big */
-            rmsgpack_write_bin(out_stream, state+block_start, (uint32_t)block_byte_size);
+            rmsgpack_write_bin(out_stream, (uint8_t*)uint32s_index_get(movie->blocks, found_block.index), block_byte_size);
          }
          else
             reused_blocks++;
