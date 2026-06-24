@@ -48,7 +48,9 @@
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
 #include "../misc/cpufreq/cpufreq.h"
-
+#ifdef HAVE_LAKKA_SWITCH
+#include "../misc/gpufreq/gpufreq.h"
+#endif
 #ifndef BIND_ACTION_LEFT
 #define BIND_ACTION_LEFT(cbs, name) (cbs)->action_left = (name)
 #endif
@@ -936,7 +938,52 @@ static int cpu_policy_freq_tweak(unsigned type, const char *label,
    return 0;
 }
 #endif
+#ifdef HAVE_LAKKA_SWITCH
+static int gpu_policy_mode_change(unsigned type, const char *label,
+      bool wraparound)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   gpu_scaling_opts_t opts;
+   enum gpu_scaling_mode mode = get_gpu_scaling_mode(&opts);
+   if (mode != GPUSCALING_MANAGED_PERFORMANCE)
+      mode--;
+   set_gpu_scaling_mode(mode, &opts);
+   menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
 
+static int gpu_policy_freq_managed_tweak(unsigned type, const char *label,
+      bool wraparound)
+{
+   bool refresh = false;
+   gpu_scaling_opts_t opts;
+   gpu_scaling_driver_t **drivers = get_gpu_scaling_drivers(false);
+   unsigned policyid = atoi(label);
+   enum gpu_scaling_mode mode = get_gpu_scaling_mode(&opts);
+
+   if (!drivers)
+     return 0;
+
+   switch (type) {
+   case MENU_SETTINGS_GPU_MANAGED_SET_MINFREQ:
+      if((*drivers)->available_freqs)
+       opts.min_freq = get_gpu_scaling_next_frequency(drivers[policyid], opts.min_freq, -1);
+      else
+        opts.min_freq = get_gpu_scaling_next_frequency_limit(opts.min_freq, -1);
+      set_gpu_scaling_mode(mode, &opts);
+      break;
+   case MENU_SETTINGS_GPU_MANAGED_SET_MAXFREQ:
+      if((*drivers)->available_freqs)
+        opts.max_freq = get_gpu_scaling_next_frequency(drivers[policyid], opts.max_freq, -1);
+      else
+        opts.max_freq = get_gpu_scaling_next_frequency_limit(opts.max_freq, -1);
+      set_gpu_scaling_mode(mode, &opts);
+      break;
+   };
+
+   return 0;
+}
+#endif
 static int core_setting_left(unsigned type, const char *label,
       bool wraparound)
 {
@@ -1288,6 +1335,15 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_CPU_POLICY_CORE_GOVERNOR:
             case MENU_ENUM_LABEL_CPU_POLICY_MENU_GOVERNOR:
                BIND_ACTION_LEFT(cbs, cpu_policy_freq_managed_gov);
+               break;
+            #endif
+            #ifdef HAVE_LAKKA_SWITCH
+            case MENU_ENUM_LABEL_GPU_PERF_MODE:
+               BIND_ACTION_LEFT(cbs, gpu_policy_mode_change);
+               break;
+            case MENU_ENUM_LABEL_GPU_MANAGED_MIN_FREQ:
+            case MENU_ENUM_LABEL_GPU_MANAGED_MAX_FREQ:
+               BIND_ACTION_LEFT(cbs, gpu_policy_freq_managed_tweak);
                break;
             #endif
             default:

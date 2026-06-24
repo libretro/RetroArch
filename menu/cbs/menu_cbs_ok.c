@@ -434,6 +434,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_CPU_PERFPOWER_LIST;
       case ACTION_OK_DL_CPU_POLICY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CPU_POLICY_ENTRY;
+#ifdef HAVE_LAKKA_SWITCH
+      case ACTION_OK_DL_GPU_PERFPOWER_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_GPU_PERFPOWER_LIST;
+#endif
       case ACTION_OK_DL_MENU_SOUNDS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MENU_SOUNDS_LIST;
       case ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST:
@@ -1815,6 +1819,9 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
       case ACTION_OK_DL_CPU_PERFPOWER_SETTINGS_LIST:
       case ACTION_OK_DL_CPU_POLICY_SETTINGS_LIST:
+#ifdef HAVE_LAKKA_SWITCH
+      case ACTION_OK_DL_GPU_PERFPOWER_SETTINGS_LIST:
+#endif
       case ACTION_OK_DL_MENU_SOUNDS_LIST:
       case ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST:
       case ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
@@ -6710,6 +6717,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_quick_menu_views_list, ACTION_OK_DL_QUIC
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_power_management_list, ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cpu_perfpower_list, ACTION_OK_DL_CPU_PERFPOWER_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cpu_policy_entry, ACTION_OK_DL_CPU_POLICY_SETTINGS_LIST)
+#ifdef HAVE_LAKKA_SWITCH
+DEFAULT_ACTION_OK_FUNC(action_ok_gpu_perfpower_list, ACTION_OK_DL_GPU_PERFPOWER_SETTINGS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_sounds_list, ACTION_OK_DL_MENU_SOUNDS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_user_interface_list, ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_file_browser_list, ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST)
@@ -9564,6 +9574,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,           action_ok_power_management_list},
          {MENU_ENUM_LABEL_CPU_PERFPOWER,                       action_ok_cpu_perfpower_list},
          {MENU_ENUM_LABEL_CPU_POLICY_ENTRY,                    action_ok_cpu_policy_entry},
+#ifdef HAVE_LAKKA_SWITCH
+         {MENU_ENUM_LABEL_GPU_PERFPOWER,                       action_ok_gpu_perfpower_list},
+#endif
          {MENU_ENUM_LABEL_MENU_SOUNDS,                         action_ok_menu_sounds_list},
          {MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,          action_ok_menu_file_browser_list},
          {MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,   action_ok_open_uwp_permission_settings},

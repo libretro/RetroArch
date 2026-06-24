@@ -400,6 +400,12 @@ typedef struct settings
       unsigned cpu_max_freq;
 #endif
 
+#ifdef HAVE_LAKKA_SWITCH
+      unsigned gpu_scaling_mode;
+      unsigned gpu_min_freq;
+      unsigned gpu_max_freq;
+#endif
+
 #ifdef HAVE_MIST
       unsigned steam_rich_presence_format;
 #endif

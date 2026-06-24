@@ -21456,6 +21456,15 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 #endif
+#ifdef HAVE_LAKKA_SWITCH
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_GPU_PERFPOWER,
+               MENU_ENUM_LABEL_VALUE_GPU_PERFPOWER,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
 #ifndef HAVE_LAKKA
          if (frontend_driver_has_gamemode())
             CONFIG_BOOL(

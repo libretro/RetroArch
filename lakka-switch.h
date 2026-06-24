@@ -18,11 +18,6 @@
 
 #define SWITCH_OC_TOGGLE_PATH "/sys/kernel/tegra_cpufreq/overclock"
 #define SWITCH_CEC_TOGGLE_PATH "/tmp/.CEC"
-#define SWITCH_GPU_PROFILE_FILE_MAX_PATH  "/sys/devices/57000000.gpu/devfreq/57000000.gpu/max_freq"
-#define SWITCH_GPU_PROFILE_FILE_MIN_PATH  "/sys/devices/57000000.gpu/devfreq/57000000.gpu/min_freq"
-#define SWITCH_GPU_PROFILE_FILE_GOVERNOR_PATH "/sys/devices/57000000.gpu/devfreq/57000000.gpu/governor"
-#define SWITCH_GPU_PROFILE_FILE_AVAILABLE_GOVERNORS_PATH "/sys/devices/57000000.gpu/devfreq/57000000.gpu/available_governors"
-#define SWITCH_GPU_PROFILE_FILE_AVAILABLE_FREQ_PATH "/sys/devices/57000000.gpu/devfreq/57000000.gpu/available_governors"
 
 #define BLUETOOTH_ERTM_TOGGLE_PATH "/sys/module/bluetooth/parameters/disable_ertm"
 
