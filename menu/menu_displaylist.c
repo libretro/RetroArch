@@ -2403,6 +2403,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_SDL2
          {SUPPORTS_SDL2, "SDL 2"},
 #endif
+#ifdef HAVE_SDL3
+         {SUPPORTS_SDL3, "SDL 3"},
+#endif
 #ifdef HAVE_X11
          {SUPPORTS_X11, "X11"},
 #endif
