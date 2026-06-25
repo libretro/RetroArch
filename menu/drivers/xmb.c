@@ -10278,26 +10278,38 @@ static void xmb_toggle(void *userdata, bool menu_on)
 {
    xmb_handle_t *xmb          = (xmb_handle_t*)userdata;
    struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   file_list_t *selection_buf = NULL;
+   float spacing              = 0.0f;
+   float target_categories_x  = 0.0f;
+   uintptr_t alpha_tag        = 0;
+   uintptr_t bg_alpha_tag     = 0;
+   uintptr_t cat_tag          = 0;
+   uintptr_t list_tag         = 0;
+   gfx_animation_ctx_entry_t anim_entry;
+   bool menu_horizontal_animation = false;
 
    if (!xmb)
       return;
+
+   menu_horizontal_animation = settings->bools.menu_horizontal_animation;
 
    /* Reset */
    xmb->alpha_list = 1.0f;
 
    if (!menu_on)
    {
-      uintptr_t alpha_tag = (uintptr_t)&xmb->alpha;
-      uintptr_t bg_alpha_tag = (uintptr_t)&xmb->bg_alpha;
-      uintptr_t cat_tag   = (uintptr_t)&xmb->categories_x_pos;
+      alpha_tag = (uintptr_t)&xmb->alpha;
+      bg_alpha_tag = (uintptr_t)&xmb->bg_alpha;
+      cat_tag   = (uintptr_t)&xmb->categories_x_pos;
       gfx_animation_kill_by_tag(&alpha_tag);
       gfx_animation_kill_by_tag(&bg_alpha_tag);
       gfx_animation_kill_by_tag(&cat_tag);
 
-      file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+      selection_buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
       if (selection_buf)
       {
-         uintptr_t list_tag = (uintptr_t)selection_buf;
+         list_tag = (uintptr_t)selection_buf;
          gfx_animation_kill_by_tag(&list_tag);
       }
 
@@ -10328,14 +10340,11 @@ static void xmb_toggle(void *userdata, bool menu_on)
 
    xmb_toggle_horizontal_list(xmb);
 
-   settings_t *settings = config_get_ptr();
-   bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
-
    if (menu_horizontal_animation && settings->bools.menu_xmb_intro_animation)
    {
-      uintptr_t alpha_tag = (uintptr_t)&xmb->alpha;
-      uintptr_t bg_alpha_tag = (uintptr_t)&xmb->bg_alpha;
-      uintptr_t cat_tag   = (uintptr_t)&xmb->categories_x_pos;
+      alpha_tag = (uintptr_t)&xmb->alpha;
+      bg_alpha_tag = (uintptr_t)&xmb->bg_alpha;
+      cat_tag   = (uintptr_t)&xmb->categories_x_pos;
       gfx_animation_kill_by_tag(&alpha_tag);
       gfx_animation_kill_by_tag(&bg_alpha_tag);
       gfx_animation_kill_by_tag(&cat_tag);
@@ -10343,7 +10352,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
       xmb->alpha = 0.0f;
       xmb->bg_alpha = 0.0f;
 
-      float spacing = xmb->icon_spacing_horizontal;
+      spacing = xmb->icon_spacing_horizontal;
       if (spacing == 0.0f)
       {
          float scale_factor = xmb->last_scale_factor;
@@ -10351,10 +10360,8 @@ static void xmb_toggle(void *userdata, bool menu_on)
          spacing = 192.0f * scale_factor / scale_cap;
       }
 
-      float target_categories_x = spacing * -(float)xmb->categories_selection_ptr;
+      target_categories_x = spacing * -(float)xmb->categories_selection_ptr;
       xmb->categories_x_pos = target_categories_x + (spacing * 3.5f);
-
-      gfx_animation_ctx_entry_t anim_entry;
 
       anim_entry.duration     = XMB_DELAY * 6;
       anim_entry.target_value = 1.0f;
@@ -10383,18 +10390,22 @@ static void xmb_toggle(void *userdata, bool menu_on)
       anim_entry.userdata     = xmb;
       gfx_animation_push(&anim_entry);
 
-      file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+      selection_buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
       if (selection_buf)
       {
          unsigned i;
-         size_t end = selection_buf->size;
-         uintptr_t list_tag = (uintptr_t)selection_buf;
+         size_t end;
+         end = selection_buf->size;
+         list_tag = (uintptr_t)selection_buf;
 
          gfx_animation_kill_by_tag(&list_tag);
 
          for (i = 0; i < end; i++)
          {
-            xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
+            xmb_node_t *node;
+            float target_ia;
+
+            node = (xmb_node_t*)selection_buf->list[i].userdata;
             if (!node)
                continue;
 
@@ -10402,7 +10413,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
             node->alpha = 0.0f;
             node->label_alpha = 0.0f;
 
-            float target_ia = (i == menu_st->selection_ptr) ? xmb->items_active_alpha : xmb->items_passive_alpha;
+            target_ia = (i == menu_st->selection_ptr) ? xmb->items_active_alpha : xmb->items_passive_alpha;
 
             anim_entry.duration     = XMB_DELAY * 9;
             anim_entry.target_value = target_ia;
@@ -10427,7 +10438,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
    {
       xmb->alpha = xmb->items_active_alpha;
       xmb->bg_alpha = 1.0f;
-      float spacing = xmb->icon_spacing_horizontal;
+      spacing = xmb->icon_spacing_horizontal;
       if (spacing == 0.0f)
       {
          float scale_factor = xmb->last_scale_factor;
