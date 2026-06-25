@@ -7280,6 +7280,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "The speed for the Text-to-Speech voice."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Text-to-Speech Engine"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "The Text-to-Speech backend used for the narrator."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK,
+   "eSpeak"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER,
+   "Speech Dispatcher"
+   )
 
 /* Settings > Power Management */
 

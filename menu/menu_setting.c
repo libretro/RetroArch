@@ -3315,9 +3315,27 @@ static size_t setting_get_string_representation_uint_ai_service_mode(
    return 0;
 }
 
-static size_t setting_get_string_representation_uint_ai_service_lang(
+static size_t setting_get_string_representation_uint_accessibility_narrator_engine(
       rarch_setting_t *setting, char *s, size_t len)
 {
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK:
+         enum_idx = MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK;
+         break;
+      case ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER:
+         enum_idx = MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER;
+         break;
+      default:
+         break;
+   }
+   if (enum_idx != 0)
+      return strlcpy(s, msg_hash_to_str(enum_idx), len);
+   return 0;
+}
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    if (!setting)
       return 0;
@@ -21561,6 +21579,25 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 1, 10, 1, true, true);
+
+#if defined(__linux__) && !defined(ANDROID)
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.accessibility_narrator_engine,
+               MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+               MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+               DEFAULT_ACCESSIBILITY_NARRATOR_ENGINE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_accessibility_narrator_engine;
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0,
+               ACCESSIBILITY_NARRATOR_ENGINE_LAST - 1, 1, true, true);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

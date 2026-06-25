@@ -188,6 +188,10 @@
 
 #define DEFAULT_ACCESSIBILITY_NARRATOR_SPEECH_SPEED 5
 
+/* espeak is the default narrator engine so existing setups are
+ * unaffected. The enum lives in configuration.h. */
+#define DEFAULT_ACCESSIBILITY_NARRATOR_ENGINE ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK
+
 #define DEFAULT_DRIVER_SWITCH_ENABLE true
 
 #define DEFAULT_USER_LANGUAGE 0
