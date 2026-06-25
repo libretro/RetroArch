@@ -2886,7 +2886,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                if (crc_len < sizeof(entry_crc32_buf))
                {
                   const char *elem0     = entry_crc32_buf;
-                  const char *hash_type = NULL;
+                  char       *hash_type = NULL;
                   char *delim           = strchr(entry_crc32_buf, '|');
 
                   if (delim)

@@ -4019,7 +4019,7 @@ static bool config_load_file(global_t *global,
    if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE) && !without_overrides)
    {
       char tmp_append_path[PATH_MAX_LENGTH];
-      const char *extra_path = NULL;
+      char *extra_path = NULL;
 #ifdef HAVE_OVERLAY
       char old_overlay_path[PATH_MAX_LENGTH], new_overlay_path[PATH_MAX_LENGTH];
       config_get_path(conf, "input_overlay", old_overlay_path, sizeof(old_overlay_path));

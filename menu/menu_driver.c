@@ -7236,7 +7236,7 @@ static int generic_menu_iterate(
          break;
       case ITERATE_TYPE_CONFIRM:
          strlcpy(menu->menu_state_msg,
-               msg_hash_to_str(menu_st->dialog_st.confirm_msg),
+               msg_hash_to_str((enum msg_hash_enums)menu_st->dialog_st.confirm_msg),
                sizeof(menu->menu_state_msg));
 
 #ifdef HAVE_ACCESSIBILITY

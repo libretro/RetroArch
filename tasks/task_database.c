@@ -2214,7 +2214,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                if (dbinfo->type == DATABASE_TYPE_ITERATE)
                   dbinfo->type   = DATABASE_TYPE_ITERATE_ARCHIVE;
 
-            current_verdict = task_database_iterate(manual_scan, content_path, dbstate, dbinfo,
+            current_verdict = (enum scan_verdict)task_database_iterate(manual_scan, content_path, dbstate, dbinfo,
                      path_contains_compressed_file);
 #ifdef DEBUG
             RARCH_DBG("[Scanner] Scan verdict is %d for %s\n", current_verdict, content_path);

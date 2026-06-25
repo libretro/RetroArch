@@ -6561,7 +6561,7 @@ static enum runloop_state_enum runloop_check_state(
       if (menu_st->dialog_st.pending_cmd != CMD_EVENT_NONE)
       {
          /* Event also wants to resume */
-         if (!command_event(menu_st->dialog_st.pending_cmd, NULL))
+         if (!command_event((enum event_command)menu_st->dialog_st.pending_cmd, NULL))
             command_event(CMD_EVENT_RESUME, NULL);
 
          menu_dialog_confirm_clear(menu_st);
