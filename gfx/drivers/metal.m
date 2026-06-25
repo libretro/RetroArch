@@ -4887,7 +4887,15 @@ typedef struct MTLALIGN(16)
       memset(&_engine.pass[i].feedback, 0, sizeof(_engine.pass[i].feedback));
    }
 
-   _engine.mvp_last_pass = _context.uniformsNoRotate->projectionMatrix;
+   /* Default to the rotated projection matrix. Under a TATE rotation the
+    * final pass swaps width/height (below), which makes its target size
+    * differ from the viewport and sends it down the FBO-allocation branch
+    * rather than the direct-to-screen 'else' that assigns the rotated
+    * matrix -- so without this default the last pass would render with the
+    * unrotated matrix and the image would keep its orientation while only
+    * the aspect ratio changed (issue #19142). This mirrors the D3D11 driver,
+    * which initialises mvp_last_pass to the rotated mvp. */
+   _engine.mvp_last_pass = _context.uniforms->projectionMatrix;
    int rot = retroarch_get_rotation();
    
    width  = (NSUInteger)_size.width;
