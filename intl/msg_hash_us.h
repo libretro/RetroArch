@@ -12324,6 +12324,14 @@ MSG_HASH(
    "Draw drop shadows for icons, thumbnails and letters. This will have a minor performance hit."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_INTRO_ANIMATION,
+   "Intro Animation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_INTRO_ANIMATION,
+   "Play home menu opening intro animation when toggling the menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
    "Shader Pipeline"
    )
