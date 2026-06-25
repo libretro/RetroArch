@@ -108,7 +108,20 @@ ifeq ($(HAVE_DRMINGW), 1)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-   LDFLAGS += -mwindows
+   # Use the GUI subsystem (no console window) but keep the default
+   # CRT entry that calls main(), rather than -mwindows which selects
+   # crtexewin.o and requires a WinMain. RetroArch provides main() (in
+   # retroarch.c) and its own Win32 window; it has no WinMain. This
+   # mirrors the MSVC/griffin builds, which use
+   # '-SUBSYSTEM:WINDOWS -ENTRY:mainCRTStartup' for the same effect.
+   # Doing it this way means the build needs neither a hand-written
+   # WinMain nor SDL's WinMain shim library (-lSDL*main), and it lets
+   # the CXX_BUILD=1 link resolve (-mwindows -> WinMain -> SDL_main was
+   # the chain that broke once main correctly stayed main). RetroArch
+   # links the Win32 libraries it needs explicitly (gdi32, ole32,
+   # winmm, comdlg32, ...), so it does not rely on -mwindows to pull
+   # them in.
+   LDFLAGS += -Wl,--subsystem,windows
 endif
 
 ifneq ($(CXX_BUILD), 1)
