@@ -1685,7 +1685,13 @@ ifeq ($(HAVE_SDL3), 1)
    SDL3_CFLAGS = $(shell pkg-config sdl3 --cflags)
 	SDL3_LIBS = $(shell pkg-config sdl3 --libs)
    DEF_FLAGS += $(SDL3_CFLAGS)
-   LIBS += $(SDL3_LIBS)
+   # RetroArch supplies its own entry point and sets SDL_MAIN_HANDLED
+   # (see retroarch.c), so SDL's WinMain shim library (-lSDL3main /
+   # -lSDLmain, pulled in automatically by pkg-config --libs on
+   # Windows/MSYS2) is both unnecessary and harmful: its WinMain
+   # references SDL_main, which no longer exists once main stays main.
+   # Filter it out.
+   LIBS += $(filter-out -lSDL3main -lSDLmain -lSDL_main,$(SDL3_LIBS))
 	DEFINES += -DHAVE_SDL3
    OBJ += input/drivers_joypad/sdl3_joypad.o
 else ifeq ($(HAVE_SDL2), 1)
@@ -1693,12 +1699,15 @@ else ifeq ($(HAVE_SDL2), 1)
    OBJ += gfx/drivers/sdl2_gfx.o \
 	  gfx/common/sdl2_common.o
    DEF_FLAGS += $(SDL2_CFLAGS)
-   LIBS += $(SDL2_LIBS)
+   # See the SDL3 note above: drop SDL's WinMain shim lib, we set
+   # SDL_MAIN_HANDLED and provide our own entry point.
+   LIBS += $(filter-out -lSDL2main -lSDLmain -lSDL_main,$(SDL2_LIBS))
 else ifeq ($(HAVE_SDL), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl_gfx.o
    DEF_FLAGS += $(SDL_CFLAGS)
-   LIBS += $(SDL_LIBS)
+   # See the SDL3 note above: drop SDL's WinMain shim lib.
+   LIBS += $(filter-out -lSDLmain -lSDL_main,$(SDL_LIBS))
 else ifeq ($(HAVE_SDL_DINGUX), 1)
    HAVE_SDL_COMMON = 1
    DEF_FLAGS += -DHAVE_SDL -DHAVE_SDL_DINGUX
