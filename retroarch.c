@@ -8648,6 +8648,25 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             if (!(runloop_st->flags & RUNLOOP_FLAG_IS_INITED))
                return false;
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+#ifdef HAVE_NETWORKING
+            /* Free netplay lobby state at shutdown. room_list and
+             * rooms_data are populated when browsing the netplay lobby
+             * and recycled on each refresh, but nothing frees them at
+             * exit, so the last-populated allocation leaks. This is the
+             * one-time teardown point: deinit_netplay() above runs on
+             * every session start/stop and must not free the lobby list
+             * (the menu may still be reading room_list to join a room). */
+            {
+               net_driver_state_t *net_st = networking_state_get_ptr();
+               netplay_rooms_free();
+               if (net_st->room_list)
+               {
+                  free(net_st->room_list);
+                  net_st->room_list  = NULL;
+               }
+               net_st->room_count = 0;
+            }
+#endif
 #ifdef HAVE_COMMAND
             input_driver_deinit_command(input_st);
 #endif
