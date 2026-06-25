@@ -6527,12 +6527,6 @@ extern "C"
 #endif
 int main(int argc, char *argv[])
 {
-   /* We opted out of SDL's main shim with SDL_MAIN_HANDLED (see the
-    * SDL include block above), so tell SDL its entry point has run
-    * before any subsystem is initialised lazily by the SDL drivers. */
-#if defined(HAVE_SDL3) || defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
-   SDL_SetMainReady();
-#endif
    return rarch_main(argc, argv, NULL);
 }
 #endif
