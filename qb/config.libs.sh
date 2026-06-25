@@ -781,6 +781,23 @@ check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false
 
 check_enabled GLSLANG BUILTINGLSLANG 'builtin glslang' 'glslang is' true
 
+check_enabled SPIRV_CROSS BUILTINSPIRV_CROSS 'builtin spirv-cross' 'spirv-cross is' true
+
+if [ "$HAVE_SPIRV_CROSS" != no ] && [ "$HAVE_BUILTINSPIRV_CROSS" = no ]; then
+   check_pkgconf SPIRV_CROSS spirv-cross-c-shared
+
+   if [ "$HAVE_SPIRV_CROSS" = no ]; then
+      check_header cxx SPIRV_CROSS spirv_cross/spirv_cross.hpp
+      check_lib cxx SPIRV_CROSS -lspirv-cross-core '' '-lspirv-cross-glsl'
+   fi
+
+   if [ "$HAVE_SPIRV_CROSS" = no ]; then
+      die : 'Notice: System SPIRV-Cross not found, enabling builtin SPIRV-Cross.'
+      HAVE_BUILTINSPIRV_CROSS=yes
+      HAVE_SPIRV_CROSS=yes
+   fi
+fi
+
 if [ "$HAVE_GLSLANG" != no ]; then
    check_header cxx GLSLANG \
       glslang/Public/ShaderLang.h \
