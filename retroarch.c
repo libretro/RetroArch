@@ -223,9 +223,27 @@
 #include "ai/game_ai.h"
 #endif
 
+/* RetroArch provides its own entry point (main, below) and runloop,
+ * creates its own Win32 window (gfx/common/win32_common.c), and
+ * initialises SDL subsystems explicitly (SDL_Init/SDL_InitSubSystem
+ * in the SDL audio/video/input drivers). SDL is used purely as a
+ * driver backend, never as the application framework. Tell SDL not to
+ * #define main->SDL_main and not to supply its own WinMain: without
+ * this, SDL.h renames our main to SDL_main and the link pulls in
+ * libSDL2main's WinMain, which (a) is unwanted given -mwindows /
+ * -ENTRY:mainCRTStartup already designate our entry point, and (b)
+ * breaks under CXX_BUILD where the renamed main is compiled as C++
+ * and no longer matches the C 'SDL_main' that WinMain calls
+ * (undefined reference to SDL_main). */
 #if defined(HAVE_SDL3)
+#ifndef SDL_MAIN_HANDLED
+#define SDL_MAIN_HANDLED
+#endif
 #include <SDL3/SDL.h>
 #elif defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+#ifndef SDL_MAIN_HANDLED
+#define SDL_MAIN_HANDLED
+#endif
 #include "SDL.h"
 #endif
 
@@ -6509,6 +6527,12 @@ extern "C"
 #endif
 int main(int argc, char *argv[])
 {
+   /* We opted out of SDL's main shim with SDL_MAIN_HANDLED (see the
+    * SDL include block above), so tell SDL its entry point has run
+    * before any subsystem is initialised lazily by the SDL drivers. */
+#if defined(HAVE_SDL3) || defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+   SDL_SetMainReady();
+#endif
    return rarch_main(argc, argv, NULL);
 }
 #endif
