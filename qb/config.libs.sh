@@ -550,7 +550,16 @@ if [ "$HAVE_BLISSBOX" != 'no' ]; then
    fi
 fi
 
-if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
+# Detect the desktop OpenGL libraries whenever OpenGL is enabled, even if
+# OpenGLES is also enabled. Both can be requested together (e.g. distro
+# packaging that wants a feature-complete build), and the desktop GL driver
+# still needs to link against -lGL. Previously this block was skipped as soon
+# as HAVE_OPENGLES=yes, so OPENGL_LIBS was left empty while HAVE_OPENGL stayed
+# 'yes' (when forced via --enable-opengl), causing a link failure that only
+# went away by adding -lGL by hand. check_lib disables OpenGL on its own if
+# the library is not present, so GLES-only systems without desktop GL are
+# unaffected.
+if [ "$HAVE_OPENGL" != 'no' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_header '' OPENGL "OpenGL/gl.h"
       check_lib '' OPENGL "-framework OpenGL"
