@@ -125,10 +125,22 @@ static void sdl_pad_connect(unsigned id)
    {
       RARCH_ERR("[SDL] Couldn't open joystick #%u: %s.\n", id, SDL_GetError());
 
+#ifdef HAVE_SDL2
+      /* SDL_GameControllerOpen() may have returned a valid controller
+       * even though the overall open failed (e.g. the backing joystick
+       * could not be retrieved). Close it here, otherwise the handle is
+       * leaked and pad->controller is left dangling - which matters when
+       * a misbehaving device triggers a rapid connect/disconnect storm. */
+      if (pad->controller)
+         SDL_GameControllerClose(pad->controller);
+      else
+#endif
       if (pad->joypad)
          SDL_JoystickClose(pad->joypad);
 
-      pad->joypad = NULL;
+      /* Reset the whole slot so no stale handles survive, mirroring
+       * sdl_pad_disconnect(). */
+      memset(pad, 0, sizeof(*pad));
 
       return;
    }
