@@ -4495,6 +4495,17 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CHEEVOS
             rcheevos_unload();
 #endif
+#ifdef HAVE_NETWORKING
+            /* The core may have registered a netpacket interface
+             * (RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE). We hold a
+             * heap copy of that struct, but it carries function
+             * pointers into the core. Clear it before the core's dylib
+             * is closed by runloop_event_deinit_core(), otherwise those
+             * pointers dangle into unloaded code. Passing NULL frees and
+             * nulls the cached interface via the existing handler. */
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_CORE_PACKET_INTERFACE,
+                  NULL);
+#endif
             runloop_event_deinit_core();
 
             /* Clear turbo and hold button state on core unload */
