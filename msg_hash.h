@@ -173,6 +173,8 @@ enum msg_file_type
 
    FILE_TYPE_OSK_OVERLAY,
 
+   FILE_TYPE_PBP,
+
    FILE_TYPE_LAST
 };
 
