@@ -6550,7 +6550,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Show the 'Import Content' entry inside the Main Menu or Playlists."
+   "Show 'Import Content' entry as a Main Menu entry or next to Playlists."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
