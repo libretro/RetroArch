@@ -81,9 +81,9 @@
                 Description="Enables or disables the default for copying binaries to the output folder to be false"
                 Category="General" />
 
-  <BoolProperty Name="CppWinRTEnableLegacyCoroutines"
-                DisplayName="Enable legacy coroutines (C++17)"
-                Description="Enables the /await compiler option (disable this if you want to pass this yourself)"
+  <BoolProperty Name="CppWinRTEnableCpp17Coroutines"
+                DisplayName="Enable C++17 coroutines"
+                Description="Enables the /await:strict compiler option"
                 Category="General" />
 
 </Rule>

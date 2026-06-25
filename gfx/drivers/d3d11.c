@@ -323,7 +323,7 @@ typedef struct
    D3D11BlendState       blend_disable;
    D3D11BlendState       blend_pipeline;
    D3D11Buffer           menu_pipeline_vbo;
-   math_matrix_4x4       mvp, mvp_no_rot, identity;
+   math_matrix_4x4       mvp, mvp_last_pass, mvp_no_rot, identity;
    struct video_viewport vp;
    D3D11_VIEWPORT        viewport;
    D3D11_RECT            scissor;
@@ -2248,7 +2248,7 @@ static bool d3d11_shader_load_step(void *data,
             },
             {
                i == ds->shader_preset->passes - 1
-                  ? &d3d11->mvp : &d3d11->identity,
+                  ? &d3d11->mvp_last_pass : &d3d11->identity,
                &d3d11->pass[i].rt.size_data,
                &d3d11->frame.output_size,
                &d3d11->pass[i].frame_count,
@@ -2577,7 +2577,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d11->luts[0].size_data, sizeof(*d3d11->luts)},
          },
          {
-            i == d3d11->shader_preset->passes - 1 ? &d3d11->mvp : &d3d11->identity, /* MVP */
+            i == d3d11->shader_preset->passes - 1 ? &d3d11->mvp_last_pass : &d3d11->identity, /* MVP */
             &d3d11->pass[i].rt.size_data,    /* OutputSize */
             &d3d11->frame.output_size,       /* FinalViewportSize */
             &d3d11->pass[i].frame_count,     /* FrameCount */
@@ -3810,6 +3810,8 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
 static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsigned height)
 {
    size_t i;
+   d3d11->mvp_last_pass = d3d11->ubo_values.mvp;
+   int rot = retroarch_get_rotation();
 
    for (i = 0; i < d3d11->shader_preset->passes; i++)
    {
@@ -3824,7 +3826,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               width = d3d11->vp.width * pass->fbo.scale_x;
+               width = (rot % 2 ? d3d11->vp.height : d3d11->vp.width) * pass->fbo.scale_x;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -3845,7 +3847,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               height = d3d11->vp.height * pass->fbo.scale_y;
+               height = (rot % 2 ? d3d11->vp.width : d3d11->vp.height) * pass->fbo.scale_y;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -3861,13 +3863,14 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
       }
       else if (i == (d3d11->shader_preset->passes - 1))
       {
-         width  = d3d11->vp.width;
-         height = d3d11->vp.height;
+         width  = rot % 2 ? d3d11->vp.height : d3d11->vp.width;
+         height = rot % 2 ? d3d11->vp.width : d3d11->vp.height;
       }
 
       RARCH_DBG("[D3D11] Updating framebuffer size %ux%u.\n", width, height);
 	  
 	  bool last_pass = i == (d3d11->shader_preset->passes - 1);
+	  
 
       if (     !last_pass
 			|| pass->feedback
@@ -3906,8 +3909,14 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
       }
       else
       {
-         width = retroarch_get_rotation() % 2 ? height : width;
-         height = retroarch_get_rotation() % 2 ? width : height;
+         d3d11->mvp_last_pass = d3d11->mvp;
+		 
+		 if (rot % 2)
+		 {
+			unsigned tmp = width;
+			width = height;
+			height = tmp;
+		 }			 
 
          d3d11->pass[i].rt.size_data.x = width;
          d3d11->pass[i].rt.size_data.y = height;
