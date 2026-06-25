@@ -183,6 +183,33 @@ bool slang_process(
 RETRO_END_DECLS
 
 #ifdef __cplusplus
+/* The DirectX SAL-compat shims (dxgi_common.h / dxsdk_sal_compat.h)
+ * #define annotation tokens such as __out / __in / __inout to nothing
+ * so the bundled DXSDK headers parse. Those names collide with real
+ * identifiers inside libstdc++ -- e.g. std::__convert_from_v() in
+ * <bits/c++locale.h> has a parameter literally named __out -- so if a
+ * SAL macro is still live when the STL headers below are parsed, the
+ * token is erased and the header fails to compile (this only bites
+ * under CXX_BUILD, where these .c files are compiled as C++ and pull
+ * in <vector>/<string>/<unordered_map>). Undef them here, after the
+ * DX headers have already consumed them and before the STL includes. */
+#undef __in
+#undef __out
+#undef __inout
+#undef __in_opt
+#undef __out_opt
+#undef __inout_opt
+#undef __in_ecount
+#undef __out_ecount
+#undef __in_ecount_opt
+#undef __out_ecount_opt
+#undef __in_bcount
+#undef __out_bcount
+#undef __in_bcount_opt
+#undef __out_bcount_opt
+#undef __out_bcount_part
+#undef __deref_out_ecount
+
 #include <vector>
 #include <string>
 #include <unordered_map>
