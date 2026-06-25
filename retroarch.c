@@ -6535,32 +6535,6 @@ int main(int argc, char *argv[])
 #endif
    return rarch_main(argc, argv, NULL);
 }
-
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-/* RetroArch builds for the Windows GUI subsystem (no console window).
- * Depending on the toolchain, the C runtime startup that the GUI
- * subsystem pulls in calls WinMain rather than main: notably MSYS2's
- * mingw-w64 selects crtexewin.o, whose __tmainCRTStartup references
- * WinMain. Previously that WinMain was supplied by SDL's shim library
- * (libSDL2main); now that we set SDL_MAIN_HANDLED and no longer link
- * -lSDL*main, we must provide it ourselves. Forward to main() with the
- * CRT-provided argc/argv. (__argc/__argv are declared by <stdlib.h> on
- * MinGW/MSVC.) This is the same one-line bridge SDL2main provided, kept
- * in-tree so the link does not depend on SDL being enabled.
- * windows.h is already included above, so use the canonical signature. */
-#ifdef __cplusplus
-extern "C"
-#endif
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-      LPSTR lpCmdLine, int nShowCmd)
-{
-   (void)hInstance;
-   (void)hPrevInstance;
-   (void)lpCmdLine;
-   (void)nShowCmd;
-   return main(__argc, __argv);
-}
-#endif
 #endif
 
 /* DYNAMIC LIBRETRO CORE  */
