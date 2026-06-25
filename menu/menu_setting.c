@@ -3315,27 +3315,9 @@ static size_t setting_get_string_representation_uint_ai_service_mode(
    return 0;
 }
 
-static size_t setting_get_string_representation_uint_accessibility_narrator_engine(
+static size_t setting_get_string_representation_uint_ai_service_lang(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
-   if (!setting)
-      return 0;
-   switch (*setting->value.target.unsigned_integer)
-   {
-      case ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK:
-         enum_idx = MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK;
-         break;
-      case ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER:
-         enum_idx = MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER;
-         break;
-      default:
-         break;
-   }
-   if (enum_idx != 0)
-      return strlcpy(s, msg_hash_to_str(enum_idx), len);
-   return 0;
-}
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    if (!setting)
       return 0;
@@ -3546,6 +3528,30 @@ static size_t setting_get_string_representation_uint_accessibility_narrator_engi
    if (enum_idx != 0)
       return strlcpy(s, msg_hash_to_str(enum_idx), len);
    return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+}
+#endif
+
+#if defined(__linux__) && !defined(ANDROID)
+static size_t setting_get_string_representation_uint_accessibility_narrator_engine(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK:
+         enum_idx = MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK;
+         break;
+      case ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER:
+         enum_idx = MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER;
+         break;
+      default:
+         break;
+   }
+   if (enum_idx != 0)
+      return strlcpy(s, msg_hash_to_str(enum_idx), len);
+   return 0;
 }
 #endif
 
