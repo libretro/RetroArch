@@ -27,6 +27,22 @@
 
 #include <sys/stat.h>
 
+/* MinGW's <sys/stat.h> defines stat (and in some configs mkdir) as
+ * function-like macros that map to _stat64/_stati64/_mkdir.  This must
+ * be undone BEFORE including libretro.h below: otherwise the macro
+ * rewrites the struct member name in the retro_vfs_interface definition
+ * (retro_vfs_stat_t stat -> _stat64), and then the use sites
+ * vfs_iface->stat / vfs_iface->mkdir no longer match it, breaking the
+ * Windows build.  The POSIX functions are still reachable via their
+ * real names where this TU needs them (it doesn't call stat()/mkdir()
+ * directly; all I/O goes through the VFS *_impl callbacks). */
+#ifdef stat
+#undef stat
+#endif
+#ifdef mkdir
+#undef mkdir
+#endif
+
 #include <boolean.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
@@ -39,6 +55,16 @@
 #include <direct.h>
 #else
 #include <unistd.h> /* stat() is defined here */
+#endif
+
+/* <direct.h> (MinGW, included just above) can re-establish the mkdir
+ * macro after the earlier #undef, so drop it again here before the use
+ * site below.  Same rationale for stat, defensively. */
+#ifdef stat
+#undef stat
+#endif
+#ifdef mkdir
+#undef mkdir
 #endif
 
 /* TODO/FIXME - globals */
