@@ -3726,8 +3726,15 @@ bool command_event(enum event_command cmd, void *data)
          {
             if (settings->bools.savestate_auto_index)
             {
+               int prev_slot = settings->ints.state_slot;
+               int next_slot = command_event_get_next_savestate_auto_index(
+                     settings);
+               RARCH_LOG("[State] auto-index advance: slot %d -> %d "
+                     "(max_keep %u) before save.\n",
+                     prev_slot, next_slot,
+                     settings->uints.savestate_max_keep);
                configuration_set_int(settings, settings->ints.state_slot,
-                  command_event_get_next_savestate_auto_index(settings));
+                  next_slot);
             }
          }
          if (!command_event_main_state(cmd))

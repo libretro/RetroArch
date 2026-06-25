@@ -565,7 +565,13 @@ static void task_save_handler(retro_task_t *task)
                RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!state->file)
+      {
+         RARCH_ERR("[State] save task could not open \"%s\" for writing "
+               "(slot %d). The auto-index slot was already advanced, so "
+               "this leaves an advanced slot with no save file.\n",
+               state->path, state->state_slot);
          return;
+      }
    }
 
    if (!state->data)
@@ -611,11 +617,20 @@ static void task_save_handler(retro_task_t *task)
       }
 
       task_set_error(task, strdup(msg));
+      RARCH_ERR("[State] save task FAILED for slot %d, path \"%s\" "
+            "(wrote %d of %d bytes%s).\n",
+            state->state_slot, state->path,
+            (int)state->written, (int)state->size,
+            ((flg & RETRO_TASK_FLG_CANCELLED) > 0) ? ", cancelled" : "");
       task_save_handler_finished(task, state);
    }
    else if (state->written == state->size)
    {
       char       *msg      = NULL;
+
+      RARCH_LOG("[State] save task COMPLETED for slot %d, path \"%s\" "
+            "(%d bytes).\n",
+            state->state_slot, state->path, (int)state->size);
 
       task_free_title(task);
 
