@@ -6263,8 +6263,15 @@ static void rgui_update_menu_viewport(
       rgui->menu_video_settings.vp.height = 1;
    }
 
-   rgui->menu_video_settings.vp.x = (vp.full_width - rgui->menu_video_settings.vp.width) / 2;
-   rgui->menu_video_settings.vp.y = (vp.full_height - rgui->menu_video_settings.vp.height) / 2;
+   /* Leave the viewport at the origin and let the video driver's
+    * viewport-bias logic centre it (default bias 0.5 == centred).
+    * Pre-centring here as well (vp.x = (full_width - width) / 2)
+    * double-applies the offset since 439c672c22 made the
+    * ASPECT_RATIO_CUSTOM path add padding * bias on top of vp.x,
+    * which pushed the menu hard against the right/bottom edge on
+    * wide screens. */
+   rgui->menu_video_settings.vp.x = 0;
+   rgui->menu_video_settings.vp.y = 0;
 }
 
 static bool rgui_set_aspect_ratio(
