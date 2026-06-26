@@ -2803,13 +2803,26 @@ static int create_string_list_rdb_entry_int(
    return 0;
 }
 
-static char* month_str_to_uint(unsigned month)
+static int month_uint_to_menu_label_value(unsigned month)
 {
-   char *months[12] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+   const int months[12] = {
+      MENU_ENUM_LABEL_VALUE_MONTH_JANUARY,
+      MENU_ENUM_LABEL_VALUE_MONTH_FEBRUARY,
+      MENU_ENUM_LABEL_VALUE_MONTH_MARCH,
+      MENU_ENUM_LABEL_VALUE_MONTH_APRIL,
+      MENU_ENUM_LABEL_VALUE_MONTH_MAY,
+      MENU_ENUM_LABEL_VALUE_MONTH_JUNE,
+      MENU_ENUM_LABEL_VALUE_MONTH_JULY,
+      MENU_ENUM_LABEL_VALUE_MONTH_AUGUST,
+      MENU_ENUM_LABEL_VALUE_MONTH_SEPTEMBER,
+      MENU_ENUM_LABEL_VALUE_MONTH_OCTOBER,
+      MENU_ENUM_LABEL_VALUE_MONTH_NOVEMBER,
+      MENU_ENUM_LABEL_VALUE_MONTH_DECEMBER,
+   };
    if (month < 1 || month > 12)
    {
       RARCH_WARN("Found invalid month number in database entry, got %d\n", month);
-      return NULL;
+      return -1;
    }
    return months[month];
 }
@@ -3077,7 +3090,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH),
-                  month_str_to_uint(db_info_entry->releasemonth), info->path, info->list) == -1)
+                  msg_hash_to_str(month_uint_to_menu_label_value(db_info_entry->releasemonth)), info->path, info->list) == -1)
             goto error;
       }
 
