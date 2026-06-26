@@ -5909,13 +5909,19 @@ bool config_save_file(const char *path)
             input_driver_state_t *input_st = input_state_get_ptr();
             input_device_info_t saved_device_info[MAX_INPUT_DEVICES];
             retro_keybind_set *saved_autoconf_binds;
+            /* Heap-allocated: MAX_USERS * sizeof(retro_keybind_set) is
+             * ~51KB, too large for the stack on small-stack platforms.
+             * Matches defaults_binds / saved_autoconf_binds above. */
+            retro_keybind_set *saved_binds;
 #ifdef HAVE_LANGEXTRA
             unsigned saved_user_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
 #endif
 
             /* Save current input_config_binds */
-            retro_keybind_set saved_binds[MAX_USERS];
-            memcpy(saved_binds, input_config_binds, sizeof(saved_binds));
+            saved_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
+            if (saved_binds)
+               memcpy(saved_binds, input_config_binds,
+                     MAX_USERS * sizeof(retro_keybind_set));
 
             /* Save current input_autoconf_binds (deep copy with string duplication) */
             saved_autoconf_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
@@ -5959,7 +5965,12 @@ bool config_save_file(const char *path)
             config_st = saved_config_st;
 
             /* Restore input_config_binds */
-            memcpy(input_config_binds, saved_binds, sizeof(saved_binds));
+            if (saved_binds)
+            {
+               memcpy(input_config_binds, saved_binds,
+                     MAX_USERS * sizeof(retro_keybind_set));
+               free(saved_binds);
+            }
 
             /* Restore input_device_info */
             memcpy(input_st->input_device_info, saved_device_info,
