@@ -17,7 +17,6 @@
 #include <string/stdstring.h>
 
 #include <alsa/asoundlib.h>
-#include <asm-generic/errno.h>
 
 #include "alsa.h"
 
