@@ -7112,6 +7112,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "Débit vocal pour la voix de la synthèse vocale."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Moteur de synthèse vocale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Le moteur de synthèse vocale utilisé pour le narrateur."
+   )
 
 /* Settings > Power Management */
 

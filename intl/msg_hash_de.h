@@ -7020,6 +7020,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "Lesegeschwindigkeit der Text-zu-Sprache-Funktion."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Text-zu-Sprache-Engine"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Das für den Erzähler verwendete Text-zu-Sprache-Backend."
+   )
 
 /* Settings > Power Management */
 

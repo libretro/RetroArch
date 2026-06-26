@@ -7140,6 +7140,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "La velocitat de la veu de la conversió de text a parla."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Motor de text a veu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "El backend de conversió de text a veu que farà servir el narrador."
+   )
 
 /* Settings > Power Management */
 

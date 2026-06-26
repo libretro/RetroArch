@@ -7148,6 +7148,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "An luas don ghuth Téacs-go-Caint."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Inneall Téacs-go-Caint"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "An cúltaca Téacs-go-Caint a úsáidtear don scéalaí."
+   )
 
 /* Settings > Power Management */
 
