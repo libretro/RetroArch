@@ -2824,7 +2824,7 @@ static int month_uint_to_menu_label_value(unsigned month)
       RARCH_WARN("Found invalid month number in database entry, got %d\n", month);
       return -1;
    }
-   return months[month];
+   return months[month - 1];
 }
 
 static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
