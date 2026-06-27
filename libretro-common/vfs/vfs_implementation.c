@@ -586,8 +586,10 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       {
          stream->mappos  = 0;
          stream->mapped  = NULL;
-         stream->mapsize = retro_vfs_file_seek_internal(stream, 0, SEEK_END);
 
+         retro_vfs_file_seek_internal(stream, 0, SEEK_END);
+
+         stream->mapsize = retro_vfs_file_tell_impl(stream);
          if (stream->mapsize == (uint64_t)-1)
             goto error;
 
