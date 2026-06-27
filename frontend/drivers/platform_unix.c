@@ -3839,8 +3839,12 @@ static void ohos_app_entry(void *data)
    rarch_main(argc, argv, data);
 }
 static napi_value StopApp(napi_env env, napi_callback_info info){
-    retroarch_main_quit();
-    return NULL;
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
+   if(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED){
+      return NULL;
+   }
+   retroarch_main_quit();
+   return NULL;
 }
     
 static napi_value StartApp(napi_env env, napi_callback_info info)
