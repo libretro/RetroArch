@@ -68,6 +68,7 @@ typedef struct
 struct input_pointer
 {
    int16_t x, y;
+   int screen_x, screen_y;
    int16_t confined_x, confined_y;
    int16_t full_x, full_y;
 };
@@ -126,32 +127,10 @@ void ohos_input_poll_touch_event(
       int pointer_max  = MIN(event.numPoints, MAX_TOUCH);
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
-         struct video_viewport vp = {0};
          float x = event.touchPoints[motion_ptr].x;
          float y = event.touchPoints[motion_ptr].y;
-         
-         vp.x                        = 0;
-         vp.y                        = 0;
-         vp.width                    = 0;
-         vp.height                   = 0;
-         vp.full_width               = 0;
-         vp.full_height              = 0;
-         video_driver_translate_coord_viewport_confined_wrap(
-               &vp,
-               x, y,
-               &ohos->pointer[motion_ptr].confined_x,
-               &ohos->pointer[motion_ptr].confined_y,
-               &ohos->pointer[motion_ptr].full_x,
-               &ohos->pointer[motion_ptr].full_y);
-
-         video_driver_translate_coord_viewport_wrap(
-               &vp,
-               x, y,
-               &ohos->pointer[motion_ptr].x,
-               &ohos->pointer[motion_ptr].y,
-               &ohos->pointer[motion_ptr].full_x,
-               &ohos->pointer[motion_ptr].full_y);
-
+         ohos->pointer[motion_ptr].screen_x = x;
+         ohos->pointer[motion_ptr].screen_y = y;
          ohos->pointer_count = MAX(
                ohos->pointer_count,
                motion_ptr + 1);
@@ -572,9 +551,31 @@ static float ohos_input_get_sensor_input(void *data, unsigned port, unsigned id)
 
 static void ohos_input_poll(void *data)
 {
-   uint8_t c;
    ohos_input_t *ohos = (ohos_input_t*)data;
-  
+   uint32_t i;
+    
+   for (i = 0; i < ohos->pointer_count || i == 0; i++)
+   {
+         struct video_viewport vp = {0};
+         memset(&vp, 0, sizeof(vp));
+         video_driver_translate_coord_viewport_confined_wrap(
+               &vp,
+               ohos->pointer[i].screen_x, 
+               ohos->pointer[i].screen_y,
+               &ohos->pointer[i].confined_x,
+               &ohos->pointer[i].confined_y,
+               &ohos->pointer[i].full_x,
+               &ohos->pointer[i].full_y);
+
+         video_driver_translate_coord_viewport_wrap(
+               &vp,
+               ohos->pointer[i].screen_x, 
+               ohos->pointer[i].screen_y,
+               &ohos->pointer[i].x,
+               &ohos->pointer[i].y,
+               &ohos->pointer[i].full_x,
+               &ohos->pointer[i].full_y);
+      }
 }
 
 static uint64_t ohos_get_capabilities(void *data)
