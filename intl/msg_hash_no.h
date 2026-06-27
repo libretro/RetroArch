@@ -1035,6 +1035,10 @@ MSG_HASH(
    "Konfigurasjonsfil."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "Databasefil."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
    "Bildefil."
    )

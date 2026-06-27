@@ -1000,11 +1000,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   "Устройства ввода"
+   "Управление"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "Настройки контроллера, клавиатуры и мыши."
+   "Настройки контроллеров, мыши и клавиатуры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -3118,11 +3118,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-   "Влияет на то, как в RetroArch производится опрос ввода. В зависимости от конфигурации, режимы 'Ранний' или 'Поздний' могут уменьшать задержку ввода. Требуется перезапуск."
+   "Влияет на способ опроса ввода в RetroArch. Режимы 'Ранний' или 'Поздний' могут снизить задержку ввода в зависимости от конфигурации системы. Требуется перезапуск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "Влияет на опрос ввода в RetroArch. Ранний - опрос ввода произ. перед выводом кадра. Стандартный - при запросе на опрос ввода. Поздний - при первом запросе состояния ввода на каждом кадре. Значения 'Ранний' или 'Поздний' могут снизить задержку ввода. Игнорируется при сетевой игре."
+   "Влияет на способ опроса ввода в RetroArch.\nРанний: перед обработкой кадра.\nСтандартный: строго по запросу.\nПоздний: при первом запросе состояния ввода для кадра.\nРежимы 'Ранний' или 'Поздний' могут снизить задержку ввода в зависимости от конфигурации системы. Игнорируется при [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -3134,11 +3134,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Сортировать привязки по геймпадам"
+   "Сортировка привязок по геймпадам"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Привязки будут применяться только к активному геймпаду, для которого были сохранены."
+   "Сохранённые привязки будут применяться только к подключенного геймпаду, для которого были созданы."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -3165,7 +3165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Выбранное устройство будет использоваться как физ. клавиатура, а не геймпад."
+   "Выбор устройства для использования в качестве физической клавиатуры, а не геймпада."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
@@ -3274,7 +3274,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   "Период ожидания (в секундах) до перехода к следующей привязке."
+   "Период ожидания (в секундах) до перехода к привязке следующего элемента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
@@ -3282,7 +3282,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
-   "Период ожидания (в секундах) для привязки нажатой кнопки."
+   "Период ожидания (в секундах) для привязки элемента после нажатия."
    )
 MSG_HASH(
    MSG_INPUT_BIND_PRESS,
@@ -3419,7 +3419,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
-   "Управление меню"
+   "Навигация по интерфейсу"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -3463,7 +3463,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Решение проблемы с переподключением контроллеров. Препятствует назначению одного и того же контроллера для обоих игроков. Не включайте при использовании двух идентичных контроллеров."
+   "Устраняет проблему с переподключением контроллеров. Блокирует повторное назначение одного контроллера для обоих игроков. Не включайте при использовании идентичных моделей геймпадов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
@@ -4396,7 +4396,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
-   "Упреждение ввода"
+   "Упреждение ввода (run-ahead)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
@@ -4477,7 +4477,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
-   "Автоматически запускать ядро"
+   "Автоматический запуск ядра"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
@@ -4892,7 +4892,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
-   "Уровень логирования фронтенда"
+   "Уровень логов фронтенда"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
@@ -4900,7 +4900,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
-   "Уровень логирования ядер"
+   "Уровень логов ядер"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
@@ -6131,7 +6131,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "Включает навигацию в меню с помощью мыши."
+   "Разрешает навигацию внутри меню с помощью мыши."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -6139,7 +6139,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Включает навигацию в меню с помощью тачскрина."
+   "Разрешает навигацию внутри меню с помощью тачскрина."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,

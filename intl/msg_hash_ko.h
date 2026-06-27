@@ -7180,6 +7180,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "TTS의 말하는 속도를 조정합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "음성 합성 엔진"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "나레이터로 사용될 음성 합성 백엔드입니다."
+   )
 
 /* Settings > Power Management */
 

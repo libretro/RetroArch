@@ -7180,6 +7180,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "Tốc độ phát giọng đọc cho chức năng chuyển văn bản thành giọng nói."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Công cụ chuyển văn bản thành giọng nói"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Hệ thống chuyển văn bản thành giọng nói được sử dụng cho người kể chuyện."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK,
+   "eSpeak chuyển văn bản thành giọng nói"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER,
+   "Bộ điều phối giọng nói"
+   )
 
 /* Settings > Power Management */
 
