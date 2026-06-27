@@ -913,7 +913,11 @@ static int action_get_title_group_settings(const char *path, const char *label,
             action_get_title_fill_search_filter_default(
                   info_list[i].val, s, len);
          else
+         {
             strlcpy(s, msg_hash_to_str(info_list[i].val), len);
+            if (info_list[i].type == MENU_ENUM_LABEL_SETTINGS_TAB)
+               menu_entries_search_append_terms_string(s, len);
+         }
          return 0;
       }
    }

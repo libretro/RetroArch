@@ -3369,6 +3369,8 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST_STR)
+                       /* > Settings */
+                       || string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_TAB_STR)
                        /* > Core updater */
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST_STR)
                        /* > File browser (Load Content) */
@@ -3881,6 +3883,21 @@ static bool menu_entries_search_push(const char *search_term)
    return true;
 }
 
+bool menu_entries_search_set_term(const char *search_term)
+{
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+
+   if (!search)
+      return false;
+
+   memset(search, 0, sizeof(*search));
+
+   if (!search_term || !*search_term)
+      return true;
+
+   return menu_entries_search_push(search_term);
+}
+
 bool menu_entries_search_pop(void)
 {
    menu_search_terms_t *search = menu_entries_search_get_terms_internal();
@@ -4041,6 +4058,32 @@ void menu_driver_set_pending_selection(const char *pending_selection)
    if (pending_selection && *pending_selection)
       strlcpy(selection, pending_selection,
             sizeof(menu_st->pending_selection));
+}
+
+void menu_driver_search_filter_update(const char *search_term)
+{
+   const char *label           = NULL;
+   unsigned type               = MENU_SETTINGS_NONE;
+   struct menu_state *menu_st  = &menu_driver_state;
+   const file_list_t *list     = MENU_LIST_GET(menu_st->entries.list, 0);
+
+   if (list && list->size)
+   {
+      label = list->list[list->size - 1].label;
+      type  = list->list[list->size - 1].type;
+   }
+
+   if (!menu_driver_search_filter_enabled(label, type))
+      return;
+
+   if (menu_entries_search_set_term(search_term))
+   {
+      menu_st->selection_ptr = 0;
+      if (menu_st->driver_ctx->navigation_set)
+         menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
+      menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                      | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   }
 }
 
 static void menu_input_search_cb(void *userdata, const char *str)
@@ -5115,6 +5158,29 @@ static unsigned input_combo_type_onkeyup_lut[INPUT_COMBO_LAST] =
    } \
 } \
 
+#ifdef HAVE_COCOATOUCH
+static bool menu_input_ios_keyboard_search_active(void)
+{
+   const char *menu_label = NULL;
+   unsigned menu_type     = MENU_SETTINGS_NONE;
+
+   menu_entries_get_last_stack(NULL, &menu_label, &menu_type, NULL, NULL);
+
+   return menu_driver_search_filter_enabled(menu_label, menu_type);
+}
+
+static bool menu_input_ios_keyboard_blocks_pointer(
+      struct menu_state *menu_st)
+{
+   if (!(menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY))
+      return false;
+
+   if (ios_keyboard_active() && menu_input_ios_keyboard_search_active())
+      return false;
+
+   return true;
+}
+#endif
 
 unsigned menu_event(
       settings_t *settings,
@@ -5196,6 +5262,37 @@ unsigned menu_event(
    if (menu_st->flags & MENU_ST_FLAG_BLOCK_ALL_INPUT)
       return MENU_ACTION_NOOP;
 
+#ifdef HAVE_COCOATOUCH
+   if (     (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY)
+         && ios_keyboard_active())
+   {
+      bool search_keyboard_active = menu_input_ios_keyboard_search_active();
+
+      BIT256_CLEAR_ALL_PTR(p_input);
+      BIT256_CLEAR_ALL_PTR(p_trigger_input);
+      ok_current                  = 0;
+      ok_trigger                  = 0;
+      ok_trigger_release          = 0;
+      ok_old                      = 0;
+      navigation_initial          = 0;
+
+      if (!search_keyboard_active)
+      {
+         menu_input->pointer.type    = MENU_POINTER_DISABLED;
+         menu_input->pointer.flags  &= ~(MENU_INP_PTR_FLG_ACTIVE
+                                       | MENU_INP_PTR_FLG_PRESSED);
+         pointer_hw_state->flags    &= ~(MENU_INP_PTR_FLG_ACTIVE
+                                       | MENU_INP_PTR_FLG_PRESSED
+                                       | MENU_INP_PTR_FLG_PRESS_SELECT
+                                       | MENU_INP_PTR_FLG_PRESS_UP
+                                       | MENU_INP_PTR_FLG_PRESS_DOWN
+                                       | MENU_INP_PTR_FLG_PRESS_LEFT
+                                       | MENU_INP_PTR_FLG_PRESS_RIGHT);
+         return MENU_ACTION_NOOP;
+      }
+   }
+#endif
+
    /* Clear OK if dragged */
    if (menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
       ok_current = ok_trigger = ok_trigger_release = 0;
@@ -5213,7 +5310,7 @@ unsigned menu_event(
    /* > Also disable when keyboard dialog is active to prevent touch events
     *   from iOS keyboard (e.g., Return button) from being interpreted as
     *   menu input that could reopen the keyboard */
-   else if (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY)
+   else if (menu_input_ios_keyboard_blocks_pointer(menu_st))
       menu_input->pointer.type = MENU_POINTER_DISABLED;
 #endif
    else
@@ -5782,6 +5879,19 @@ static int menu_input_post_iterate(
    menu_file_list_cbs_t *cbs                       = selection_buf && selection_buf->size
       ? (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
       : NULL;
+
+#ifdef HAVE_COCOATOUCH
+   if (osk_active && ios_keyboard_active())
+   {
+      const char *menu_label = NULL;
+      unsigned menu_type     = MENU_SETTINGS_NONE;
+
+      menu_entries_get_last_stack(NULL, &menu_label, &menu_type, NULL, NULL);
+
+      if (menu_driver_search_filter_enabled(menu_label, menu_type))
+         osk_active = false;
+   }
+#endif
 
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
@@ -8061,6 +8171,18 @@ bool menu_input_dialog_start_search(void)
       input_keyboard_start_line(menu,
             &input_st->keyboard_line,
             menu_input_search_cb);
+
+   {
+      menu_search_terms_t *search_terms = menu_entries_search_get_terms();
+      if (search_terms && search_terms->size > 0)
+      {
+         const char *search_term =
+            search_terms->terms[search_terms->size - 1];
+         if (search_term && *search_term)
+            input_keyboard_line_append(&input_st->keyboard_line,
+                  search_term, strlen(search_term));
+      }
+   }
 
 #ifdef HAVE_COCOATOUCH
    /* Use iOS/tvOS native keyboard instead of custom on-screen keyboard */

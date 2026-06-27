@@ -3140,6 +3140,14 @@ error:
 }
 #endif
 
+static bool menu_displaylist_setting_matches_search(
+      rarch_setting_t *setting,
+      enum msg_hash_enums enum_idx,
+      menu_search_terms_t *search_terms);
+static unsigned menu_displaylist_append_search_results(
+      file_list_t *info_list,
+      bool menu_show_advanced_settings);
+
 int menu_displaylist_parse_settings_enum(
       file_list_t *info_list,
       enum menu_displaylist_parse_type parse_type,
@@ -3254,6 +3262,12 @@ int menu_displaylist_parse_settings_enum(
             break;
       }
 
+      if (!menu_displaylist_setting_matches_search(
+               setting,
+               is_enum ? (enum msg_hash_enums)entry_type : MSG_UNKNOWN,
+               menu_entries_search_get_terms()))
+         goto loop;
+
       if (is_enum)
          menu_entries_append(info_list,
                short_description, name,
@@ -3317,6 +3331,118 @@ end:
    }
 
    return 0;
+}
+
+static bool menu_displaylist_setting_matches_search(
+      rarch_setting_t *setting,
+      enum msg_hash_enums enum_idx,
+      menu_search_terms_t *search_terms)
+{
+   size_t i;
+   const char *short_description = NULL;
+   const char *name              = NULL;
+
+   if (!search_terms)
+      return true;
+
+   if (!setting)
+      return false;
+
+   short_description = setting->short_description;
+   name              = setting->name;
+
+   for (i = 0; i < search_terms->size; i++)
+   {
+      const char *search_term = search_terms->terms[i];
+
+      if (string_is_empty(search_term))
+         continue;
+
+      if (     (!string_is_empty(short_description)
+            && strcasestr(short_description, search_term))
+            || (!string_is_empty(name)
+            && strcasestr(name, search_term))
+            || (enum_idx != MSG_UNKNOWN
+            && strcasestr(msg_hash_to_str(enum_idx), search_term)))
+         continue;
+
+      return false;
+   }
+
+   return true;
+}
+
+static unsigned menu_displaylist_append_search_results(
+      file_list_t *info_list,
+      bool menu_show_advanced_settings)
+{
+   unsigned count                    = 0;
+   rarch_setting_t *setting          = NULL;
+   struct menu_state *menu_st        = menu_state_get_ptr();
+   menu_search_terms_t *search_terms = menu_entries_search_get_terms();
+
+   if (!menu_st || !info_list || !search_terms)
+      return 0;
+
+   setting = menu_st->entries.list_settings;
+
+   if (!setting)
+      return 0;
+
+   for (; setting->type != ST_NONE; setting++)
+   {
+      unsigned type_flags = 0;
+      uint32_t flags      = setting->flags;
+
+      switch (setting->type)
+      {
+         case ST_ACTION:
+            type_flags = MENU_SETTING_ACTION;
+            break;
+         case ST_PATH:
+            type_flags = FILE_TYPE_PATH;
+            break;
+         case ST_STRING_OPTIONS:
+            type_flags = MENU_SETTING_STRING_OPTIONS;
+            break;
+         case ST_BOOL:
+         case ST_INT:
+         case ST_UINT:
+         case ST_SIZE:
+         case ST_FLOAT:
+         case ST_DIR:
+         case ST_STRING:
+         case ST_BIND:
+            break;
+         default:
+            continue;
+      }
+
+#ifdef HAVE_LAKKA
+      if (flags & (SD_FLAG_ADVANCED | SD_FLAG_LAKKA_ADVANCED))
+#else
+      if (flags & SD_FLAG_ADVANCED)
+#endif
+      {
+         if (!menu_show_advanced_settings)
+            continue;
+      }
+
+      if (string_is_empty(setting->short_description)
+            || string_is_empty(setting->name)
+            || !menu_displaylist_setting_matches_search(
+               setting, setting->enum_value_idx, search_terms))
+         continue;
+
+      if (menu_entries_append(info_list,
+               setting->short_description,
+               setting->name,
+               MSG_UNKNOWN,
+               type_flags, 0, 0, setting))
+         count++;
+   }
+
+   return count;
 }
 
 static void menu_displaylist_set_new_playlist(
@@ -11390,6 +11516,7 @@ unsigned menu_displaylist_build_list(
 #endif
       case DISPLAYLIST_SETTINGS_ALL:
          {
+            menu_search_terms_t *search_terms = menu_entries_search_get_terms();
 #ifdef HAVE_TRANSLATE
             bool settings_show_ai_service = settings->bools.settings_show_ai_service;
 #endif
@@ -11428,6 +11555,20 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_LOGGING_SETTINGS,            PARSE_ACTION, true},
             };
 
+            if (search_terms)
+            {
+               count = menu_displaylist_append_search_results(list,
+                     settings->bools.menu_show_advanced_settings);
+
+               if (count == 0)
+                  menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                        MENU_ENUM_LABEL_NO_SETTINGS_FOUND_STR,
+                        MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                        0, 0, 0, NULL);
+
+               break;
+            }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {

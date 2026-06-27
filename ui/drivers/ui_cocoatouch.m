@@ -55,6 +55,7 @@
 #endif
 
 #ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
 #include "../../menu/menu_setting.h"
 #endif
 
@@ -219,6 +220,14 @@ static void handle_touch_event(NSArray* touches)
    {
       UITouch      *touch = [touches objectAtIndex:i];
       CGPoint       coord = [touch locationInView:[touch view]];
+      UIView       *view  = [touch view];
+      UIView       *root  = [CocoaView get].view;
+      if (     ios_keyboard_active()
+            && root
+            && view
+            && view != root
+            && ![view isDescendantOfView:root])
+         continue;
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
       {
          apple->touches[apple->touch_count   ].screen_x = coord.x * scale;
@@ -270,6 +279,9 @@ enum
 /* This is specifically for iOS 9, according to the private headers */
 -(void)handleKeyUIEvent:(UIEvent *)event
 {
+    if (ios_keyboard_active())
+       return [super handleKeyUIEvent:event];
+
     /* This gets called twice with the same timestamp
      * for each keypress, that's fine for polling
      * but is bad for business with events. */
@@ -328,6 +340,9 @@ enum
 /* This is for iOS versions < 9.0 */
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
+   if (ios_keyboard_active())
+      return [super _keyCommandForEvent:event];
+
    /* This gets called twice with the same timestamp
     * for each keypress, that's fine for polling
     * but is bad for business with events. */
@@ -468,6 +483,9 @@ enum
       handle_touch_event(event.allTouches.allObjects);
 
 #if __IPHONE_OS_VERSION_MAX_ALLOWED < 70000
+   if (ios_keyboard_active())
+      return;
+
    {
       int major, minor;
       get_ios_version(&major, &minor);
@@ -1314,6 +1332,9 @@ enum
       /* Keep ptr in sync with size to prevent buffer overrun when appending */
       if (self.keyboardPtrPtr)
          *self.keyboardPtrPtr = newLen;
+#ifdef HAVE_MENU
+      menu_driver_search_filter_update(self.keyboardAllocatedBuffer);
+#endif
    }
 
    return YES;
@@ -1469,6 +1490,8 @@ bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
    app.keyboardPtrPtr = ptr_ptr;
    app.keyboardAllocatedBuffer = allocated_buffer;
 
+   apple_input_keyboard_reset();
+
    /* Set up the text field with initial text from the buffer */
    app.keyboardTextField.text = (allocated_buffer[0] != '\0') ?
       [NSString stringWithUTF8String:allocated_buffer] : @"";
@@ -1502,6 +1525,28 @@ bool ios_keyboard_active(void)
 {
    RetroArch_iOS *app = [RetroArch_iOS get];
    return app && app.keyboardTextField && [app.keyboardTextField isFirstResponder];
+}
+
+void ios_keyboard_set_text(const char *text)
+{
+   size_t len;
+   RetroArch_iOS *app = [RetroArch_iOS get];
+
+   if (!app || !app.keyboardTextField || !app.keyboardAllocatedBuffer)
+      return;
+
+   if (!text)
+      text = "";
+
+   strlcpy(app.keyboardAllocatedBuffer, text, 512);
+   len = strlen(app.keyboardAllocatedBuffer);
+
+   if (app.keyboardSizePtr)
+      *app.keyboardSizePtr = len;
+   if (app.keyboardPtrPtr)
+      *app.keyboardPtrPtr = len;
+
+   app.keyboardTextField.text = [NSString stringWithUTF8String:app.keyboardAllocatedBuffer];
 }
 
 void ios_keyboard_end(void)
