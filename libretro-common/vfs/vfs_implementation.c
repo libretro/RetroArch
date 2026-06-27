@@ -321,7 +321,7 @@ int64_t retro_vfs_file_seek_internal(
             stream->mappos = stream->mapsize + offset;
             break;
       }
-      return stream->mappos;
+      return 0;
    }
 #endif
 
