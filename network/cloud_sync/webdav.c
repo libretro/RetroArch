@@ -59,7 +59,7 @@ typedef struct
    char *nonce;
    char *algo;
    char *opaque;
-   char *cnonce;
+   const char *cnonce;
    bool qop_auth;
    unsigned nc;
 } webdav_state_t;

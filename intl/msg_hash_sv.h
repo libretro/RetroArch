@@ -8495,16 +8495,8 @@ MSG_HASH(
    "Lägg till i spellista"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Lägg till innehållet till en spellista."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Skapa ny spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Skapa en ny spellista och lägg till aktuellt objekt till den."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8523,16 +8515,8 @@ MSG_HASH(
    "Återställ kärnan som är kopplad till detta innehåll."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Visa mer information om innehållet."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Hämta ner miniatyrer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Hämta ner miniatyrbilder för skärmdump/omslag/titelskärm för aktuellt innehåll. Uppdaterar eventuella befintliga miniatyrbilder."
    )
 
 /* Playlist Item > Set Core Association */

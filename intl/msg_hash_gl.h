@@ -2053,6 +2053,10 @@ MSG_HASH(
    "Tasa de refresco vertical"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "Frecuencia de actualización vertical da túa pantalla. Úsase para calcular unha taxa de entrada de son axeitada. Isto ignorarase se está activado “Vídeo con fíos (Threaded Video)”."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Taxa de actualización da pantalla estimada"
    )
@@ -4953,6 +4957,10 @@ MSG_HASH(
    "Contador de tempo de fotogramas"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+   "Troca a configuración que afecta ao contador de tempo de cadros. Só está activo cando o vídeo con fíos está desactivado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "Taxa de avance rápido"
    )
@@ -7188,6 +7196,10 @@ MSG_HASH(
    "Resumo de inicio"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "Amosa información sobre o xogo que se está a cargar e o progreso actual do usuario. “Todos os xogos identificados” mostrará un resumo para xogos sen logros publicados."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Todos os xogos identificados"
    )
@@ -7657,6 +7669,10 @@ MSG_HASH(
    "Mostrar núcleos asociados nas listas de reprodución"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   "Especifica cando etiquetar as entradas da lista de reprodución co núcleo asociado actualmente (se o hai). Esta opción ignórase cando están activadas as subetiquetas da lista de reprodución."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Mostrar subetiquetas da lista de reprodución"
    )
@@ -7759,6 +7775,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Tempo de execución da sub-etiqueta da lista de reprodución"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   "Selecciona que tipo de rexistro de tempo de execución se mostra nas subetiquetas da lista de reprodución. O rexistro correspondente debe estar activado no menú de opcións de “Gardado”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7936,6 +7956,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Discord Rich Presenza"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
+   "Permitir ca aplicación de Discord mostre datos sobre o contido reproducido. Só dispoñible no cliente de escritorio nativo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8335,8 +8359,16 @@ MSG_HASH(
    "Engadir ao Mesturador"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
+   "Engadir esta pista de son a unha rañura de fluxo de son dispoñible. Se non hai rañuras libres, ignorarase."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Engadir ao Mesturador e xogar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
+   "Engadir esta pista de son a unha rañura de fluxo de son dispoñible e reproducila. Se non hai rañuras libres, ignorarase."
    )
 
 /* Netplay */
@@ -8848,7 +8880,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Engade o contido a unha lista de reprodución."
+   "Engadir esta entrada a unha lista de reprodución."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -8856,7 +8888,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Produciuse un erro ao engadir á lista de reprodución: lista de reprodución chea."
+   "Crear unha nova lista de reprodución e engadir esta entrada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8880,7 +8912,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Ver máis información sobre o contido."
+   "Ver máis información sobre este contido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -8888,7 +8920,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Descarga imaxes en miniatura de captura de pantalla/arte da caixa/pantalla de título para o contido actual. Actualiza as miniaturas existentes."
+   "Descargar imaxes en miniatura para este contido. Actualiza calquera imaxe existente."
    )
 
 /* Playlist Item > Set Core Association */
@@ -9703,6 +9735,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Cargar disco novo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Seleccionar un novo disco desde o sistema de ficheiros e engadilo á lista de índices."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
+   "Seleccionar un novo disco desde o sistema de ficheiros e engadilo á lista de índices.\nNOTA: Esta é unha función antiga. Recoméndase usar listas M3U para títulos multidisco."
    )
 
 /* Quick Menu > Shaders */
@@ -11354,6 +11394,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Seleccione un tema de icona diferente para RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Iconas de entradas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Debuxar iconas para as entradas do menú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
@@ -13987,6 +14035,10 @@ MSG_HASH(
    "Restableceuse o antigo estado de gardado."
    )
 MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Sombreadores: restaurando o predefinido de sombreado a"
+   )
+MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
    "Revertindo o directorio de ficheiros de gardar"
    )
@@ -14525,6 +14577,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Colocación do disco na bandexa"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Fallou ao configurar o disco"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

@@ -76,6 +76,7 @@
 #include "../record/record_driver.h"
 #include "../tasks/task_content.h"
 #include "../runloop.h"
+#include "../midi_driver.h"
 #include "../verbosity.h"
 
 #define AUDIO_CHUNK_SIZE_BLOCKING      512
@@ -380,6 +381,11 @@ static bool audio_driver_deinit_internal(bool audio_enable)
       memalign_free(audio_st->input_data);
 
    audio_st->input_data = NULL;
+
+   if (audio_st->synth_buf)
+      memalign_free(audio_st->synth_buf);
+
+   audio_st->synth_buf  = NULL;
    audio_st->data_ptr   = 0;
 
 #ifdef HAVE_REWIND
@@ -598,8 +604,11 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    }
 
    /* Fast path: if driver handles resampling and no DSP/mixer is active,
-    * bypass software resampling entirely. */
+    * bypass software resampling entirely. An active in-process MIDI synth
+    * also disables the fast path, since its PCM is mixed into the float
+    * buffer below (which the fast path would skip). */
    if (audio->write_raw
+         && !midi_driver_synth_active()
 #ifdef HAVE_DSP_FILTER
          && !audio_st->dsp
 #endif
@@ -641,6 +650,23 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
    convert_s16_to_float(audio_st->input_data, data, samples,
          audio_volume_gain);
+
+   /* Mix in-process MIDI synth output (e.g. fmsynth) into the float input
+    * before resampling, so it shares the core's resampler, gain and output
+    * path. No-op unless a render-capable MIDI driver is active and sounding.
+    * audio_st->synth_buf is allocated to the same size as input_data. */
+   if (midi_driver_synth_active() && audio_st->synth_buf)
+   {
+      size_t frames = samples >> 1;
+      if (midi_driver_render_audio(audio_st->synth_buf, frames,
+               (unsigned)audio_st->input))
+      {
+         size_t s;
+         for (s = 0; s < samples; s++)
+            audio_st->input_data[s] +=
+                  audio_st->synth_buf[s] * audio_volume_gain;
+      }
+   }
 
    /* The resampler operates on floating-point frames,
     * so we have to convert the input first */
@@ -912,6 +938,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    int16_t *out_conv_buf          = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
    size_t audio_buf_length        = max_buffer_samples * sizeof(float);
    float *audio_buf               = (float*)memalign_alloc(64, audio_buf_length);
+   float *synth_buf               = (float*)memalign_alloc(64, audio_buf_length);
    bool verbosity_enabled         = verbosity_is_enabled();
 #ifdef HAVE_REWIND
    int16_t *rewind_buf            = NULL;
@@ -929,11 +956,16 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_clamp_init_simd();
 
    if (!out_conv_buf || !audio_buf)
+   {
+      if (synth_buf)
+         memalign_free(synth_buf);
       goto error;
+   }
 
    memset(audio_buf, 0, audio_buf_length);
 
    audio_driver_st.input_data                     = audio_buf;
+   audio_driver_st.synth_buf                      = synth_buf;
    audio_driver_st.input_data_length              = audio_buf_length;
    audio_driver_st.output_samples_conv_buf        = out_conv_buf;
    audio_driver_st.output_samples_conv_buf_length = outsamples_max * sizeof(int16_t);

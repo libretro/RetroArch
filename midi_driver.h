@@ -18,6 +18,8 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <stddef.h> /* size_t */
+#include <stdint.h> /* uint8_t, uint32_t */
 
 RETRO_BEGIN_DECLS
 
@@ -199,6 +201,25 @@ typedef struct midi_driver
     * Remarks: On error, drivers should keep the events (don't drop them).
     **/
    bool (*flush)(void *p);
+
+   /**
+    * render:
+    * OPTIONAL. For in-process software synthesizers (e.g. fmsynth) that
+    * produce their own PCM instead of routing to an OS MIDI device. When
+    * non-NULL, the audio driver calls this once per core audio frame to
+    * obtain synthesized samples, which it mixes into the output stream.
+    * Drivers that route to an external device (winmm/alsa/coremidi) leave
+    * this NULL.
+    *
+    * @p      : Driver specific data pointer from init().
+    * @out    : Destination for 'frames' interleaved stereo float samples.
+    * @frames : Number of stereo frames to render.
+    * @rate   : Current audio output rate in Hz.
+    *
+    * Returns: True if any audio was written (voices sounding), false if the
+    *          buffer is silent (caller may skip mixing).
+    **/
+   bool (*render)(void *p, float *out, size_t frames, unsigned rate);
 } midi_driver_t;
 
 struct string_list *midi_driver_get_avail_inputs(void);
@@ -234,9 +255,26 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time);
 
 bool midi_driver_set_all_sounds_off(void);
 
+/**
+ * midi_driver_synth_active:
+ * Returns true if the active MIDI driver is an in-process synth (implements
+ * the optional 'render' member) with a live instance. Used by the audio
+ * driver to route through the software mixer so synth PCM can be summed in.
+ **/
+bool midi_driver_synth_active(void);
+
+/**
+ * midi_driver_render_audio:
+ * Renders the active in-process synth into 'out' (frames interleaved stereo
+ * float) at 'rate' Hz. Returns true if audio was written. No-op returning
+ * false when no render-capable MIDI driver is active.
+ **/
+bool midi_driver_render_audio(float *out, size_t frames, unsigned rate);
+
 extern midi_driver_t midi_winmm;
 extern midi_driver_t midi_alsa;
 extern midi_driver_t midi_coremidi;
+extern midi_driver_t midi_fmsynth;
 
 extern midi_driver_t *midi_drivers[];
 

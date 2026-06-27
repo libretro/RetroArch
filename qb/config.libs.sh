@@ -91,6 +91,16 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    fi
 fi
 
+# The dispmanx video driver is built against the legacy Broadcom VideoCore
+# firmware stack (bcm_host.h, libbcm_host) from /opt/vc, which is absent on
+# the Raspberry Pi 4 and later (they use the open-source Mesa/DRM-KMS path).
+# Without VideoCore the driver cannot compile, so auto-disable it here with a
+# clear notice rather than failing later with "bcm_host.h: No such file".
+if [ "$HAVE_DISPMANX" = 'yes' ] && [ "$HAVE_VIDEOCORE" != 'yes' ]; then
+   HAVE_DISPMANX='no'
+   die : 'Notice: Dispmanx support disabled, VideoCore (bcm_host) was not found.'
+fi
+
 if [ "$HAVE_7ZIP" = "yes" ]; then
    add_dirs INCLUDE ./deps/7zip
 fi
@@ -394,7 +404,13 @@ check_val '' PIPEWIRE -lpipewire-0.3 '' libpipewire-0.3 '' '' false
 check_val '' PIPEWIRE_STABLE -lpipewire-0.3 '' libpipewire-0.3 1.0.0 '' false
 check_val '' SDL -lSDL SDL sdl 1.2.10 '' true
 check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' true
+check_val '' SDL3 -lSDL3 SDL3 sdl3 3.2.20 '' true
 
+if [ "$HAVE_SDL3" = 'yes' ] && { [ "$HAVE_SDL2" = 'yes' ] || [ "$HAVE_SDL" = 'yes' ]; }; then
+   die : 'Notice: SDL drivers will be replaced by SDL3 ones.'
+   HAVE_SDL=no
+   HAVE_SDL2=no
+fi
 if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
    HAVE_SDL=no
@@ -534,7 +550,16 @@ if [ "$HAVE_BLISSBOX" != 'no' ]; then
    fi
 fi
 
-if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
+# Detect the desktop OpenGL libraries whenever OpenGL is enabled, even if
+# OpenGLES is also enabled. Both can be requested together (e.g. distro
+# packaging that wants a feature-complete build), and the desktop GL driver
+# still needs to link against -lGL. Previously this block was skipped as soon
+# as HAVE_OPENGLES=yes, so OPENGL_LIBS was left empty while HAVE_OPENGL stayed
+# 'yes' (when forced via --enable-opengl), causing a link failure that only
+# went away by adding -lGL by hand. check_lib disables OpenGL on its own if
+# the library is not present, so GLES-only systems without desktop GL are
+# unaffected.
+if [ "$HAVE_OPENGL" != 'no' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_header '' OPENGL "OpenGL/gl.h"
       check_lib '' OPENGL "-framework OpenGL"
@@ -774,6 +799,23 @@ check_enabled CXX GLSLANG glslang 'The C++ compiler is' false
 check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false
 
 check_enabled GLSLANG BUILTINGLSLANG 'builtin glslang' 'glslang is' true
+
+check_enabled SPIRV_CROSS BUILTINSPIRV_CROSS 'builtin spirv-cross' 'spirv-cross is' true
+
+if [ "$HAVE_SPIRV_CROSS" != no ] && [ "$HAVE_BUILTINSPIRV_CROSS" = no ]; then
+   check_pkgconf SPIRV_CROSS spirv-cross-c-shared
+
+   if [ "$HAVE_SPIRV_CROSS" = no ]; then
+      check_header cxx SPIRV_CROSS spirv_cross/spirv_cross.hpp
+      check_lib cxx SPIRV_CROSS -lspirv-cross-core '' '-lspirv-cross-glsl'
+   fi
+
+   if [ "$HAVE_SPIRV_CROSS" = no ]; then
+      die : 'Notice: System SPIRV-Cross not found, enabling builtin SPIRV-Cross.'
+      HAVE_BUILTINSPIRV_CROSS=yes
+      HAVE_SPIRV_CROSS=yes
+   fi
+fi
 
 if [ "$HAVE_GLSLANG" != no ]; then
    check_header cxx GLSLANG \

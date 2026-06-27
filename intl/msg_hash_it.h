@@ -8603,16 +8603,8 @@ MSG_HASH(
    "Aggiungi alla Scaletta"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Aggiungi il contenuto a una scaletta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Crea una nuova scaletta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Crea una nuova scaletta e aggiungi la voce corrente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8635,16 +8627,8 @@ MSG_HASH(
    "Informazioni"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Visualizza ulteriori informazioni sul contenuto."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Scarica Copertine"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Scarica le istantanee delle schermate/box art/schermata del titolo per il contenuto attuale. Aggiorna ogni anteprima esistente."
    )
 
 /* Playlist Item > Set Core Association */

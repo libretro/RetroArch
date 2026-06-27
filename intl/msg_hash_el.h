@@ -3471,16 +3471,8 @@ MSG_HASH(
    "Πληροφορίες"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Προβολή περισσότερων πληροφορίών για το περιεχόμενο."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Λήψη Μικρογραφιών"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Λήψη στιγμιότυπου οθόνης/περίβλημα κουτιού/μικρογραφίες οθόνης τίτλου για το τρέχον περιεχόμενο. Ενημέρωση τυχόν υπάρχουσων μικρογραφιών."
    )
 
 /* Playlist Item > Set Core Association */

@@ -8075,16 +8075,8 @@ MSG_HASH(
    "Přidat do Playlistu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Přidejte obsah do seznamu skladeb."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Vytvořit nový Playlist"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Vytvořte nový seznam skladeb a přidejte do něj aktuální položku."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8107,16 +8099,8 @@ MSG_HASH(
    "Informace"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Zobrazit další informace o obsahu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Stáhnout miniatury"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Stažení obrázků snímků obrazovky/obrázků obalu/názorů titulní obrazovky pro aktuální obsah. Aktualizuje všechny existující miniatury."
    )
 
 /* Playlist Item > Set Core Association */

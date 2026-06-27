@@ -476,6 +476,169 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len,
    return 0;
 }
 
+/* Reads a little-endian uint32 from a 4-byte buffer. PBP/SFO header
+ * fields are always stored little-endian regardless of host. */
+static uint32_t pbp_read_u32(const uint8_t *p)
+{
+   return  (uint32_t)p[0]
+         | ((uint32_t)p[1] << 8)
+         | ((uint32_t)p[2] << 16)
+         | ((uint32_t)p[3] << 24);
+}
+
+/* detect_pbp_game:
+ *
+ * PSP and PS1-Classic content is distributed as EBOOT.PBP. The disc
+ * image inside DATA.PSAR is encrypted (PGD/AMCTRL) on official titles,
+ * so the on-disc license string and serial cannot be located by the
+ * raw linear scan used for CUE/CHD/ISO. The plaintext PARAM.SFO at the
+ * head of the PBP, however, carries the serial in its DISC_ID key
+ * (PS1-Classics) or TITLE_ID key (PSP), so we parse that instead.
+ *
+ * PBP header layout (little-endian):
+ *   0x00 u32 magic = 0x50425000 ('\0','P','B','P')
+ *   0x04 u32 version
+ *   0x08 u32 offset of PARAM.SFO
+ *   0x0C u32 offset of ICON0.PNG  (== PARAM.SFO end)
+ *   ... five further sub-file offsets ...
+ *
+ * PARAM.SFO layout (little-endian):
+ *   0x00 u32 magic = 0x46535000 ('\0','P','S','F')
+ *   0x08 u32 key_table_start   (relative to SFO start)
+ *   0x0C u32 data_table_start  (relative to SFO start)
+ *   0x10 u32 num_entries
+ *   0x14 .. index entries, 16 bytes each:
+ *        u16 key_offset (relative to key_table_start)
+ *        u16 data_fmt
+ *        u32 data_len
+ *        u32 data_max_len
+ *        u32 data_offset (relative to data_table_start)
+ *
+ * The DISC_ID/TITLE_ID value is stored without a separator
+ * (e.g. "SCUS94900"); we re-insert the hyphen after the 4-letter
+ * prefix to produce the "SCUS-94900" form the RDB is keyed on.
+ */
+int detect_pbp_game(intfstream_t *fd, char *s, size_t len,
+   const char *filename)
+{
+#define PBP_SFO_MAX 65536
+   uint8_t pbp_header[0x28];
+   uint8_t *sfo       = NULL;
+   uint32_t sfo_off   = 0;
+   uint32_t sfo_end   = 0;
+   uint32_t sfo_size  = 0;
+   uint32_t key_tbl   = 0;
+   uint32_t data_tbl  = 0;
+   uint32_t entries   = 0;
+   uint32_t i;
+   char raw_id[16];
+   int      found     = 0;
+
+   if (intfstream_seek(fd, 0, SEEK_SET) < 0)
+      return 0;
+   if (intfstream_read(fd, pbp_header, sizeof(pbp_header))
+         != (int64_t)sizeof(pbp_header))
+      return 0;
+
+   /* Verify '\0PBP' magic. */
+   if (pbp_read_u32(pbp_header) != 0x50425000)
+      return 0;
+
+   sfo_off = pbp_read_u32(pbp_header + 0x08);
+   sfo_end = pbp_read_u32(pbp_header + 0x0C);
+   if (sfo_end <= sfo_off)
+      return 0;
+   sfo_size = sfo_end - sfo_off;
+   if (sfo_size < 0x14 || sfo_size > PBP_SFO_MAX)
+      return 0;
+
+   if (intfstream_seek(fd, (int64_t)sfo_off, SEEK_SET) < 0)
+      return 0;
+
+   sfo = (uint8_t*)malloc(sfo_size);
+   /* NULL-check: intfstream_read writes into sfo via filestream_read
+    * (fread, no NULL-guard on the dest). */
+   if (!sfo)
+      return 0;
+   if (intfstream_read(fd, sfo, sfo_size) != (int64_t)sfo_size)
+   {
+      free(sfo);
+      return 0;
+   }
+
+   /* Verify '\0PSF' magic. */
+   if (pbp_read_u32(sfo) != 0x46535000)
+   {
+      free(sfo);
+      return 0;
+   }
+
+   key_tbl  = pbp_read_u32(sfo + 0x08);
+   data_tbl = pbp_read_u32(sfo + 0x0C);
+   entries  = pbp_read_u32(sfo + 0x10);
+   if (     key_tbl  >= sfo_size
+         || data_tbl >= sfo_size
+         || entries == 0
+         || entries  > 1024)
+   {
+      free(sfo);
+      return 0;
+   }
+
+   /* First pass prefers DISC_ID (PS1-Classics), second pass falls
+    * back to TITLE_ID (PSP). DISC_ID matches the RDB serial form
+    * directly; TITLE_ID is the PSP product code, also RDB-keyed. */
+   for (i = 0; i < entries && !found; i++)
+   {
+      uint32_t idx = 0x14 + i * 0x10;
+      uint16_t koff;
+      uint32_t dlen;
+      uint32_t doff;
+      const char *key;
+      const char *val;
+
+      if (idx + 0x10 > sfo_size)
+         break;
+
+      koff = (uint16_t)(sfo[idx] | (sfo[idx + 1] << 8));
+      dlen = pbp_read_u32(sfo + idx + 0x04);
+      doff = pbp_read_u32(sfo + idx + 0x0C);
+
+      if (     (uint32_t)key_tbl  + koff >= sfo_size
+            || (uint32_t)data_tbl + doff >= sfo_size)
+         continue;
+
+      key = (const char*)(sfo + key_tbl + koff);
+      val = (const char*)(sfo + data_tbl + doff);
+
+      if (     strcmp(key, "DISC_ID") != 0
+            && strcmp(key, "TITLE_ID") != 0)
+         continue;
+
+      /* dlen counts the trailing NUL for UTF8 SFO strings; require a
+       * sane product-code length (e.g. "SCUS94900" -> 9 + NUL). */
+      if (dlen < 9 || (uint32_t)data_tbl + doff + dlen > sfo_size)
+         continue;
+
+      /* Copy the 9-char product code (4 alpha + 5 digit). */
+      strlcpy(raw_id, val, sizeof(raw_id));
+      raw_id[9]  = '\0';
+
+      /* Re-insert the separator: "SCUS94900" -> "SCUS-94900". */
+      memmove(raw_id + 5, raw_id + 4, 5);
+      raw_id[4]  = '-';
+      raw_id[10] = '\0';
+
+      string_remove_all_whitespace(s, raw_id);
+      cue_append_multi_disc_suffix(s, filename);
+      found = 1;
+   }
+
+   free(sfo);
+   return found;
+#undef PBP_SFO_MAX
+}
+
 size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
    const char *filename)
 {
@@ -1597,6 +1760,37 @@ int task_database_gdi_get_serial(const char *name, char *s, size_t len,
 
    return intfstream_file_get_serial(track_path, 0, INT64_MAX, s, len,
    filesize);
+}
+
+int task_database_pbp_get_serial(const char *name, char *s, size_t len,
+   uint64_t *filesize)
+{
+   int rv;
+   int64_t file_size = -1;
+   intfstream_t *fd  = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fd)
+      return 0;
+
+   if (intfstream_seek(fd, 0, SEEK_END) != -1)
+   {
+      file_size = intfstream_tell(fd);
+      if (filesize)
+         *filesize = (uint64_t)file_size;
+   }
+
+   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
+   {
+      intfstream_close(fd);
+      free(fd);
+      return 0;
+   }
+
+   rv = detect_pbp_game(fd, s, len, name);
+   intfstream_close(fd);
+   free(fd);
+   return rv;
 }
 
 /* Helper function to detect if a CHD file is a CD-i disc

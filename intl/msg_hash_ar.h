@@ -4703,16 +4703,8 @@ MSG_HASH(
    "معلومات"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "عرض المزيد من المعلومات حول المحتوى."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "إظهار الصور المصغرة للتنزيل"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "تحميل الصور المصغرة لقطة الشاشة/المربع الفني/العنوان للشاشة للمحتوى الحالي. قم بتحديث أي صور مصغرة موجودة."
    )
 
 /* Playlist Item > Set Core Association */

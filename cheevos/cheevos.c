@@ -90,12 +90,14 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* client */
    {{0}},/* memory */
 #ifdef HAVE_THREADS
-   /* queued_command (atomic). CMD_EVENT_NONE == 0; static
-    * zero-initialization satisfies all retro_atomic.h backends. */
-   0,
+   /* queued_command (atomic). CMD_EVENT_NONE == 0. Brace-init so that
+    * under CXX_BUILD (std::atomic<int>) this list-initializes via the
+    * converting constructor rather than the deleted copy constructor;
+    * for the C backends {0} is an equivalent scalar initializer. */
+   {0},
    /* load_generation (atomic). Starts at 0; bumped by
     * rcheevos_unload and rcheevos_load. */
-   0,
+   {0},
 #endif
    "",   /* user_agent_prefix */
    "",   /* user_agent_core */
@@ -469,7 +471,6 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
       if (shotname)
       {
          const char *path_directory_screenshot = settings->paths.directory_screenshot;
-         video_driver_state_t* video_st = video_state_get_ptr();;
          snprintf(shotname, shotname_len, "%s/%s-cheevo-%u",
             path_directory_screenshot,
             path_basename(path_get(RARCH_PATH_BASENAME)),

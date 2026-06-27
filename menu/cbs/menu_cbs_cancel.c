@@ -62,7 +62,7 @@ int action_cancel_pop_default(const char *path,
       if (menu_st->driver_ctx->navigation_set)
          menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
       /* Refresh menu */
-      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH 
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                       | MENU_ST_FLAG_PREVENT_POPULATE;
       return 0;
    }
@@ -127,7 +127,7 @@ static int action_cancel_core_content(const char *path,
 
    if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST_STR))
    {
-      menu_search_terms_t *menu_search_terms = 
+      menu_search_terms_t *menu_search_terms =
          menu_entries_search_get_terms();
 
       /* Check whether search terms have been set
@@ -141,7 +141,7 @@ static int action_cancel_core_content(const char *path,
          if (menu_st->driver_ctx->navigation_set)
             menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
          /* Refresh menu */
-         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH 
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                          | MENU_ST_FLAG_PREVENT_POPULATE;
          return 0;
       }
@@ -153,7 +153,16 @@ static int action_cancel_core_content(const char *path,
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR))
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR))
+   {
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+#ifdef HAVE_NETWORKING
+      /* Allow going back from sub-categories within the Content Downloader. */
+      action_ok_core_content_dirs_list(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
+            MENU_SETTING_ACTION, 0, 0);
+#endif
+   }
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST_STR))
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
    else

@@ -21,7 +21,7 @@
 
 #include <alsa/asoundlib.h>
 #include <alsa/pcm.h>
-#include <asm-generic/errno.h>
+#include <errno.h>
 
 #include "../audio_driver.h"
 #include "../common/alsa.h"

@@ -8595,16 +8595,8 @@ MSG_HASH(
    "Voeg toe aan afspeellijst"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Voeg de inhoud toe aan een afspeellijst."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Nieuwe afspeellijst maken"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Maak een nieuwe afspeellijst aan en voeg het huidige item eraan toe."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -8627,16 +8619,8 @@ MSG_HASH(
    "Informatie"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "Bekijk meer informatie over de inhoud."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Download miniaturen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Download screenshot/doosafbeelding/titelscherm miniatuurafbeeldingen voor de huidige content. Bestaande miniaturen worden bijgewerkt."
    )
 
 /* Playlist Item > Set Core Association */

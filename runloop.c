@@ -3987,7 +3987,6 @@ static retro_time_t runloop_core_runtime_tick(
 static bool core_unload_game(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
-   video_driver_state_t *video_st = video_state_get_ptr();
 
    video_driver_free_hw_context();
 
@@ -6565,7 +6564,7 @@ static enum runloop_state_enum runloop_check_state(
       if (menu_st->dialog_st.pending_cmd != CMD_EVENT_NONE)
       {
          /* Event also wants to resume */
-         if (!command_event(menu_st->dialog_st.pending_cmd, NULL))
+         if (!command_event((enum event_command)menu_st->dialog_st.pending_cmd, NULL))
             command_event(CMD_EVENT_RESUME, NULL);
 
          menu_dialog_confirm_clear(menu_st);
@@ -8197,7 +8196,6 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
    bool             game_loaded   = false;
-   video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = &runloop_state;
 
    video_driver_cached_frame_invalidate();
@@ -8334,7 +8332,6 @@ uint64_t core_serialization_quirks(void)
 void core_reset(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
-   video_driver_state_t *video_st = video_state_get_ptr();
 
    /* Drop video-driver caches of core-owned GPU resources before
     * retro_reset() is allowed to destroy them. No-op on software

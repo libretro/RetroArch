@@ -610,9 +610,12 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
          cheat_st->cheats[i].desc = NULL;
       }
 
-      val = (struct item_cheat*)
-            realloc(cheat_st->cheats,
-            new_size * sizeof(struct item_cheat));
+      if (new_size != 0)
+      {
+         val = (struct item_cheat*)
+               realloc(cheat_st->cheats,
+               new_size * sizeof(struct item_cheat));
+      }
 
       /* realloc-to-tmp: on OOM 'val' is NULL, the original
        * cheat_st->cheats is still valid.  Pre-patch did

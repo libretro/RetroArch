@@ -135,21 +135,19 @@ struct GameEntity: AppEntity, Identifiable {
    static let defaultQuery = GameEntityQuery()
 
    var id: String
-   var displayRepresentation: DisplayRepresentation
+   var title: String
    var filename: String
    var core: String?
    var coreName: String?
    var systemName: String?
    var synonyms: [String]
 
-   init(id: String, title: String, filename: String, core: String? = nil, coreName: String? = nil, systemName: String? = nil) {
-      self.id = id
-      self.filename = filename
-      self.core = core
-      self.coreName = coreName
-      self.systemName = systemName
-
-      // Create display representation with system context for disambiguation
+   // Computed rather than stored: DisplayRepresentation is not Sendable, so
+   // storing it would make GameEntity (an AppEntity, hence Sendable) hold a
+   // non-Sendable field. AppEntity declares displayRepresentation as a
+   // get-only requirement, so building it on demand satisfies the protocol.
+   var displayRepresentation: DisplayRepresentation {
+      // Use system context as subtitle for disambiguation
       let subtitle: String
       if let systemName = systemName {
          subtitle = systemName
@@ -159,21 +157,26 @@ struct GameEntity: AppEntity, Identifiable {
          subtitle = "Unknown System"
       }
 
-      // Create comprehensive synonyms for better Siri recognition
-      self.synonyms = GameSynonymGenerator.generateSynonyms(for: title)
+      return DisplayRepresentation(
+         title: "\(title)",
+         subtitle: LocalizedStringResource(stringLiteral: subtitle)
+      )
+   }
 
-      if #available(macOS 14.0, iOS 17.0, tvOS 17.0, *) {
-         self.displayRepresentation = DisplayRepresentation(
-            title: "\(title)",
-            subtitle: LocalizedStringResource(stringLiteral: subtitle),
-            synonyms: self.synonyms.map { LocalizedStringResource(stringLiteral: $0) }
-         )
-      } else {
-         self.displayRepresentation = DisplayRepresentation(
-            title: "\(title)",
-            subtitle: LocalizedStringResource(stringLiteral: subtitle)
-         )
-      }
+   init(id: String, title: String, filename: String, core: String? = nil, coreName: String? = nil, systemName: String? = nil) {
+      self.id = id
+      self.title = title
+      self.filename = filename
+      self.core = core
+      self.coreName = coreName
+      self.systemName = systemName
+
+      // Synonyms feed GameMatchingEngine (see entities(matching:)) for
+      // fuzzy game-name resolution; they are not passed to
+      // DisplayRepresentation because the synonyms-bearing initializer is
+      // not available across the SDKs/deployment targets RetroArch builds
+      // against.
+      self.synonyms = GameSynonymGenerator.generateSynonyms(for: title)
    }
 }
 
@@ -430,8 +433,8 @@ struct GameMatchingEngine {
          if first.score != second.score {
             return first.score > second.score
          }
-         let firstTitle = String(localized: first.game.displayRepresentation.title)
-         let secondTitle = String(localized: second.game.displayRepresentation.title)
+         let firstTitle = first.game.title
+         let secondTitle = second.game.title
          return firstTitle.count < secondTitle.count
       }
 
@@ -439,7 +442,7 @@ struct GameMatchingEngine {
    }
 
    private static func findBestMatch(searchString: String, game: GameEntity) -> GameMatch? {
-      let gameTitle = String(localized: game.displayRepresentation.title)
+      let gameTitle = game.title
       let normalizedTitle = normalizeSearchString(gameTitle)
 
       // Get all synonyms for this game

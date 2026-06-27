@@ -879,9 +879,23 @@ bool gfx_ctx_wl_init_common(
 
 #ifdef HAVE_LIBDECOR_H
    if (wl->libdecor)
-   {
       wl->libdecor_context = wl->libdecor_new(wl->input.dpy, &libdecor_interface);
 
+   /* libdecor_new() can fail (e.g. no usable decoration plugin could be
+    * loaded). Treat that as libdecor being unavailable and fall back to
+    * plain xdg-shell, rather than passing a NULL context to
+    * libdecor_decorate(). Clearing wl->libdecor keeps every downstream
+    * "if (wl->libdecor)" branch (window setup and fullscreen toggling)
+    * consistently on the xdg-shell path. */
+   if (wl->libdecor && !wl->libdecor_context)
+   {
+      RARCH_WARN("[Wayland] libdecor failed to initialize, falling back to xdg-shell decorations.\n");
+      dylib_close(wl->libdecor);
+      wl->libdecor = NULL;
+   }
+
+   if (wl->libdecor)
+   {
       wl->libdecor_frame = wl->libdecor_decorate(wl->libdecor_context, wl->surface, &toplevel_listener->libdecor_frame_interface, wl);
       if (!wl->libdecor_frame)
       {

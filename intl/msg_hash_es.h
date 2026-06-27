@@ -7140,6 +7140,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "Ajusta la velocidad de la voz del conversor de texto a voz."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Motor de conversión de texto a voz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "El back-end de conversión de texto a voz que se utilizará para el narrador."
+   )
 
 /* Settings > Power Management */
 
@@ -8980,7 +8988,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Agrega el contenido a una lista de reproducción."
+   "Agrega este elemento a una lista de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -8988,7 +8996,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Crea una lista de reproducción nueva y agrega a la misma el elemento actual."
+   "Crea una lista de reproducción nueva y agrega a la misma este elemento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -9012,7 +9020,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "Muestra más información sobre el contenido."
+   "Muestra más información sobre este contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -9020,7 +9028,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Descarga miniaturas con capturas, carátulas o pantallas de inicio del contenido actual. Actualizará cualquier miniatura ya existente."
+   "Descarga las imágenes de miniaturas para este contenido. Actualizará cualquier imagen ya existente."
    )
 
 /* Playlist Item > Set Core Association */
@@ -11550,6 +11558,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Selecciona otro tema de iconos de RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Iconos de elementos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Muestra iconos junto a los elementos de los menús."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
@@ -14167,6 +14183,10 @@ MSG_HASH(
    "El antiguo guardado rápido ha sido restaurado."
    )
 MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Shaders: restaurando el preajuste predeterminado en"
+   )
+MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
    "Revirtiendo el directorio de archivos de guardado a"
    )
@@ -14709,6 +14729,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Introduciendo disco en bandeja"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Error al asignar disco"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

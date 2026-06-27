@@ -17,6 +17,7 @@
  */
 
 #include <stdlib.h>
+#include <time.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -1225,6 +1226,33 @@ static const rgui_theme_t rgui_theme_opaque_gray_light = {
  * of 60Hz (-> 16.666 ms update period) */
 static const float particle_effect_period = (1.0f / 60.0f) * 1000.0f;
 
+/* Cheap inline PRNG for the cosmetic particle effects. libc
+ * rand()/random() are ~10x slower than needed (call overhead +
+ * internal state/locking), random() is not portable, and the
+ * particle effects do not need their statistical quality. xorshift32
+ * is deterministic, multiply-free, has a single word of state, and
+ * inlines to register-only shift/xor. Returns [0, RGUI_RAND_MAX]. */
+#define RGUI_RAND_MAX 0xFFFFFFFFu
+
+static uint32_t rgui_rng_state = 0;
+
+static INLINE uint32_t rgui_rand(void)
+{
+   uint32_t x = rgui_rng_state;
+   /* Lazy seed; xorshift state must never be zero. */
+   if (!x)
+   {
+      x = (uint32_t)time(NULL) * 2654435761u;
+      if (!x)
+         x = 2463534242u;
+   }
+   x ^= x << 13;
+   x ^= x >> 17;
+   x ^= x << 5;
+   rgui_rng_state = x;
+   return x;
+}
+
 /* ==============================
  * pixel format conversion START
  * ============================== */
@@ -1946,10 +1974,10 @@ static void rgui_init_particle_effect(
             {
                rgui_particle_t *particle = &rgui->particles[i];
 
-               particle->a = (float)(rand() % fb_width);
-               particle->b = (float)(rand() % fb_height);
-               particle->c = (float)(rand() % 64 - 16) * 0.1f;
-               particle->d = (float)(rand() % 64 - 48) * 0.1f;
+               particle->a = (float)(rgui_rand() % fb_width);
+               particle->b = (float)(rgui_rand() % fb_height);
+               particle->c = (float)(rgui_rand() % 64 - 16) * 0.1f;
+               particle->d = (float)(rgui_rand() % 64 - 48) * 0.1f;
             }
          }
          break;
@@ -1974,13 +2002,13 @@ static void rgui_init_particle_effect(
                rgui_particle_t *particle = &rgui->particles[i];
 
                /* x pos */
-               particle->a = (float)(rand() % (fb_width / 3)) * 3.0f;
+               particle->a = (float)(rgui_rand() % (fb_width / 3)) * 3.0f;
                /* y pos */
-               particle->b = (float)(rand() % fb_height);
+               particle->b = (float)(rgui_rand() % fb_height);
                /* drop length */
-               particle->c = (float)weights[(unsigned)(rand() % 60)];
+               particle->c = (float)weights[(unsigned)(rgui_rand() % 60)];
                /* drop speed (larger drops fall faster) */
-               particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rand() % 150) / 200.0f));
+               particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rgui_rand() % 150) / 200.0f));
             }
          }
          break;
@@ -1994,13 +2022,13 @@ static void rgui_init_particle_effect(
                rgui_particle_t *particle = &rgui->particles[i];
 
                /* radius */
-               particle->a = 1.0f + (((float)rand() / (float)RAND_MAX) * max_radius);
+               particle->a = 1.0f + (((float)rgui_rand() / (float)RGUI_RAND_MAX) * max_radius);
                /* theta */
-               particle->b = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
+               particle->b = ((float)rgui_rand() / (float)RGUI_RAND_MAX) * 2.0f * PI;
                /* radial speed */
-               particle->c = (float)((rand() % 100) + 1) * 0.001f;
+               particle->c = (float)((rgui_rand() % 100) + 1) * 0.001f;
                /* rotational speed */
-               particle->d = (((float)((rand() % 50) + 1) / 200.0f) + 0.1f) * one_degree_radians;
+               particle->d = (((float)((rgui_rand() % 50) + 1) / 200.0f) + 0.1f) * one_degree_radians;
             }
          }
          break;
@@ -2011,13 +2039,13 @@ static void rgui_init_particle_effect(
                rgui_particle_t *particle = &rgui->particles[i];
 
                /* x pos */
-               particle->a = (float)(rand() % fb_width);
+               particle->a = (float)(rgui_rand() % fb_width);
                /* y pos */
-               particle->b = (float)(rand() % fb_height);
+               particle->b = (float)(rgui_rand() % fb_height);
                /* depth */
                particle->c = (float)fb_width;
                /* speed */
-               particle->d = 1.0f + ((float)(rand() % 20) * 0.01f);
+               particle->d = 1.0f + ((float)(rgui_rand() % 20) * 0.01f);
             }
          }
          break;
@@ -2095,8 +2123,8 @@ static void rgui_render_particle_effect(
                rgui_particle_t *particle = &rgui->particles[i];
 
                /* Update particle 'speed' */
-               particle->c    = particle->c + (float)(rand() % 16 - 9) * 0.01f;
-               particle->d    = particle->d + (float)(rand() % 16 - 7) * 0.01f;
+               particle->c    = particle->c + (float)(rgui_rand() % 16 - 9) * 0.01f;
+               particle->d    = particle->d + (float)(rgui_rand() % 16 - 7) * 0.01f;
 
                if (particle->c < -0.4f)
                   particle->c = -0.4f;
@@ -2177,13 +2205,13 @@ static void rgui_render_particle_effect(
                if (!on_screen)
                {
                   /* x pos */
-                  particle->a = (float)(rand() % (fb_width / 3)) * 3.0f;
+                  particle->a = (float)(rgui_rand() % (fb_width / 3)) * 3.0f;
                   /* y pos */
                   particle->b = 0.0f;
                   /* drop length */
-                  particle->c = (float)weights[(unsigned)(rand() % 60)];
+                  particle->c = (float)weights[(unsigned)(rgui_rand() % 60)];
                   /* drop speed (larger drops fall faster) */
-                  particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rand() % 150) / 200.0f));
+                  particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rgui_rand() % 150) / 200.0f));
                }
             }
          }
@@ -2233,13 +2261,13 @@ static void rgui_render_particle_effect(
                    * > particle->a = max_radius;
                    * ...but it turns out that spawning new particles at random
                    * locations produces a more visually appealing result... */
-                  particle->a = 1.0f + (((float)rand() / (float)RAND_MAX) * max_radius);
+                  particle->a = 1.0f + (((float)rgui_rand() / (float)RGUI_RAND_MAX) * max_radius);
                   /* theta */
-                  particle->b = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
+                  particle->b = ((float)rgui_rand() / (float)RGUI_RAND_MAX) * 2.0f * PI;
                   /* radial speed */
-                  particle->c = (float)((rand() % 100) + 1) * 0.001f;
+                  particle->c = (float)((rgui_rand() % 100) + 1) * 0.001f;
                   /* rotational speed */
-                  particle->d = (((float)((rand() % 50) + 1) / 200.0f) + 0.1f) * one_degree_radians;
+                  particle->d = (((float)((rgui_rand() % 50) + 1) / 200.0f) + 0.1f) * one_degree_radians;
                }
             }
          }
@@ -2286,13 +2314,13 @@ static void rgui_render_particle_effect(
                if (!on_screen || (particle->c <= 0.0f) || particle_size > 16)
                {
                   /* x pos */
-                  particle->a = (float)(rand() % fb_width);
+                  particle->a = (float)(rgui_rand() % fb_width);
                   /* y pos */
-                  particle->b = (float)(rand() % fb_height);
+                  particle->b = (float)(rgui_rand() % fb_height);
                   /* depth */
                   particle->c = (float)fb_width;
                   /* speed */
-                  particle->d = 1.0f + ((float)(rand() % 20) * 0.01f);
+                  particle->d = 1.0f + ((float)(rgui_rand() % 20) * 0.01f);
                }
             }
          }
@@ -6235,8 +6263,15 @@ static void rgui_update_menu_viewport(
       rgui->menu_video_settings.vp.height = 1;
    }
 
-   rgui->menu_video_settings.vp.x = (vp.full_width - rgui->menu_video_settings.vp.width) / 2;
-   rgui->menu_video_settings.vp.y = (vp.full_height - rgui->menu_video_settings.vp.height) / 2;
+   /* Leave the viewport at the origin and let the video driver's
+    * viewport-bias logic centre it (default bias 0.5 == centred).
+    * Pre-centring here as well (vp.x = (full_width - width) / 2)
+    * double-applies the offset since 439c672c22 made the
+    * ASPECT_RATIO_CUSTOM path add padding * bias on top of vp.x,
+    * which pushed the menu hard against the right/bottom edge on
+    * wide screens. */
+   rgui->menu_video_settings.vp.x = 0;
+   rgui->menu_video_settings.vp.y = 0;
 }
 
 static bool rgui_set_aspect_ratio(
