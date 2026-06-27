@@ -262,8 +262,6 @@ int64_t retro_vfs_file_seek_internal(
       libretro_vfs_implementation_file *stream,
       int64_t offset, int whence)
 {
-   int64_t val;
-
    if (!stream)
       return -1;
 
@@ -283,7 +281,7 @@ int64_t retro_vfs_file_seek_internal(
 #elif defined(HAVE_64BIT_OFFSETS)
       return fseeko(stream->fp, (off_t)offset, whence);
 #else
-      return fseek(stream->fp, (long)offset, whence);
+      return fseek(stream->fp, (long)offset, whence) != 0 ? -1 : 0;
 #endif
    }
 #ifdef HAVE_MMAP
@@ -327,10 +325,7 @@ int64_t retro_vfs_file_seek_internal(
    }
 #endif
 
-   if ((val = lseek(stream->fd, (off_t)offset, whence)) < 0)
-      return -1;
-
-   return val;
+   return lseek(stream->fd, (off_t)offset, whence) == -1 ? -1 : 0;
 }
 
 /**
@@ -749,8 +744,6 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, i
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 {
-   int64_t val;
-
    if (!stream)
       return -1;
 
@@ -780,10 +773,7 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
          RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS))
       return stream->mappos;
 #endif
-   if ((val = lseek(stream->fd, 0, SEEK_CUR)) < 0)
-      return -1;
-
-   return val;
+   return lseek(stream->fd, 0, SEEK_CUR);
 }
 
 int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream,
