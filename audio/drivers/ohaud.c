@@ -28,6 +28,7 @@
 
 #define OHAUDIO_CHANNELS        2
 #define OHAUDIO_BYTES_PER_FRAME (OHAUDIO_CHANNELS * sizeof(int16_t))
+#define OHAUDIO_DEFAULT_BLOCK_FRAMES 256
 #define OHAUDIO_WAIT_TIMEOUT_US 50000
 
 typedef struct ohaudio
@@ -58,6 +59,7 @@ static int32_t ohaudio_write_cb(OH_AudioRenderer *renderer,
    slock_lock(oha->lock);
    avail     = FIFO_READ_AVAIL(oha->fifo);
    read_size = avail < (size_t)length ? avail : (size_t)length;
+   read_size -= read_size % OHAUDIO_BYTES_PER_FRAME;
 
    scond_signal(oha->cond);
    if (read_size)
@@ -157,6 +159,8 @@ static void *ohaudio_init(const char *device, unsigned rate,
       unsigned latency, unsigned block_frames, unsigned *new_rate)
 {
    size_t buffer_size;
+   unsigned callback_frames               = block_frames
+      ? block_frames : OHAUDIO_DEFAULT_BLOCK_FRAMES;
    OH_AudioRenderer_Callbacks callbacks = {0};
    OH_AudioStreamBuilder *builder       = NULL;
    OH_AudioStream_Result res            = AUDIOSTREAM_SUCCESS;
@@ -207,8 +211,9 @@ static void *ohaudio_init(const char *device, unsigned rate,
    if ((res = OH_AudioStreamBuilder_SetLatencyMode(builder,
                AUDIOSTREAM_LATENCY_MODE_FAST)) != AUDIOSTREAM_SUCCESS)
       goto error;
-   if (block_frames)
-      OH_AudioStreamBuilder_SetFrameSizeInCallback(builder, (int32_t)block_frames);
+   if ((res = OH_AudioStreamBuilder_SetFrameSizeInCallback(builder,
+               (int32_t)callback_frames)) != AUDIOSTREAM_SUCCESS)
+      goto error;
    if ((res = OH_AudioStreamBuilder_SetRendererCallback(builder, callbacks, oha))
          != AUDIOSTREAM_SUCCESS)
       goto error;
@@ -229,8 +234,8 @@ static void *ohaudio_init(const char *device, unsigned rate,
    if (new_rate)
       *new_rate = rate;
 
-   RARCH_LOG("[OHAudio] Initialized with %u Hz, %u byte buffer.\n",
-         rate, (unsigned)buffer_size);
+   RARCH_LOG("[OHAudio] Initialized with %u Hz, %u byte buffer, %u callback frames.\n",
+         rate, (unsigned)buffer_size, callback_frames);
    return oha;
 
 error:
@@ -404,7 +409,7 @@ audio_driver_t audio_ohaudio = {
    ohaudio_set_nonblock_state,
    ohaudio_free,
    ohaudio_use_float,
-   "ohaud",
+   "ohaudio",
    NULL,
    NULL,
    ohaudio_write_avail,

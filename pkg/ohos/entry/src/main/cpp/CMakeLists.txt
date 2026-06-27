@@ -27,7 +27,7 @@ execute_process(
 set(HAVE_NEON 1)
 set(HAVE_LOGGER 0)
 set(HAVE_VULKAN 1)
-set(HAVE_CHEEVOS 0)
+set(HAVE_CHEEVOS 1)
 set(HAVE_FILE_LOGGER 1)
 set(HAVE_GFX_WIDGETS 1)
 set(HAVE_SAF 1)
