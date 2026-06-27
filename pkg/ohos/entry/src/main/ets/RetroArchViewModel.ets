@@ -32,7 +32,7 @@ enum NativeEventId{
 export class RetroArchViewModel{
   context?: common.UIAbilityContext
 
-  @Trace loading: boolean = true;
+  @Trace loading: boolean = false;
   @Trace openKeyboard: boolean = false;
   @Trace fullScreen: boolean = false;
   @Trace currentRotation: number = 0

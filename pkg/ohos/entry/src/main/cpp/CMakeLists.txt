@@ -245,6 +245,7 @@ target_link_libraries(${PROJECT_NAME}
     z
     native_window
     hilog_ndk.z
+    ohaudio
 )
 if(DEFINED SANITIZER)
     target_compile_options(${PROJECT_NAME} PRIVATE -g -fsanitize=${SANITIZER} -fno-omit-frame-pointer)
