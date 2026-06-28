@@ -5816,6 +5816,37 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
    return ret;
 }
 
+/* config_path_strip_trailing_slash:
+ *
+ * Removes a single trailing path separator from a directory value, so
+ * that directory paths are serialised consistently in the config file
+ * (e.g. ".../assets/" is written as ".../assets").
+ *
+ * Intentionally left untouched:
+ *   - root paths ("/")                    -> length < 2
+ *   - drive roots and the content marker  -> preceding char is ':'
+ *                                            ("C:\", "C:/", ":/")
+ *   - empty strings, "default" and file
+ *     paths                               -> never end in a separator
+ *
+ * This only affects serialisation: fill_pathname_join() and friends
+ * ignore a trailing separator on their directory operand, so runtime
+ * path construction is unaffected either way. */
+static void config_path_strip_trailing_slash(char *s)
+{
+   size_t len;
+   if (!s || !*s)
+      return;
+   len = strlen(s);
+   if (len < 2)
+      return;
+   if (!PATH_CHAR_IS_SLASH(s[len - 1]))
+      return;
+   if (s[len - 2] == ':')
+      return;
+   s[len - 1] = '\0';
+}
+
 /**
  * config_save_file:
  * @path            : Path that shall be written to.
@@ -6037,6 +6068,8 @@ bool config_save_file(const char *path)
    {
       for (i = 0; i < (unsigned)path_settings_size; i++)
       {
+         char value_buf[PATH_MAX_LENGTH];
+         char default_buf[PATH_MAX_LENGTH];
          const char *value         = path_settings[i].ptr;
          const char *default_value = path_defaults ? path_defaults[i].ptr : NULL;
 
@@ -6048,17 +6081,32 @@ bool config_save_file(const char *path)
                default_value = "default";
          }
 
+         /* Normalise a trailing separator out of directory values so
+          * saved paths are consistent. File paths and the "" / "default"
+          * sentinels never end in a separator, so they pass through
+          * unchanged; both the written value and the default used for
+          * the minimal-mode comparison are normalised so the dedup
+          * stays correct. */
+         if (value)
+         {
+            strlcpy(value_buf, value, sizeof(value_buf));
+            config_path_strip_trailing_slash(value_buf);
+            value = value_buf;
+         }
+         if (default_value)
+         {
+            strlcpy(default_buf, default_value, sizeof(default_buf));
+            config_path_strip_trailing_slash(default_buf);
+            default_value = default_buf;
+         }
+
          /* In minimal mode, only save if value differs from default */
          if (   !minimal
              || !string_is_equal(value, default_value))
-         {
             config_set_path(conf, path_settings[i].ident, value);
-         }
          else
-         {
             /* Remove key if it matches default */
             config_unset(conf, path_settings[i].ident);
-         }
       }
    }
 
