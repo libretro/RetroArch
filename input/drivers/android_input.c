@@ -987,6 +987,64 @@ static bool android_is_keyboard_id(int id)
    return false;
 }
 
+/* Resolves the printable Unicode codepoint produced by a hardware-key
+ * press, honouring the active keyboard layout and modifier (shift, caps
+ * lock, ...) state via the device's KeyCharacterMap - this mirrors what
+ * android.view.KeyEvent.getUnicodeChar() does.
+ *
+ * Returns 0 for keys that do not produce a character (modifiers, lock
+ * keys, navigation/function keys, ...).  That is exactly what the
+ * keyboard line-editor expects: such keys must not emit text, and were
+ * previously leaking into menu text fields as '?'.
+ *
+ * Also returns 0 (rather than failing) whenever JNI is unavailable, so
+ * the caller can fall back to its previous keysym-based behaviour. */
+static unsigned android_keycode_to_unicode(int device_id,
+      int keycode, int meta_state)
+{
+   jint      unicode = 0;
+   jobject   kcm     = NULL;
+   jmethodID load    = NULL;
+   jmethodID get     = NULL;
+   jclass    class   = NULL;
+   JNIEnv   *env     = (JNIEnv*)jni_thread_getenv();
+
+   if (!env)
+      return 0;
+
+   /* Bound the local references created below so they are released as
+    * soon as the lookup completes, rather than accumulating in the
+    * thread-local reference table across key presses. */
+   if ((*env)->PushLocalFrame(env, 4) < 0)
+      return 0;
+
+   FIND_CLASS(env, class, "android/view/KeyCharacterMap");
+   if (class)
+   {
+      GET_STATIC_METHOD_ID(env, load, class, "load",
+            "(I)Landroid/view/KeyCharacterMap;");
+      if (load)
+      {
+         CALL_OBJ_STATIC_METHOD_PARAM(env, kcm, class, load,
+               (jint)device_id);
+         if (kcm)
+         {
+            GET_METHOD_ID(env, get, class, "get", "(II)I");
+            if (get)
+               CALL_INT_METHOD_PARAM(env, unicode, kcm, get,
+                     (jint)keycode, (jint)meta_state);
+         }
+      }
+   }
+
+   (*env)->PopLocalFrame(env, NULL);
+
+   /* KeyCharacterMap.get() sets the COMBINING_ACCENT (0x80000000) flag
+    * for dead keys; the menu line-editor cannot compose those, so strip
+    * the flag and keep the base accent character. */
+   return ((unsigned)unicode) & 0x7fffffff;
+}
+
 static INLINE void android_input_poll_event_type_keyboard(
       AInputEvent *event, int keycode, int *handled)
 {
@@ -996,6 +1054,7 @@ static INLINE void android_input_poll_event_type_keyboard(
    /* Set keyboard modifier based on shift,ctrl and alt state */
    uint16_t mod          = 0;
    int meta              = AKeyEvent_getMetaState(event);
+   uint32_t character    = 0;
 
    if (meta & AMETA_ALT_ON)
       mod |= RETROKMOD_ALT;
@@ -1012,8 +1071,23 @@ static INLINE void android_input_poll_event_type_keyboard(
    if (meta & AMETA_META_ON)
       mod |= RETROKMOD_META;
 
+   /* Resolve the actual printable character for this key in the current
+    * layout + modifier state.  This produces capitals and shifted
+    * symbols, and yields 0 for modifier/lock keys so they no longer leak
+    * into menu text fields as '?'. */
+   character = android_keycode_to_unicode(
+         AInputEvent_getDeviceId(event), keycode, meta);
+
+   /* Fall back to the raw keysym for the plain ASCII range when the
+    * platform could not resolve a character (e.g. JNI unavailable).
+    * This preserves the previous behaviour for lowercase input while
+    * still suppressing modifier/lock keys, whose keysyms are >= 0x80,
+    * from being emitted as text. */
+   if (character == 0 && keyboardcode < 0x80)
+      character = keyboardcode;
+
    input_keyboard_event(keydown, keyboardcode,
-         keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
+         character, mod, RETRO_DEVICE_KEYBOARD);
 
    if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
       *handled = 0;
