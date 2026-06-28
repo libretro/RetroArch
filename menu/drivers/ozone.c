@@ -5811,6 +5811,14 @@ compute_sublabel:
 
    /* Update scrolling */
    ozone->selection          = menu_st->selection_ptr;
+   /* selection_ptr can momentarily exceed the entry-list size when the
+    * list is rebuilt (e.g. a playlist refresh that shrinks it) before
+    * the navigation pointer is re-clamped. Every other indexed access
+    * in this file guards with (selection < size); do the same here
+    * before reading list[].userdata to avoid an out-of-bounds read
+    * (issue #18797). size >= 1 is guaranteed by the early return above. */
+   if (ozone->selection >= selection_buf->size)
+      ozone->selection       = selection_buf->size - 1;
    ozone_update_scroll(ozone, false, (ozone_node_t*)selection_buf->list[ozone->selection].userdata);
 }
 
