@@ -638,6 +638,14 @@
  * controller is connected in port 1 */
 #define DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED false
 
+/* Conditional overlay profiles (FR #18178): default behaviour mode and the
+ * debounce window (ms) before a profile switch is committed. The legacy
+ * DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED bool above is migrated into the
+ * behaviour enum on config load (see configuration.c). */
+#define DEFAULT_OVERLAY_BEHAVIOR OVERLAY_BEHAVIOR_STATIC
+
+#define DEFAULT_OVERLAY_SWITCH_DELAY_MS 800
+
 #define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR false
 
 #ifdef HAKCHI

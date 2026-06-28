@@ -5920,6 +5920,9 @@ void retroarch_override_setting_set(
       case RARCH_OVERRIDE_SETTING_OVERLAY_PRESET:
          p_rarch->flags |= RARCH_FLAGS_HAS_SET_OVERLAY_PRESET;
          break;
+      case RARCH_OVERRIDE_SETTING_OVERLAY_MINIMAL_PRESET:
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_OVERLAY_MINIMAL_PRESET;
+         break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -6004,6 +6007,9 @@ void retroarch_override_setting_unset(
          break;
       case RARCH_OVERRIDE_SETTING_OVERLAY_PRESET:
          p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_OVERLAY_PRESET;
+         break;
+      case RARCH_OVERRIDE_SETTING_OVERLAY_MINIMAL_PRESET:
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_OVERLAY_MINIMAL_PRESET;
          break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
@@ -8900,6 +8906,8 @@ bool retroarch_override_setting_is_set(
          return ((p_rarch->flags & RARCH_FLAGS_CLI_DATABASE_SCAN) > 0);
       case RARCH_OVERRIDE_SETTING_OVERLAY_PRESET:
          return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_OVERLAY_PRESET) > 0);
+      case RARCH_OVERRIDE_SETTING_OVERLAY_MINIMAL_PRESET:
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_OVERLAY_MINIMAL_PRESET) > 0);
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;

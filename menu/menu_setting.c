@@ -5629,6 +5629,33 @@ static size_t setting_get_string_representation_uint_input_overlay_show_inputs(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_overlay_behavior(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case OVERLAY_BEHAVIOR_STATIC:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHAVIOR_STATIC),
+                  len);
+         case OVERLAY_BEHAVIOR_HIDE_WHEN_GAMEPAD:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHAVIOR_HIDE_WHEN_GAMEPAD),
+                  len);
+         case OVERLAY_BEHAVIOR_CONDITIONAL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHAVIOR_CONDITIONAL),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_input_overlay_show_inputs_port(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -18141,22 +18168,65 @@ static bool setting_append_list(
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
-         CONFIG_BOOL(
+         /* Legacy "Hide When Controller Is Connected" bool is superseded by
+          * input_overlay_behavior (FR #18178). The cfg key + migration in
+          * configuration.c are kept for downgrade safety; the menu entry is
+          * intentionally not registered so users see only the new enum. */
+
+         CONFIG_UINT(
                list, list_info,
-               &settings->bools.input_overlay_hide_when_gamepad_connected,
-               MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-               DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
+               &settings->uints.input_overlay_behavior,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_BEHAVIOR,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHAVIOR,
+               DEFAULT_OVERLAY_BEHAVIOR,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
+               general_read_handler
                );
-         (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
+         (*list)[list_info->index - 1].ui_type                   = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left               = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right              = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_overlay_behavior;
+         (*list)[list_info->index - 1].change_handler            = overlay_enable_toggle_change_handler;
+         menu_settings_list_current_add_range(list, list_info, 0, OVERLAY_BEHAVIOR_LAST-1, 1, true, true);
+
+         CONFIG_PATH(
+               list, list_info,
+               settings->paths.path_overlay_minimal,
+               sizeof(settings->paths.path_overlay_minimal),
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MINIMAL_PRESET,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MINIMAL_PRESET,
+               settings->paths.directory_overlay,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_INIT);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_switch_delay_ms,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_SWITCH_DELAY,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SWITCH_DELAY,
+               DEFAULT_OVERLAY_SWITCH_DELAY_MS,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler
+               );
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         /* Min clamped at 100 ms: anything below defeats the debounce window
+          * this setting exists to provide (FR #18178 motivates the delay to
+          * prevent USB-enumeration / hot-plug flapping causing overlay
+          * reload thrash). */
+         menu_settings_list_current_add_range(list, list_info, 100, 3000, 50, true, true);
 
          CONFIG_UINT(
                list, list_info,

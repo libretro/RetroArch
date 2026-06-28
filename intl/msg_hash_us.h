@@ -5415,6 +5415,42 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHAVIOR,
+   "Overlay Behavior"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHAVIOR,
+   "Choose how the on-screen overlay reacts when a physical controller is connected in port 1. 'Static' never changes the overlay. 'Hide When Controller Is Connected' removes it. 'Conditional Profiles' switches to the Minimal Overlay Preset after the switch delay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHAVIOR_STATIC,
+   "Static"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHAVIOR_HIDE_WHEN_GAMEPAD,
+   "Hide When Controller Is Connected"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHAVIOR_CONDITIONAL,
+   "Conditional Profiles"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MINIMAL_PRESET,
+   "Minimal Overlay Preset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MINIMAL_PRESET,
+   "Overlay preset loaded in 'Conditional Profiles' mode when a controller is connected. If left empty, the main Overlay Preset is used instead."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SWITCH_DELAY,
+   "Overlay Switch Delay (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SWITCH_DELAY,
+   "Time in milliseconds that a controller connect or disconnect must remain stable before the overlay switches, to prevent flicker on rapid plug/unplug."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
    "Show Inputs on Overlay"
    )

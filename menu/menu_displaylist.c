@@ -10629,6 +10629,7 @@ unsigned menu_displaylist_build_list(
             enum overlay_show_input_type
                   input_overlay_show_inputs = (enum overlay_show_input_type)
                         settings->uints.input_overlay_show_inputs;
+            unsigned input_overlay_behavior = settings->uints.input_overlay_behavior;
 
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,                      PARSE_ONLY_BOOL,  true  },
@@ -10637,7 +10638,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_OVERLAY_OPACITY,                           PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_BEHIND_MENU,                 PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,                PARSE_ONLY_BOOL,  false },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED, PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_BEHAVIOR,                    PARSE_ONLY_UINT,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_MINIMAL_PRESET,              PARSE_ONLY_PATH,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SWITCH_DELAY,                PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS,                 PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,            PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,           PARSE_ONLY_BOOL,  false },
@@ -10670,7 +10673,7 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_BEHIND_MENU:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
-                  case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED:
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_BEHAVIOR:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE:
@@ -10680,6 +10683,14 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_OVERLAY_OPACITY:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_POINTER_ENABLE:
                      build_list[i].checked = input_overlay_enable;
+                     break;
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_MINIMAL_PRESET:
+                     build_list[i].checked = input_overlay_enable &&
+                         (input_overlay_behavior == OVERLAY_BEHAVIOR_CONDITIONAL);
+                     break;
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SWITCH_DELAY:
+                     build_list[i].checked = input_overlay_enable &&
+                         (input_overlay_behavior != OVERLAY_BEHAVIOR_STATIC);
                      break;
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT:
                      build_list[i].checked = input_overlay_enable &&

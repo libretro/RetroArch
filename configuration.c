@@ -1743,6 +1743,7 @@ static struct config_path_setting *populate_settings_path(
 
 #ifdef HAVE_OVERLAY
    SETTING_PATH("input_overlay",                 settings->paths.path_overlay, false, NULL, true);
+   SETTING_PATH("input_overlay_minimal",         settings->paths.path_overlay_minimal, false, NULL, true);
    SETTING_PATH("input_osk_overlay",             settings->paths.path_osk_overlay, false, NULL, true);
    SETTING_PATH("overlay_directory",             settings->paths.directory_overlay, true, NULL, true);
    SETTING_PATH("osk_overlay_directory",         settings->paths.directory_osk_overlay, true, NULL, true);
@@ -2656,6 +2657,8 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_overlay_dpad_diagonal_sensitivity", &settings->uints.input_overlay_dpad_diagonal_sensitivity, true, DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY, false);
    SETTING_UINT("input_overlay_abxy_diagonal_sensitivity", &settings->uints.input_overlay_abxy_diagonal_sensitivity, true, DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY, false);
    SETTING_UINT("input_overlay_analog_recenter_zone",      &settings->uints.input_overlay_analog_recenter_zone, true, DEFAULT_INPUT_OVERLAY_ANALOG_RECENTER_ZONE, false);
+   SETTING_UINT("input_overlay_behavior",                  &settings->uints.input_overlay_behavior, true, DEFAULT_OVERLAY_BEHAVIOR, false);
+   SETTING_UINT("input_overlay_switch_delay_ms",           &settings->uints.input_overlay_switch_delay_ms, true, DEFAULT_OVERLAY_SWITCH_DELAY_MS, false);
 #endif
 
 #ifdef HAVE_LIBNX
@@ -3360,6 +3363,11 @@ void config_set_defaults(void *data)
                settings->paths.directory_overlay,
                FILE_PATH_DEFAULT_OVERLAY,
                sizeof(settings->paths.path_overlay));
+      /* No default for path_overlay_minimal: leave it empty so the
+       * resolver falls back to the main preset until the user explicitly
+       * picks a minimal preset via Settings -> On-Screen Display -> On-Screen
+       * Overlay -> Minimal Overlay Preset. Avoids pointing at an asset that
+       * may not ship in the user's overlay bundle. */
       if (!*settings->paths.path_osk_overlay)
          fill_pathname_join_special(settings->paths.path_osk_overlay,
                settings->paths.directory_overlay,
@@ -4022,7 +4030,10 @@ static bool config_load_file(global_t *global,
       char *extra_path = NULL;
 #ifdef HAVE_OVERLAY
       char old_overlay_path[PATH_MAX_LENGTH], new_overlay_path[PATH_MAX_LENGTH];
+      char old_overlay_minimal_path[PATH_MAX_LENGTH], new_overlay_minimal_path[PATH_MAX_LENGTH];
       config_get_path(conf, "input_overlay", old_overlay_path, sizeof(old_overlay_path));
+      config_get_path(conf, "input_overlay_minimal",
+            old_overlay_minimal_path, sizeof(old_overlay_minimal_path));
 #endif
       strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_OVERRIDE),
             sizeof(tmp_append_path));
@@ -4052,6 +4063,11 @@ static bool config_load_file(global_t *global,
       config_get_path(conf, "input_overlay", new_overlay_path, sizeof(new_overlay_path));
       if (!string_is_equal(old_overlay_path, new_overlay_path))
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
+      config_get_path(conf, "input_overlay_minimal",
+            new_overlay_minimal_path, sizeof(new_overlay_minimal_path));
+      if (!string_is_equal(old_overlay_minimal_path, new_overlay_minimal_path))
+         retroarch_override_setting_set(
+               RARCH_OVERRIDE_SETTING_OVERLAY_MINIMAL_PRESET, NULL);
 #endif
    }
 
@@ -4062,6 +4078,26 @@ static bool config_load_file(global_t *global,
       if (tmp)
          retroarch_ctl(RARCH_CTL_SET_PERFCNT_ENABLE, NULL);
    }
+
+#ifdef HAVE_OVERLAY
+   /* Migrate the legacy "input_overlay_hide_when_gamepad_connected" bool to
+    * the new "input_overlay_behavior" enum (FR #18178).  Only applies when
+    * the new key is absent from the config (older installs): a true legacy
+    * bool becomes HIDE_WHEN_GAMEPAD; otherwise the loaded enum value is kept.
+    * The legacy key is left in the config for downgrade safety. */
+   {
+      unsigned beh_tmp = 0;
+      if (!config_get_uint(conf, "input_overlay_behavior", &beh_tmp))
+      {
+         bool hide_tmp = false;
+         config_get_bool(conf, "input_overlay_hide_when_gamepad_connected",
+               &hide_tmp);
+         if (hide_tmp)
+            settings->uints.input_overlay_behavior =
+                  OVERLAY_BEHAVIOR_HIDE_WHEN_GAMEPAD;
+      }
+   }
+#endif
 
    /* Overrides */
 

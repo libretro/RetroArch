@@ -108,6 +108,25 @@ enum overlay_show_input_type
    OVERLAY_SHOW_INPUT_LAST
 };
 
+/* Conditional overlay profiles (FR #18178): how the on-screen overlay
+ * reacts when a gamepad is connected to port 1.  Stored in
+ * settings->uints.input_overlay_behavior. */
+enum overlay_behavior
+{
+   OVERLAY_BEHAVIOR_STATIC = 0,        /* never change the overlay          */
+   OVERLAY_BEHAVIOR_HIDE_WHEN_GAMEPAD, /* hide overlay when gamepad present  */
+   OVERLAY_BEHAVIOR_CONDITIONAL,       /* swap to the minimal preset instead */
+   OVERLAY_BEHAVIOR_LAST
+};
+
+/* Resolved overlay state: which preset (if any) should be active now. */
+enum overlay_profile
+{
+   OVERLAY_PROFILE_FULL = 0, /* full/touch preset  (paths.path_overlay)         */
+   OVERLAY_PROFILE_MINIMAL,  /* minimal preset     (paths.path_overlay_minimal) */
+   OVERLAY_PROFILE_HIDDEN    /* show nothing                                    */
+};
+
 enum OVERLAY_LOADER_FLAGS
 {
    OVERLAY_LOADER_RGBA_SUPPORT = (1 << 0),

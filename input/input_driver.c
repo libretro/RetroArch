@@ -3,6 +3,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2019 - Andr s Su rez (input mapper code)
+ *  Copyright (C) 2026 - M00NR00ST3R (conditional overlay profiles)
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
@@ -6167,6 +6168,32 @@ void input_overlay_set_visibility(int overlay_idx,
       ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
 }
 
+/* Conditional overlay profiles (FR #18178).
+ * Pure resolver: maps the configured behaviour mode and current controller
+ * state to the overlay profile that should be active.  No side effects, so
+ * it is safe to call every frame.  Additional input sources (e.g. an active
+ * stylus) can be added as parameters here without touching the call sites. */
+enum overlay_profile overlay_resolve_profile(
+      unsigned behavior, bool controller_connected,
+      bool minimal_available)
+{
+   switch (behavior)
+   {
+      case OVERLAY_BEHAVIOR_HIDE_WHEN_GAMEPAD:
+         return controller_connected
+            ? OVERLAY_PROFILE_HIDDEN : OVERLAY_PROFILE_FULL;
+      case OVERLAY_BEHAVIOR_CONDITIONAL:
+         if (controller_connected)
+            return minimal_available
+               ? OVERLAY_PROFILE_MINIMAL : OVERLAY_PROFILE_FULL;
+         return OVERLAY_PROFILE_FULL;
+      case OVERLAY_BEHAVIOR_STATIC:
+      default:
+         break;
+   }
+   return OVERLAY_PROFILE_FULL;
+}
+
 static bool input_overlay_want_hidden(void)
 {
    settings_t *settings = config_get_ptr();
@@ -6176,9 +6203,19 @@ static bool input_overlay_want_hidden(void)
    if (settings->bools.input_overlay_hide_in_menu)
       hide = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
 #endif
-   if (settings->bools.input_overlay_hide_when_gamepad_connected
-         && !settings->bools.input_overlay_pointer_enable)
-      hide = hide || (input_config_get_device_name(0) != NULL);
+   /* Hard-hide (unload) only when the resolved profile is HIDDEN and pointer
+    * input is not enabled; with pointer input the runloop soft-hides instead
+    * so mouse/lightgun input keeps working. */
+   if (!settings->bools.input_overlay_pointer_enable)
+   {
+      unsigned behavior         = settings->uints.input_overlay_behavior;
+      bool controller_connected = (input_config_get_device_name(0) != NULL);
+      bool minimal_available    = (*settings->paths.path_overlay_minimal != '\0');
+      if (overlay_resolve_profile(behavior, controller_connected,
+               minimal_available)
+            == OVERLAY_PROFILE_HIDDEN)
+         hide = true;
+   }
 
    return hide;
 }
@@ -6306,13 +6343,17 @@ static void input_overlay_loaded(retro_task_t *task,
    if (!enable_overlay)
       input_overlay_unload();
 
-   /* Soft-hide when gamepad connected but pointer input enabled */
+   /* Soft-hide when the resolved profile is HIDDEN but pointer input is
+    * enabled, so the overlay stays loaded for mouse/lightgun (FR #18178). */
    {
       settings_t *settings = config_get_ptr();
+      unsigned    behavior = settings->uints.input_overlay_behavior;
       if (enable_overlay
-            && settings->bools.input_overlay_hide_when_gamepad_connected
             && settings->bools.input_overlay_pointer_enable
-            && input_config_get_device_name(0) != NULL)
+            && overlay_resolve_profile(behavior,
+                  input_config_get_device_name(0) != NULL,
+                  *settings->paths.path_overlay_minimal != '\0')
+               == OVERLAY_PROFILE_HIDDEN)
          ol->flags |= INPUT_OVERLAY_GAMEPAD_HIDDEN;
    }
 
@@ -6350,6 +6391,22 @@ static const char *input_overlay_path(bool want_osk)
 
    if (want_osk)
       return settings->paths.path_osk_overlay;
+
+   /* Conditional profiles: when the resolved profile is MINIMAL, skip the
+    * auto-preferred lookup and return the user's minimal preset directly.
+    * The resolver only returns MINIMAL when the path is non-empty, so no
+    * further fallback is needed here. */
+   {
+      unsigned             behavior          = settings->uints.input_overlay_behavior;
+      bool                 controller_active = (input_config_get_device_name(0) != NULL);
+      bool                 minimal_available = (*settings->paths.path_overlay_minimal != '\0');
+      enum overlay_profile profile           = overlay_resolve_profile(
+            behavior, controller_active, minimal_available);
+
+      if (profile == OVERLAY_PROFILE_MINIMAL)
+         return settings->paths.path_overlay_minimal;
+   }
+
    /* If the option is set to turn this off, just return default */
    if (!settings->bools.input_overlay_enable_autopreferred)
        return settings->paths.path_overlay;
