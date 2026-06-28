@@ -7160,6 +7160,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "La rapido de la voĉo por la parolsintezo."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Parolsinteza motoro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "La parolsinteza datumtraktejo uzata por la rakontilo."
+   )
 
 /* Settings > Power Management */
 
