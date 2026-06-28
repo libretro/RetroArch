@@ -5783,6 +5783,36 @@ static int menu_input_post_iterate(
       ? (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
       : NULL;
 
+   /* While an input flush is in progress (e.g. immediately after a
+    * menu toggle), pointer input must be ignored entirely.
+    * Gamepad/keyboard bits are flushed upstream in the runloop, but
+    * pointer hardware state is sampled directly in menu_event() and
+    * therefore bypasses that flush. Without this, a press that
+    * straddles the toggle - a touchscreen tap that opened the menu
+    * with the finger still down, or a mouse button held as the menu
+    * appears - leaks through here as a stray 'ghost' tap/click,
+    * firing a release action against stale start coordinates.
+    * We also reset the press-tracking state so that, once the flush
+    * window ends, any still-active press is registered as a fresh
+    * 'pointer down' rather than a spurious release. */
+   if (menu_st->input_driver_flushing_input > 0)
+   {
+      start_x                   = 0;
+      start_y                   = 0;
+      last_x                    = 0;
+      last_y                    = 0;
+      dx_start_right_max        = 0;
+      dx_start_left_max         = 0;
+      dy_start_up_max           = 0;
+      dy_start_down_max         = 0;
+      last_press_direction_time = 0;
+      last_select_pressed       = false;
+      last_cancel_pressed       = false;
+      last_left_pressed         = false;
+      last_right_pressed        = false;
+      return 0;
+   }
+
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
                 | MENU_ENTRY_FLAG_LABEL_ENABLED;
