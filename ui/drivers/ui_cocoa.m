@@ -743,7 +743,7 @@ static NSStatusItem *statusBarItem = nil;
 
    settings_t *settings = config_get_ptr();
    if (!statusBarItem) {
-           statusBarItem = [[[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength] retain];
+           statusBarItem = RARCH_RETAIN([[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength]);
            NSImage *invaderImg = nil;
            if (settings && *settings->paths.directory_assets) {
                NSString *assetsDir = [NSString stringWithUTF8String:settings->paths.directory_assets];
