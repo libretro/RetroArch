@@ -1184,10 +1184,17 @@ again:
 
    if (voice->types.mod.samples < buf_free)
    {
+      /* ibxm emits fixed-point samples whose unity is FP_ONE (32768 ==
+       * 0x8000), so scale by 1/0x8000 to match audio/conversion/
+       * s16_to_float and the rest of the mixer. The previous
+       * (s + 32768) / 65535 * 2 - 1 mapping added a small positive DC
+       * offset (0 -> +1.5e-5) and a non-canonical scale; this keeps the
+       * MOD voice consistent (and deterministic) with the other formats.
+       * Samples beyond +/-FP_ONE (loud multi-channel mixes) exceed
+       * +/-1.0 and are clamped downstream exactly as before. */
       for (i = voice->types.mod.samples; i != 0; i--)
       {
-         samplef     = ((float)(*pcm++) + 32768.0f) / 65535.0f;
-         samplef     = samplef * 2.0f - 1.0f;
+         samplef     = (float)(*pcm++) * (1.0f / 0x8000);
          *buffer++  += samplef * volume;
       }
 
@@ -1197,8 +1204,7 @@ again:
 
    for (i = buf_free; i != 0; --i )
    {
-      samplef     = ((float)(*pcm++) + 32768.0f) / 65535.0f;
-      samplef     = samplef * 2.0f - 1.0f;
+      samplef     = (float)(*pcm++) * (1.0f / 0x8000);
       *buffer++  += samplef * volume;
    }
 
