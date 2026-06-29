@@ -1130,6 +1130,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_index,                         
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_options,                          MENU_ENUM_SUBLABEL_DISK_OPTIONS)
 #ifdef HAVE_XMB
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_layout,                            MENU_ENUM_SUBLABEL_XMB_LAYOUT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_menu_color_theme,                  MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_icon_theme,                        MENU_ENUM_SUBLABEL_XMB_THEME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_current_menu_icon,                 MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON)
@@ -1150,7 +1151,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_animation_move_up_down,    
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_animation_opening_main_menu,  MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU)
 #endif
 #ifdef HAVE_MATERIALUI
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_menu_color_theme,              MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_menu_transition_animation,     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_menu_thumbnail_view_portrait,  MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_menu_thumbnail_view_landscape, MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE)
@@ -3141,13 +3142,17 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_video_tab);
             break;
          case MENU_ENUM_LABEL_XMB_FONT:
+#ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_font);
+#endif
             break;
          case MENU_ENUM_LABEL_OZONE_FONT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_ozone_font);
             break;
          case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
+#ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_ribbon_enable);
+#endif
             break;
          case MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_framebuffer_opacity);
@@ -3311,8 +3316,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #endif
             break;
          case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
+#ifdef HAVE_MATERIALUI
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_menu_color_theme);
+#endif
+            break;
          case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_color_theme);
+#ifdef HAVE_XMB
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_menu_color_theme);
+#endif
             break;
          case MENU_ENUM_LABEL_MATERIALUI_MENU_TRANSITION_ANIMATION:
 #ifdef HAVE_MATERIALUI
