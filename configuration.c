@@ -1714,6 +1714,7 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("content_database_path",           settings->paths.path_content_database, false, NULL, true);
    SETTING_PATH("content_favorites_path",          settings->paths.path_content_favorites, false, NULL, true);
    SETTING_PATH("content_history_path",            settings->paths.path_content_history, false, NULL, true);
+   SETTING_PATH("content_most_played_path",        settings->paths.path_content_most_played, false, NULL, true);
    SETTING_PATH("content_image_history_path",      settings->paths.path_content_image_history, false, NULL, true);
    SETTING_PATH("content_music_history_path",      settings->paths.path_content_music_history, false, NULL, true);
    SETTING_PATH("content_video_history_path",      settings->paths.path_content_video_history, false, NULL, true);
@@ -2096,6 +2097,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("content_show_settings",         &settings->bools.menu_content_show_settings, true, DEFAULT_CONTENT_SHOW_SETTINGS, false);
    SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, DEFAULT_CONTENT_SHOW_FAVORITES, false);
    SETTING_BOOL("content_show_favorites_first",  &settings->bools.menu_content_show_favorites_first, true, DEFAULT_CONTENT_SHOW_FAVORITES_FIRST, false);
+   SETTING_BOOL("content_show_most_played",      &settings->bools.menu_content_show_most_played, true, DEFAULT_CONTENT_SHOW_MOST_PLAYED, false);
 #ifdef HAVE_IMAGEVIEWER
    SETTING_BOOL("content_show_images",           &settings->bools.menu_content_show_images, true, DEFAULT_CONTENT_SHOW_IMAGES, false);
 #endif
@@ -2483,6 +2485,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("content_show_netplay",          &settings->uints.menu_content_show_netplay, true, DEFAULT_CONTENT_SHOW_NETPLAY, false);
 #endif
    SETTING_UINT("content_history_size",          &settings->uints.content_history_size, true, DEFAULT_CONTENT_HISTORY_SIZE, false);
+   SETTING_UINT("content_most_played_size",      &settings->uints.content_most_played_size, true, DEFAULT_CONTENT_MOST_PLAYED_SIZE, false);
    SETTING_UINT("playlist_entry_remove_enable",        &settings->uints.playlist_entry_remove_enable, true, DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE, false);
    SETTING_UINT("playlist_show_inline_core_name",      &settings->uints.playlist_show_inline_core_name, true, DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME, false);
    SETTING_UINT("playlist_show_history_icons",         &settings->uints.playlist_show_history_icons, true, DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS, false);
@@ -3241,6 +3244,7 @@ void config_set_defaults(void *data)
    *settings->paths.path_core_options            = '\0';
    *settings->paths.path_content_favorites       = '\0';
    *settings->paths.path_content_history         = '\0';
+   *settings->paths.path_content_most_played     = '\0';
    *settings->paths.path_content_image_history   = '\0';
    *settings->paths.path_content_music_history   = '\0';
    *settings->paths.path_content_video_history   = '\0';
@@ -3490,6 +3494,13 @@ void config_set_defaults(void *data)
                settings->paths.directory_content_history,
                FILE_PATH_CONTENT_HISTORY,
                sizeof(settings->paths.path_content_history));
+
+      if (!*settings->paths.path_content_most_played)
+         fill_pathname_join_special(
+               settings->paths.path_content_most_played,
+               new_path,
+               FILE_PATH_CONTENT_MOST_PLAYED,
+               sizeof(settings->paths.path_content_most_played));
 
       if (!*settings->paths.path_content_image_history)
          strlcpy(settings->paths.directory_content_image_history, "default",
@@ -4340,6 +4351,13 @@ static bool config_load_file(global_t *global,
                settings->paths.directory_content_history,
                FILE_PATH_CONTENT_HISTORY,
                sizeof(settings->paths.path_content_history));
+
+      if (!*settings->paths.path_content_most_played)
+         fill_pathname_join_special(
+               settings->paths.path_content_most_played,
+               new_path,
+               FILE_PATH_CONTENT_MOST_PLAYED,
+               sizeof(settings->paths.path_content_most_played));
 
       if (!*settings->paths.path_content_image_history)
          strlcpy(settings->paths.directory_content_image_history, "default",

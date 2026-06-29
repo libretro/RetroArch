@@ -857,6 +857,7 @@
 
 #define DEFAULT_CONTENT_SHOW_SETTINGS true
 #define DEFAULT_CONTENT_SHOW_HISTORY true
+#define DEFAULT_CONTENT_SHOW_MOST_PLAYED false
 #define DEFAULT_CONTENT_SHOW_FAVORITES true
 #define DEFAULT_CONTENT_SHOW_FAVORITES_FIRST false
 #ifdef HAVE_IMAGEVIEWER
@@ -1545,6 +1546,9 @@
 
 /* Number of entries that will be kept in content history playlist file. */
 #define DEFAULT_CONTENT_HISTORY_SIZE 200
+
+/* Number of entries that will be kept in content most played playlist file. */
+#define DEFAULT_CONTENT_MOST_PLAYED_SIZE 200
 
 /* Number of entries that will be kept in content favorites playlist file.
  * -1 == 'unlimited' (99999) */

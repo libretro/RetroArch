@@ -100,6 +100,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_netplay_sublist,                DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_content_settings,               DISPLAYLIST_CONTENT_SETTINGS)
 GENERIC_DEFERRED_PUSH(deferred_push_add_content_list,               DISPLAYLIST_ADD_CONTENT_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_history_list,                   DISPLAYLIST_HISTORY)
+GENERIC_DEFERRED_PUSH(deferred_push_most_played_list,               DISPLAYLIST_MOST_PLAYED)
 GENERIC_DEFERRED_PUSH(deferred_push_database_manager_list,          DISPLAYLIST_DATABASES)
 GENERIC_DEFERRED_PUSH(deferred_push_content_collection_list,        DISPLAYLIST_DATABASE_PLAYLISTS)
 GENERIC_DEFERRED_PUSH(deferred_push_configurations_list,            DISPLAYLIST_CONFIGURATIONS_LIST)
@@ -670,6 +671,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST, deferred_push_accounts_list},
       {MENU_ENUM_LABEL_CORE_LIST, deferred_push_core_list},
       {MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY, deferred_push_history_list},
+      {MENU_ENUM_LABEL_LOAD_MOST_PLAYED, deferred_push_most_played_list},
       {MENU_ENUM_LABEL_SAVESTATE_LIST, deferred_push_savestate_list},
       {MENU_ENUM_LABEL_STATE_SLOT_RUN, deferred_push_state_slot_run},
       {MENU_ENUM_LABEL_CORE_OPTIONS, deferred_push_core_options},
@@ -864,6 +866,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_history_list);
+            break;
+         case MENU_ENUM_LABEL_LOAD_MOST_PLAYED:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_most_played_list);
             break;
          case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);

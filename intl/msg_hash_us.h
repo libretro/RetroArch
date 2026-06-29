@@ -39,6 +39,10 @@ MSG_HASH(
    "History"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MOST_PLAYED_TAB,
+   "Most Played"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
    "Images"
    )
@@ -6545,6 +6549,14 @@ MSG_HASH(
    "Show the recent history menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MOST_PLAYED,
+   "Show 'Most Played'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MOST_PLAYED,
+   "Show a playtime-ranked playlist when aggregate runtime logging is enabled."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "Show 'Import Content'"
    )
@@ -7875,6 +7887,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
    "Limit the number of entries in recent playlist for games, images, music, and videos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_MOST_PLAYED_SIZE,
+   "Most Played Size"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_MOST_PLAYED_SIZE,
+   "Limit the number of entries in the 'Most Played' playlist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
@@ -10514,6 +10534,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
    "No History Available"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_MOST_PLAYED_AVAILABLE,
+   "No Most Played Entries Available"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
@@ -13690,6 +13714,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
    "When content is loaded, content and libretro core combinations are saved to history.\nThe history is saved to a file in the same directory as the RetroArch config file. If no config file was loaded in startup, history will not be saved or loaded, and will not exist in the main menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_MOST_PLAYED,
+   "Most Played"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_MOST_PLAYED,
+   "Select content from the playtime-ranked playlist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,

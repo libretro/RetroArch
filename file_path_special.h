@@ -61,6 +61,7 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_AUTOCONFIG_ZIP "autoconfig.zip"
 #define FILE_PATH_CONTENT_FAVORITES "content_favorites.lpl"
 #define FILE_PATH_CONTENT_HISTORY "content_history.lpl"
+#define FILE_PATH_CONTENT_MOST_PLAYED "content_most_played.lpl"
 #define FILE_PATH_CONTENT_IMAGE_HISTORY "content_image_history.lpl"
 #define FILE_PATH_CONTENT_MUSIC_HISTORY "content_music_history.lpl"
 #define FILE_PATH_CONTENT_VIDEO_HISTORY "content_video_history.lpl"

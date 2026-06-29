@@ -251,6 +251,7 @@ enum
    XMB_SYSTEM_TAB_MAIN = 0,
    XMB_SYSTEM_TAB_SETTINGS,
    XMB_SYSTEM_TAB_HISTORY,
+   XMB_SYSTEM_TAB_MOST_PLAYED,
    XMB_SYSTEM_TAB_FAVORITES,
    XMB_SYSTEM_TAB_MUSIC,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
@@ -334,6 +335,7 @@ typedef struct xmb_handle
 #endif
    xmb_node_t settings_tab_node;
    xmb_node_t history_tab_node;
+   xmb_node_t most_played_tab_node;
    xmb_node_t favorites_tab_node;
    xmb_node_t add_tab_node;
    xmb_node_t contentless_cores_tab_node;
@@ -2656,6 +2658,8 @@ static void xmb_set_title(xmb_handle_t *xmb)
          enum_idx = MENU_ENUM_LABEL_SETTINGS_TAB;
       else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
          enum_idx = MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY;
+      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MOST_PLAYED_TAB)))
+         enum_idx = MENU_ENUM_LABEL_LOAD_MOST_PLAYED;
       else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)))
          enum_idx = MENU_ENUM_LABEL_GOTO_FAVORITES;
@@ -2880,6 +2884,8 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 #endif
       case XMB_SYSTEM_TAB_HISTORY:
          return &xmb->history_tab_node;
+      case XMB_SYSTEM_TAB_MOST_PLAYED:
+         return &xmb->most_played_tab_node;
       case XMB_SYSTEM_TAB_FAVORITES:
          return &xmb->favorites_tab_node;
 #ifdef HAVE_NETWORKING
@@ -3440,6 +3446,10 @@ static void xmb_refresh_system_tabs_list(xmb_handle_t *xmb)
          xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
       if (settings->bools.menu_content_show_history && settings->bools.history_list_enable)
          xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
+      if (     settings->bools.menu_content_show_most_played
+            && settings->bools.content_runtime_log_aggregate
+            && settings->bools.history_list_enable)
+         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MOST_PLAYED;
    }
    else
    {
@@ -3447,6 +3457,10 @@ static void xmb_refresh_system_tabs_list(xmb_handle_t *xmb)
          xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
       if (settings->bools.menu_content_show_favorites)
          xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
+      if (     settings->bools.menu_content_show_most_played
+            && settings->bools.content_runtime_log_aggregate
+            && settings->bools.history_list_enable)
+         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MOST_PLAYED;
    }
 
 #ifdef HAVE_IMAGEVIEWER
@@ -4032,6 +4046,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_PLAYLISTS_TAB:
          return xmb->textures.list[XMB_TEXTURE_PLAYLIST];
       case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
+         return xmb->textures.list[XMB_TEXTURE_HISTORY];
+      case MENU_ENUM_LABEL_LOAD_MOST_PLAYED:
          return xmb->textures.list[XMB_TEXTURE_HISTORY];
       case MENU_ENUM_LABEL_GOTO_FAVORITES:
          return xmb->textures.list[XMB_TEXTURE_FAVORITES];
@@ -5851,6 +5867,8 @@ static int xmb_draw_item(
       {
          if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
             texture = xmb->textures.list[XMB_TEXTURE_HISTORY];
+         else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MOST_PLAYED_TAB)))
+            texture = xmb->textures.list[XMB_TEXTURE_HISTORY];
          else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
             texture = xmb->textures.list[XMB_TEXTURE_FAVORITES];
 #ifdef HAVE_IMAGEVIEWER
@@ -7194,6 +7212,7 @@ static void xmb_context_reset_textures(
    xmb->main_menu_node.icon              = 0;
    xmb->settings_tab_node.icon           = 0;
    xmb->history_tab_node.icon            = 0;
+   xmb->most_played_tab_node.icon        = 0;
    xmb->favorites_tab_node.icon          = 0;
 #ifdef HAVE_IMAGEVIEWER
    xmb->images_tab_node.icon             = 0;
@@ -7217,6 +7236,8 @@ static void xmb_context_reset_textures(
    xmb->settings_tab_node.zoom           = xmb->categories_active_zoom;
    xmb->history_tab_node.alpha           = xmb->categories_active_alpha;
    xmb->history_tab_node.zoom            = xmb->categories_active_zoom;
+   xmb->most_played_tab_node.alpha       = xmb->categories_active_alpha;
+   xmb->most_played_tab_node.zoom        = xmb->categories_active_zoom;
    xmb->favorites_tab_node.alpha         = xmb->categories_active_alpha;
    xmb->favorites_tab_node.zoom          = xmb->categories_active_zoom;
 #ifdef HAVE_IMAGEVIEWER
@@ -8657,6 +8678,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       xmb->settings_tab_node.icon          = tex_list[XMB_TEXTURE_SETTINGS];
    if (tex_list[XMB_TEXTURE_HISTORY])
       xmb->history_tab_node.icon           = tex_list[XMB_TEXTURE_HISTORY];
+   if (tex_list[XMB_TEXTURE_HISTORY])
+      xmb->most_played_tab_node.icon       = tex_list[XMB_TEXTURE_HISTORY];
    if (tex_list[XMB_TEXTURE_FAVORITES])
       xmb->favorites_tab_node.icon         = tex_list[XMB_TEXTURE_FAVORITES];
 #ifdef HAVE_IMAGEVIEWER
@@ -10269,6 +10292,10 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
             case XMB_SYSTEM_TAB_HISTORY:
                menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));
                menu_stack->list[stack_size - 1].type  = MENU_HISTORY_TAB;
+               break;
+            case XMB_SYSTEM_TAB_MOST_PLAYED:
+               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_MOST_PLAYED_TAB));
+               menu_stack->list[stack_size - 1].type  = MENU_MOST_PLAYED_TAB;
                break;
             case XMB_SYSTEM_TAB_FAVORITES:
                menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB));

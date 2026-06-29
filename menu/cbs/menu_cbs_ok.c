@@ -2786,6 +2786,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    settings_t *settings                   = config_get_ptr();
    bool playlist_sort_alphabetical        = settings->bools.playlist_sort_alphabetical;
    const char *path_content_history       = settings->paths.path_content_history;
+   const char *path_content_most_played   = settings->paths.path_content_most_played;
    const char *path_content_image_history = settings->paths.path_content_image_history;
    const char *path_content_music_history = settings->paths.path_content_music_history;
    const char *path_content_video_history = settings->paths.path_content_video_history;
@@ -2814,6 +2815,7 @@ static int action_ok_playlist_entry_collection(const char *path,
        *   the same here - otherwise entry_idx may
        *   go out of sync... */
       bool is_content_history =    string_is_equal(menu->db_playlist_file, path_content_history)
+                                || string_is_equal(menu->db_playlist_file, path_content_most_played)
                                 || string_is_equal(menu->db_playlist_file, path_content_image_history)
                                 || string_is_equal(menu->db_playlist_file, path_content_music_history)
                                 || string_is_equal(menu->db_playlist_file, path_content_video_history);

@@ -138,6 +138,7 @@ enum
    OZONE_SYSTEM_TAB_MAIN = 0,
    OZONE_SYSTEM_TAB_SETTINGS,
    OZONE_SYSTEM_TAB_HISTORY,
+   OZONE_SYSTEM_TAB_MOST_PLAYED,
    OZONE_SYSTEM_TAB_FAVORITES,
 #ifdef HAVE_IMAGEVIEWER
    OZONE_SYSTEM_TAB_IMAGES,
@@ -3369,6 +3370,7 @@ const enum msg_hash_enums ozone_system_tabs_label[OZONE_SYSTEM_TAB_LAST] = {
       MENU_ENUM_LABEL_MAIN_MENU,
       MENU_ENUM_LABEL_SETTINGS_TAB,
       MENU_ENUM_LABEL_HISTORY_TAB,
+      MENU_ENUM_LABEL_MOST_PLAYED_TAB,
       MENU_ENUM_LABEL_FAVORITES_TAB,
 #ifdef HAVE_IMAGEVIEWER
       MENU_ENUM_LABEL_IMAGES_TAB,
@@ -3406,6 +3408,7 @@ static void ozone_draw_sidebar(
       MENU_ENUM_LABEL_VALUE_MAIN_MENU,
       MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
       MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+      MENU_ENUM_LABEL_VALUE_MOST_PLAYED_TAB,
       MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
 #ifdef HAVE_IMAGEVIEWER
       MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
@@ -3426,6 +3429,7 @@ static void ozone_draw_sidebar(
    static const unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST]            = {
       OZONE_TAB_TEXTURE_MAIN_MENU,
       OZONE_TAB_TEXTURE_SETTINGS,
+      OZONE_TAB_TEXTURE_HISTORY,
       OZONE_TAB_TEXTURE_HISTORY,
       OZONE_TAB_TEXTURE_FAVORITES,
 #ifdef HAVE_IMAGEVIEWER
@@ -4150,6 +4154,7 @@ static bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
             is_playlist = false;
             break;
          case OZONE_SYSTEM_TAB_HISTORY:
+         case OZONE_SYSTEM_TAB_MOST_PLAYED:
          case OZONE_SYSTEM_TAB_FAVORITES:
          case OZONE_SYSTEM_TAB_MUSIC:
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
@@ -4814,6 +4819,7 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
       MENU_ENUM_LABEL_MAIN_MENU,
       MENU_ENUM_LABEL_SETTINGS_TAB,
       MENU_ENUM_LABEL_HISTORY_TAB,
+      MENU_ENUM_LABEL_MOST_PLAYED_TAB,
       MENU_ENUM_LABEL_FAVORITES_TAB,
 #ifdef HAVE_IMAGEVIEWER
       MENU_ENUM_LABEL_IMAGES_TAB,
@@ -4835,6 +4841,7 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
       MENU_SETTINGS,
       MENU_SETTINGS_TAB,
       MENU_HISTORY_TAB,
+      MENU_MOST_PLAYED_TAB,
       MENU_FAVORITES_TAB,
 #ifdef HAVE_IMAGEVIEWER
       MENU_IMAGES_TAB,
@@ -5313,6 +5320,10 @@ static void ozone_refresh_system_tabs_list(ozone_handle_t * ozone)
          ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_FAVORITES;
       if (settings->bools.menu_content_show_history && settings->bools.history_list_enable)
          ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_HISTORY;
+      if (     settings->bools.menu_content_show_most_played
+            && settings->bools.content_runtime_log_aggregate
+            && settings->bools.history_list_enable)
+         ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_MOST_PLAYED;
    }
    else
    {
@@ -5320,6 +5331,10 @@ static void ozone_refresh_system_tabs_list(ozone_handle_t * ozone)
          ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_HISTORY;
       if (settings->bools.menu_content_show_favorites)
          ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_FAVORITES;
+      if (     settings->bools.menu_content_show_most_played
+            && settings->bools.content_runtime_log_aggregate
+            && settings->bools.history_list_enable)
+         ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_MOST_PLAYED;
    }
 
 #ifdef HAVE_IMAGEVIEWER
@@ -6156,6 +6171,9 @@ border_iterate:
                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
                texture = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_HISTORY];
             else if (string_is_equal(entry.rich_label,
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MOST_PLAYED_TAB)))
+               texture = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_HISTORY];
+            else if (string_is_equal(entry.rich_label,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
                texture = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES];
 #ifdef HAVE_IMAGEVIEWER
@@ -6207,7 +6225,8 @@ border_iterate:
                      && (db_node = RHMAP_GET_STR(ozone->playlist_db_node_map, pl_entry->db_name)))
                {
                   if (     string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB))
-                        || string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
+                        || string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB))
+                        || string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MOST_PLAYED_TAB)))
                   {
                      switch (show_history_icons)
                      {
@@ -6245,6 +6264,7 @@ border_iterate:
             {
                case OZONE_SYSTEM_TAB_MAIN:
                case OZONE_SYSTEM_TAB_HISTORY:
+               case OZONE_SYSTEM_TAB_MOST_PLAYED:
                case OZONE_SYSTEM_TAB_FAVORITES:
                   {
                      const struct playlist_entry *pl_entry = NULL;
@@ -8690,6 +8710,9 @@ static enum menu_action ozone_parse_menu_entry_action(
                {
                   case MENU_ENUM_LABEL_HISTORY_TAB:
                      strlcpy(playlist_path, playlist_get_conf_path(g_defaults.content_history), sizeof(playlist_path));
+                     break;
+                  case MENU_ENUM_LABEL_MOST_PLAYED_TAB:
+                     strlcpy(playlist_path, playlist_get_conf_path(g_defaults.content_most_played), sizeof(playlist_path));
                      break;
                   case MENU_ENUM_LABEL_FAVORITES_TAB:
                      strlcpy(playlist_path, playlist_get_conf_path(g_defaults.content_favorites), sizeof(playlist_path));

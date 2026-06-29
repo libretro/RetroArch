@@ -327,6 +327,7 @@ void playlist_write_file(playlist_t *playlist);
 void playlist_write_runtime_file(playlist_t *playlist);
 
 void playlist_qsort(playlist_t *playlist);
+void playlist_qsort_runtime_descending(playlist_t *playlist);
 
 void playlist_free_cached(void);
 
