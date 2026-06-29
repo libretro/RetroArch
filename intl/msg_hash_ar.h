@@ -575,7 +575,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "منع تعديل المحاكي المثبت حاليا. يمكن استخدامها لتجنب التحديثات غير المرغوب فيها عندما يتطلب المحتوى إصدار أساسي محدد (مثل مجموعات ROM اﻵركيد) أو تغييرات تنسيق حفظ المحاكي الخاصة بها."
+   "منع تعديل النواة المثبتة حاليا. يمكن استخدامها لتجنب التحديثات غير المرغوب فيها عندما يتطلب المحتوى إصدار أساسي محدد (على سبيل المثال مجموعة رومات الآركيد)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -1200,7 +1200,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
-   "نواة ليبرترو. حدد هذا الملف لتحميل RetroArch هذا النوع."
+   "نواةRetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
@@ -1392,10 +1392,6 @@ MSG_HASH(
    "نظام تشغيل الفيديو"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "مشغل الفيديو لاستخدامه."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
    "سائق فولكان (Vulkan). هذا السائق يسمح باستخدام قلب ليبرترو فولكان بالإضافة إلى النواة المصنوعة من البرمجيات. الإصدار الأدنى المطلوب: Vulkan 1.0. يدعم HDR و Slang ظل."
    )
@@ -1418,10 +1414,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "نظام تشغيل الصوت"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "مشغل الصوت لاستخدامه."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
@@ -1462,32 +1454,16 @@ MSG_HASH(
    "نظام تشغيل الكاميرا"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "مشغل الكاميرا لاستخدامه."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
    "بلوتوث"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "مشغل البلوتوث لاستخدامه."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "نظام تشغيل الواي-فاي"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "مشغل WiFi لاستخدامه."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "الموقع"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "مشغل الموقع لاستخدامه."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1516,14 +1492,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "نظام تشغيل التسجيل"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "سجل السائق لاستخدامه."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "سائق MIDI لاستخدامه."
    )
 
 /* Settings > Video */
@@ -2303,10 +2271,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "الحد الأقصى للمستخدمين"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "الحد الأقصى لعدد المستخدمين المدعومين من RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -4739,16 +4703,8 @@ MSG_HASH(
    "معلومات"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION,
-   "عرض المزيد من المعلومات حول المحتوى."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "إظهار الصور المصغرة للتنزيل"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "تحميل الصور المصغرة لقطة الشاشة/المربع الفني/العنوان للشاشة للمحتوى الحالي. قم بتحديث أي صور مصغرة موجودة."
    )
 
 /* Playlist Item > Set Core Association */
@@ -7420,10 +7376,6 @@ MSG_HASH(
    "العدادات الأساسية"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "لا يوجد قرص محدد"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "عدادات الواجهة"
    )
@@ -7662,10 +7614,6 @@ MSG_HASH(
    "لا توجد حجج مقدمة ولا قائمة مدمجة، عرض المساعدة..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "إعداد القرص في الصبغة"
-   )
-MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "لقد غادرت اللعبة"
    )
@@ -7857,14 +7805,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESET_CORE_ASSOCIATION,
    "تم إعادة تعيين الرابطة الأساسية لإدخال قائمة التشغيل."
-   )
-MSG_HASH(
-   MSG_APPENDED_DISK,
-   "قرص ملحق"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "فشل في إلحاق القرص"
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
@@ -8121,10 +8061,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "فشل استلام بيانات SRAM من المضيف."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "فشل في إزالة القرص من اللعبة."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -8387,10 +8323,6 @@ MSG_HASH(
    "تمت إزالة ملف Remap بنجاح."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "سحب القرص من القارئ."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "إزالة ملف المحتوى المؤقت"
    )
@@ -8405,10 +8337,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "استعادة حالة الحفظ القديمة."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "الظلال: استعادة الإعداد المسبق للمزج الافتراضي إلى"
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
@@ -8701,6 +8629,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "تم حذف الغش."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "سحب القرص من القارئ."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "فشل في إزالة القرص من اللعبة."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "لا يوجد قرص محدد"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "قرص ملحق"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "فشل في إلحاق القرص"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "إعداد القرص في الصبغة"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,

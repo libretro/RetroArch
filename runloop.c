@@ -4065,7 +4065,6 @@ static retro_time_t runloop_core_runtime_tick(
 static bool core_unload_game(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
-   video_driver_state_t *video_st = video_state_get_ptr();
 
    video_driver_free_hw_context();
 
@@ -6316,6 +6315,23 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Iterate the menu driver for one frame. */
 
+#ifdef HAVE_CONFIGFILE
+      /* If a configuration file load was requested on the previous
+       * frame, perform it now - before the menu is iterated and while
+       * no menu list/driver pointers are held on the stack.
+       * config_replace() triggers a full driver/menu reinit (and may
+       * free and recreate the menu driver), so it must never run from
+       * within menu iteration. Exit afterwards to start the next frame
+       * with a freshly (re)built menu. */
+      if (menu_st->flags & MENU_ST_FLAG_PENDING_CONFIG_REPLACE)
+      {
+         bool config_save_on_exit = settings->bools.config_save_on_exit;
+         menu_st->flags          &= ~MENU_ST_FLAG_PENDING_CONFIG_REPLACE;
+         config_replace(config_save_on_exit, menu_st->pending_config_path);
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+      }
+#endif
+
       /* If the user had requested that the Quick Menu
        * be spawned during the previous frame, do this now
        * and exit the function to go to the next frame. */
@@ -6626,7 +6642,7 @@ static enum runloop_state_enum runloop_check_state(
       if (menu_st->dialog_st.pending_cmd != CMD_EVENT_NONE)
       {
          /* Event also wants to resume */
-         if (!command_event(menu_st->dialog_st.pending_cmd, NULL))
+         if (!command_event((enum event_command)menu_st->dialog_st.pending_cmd, NULL))
             command_event(CMD_EVENT_RESUME, NULL);
 
          menu_dialog_confirm_clear(menu_st);
@@ -8258,7 +8274,6 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
    bool             game_loaded   = false;
-   video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = &runloop_state;
 
    video_driver_cached_frame_invalidate();
@@ -8395,7 +8410,6 @@ uint64_t core_serialization_quirks(void)
 void core_reset(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
-   video_driver_state_t *video_st = video_state_get_ptr();
 
    /* Drop video-driver caches of core-owned GPU resources before
     * retro_reset() is allowed to destroy them. No-op on software

@@ -432,7 +432,7 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
          {
             char *ptr;
             uint32_t flags = setting->flags;
-            *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
+            *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 0);
             if (flags & SD_FLAG_HAS_RANGE)
             {
                float min   = setting->min;
@@ -454,7 +454,7 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
          {
             uint32_t flags = setting->flags;
             char *end;
-            unsigned long long parsed = strtoull(value, &end, 10);
+            unsigned long long parsed = strtoull(value, &end, 0);
             if (end != value && *end == '\0')
                *setting->value.target.sizet = (size_t)parsed;
             if (flags & SD_FLAG_HAS_RANGE)
@@ -532,7 +532,7 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
       if (*ptr >= '0' && *ptr <= '9')
       {
          char *end            = NULL;
-         unsigned long value  = strtoul(str, &end, 10);
+         unsigned long value  = strtoul(str, &end, 0);
          /* Ensure entire string was consumed and value fits in unsigned */
          if (end && *end == '\0' && value <= UINT_MAX)
          {
@@ -626,7 +626,6 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
 
    menu_input_dialog_end();
 }
-
 
 static int setting_generic_action_ok_linefeed(
       rarch_setting_t *setting, size_t idx, bool wraparound)
@@ -3562,6 +3561,30 @@ static size_t setting_get_string_representation_uint_ai_service_lang(
    if (enum_idx != 0)
       return strlcpy(s, msg_hash_to_str(enum_idx), len);
    return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+}
+#endif
+
+#if defined(__linux__) && !defined(ANDROID)
+static size_t setting_get_string_representation_uint_accessibility_narrator_engine(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK:
+         enum_idx = MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK;
+         break;
+      case ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER:
+         enum_idx = MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER;
+         break;
+      default:
+         break;
+   }
+   if (enum_idx != 0)
+      return strlcpy(s, msg_hash_to_str(enum_idx), len);
+   return 0;
 }
 #endif
 
@@ -8818,11 +8841,35 @@ static void general_write_handler(rarch_setting_t *setting)
          if (!settings->bools.video_fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
+      case MENU_ENUM_LABEL_REWIND_ENABLE:
+         {
+            struct menu_state *menu_st = menu_state_get_ptr();
+            /* Toggling rewind support shows or hides the dependent
+             * rewind items (granularity, buffer size, ...), so force
+             * the page to rebuild immediately. The setting value is
+             * already written by the framework before this handler
+             * runs, and the CMD_EVENT_REWIND_TOGGLE attached to the
+             * setting still fires via rarch_cmd below. */
+            menu_st->flags            |= MENU_ST_FLAG_PREVENT_POPULATE
+                                       | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+         }
+         break;
       case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
-         settings->flags                  |= SETTINGS_FLG_MODIFIED;
-         settings->uints.video_hdr_mode    = *setting->value.target.unsigned_integer;
+         {
+            struct menu_state *menu_st     = menu_state_get_ptr();
+            settings->flags               |= SETTINGS_FLG_MODIFIED;
+            settings->uints.video_hdr_mode = *setting->value.target.unsigned_integer;
 
-         rarch_cmd = CMD_EVENT_REINIT;
+            rarch_cmd                      = CMD_EVENT_REINIT;
+
+            /* Switching HDR on/off shows or hides the dependent HDR
+             * items (paper white, expand gamut, scanlines, ...), so
+             * force the page to rebuild immediately. This fires for
+             * both left/right scroll and dropdown OK selection
+             * because they both invoke setting->change_handler. */
+            menu_st->flags                |= MENU_ST_FLAG_PREVENT_POPULATE
+                                           | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+         }
          break;
       case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
          {
@@ -8860,12 +8907,18 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES:
          {
             video_driver_state_t *video_st               = video_state_get_ptr();
+            struct menu_state *menu_st                   = menu_state_get_ptr();
             settings->flags                              |= SETTINGS_FLG_MODIFIED;
             settings->bools.video_hdr_scanlines          = *setting->value.target.boolean;
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_scanlines)
                video_st->poke->set_hdr_scanlines(video_st->data,
                      settings->bools.video_hdr_scanlines);
+
+            /* Scanlines on/off shows or hides the subpixel layout
+             * item, so force the page to rebuild immediately. */
+            menu_st->flags                               |= MENU_ST_FLAG_PREVENT_POPULATE
+                                                          | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_SUBPIXEL_LAYOUT:
@@ -9347,6 +9400,10 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
+      case MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS:
+#ifdef HAVE_XMB
+      case MENU_ENUM_LABEL_XMB_ENTRY_ICONS:
+#endif
          {
             /* Reset wallpaper by menu context reset */
             struct menu_state *menu_st = menu_state_get_ptr();
@@ -12787,17 +12844,22 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address,
-                  CHEAT_ADDRESS,
-                  setting_uint_action_left_with_refresh,
-                  setting_uint_action_right_with_refresh,
+            CONFIG_UINT(
+                  list, list_info,
+                  &cheat_manager_state.working_cheat.address,
+                  MENU_ENUM_LABEL_CHEAT_ADDRESS,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
                   0,
-                  &setting_get_string_representation_hex_and_uint,
-                  0,
-                  (cheat_manager_state.total_memory_size == 0)
-                  ? 0
-                  : (cheat_manager_state.total_memory_size - 1),
-                  1);
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info,
+                  0,  (cheat_manager_state.total_memory_size == 0) ? 0 : (cheat_manager_state.total_memory_size - 1), 1, true, true);
+            (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_hex_and_uint;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
 
             max_bit_position = (cheat_manager_state.working_cheat.memory_search_size < 3) ? 255 : 0;
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address_mask,
@@ -12969,8 +13031,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_exact;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact;
-
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact_input;
          CONFIG_UINT(
                list, list_info,
                &cheat_manager_state.dummy,
@@ -13069,7 +13130,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_eqplus;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqplus;
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqplus_input;
 
          CONFIG_UINT(
                list, list_info,
@@ -13085,7 +13146,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_eqminus;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqminus;
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqminus_input;
 
          CONFIG_UINT(
                list, list_info,
@@ -20034,7 +20095,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_xmb_layout;
             menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_UINT(
@@ -20055,6 +20115,21 @@ static bool setting_append_list(
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_xmb_entry_icons,
+                  MENU_ENUM_LABEL_XMB_ENTRY_ICONS,
+                  MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+                  DEFAULT_XMB_ENTRY_ICONS,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -21161,7 +21236,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (     memcmp(settings->arrays.menu_driver, "glui", 5) == 0
+         if (     memcmp(settings->arrays.menu_driver, "rgui", 5) == 0
                || memcmp(settings->arrays.menu_driver, "xmb", 4) == 0
                || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
          {
@@ -21718,6 +21793,25 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 1, 10, 1, true, true);
+
+#if defined(__linux__) && !defined(ANDROID)
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.accessibility_narrator_engine,
+               MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+               MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+               DEFAULT_ACCESSIBILITY_NARRATOR_ENGINE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_accessibility_narrator_engine;
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0,
+               ACCESSIBILITY_NARRATOR_ENGINE_LAST - 1, 1, true, true);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

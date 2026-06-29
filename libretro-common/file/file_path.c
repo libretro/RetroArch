@@ -380,7 +380,7 @@ char *find_last_slash(const char *str)
       return s1;
    return (s2 > s1) ? s2 : s1;
 #else
-   return strrchr(str, '/');
+   return (char*)strrchr(str, '/');
 #endif
 }
 

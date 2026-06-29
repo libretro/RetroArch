@@ -482,7 +482,7 @@ int rmsgpack_dom_read(intfstream_t *fd, struct rmsgpack_dom_value *out)
    s.i        = 0;
    s.growable = false;
    s.capacity = MAX_DEPTH;
-   s.stack    = alloca(MAX_DEPTH*sizeof(struct rmsgpack_dom_value *));
+   s.stack    = (struct rmsgpack_dom_value **)alloca(MAX_DEPTH*sizeof(struct rmsgpack_dom_value *));
    return rmsgpack_dom_read_with(fd, out, &s);
 }
 

@@ -1428,10 +1428,21 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
    thr->driver = drv;
    *out_driver = &thr->video_thread;
    *out_data   = thr;
-   if (!video_thread_init(thr, info, input, input_data))
-      return false;
 
+   /* Mark the wrapper active before running the underlying driver's
+    * init(): that init() runs on the worker thread and may query
+    * video_driver_get_ident() (e.g. via the context driver's get_flags
+    * for shader-backend detection).  current_video already points at the
+    * thread wrapper here, so without the flag set get_ident() would
+    * resolve to "Thread wrapper" instead of the wrapped driver ("glcore"),
+    * causing shader-backend detection to fail. */
    video_state_get_ptr()->flags |= VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
+   if (!video_thread_init(thr, info, input, input_data))
+   {
+      video_state_get_ptr()->flags &= ~VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
+      return false;
+   }
+
    return true;
 }
 

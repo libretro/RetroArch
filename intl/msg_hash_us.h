@@ -1489,7 +1489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Video driver to use."
+   "Video driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1589,7 +1589,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Audio driver to use."
+   "Audio driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1650,7 +1650,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Microphone driver to use."
+   "Microphone driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1691,7 +1691,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Camera driver to use."
+   "Camera driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
@@ -1699,7 +1699,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Bluetooth driver to use."
+   "Bluetooth driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
@@ -1707,7 +1707,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Wi-Fi driver to use."
+   "Wi-Fi driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1715,7 +1715,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Location driver to use."
+   "Location driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1747,7 +1747,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Record driver to use."
+   "Record driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
@@ -1755,7 +1755,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "MIDI driver to use."
+   "MIDI driver to use. (Restart required)"
    )
 
 /* Settings > Video */
@@ -2118,7 +2118,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate.\nThis will be ignored if 'Threaded Video' is enabled."
+   "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate. This will be ignored if 'Threaded Video' is enabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -3190,7 +3190,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Maximum amount of users supported by RetroArch."
+   "Maximum amount of users supported by RetroArch. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -5122,7 +5122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Change settings influencing the frame time counter.\nOnly active when threaded video is disabled."
+   "Change settings influencing the frame time counter. Only active when threaded video is disabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7280,6 +7280,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "The speed for the Text-to-Speech voice."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Text-to-Speech Engine"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "The Text-to-Speech backend used for the narrator."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK,
+   "eSpeak"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER,
+   "Speech Dispatcher"
+   )
 
 /* Settings > Power Management */
 
@@ -7437,7 +7453,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Shows information about the game being loaded and the user's current progress.\n'All Identified Games' will show summary for games with no published achievements."
+   "Shows information about the game being loaded and the user's current progress. 'All Identified Games' will show summary for games with no published achievements."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -8048,7 +8064,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Specify when to tag playlist entries with the currently associated core (if any).\nThis setting is ignored when playlist sublabels are enabled."
+   "Specify when to tag playlist entries with the currently associated core (if any). This setting is ignored when playlist sublabels are enabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -8156,7 +8172,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Select which type of runtime log record to display on playlist sublabels.\nThe corresponding runtime log must be enabled via the 'Saving' options menu."
+   "Select which type of runtime log record to display on playlist sublabels. The corresponding runtime log must be enabled via the 'Saving' options menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8341,7 +8357,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Allow the Discord app to show data about the content played.\nOnly available with the native desktop client."
+   "Allow the Discord app to show data about the content played. Only available with the native desktop client."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8758,7 +8774,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Add this audio track to an available audio stream slot.\nIf no slots are currently available, it will be ignored."
+   "Add this audio track to an available audio stream slot. If no slots are currently available, it will be ignored."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8766,7 +8782,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Add this audio track to an available audio stream slot and play it.\nIf no slots are currently available, it will be ignored."
+   "Add this audio track to an available audio stream slot and play it. If no slots are currently available, it will be ignored."
    )
 
 /* Netplay */
@@ -9278,7 +9294,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Add the content to a playlist."
+   "Add this entry to a playlist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
@@ -9286,7 +9302,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Create a new playlist and add the current entry to it."
+   "Create a new playlist and add this entry to it."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -9310,7 +9326,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "View more information about the content."
+   "View more information about this content."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -9318,7 +9334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Download screenshot/box art/title screen thumbnail images for current content. Updates any existing thumbnails."
+   "Download thumbnail images for this content. Updates any existing images."
    )
 
 /* Playlist Item > Set Core Association */
@@ -9868,7 +9884,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "Big Endian: 258 = 0x0102\nLittle Endian: 258 = 0x0201"
+   "Big Endian: 258 = 0x0102, Little Endian: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -10176,6 +10192,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Select a new disc from the filesystem and append it in the index list."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    "Select a new disc from the filesystem and append it in the index list.\nNOTE: This is a legacy feature. It is instead recommended to use M3U playlists for multi-disc titles."
    )
 
@@ -12414,6 +12434,14 @@ MSG_HASH(
    "Select a different icon theme for RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
+   "Entry Icons"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
+   "Draw icons for menu entries."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    "Switch Icons"
    )
@@ -13766,10 +13794,6 @@ MSG_HASH(
    "Core Counters"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "No disc selected"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Frontend Counters"
    )
@@ -14092,10 +14116,6 @@ MSG_HASH(
    "No arguments supplied and no menu built-in, displaying help..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Setting disc in tray"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Waiting for client..."
    )
@@ -14401,14 +14421,6 @@ MSG_HASH(
    "Playlist entry core association has been reset."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Appended disc"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Failed to append disc"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Application Directory"
    )
@@ -14581,14 +14593,6 @@ MSG_HASH(
    "Disconnect device from a valid port."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Closed virtual disc tray."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Ejected virtual disc tray."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Downloading"
    )
@@ -14743,10 +14747,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Failed to receive SRAM data from host."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Failed to remove disc from tray."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -15129,10 +15129,6 @@ MSG_HASH(
    "All input remapping options reset to default."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Removed disk from tray."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Removing temporary content file"
    )
@@ -15150,7 +15146,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shaders: restoring default shader preset to"
+   "Shaders: Restoring default shader preset to"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -15403,14 +15399,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Failed to eject virtual disc tray."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Failed to close virtual disc tray."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -15669,8 +15657,48 @@ MSG_HASH(
    "Cheat deleted."
    )
 MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Closed virtual disc tray."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Failed to close virtual disc tray."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Ejected virtual disc tray."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Failed to eject virtual disc tray."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Removed disk from tray."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Failed to remove disc from tray."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "No disc selected"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Appended disc"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Failed to append disc"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Setting disc in tray"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Failed to set disc."
+   "Failed to set disc"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

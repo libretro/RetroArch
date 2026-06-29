@@ -224,7 +224,27 @@
 #include "ai/game_ai.h"
 #endif
 
-#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+/* RetroArch provides its own entry point (main, below) and runloop,
+ * creates its own Win32 window (gfx/common/win32_common.c), and
+ * initialises SDL subsystems explicitly (SDL_Init/SDL_InitSubSystem
+ * in the SDL audio/video/input drivers). SDL is used purely as a
+ * driver backend, never as the application framework. Tell SDL not to
+ * #define main->SDL_main and not to supply its own WinMain: without
+ * this, SDL.h renames our main to SDL_main and the link pulls in
+ * libSDL2main's WinMain, which (a) is unwanted given -mwindows /
+ * -ENTRY:mainCRTStartup already designate our entry point, and (b)
+ * breaks under CXX_BUILD where the renamed main is compiled as C++
+ * and no longer matches the C 'SDL_main' that WinMain calls
+ * (undefined reference to SDL_main). */
+#if defined(HAVE_SDL3)
+#ifndef SDL_MAIN_HANDLED
+#define SDL_MAIN_HANDLED
+#endif
+#include <SDL3/SDL.h>
+#elif defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+#ifndef SDL_MAIN_HANDLED
+#define SDL_MAIN_HANDLED
+#endif
 #include "SDL.h"
 #endif
 
@@ -604,6 +624,7 @@ midi_driver_t *midi_drivers[]   = {
 #ifdef HAVE_COREMIDI
    &midi_coremidi,
 #endif
+   &midi_fmsynth,
    &midi_null
 };
 
@@ -736,6 +757,21 @@ static bool midi_driver_init_io_buffers(void)
    rarch_midi_drv_output_event.data_size = 0;
 
    return true;
+}
+
+bool midi_driver_synth_active(void)
+{
+   return midi_drv
+       && midi_drv->render
+       && rarch_midi_drv_data
+       && rarch_midi_drv_data != (void*)-1;
+}
+
+bool midi_driver_render_audio(float *out, size_t frames, unsigned rate)
+{
+   if (!midi_driver_synth_active())
+      return false;
+   return midi_drv->render(rarch_midi_drv_data, out, frames, rate);
 }
 
 static void midi_driver_free(void)
@@ -3691,8 +3727,15 @@ bool command_event(enum event_command cmd, void *data)
          {
             if (settings->bools.savestate_auto_index)
             {
+               int prev_slot = settings->ints.state_slot;
+               int next_slot = command_event_get_next_savestate_auto_index(
+                     settings);
+               RARCH_LOG("[State] auto-index advance: slot %d -> %d "
+                     "(max_keep %u) before save.\n",
+                     prev_slot, next_slot,
+                     settings->uints.savestate_max_keep);
                configuration_set_int(settings, settings->ints.state_slot,
-                  command_event_get_next_savestate_auto_index(settings));
+                  next_slot);
             }
          }
          if (!command_event_main_state(cmd))
@@ -3782,8 +3825,8 @@ bool command_event(enum event_command cmd, void *data)
             ram_state_to_file();
 
             /* Save auto state */
-            if (settings->bools.savestate_auto_save &&
-                runloop_st->current_core_type != CORE_TYPE_DUMMY)
+            if (     settings->bools.savestate_auto_save
+                  && runloop_st->current_core_type != CORE_TYPE_DUMMY)
                command_event_save_auto_state();
 
             /* Save last selected disk index, if required */
@@ -4160,6 +4203,7 @@ bool command_event(enum event_command cmd, void *data)
 
             ol->index                      = ol->next_index;
             ol->active                     = &ol->overlays[ol->index];
+            ((struct overlay *)ol->active)->viewport_override_logged = false;
 
             input_overlay_opacity          = (ol->flags & INPUT_OVERLAY_IS_OSK)
                   ? settings->floats.input_osk_overlay_opacity
@@ -4452,6 +4496,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Save auto state */
             if (     runloop_st
                   && (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+                  && !(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
                   && settings->bools.savestate_auto_save)
             {
                command_event_save_auto_state();
@@ -4489,6 +4534,17 @@ bool command_event(enum event_command cmd, void *data)
             hwr = VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
 #ifdef HAVE_CHEEVOS
             rcheevos_unload();
+#endif
+#ifdef HAVE_NETWORKING
+            /* The core may have registered a netpacket interface
+             * (RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE). We hold a
+             * heap copy of that struct, but it carries function
+             * pointers into the core. Clear it before the core's dylib
+             * is closed by runloop_event_deinit_core(), otherwise those
+             * pointers dangle into unloaded code. Passing NULL frees and
+             * nulls the cached interface via the existing handler. */
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_CORE_PACKET_INTERFACE,
+                  NULL);
 #endif
             runloop_event_deinit_core();
 
@@ -6071,7 +6127,7 @@ static void global_free(struct rarch_state *p_rarch)
    retroarch_override_setting_free_state();
 }
 
-#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX) || defined(HAVE_SDL3)
 static void sdl_exit(void)
 {
    /* Quit any SDL subsystems, then quit
@@ -6173,7 +6229,7 @@ void main_exit(void *args)
    CoUninitialize();
 #endif
 
-#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX) || defined(HAVE_SDL3)
    sdl_exit();
 #endif
 }
@@ -6267,6 +6323,8 @@ int rarch_main(int argc, char *argv[], void *data)
       }
    }
 
+   if (getenv("APPID") == NULL)
+      setenv("APPID", WEBOS_APP_ID, 0);
    /* compatibility with webOS 3 - 5 */
    if (getenv("EGL_PLATFORM") == NULL)
       setenv("EGL_PLATFORM", "wayland", 0);
@@ -6666,6 +6724,9 @@ static void retroarch_print_features(void)
 #endif
 #ifdef HAVE_SDL2
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL2,            "SDL2",            "SDL2 input/audio/video drivers");
+#endif
+#ifdef HAVE_SDL3
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL3,            "SDL3",            "SDL3 joypad driver");
 #endif
 #ifdef HAVE_X11
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_X11,             "X11",             "X11 input/video drivers");
@@ -8224,9 +8285,14 @@ bool retroarch_main_init(int argc, char *argv[])
                if (frontend && frontend->get_os)
                {
                   frontend->get_os(osbuf, sizeof(osbuf), &major, &minor);
+#ifdef __aarch64__
+                  const char *arch = " (64-bit)";
+#else
+                  const char *arch = " (32-bit)";
+#endif
                   _len += snprintf(str_output + _len, sizeof(str_output) - _len,
-                        FILE_PATH_LOG_INFO " Running on: %s\n",
-                        osbuf);
+                     FILE_PATH_LOG_INFO " Running on: %s%s\n",
+                     osbuf, arch);
                }
             }
          }
@@ -8363,9 +8429,35 @@ bool retroarch_main_init(int argc, char *argv[])
          "location driver", verbosity_enabled);
 #ifdef HAVE_MENU
    {
-      if (!(menu_st->driver_ctx = menu_driver_find_driver(settings,
-                  "menu driver", verbosity_enabled)))
+      const menu_ctx_driver_t *menu_ctx_new = menu_driver_find_driver(
+            settings, "menu driver", verbosity_enabled);
+      if (!menu_ctx_new)
          retroarch_fail(1, "menu_driver_find_driver()");
+
+      /* If a menu driver instance is already allocated and the
+       * selected menu driver has changed since that instance was
+       * created - e.g. a configuration file specifying a different
+       * 'menu_driver' has just been loaded at runtime - the stale
+       * instance must be torn down here, while menu_st->driver_ctx
+       * still references the *old* driver (so that the correct
+       * free()/context_destroy() handlers are invoked on the old
+       * handle).
+       *
+       * Otherwise menu_driver_init() would skip (re)initialisation
+       * - because driver_data is non-NULL - and invoke the new
+       * driver's context_reset() on the old driver's handle,
+       * dereferencing it as the wrong type (crash). */
+      if (     menu_st->driver_data
+            &&  menu_st->driver_ctx
+            && (menu_st->driver_ctx != menu_ctx_new))
+      {
+         uint16_t menu_data_own = (menu_st->flags & MENU_ST_FLAG_DATA_OWN);
+         menu_st->flags        &= ~MENU_ST_FLAG_DATA_OWN;
+         menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
+         menu_st->flags        |= menu_data_own;
+      }
+
+      menu_st->driver_ctx = menu_ctx_new;
    }
 #endif
    /* Enforce stored brightness if needed */
@@ -8604,6 +8696,25 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             if (!(runloop_st->flags & RUNLOOP_FLAG_IS_INITED))
                return false;
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+#ifdef HAVE_NETWORKING
+            /* Free netplay lobby state at shutdown. room_list and
+             * rooms_data are populated when browsing the netplay lobby
+             * and recycled on each refresh, but nothing frees them at
+             * exit, so the last-populated allocation leaks. This is the
+             * one-time teardown point: deinit_netplay() above runs on
+             * every session start/stop and must not free the lobby list
+             * (the menu may still be reading room_list to join a room). */
+            {
+               net_driver_state_t *net_st = networking_state_get_ptr();
+               netplay_rooms_free();
+               if (net_st->room_list)
+               {
+                  free(net_st->room_list);
+                  net_st->room_list  = NULL;
+               }
+               net_st->room_count = 0;
+            }
+#endif
 #ifdef HAVE_COMMAND
             input_driver_deinit_command(input_st);
 #endif

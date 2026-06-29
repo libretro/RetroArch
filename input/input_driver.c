@@ -299,7 +299,7 @@ input_device_driver_t *joypad_drivers[] = {
 #ifdef ANDROID
    &android_joypad,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+#if defined(HAVE_SDL3) || defined(HAVE_SDL) || defined(HAVE_SDL2)
    &sdl_joypad,
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)

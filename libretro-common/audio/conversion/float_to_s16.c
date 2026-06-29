@@ -55,7 +55,7 @@ void convert_float_to_s16(int16_t *s, const float *in, size_t len)
 
          s        += aligned_samples;
          in       += aligned_samples;
-         samples  -= aligned_samples;
+         len      -= aligned_samples;
          i         = 0;
 #else
          int16x4x2_t oreg;

@@ -1295,7 +1295,9 @@ const char *config_get_default_joypad(void)
       case JOYPAD_ANDROID:
          return "android";
       case JOYPAD_SDL:
-#ifdef HAVE_SDL2
+#ifdef HAVE_SDL3
+         return "sdl3";
+#elif defined(HAVE_SDL2)
          return "sdl2";
 #else
          return "sdl";
@@ -2165,6 +2167,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #ifdef HAVE_XMB
    SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, DEFAULT_XMB_SHADOWS_ENABLE, false);
+   SETTING_BOOL("xmb_entry_icons",               &settings->bools.menu_xmb_entry_icons, true, DEFAULT_XMB_ENTRY_ICONS, false);
    SETTING_BOOL("xmb_switch_icons",              &settings->bools.menu_xmb_switch_icons, true, DEFAULT_XMB_SWITCH_ICONS, false);
    SETTING_BOOL("xmb_vertical_thumbnails",       &settings->bools.menu_xmb_vertical_thumbnails, true, DEFAULT_XMB_VERTICAL_THUMBNAILS, false);
    SETTING_BOOL("menu_xmb_show_horizontal_list", &settings->bools.menu_xmb_show_horizontal_list, true, DEFAULT_XMB_SHOW_HORIZONTAL_LIST, false);
@@ -2707,6 +2710,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("cheevos_visibility_summary",    &settings->uints.cheevos_visibility_summary, true, DEFAULT_CHEEVOS_VISIBILITY_SUMMARY, false);
 #endif
    SETTING_UINT("accessibility_narrator_speech_speed", &settings->uints.accessibility_narrator_speech_speed, true, DEFAULT_ACCESSIBILITY_NARRATOR_SPEECH_SPEED, false);
+   SETTING_UINT("accessibility_narrator_engine", &settings->uints.accessibility_narrator_engine, true, DEFAULT_ACCESSIBILITY_NARRATOR_ENGINE, false);
    SETTING_UINT("ai_service_mode",              &settings->uints.ai_service_mode,            true, DEFAULT_AI_SERVICE_MODE, false);
    SETTING_UINT("ai_service_target_lang",       &settings->uints.ai_service_target_lang,     true, 0, false);
    SETTING_UINT("ai_service_source_lang",       &settings->uints.ai_service_source_lang,     true, 0, false);
@@ -4025,7 +4029,7 @@ static bool config_load_file(global_t *global,
    if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE) && !without_overrides)
    {
       char tmp_append_path[PATH_MAX_LENGTH];
-      const char *extra_path = NULL;
+      char *extra_path = NULL;
 #ifdef HAVE_OVERLAY
       char old_overlay_path[PATH_MAX_LENGTH], new_overlay_path[PATH_MAX_LENGTH];
       config_get_path(conf, "input_overlay", old_overlay_path, sizeof(old_overlay_path));
@@ -4753,7 +4757,13 @@ static bool config_load_file(global_t *global,
 #endif
 #endif
 
-   if (    !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL)
+   /* The "without-overrides" load (config_save_overrides) is a
+    * comparison-only pass to obtain the pre-override baseline; it must
+    * not mutate runtime directory state. Without this guard, saving an
+    * override would reset the live save directory to the base config
+    * value (issue #18809). */
+   if (    !without_overrides
+         && !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL)
          && config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
       if (string_is_equal(tmp_str, "default"))
@@ -4773,7 +4783,8 @@ static bool config_load_file(global_t *global,
          RARCH_WARN("[Config] \"savefile_directory\" is not a directory, ignoring...\n");
    }
 
-   if (    !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL)
+   if (    !without_overrides
+         && !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL)
          && config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
       if (string_is_equal(tmp_str, "default"))
@@ -6000,6 +6011,37 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
    return ret;
 }
 
+/* config_path_strip_trailing_slash:
+ *
+ * Removes a single trailing path separator from a directory value, so
+ * that directory paths are serialised consistently in the config file
+ * (e.g. ".../assets/" is written as ".../assets").
+ *
+ * Intentionally left untouched:
+ *   - root paths ("/")                    -> length < 2
+ *   - drive roots and the content marker  -> preceding char is ':'
+ *                                            ("C:\", "C:/", ":/")
+ *   - empty strings, "default" and file
+ *     paths                               -> never end in a separator
+ *
+ * This only affects serialisation: fill_pathname_join() and friends
+ * ignore a trailing separator on their directory operand, so runtime
+ * path construction is unaffected either way. */
+static void config_path_strip_trailing_slash(char *s)
+{
+   size_t len;
+   if (!s || !*s)
+      return;
+   len = strlen(s);
+   if (len < 2)
+      return;
+   if (!PATH_CHAR_IS_SLASH(s[len - 1]))
+      return;
+   if (s[len - 2] == ':')
+      return;
+   s[len - 1] = '\0';
+}
+
 /**
  * config_save_file:
  * @path            : Path that shall be written to.
@@ -6093,13 +6135,19 @@ bool config_save_file(const char *path)
             input_driver_state_t *input_st = input_state_get_ptr();
             input_device_info_t saved_device_info[MAX_INPUT_DEVICES];
             retro_keybind_set *saved_autoconf_binds;
+            /* Heap-allocated: MAX_USERS * sizeof(retro_keybind_set) is
+             * ~51KB, too large for the stack on small-stack platforms.
+             * Matches defaults_binds / saved_autoconf_binds above. */
+            retro_keybind_set *saved_binds;
 #ifdef HAVE_LANGEXTRA
             unsigned saved_user_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
 #endif
 
             /* Save current input_config_binds */
-            retro_keybind_set saved_binds[MAX_USERS];
-            memcpy(saved_binds, input_config_binds, sizeof(saved_binds));
+            saved_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
+            if (saved_binds)
+               memcpy(saved_binds, input_config_binds,
+                     MAX_USERS * sizeof(retro_keybind_set));
 
             /* Save current input_autoconf_binds (deep copy with string duplication) */
             saved_autoconf_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
@@ -6143,7 +6191,12 @@ bool config_save_file(const char *path)
             config_st = saved_config_st;
 
             /* Restore input_config_binds */
-            memcpy(input_config_binds, saved_binds, sizeof(saved_binds));
+            if (saved_binds)
+            {
+               memcpy(input_config_binds, saved_binds,
+                     MAX_USERS * sizeof(retro_keybind_set));
+               free(saved_binds);
+            }
 
             /* Restore input_device_info */
             memcpy(input_st->input_device_info, saved_device_info,
@@ -6210,6 +6263,8 @@ bool config_save_file(const char *path)
    {
       for (i = 0; i < (unsigned)path_settings_size; i++)
       {
+         char value_buf[PATH_MAX_LENGTH];
+         char default_buf[PATH_MAX_LENGTH];
          const char *value         = path_settings[i].ptr;
          const char *default_value = path_defaults ? path_defaults[i].ptr : NULL;
 
@@ -6221,17 +6276,32 @@ bool config_save_file(const char *path)
                default_value = "default";
          }
 
+         /* Normalise a trailing separator out of directory values so
+          * saved paths are consistent. File paths and the "" / "default"
+          * sentinels never end in a separator, so they pass through
+          * unchanged; both the written value and the default used for
+          * the minimal-mode comparison are normalised so the dedup
+          * stays correct. */
+         if (value)
+         {
+            strlcpy(value_buf, value, sizeof(value_buf));
+            config_path_strip_trailing_slash(value_buf);
+            value = value_buf;
+         }
+         if (default_value)
+         {
+            strlcpy(default_buf, default_value, sizeof(default_buf));
+            config_path_strip_trailing_slash(default_buf);
+            default_value = default_buf;
+         }
+
          /* In minimal mode, only save if value differs from default */
          if (   !minimal
              || !string_is_equal(value, default_value))
-         {
             config_set_path(conf, path_settings[i].ident, value);
-         }
          else
-         {
             /* Remove key if it matches default */
             config_unset(conf, path_settings[i].ident);
-         }
       }
    }
 
@@ -6889,8 +6959,7 @@ int8_t config_save_overrides(enum override_type type,
    int tmp_i                                   = 0;
    unsigned i                                  = 0;
    int8_t ret                                  = 0;
-   retro_keybind_set input_override_binds[MAX_USERS]
-                                               = {0};
+   retro_keybind_set *input_override_binds     = NULL;
    config_file_t *conf                         = NULL;
    settings_t *settings                        = NULL;
    struct config_bool_setting *bool_settings   = NULL;
@@ -6910,6 +6979,10 @@ int8_t config_save_overrides(enum override_type type,
    char config_directory[DIR_MAX_LENGTH];
    char override_directory[DIR_MAX_LENGTH];
    char override_path[PATH_MAX_LENGTH];
+   char base_savefile[PATH_MAX_LENGTH];
+   char base_savestate[PATH_MAX_LENGTH];
+   bool savefile_cmdline                       = false;
+   bool savestate_cmdline                      = false;
    settings_t *overrides                       = config_st;
    int bool_settings_size                      = SETTINGS_BOOL_COUNT_MAX;
    int float_settings_size                     = SETTINGS_FLOAT_COUNT_MAX;
@@ -6935,6 +7008,12 @@ int8_t config_save_overrides(enum override_type type,
 
    settings = (settings_t*)calloc(1, sizeof(settings_t));
    conf     = config_file_new_alloc();
+   /* MAX_USERS * sizeof(retro_keybind_set) is ~51KB; keep it off the
+    * stack (this function is reachable on small-stack platforms such
+    * as the 3DS). Allocated here so it shares the OOM bail below and
+    * is freed at the function-end cleanup. */
+   input_override_binds = (retro_keybind_set*)calloc(
+         MAX_USERS, sizeof(retro_keybind_set));
 
    /* NULL-check: both calloc and config_file_new_alloc can
     * return NULL on OOM.  config_load_file at line ~6552
@@ -6948,11 +7027,12 @@ int8_t config_save_overrides(enum override_type type,
     * Return -1 to signal hard failure (as distinct from
     * 'override was not needed' = false/0 at line 6529).
     * int8_t return value accommodates -1. */
-   if (!settings || !conf)
+   if (!settings || !conf || !input_override_binds)
    {
       if (conf)
          config_file_free(conf);
       free(settings);
+      free(input_override_binds);
       return -1;
    }
 
@@ -6970,7 +7050,7 @@ int8_t config_save_overrides(enum override_type type,
       path_mkdir(override_directory);
 
    /* Store current binds as override binds */
-   memcpy(input_override_binds, input_config_binds, sizeof(input_override_binds));
+   memcpy(input_override_binds, input_config_binds, sizeof(input_config_binds));
 
    /* Load the original config file in memory */
    config_load_file(global_get_ptr(),
@@ -7003,6 +7083,45 @@ int8_t config_save_overrides(enum override_type type,
    path_settings       = populate_settings_path(settings,   &path_settings_size);
    tmp_i               = SETTINGS_PATH_COUNT_MAX;
    path_overrides      = populate_settings_path(overrides,  &tmp_i);
+
+   /* savefile_directory and savestate_directory are backed by a single
+    * global runtime buffer (dir_get_ptr) rather than a per-settings
+    * field, so populate_settings_path() returns the same pointer for
+    * both 'settings' (base) and 'overrides' (live). The generic path
+    * diff below is therefore blind to changes in these two dirs
+    * (issue #18809). Read the pre-override baseline straight from the
+    * on-disk config so the live dirs can be diffed against it explicitly.
+    * "default" is resolved the same way the loader does, so an unchanged
+    * default does not register as a spurious change. The command-line
+    * --save/--savestate overrides mirror the loader's gate: when set,
+    * the dir cannot be applied from an override on load, so leave it to
+    * the (no-op) generic comparison instead. */
+   base_savefile[0]    = '\0';
+   base_savestate[0]   = '\0';
+   savefile_cmdline    = retroarch_override_setting_is_set(
+         RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
+   savestate_cmdline   = retroarch_override_setting_is_set(
+         RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+   {
+      config_file_t *base_conf = config_file_new_from_path_to_string(
+            path_get(RARCH_PATH_CONFIG));
+      if (base_conf)
+      {
+         if (config_get_path(base_conf, "savefile_directory",
+                  base_savefile, sizeof(base_savefile))
+               && string_is_equal(base_savefile, "default"))
+            strlcpy(base_savefile, g_defaults.dirs[DEFAULT_DIR_SRAM],
+                  sizeof(base_savefile));
+         if (config_get_path(base_conf, "savestate_directory",
+                  base_savestate, sizeof(base_savestate))
+               && string_is_equal(base_savestate, "default"))
+            strlcpy(base_savestate, g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+                  sizeof(base_savestate));
+         config_file_free(base_conf);
+      }
+      config_path_strip_trailing_slash(base_savefile);
+      config_path_strip_trailing_slash(base_savestate);
+   }
 
    if (conf->flags & CONF_FILE_FLG_MODIFIED)
       RARCH_LOG("[Override] Looking for changed settings...\n");
@@ -7103,16 +7222,44 @@ int8_t config_save_overrides(enum override_type type,
 
       for (i = 0; i < (unsigned)path_settings_size; i++)
       {
-         if (!string_is_equal(path_settings[i].ptr, path_overrides[i].ptr))
+         const char *cur  = path_overrides[i].ptr;
+         const char *base = path_settings[i].ptr;
+         char        cur_buf[PATH_MAX_LENGTH];
+
+         /* savefile_directory / savestate_directory alias a global
+          * buffer, so path_settings[] and path_overrides[] point at the
+          * same string and the generic comparison never fires. Diff the
+          * live dir against the on-disk baseline read above instead,
+          * normalising a trailing separator on both sides. When the
+          * matching command-line override is set the dir cannot be
+          * applied from an override on load, so fall through to the
+          * (equal -> no-op) generic comparison. */
+         if (     !savefile_cmdline
+               && string_is_equal(path_overrides[i].ident, "savefile_directory"))
+         {
+            strlcpy(cur_buf, cur ? cur : "", sizeof(cur_buf));
+            config_path_strip_trailing_slash(cur_buf);
+            cur  = cur_buf;
+            base = base_savefile;
+         }
+         else if (!savestate_cmdline
+               && string_is_equal(path_overrides[i].ident, "savestate_directory"))
+         {
+            strlcpy(cur_buf, cur ? cur : "", sizeof(cur_buf));
+            config_path_strip_trailing_slash(cur_buf);
+            cur  = cur_buf;
+            base = base_savestate;
+         }
+
+         if (!string_is_equal(base, cur))
          {
 #if IOS
             if (string_is_equal(path_settings[i].ident, "libretro_directory"))
                continue;
 #endif
-            config_set_path(conf, path_overrides[i].ident,
-                  path_overrides[i].ptr);
+            config_set_path(conf, path_overrides[i].ident, cur);
             RARCH_DBG("[Override] %s = \"%s\"\n",
-                  path_overrides[i].ident, path_overrides[i].ptr);
+                  path_overrides[i].ident, cur);
          }
       }
 
@@ -7292,6 +7439,7 @@ int8_t config_save_overrides(enum override_type type,
    if (size_overrides)
       free(size_overrides);
    free(settings);
+   free(input_override_binds);
 
    return ret;
 }

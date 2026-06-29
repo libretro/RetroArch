@@ -102,6 +102,15 @@ enum settings_glob_flags
    SETTINGS_FLG_SKIP_WINDOW_POSITIONS = (1 << 1)
 };
 
+/* Narrator (TTS) engine for the Linux/Unix accessibility path.
+ * espeak is index 0 / default so existing setups are unaffected. */
+enum accessibility_narrator_engine_enum
+{
+   ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK = 0,
+   ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER,
+   ACCESSIBILITY_NARRATOR_ENGINE_LAST
+};
+
 typedef struct settings
 {
    struct
@@ -298,6 +307,7 @@ typedef struct settings
 
       /* Accessibility */
       unsigned accessibility_narrator_speech_speed;
+      unsigned accessibility_narrator_engine;
 
       unsigned menu_timedate_style;
       unsigned menu_timedate_date_separator;
@@ -895,6 +905,7 @@ typedef struct settings
       bool menu_xmb_shadows_enable;
       bool menu_xmb_show_horizontal_list;
       bool menu_xmb_show_title_header;
+      bool menu_xmb_entry_icons;
       bool menu_xmb_switch_icons;
       bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;

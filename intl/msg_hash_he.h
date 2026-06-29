@@ -808,26 +808,14 @@ MSG_HASH(
    "וידאו"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "בחר התקן תצוגה."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "שמע"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "בחר התקן שמע."
    )
 #ifdef HAVE_MICROPHONE
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
    "מצלמה"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "בחר התקן מצלמה."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
@@ -842,20 +830,12 @@ MSG_HASH(
    "שירותי מיקום"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "בחר התקן עבור שירותי מיקום."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "תצורת תפריט"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "הקלט"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "בחר התקן הקלטה."
    )
 
 /* Settings > Video */

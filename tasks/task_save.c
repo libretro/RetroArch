@@ -565,7 +565,13 @@ static void task_save_handler(retro_task_t *task)
                RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!state->file)
+      {
+         RARCH_ERR("[State] save task could not open \"%s\" for writing "
+               "(slot %d). The auto-index slot was already advanced, so "
+               "this leaves an advanced slot with no save file.\n",
+               state->path, state->state_slot);
          return;
+      }
    }
 
    if (!state->data)
@@ -611,11 +617,20 @@ static void task_save_handler(retro_task_t *task)
       }
 
       task_set_error(task, strdup(msg));
+      RARCH_ERR("[State] save task FAILED for slot %d, path \"%s\" "
+            "(wrote %d of %d bytes%s).\n",
+            state->state_slot, state->path,
+            (int)state->written, (int)state->size,
+            ((flg & RETRO_TASK_FLG_CANCELLED) > 0) ? ", cancelled" : "");
       task_save_handler_finished(task, state);
    }
    else if (state->written == state->size)
    {
       char       *msg      = NULL;
+
+      RARCH_LOG("[State] save task COMPLETED for slot %d, path \"%s\" "
+            "(%d bytes).\n",
+            state->state_slot, state->path, (int)state->size);
 
       task_free_title(task);
 
@@ -662,7 +677,6 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t len)
    if (task && state)
    {
       settings_t *settings  = config_get_ptr();
-      video_driver_state_t *video_st = video_state_get_ptr();
 
       strlcpy(state->path, path, sizeof(state->path));
       state->data           = data;
@@ -1230,7 +1244,6 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
 {
    settings_t     *settings        = config_get_ptr();
    retro_task_t       *task        = task_init();
-   video_driver_state_t *video_st  = video_state_get_ptr();
    save_task_state_t *state        = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
@@ -1352,7 +1365,6 @@ static void task_push_load_and_save_state(const char *path, void *data,
 {
    retro_task_t      *task        = NULL;
    settings_t        *settings    = config_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr();
    save_task_state_t *state       = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
@@ -1470,7 +1482,6 @@ bool content_auto_save_state(const char *path)
 #ifdef HAVE_SCREENSHOTS
    if (settings->bools.savestate_thumbnail_enable)
    {
-      video_driver_state_t *video_st = video_state_get_ptr();
       const char *dir_screenshot = settings->paths.directory_screenshot;
       bool validfb = video_driver_cached_frame_is_hw_render();
 
@@ -1634,7 +1645,6 @@ bool content_load_state(const char *path,
 {
    retro_task_t       *task        = NULL;
    save_task_state_t *state        = NULL;
-   video_driver_state_t *video_st  = video_state_get_ptr();
    settings_t *settings            = config_get_ptr();
 
    if (!core_info_current_supports_savestate())

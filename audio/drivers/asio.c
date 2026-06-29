@@ -630,8 +630,17 @@ static int asio_enumerate_drivers(asio_driver_entry_t *entries,
 static void *asio_load_driver(const CLSID *clsid)
 {
    void *iface = NULL;
+   /* In C, REFCLSID/REFIID (CoCreateInstance's 1st and 4th args) are
+    * 'const IID *'; in C++ they are 'const IID &'. ASIO uses the CLSID
+    * as both the class ID and the interface ID, so pass the same GUID
+    * for both, dereferencing under CXX_BUILD. */
+#ifdef __cplusplus
+   HRESULT hr  = CoCreateInstance(*clsid, NULL,
+         CLSCTX_INPROC_SERVER, *clsid, &iface);
+#else
    HRESULT hr  = CoCreateInstance(clsid, NULL,
          CLSCTX_INPROC_SERVER, clsid, &iface);
+#endif
    if (FAILED(hr))
       return NULL;
    return iface;

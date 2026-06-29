@@ -3351,10 +3351,17 @@ static bool accessibility_speak_unix(int speed,
       const char* speak_text, int priority)
 {
    int pid;
+   settings_t *settings   = config_get_ptr();
+   unsigned engine        = settings
+      ? settings->uints.accessibility_narrator_engine
+      : (unsigned)ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK;
    const char* language   = accessibility_unix_language_code(get_user_language_iso639_1(true));
    char* voice_out        = (char*)malloc(3 + strlen(language));
    char* speed_out        = (char*)malloc(3 + 3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
+   /* speech-dispatcher (spd-say) takes a rate in the range -100..100,
+    * mapped here from RetroArch's 1..10 speed ladder. */
+   const char* spd_rates[10] = {"-90", "-70", "-50", "-30", "-10", "10", "30", "50", "70", "90"};
 
    /* NULL-check both mallocs: voice_out[0]='-' and speed_out[0]='-'
     * below NULL-deref on OOM.  The 'end:' label does NULL-tolerant
@@ -3390,7 +3397,7 @@ static bool accessibility_speak_unix(int speed,
 
    if (speak_pid > 0)
    {
-      /* Kill the running espeak */
+      /* Kill the running narrator */
       kill(speak_pid, SIGTERM);
       speak_pid = 0;
    }
@@ -3399,6 +3406,30 @@ static bool accessibility_speak_unix(int speed,
    switch (pid)
    {
       case 0:
+         if (engine == ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER)
+         {
+            /* child process: speech-dispatcher via spd-say.
+             *   -l <lang>   language
+             *   -r <rate>   rate (-100..100)
+             *   -w          wait until finished, so this child stays
+             *               alive for is_narrator_running_unix()/SIGTERM
+             *               to track and interrupt, matching the espeak
+             *               long-lived-child behaviour. */
+            char* cmd[] = { (char*) "spd-say",
+               (char*) "-l", NULL,
+               (char*) "-r", NULL,
+               (char*) "-w",
+               NULL, NULL };
+            cmd[2] = (char*)language;
+            cmd[4] = (char*)spd_rates[speed-1];
+            cmd[6] = (char*)speak_text;
+            execvp("spd-say", cmd);
+
+            RARCH_WARN("Could not execute spd-say.\n");
+            /* Prevent interfere with the parent process */
+            _exit(EXIT_FAILURE);
+         }
+         else
          {
             /* child process: replace process with the espeak command */
             char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL };
@@ -3412,7 +3443,7 @@ static bool accessibility_speak_unix(int speed,
             _exit(EXIT_FAILURE);
          }
       case -1:
-         RARCH_ERR("Could not fork for espeak.\n");
+         RARCH_ERR("Could not fork for narrator.\n");
       default:
          {
             /* parent process */

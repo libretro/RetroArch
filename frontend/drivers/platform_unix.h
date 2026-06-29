@@ -380,6 +380,10 @@ enum
    var = (*env)->CallIntMethod(env, clazz_obj, methodId); \
    JNI_EXCEPTION(env)
 
+#define CALL_INT_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
+   var = (*env)->CallIntMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+   JNI_EXCEPTION(env)
+
 extern JNIEnv *jni_thread_getenv(void);
 
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);

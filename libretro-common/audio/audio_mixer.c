@@ -219,6 +219,15 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
 
    *pcm = f;
 
+   /* Canonical PCM->float scaling, matching audio/conversion/s16_to_float
+    * (s16 / 0x8000) and audio_mix's 8-bit path ((u8 - 128) / 128). The
+    * previous (s + 32768) / 65535 * 2 - 1 mapping introduced a small
+    * positive DC offset (0 -> +1.5e-5) and a non-canonical scale; using
+    * the same factor as the rest of the pipeline keeps the mixer's float
+    * representation consistent (and the result deterministic) across the
+    * s16/float boundaries the voices are mixed and clamped at. The mono
+    * channel-duplication below is why the audio/conversion helpers can't
+    * be called verbatim here. */
    if (wav->bitspersample == 8)
    {
       float sample      = 0.0f;
@@ -228,8 +237,7 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
       {
          for (i = wav->numsamples; i != 0; i--)
          {
-            sample = (float)*u8++ / 255.0f;
-            sample = sample * 2.0f - 1.0f;
+            sample = ((float)*u8++ - 128.0f) * (1.0f / 128.0f);
             *f++   = sample;
             *f++   = sample;
          }
@@ -238,20 +246,13 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
       {
          for (i = wav->numsamples; i != 0; i--)
          {
-            sample = (float)*u8++ / 255.0f;
-            sample = sample * 2.0f - 1.0f;
-            *f++   = sample;
-            sample = (float)*u8++ / 255.0f;
-            sample = sample * 2.0f - 1.0f;
-            *f++   = sample;
+            *f++ = ((float)*u8++ - 128.0f) * (1.0f / 128.0f);
+            *f++ = ((float)*u8++ - 128.0f) * (1.0f / 128.0f);
          }
       }
    }
    else
    {
-      /* TODO/FIXME note to leiradel - can we use audio/conversion/s16_to_float
-       * functions here? */
-
       float sample       = 0.0f;
       const int16_t *s16 = (const int16_t*)wav->samples;
 
@@ -259,8 +260,7 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
       {
          for (i = wav->numsamples; i != 0; i--)
          {
-            sample = (float)((int)*s16++ + 32768) / 65535.0f;
-            sample = sample * 2.0f - 1.0f;
+            sample = (float)*s16++ * (1.0f / 0x8000);
             *f++   = sample;
             *f++   = sample;
          }
@@ -269,12 +269,8 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
       {
          for (i = wav->numsamples; i != 0; i--)
          {
-            sample = (float)((int)*s16++ + 32768) / 65535.0f;
-            sample = sample * 2.0f - 1.0f;
-            *f++   = sample;
-            sample = (float)((int)*s16++ + 32768) / 65535.0f;
-            sample = sample * 2.0f - 1.0f;
-            *f++   = sample;
+            *f++ = (float)*s16++ * (1.0f / 0x8000);
+            *f++ = (float)*s16++ * (1.0f / 0x8000);
          }
       }
    }
@@ -1188,10 +1184,17 @@ again:
 
    if (voice->types.mod.samples < buf_free)
    {
+      /* ibxm emits fixed-point samples whose unity is FP_ONE (32768 ==
+       * 0x8000), so scale by 1/0x8000 to match audio/conversion/
+       * s16_to_float and the rest of the mixer. The previous
+       * (s + 32768) / 65535 * 2 - 1 mapping added a small positive DC
+       * offset (0 -> +1.5e-5) and a non-canonical scale; this keeps the
+       * MOD voice consistent (and deterministic) with the other formats.
+       * Samples beyond +/-FP_ONE (loud multi-channel mixes) exceed
+       * +/-1.0 and are clamped downstream exactly as before. */
       for (i = voice->types.mod.samples; i != 0; i--)
       {
-         samplef     = ((float)(*pcm++) + 32768.0f) / 65535.0f;
-         samplef     = samplef * 2.0f - 1.0f;
+         samplef     = (float)(*pcm++) * (1.0f / 0x8000);
          *buffer++  += samplef * volume;
       }
 
@@ -1201,8 +1204,7 @@ again:
 
    for (i = buf_free; i != 0; --i )
    {
-      samplef     = ((float)(*pcm++) + 32768.0f) / 65535.0f;
-      samplef     = samplef * 2.0f - 1.0f;
+      samplef     = (float)(*pcm++) * (1.0f / 0x8000);
       *buffer++  += samplef * volume;
    }
 
