@@ -406,6 +406,17 @@ void audio_driver_sample(int16_t left, int16_t right);
  **/
 size_t audio_driver_sample_batch(const int16_t *data, size_t frames);
 
+/**
+ * audio_driver_sample_batch_float:
+ *
+ * Float counterpart of audio_driver_sample_batch(), handed to a core via
+ * RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT. Samples are interleaved
+ * stereo float normalized to [-1.0, 1.0].
+ *
+ * @return Number of frames processed.
+ **/
+size_t audio_driver_sample_batch_float(const float *data, size_t frames);
+
 #ifdef HAVE_REWIND
 /**
  * audio_driver_sample_rewind:

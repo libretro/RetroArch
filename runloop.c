@@ -3534,6 +3534,26 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
 
+      case RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT:
+      {
+         struct retro_audio_sample_float_callback *cb =
+               (struct retro_audio_sample_float_callback*)data;
+         if (!cb)
+            return false;
+         /* RetroArch's resampler and DSP chain are float-native, so we
+          * advertise float audio output and hand the core our float
+          * batch entry point. The core then bypasses int16 entirely.
+          *
+          * Note: the float entry funnels into the same audio_driver_flush()
+          * as int16 and internally bridges recording and reverse-audio
+          * (rewind). The one subsystem it does not cover is netplay's
+          * core-packet audio interception (audio_sample_batch_net), which
+          * swaps the int16 batch callback the float core no longer uses;
+          * that path remains int16-only. */
+         cb->batch = audio_driver_sample_batch_float;
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
          {
 #if TARGET_OS_IPHONE

@@ -2656,6 +2656,46 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_EXEC_MEM_FREE  84
 
+/**
+ * Queries whether the frontend can accept audio samples in 32-bit
+ * native-endian IEEE-754 float format, and, if so, obtains a float
+ * sample-batch callback the core may use in place of the standard
+ * int16 \c retro_audio_sample_batch_t callback.
+ *
+ * Rationale: frontend resamplers and DSP chains operate on float, and
+ * most modern audio drivers expose a native float output path. A core
+ * whose audio is float-native (e.g. one with a float software mixer or
+ * a float decoder) currently has to squash its output down to int16 at
+ * the libretro boundary, only for the frontend to immediately widen it
+ * back to float. Negotiating float output here removes that redundant
+ * int16<->float round-trip on both sides of the boundary.
+ *
+ * On success the frontend sets \c batch in the supplied
+ * \c retro_audio_sample_float_callback. The core may call that function
+ * from within \c retro_run() (or from the audio callback registered via
+ * \c RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK), passing interleaved stereo
+ * frames of float samples normalized to the range [-1.0, 1.0]. The
+ * return value has the same meaning as \c retro_audio_sample_batch_t.
+ *
+ * Contract:
+ *  - The core must commit to a single output format for the lifetime of
+ *    a loaded game; it must not mix int16 and float batch calls. Perform
+ *    negotiation once, during \c retro_load_game() (after any
+ *    \c RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK call).
+ *  - If this returns \c false the core must keep using the int16
+ *    \c retro_audio_sample_batch_t / \c retro_audio_sample_t callbacks.
+ *  - The \c batch function pointer is owned by the frontend and remains
+ *    valid until \c retro_unload_game().
+ *  - Frontends that do not recognize this call return \c false, so older
+ *    frontends transparently keep the int16 path.
+ *
+ * @param[out] data <tt>struct retro_audio_sample_float_callback *</tt>.
+ * @return \c true if float audio output is supported, \c false otherwise.
+ * @see retro_audio_sample_batch_float_t
+ * @see retro_audio_sample_float_callback
+ */
+#define RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT (85 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
 /**@}*/
 
 /**
@@ -7596,6 +7636,40 @@ typedef void (RETRO_CALLCONV *retro_audio_sample_t)(int16_t left, int16_t right)
  */
 typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_t)(const int16_t *data,
       size_t frames);
+
+/**
+ * Renders multiple audio frames in one go, in float format.
+ *
+ * This is the float counterpart of \c retro_audio_sample_batch_t. It is
+ * only valid after the frontend has answered \c true to
+ * \c RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT, and must not be
+ * mixed with the int16 callbacks within the same loaded game.
+ *
+ * @param data A pointer to interleaved stereo float sample frames,
+ *     normalized to the range [-1.0, 1.0]. One frame is a left/right
+ *     pair, e.g. <tt>float buf[4] = { l, r, l, r };</tt> is 2 frames.
+ * @param frames The number of frames represented in \c data.
+ *
+ * @return The number of frames that were processed.
+ *
+ * @see RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT
+ * @see retro_audio_sample_batch_t
+ */
+typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_float_t)(
+      const float *data, size_t frames);
+
+/**
+ * Float audio sample-batch callback handed to the core in response to
+ * \c RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT.
+ *
+ * @see RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT
+ */
+struct retro_audio_sample_float_callback
+{
+   /* Set by the frontend. The core calls this instead of the int16
+    * batch callback once float output has been negotiated. */
+   retro_audio_sample_batch_float_t batch;
+};
 
 /**
  * Polls input.

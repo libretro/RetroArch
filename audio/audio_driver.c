@@ -582,7 +582,7 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
 
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
-      const int16_t *data, size_t samples,
+      const void *data, size_t samples, bool is_float,
       bool is_slowmotion, bool is_fastforward)
 {
    struct resampler_data src_data;
@@ -606,8 +606,13 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    /* Fast path: if driver handles resampling and no DSP/mixer is active,
     * bypass software resampling entirely. An active in-process MIDI synth
     * also disables the fast path, since its PCM is mixed into the float
-    * buffer below (which the fast path would skip). */
+    * buffer below (which the fast path would skip).
+    * The fast path feeds int16 directly to audio->write_raw, so it is
+    * only available when the core delivered int16; float-native cores
+    * fall through to the float resampler path below (which is exactly
+    * where the redundant int16<->float round-trip is avoided). */
    if (audio->write_raw
+         && !is_float
          && !midi_driver_synth_active()
 #ifdef HAVE_DSP_FILTER
          && !audio_st->dsp
@@ -648,8 +653,25 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    src_data.output_frames            = 0;
    /* We'll assign a proper output to the resampler later in this function */
 
-   convert_s16_to_float(audio_st->input_data, data, samples,
-         audio_volume_gain);
+   /* Bring the core's audio into the float input buffer the resampler/DSP
+    * operate on. For a float-native core this is just a gain-scaled copy
+    * (or a plain copy at unity gain) - no int16<->float conversion - which
+    * is the whole point of float audio negotiation. */
+   if (is_float)
+   {
+      const float *fin = (const float*)data;
+      if (audio_volume_gain == 1.0f)
+         memcpy(audio_st->input_data, fin, samples * sizeof(float));
+      else
+      {
+         size_t s;
+         for (s = 0; s < samples; s++)
+            audio_st->input_data[s] = fin[s] * audio_volume_gain;
+      }
+   }
+   else
+      convert_s16_to_float(audio_st->input_data, (const int16_t*)data, samples,
+            audio_volume_gain);
 
    /* Mix in-process MIDI synth output (e.g. fmsynth) into the float input
     * before resampling, so it shares the core's resampler, gain and output
@@ -1185,7 +1207,7 @@ void audio_driver_sample(int16_t left, int16_t right)
       audio_driver_flush(audio_st,
             config_get_ptr()->floats.slowmotion_ratio,
             audio_st->output_samples_conv_buf,
-            audio_st->data_ptr,
+            audio_st->data_ptr, false,
             (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
             (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 
@@ -1239,7 +1261,99 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 
       if (flush_audio)
          audio_driver_flush(audio_st, slowmotion_ratio, data,
-               frames_to_write << 1,
+               frames_to_write << 1, false,
+               (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
+               (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
+
+      frames_remaining -= frames_to_write;
+      data             += frames_to_write << 1;
+   } while (frames_remaining > 0);
+
+   return frames;
+}
+
+/* Float counterpart of audio_driver_sample_batch(). Used only when the
+ * core negotiated float output via
+ * RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT. 'data' is interleaved
+ * stereo float in [-1.0, 1.0]; 'frames' is the frame count (2 floats per
+ * frame). Funnels into the same audio_driver_flush() as the int16 path,
+ * but with is_float=true so the redundant int16->float conversion is
+ * skipped. Recording and reverse-audio (rewind), which are int16
+ * subsystems, are bridged here by converting only the affected chunk. */
+size_t audio_driver_sample_batch_float(const float *data, size_t frames)
+{
+   uint32_t runloop_flags;
+   bool recording_push_audio      = false;
+   bool flush_audio               = false;
+   size_t frames_remaining        = frames;
+   recording_state_t *record_st   = recording_state_get_ptr();
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   float slowmotion_ratio         = config_get_ptr()->floats.slowmotion_ratio;
+
+   if ((audio_st->flags & AUDIO_FLAG_SUSPENDED) || (frames < 1))
+      return frames;
+
+#ifdef HAVE_REWIND
+   /* While frames are being played in reverse, the int16 path swaps the
+    * core callback to audio_driver_sample_batch_rewind(). A float core
+    * keeps the cached float pointer, so replicate that routing here:
+    * convert to int16 and store into the reverse buffer. */
+   if (state_manager_frame_is_reversed())
+   {
+      size_t i;
+      size_t samples = frames << 1;
+      for (i = 0; i < samples; i++)
+      {
+         if (audio_st->rewind_ptr < 1)
+            break;
+         /* Inline saturating float->s16 to avoid an extra scratch copy. */
+         {
+            float v = data[i] * 0x8000;
+            int   s = (int)v;
+            if (s >  0x7fff) s =  0x7fff;
+            if (s < -0x8000) s = -0x8000;
+            audio_st->rewind_buf[--audio_st->rewind_ptr] = (int16_t)s;
+         }
+      }
+      return frames;
+   }
+#endif
+
+   runloop_flags                  = runloop_get_flags();
+   flush_audio                    = !((runloop_flags & RUNLOOP_FLAG_PAUSED)
+            || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
+            || !(audio_st->output_samples_buf));
+   recording_push_audio           = record_st->data
+           && record_st->driver
+           && record_st->driver->push_audio;
+
+   do
+   {
+      size_t frames_to_write =
+            (frames_remaining > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
+                  ? (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)
+                  : frames_remaining;
+
+      /* The recorder consumes int16. Convert just this chunk into the
+       * int16 scratch buffer (sized for >= a full chunk) and hand that
+       * over; push_audio copies synchronously, matching how the int16
+       * single-sample path reuses output_samples_conv_buf. */
+      if (recording_push_audio && audio_st->output_samples_conv_buf)
+      {
+         struct record_audio_data ffemu_data;
+
+         convert_float_to_s16(audio_st->output_samples_conv_buf,
+               data, frames_to_write << 1);
+
+         ffemu_data.data   = audio_st->output_samples_conv_buf;
+         ffemu_data.frames = frames_to_write;
+
+         record_st->driver->push_audio(record_st->data, &ffemu_data);
+      }
+
+      if (flush_audio)
+         audio_driver_flush(audio_st, slowmotion_ratio, data,
+               frames_to_write << 1, true,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 
@@ -2101,7 +2215,7 @@ void audio_driver_frame_is_reverse(void)
          audio_driver_flush(audio_st,
                config_get_ptr()->floats.slowmotion_ratio,
                audio_st->rewind_buf  + audio_st->rewind_ptr,
-               audio_st->rewind_size - audio_st->rewind_ptr,
+               audio_st->rewind_size - audio_st->rewind_ptr, false,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 }
@@ -2269,7 +2383,7 @@ void audio_driver_menu_sample(void)
          audio_driver_flush(audio_st,
                slowmotion_ratio,
                samples_buf,
-               1024,
+               1024, false,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
       sample_count -= 1024;
@@ -2289,7 +2403,7 @@ void audio_driver_menu_sample(void)
    }
 
    if (check_flush)
-      audio_driver_flush(audio_st, slowmotion_ratio, samples_buf, sample_count,
+      audio_driver_flush(audio_st, slowmotion_ratio, samples_buf, sample_count, false,
             (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
             (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 }
