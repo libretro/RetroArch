@@ -1131,18 +1131,26 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_options,                       
 #ifdef HAVE_XMB
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_layout,                            MENU_ENUM_SUBLABEL_XMB_LAYOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_icon_theme,                        MENU_ENUM_SUBLABEL_XMB_THEME)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_current_menu_icon,                 MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_entry_icons,                       MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_switch_icons,                      MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_shadows_enable,                    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_vertical_thumbnails,               MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_alpha_factor,                 MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_vertical_fade_factor,         MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_show_horizontal_list,         MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_show_title_header,            MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_title_margin,                 MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_title_margin_horizontal_offset, MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_font,                         MENU_ENUM_SUBLABEL_XMB_FONT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_thumbnail_scale_factor,       MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_animation_horizontal_higlight,MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_animation_move_up_down,       MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_animation_opening_main_menu,  MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU)
 #endif
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
 #ifdef HAVE_MATERIALUI
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_menu_transition_animation,     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_menu_thumbnail_view_portrait,  MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_menu_thumbnail_view_landscape, MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE)
@@ -1159,8 +1167,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_widget_scale_factor_windowed,  
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_wallpaper_opacity,                MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_framebuffer_opacity,              MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_horizontal_animation,             MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_font,                         MENU_ENUM_SUBLABEL_XMB_FONT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_ozone_font,                       MENU_ENUM_SUBLABEL_OZONE_FONT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_show_drivers,                 MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_show_video,                   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO)
@@ -3180,6 +3186,36 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #endif
          case MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_wallpaper_opacity);
+            break;
+         case MENU_ENUM_LABEL_XMB_ALPHA_FACTOR:
+#ifdef HAVE_XMB
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_alpha_factor);
+#endif
+            break;
+         case MENU_ENUM_LABEL_MENU_XMB_VERTICAL_FADE_FACTOR:
+#ifdef HAVE_XMB
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_vertical_fade_factor);
+#endif
+            break;
+         case MENU_ENUM_LABEL_MENU_XMB_SHOW_HORIZONTAL_LIST:
+#ifdef HAVE_XMB
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_show_horizontal_list);
+#endif
+            break;
+         case MENU_ENUM_LABEL_MENU_XMB_SHOW_TITLE_HEADER:
+#ifdef HAVE_XMB
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_show_title_header);
+#endif
+            break;
+         case MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN:
+#ifdef HAVE_XMB
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_title_margin);
+#endif
+            break;
+         case MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET:
+#ifdef HAVE_XMB
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_title_margin_horizontal_offset);
+#endif
             break;
          case MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_use_preferred_system_color_theme);
