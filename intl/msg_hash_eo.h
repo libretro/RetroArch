@@ -1814,7 +1814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   ""
+   "AVERTO: rapida flagro povas kaŭzi bildan daŭron (\"image persistence\") en kelkaj ekranoj. Uzu ĝin je via propra risko. // Enmeti nigrajn filmerojn inter filmeroj. Povas ege redukti malklarajn movojn (\"motion blur\") imitante la \"scan out\" de CRT, sed kontraŭ brilo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
@@ -14344,7 +14344,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVING_RAM_TYPE,
-   "Konservante RAM-specon"
+   "Konservante ĉefmemoran specon"
    )
 MSG_HASH(
    MSG_SAVING_STATE,
