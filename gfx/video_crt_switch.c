@@ -32,6 +32,7 @@
 #include "video_display_server.h"
 #include "../core_info.h"
 #include "../verbosity.h"
+#include "../command.h"
 #include "../file_path_special.h"
 #include "../paths.h"
 
