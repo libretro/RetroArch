@@ -331,7 +331,7 @@ The links below belong to our official channels. Links other than this may have 
 - [Facebook](https://www.facebook.com/libretro)
 - [Twitter](https://twitter.com/libretro)
 - [Reddit](https://www.reddit.com/r/RetroArch/)
-- [YouTube](https://www.youtube.com/Libretro)
+- [YouTube](https://www.youtube.com/@Libretro)
 - [Google Post](https://posts.google.com/share/55Nhs2jG)
 - [Steam](https://store.steampowered.com/app/1118310/RetroArch/)
 - [YouTube Topic](https://www.youtube.com/channel/UC5q007PYyQPgin0HHbzF0zQ)
