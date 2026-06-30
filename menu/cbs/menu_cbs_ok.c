@@ -9088,7 +9088,7 @@ static int action_ok_playlist_refresh(const char *path,
             settings->bools.playlist_portable_paths ?
             settings->paths.directory_menu_content : NULL);
 
-      task_push_manual_content_scan(true);
+      task_push_manual_content_scan(false);
    }
    return 0;
 }
