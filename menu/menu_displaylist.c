@@ -2806,6 +2806,30 @@ static int create_string_list_rdb_entry_int(
    return 0;
 }
 
+static int month_uint_to_menu_label_value(unsigned month)
+{
+   const int months[12] = {
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_FEBRUARY,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MARCH,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_APRIL,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MAY,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JUNE,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JULY,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_AUGUST,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_SEPTEMBER,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_OCTOBER,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_NOVEMBER,
+      MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_DECEMBER,
+   };
+   if (month < 1 || month > 12)
+   {
+      RARCH_WARN("Found invalid month number in database entry, got %d\n", month);
+      return -1;
+   }
+   return months[month - 1];
+}
+
 static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       menu_displaylist_info_t *info,
       bool show_advanced_settings,
@@ -3063,8 +3087,16 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       RDB_ENTRY_INT(edge_magazine_issue,  MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE)
 
-      RDB_ENTRY_INT(releasemonth,        MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH,
-                                          MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH)
+      if (db_info_entry->releasemonth)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH),
+                  msg_hash_to_str(month_uint_to_menu_label_value(db_info_entry->releasemonth)), info->path, info->list) == -1)
+            goto error;
+      }
+
       RDB_ENTRY_INT(releaseyear,         MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_YEAR,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR)
 
