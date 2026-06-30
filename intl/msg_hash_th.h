@@ -6727,14 +6727,6 @@ MSG_HASH(
    "เลือกรูปภาพเพื่อตั้งค่าเป็นพื้นหลังของเมนู รูปภาพที่เลือกเองหรือรูปภาพแบบไดนามิกจะแทนที่ 'ธีมสี' ในเมนู"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "ความโปร่งใสของภาพพื้นหลัง"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "ปรับความโปร่งใสของภาพพื้นหลัง"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "ความโปร่งใส"
    )
@@ -10864,10 +10856,6 @@ MSG_HASH(
    "แอนิเมชันที่เกิดขึ้นเมื่อเปิดเมนูย่อย"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "ค่าอัลฟ่าของธีมสี"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    "ไอคอนเมนูปัจจุบัน"
    )
@@ -10894,18 +10882,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "เลือกฟอนต์หลักอื่นเพื่อใช้ในเมนู"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "สีตัวอักษร (แดง)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "สีตัวอักษร (เขียว)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "สีตัวอักษร (น้ำเงิน)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -14904,24 +14880,12 @@ MSG_HASH(
    "แสดงแบบอักษรเมนูด้านล่าง เปิดใช้งานเพื่อแสดงคำอธิบายปุ่มบนหน้าจอด้านล่าง ทั้งนี้ไม่รวมถึงวันที่ของบันทึกสถานะ"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
-   "สีตัวอักษร แดง"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "ปรับค่าสีแดงของแบบอักษรหน้าจอด้านล่าง"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
-   "สีตัวอักษร เขียว"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "ปรับค่าสีเขียวของแบบอักษรหน้าจอด้านล่าง"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
-   "สีตัวอักษร น้ำเงิน"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

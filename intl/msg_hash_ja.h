@@ -6031,14 +6031,6 @@ MSG_HASH(
    "メニューの背景として設定する画像を選択します。手動およびダイナミック画像は [カラーテーマ] を上書きします。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "壁紙の不透明度"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "背景画像の不透明度を変更します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "不透明度"
    )
@@ -10228,10 +10220,6 @@ MSG_HASH(
    "サブメニューを開く際のアニメーションです。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "カラーテーマの不透明度"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    "なし"
    )
@@ -10246,18 +10234,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "メニューで使用する別のメインフォントを選択します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "フォントの色 (赤)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "フォントの色 (緑)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "フォントの色 (青)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -14100,24 +14076,12 @@ MSG_HASH(
    "フォントを有効にする"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
-   "フォントの色 (赤)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "下画面のフォントの赤色を調整します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
-   "フォントの色 (緑)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "下画面のフォントの緑色を調整します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
-   "フォントの色 (青)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

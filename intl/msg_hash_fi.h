@@ -5539,14 +5539,6 @@ MSG_HASH(
    "Taustakuva"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "Taustan läpinäkyvyys"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "Muokkaa taustakuvan läpinäkyvyyttä."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "Peittävyys"
    )
@@ -9564,18 +9556,6 @@ MSG_HASH(
    "Valitse eri fontti valikossa käytettäväksi."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Fontin väri (punainen)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Fontin väri (vihreä)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Fontin väri (sininen)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
    "Asettelu"
    )
@@ -13316,24 +13296,12 @@ MSG_HASH(
    "Kirjasimet"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
-   "Fontin punainen väri"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "Säädä alemman näytön fontin punaista väriä."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
-   "Fontin vihreä väri"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "Säädä alemman näytön fontin vihreää väriä."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
-   "Fontin sininen väri"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

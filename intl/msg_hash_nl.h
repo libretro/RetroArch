@@ -6679,14 +6679,6 @@ MSG_HASH(
    "Selecteer een afbeelding om in te stellen als menu-achtergrond. Handmatige en dynamische afbeeldingen overschrijven het 'Kleurthema'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "Achtergrond doorzichtigheid"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "Wijzig de ondoorzichtigheid van de achtergrondafbeelding."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "Transparantie"
    )
@@ -11040,10 +11032,6 @@ MSG_HASH(
    "De animatie die activeert bij het openen van een submenu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Alfa-factor voor het kleurthema "
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    "Huidig menu-pictogram"
    )
@@ -11070,18 +11058,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Selecteer een ander hoofdlettertype dat gebruikt wordt door het menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Letterkleur (rood)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Letterkleur (groen)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Letterkleur (blauw)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -15192,24 +15168,12 @@ MSG_HASH(
    "Lettertype van het onderste menu weergeven. Inschakelen om knopbeschrijvingen op het onderste scherm weer te geven. Heeft geen effect op onderbrekingspunten."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
-   "Letterkleur rood"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "Pas de rode kleur van het lettertype onderaan het scherm aan."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
-   "Letterkleur groen"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "Pas de groene kleur van het lettertype onderaan het scherm aan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
-   "Letterkleur blauw"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

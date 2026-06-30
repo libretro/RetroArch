@@ -3051,10 +3051,6 @@ MSG_HASH(
    "Selecione uma imagem para definir como fundo do menu. As imagens manuais e dinâmicas substituem a opção \"Tema de cor\"."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "Opacidade da imagem de fundo"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
    "Tipo de miniatura a ser mostrada."
    )

@@ -6287,14 +6287,6 @@ MSG_HASH(
    "Вызначыць відарыс у якасці фону меню. Зададзеныя ўручную ды дынамічныя маюць перавагу над 'Колеравая тэма'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "Непразрыстасць фону"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "Змяніць непразрыстасць фонавага відарысу."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "Непразрыстасць"
    )
@@ -10608,10 +10600,6 @@ MSG_HASH(
    "Эфект анімацыі пры пераходзе ў падменю."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Празрыстасць каляровай тэмы"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    "Няма"
    )
@@ -10626,18 +10614,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Выбраць асноўны шрыфт для меню інтэрфейсу."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Колер шрыфта (чырвоны)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Колер шрыфта (зялёны)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Колер шрыфта (сіні)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -14648,24 +14624,12 @@ MSG_HASH(
    "Адлюстроўвае шрыфт ніжняга меню. Уключыце, каб бачыць апісанне кнопак на ніжнім экране. Адкідае даты захаванняў стану."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
-   "Чырвоны колер шрыфта"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "Рэгулюе чырвоны колер шрыфта ніжняга экрана."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
-   "Зялёны колер шрыфта"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "Рэгулюе зялёны колер шрыфта ніжняга экрана."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
-   "Сіні колер шрыфта"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

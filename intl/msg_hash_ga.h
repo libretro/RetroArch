@@ -6971,14 +6971,6 @@ MSG_HASH(
    "Roghnaigh íomhá le socrú mar chúlra an roghchláir. Sáróidh íomhánna láimhe agus dinimiciúla 'Téama Datha'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "Teimhneacht an Chúlra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "Modhnaigh teimhneacht na híomhá cúlra."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "Teimhneacht"
    )
@@ -11564,10 +11556,6 @@ MSG_HASH(
    "An beochan a spreagtar nuair a osclaítear fo-roghchlár."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Fachtóir Alfa Téama Dath"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    "Deilbhín an Roghchláir Reatha"
    )
@@ -11594,18 +11582,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Roghnaigh cló príomhúil difriúil le húsáid ag an roghchlár."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Dath Cló (Dearg)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Dath Cló (Glas)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Dath Cló (Gorm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -15852,24 +15828,12 @@ MSG_HASH(
    "Taispeáin cló an roghchláir ag bun an leathanaigh. Cumasaigh chun cur síos ar na cnaipí a thaispeáint ar an scáileán ag bun an leathanaigh. Ní áirítear leis seo dáta an stáit shábhála."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
-   "Dath Cló Dearg"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "Coigeartaigh dath dearg cló bun an scáileáin."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
-   "Dath Cló Glas"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "Coigeartaigh dath glas cló bun an scáileáin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
-   "Dath Cló Gorm"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

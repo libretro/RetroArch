@@ -1999,10 +1999,6 @@ MSG_HASH(
    "Imaxe del fondu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "Opacidá del fondu"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "Opacidá"
    )

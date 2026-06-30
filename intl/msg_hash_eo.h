@@ -6983,14 +6983,6 @@ MSG_HASH(
    "Elekti bildon agordota kiel menua fono. Permanaj kaj dinamikaj bildoj transpasos \"Kolora etoso\"."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "Fona maldiafaneco"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "Modifi la maldiafanecon de la fona bildo."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "Maldiafaneco"
    )
@@ -11572,10 +11564,6 @@ MSG_HASH(
    "La animacio okazanta kiam oni malfermas submenuon."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Koloretosa alfa faktoro"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    "Kuranta menua piktogramo"
    )
@@ -11602,18 +11590,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Elekti malsaman ĉefan tiparon uzota de la menuo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Tiparkoloro (ruĝeco)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Tiparkoloro (verdeco)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Tiparkoloro (blueco)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -15876,24 +15852,12 @@ MSG_HASH(
    "Montri malsupran menuan tiparon. Ebligi por montri butonaj priskriboj en la malsupra ekrano. Ĉi tio ekskluzivas la konservostatan daton."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
-   "Ruĝeco de tiparkoloro"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "Alĝustigi la ruĝecon de la tiparo de la malsupra ekrano."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
-   "Verdeco de tiparkoloro"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "Alĝustigi la verdecon de la tiparo de la malsupra ekrano."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
-   "Blueco de tiparkoloro"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

@@ -6903,14 +6903,6 @@ MSG_HASH(
    "Vyberte obrázok ako pozadie menu. Manuálne a dynamické obrázky prepíšu 'Farebnú tému'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "Nepriehľadnosť pozadia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "Upraviť nepriehľadnosť obrázku pozadia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "Nepriehľadnosť"
    )
@@ -11252,10 +11244,6 @@ MSG_HASH(
    "Animácia, ktorá sa spustí pri otváraní vedľajšej ponuky."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Faktor priehľadnosti farebného motívu"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    "Aktuálna ikona ponuky"
    )
@@ -11282,18 +11270,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Vyberte iné hlavné písmo pre použitie v ponuke."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Farba písma (červená)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Farba písma (zelená)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Farba písma (modrá)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -15404,24 +15380,12 @@ MSG_HASH(
    "Zobraziť písmo spodnej ponuky. Povoľte pre zobrazenie popisov tlačidiel na spodnej obrazovke. Toto vylučuje dátum uloženého stavu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
-   "Farba písma červená"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "Upraviť červenú farbu písma spodnej obrazovky."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
-   "Farba písma zelená"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "Upraviť zelenú farbu písma spodnej obrazovky."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
-   "Farba písma modrá"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

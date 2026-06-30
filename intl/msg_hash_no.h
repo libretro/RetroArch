@@ -2763,10 +2763,6 @@ MSG_HASH(
    "Bakgrunnsbilde"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "Bakgrunnsopasitet"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "Opasitet"
    )
