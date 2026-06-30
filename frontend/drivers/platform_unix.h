@@ -29,6 +29,145 @@
 #define MAX_AXIS 10
 #endif
 
+#ifdef __OHOS__
+#include <ace/xcomponent/native_interface_xcomponent.h>
+#include <stdbool.h>
+#include <deviceinfo.h>
+#include <rthreads/rthreads.h>
+#include "../../input/input_driver.h"
+#include <native_window/external_window.h>
+#define PROP_VALUE_MAX 92
+
+
+typedef void (*input_keyboard_line_complete_t)(void *userdata, const char *line);
+extern bool ohos_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
+                                const char *label,
+                                input_keyboard_line_complete_t callback, void *userdata);
+
+extern void ohos_show_file_picker(void);
+extern void ohos_send_native_event(int event_id, int value);
+
+struct ohos_app;
+
+enum
+{
+   EVENT_ACTION_DOWN,
+   EVENT_ACTION_UP,
+   EVENT_ACTION_MOVE,
+   EVENT_ACTION_Cancel,
+   EVENT_ACTION_HOVER_ENTER,
+   EVENT_ACTION_HOVER_MOVE,
+   EVENT_ACTION_HOVER_HOVER_EXIT,
+   EVENT_ACTION_HOVER_HOVER_HOVER_CANCELT,
+};
+
+enum
+{
+   EVENT_NATIVE_OPEN_KEYBOARD,
+   EVENT_NATIVE_APP_SHUTDOWN,
+   EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE,
+   EVENT_NATIVE_SET_SCREEN_ORIENTATION,
+   EVENT_NATIVE_SHOW_FILE_PICKER,
+};
+enum {
+   KEY_EVENT_ACTION_DOWN,
+   KEY_EVENT_ACTION_UP,
+};
+
+typedef struct {
+   int id;
+   double x;
+   double  y;
+} TouchPoint;
+
+typedef struct {
+   int id;
+   int type;
+   int pointerCount;
+   TouchPoint touchPoints[10];
+   int64_t eventTime;
+} TouchEvent;
+
+typedef struct {
+   int type;
+   int keyCode;
+   int keySource;
+   int deviceId;
+   int64_t timestamp;
+} KeyEvent;
+
+char internal_storage_app_path[PATH_MAX_LENGTH];
+
+typedef struct {
+    char CONFIGFILE[PATH_MAX_LENGTH];
+    char IME[NAME_MAX];
+    char LIBRETRO[PATH_MAX_LENGTH];
+    char ROM[PATH_MAX_LENGTH];
+    char HAP[DIR_MAX_LENGTH];
+    char EXTERNAL[PATH_MAX_LENGTH];
+    char DATADIR[PATH_MAX_LENGTH];
+    char Lang[NAME_MAX];
+    int  DPI;
+} StartParams;
+
+
+extern struct ohos_app *g_ohos;
+
+struct ohos_app
+{
+   /* The application can place a pointer to its own state object
+    * here if it likes. */
+   void* userData;
+   StartParams* startParams;    
+   void* ohos_input;
+
+   /* When non-NULL, this is the window surface that the app can draw in. */
+   OHNativeWindow* window;
+    
+   OH_NativeXComponent *nativeComponent;
+    
+   /* Below are "private" implementation of the glue code. */
+   slock_t *mutex;
+   scond_t *cond;
+
+   int msgread;
+   int msgwrite;
+
+   sthread_t *thread;
+
+   int running;
+   int destroyed;
+
+   /*  Below are "private" implementation of RA code. */
+   bool unfocused;
+   unsigned accelerometer_event_rate;
+   unsigned gyroscope_event_rate;
+   uint64_t sensor_state_mask;
+   unsigned detected_screen_rotation;
+   float    gravity_accum_x;
+   float    gravity_accum_y;
+   unsigned gravity_sample_count;
+   bool     gravity_calibrated;
+   char current_ime[NAME_MAX_LENGTH];
+   bool input_alive;
+   int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
+   int8_t hat_state[DEFAULT_MAX_PADS][2];
+
+   struct
+   {
+      unsigned width, height;
+      bool changed;
+   } content_rect;
+   uint16_t rumble_last_strength_strong[MAX_USERS];
+   uint16_t rumble_last_strength_weak[MAX_USERS];
+   uint16_t rumble_last_strength[MAX_USERS];
+   int id[MAX_USERS];
+
+   bool is_play_store_build;
+
+};
+#endif
+
 #ifdef ANDROID
 #include <jni.h>
 #include <poll.h>

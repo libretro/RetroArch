@@ -336,6 +336,7 @@ VkBool32 vulkan_symbol_wrapper_load_core_device_symbols(VkDevice device);
 VkBool32 vulkan_symbol_wrapper_load_instance_symbol(VkInstance instance, const char *name, PFN_vkVoidFunction *ppSymbol);
 VkBool32 vulkan_symbol_wrapper_load_device_symbol(VkDevice device, const char *name, PFN_vkVoidFunction *ppSymbol);
 
+
 #define VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, name, pfn) vulkan_symbol_wrapper_load_instance_symbol(instance, name, (PFN_vkVoidFunction*) &(pfn))
 #define VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(instance, name) vulkan_symbol_wrapper_load_instance_symbol(instance, #name, (PFN_vkVoidFunction*) & name)
 #define VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, name, pfn) vulkan_symbol_wrapper_load_device_symbol(device, name, (PFN_vkVoidFunction*) &(pfn))

@@ -14,6 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef __OHOS__
+#include "vulkan/vulkan_ohos.h"
+#endif
 #include <retro_assert.h>
 #include <dynamic/dylib.h>
 #include <lists/string_list.h>
@@ -1025,6 +1028,9 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       case VULKAN_WSI_ANDROID:
          required_extensions[required_extension_count++] = "VK_KHR_android_surface";
          break;
+      case VULKAN_WSI_OHOS:
+         required_extensions[required_extension_count++] = "VK_OHOS_surface";
+         break;
       case VULKAN_WSI_WIN32:
          required_extensions[required_extension_count++] = "VK_KHR_win32_surface";
          break;
@@ -1573,6 +1579,32 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
                return false;
             }
             RARCH_LOG("[Vulkan] Created Android surface: %llu.\n",
+                  (unsigned long long)vk->vk_surface);
+         }
+#endif
+         break;
+      case VULKAN_WSI_OHOS:
+#ifdef __OHOS__
+         {
+            VkSurfaceCreateInfoOHOS surf_info;
+            PFN_vkCreateSurfaceOHOS create;
+        
+            create  = (PFN_vkCreateSurfaceOHOS)dylib_proc(vulkan_library, "vkCreateSurfaceOHOS");
+            if (create == NULL)
+               return false;
+
+            surf_info.sType  = VK_STRUCTURE_TYPE_SURFACE_CREATE_INFO_OHOS;
+            surf_info.pNext  = NULL;
+            surf_info.flags  = 0;
+            surf_info.window = (OHNativeWindow*)surface;
+
+            if (create(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+            {
+               RARCH_ERR("[Vulkan] Failed to create ohos surface.\n");
+               return false;
+            }
+            RARCH_LOG("[Vulkan] Created ohos surface: %llu.\n",
                   (unsigned long long)vk->vk_surface);
          }
 #endif
@@ -2664,7 +2696,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    GetInstanceProcAddr =
       (PFN_vkGetInstanceProcAddr)dylib_proc(vulkan_library, "vkGetInstanceProcAddr");
-
+  
    if (!GetInstanceProcAddr)
    {
       RARCH_ERR("[Vulkan] Failed to load vkGetInstanceProcAddr symbol, broken loader?\n");

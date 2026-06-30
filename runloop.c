@@ -3556,8 +3556,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
          {
+
 #if TARGET_OS_IPHONE
             *(bool*)data             = jit_available();
+#elif defined (__OHOS__)
+            *(bool*)data             =  false;
 #else
             *(bool*)data             = true;
 #endif

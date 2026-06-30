@@ -87,6 +87,10 @@
 #include "../ui/drivers/cocoa/apple_platform.h"
 #endif
 
+#ifdef __OHOS__
+#include "../frontend/drivers/platform_unix.h"
+#endif
+
 typedef struct menu_input_ctx_bind
 {
    char *s;
@@ -8073,6 +8077,17 @@ bool menu_input_dialog_start_search(void)
          menu);
 #endif
 
+#ifdef __OHOS__
+   /* Use ohos native keyboard instead of custom on-screen keyboard */
+   ohos_keyboard_start(
+         (char **)menu_st->input_dialog_keyboard_buffer,
+         &input_st->keyboard_line.size,
+         &input_st->keyboard_line.ptr,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
+         menu_input_search_cb,
+         menu);
+#endif
+    
    /* While reading keyboard line input, we have to block all hotkeys. */
    input_st->flags                        |= INP_FLAG_KB_MAPPING_BLOCKED;
 
@@ -8145,7 +8160,17 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
          line->cb,
          menu);
 #endif
-
+    
+#ifdef __OHOS__
+   /* Use ohos native keyboard instead of custom on-screen keyboard */
+   ohos_keyboard_start(
+         (char **)menu_st->input_dialog_keyboard_buffer,
+         &input_st->keyboard_line.size,
+         &input_st->keyboard_line.ptr,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
+         menu_input_search_cb,
+         menu);
+#endif
    /* While reading keyboard line input, we have to block all hotkeys. */
    input_st->flags |= INP_FLAG_KB_MAPPING_BLOCKED;
 

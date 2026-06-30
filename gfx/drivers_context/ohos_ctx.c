@@ -1,0 +1,348 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include <stdint.h>
+
+
+#include <formats/image.h>
+#include <string/stdstring.h>
+#include <compat/strl.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_EGL
+#include "../common/egl_common.h"
+#endif
+
+#include "../../frontend/frontend_driver.h"
+#include "../../frontend/drivers/platform_unix.h"
+#include "../../verbosity.h"
+#include "../../configuration.h"
+
+#ifdef HAVE_OPENGLES
+#ifndef EGL_OPENGL_ES3_BIT_KHR
+#define EGL_OPENGL_ES3_BIT_KHR                  0x0040
+#endif
+#endif
+
+typedef struct
+{
+#ifdef HAVE_EGL
+   egl_ctx_data_t egl;
+#endif
+} ohos_ctx_data_t;
+
+/* TODO/FIXME - static globals */
+static enum gfx_ctx_api ohos_api           = GFX_CTX_NONE;
+#ifdef HAVE_OPENGLES
+static bool g_es3                             = false;
+#endif
+
+/* FORWARD DECLARATION */
+bool ohos_display_get_metrics(void *data,
+      enum display_metric_types type, float *value);
+bool ohos_display_has_focus(void *data);
+
+static void ohos_gfx_ctx_destroy(void *data)
+{
+   ohos_ctx_data_t *and         = (ohos_ctx_data_t*)data;
+
+   if (!and)
+      return;
+
+#ifdef HAVE_EGL
+   egl_destroy(&and->egl);
+#endif
+
+   free(data);
+}
+const int EGL_BLUE_SIZE_DEFAULT = 8;
+const int EGL_RED_SIZE_DEFAULT = 8;
+const int EGL_GREEN_SIZE_DEFAULT = 8;
+const int EGL_ALPHA_SIZE_DEFAULT = 8;
+
+static void *ohos_gfx_ctx_init(void *video_driver)
+{
+
+#ifdef HAVE_OPENGLES
+   EGLint n, major, minor;
+   EGLint format;
+#ifdef DEBUG
+   struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+   bool debug                           = hwr->debug_context;
+#endif
+   EGLint attribs[]                     = {
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+      EGL_BLUE_SIZE, 8,
+      EGL_GREEN_SIZE, 8,
+      EGL_RED_SIZE, 8,
+      EGL_ALPHA_SIZE, 8,
+      EGL_DEPTH_SIZE, 16,
+      EGL_NONE
+   };
+#endif
+   struct ohos_app *ohos_app      = (struct ohos_app*)g_ohos;
+   ohos_ctx_data_t        *and       = (ohos_ctx_data_t*)
+      calloc(1, sizeof(*and));
+
+   /* Separate the two checks so the combined bail doesn't leak
+    * 'and' when it succeeded but ohos_app was NULL.  In the
+    * pre-patch form both conditions shared one return without
+    * a free.  Also fixed the return value: the pre-patch
+    * 'return false' was 'return 0' which is NULL for a void*-
+    * returning function but sloppy; use NULL explicitly. */
+   if (!and)
+      return NULL;
+   if (!ohos_app)
+   {
+      free(and);
+      return NULL;
+   }
+ 
+#ifdef HAVE_OPENGLES
+   if (g_es3)
+      attribs[1]                        = EGL_OPENGL_ES3_BIT_KHR;
+#endif
+
+#ifdef HAVE_EGL
+   RARCH_LOG("[ohos] EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
+
+   if (!egl_init_context(&and->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
+            &major, &minor, &n, attribs, NULL))
+   {
+      egl_report_error();
+      goto error;
+   }
+   if (!egl_get_native_visual_id(&and->egl, &format))
+      goto error;
+#endif
+
+   slock_lock(ohos_app->mutex);
+   if (!ohos_app->window)
+   {
+      slock_unlock(ohos_app->mutex);
+      ohos_gfx_ctx_destroy(and);
+      return NULL;
+   }
+ 
+   slock_unlock(ohos_app->mutex);
+   return and;
+
+error:
+   ohos_gfx_ctx_destroy(and);
+
+   return NULL;
+}
+
+static void ohos_gfx_ctx_get_video_size(void *data,
+      unsigned *width, unsigned *height)
+{
+#ifdef HAVE_EGL
+   ohos_ctx_data_t *and  = (ohos_ctx_data_t*)data;
+   egl_get_video_size(&and->egl, width, height);
+#endif
+}
+
+static void ohos_gfx_ctx_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height)
+{
+   unsigned new_width       = 0;
+   unsigned new_height      = 0;
+   ohos_ctx_data_t *and  = (ohos_ctx_data_t*)data;
+
+   *quit                    = false;
+
+#ifdef HAVE_EGL
+   egl_get_video_size(&and->egl, &new_width, &new_height);
+#endif
+
+   if (new_width != *width || new_height != *height)
+   {
+      RARCH_LOG("[ohos] Resizing (%u x %u) -> (%u x %u).\n",
+              *width, *height, new_width, new_height);
+
+      *width  = new_width;
+      *height = new_height;
+      *resize = true;
+   }
+}
+
+static bool ohos_gfx_ctx_set_resize(void *data,
+      unsigned width, unsigned height) { return false; }
+
+static bool ohos_gfx_ctx_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen)
+{
+#if defined(HAVE_OPENGLES)
+   struct ohos_app *ohos_app = (struct ohos_app*)g_ohos;
+   ohos_ctx_data_t         *and = (ohos_ctx_data_t*)data;
+#if defined(HAVE_EGL)
+   EGLint     context_attributes[] = {
+      EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
+#ifdef DEBUG
+      EGL_CONTEXT_FLAGS_KHR, debug ? EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR : 0,
+#endif
+      EGL_NONE
+   };
+
+   if (ohos_api == GFX_CTX_OPENGL_ES_API)
+   {
+      if (!egl_create_context(&and->egl, context_attributes))
+      {
+         egl_report_error();
+         return false;
+      }
+      if (!egl_create_surface(&and->egl, ohos_app->window))
+         return false;
+   }
+#endif
+#endif
+   return true;
+}
+
+static void ohos_gfx_ctx_input_driver(void *data,
+      const char *joypad_name,
+      input_driver_t **input, void **input_data)
+{
+   void *ohosinput   = input_driver_init_wrap(&input_ohos, joypad_name);
+
+   *input               = ohosinput ? &input_ohos : NULL;
+   *input_data          = ohosinput;
+}
+
+static enum gfx_ctx_api ohos_gfx_ctx_get_api(void *data)
+{
+   return ohos_api;
+}
+
+static bool ohos_gfx_ctx_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
+{
+   unsigned version;
+   ohos_api = api;
+
+#ifdef HAVE_OPENGLES
+   version     = major * 100 + minor;
+   if (version >= 300)
+      g_es3    = true;
+   if (api == GFX_CTX_OPENGL_ES_API)
+      return true;
+#endif
+   return false;
+}
+
+static bool ohos_gfx_ctx_suppress_screensaver(void *data, bool enable) { return false; }
+
+static void ohos_gfx_ctx_swap_buffers(void *data)
+{
+#ifdef HAVE_EGL
+   ohos_ctx_data_t *and  = (ohos_ctx_data_t*)data;
+   egl_swap_buffers(&and->egl);
+#endif
+}
+
+static void ohos_gfx_ctx_set_swap_interval(void *data, int swap_interval)
+{
+#ifdef HAVE_EGL
+   ohos_ctx_data_t *and  = (ohos_ctx_data_t*)data;
+   egl_set_swap_interval(&and->egl, swap_interval);
+#endif
+}
+
+static void ohos_gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+#ifdef HAVE_EGL
+   ohos_ctx_data_t *and  = (ohos_ctx_data_t*)data;
+   egl_bind_hw_render(&and->egl, enable);
+#endif
+}
+
+static uint32_t ohos_gfx_ctx_get_flags(void *data)
+{
+   uint32_t flags = 0;
+
+#ifdef HAVE_GLSL
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
+
+   return flags;
+}
+
+static void ohos_gfx_ctx_set_flags(void *data, uint32_t flags) { }
+
+static bool ohos_gfx_ctx_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   struct ohos_app *ohos_app = (struct ohos_app*)g_ohos;
+   ohos_ctx_data_t *and = (ohos_ctx_data_t*)data;
+   return egl_create_surface(&and->egl, ohos_app->window);
+#else
+   return false;
+#endif
+}
+
+static bool ohos_gfx_ctx_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   ohos_ctx_data_t *and = (ohos_ctx_data_t*)data;
+   return egl_destroy_surface(&and->egl);
+#else
+   return false;
+#endif
+}
+
+const gfx_ctx_driver_t gfx_ctx_ohos = {
+   ohos_gfx_ctx_init,
+   ohos_gfx_ctx_destroy,
+   ohos_gfx_ctx_get_api,
+   ohos_gfx_ctx_bind_api,
+   ohos_gfx_ctx_set_swap_interval,
+   ohos_gfx_ctx_set_video_mode,
+   ohos_gfx_ctx_get_video_size,
+   NULL, /* get_refresh_rate */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_metrics - handled by display server */
+   NULL,
+   NULL, /* update_title */
+   ohos_gfx_ctx_check_window,
+   ohos_gfx_ctx_set_resize,
+   ohos_display_has_focus,
+   ohos_gfx_ctx_suppress_screensaver,
+   false, /* has_windowed */
+   ohos_gfx_ctx_swap_buffers,
+   ohos_gfx_ctx_input_driver,
+#ifdef HAVE_EGL
+   egl_get_proc_address,
+#else
+   NULL,
+#endif
+   NULL,
+   NULL,
+   NULL,
+   "egl_ohos",
+   ohos_gfx_ctx_get_flags,
+   ohos_gfx_ctx_set_flags,
+   ohos_gfx_ctx_bind_hw_render,
+   NULL,
+   NULL,
+   ohos_gfx_ctx_create_surface,
+   ohos_gfx_ctx_destroy_surface
+};

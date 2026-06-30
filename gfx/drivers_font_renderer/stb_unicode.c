@@ -332,6 +332,9 @@ static const char *font_renderer_stb_unicode_get_default_font(void)
       "/system/fonts/DroidSansMono.ttf",
       "/system/fonts/CutiveMono.ttf",
       "/system/fonts/DroidSans.ttf",
+#elif defined(__OHOS__)
+      "/system/fonts/HarmonyOS_Sans_SC.ttf",
+      "/system/fonts/HarmonyOS_Sans_TC.ttf",
 #elif defined(VITA)
       "vs0:data/external/font/pvf/c041056ts.ttf",
       "vs0:data/external/font/pvf/d013013ds.ttf",

@@ -165,6 +165,9 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(ANDROID)
    &gfx_ctx_android,
 #endif
+#if defined(OHOS)
+   &gfx_ctx_ohos,
+#endif
 #if defined(__QNX__)
    &gfx_ctx_qnx,
 #endif
@@ -1306,6 +1309,8 @@ void* video_display_server_init(enum rarch_display_type type)
       default:
 #if defined(ANDROID)
          current_display_server = &dispserv_android;
+#elif defined (OHOS)
+        current_display_server = &dispserv_ohos;
 #elif defined(__APPLE__)
          current_display_server = &dispserv_apple;
 #else

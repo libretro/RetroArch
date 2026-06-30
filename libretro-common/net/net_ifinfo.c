@@ -43,6 +43,9 @@
 #endif
 #endif
 #endif
+#ifdef __OHOS__
+#include <linux/if.h>
+#endif
 
 #include <net/net_ifinfo.h>
 

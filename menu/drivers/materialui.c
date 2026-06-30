@@ -2677,7 +2677,11 @@ static void materialui_draw_thumbnail(
    float bg_y      = y - (bg_height - (float)mui->thumbnail_height_max) / 2.0f;
 
    /* If thumbnail is missing, draw fallback image... */
+   #ifdef __OHOS__
+   switch (atomic_load(&thumbnail->status))
+   #else
    switch (thumbnail->status)
+   #endif
    {
       case GFX_THUMBNAIL_STATUS_MISSING:
          {

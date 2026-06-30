@@ -1,0 +1,12 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "libretroarch.so": "file:./src/main/cpp/types/libretroarch",
+    "xb_components":"file:../xb_components"
+  }
+}

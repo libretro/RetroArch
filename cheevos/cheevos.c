@@ -94,10 +94,18 @@ static rcheevos_locals_t rcheevos_locals =
     * under CXX_BUILD (std::atomic<int>) this list-initializes via the
     * converting constructor rather than the deleted copy constructor;
     * for the C backends {0} is an equivalent scalar initializer. */
+   #ifdef __OHOS__
+   /*
+      ohos not support C++23
+   */
+   ATOMIC_VAR_INIT(0),
+   ATOMIC_VAR_INIT(0),
+   #else
    {0},
    /* load_generation (atomic). Starts at 0; bumped by
     * rcheevos_unload and rcheevos_load. */
    {0},
+   #endif
 #endif
    "",   /* user_agent_prefix */
    "",   /* user_agent_core */

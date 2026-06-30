@@ -75,6 +75,9 @@
 #ifdef ANDROID
 #include "../frontend/drivers/platform_unix.h"
 #endif
+#ifdef __OHOS__
+#include "../frontend/drivers/platform_unix.h"
+#endif
 
 #include "../ai/game_ai.h"
 
@@ -289,7 +292,7 @@ input_device_driver_t *joypad_drivers[] = {
 #ifdef HAVE_UDEV
    &udev_joypad,
 #endif
-#if defined(__linux) && !defined(ANDROID)
+#if defined(__linux) && !defined(ANDROID) && !defined(OHOS)
    &linuxraw_joypad,
 #endif
 #ifdef HAVE_PARPORT
@@ -297,6 +300,9 @@ input_device_driver_t *joypad_drivers[] = {
 #endif
 #ifdef ANDROID
    &android_joypad,
+#endif
+#ifdef __OHOS__
+   &ohos_joypad,
 #endif
 #if defined(HAVE_SDL3) || defined(HAVE_SDL) || defined(HAVE_SDL2)
    &sdl_joypad,
@@ -392,10 +398,13 @@ input_driver_t *input_drivers[] = {
 #ifdef ANDROID
    &input_android,
 #endif
+#ifdef __OHOS__
+   &input_ohos,
+#endif
 #ifdef HAVE_UDEV
    &input_udev,
 #endif
-#if defined(__linux__) && !defined(ANDROID)
+#if defined(__linux__) && !defined(ANDROID) && !defined(OHOS)
    &input_linuxraw,
 #endif
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)

@@ -529,8 +529,11 @@
 
 /* Only applies to Android 9.0 (API 28) and up */
 /* Choose if the screen will be able to write around the notch or not */
+#ifdef __OHOS__
+#define DEFAULT_NOTCH_WRITE_OVER_ENABLE true
+#else
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
-
+#endif
 /* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
 
@@ -790,8 +793,11 @@
 #ifdef HAVE_NETWORKING
 #define DEFAULT_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS true
 #endif
-
+#ifdef __OHOS__
+#define DEFAULT_MENU_SHOW_ONLINE_UPDATER false
+#else
 #define DEFAULT_MENU_SHOW_ONLINE_UPDATER true
+#endif
 #if defined(HAVE_LAKKA) || defined(VITA)
 #define DEFAULT_MENU_SHOW_CORE_UPDATER false
 #else
@@ -865,6 +871,15 @@
 #define DEFAULT_CONTENT_SHOW_MUSIC false
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 #define DEFAULT_CONTENT_SHOW_VIDEO true
+#endif
+#if defined(HAVE_NETWORKING)
+#if defined(_3DS)
+#define DEFAULT_CONTENT_SHOW_NETPLAY false
+#elif defined(__OHOS__)
+#define DEFAULT_CONTENT_SHOW_NETPLAY false
+#else
+#define DEFAULT_CONTENT_SHOW_NETPLAY true
+#endif
 #endif
 
 #define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
@@ -994,7 +1009,7 @@
 #define DEFAULT_INPUT_BACKTOUCH_TOGGLE false
 #endif
 
-#if defined(ANDROID) || defined(IOS)
+#if defined(ANDROID) || defined(IOS) || defined (__OHOS__)
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED true
 #else
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED false
@@ -1241,7 +1256,7 @@
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && defined(HAVE_AL))
+#if defined(ANDROID) || defined (OHOS) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && defined(HAVE_AL))
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #define DEFAULT_IN_LATENCY 128
@@ -1250,8 +1265,14 @@
 #define DEFAULT_IN_LATENCY 64
 #endif
 
+#ifdef __OHOS__
+/* OHOS has a bug that blocks the thread */
+#define DEFAULT_AUDIO_SYNC false
+#else
+
 /* Will sync audio. (recommended) */
 #define DEFAULT_AUDIO_SYNC true
+#endif
 
 /* Audio rate control. */
 #if !defined(RARCH_CONSOLE)
@@ -1606,6 +1627,8 @@
 #if defined(VITA)
 #define DEFAULT_MENU_SCALE_FACTOR 1.5f
 #elif defined(__ANDROID__)
+#define DEFAULT_MENU_SCALE_FACTOR 0.75f
+#elif defined(__OHOS__)
 #define DEFAULT_MENU_SCALE_FACTOR 0.75f
 #else
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f

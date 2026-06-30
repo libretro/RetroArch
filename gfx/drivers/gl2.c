@@ -3362,9 +3362,12 @@ static void gl2_render_osd_background(gl2_t *gl, bool video_scale_integer, const
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
    float video_font_size   = settings->floats.video_font_size;
+   #ifdef __OHOS__
+   int msg_width           = font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
+   #else
    int msg_width           =
       gl2_raster_font_get_message_width(gl, msg, strlen(msg), 1.0f);
-
+   #endif
    /* shader driver expects vertex coords as 0..1 */
    float x                 = settings->floats.video_msg_pos_x;
    float y                 = settings->floats.video_msg_pos_y;
@@ -3793,7 +3796,7 @@ static bool gl2_frame(void *data, const void *frame,
    /* Set prev textures. */
    gl2_renderchain_bind_prev_texture(gl,
          chain, &gl->tex_info);
-
+     
 #ifdef HAVE_OVERLAY
    if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
       gl2_render_overlay(gl);

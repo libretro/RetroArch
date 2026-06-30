@@ -16,6 +16,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -61,6 +62,11 @@
 #include <vfs/vfs_implementation_saf.h>
 #include "../../menu/menu_cbs.h"
 #endif
+#endif
+#ifdef __OHOS__
+#include <ace/xcomponent/native_interface_xcomponent.h>
+#include "napi/native_api.h"
+#include "hilog/log.h"
 #endif
 
 #if defined(DINGUX)
@@ -127,6 +133,12 @@ static char app_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
 static uint8_t g_platform_android_flags  = 0;
+#elif defined(__OHOS__)
+static pthread_key_t thread_key;
+static char app_dir[DIR_MAX_LENGTH];
+unsigned storage_permissions             = 0;
+struct ohos_app *g_ohos            = NULL;
+static napi_threadsafe_function g_native_event_tsfn = NULL;
 #else
 #define PROC_APM_PATH                    "/proc/apm"
 #define PROC_ACPI_BATTERY_PATH           "/proc/acpi/battery"
@@ -223,7 +235,6 @@ int system_property_get(const char *command,
    pclose(pipe);
    return __len;
 }
-
 #ifdef ANDROID
 /* forward declaration */
 bool android_run_events(void *data);
@@ -740,6 +751,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
    }
 #endif
 }
+#elif defined(__OHOS__)
 
 #elif !defined(DINGUX)
 static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
@@ -1280,6 +1292,8 @@ static enum frontend_powerstate frontend_unix_get_powerstate(
    *percent = battery_level;
 
    ret = (enum frontend_powerstate)powerstate;
+#elif defined(__OHOS__)
+
 #elif defined(RETROFW)
    *percent = retrofw_get_battery_level(&ret);
 
@@ -1464,6 +1478,13 @@ static size_t frontend_unix_get_os(char *s,
    int rel;
    frontend_android_get_version(major, minor, &rel);
    _len = strlcpy(s, "Android", len);
+#elif defined(__OHOS__)
+   *major = 0;
+   char buffer[128];
+   const char* os = OH_GetDistributionOSName();
+   const char* version = OH_GetDistributionOSVersion();
+   snprintf(buffer, sizeof(buffer), "%s %s", os, version);
+  _len = strlcpy(s, buffer, len);
 #else
    char *ptr;
    struct utsname buffer;
@@ -1932,6 +1953,229 @@ static void frontend_unix_get_env(int *argc,
       g_defaults.overlay_enable = false;
       strlcpy(g_defaults.settings_menu, "ozone", sizeof(g_defaults.settings_menu));
    }
+#elif defined(__OHOS__)
+   int32_t major, minor, rel;
+   struct rarch_main_wrap      *args  = NULL;
+   struct ohos_app   *ohos_app  = (struct ohos_app*)data;
+   char parent_path[PATH_MAX_LENGTH];
+
+   if (!ohos_app)
+      return;
+
+   if ((args = (struct rarch_main_wrap*)params_data))
+   {
+      args->flags     &= ~(RARCH_MAIN_WRAP_FLAG_VERBOSE
+                         | RARCH_MAIN_WRAP_FLAG_NO_CONTENT);
+      args->flags     |=   RARCH_MAIN_WRAP_FLAG_TOUCHED;
+      args->sram_path  = NULL;
+      args->state_path = NULL;
+   }
+
+   OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
+      "RetroArch", "[ENV] ohos version (major : %{public}d, minor : %{public}d, rel : %{public}d)\n",
+         major, minor, rel);
+   OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
+      "RetroArch", "[ENV] Checking arguments passed from intent ...\n");
+
+   /* Config file. */
+   if (!string_is_equal(ohos_app->startParams->CONFIGFILE, ""))
+   {
+      static char config_path[PATH_MAX_LENGTH] = {0};
+      const char *argv = ohos_app->startParams->CONFIGFILE;
+
+      if (argv && *argv)
+         strlcpy(config_path, argv, sizeof(config_path));
+
+      OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
+         "RetroArch", "[ENV] Config file: \"%{public}s\".\n", config_path);
+      if (args && *config_path)
+         args->config_path = config_path;
+   }
+
+   /* Current IME. */;
+   if (!string_is_equal(ohos_app->startParams->IME, ""))
+   {
+      const char *argv = ohos_app->startParams->IME;
+      strlcpy(ohos_app->current_ime, argv,
+            sizeof(ohos_app->current_ime));
+      OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
+         "RetroArch", "[ENV] Current IME: \"%{public}s\".\n", ohos_app->current_ime);
+   }
+
+   /* LIBRETRO. */
+   if (!string_is_equal(ohos_app->startParams->LIBRETRO, ""))
+   {
+      static char core_path[PATH_MAX_LENGTH];
+      const char *argv = ohos_app->startParams->LIBRETRO;
+      *core_path = '\0';
+      if (argv && *argv)
+         strlcpy(core_path, argv, sizeof(core_path));
+      OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
+         "RetroArch", "[ENV] Libretro path: \"%{public}s\".\n", core_path);
+      if (args && *core_path)
+         args->libretro_path = core_path;
+   }
+
+   /* Content. */
+    if (!string_is_equal(ohos_app->startParams->ROM, ""))
+   {
+      static char path[PATH_MAX_LENGTH];
+      const char *argv = ohos_app->startParams->ROM;
+      *path = '\0';
+      if (argv && *argv)
+         strlcpy(path, argv, sizeof(path));
+      if (*path)
+      {
+         OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
+            "RetroArch", "[ENV] Auto-start game \"%{public}s\".\n", path);
+         if (args && *path)
+            args->content_path = path;
+      }
+   }
+
+   if (!string_is_equal(ohos_app->startParams->EXTERNAL, ""))
+   {
+      const char *argv = ohos_app->startParams->EXTERNAL;
+      *internal_storage_app_path = '\0';
+
+      if (argv && *argv)
+         strlcpy(internal_storage_app_path, argv,
+               sizeof(internal_storage_app_path));
+
+      if (*internal_storage_app_path)
+      {
+         OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+            "RetroArch", "[ENV] ohos external files location \"%{public}s\".\n",
+            internal_storage_app_path);
+      }
+   }
+
+   /* Content. */
+  if (!string_is_equal(ohos_app->startParams->DATADIR, ""))
+   {
+      const char *argv = ohos_app->startParams->DATADIR;
+
+      *app_dir = '\0';
+
+      if (argv && *argv)
+         strlcpy(app_dir, argv, sizeof(app_dir));
+
+      OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+         "RetroArch", "[ENV] App dir: \"%{public}s\".\n", app_dir);
+
+      /* code to populate default paths*/
+      if (*app_dir)
+      {
+         OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+            "RetroArch", "[ENV] Application location: \"%{public}s\".\n", app_dir);
+         if (args && *app_dir)
+         {
+                
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], app_dir,
+                  "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], app_dir,
+                  "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], app_dir,
+                  "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], app_dir,
+                  "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
+            
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], ohos_app->startParams->LIBRETRO,
+                  "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+                
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+                  app_dir, "info",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+                  app_dir, "autoconfig",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+                  app_dir, "filters/audio",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+                  app_dir, "filters/video",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+            strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
+                  app_dir, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+                  app_dir, "database/rdb",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
+                  app_dir, "assets/wallpapers",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
+
+            strlcpy(parent_path, app_dir, sizeof(parent_path));
+            if (!string_is_equal(ohos_app->startParams->EXTERNAL, "")){
+               strlcpy(parent_path, internal_storage_app_path, sizeof(parent_path));
+            }
+
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
+                  parent_path, "saves",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+                  parent_path, "states",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+                  parent_path, "system",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+                  parent_path, "screenshots",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+                  parent_path, "downloads",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+                  parent_path, "logs",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+
+            /* remaps is nested in config */
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+                  parent_path, "config",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+                  g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
+                  parent_path, "thumbnails",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+                  parent_path, "playlists",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+                  parent_path, "cheats",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
+                  parent_path, "temp",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+
+            OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+               "RetroArch", "[ENV] Default savefile folder: \"%{public}s\".",
+               g_defaults.dirs[DEFAULT_DIR_SRAM]);
+            OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+               "RetroArch", "[ENV] Default savestate folder: \"%{public}s\".",
+               g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
+            OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+               "RetroArch", "[ENV] Default system folder: \"%{public}s\".",
+               g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
+            OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+               "RetroArch", "[ENV] Default screenshot folder: \"%{public}s\".",
+               g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]);
+         }
+      }
+   }
+   /* For gamepad-like/console devices:
+    *
+    * - Explicitly disable input overlay by default
+    * - Use Ozone menu driver by default
+    *
+    * */
+
+   g_defaults.settings_video_refresh_rate =  120.0;
+   g_defaults.overlay_set    = true;
+   g_defaults.overlay_enable = true;
+   strlcpy(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
 #else
    char base_path[PATH_MAX] = {0};
 #if defined(RARCH_UNIX_CWD_ENV)
@@ -2276,6 +2520,21 @@ static void frontend_unix_deinit(void *data)
 
 static void frontend_unix_init(void *data)
 {
+   #if defined(__OHOS__)
+   struct ohos_app* ohos_app  = (struct ohos_app*)data;
+   slock_lock(ohos_app->mutex);
+   ohos_app->running = 1;
+   scond_broadcast(ohos_app->cond);
+   slock_unlock(ohos_app->mutex);
+
+       
+   while (!ohos_app->window)
+   {
+        if(ohos_app->window != NULL){
+            break;
+        }
+   }
+#endif
 #ifdef ANDROID
    char device_model[PROP_VALUE_MAX] = {0};
    JNIEnv                     *env   = NULL;
@@ -2530,7 +2789,24 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
    }
-
+#elif defined(__OHOS__)
+    menu_entries_append(list,
+            g_ohos->startParams->DATADIR,
+            msg_hash_to_str(MSG_INTERNAL_STORAGE),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+    if(!string_is_equal(g_ohos->startParams->EXTERNAL, "")){
+         menu_entries_append(list,
+            g_ohos->startParams->EXTERNAL,
+            msg_hash_to_str(MSG_INTERNAL_STORAGE),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+    }
+    menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
+         MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
+         MENU_SETTING_ACTION, 0, 0, NULL);
 #elif defined(WEBOS)
    if (path_is_directory("/media/developer/temp"))
       menu_entries_append(list, "/media/developer/temp",
@@ -2620,6 +2896,8 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
 #ifdef ANDROID
    if (!g_android->is_play_store_build)
+#elif defined(__OHOS__)
+   if (0)     
 #else
    if (1)
 #endif
@@ -2975,7 +3253,7 @@ static void frontend_unix_destroy_signal_handler_state(void)
    unix_sighandler_quit = 0;
 }
 
-/* To free change_data, call the function again with a NULL 
+/* To free change_data, call the function again with a NULL
  * string_list while providing change_data again */
 static void frontend_unix_watch_path_for_changes(struct string_list *list,
    int flags, path_change_data_t **change_data)
@@ -3204,7 +3482,7 @@ static void frontend_unix_set_sustained_performance_mode(bool on)
 
 static const char* frontend_unix_get_cpu_model_name(void)
 {
-#ifdef ANDROID
+#if defined (ANDROID) || defined (OHOS)
    return NULL;
 #else
    cpu_features_get_model_name(unix_cpu_model_name,
@@ -3237,6 +3515,14 @@ enum retro_language frontend_unix_get_user_language(void)
          (*env)->ReleaseStringUTFChars(env, jstr, lang_str);
       }
    }
+#elif defined(__OHOS__)
+      if (!g_ohos)
+         return RETRO_LANGUAGE_CHINESE_SIMPLIFIED;
+      if (!string_is_equal(g_ohos->startParams->Lang, ""))
+         lang = retroarch_get_language_from_iso(g_ohos->startParams->Lang);
+      else
+         return RETRO_LANGUAGE_CHINESE_SIMPLIFIED;
+      
 #else
    char *envvar = getenv("LANG");
    if (envvar)
@@ -3513,17 +3799,392 @@ static enum rarch_display_type frontend_unix_get_display_type(void)
    return RARCH_DISPLAY_NONE;
 }
 
+#ifdef __OHOS__
+typedef struct {
+    int event_id; 
+    int value;
+} NativeEventData;    
+void ohos_input_poll_touch_event(void* ohos_input, OH_NativeXComponent_TouchEvent data);
+void ohos_input_poll_key_event(void* ohos_input, KeyEvent* data);
+bool ohos_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
+                                const char *label,
+                                input_keyboard_line_complete_t callback, void *userdata){
+   ohos_send_native_event(EVENT_NATIVE_OPEN_KEYBOARD, 0);
+   return true;
+}
+void ohos_show_file_picker(){
+   ohos_send_native_event(EVENT_NATIVE_SHOW_FILE_PICKER, 0);
+}
+
+
+static void frontend_ohos_shutdown(bool unused)
+{
+   (void)unused;
+   /* Cleaner approaches don't work sadly. */
+   ohos_send_native_event(EVENT_NATIVE_APP_SHUTDOWN, 0);
+}
+
+void frontend_ohos_get_name(char *s, size_t len)
+{
+   const char *product = OH_GetProductModel();
+   strcpy(s, product);
+}
+
+static void ohos_app_entry(void *data)
+{
+   char arguments[]  = "retroarch";
+   char      *argv[] = {arguments,   NULL};
+   int          argc = 1;
+
+   rarch_main(argc, argv, data);
+}
+static napi_value StopApp(napi_env env, napi_callback_info info){
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
+   if(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED){
+      return NULL;
+   }
+   retroarch_main_quit();
+   return NULL;
+}
+    
+static napi_value StartApp(napi_env env, napi_callback_info info)
+{
+   size_t argc = 1;
+   napi_value args[1];
+   napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+   if (status != napi_ok || argc < 1) {
+     napi_throw_error(env, NULL, "params error");
+     return NULL;
+   }
+   napi_valuetype valuetype;
+   napi_typeof(env, args[0], &valuetype);
+   if (valuetype != napi_object) {
+     napi_throw_type_error(env, NULL, "param not is object");
+     return NULL;
+   }
+   static StartParams params;
+   napi_value name_value;
+   if (napi_get_named_property(env, args[0], "CONFIGFILE", &name_value) == napi_ok) {
+     size_t str_len;
+     napi_get_value_string_utf8(env, name_value, params.CONFIGFILE, sizeof(params.CONFIGFILE), &str_len);
+   }
+   if (napi_get_named_property(env, args[0], "DATADIR", &name_value) == napi_ok) {
+     size_t str_len;
+     napi_get_value_string_utf8(env, name_value, params.DATADIR, sizeof(params.DATADIR), &str_len);
+   }
+   if (napi_get_named_property(env, args[0], "IME", &name_value) == napi_ok) {
+     size_t str_len;
+     napi_get_value_string_utf8(env, name_value, params.IME, sizeof(params.IME), &str_len);
+   }
+   if (napi_get_named_property(env, args[0], "EXTERNAL", &name_value) == napi_ok) {
+     size_t str_len;
+     napi_get_value_string_utf8(env, name_value, params.EXTERNAL, sizeof(params.EXTERNAL), &str_len);
+   }
+   if (napi_get_named_property(env, args[0], "ROM", &name_value) == napi_ok) {
+     size_t str_len;
+     napi_get_value_string_utf8(env, name_value, params.ROM, sizeof(params.ROM), &str_len);
+   }
+   if (napi_get_named_property(env, args[0], "LIBRETRO", &name_value) == napi_ok) {
+     size_t str_len;
+     napi_get_value_string_utf8(env, name_value, params.LIBRETRO, sizeof(params.LIBRETRO), &str_len);
+   }
+   if (napi_get_named_property(env, args[0], "Lang", &name_value) == napi_ok) {
+     size_t str_len;
+     napi_get_value_string_utf8(env, name_value, params.Lang, sizeof(params.Lang), &str_len);
+   }
+   if (napi_get_named_property(env, args[0], "Dpi", &name_value) == napi_ok) {
+      napi_get_value_int32(env, name_value, &params.DPI);
+   }
+
+   int msgpipe[2];
+   struct ohos_app *ohos_app = g_ohos;
+
+   ohos_app->startParams = &params;
+   ohos_app->mutex    = slock_new();
+   ohos_app->cond     = scond_new();
+   if (!ohos_app->mutex || !ohos_app->cond)
+   {
+      if (ohos_app->mutex)
+         slock_free(ohos_app->mutex);
+      if (ohos_app->cond)
+         scond_free(ohos_app->cond);
+      free(ohos_app);
+      RARCH_ERR("Failed to allocate ohos_app locks.\n");
+      return NULL;
+   }
+   if (pipe(msgpipe))
+   {
+      slock_free(ohos_app->mutex);
+      scond_free(ohos_app->cond);
+      free(ohos_app);
+      return NULL;
+   }
+   ohos_app->msgread  = msgpipe[0];
+   ohos_app->msgwrite = msgpipe[1];
+
+   ohos_app->thread  = sthread_create(ohos_app_entry, ohos_app);
+   /* NULL-check sthread_create: on OOM the thread won't be
+    * spawned and nothing will set ohos_app->running to true,
+    * so the scond_wait loop below would block indefinitely.
+    * Tear down the partially-constructed ohos_app (including
+    * the just-created pipe fds) and bail. */
+   if (!ohos_app->thread)
+   {
+      close(msgpipe[0]);
+      close(msgpipe[1]);
+      slock_free(ohos_app->mutex);
+      scond_free(ohos_app->cond);
+      free(ohos_app);
+      RARCH_ERR("Failed to spawn ohos_app thread.\n");
+      return NULL;
+   }
+   slock_lock(ohos_app->mutex);
+   while (!ohos_app->running)
+      scond_wait(ohos_app->cond, ohos_app->mutex);
+   slock_unlock(ohos_app->mutex);
+  
+   return NULL;
+}
+
+
+void ohos_send_native_event(int event_id, int value) {
+   if (g_native_event_tsfn == NULL) {
+        return;
+    }
+    NativeEventData* event = (NativeEventData*)malloc(sizeof(NativeEventData));
+    if (event == NULL) {
+        return;
+    }
+    event->event_id = event_id;
+    event->value = value;
+    napi_call_threadsafe_function(g_native_event_tsfn, event, napi_tsfn_blocking);
+}
+
+static napi_value OnKeyEvent(napi_env env, napi_callback_info info)
+{
+    if(g_ohos == NULL || g_ohos->ohos_input == NULL)
+        return NULL;
+    size_t argc = 1;
+    napi_value args[1];
+   napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+    KeyEvent event;
+    napi_value temp_val;
+    napi_get_named_property(env, args[0], "deviceId", &temp_val);
+    napi_get_value_int32(env, temp_val, &event.deviceId);
+    
+    napi_get_named_property(env, args[0], "type", &temp_val);
+    napi_get_value_int32(env, temp_val, &event.type);
+    
+    napi_get_named_property(env, args[0], "keyCode", &temp_val);
+    napi_get_value_int32(env, temp_val, &event.keyCode);
+    
+    napi_get_named_property(env, args[0], "timestamp", &temp_val);
+    napi_get_value_int64(env, temp_val, &event.timestamp);
+  
+    ohos_input_poll_key_event(g_ohos->ohos_input, &event);
+    return NULL;
+}
+static void CallJsCallback(napi_env env, napi_value js_callback, void* context, void* data) {
+     NativeEventData* event = (NativeEventData*)data;
+    
+    if (event == NULL) {
+        return;
+    }
+    
+    napi_value argv[2];  
+    napi_status status;
+    
+    status = napi_create_int32(env, event->event_id, &argv[0]);
+    if (status != napi_ok) {
+        free(event);
+        return;
+    }
+    
+    status = napi_create_int32(env, event->value, &argv[1]);
+    if (status != napi_ok) {
+        free(event);
+        return;
+    }
+    napi_value undefined;
+    status = napi_call_function(env, NULL, js_callback, 2, argv, &undefined);
+    free(event);
+}
+
+static napi_value OnNativeEvent(napi_env env, napi_callback_info info)
+{
+   if(g_ohos == NULL)
+        return NULL;
+   size_t argc = 1;
+   napi_value args[1];
+   napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+   napi_value resource_name;
+   napi_create_string_utf8(env, "NativeEventCallback", NAPI_AUTO_LENGTH, &resource_name);
+   status = napi_create_threadsafe_function(
+     env,
+     args[0],
+     NULL,
+     resource_name,
+     0,
+     1,        
+     NULL,
+     NULL,
+     NULL,
+     CallJsCallback,
+     &g_native_event_tsfn
+   );
+   return NULL;
+}
+static void OnSurfaceCreatedCB(OH_NativeXComponent *component, void *window)
+{
+    if ((NULL == component) || (NULL == window)) {
+        return;
+    }
+    g_ohos->nativeComponent = component;
+    g_ohos->window = window;
+    OH_NativeXComponent_ExpectedRateRange frameRateRange;
+    frameRateRange.min = 60;      // min fps 60fps
+    frameRateRange.max = 120;      // max fps 60fps
+    frameRateRange.expected = 120; // expected fps 60fps
+
+    OH_NativeXComponent_SetExpectedFrameRateRange(component, &frameRateRange);
+    uint64_t width;
+    uint64_t height;
+    OH_NativeXComponent_GetXComponentSize(component, window, &width, &height);
+    g_ohos->content_rect.changed = true;
+    g_ohos->content_rect.width   = width;
+    g_ohos->content_rect.height  = height;
+    
+}
+
+static void OnSurfaceChangedCB(OH_NativeXComponent *component, void *window)
+{
+    if ((NULL == component) || (NULL == window)) {
+        return;
+    }
+   uint64_t width;
+   uint64_t height;
+   OH_NativeXComponent_GetXComponentSize(component, window, &width, &height);
+   g_ohos->content_rect.changed = true;
+   g_ohos->content_rect.width   = width;
+   g_ohos->content_rect.height  = height;
+}
+
+static void OnSurfaceDestroyedCB(OH_NativeXComponent *component, void *window)
+{
+    if ((NULL == component) || (NULL == window)) {
+        return;
+    }
+}
+static void DispatchTouchEventCB(OH_NativeXComponent *component, void *window)
+{
+   if ((NULL == component) || (NULL == window)) {
+     return;
+   }
+   OH_NativeXComponent_TouchEvent touchEvent;
+   OH_NativeXComponent_GetTouchEvent(component,window, &touchEvent);
+   ohos_input_poll_touch_event(g_ohos->ohos_input, touchEvent);
+}
+static napi_value SurfaceChanged(napi_env env, napi_callback_info info)
+{
+   size_t argc = 3;
+   napi_value args[3];
+   napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+   long surfaceId;
+   int width;
+   int height;
+   napi_get_value_int64(env, args[0], &surfaceId);
+   napi_get_value_int32(env, args[1], &width);
+   napi_get_value_int32(env, args[2], &height);
+   if(g_ohos == NULL || width == 0 || height == 0)
+        return NULL;
+   g_ohos->content_rect.width = width;
+   g_ohos->content_rect.height = height;
+   g_ohos->content_rect.changed = true;
+   if(g_ohos->window == NULL){
+        OH_NativeWindow_CreateNativeWindowFromSurfaceId(surfaceId, &g_ohos->window);
+   } else{
+        uint64_t oldId;
+        OH_NativeWindow_GetSurfaceId(g_ohos->window, &oldId);
+        if (oldId != (uint64_t)surfaceId){
+            OH_NativeWindow_DestroyNativeWindow(g_ohos->window);
+            OH_NativeWindow_CreateNativeWindowFromSurfaceId(surfaceId, &g_ohos->window);
+        }
+    }
+   return NULL;
+}
+static OH_NativeXComponent_Callback renderCallback = {
+   OnSurfaceCreatedCB,
+   OnSurfaceChangedCB,
+   OnSurfaceDestroyedCB,
+   DispatchTouchEventCB
+};
+void init_surface(napi_env env, napi_value exports){
+   napi_value exportInstance = NULL;
+    if (napi_ok != napi_get_named_property(env, exports, OH_NATIVE_XCOMPONENT_OBJ, &exportInstance)) {
+        return;
+    }
+    if (napi_ok != napi_unwrap(env, exportInstance, (void **)(&g_ohos->nativeComponent))) {
+        return;
+   }
+   OH_NativeXComponent_RegisterCallback(g_ohos->nativeComponent, &renderCallback);
+}
+static napi_value OpenFile (napi_env env, napi_callback_info info)
+{
+   size_t argc = 1;
+   napi_value args[1];
+   napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+   size_t str_len;
+   char filePath[PATH_MAX_LENGTH];
+   napi_get_value_string_utf8(env, args[0],filePath, sizeof(filePath), &str_len);
+   
+   return NULL;
+}
+
+static napi_value Init(napi_env env, napi_value exports)
+{
+   if (g_ohos == NULL)
+   {
+      struct ohos_app *ohos_app = (struct ohos_app*)calloc(1, sizeof(*ohos_app));
+      g_ohos = ohos_app;
+   }
+   init_surface(env, exports);
+   napi_property_descriptor desc[] = {
+      { "surfaceChanged", NULL, SurfaceChanged, NULL, NULL, NULL, napi_default, NULL },
+      { "startApp", NULL, StartApp, NULL, NULL, NULL, napi_default, NULL },
+      { "onNativeEvent", NULL, OnNativeEvent, NULL, NULL, NULL, napi_default, NULL },
+      { "openFile", NULL, OpenFile, NULL, NULL, NULL, napi_default, NULL },
+      { "onKeyEvent", NULL, OnKeyEvent, NULL, NULL, NULL, napi_default, NULL },
+      { "stopApp", NULL, StopApp, NULL, NULL, NULL, napi_default, NULL },
+   };
+   napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+   return exports;
+}
+static napi_module retroArchModule = {
+    .nm_version = 1,
+    .nm_flags = 0,
+    .nm_filename = NULL,
+    .nm_register_func = Init,
+    .nm_modname = "retroarch",
+    .nm_priv = ((void*)0),
+    .reserved = { 0 },
+};
+__attribute__((constructor)) void RegisterEntryModule(void)
+{
+    napi_module_register(&retroArchModule);
+}
+#endif
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* get_env */
    frontend_unix_init,          /* init */
    frontend_unix_deinit,        /* deinit */
-#ifdef ANDROID
+#if defined (ANDROID) || defined (OHOS)
    NULL,                         /* exitspawn */
 #else
    frontend_unix_exitspawn,     /* exitspawn */
 #endif
    NULL,                         /* process_args */
-#ifdef ANDROID
+#if defined (ANDROID) || defined (OHOS)
    NULL,                         /* exec */
    NULL,                         /* set_fork */
 #else
@@ -3533,6 +4194,9 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #ifdef ANDROID
    frontend_android_shutdown,    /* shutdown */
    frontend_android_get_name,    /* get_name */
+#elif defined(__OHOS__)
+   frontend_ohos_shutdown,    /* shutdown */
+   frontend_ohos_get_name,    /* get_name */
 #else
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
@@ -3580,6 +4244,8 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_display_type,
 #ifdef ANDROID
    "android",                    /* ident               */
+#elif defined(__OHOS__)
+   "ohos",                    /* ident               */
 #else
    "unix",                       /* ident               */
 #endif

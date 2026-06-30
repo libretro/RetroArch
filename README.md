@@ -73,6 +73,7 @@ RetroArch has been ported to the following platforms:
    - Emscripten (WebAssembly and JavaScript)
    - FreeBSD
    - Haiku
+   - HarmonyOS 
    - LG webOS
    - Linux
    - Original Microsoft Xbox

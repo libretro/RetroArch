@@ -4684,7 +4684,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
       case CMD_EVENT_SHUTDOWN:
          {
-#if defined(__linux__) && !defined(ANDROID)
+#if defined(__linux__) && !defined(ANDROID) && !defined(OHOS)
             const char *_msg = msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN);
             if (settings->bools.config_save_on_exit)
                command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
@@ -4701,7 +4701,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_REBOOT:
          {
-#if defined(__linux__) && !defined(ANDROID)
+#if defined(__linux__) && !defined(ANDROID) && !defined(OHOS)
             const char *_msg = msg_hash_to_str(MSG_VALUE_REBOOTING);
             if (settings->bools.config_save_on_exit)
                command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
@@ -6136,7 +6136,7 @@ void main_exit(void *args)
       runloop_log_counters(p_rarch->perf_counters_rarch, p_rarch->perf_ptr_rarch);
    }
 
-#if defined(HAVE_LOGGER) && !defined(ANDROID)
+#if defined(HAVE_LOGGER) && !defined(ANDROID) && !defined(OHOS)
    logger_shutdown();
 #endif
 #ifdef PS2
@@ -6376,7 +6376,7 @@ int rarch_main(int argc, char *argv[], void *data)
    }
 
    settings = config_get_ptr();
-
+  
 #ifdef HAVE_SMBCLIENT
    retroarch_smb_init();
 #endif

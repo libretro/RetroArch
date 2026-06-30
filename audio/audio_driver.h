@@ -458,6 +458,7 @@ extern audio_driver_t audio_tinyalsa;
 extern audio_driver_t audio_roar;
 extern audio_driver_t audio_openal;
 extern audio_driver_t audio_opensl;
+extern audio_driver_t audio_ohaudio;
 extern audio_driver_t audio_jack;
 extern audio_driver_t audio_sdl;
 extern audio_driver_t audio_xa;
