@@ -402,10 +402,8 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
 int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
    int64_t offset, int whence)
 {
-   uint64_t newpos = 0;
    struct smb2fh *fh;
    struct smb2_context *ctx;
-   int64_t ret;
 
    if (!smb_initialized || !stream || !stream->smb_ctx)
       return -1;
@@ -427,12 +425,10 @@ int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
    if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
       return -1;
 
-   /* libsmb2 returns status via ret, and the new offset via out param */
-   ret = smb2_lseek(ctx, fh, offset, whence, &newpos);
-   if (ret < 0)
+   if (smb2_lseek(ctx, fh, offset, whence, NULL) == -EINVAL)
       return -1;
 
-   return (int64_t)newpos;
+   return 0;
 }
 
 /* return the current byte offset in an open file */
@@ -441,7 +437,6 @@ int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
    uint64_t cur = 0;
    struct smb2fh *fh;
    struct smb2_context *ctx;
-   int64_t ret;
 
    if (!smb_initialized || !stream || !stream->smb_ctx)
       return -1;
@@ -457,8 +452,7 @@ int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
    if (!ctx)
       return -1;
 
-   ret = smb2_lseek(ctx, fh, 0, SEEK_CUR, &cur);
-   if (ret < 0)
+   if (smb2_lseek(ctx, fh, 0, SEEK_CUR, &cur) == -EINVAL)
       return -1;
 
    return (int64_t)cur;
