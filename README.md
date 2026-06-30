@@ -335,7 +335,6 @@ The links below belong to our official channels. Links other than this may have 
 - [Steam](https://store.steampowered.com/app/1118310/RetroArch/)
 - [YouTube Topic](https://www.youtube.com/channel/UCyXchL2xdEpHNzqE52w8XYw)
 - [Patreon](https://www.patreon.com/libretro)
-- [BOUNTYSOURCE](https://www.bountysource.com/teams/libretro/issues)
 - [Discord](https://discord.gg/C4amCeV)
 - [Teespring](https://teespring.com/stores/retroarch)
 - [Documentation](https://docs.libretro.com/)
