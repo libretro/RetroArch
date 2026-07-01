@@ -2449,7 +2449,11 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_SUBSYSTEM_ADD:
-         flush_type = MENU_SETTINGS;
+         /* Return to the subsystem list (which rebuilds to offer the
+          * next required ROM, or the Load entry once all are set)
+          * instead of flushing all the way back to the main menu. */
+         flush_char = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST);
          content_add_subsystem(action_path);
          break;
       case ACTION_OK_SET_DIRECTORY:
@@ -2695,7 +2699,8 @@ static int action_ok_file_load(const char *path,
       }
 
       content_add_subsystem(full_path_new);
-      menu_entries_flush_stack(NULL, MENU_SETTINGS);
+      menu_entries_flush_stack(msg_hash_to_str(
+            MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST), 0);
       return 0;
    }
 
