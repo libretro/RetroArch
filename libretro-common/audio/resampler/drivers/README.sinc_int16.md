@@ -86,15 +86,32 @@ conditions flip (e.g. a DSP plugin is toggled, the mixer starts, volume leaves
 0 dB, or fast-forward-with-speedup engages), which is exactly when it falls back
 to float.
 
-### Notes / follow-ups
+### Menu setting
 
-- Non-unity volume/mute and active DSP/mixer/MIDI deliberately fall back to the
-  float path; a later refinement can apply a Q16 gain in the integer path to
-  cover volume too.
-- For a **float-output** driver the integer path saturates to the s16 range
-  before the s16->float pass, so it does not reproduce sinc overshoot headroom
-  a float endpoint could otherwise carry — intended for s16-source content and
-  determinism; the float path remains available for anyone who wants that
-  headroom.
-- Optional: gate the whole thing behind an `audio_fastpath_s16` setting
-  (default on) to A/B without changing resampler backends.
+Exposed as **Settings > Audio > Resampler > "Resample to Fixed Integer (Hint)"**
+(`audio_fastpath_s16`, default on). When on and a core outputs 16-bit integer
+audio, any needed resampling uses the integer SINC driver instead of the float
+one. Ignored for float-output cores and whenever DSP / mixer / MIDI synth is
+active. Toggling it flips the logged active path (above) without an audio
+reinit.
+
+### Volume
+
+Volume/mute is applied inside the fast path, so non-unity gain no longer forces
+the float route:
+
+- **s16-output** driver: a deterministic Q16 gain multiply + saturate over the
+  output buffer (skipped at unity gain).
+- **float-output** driver: folded into the single s16->float pass via
+  `convert_s16_to_float(..., audio_volume_gain)` - free.
+
+Because resampling is linear, attenuation is bit-clean; a boost above 0 dB
+interacts with s16 saturation slightly differently than the float path's
+input-side gain, which is acceptable for s16-source content.
+
+### Notes
+
+- For a float-output driver the integer path saturates to the s16 range before
+  the s16->float pass, so it does not reproduce sinc overshoot headroom a float
+  endpoint could otherwise carry; intended for s16-source content and
+  determinism. Turn the hint off to keep the float path (and that headroom).

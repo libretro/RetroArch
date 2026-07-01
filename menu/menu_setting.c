@@ -15392,6 +15392,21 @@ static bool setting_append_list(
             &setting_get_string_representation_uint_audio_resampler_quality;
          menu_settings_list_current_add_range(list, list_info, RESAMPLER_QUALITY_DONTCARE, RESAMPLER_QUALITY_HIGHEST, 1.0, true, true);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_fastpath_s16,
+               MENU_ENUM_LABEL_AUDIO_FASTPATH_S16,
+               MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
+               DEFAULT_AUDIO_FASTPATH_S16,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED);
+
          CONFIG_FLOAT(
                list, list_info,
                audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA),

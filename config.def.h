@@ -1291,6 +1291,10 @@
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
 /* Speed up audio to match fast forward speed up. */
 #define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
+/* When a core outputs 16-bit integer audio, prefer the deterministic
+ * fixed-point (int16) SINC resampler over the float one for any needed
+ * resampling. Avoids the s16<->float round-trip and is bit-reproducible. */
+#define DEFAULT_AUDIO_FASTPATH_S16 true
 /* Automatically mute audio when rewind is enabled. */
 #define DEFAULT_AUDIO_REWIND_MUTE false
 

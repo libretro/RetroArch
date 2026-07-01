@@ -2998,6 +2998,14 @@ MSG_HASH(
    "Lower this value to favor performance/lower latency over audio quality, increase for better audio quality at the expense of performance/lower latency."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
+   "Resample to Fixed Integer (Hint)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
+   "When a core outputs 16-bit integer audio, use the fixed-point (integer) SINC resampler instead of the floating-point one for any needed resampling. Avoids the integer-to-float round-trip and produces bit-identical output across platforms. Ignored for cores that output floating-point audio, and when audio DSP effects or the mixer are active."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    "Output Rate (Hz)"
    )

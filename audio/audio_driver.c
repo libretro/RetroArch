@@ -672,18 +672,19 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
    /* Deterministic integer (s16) fast path.
     *
-    * When the core delivered int16, the selected resampler is "sinc", and no
-    * float-domain stage is active (DSP, mixer, MIDI synth, non-unity gain, or
-    * the fast-forward pitch EMA), resample s16 -> s16 directly.  This removes
-    * the s16<->float round-trip, uses no FPU, and is bit-identical across
-    * platforms (netplay / rewind).  Any of those conditions failing falls
-    * through to the float resampler path below. */
+    * When enabled by the 'Resample to Fixed Integer' hint, the core delivered
+    * int16, the selected resampler is "sinc", and no float-domain stage is
+    * active (DSP, mixer, MIDI synth, or the fast-forward pitch EMA), resample
+    * s16 -> s16 directly.  Volume is applied in fixed point (Q16), so non-unity
+    * gain no longer forces the float path.  This removes the s16<->float
+    * round-trip, uses no FPU, and is bit-identical across platforms (netplay /
+    * rewind).  Any condition failing falls through to the float path below. */
    {
       static int audio_i16_path_logged = -1;
       bool use_i16 =
              (audio_st->resampler_data_int16 != NULL)
+         &&  config_get_ptr()->bools.audio_fastpath_s16
          && !is_float
-         &&  audio_volume_gain == 1.0f
          && !midi_driver_synth_active()
          && !(is_fastforward
                && config_get_ptr()->bools.audio_fastforward_speedup)
@@ -731,19 +732,39 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
          if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
          {
-            /* Float-output driver: a single s16 -> float pass at the output
-             * rate.  The integer resampler already saturated to the s16 range,
-             * so no additional clamp is required. */
+            /* Float-output driver: fold volume into the single s16 -> float
+             * pass at the output rate.  The integer resampler already
+             * saturated to the s16 range. */
             convert_s16_to_float(audio_st->output_samples_buf,
-                  audio_st->output_samples_conv_buf, out_frames * 2, 1.0f);
+                  audio_st->output_samples_conv_buf, out_frames * 2,
+                  audio_volume_gain);
             audio->write(audio_st->context_audio_data,
                   audio_st->output_samples_buf,
                   out_frames * 2 * sizeof(float));
          }
          else
+         {
+            /* s16-output driver: apply volume as a deterministic Q16 gain
+             * (round toward zero on the shift, saturate). */
+            if (audio_volume_gain != 1.0f)
+            {
+               int32_t  gain_q16 = (int32_t)(audio_volume_gain * 65536.0f + 0.5f);
+               unsigned k;
+               unsigned total    = out_frames * 2;
+               int16_t *ob       = audio_st->output_samples_conv_buf;
+               for (k = 0; k < total; k++)
+               {
+                  int64_t p = (int64_t)ob[k] * gain_q16;
+                  int64_t v = (p >= 0) ? (p >> 16) : -((-p) >> 16);
+                  if      (v >  32767) v =  32767;
+                  else if (v < -32768) v = -32768;
+                  ob[k] = (int16_t)v;
+               }
+            }
             audio->write(audio_st->context_audio_data,
                   audio_st->output_samples_conv_buf,
                   out_frames * 2 * sizeof(int16_t));
+         }
          return;
       }
    }
