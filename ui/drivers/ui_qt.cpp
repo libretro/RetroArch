@@ -1836,7 +1836,7 @@ void MainWindow::showWelcomeScreen()
 	  "that's functional for launching content and managing playlists.<br>\n"
       "<br>\n"
       "Settings can be configured via &ldquo;View -> Settings...&rdquo; in Desktop Mode window, "
-	  "or &ldquo;Main Menu -> Settings&rdquo; in the 10-foot user interface window (the main window) "
+	  "or &ldquo;Main Menu -> Settings&rdquo; in the 10-foot user interface (aka Big Picture Mode) window"
 	  "— both access the same settings. But many actions only function in the 10-foot UI, including "
 	  "these default hotkey assignments:\n"
       "<ul>\n"
