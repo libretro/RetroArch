@@ -331,7 +331,9 @@ static uint64_t frontend_uwp_get_free_mem(void)
    MEMORYSTATUSEX mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUSEX);
    GlobalMemoryStatusEx(&mem_info);
-   return (mem_info.ullTotalPhys - mem_info.ullAvailPhys);
+   /* ullAvailPhys is the amount free; the previous expression
+    * (ullTotalPhys - ullAvailPhys) returned memory *in use*. */
+   return mem_info.ullAvailPhys;
 }
 
 static enum rarch_display_type frontend_uwp_get_display_type(void)
