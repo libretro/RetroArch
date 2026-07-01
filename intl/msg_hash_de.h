@@ -6843,6 +6843,14 @@ MSG_HASH(
    "Ein Bild auswählen, das als Menühintergrund verwendet werden soll. Manuelle und dynamische Bilder übersteuern das „Farbthema“."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
+   "Deckkraft des Hintergrundbildes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+   "Die Deckkraft für das Hintergrundbild anpassen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    "Deckkraft"
    )
@@ -6951,7 +6959,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
-   "Das zu verwendenden Übersetzungs-Backends auswählen. HTTP verwendet einen Remote-Server unter der konfigurierten URL. Apple verwendet geräteinterne OCR und Übersetzung (macOS/iOS)."
+   "Das zu verwendende Übersetzungs-Backend auswählen. HTTP verwendet einen Remote-Server unter der konfigurierten URL. Apple verwendet geräteinterne OCR und Übersetzung (macOS/iOS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -11268,6 +11276,14 @@ MSG_HASH(
    "Animation, die beim Öffnen eines Untermenüs verwendet wird."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+   "Farbthema-Deckkraftfaktor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
+   "Die Deckkraft des Farbschemas anpassen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    "Aktuelles Menüsymbol"
    )
@@ -11290,6 +11306,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Eine andere Schriftart wählen, die im Menü verwendet werden soll."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "Schriftfarbe: Rot"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "Schriftfarbe: Grün"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "Schriftfarbe: Blau"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
@@ -11364,20 +11392,40 @@ MSG_HASH(
    "Vertikaler Verblassungsfaktor"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Den Ausblendgrad der sichtbaren Elemente an den Bildschirmrändern anpassen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
    "Horizontale Liste anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Die horizontale Hauptregisterkartenliste für die Navigation aktivieren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Kopfzeilentitel anzeigen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
+   "Die aktuelle Menüposition in der Kopfzeile anzeigen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
    "Randsaumbreite"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
+   "Den Abstand der Titelzeile zum Bildschirmrand anpassen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    "Horizontaler Versatz der Randtitel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   "Den horizontalen Abstand der Titelzeile anpassen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -15408,12 +15456,24 @@ MSG_HASH(
    "Text am unteren Bildschirm einblenden. Aktivieren, um Schaltflächenbeschreibungen auf dem unteren Bildschirm anzuzeigen. Dies schließt das Savestate-Speicherdatum aus."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   "Schriftfarbe: Rot"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "Rote Schriftfarbe auf unteren Bildschirm anpassen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   "Schriftfarbe: Grün"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "Grüne Schriftfarbe auf unteren Bildschirm anpassen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "Schriftfarbe: Blau"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

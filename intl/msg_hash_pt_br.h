@@ -531,7 +531,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Suporte a Ponto de Save"
+   "Suporte a Save State"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -579,7 +579,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Impede a modificação do núcleo atualmente instalado. Pode ser usado para evitar atualizações indesejadas quando o conteúdo requer uma versão específica do núcleo (por exemplo, conjuntos de ROMs de Arcade) ou quando o formato de ponto de save do próprio núcleo é alterado."
+   "Impede a modificação do núcleo atualmente instalado. Pode ser usado para evitar atualizações indesejadas quando o conteúdo requer uma versão específica do núcleo (por exemplo, conjuntos de ROMs de Arcade) ou quando o formato do save state do próprio núcleo é alterado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -1036,7 +1036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
-   "Sincronização: Pontos/Saves"
+   "Sincronização: Saves/Save States"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
@@ -1052,7 +1052,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
-   "Quando ativado, pontos/saves serão sincronizados na nuvem."
+   "Quando ativado, saves/save states serão sincronizados na nuvem."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
@@ -2162,7 +2162,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   "Mostrar botões em janela"
+   "Mostrar Decorações de Janela"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
@@ -2170,7 +2170,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   "Mostrar barra de menu"
+   "Mostrar Barra de Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
@@ -3719,31 +3719,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "Carrega o ponto de save do slot atualmente selecionado."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Ponto de Save"
+   "Carrega o save state do slot atualmente selecionado."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "Salva o ponto de save no slot atualmente selecionado."
+   "Salva um save state no slot atualmente selecionado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "Próximo Slot de Ponto de Save"
+   "Próximo Slot de Save State"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Incrementa o índice do slot de ponto de save atualmente selecionado."
+   "Incrementa o índice do slot de save state selecionado atualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "Slot Anterior do Ponto de Save"
+   "Slot Anterior do Save State"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Decrementa o índice do slot de ponto de save atualmente selecionado."
+   "Decrementa o índice do slot de save state selecionado atualmente."
    )
 
 MSG_HASH(
@@ -4629,7 +4625,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "Impede que a SaveRAM seja sobrescrita ao carregar pontos de save. Pode, potencialmente, causar falhas nos jogos."
+   "Impede que a SaveRAM seja sobrescrita ao carregar save states. Pode, potencialmente, causar falhas nos jogos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -4645,15 +4641,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
-   "Ponto de Save: Intervalo Automático"
+   "Save State: Intervalo Automático"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
-   "Salva um ponto de save automaticamente em um intervalo regular (em segundos). Defina como 0 para desativar."
+   "Salva um save state automaticamente em um intervalo regular (em segundos). Defina como 0 para desativar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
-   "Salva um ponto de save automaticamente em um intervalo regular, medido em segundos. Útil para criar backups periódicos do seu progresso no jogo, especialmente em dispositivos que podem fechar inesperadamente devido à bateria ou outros problemas. O valor 0 desativa este recurso."
+   "Salva um save state automaticamente em um intervalo regular, medido em segundos. Útil para criar backups periódicos do seu progresso no jogo, especialmente em dispositivos que podem fechar inesperadamente devido à bateria ou outros problemas. O valor 0 desativa este recurso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
@@ -4685,7 +4681,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "Antes de criar um ponto de save, o índice do ponto de save é incrementado automaticamente. Ao carregar o conteúdo, o índice será definido como o maior índice existente."
+   "Antes de criar um save state, o índice do save state é incrementado automaticamente. Ao carregar um conteúdo, o índice será definido para o maior índice existente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
@@ -4725,7 +4721,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   "Carrega automaticamente o ponto de save automático na inicialização."
+   "Carrega automaticamente o save state automático na inicialização."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
@@ -4733,7 +4729,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Exibe miniaturas de save states."
+   "Mostra miniaturas de save states."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
@@ -4749,7 +4745,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "Grava arquivos de ponto de save em formato compactado. Reduz drasticamente o tamanho dos arquivos, em troca de tempos maiores para salvamento/carregamento."
+   "Grava os arquivos de save state em um formato compactado. Reduz drasticamente o tamanho do arquivo à custa de um tempo maior de salvamento/carregamento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
@@ -4765,7 +4761,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Usa o diretório do conteúdo como diretório de ponto de save."
+   "Usa o diretório do conteúdo como diretório do save state."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
@@ -4887,11 +4883,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
-   "Mostrar arquivos e pastas ocultas"
+   "Mostrar Arquivos e Pastas Ocultas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "Mostrar arquivos e diretórios ocultos no Navegador de Arquivos."
+   "Mostra arquivos e diretórios ocultos no Navegador de Arquivos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
@@ -4931,7 +4927,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
-   "Mostrar arquivos suportados pelo Player de Mídia no Navegador de Arquivos."
+   "Mostra arquivos suportados pelo Player de Mídia no Navegador de Arquivos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
@@ -4939,7 +4935,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
-   "Mostrar arquivos suportados pelo Visualizador de Imagens no Navegador de Arquivos."
+   "Mostra arquivos suportados pelo Visualizador de Imagens no Navegador de Arquivos."
    )
 
 /* Settings > Frame Throttle */
@@ -5194,7 +5190,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
-   "Mostrar sobreposição por trás do menu"
+   "Mostrar Sobreposição Atrás do Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
@@ -5224,7 +5220,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
-   "Mostrar entradas na sobreposição"
+   "Mostrar Entradas na Sobreposição"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
@@ -5240,15 +5236,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "Mostrar entradas da porta"
+   "Mostrar Entradas da Porta"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "Selecione a porta do dispositivo de entrada que será monitorada quando a opção \"Mostrar entradas na sobreposição\" estiver configurada como \"Físico (controle)\"."
+   "Seleciona a porta do dispositivo de entrada para monitorar quando 'Mostrar Entradas na Sobreposição' estiver definido como 'Físico (Controle)'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-   "Mostrar cursor do mouse na sobreposição"
+   "Mostrar Cursor do Mouse com Sobreposição"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -6222,7 +6218,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   "Mostrar \"Atualizações e downloads\""
+   "Mostrar \"Atualizador Online\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
@@ -6338,7 +6334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Mostrar a opção 'Netplay' no Menu Principal ou nas Listas de Reprodução."
+   "Mostra a opção 'Netplay' no Menu Principal ou nas Listas de Reprodução."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6346,7 +6342,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Mostrar o menu de histórico recente."
+   "Mostra o menu de histórico recente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -6354,7 +6350,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Mostrar a opção ‘Importar Conteúdo’ no Menu Principal ou em Listas de Reprodução."
+   "Mostra a opção ‘Importar conteúdo’ no Menu Principal ou em Listas de Reprodução."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -6378,7 +6374,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
-   "Mostrar as abas da lista de reprodução. Não afeta o RGUI. A barra de navegação deve estar ativada no GLUI."
+   "Mostra as abas da lista de reprodução. Não afeta o RGUI. A barra de navegação deve estar ativada no GLUI."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -6386,7 +6382,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Mostrar a opção explorador de conteúdo."
+   "Mostra a opção explorador de conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
@@ -6442,7 +6438,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
-   "Mostrar nome do núcleo"
+   "Mostrar Nome do Núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ENABLE,
@@ -6450,7 +6446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
-   "Mostrar sub-etiquetas no menu"
+   "Mostrar Sub-rótulos do Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
@@ -6466,7 +6462,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
-   "Exibir tela inicial"
+   "Mostrar Tela Inicial"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
@@ -6489,7 +6485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Mostrar a opção de reiniciar conteúdo."
+   "Mostra a opção de reiniciar conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -6497,27 +6493,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Mostrar a opção de fechar conteúdo."
+   "Mostra a opção de fechar conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Mostrar submenu 'Save States'"
+   "Mostrar Submenu 'Save States'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Mostra as opções de ponto de save em um submenu."
+   "Mostrar opções de save state em um submenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Mostrar 'Salvar/Carregar Ponto de Save''"
+   "Mostrar 'Save/Carregar Save State'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Mostra as opções para salvar/carregar um ponto de save."
+   "Mostra as opções para salvar/carregar um save state."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
-   "Exibir 'Controles de Replay'"
+   "Mostrar 'Controles de Replay'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
@@ -6525,11 +6521,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostrar 'Desfazer Salvar/Carregar Ponto de Save'"
+   "Mostrar 'Desfazer Save/Carregar Save State'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Exibe as opções para desfazer o salvamento ou carregamento de ponto de save. O botão Start do RetroPad aciona o 'desfazer de ponto de save' quando oculto."
+   "Mostra as opções para desfazer o save/carregamento do save state. O botão Start do RetroPad aciona o 'desfazer o save/carregamento' quando oculto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -6621,11 +6617,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
-   "Exibir 'Substituições do Diretório de Conteúdo Salvo'"
+   "Mostrar 'Substituições do Diretório de Conteúdo Salvo'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
-   "Exibir a opção 'Substituições do Diretório de Conteúdo Salvo' no menu 'Substituições'."
+   "Mostrar a opção 'Substituições do Diretório de Conteúdo Salvo' no menu 'Substituições'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -6665,7 +6661,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   "Exibir opção 'Adicionar em uma lista'."
+   "Mostrar opção 'Adicionar em uma lista'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
@@ -6844,7 +6840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
-   "Exibir configurações de 'Conquistas'."
+   "Mostrar configurações de 'Conquistas'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
@@ -6905,6 +6901,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
    "Seleciona uma imagem para definir como plano de fundo do menu. Imagens manuais e dinâmicas substituirão o 'Tema de Cores'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
+   "Opacidade da Imagem de Fundo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+   "Modifica o nível de opacidade da imagem de fundo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
@@ -7075,6 +7079,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "Define a velocidade da voz do narrador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
+   "Motor de Conversão de Texto em Fala"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
+   "O backend de Conversão de Texto em Fala usado para o narrador."
    )
 
 /* Settings > Power Management */
@@ -9028,16 +9040,12 @@ MSG_HASH(
    "Altera o compartimento do jogo salvo selecionado atualmente."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "Ponto de Save"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "Salva um ponto de save no slot atualmente selecionado."
+   "Salva um save state no slot atualmente selecionado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVE_STATE,
-   "Salva um ponto de save no slot atualmente selecionado. Nota: pontos de save normalmente não são portáteis e podem não funcionar em outras versões deste núcleo."
+   "Salva um save state no slot atualmente selecionado. Observe: save states normalmente não são portáteis e podem não funcionar em outras versões deste núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
@@ -9045,11 +9053,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
-   "Carrega um ponto de save do slot atualmente selecionado."
+   "Carrega um save state do slot atualmente selecionado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_STATE,
-   "Carrega um ponto de save do slot atualmente selecionado. Nota: pode não funcionar se o ponto de save foi criado com outra versão do núcleo."
+   "Carrega um save state do slot atualmente selecionado. Nota: pode não funcionar se o save state foi criado com outra versão do núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -9065,7 +9073,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   "Se um ponto de save for sobrescrito, ele voltará para o ponto de save anterior."
+   "Se um save state for sobrescrito, ele voltará para o save state anterior."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
@@ -9145,7 +9153,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
-   "Acessar opções do ponto de save."
+   "Acessar opções do save state."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
@@ -11356,6 +11364,14 @@ MSG_HASH(
    "A animação que é acionada ao abrir um submenu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+   "Fator de Opacidade do Tema de Cores"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
+   "Modifica a porcentagem de opacidade do tema de cores."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    "Ícone do Menu Atual"
    )
@@ -11378,6 +11394,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Seleciona uma fonte principal diferente para ser usada pelo menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "Cor da Fonte: Vermelho"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "Cor da Fonte: Verde"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "Cor da Fonte: Azul"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
@@ -11452,20 +11480,40 @@ MSG_HASH(
    "Desvanecimento vertical"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Ajusta o nível de esmaecimento de itens visíveis próximos às bordas da tela."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
    "Mostrar Lista Horizontal"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Ativa a lista principal de abas horizontais para navegação."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Mostrar cabeçalho"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
+   "Mostra a localização atual do menu no cabeçalho."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
    "Margem dos títulos"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
+   "Ajusta a distância do cabeçalho do título em relação à borda da tela."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    "Deslocamento horizontal da margem do título"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   "Ajusta a distância horizontal do cabeçalho do título."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -13332,7 +13380,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
-   "Salvar ponto de save automático em"
+   "Salvar save state automático em"
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -13632,7 +13680,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
-   "Falha ao salvar ponto de save em"
+   "Falha ao salvar save state em"
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME,
@@ -13676,7 +13724,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_UNDO_SAVE_STATE,
-   "Falha ao desfazer ponto de save."
+   "Falha ao desfazer o save state."
    )
 MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
@@ -13692,7 +13740,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
-   "Ponto de save automático encontrado em"
+   "Save state automático encontrado em"
    )
 MSG_HASH(
    MSG_FOUND_DISK_LABEL,
@@ -13720,7 +13768,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
-   "Não é possível carregar o ponto de save futuro durante a reprodução"
+   "Não é possível carregar o save state futuro durante a reprodução"
    )
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
@@ -13916,7 +13964,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
-   "Nenhum ponto de save foi sobrescrito ainda."
+   "Nenhum save state foi sobrescrito ainda."
    )
 MSG_HASH(
    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
@@ -13976,7 +14024,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
-   "Redirecionando ponto de save para"
+   "Redirecionando save state para"
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
@@ -14004,7 +14052,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
-   "Ponto de save antigo restaurado."
+   "Save state antigo restaurado."
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
@@ -14016,7 +14064,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-   "Revertendo diretório do ponto de save para"
+   "Revertendo diretório do save state para"
    )
 MSG_HASH(
    MSG_REWINDING,
@@ -14220,7 +14268,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Desfazendo ponto de save..."
+   "Desfazendo save state..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -14264,15 +14312,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Carregando automaticamente ponto de save de"
+   "Carregando automaticamente do save state de"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
-   "O carregamento automático do ponto de save de \"%s\" falhou."
+   "O carregamento automático do save state de \"%s\" falhou."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   "O carregamento automático do ponto de save de \"%s\" foi bem-sucesso."
+   "O carregamento automático do save state de \"%s\" foi concluído com sucesso."
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT_NR,
@@ -15588,12 +15636,24 @@ MSG_HASH(
    "Exibe a fonte do menu inferior. Ative para mostrar as descrições dos botões na parte inferior da tela. Isso exclui a data do jogo salvo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   "Cor da Fonte: Vermelho"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "Ajusta a cor vermelha da fonte da tela inferior."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   "Cor da Fonte: Verde"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "Ajusta a cor verde da fonte da tela inferior."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "Cor da Fonte: Azul"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
