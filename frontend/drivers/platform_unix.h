@@ -190,6 +190,9 @@ struct android_app
    jmethodID isScreenReaderEnabled;
    jmethodID accessibilitySpeak;
 
+   jmethodID showKeyboard;
+   jmethodID hideKeyboard;
+
    struct
    {
       unsigned width, height;

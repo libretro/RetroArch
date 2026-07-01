@@ -194,6 +194,228 @@ static typeof(AMotionEvent_getButtonState) *p_AMotionEvent_getButtonState;
 static void *libandroid_handle;
 #endif
 
+/* Android system (IME) keyboard support for the menu OSK.
+ *
+ * Mirrors the iOS ios_keyboard_* hooks (ui/drivers/ui_cocoatouch.m):
+ * when the menu wants text input, the keyboard line buffer is repointed
+ * to an owned 512-byte buffer and the Java side raises the native soft
+ * keyboard (which gives copy/paste and password managers that the
+ * custom on-screen keyboard cannot).
+ *
+ * The Android soft keyboard runs on the UI thread, so committed/pasted
+ * text arrives via the onSystemKeyboardInput JNI callback on that
+ * thread; it is staged there (under a lock) and applied on the
+ * RetroArch input thread in android_keyboard_poll(). */
+#define ANDROID_KBD_BUFFER_SIZE 512
+
+static slock_t *android_kbd_lock        = NULL;
+static char    *android_kbd_buffer      = NULL; /* == keyboard_line.buffer */
+static size_t  *android_kbd_size_ptr    = NULL;
+static size_t  *android_kbd_ptr_ptr     = NULL;
+static input_keyboard_line_complete_t android_kbd_cb = NULL;
+static void    *android_kbd_userdata    = NULL;
+static bool     android_kbd_open        = false;
+
+/* Staging: written by the JNI/UI thread, drained by the input thread. */
+static char     android_kbd_staging[ANDROID_KBD_BUFFER_SIZE];
+static bool     android_kbd_dirty       = false;
+static bool     android_kbd_finished    = false;
+static bool     android_kbd_cancel      = false;
+
+/* Called by Java (UI thread) on every text change, and once more with
+ * finished = true on Done/Enter. A null text means the keyboard was
+ * dismissed without confirming, i.e. cancel. */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCommon_onSystemKeyboardInput(
+      JNIEnv *env, jobject this_obj, jstring text_obj, jboolean finished)
+{
+   if (!android_kbd_lock)
+      return;
+
+   slock_lock(android_kbd_lock);
+   if (text_obj)
+   {
+      const char *text = (*env)->GetStringUTFChars(env, text_obj, NULL);
+      if (text)
+      {
+         strlcpy(android_kbd_staging, text, sizeof(android_kbd_staging));
+         (*env)->ReleaseStringUTFChars(env, text_obj, text);
+      }
+      android_kbd_cancel = false;
+   }
+   else
+   {
+      android_kbd_staging[0] = '\0';
+      android_kbd_cancel     = true;
+   }
+   android_kbd_dirty = true;
+   if (finished)
+      android_kbd_finished = true;
+   slock_unlock(android_kbd_lock);
+}
+
+bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
+      size_t *ptr_ptr, const char *label,
+      input_keyboard_line_complete_t cb, void *userdata)
+{
+   JNIEnv             *env;
+   char               *allocated;
+   size_t              len;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   if (!android_app || !android_app->showKeyboard || !buffer_ptr || !size_ptr)
+      return false;
+
+   if (!android_kbd_lock && !(android_kbd_lock = slock_new()))
+      return false;
+
+   if (!(allocated = (char*)malloc(ANDROID_KBD_BUFFER_SIZE)))
+      return false;
+
+   /* Seed with any existing content (e.g. when editing a value). */
+   if (*buffer_ptr && **buffer_ptr)
+      strlcpy(allocated, *buffer_ptr, ANDROID_KBD_BUFFER_SIZE);
+   else
+      allocated[0] = '\0';
+
+   /* Repoint the keyboard line at our buffer; it is freed later by
+    * input_keyboard_line_free(), mirroring the iOS path. */
+   *buffer_ptr = allocated;
+   len         = strlen(allocated);
+   *size_ptr   = len;
+   if (ptr_ptr)
+      *ptr_ptr = len;
+
+   slock_lock(android_kbd_lock);
+   android_kbd_buffer     = allocated;
+   android_kbd_size_ptr   = size_ptr;
+   android_kbd_ptr_ptr    = ptr_ptr;
+   android_kbd_cb         = cb;
+   android_kbd_userdata   = userdata;
+   android_kbd_staging[0] = '\0';
+   android_kbd_dirty      = false;
+   android_kbd_finished   = false;
+   android_kbd_cancel     = false;
+   android_kbd_open       = true;
+   slock_unlock(android_kbd_lock);
+
+   if ((env = jni_thread_getenv()))
+   {
+      jstring jlabel = label ? (*env)->NewStringUTF(env, label) : NULL;
+      jstring jinit  = (*env)->NewStringUTF(env, allocated);
+      CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
+            android_app->showKeyboard, jlabel, jinit);
+      if (jlabel)
+         (*env)->DeleteLocalRef(env, jlabel);
+      if (jinit)
+         (*env)->DeleteLocalRef(env, jinit);
+   }
+
+   return true;
+}
+
+bool android_keyboard_active(void)
+{
+   return android_kbd_open;
+}
+
+void android_keyboard_end(void)
+{
+   JNIEnv             *env         = NULL;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   if (!android_kbd_open || !android_kbd_lock)
+      return;
+
+   slock_lock(android_kbd_lock);
+   android_kbd_open       = false;
+   android_kbd_buffer     = NULL;
+   android_kbd_size_ptr   = NULL;
+   android_kbd_ptr_ptr    = NULL;
+   android_kbd_cb         = NULL;
+   android_kbd_userdata   = NULL;
+   android_kbd_dirty      = false;
+   android_kbd_finished   = false;
+   android_kbd_cancel     = false;
+   slock_unlock(android_kbd_lock);
+
+   if (android_app && android_app->hideKeyboard && (env = jni_thread_getenv()))
+      CALL_VOID_METHOD(env, android_app->activity->clazz,
+            android_app->hideKeyboard);
+}
+
+/* Drain staged IME text on the RetroArch input thread. */
+void android_keyboard_poll(void)
+{
+   bool                           finished;
+   bool                           cancel;
+   char                          *buffer;
+   void                          *userdata;
+   input_keyboard_line_complete_t cb;
+
+   if (!android_kbd_open || !android_kbd_lock)
+      return;
+
+   slock_lock(android_kbd_lock);
+   if (!android_kbd_dirty)
+   {
+      slock_unlock(android_kbd_lock);
+      return;
+   }
+
+   /* Sync staged text into the live keyboard line buffer so the menu
+    * displays it (same role as the iOS UITextField delegate). */
+   if (!android_kbd_cancel && android_kbd_buffer)
+   {
+      size_t len;
+      strlcpy(android_kbd_buffer, android_kbd_staging, ANDROID_KBD_BUFFER_SIZE);
+      len = strlen(android_kbd_buffer);
+      if (android_kbd_size_ptr)
+         *android_kbd_size_ptr = len;
+      if (android_kbd_ptr_ptr)
+         *android_kbd_ptr_ptr  = len;
+   }
+
+   finished             = android_kbd_finished;
+   cancel               = android_kbd_cancel;
+   cb                   = android_kbd_cb;
+   userdata             = android_kbd_userdata;
+   buffer               = android_kbd_buffer;
+   android_kbd_dirty    = false;
+   android_kbd_finished = false;
+   slock_unlock(android_kbd_lock);
+
+   if (finished)
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+
+      /* Mirror the iOS completion block: fire the callback (NULL line
+       * on cancel), then release the keyboard line and unblock hotkeys.
+       * The callback closes the dialog, which hides the soft keyboard
+       * via menu_input_dialog_end() -> android_keyboard_end(). */
+      if (cb)
+         cb(userdata, cancel ? NULL : buffer);
+
+      if (input_st)
+      {
+         input_keyboard_line_free(input_st);
+         input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+      }
+
+      /* The callback normally closes the dialog (-> android_keyboard_end),
+       * which clears our state. If it didn't, drop the now-freed buffer
+       * pointer so a late JNI callback can't use it after free. */
+      slock_lock(android_kbd_lock);
+      if (android_kbd_buffer == buffer)
+      {
+         android_kbd_buffer   = NULL;
+         android_kbd_open     = false;
+         android_kbd_dirty    = false;
+         android_kbd_finished = false;
+      }
+      slock_unlock(android_kbd_lock);
+   }
+}
+
 static void android_keyboard_free(void)
 {
     unsigned i, j;
@@ -1905,6 +2127,9 @@ static void android_input_poll(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
    settings_t            *settings = config_get_ptr();
+
+   /* Apply any text staged by the native (IME) keyboard. */
+   android_keyboard_poll();
 
    while ((ident =
             ALooper_pollAll(settings->uints.input_block_timeout,

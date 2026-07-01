@@ -4446,6 +4446,11 @@ void menu_input_dialog_end(void)
    if (ios_keyboard_active())
       ios_keyboard_end();
 #endif
+#ifdef ANDROID
+   /* Dismiss the Android system keyboard if it's currently open */
+   if (android_keyboard_active())
+      android_keyboard_end();
+#endif
 }
 
 #if defined(_MSC_VER)
@@ -8072,6 +8077,17 @@ bool menu_input_dialog_start_search(void)
          menu_input_search_cb,
          menu);
 #endif
+#ifdef ANDROID
+   /* Use the Android system keyboard instead of the custom on-screen one */
+   if (config_get_ptr()->bools.input_android_system_keyboard)
+      android_keyboard_start(
+            (char **)menu_st->input_dialog_keyboard_buffer,
+            &input_st->keyboard_line.size,
+            &input_st->keyboard_line.ptr,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
+            menu_input_search_cb,
+            menu);
+#endif
 
    /* While reading keyboard line input, we have to block all hotkeys. */
    input_st->flags                        |= INP_FLAG_KB_MAPPING_BLOCKED;
@@ -8097,6 +8113,11 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    /* Prevent reopening keyboard if it's already active
     * This can happen when return key events trigger menu OK actions */
    if (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY)
+      return false;
+#endif
+#ifdef ANDROID
+   if (     config_get_ptr()->bools.input_android_system_keyboard
+         && (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY))
       return false;
 #endif
 
@@ -8144,6 +8165,17 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
          line->label,
          line->cb,
          menu);
+#endif
+#ifdef ANDROID
+   /* Use the Android system keyboard instead of the custom on-screen one */
+   if (config_get_ptr()->bools.input_android_system_keyboard)
+      android_keyboard_start(
+            (char **)menu_st->input_dialog_keyboard_buffer,
+            &input_st->keyboard_line.size,
+            &input_st->keyboard_line.ptr,
+            line->label,
+            line->cb,
+            menu);
 #endif
 
    /* While reading keyboard line input, we have to block all hotkeys. */

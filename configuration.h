@@ -765,6 +765,7 @@ typedef struct settings
       bool input_remap_sort_by_controller_enable;
       bool input_autodetect_enable;
       bool input_sensors_enable;
+      bool input_android_system_keyboard;
       bool input_overlay_enable;
       bool input_overlay_enable_autopreferred;
       bool input_overlay_behind_menu;

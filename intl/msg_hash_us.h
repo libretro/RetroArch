@@ -3268,6 +3268,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "Enable input from accelerometer, gyroscope and illuminance sensors, if supported by the current hardware. May have a performance impact and/or increase power drain on some platforms."
    )
+#ifdef ANDROID
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+   "Use System Keyboard"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+   "Use the Android system keyboard for menu text entry instead of the built-in on-screen keyboard. Enables clipboard paste and password managers. Requires a touchscreen or an input method that can be navigated with a gamepad."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
    "Automatic Mouse Grab"

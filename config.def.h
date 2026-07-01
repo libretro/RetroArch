@@ -1684,6 +1684,12 @@
  * sensor input, if supported */
 #define DEFAULT_INPUT_SENSORS_ENABLE true
 
+/* Use the Android system (IME) keyboard for menu text entry instead of
+ * the built-in on-screen keyboard. Off by default so gamepad-only
+ * and no-touch devices keep the navigable on-screen keyboard at
+ * all times. */
+#define DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD false
+
 /* Automatically enable game focus when running or
  * resuming content */
 #define DEFAULT_INPUT_AUTO_GAME_FOCUS AUTO_GAME_FOCUS_OFF
