@@ -26,6 +26,7 @@
 
 #include <audio/audio_mixer.h>
 #include <audio/audio_resampler.h>
+#include <audio/sinc_resampler_int16.h>
 
 #ifdef HAVE_RWAV
 #include <formats/rwav.h>
@@ -161,6 +162,9 @@ struct audio_mixer_voice
          unsigned    samples;
          unsigned    buf_samples;
          float       ratio;
+         /* s16 pipeline (parallel; used when voice->is_s16) */
+         int16_t*    buffer_s16;
+         void*       resampler_int16;
       } flac;
 #endif
 
@@ -195,6 +199,7 @@ struct audio_mixer_voice
    unsigned type;
    float    volume;
    bool     repeat;
+   bool     is_s16;
 #ifdef HAVE_THREADS
    slock_t *lock;
 #endif
@@ -349,6 +354,46 @@ void audio_mixer_done(void)
       slock_free(voice->lock);
       voice->lock = NULL;
 #endif
+   }
+}
+
+/* --------------------------------------------------------------------------
+ * Fixed-point (s16) mixer pipeline.
+ *
+ * A full parallel to the float pipeline above: voices decode straight to
+ * int16, resample with the deterministic integer SINC resampler, and are
+ * summed with saturation into an int16 output buffer. Nothing crosses
+ * between the two pipelines, so neither incurs an int16<->float round-trip.
+ * ------------------------------------------------------------------------ */
+
+static int16_t audio_mixer_sat_s16(int32_t v)
+{
+   if (v >  32767)
+      return  32767;
+   if (v < -32768)
+      return -32768;
+   return (int16_t)v;
+}
+
+/* Apply a Q16 gain to an s16 sample, rounding toward zero (matches the
+ * fixed-point volume applied on the core int16 audio path). */
+static int32_t audio_mixer_gain_s16(int16_t s, int32_t gain_q16)
+{
+   int32_t p = (int32_t)s * gain_q16;
+   return (p >= 0) ? (p >> 16) : -((-p) >> 16);
+}
+
+static enum sinc_int16_quality audio_mixer_i16_quality(enum resampler_quality q)
+{
+   switch (q)
+   {
+      case RESAMPLER_QUALITY_LOWEST:  return SINC_INT16_QUALITY_LOWEST;
+      case RESAMPLER_QUALITY_LOWER:   return SINC_INT16_QUALITY_LOWER;
+      case RESAMPLER_QUALITY_HIGHER:  return SINC_INT16_QUALITY_HIGHER;
+      case RESAMPLER_QUALITY_HIGHEST: return SINC_INT16_QUALITY_HIGHEST;
+      case RESAMPLER_QUALITY_NORMAL:
+      case RESAMPLER_QUALITY_DONTCARE:
+      default:                        return SINC_INT16_QUALITY_NORMAL;
    }
 }
 
@@ -794,6 +839,77 @@ static void audio_mixer_release_flac(audio_mixer_voice_t* voice)
       voice->types.flac.resampler->free(voice->types.flac.resampler_data);
    if (voice->types.flac.buffer)
       memalign_free(voice->types.flac.buffer);
+   if (voice->types.flac.buffer_s16)
+      memalign_free(voice->types.flac.buffer_s16);
+   if (voice->types.flac.resampler_int16)
+      sinc_resampler_int16_free(voice->types.flac.resampler_int16);
+}
+
+static bool audio_mixer_play_flac_s16(
+      audio_mixer_sound_t* sound,
+      audio_mixer_voice_t* voice,
+      bool repeat, float volume,
+      enum resampler_quality quality,
+      audio_mixer_stop_cb_t stop_cb)
+{
+   double   ratio       = 1.0;
+   unsigned samples     = 0;
+   void    *flac_buffer = NULL;
+   void    *resamp_i16  = NULL;
+   drflac  *dr_flac     = drflac_open_memory(
+         (const unsigned char*)sound->types.flac.data,
+         sound->types.flac.size, NULL);
+   (void)repeat;
+   (void)volume;
+   (void)stop_cb;
+
+   if (!dr_flac)
+      return false;
+
+   /* Stereo-only, matching the float path's stack-buffer sizing. */
+   if (dr_flac->channels != 2)
+   {
+      drflac_close(dr_flac);
+      return false;
+   }
+
+   if (dr_flac->sampleRate != s_rate)
+   {
+      ratio      = (double)s_rate / (double)(dr_flac->sampleRate);
+      resamp_i16 = sinc_resampler_int16_init(
+            (ratio < 1.0) ? ratio : 1.0,
+            audio_mixer_i16_quality(quality));
+      if (!resamp_i16)
+         goto error;
+   }
+
+   samples     = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
+   flac_buffer = memalign_alloc(16,
+         (((samples + 16) + 15) & ~15) * sizeof(int16_t));
+
+   if (!flac_buffer)
+   {
+      if (resamp_i16)
+         sinc_resampler_int16_free(resamp_i16);
+      goto error;
+   }
+
+   voice->types.flac.resampler       = NULL;
+   voice->types.flac.resampler_data  = NULL;
+   voice->types.flac.buffer          = NULL;
+   voice->types.flac.resampler_int16 = resamp_i16;
+   voice->types.flac.buffer_s16      = (int16_t*)flac_buffer;
+   voice->types.flac.buf_samples     = samples;
+   voice->types.flac.ratio           = (float)ratio;
+   voice->types.flac.stream          = dr_flac;
+   voice->types.flac.position        = 0;
+   voice->types.flac.samples         = 0;
+
+   return true;
+
+error:
+   drflac_close(dr_flac);
+   return false;
 }
 #endif
 
@@ -957,6 +1073,75 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
    return voice;
 }
 
+audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
+      bool repeat, float volume,
+      enum resampler_quality quality,
+      audio_mixer_stop_cb_t stop_cb)
+{
+   unsigned i;
+   bool res                   = false;
+   audio_mixer_voice_t* voice = s_voices;
+
+   if (!sound)
+      return NULL;
+
+   for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
+   {
+      if (voice->type != AUDIO_MIXER_TYPE_NONE)
+         continue;
+
+      AUDIO_MIXER_LOCK(voice);
+
+      if (voice->type != AUDIO_MIXER_TYPE_NONE)
+      {
+         AUDIO_MIXER_UNLOCK(voice);
+         continue;
+      }
+
+      voice->type   = sound->type;
+      voice->is_s16 = true;
+
+      switch (sound->type)
+      {
+         case AUDIO_MIXER_TYPE_FLAC:
+#ifdef HAVE_DR_FLAC
+            res = audio_mixer_play_flac_s16(sound, voice, repeat, volume,
+                  quality, stop_cb);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_WAV:
+         case AUDIO_MIXER_TYPE_OGG:
+         case AUDIO_MIXER_TYPE_MOD:
+         case AUDIO_MIXER_TYPE_MP3:
+         case AUDIO_MIXER_TYPE_NONE:
+            /* Remaining s16 voice types land in follow-up commits. */
+            break;
+      }
+
+      break;
+   }
+
+   if (res)
+   {
+      voice->repeat   = repeat;
+      voice->volume   = volume;
+      voice->sound    = sound;
+      voice->stop_cb  = stop_cb;
+      AUDIO_MIXER_UNLOCK(voice);
+   }
+   else
+   {
+      if (i < AUDIO_MIXER_MAX_VOICES)
+      {
+         audio_mixer_release(voice);
+         AUDIO_MIXER_UNLOCK(voice);
+      }
+      voice = NULL;
+   }
+
+   return voice;
+}
+
 /* Need to hold lock for voice.  */
 static void audio_mixer_release(audio_mixer_voice_t* voice)
 {
@@ -990,7 +1175,8 @@ static void audio_mixer_release(audio_mixer_voice_t* voice)
    }
 
    memset(&voice->types, 0, sizeof(voice->types));
-   voice->type = AUDIO_MIXER_TYPE_NONE;
+   voice->type   = AUDIO_MIXER_TYPE_NONE;
+   voice->is_s16 = false;
 }
 
 void audio_mixer_stop(audio_mixer_voice_t* voice)
@@ -1314,6 +1500,79 @@ again:
    voice->types.flac.position += buf_free;
    voice->types.flac.samples  -= buf_free;
 }
+
+static void audio_mixer_mix_flac_s16(int16_t* buffer, size_t num_frames,
+      audio_mixer_voice_t* voice,
+      int32_t gain_q16)
+{
+   int i;
+   struct resampler_data_int16 info;
+   int16_t  temp_buffer[AUDIO_MIXER_TEMP_BUFFER];
+   unsigned buf_free     = (unsigned)(num_frames * 2);
+   unsigned temp_samples = 0;
+   int16_t *pcm          = NULL;
+
+   if (voice->types.flac.position == voice->types.flac.samples)
+   {
+again:
+      temp_samples = (unsigned)drflac_read_pcm_frames_s16(
+            voice->types.flac.stream,
+            AUDIO_MIXER_TEMP_BUFFER / 2, temp_buffer) * 2;
+      if (temp_samples == 0)
+      {
+         if (voice->repeat)
+         {
+            if (voice->stop_cb)
+               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
+            drflac_seek_to_pcm_frame(voice->types.flac.stream, 0);
+            goto again;
+         }
+         if (voice->stop_cb)
+            voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
+         audio_mixer_release(voice);
+         return;
+      }
+
+      info.data_in       = temp_buffer;
+      info.data_out      = voice->types.flac.buffer_s16;
+      info.input_frames  = temp_samples / 2;
+      info.output_frames = 0;
+      info.ratio         = voice->types.flac.ratio;
+
+      if (voice->types.flac.resampler_int16)
+         sinc_resampler_int16_process(
+               voice->types.flac.resampler_int16, &info);
+      else
+         memcpy(voice->types.flac.buffer_s16, temp_buffer,
+               temp_samples * sizeof(int16_t));
+      voice->types.flac.position = 0;
+      voice->types.flac.samples  = voice->types.flac.buf_samples;
+   }
+
+   pcm = voice->types.flac.buffer_s16 + voice->types.flac.position;
+
+   if (voice->types.flac.samples < buf_free)
+   {
+      for (i = voice->types.flac.samples; i != 0; i--)
+      {
+         *buffer = audio_mixer_sat_s16((int32_t)*buffer
+               + audio_mixer_gain_s16(*pcm++, gain_q16));
+         buffer++;
+      }
+      buf_free -= voice->types.flac.samples;
+      goto again;
+   }
+
+   for (i = buf_free; i != 0; --i)
+   {
+      *buffer = audio_mixer_sat_s16((int32_t)*buffer
+            + audio_mixer_gain_s16(*pcm++, gain_q16));
+      buffer++;
+   }
+
+   voice->types.flac.position += buf_free;
+   voice->types.flac.samples  -= buf_free;
+}
 #endif
 
 #ifdef HAVE_DR_MP3
@@ -1402,6 +1661,12 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
 
       AUDIO_MIXER_LOCK(voice);
 
+      if (voice->is_s16)
+      {
+         AUDIO_MIXER_UNLOCK(voice);
+         continue;
+      }
+
       volume = (override) ? volume_override : voice->volume;
 
       switch (voice->type)
@@ -1443,6 +1708,49 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
       else if (*sample > 1.0f)
          *sample = 1.0f;
    }
+}
+
+void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
+      float volume_override, bool override)
+{
+   unsigned i;
+   audio_mixer_voice_t* voice = s_voices;
+
+   for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
+   {
+      float   volume;
+      int32_t gain_q16;
+
+      AUDIO_MIXER_LOCK(voice);
+
+      if (!voice->is_s16)
+      {
+         AUDIO_MIXER_UNLOCK(voice);
+         continue;
+      }
+
+      volume   = (override) ? volume_override : voice->volume;
+      gain_q16 = (int32_t)(volume * 65536.0f + 0.5f);
+
+      switch (voice->type)
+      {
+         case AUDIO_MIXER_TYPE_FLAC:
+#ifdef HAVE_DR_FLAC
+            audio_mixer_mix_flac_s16(buffer, num_frames, voice, gain_q16);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_WAV:
+         case AUDIO_MIXER_TYPE_OGG:
+         case AUDIO_MIXER_TYPE_MOD:
+         case AUDIO_MIXER_TYPE_MP3:
+         case AUDIO_MIXER_TYPE_NONE:
+            /* Remaining s16 voice types land in follow-up commits. */
+            break;
+      }
+
+      AUDIO_MIXER_UNLOCK(voice);
+   }
+   /* No final clamp: audio_mixer_mix_*_s16 saturate as they accumulate. */
 }
 
 float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice)
