@@ -394,9 +394,9 @@ static bool audio_driver_deinit_internal(bool audio_enable)
       audio_st->context_audio_data = NULL;
    }
 
-   if (audio_st->output_samples_conv_buf)
-      memalign_free(audio_st->output_samples_conv_buf);
-   audio_st->output_samples_conv_buf     = NULL;
+   if (audio_st->output_samples_int16)
+      memalign_free(audio_st->output_samples_int16);
+   audio_st->output_samples_int16     = NULL;
 
    if (audio_st->input_data)
       memalign_free(audio_st->input_data);
@@ -748,7 +748,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             i16_ratio *= slowmotion_ratio;
 
          s16.data_in       = rs_in;
-         s16.data_out      = audio_st->output_samples_conv_buf;
+         s16.data_out      = audio_st->output_samples_int16;
          s16.input_frames  = rs_frames;
          s16.output_frames = 0;
          s16.ratio         = i16_ratio;
@@ -762,7 +762,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
              * pass at the output rate.  The integer resampler already
              * saturated to the s16 range. */
             convert_s16_to_float(audio_st->output_samples_buf,
-                  audio_st->output_samples_conv_buf, out_frames * 2,
+                  audio_st->output_samples_int16, out_frames * 2,
                   audio_volume_gain);
             audio->write(audio_st->context_audio_data,
                   audio_st->output_samples_buf,
@@ -777,7 +777,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                int32_t  gain_q16 = (int32_t)(audio_volume_gain * 65536.0f + 0.5f);
                unsigned k;
                unsigned total    = out_frames * 2;
-               int16_t *ob       = audio_st->output_samples_conv_buf;
+               int16_t *ob       = audio_st->output_samples_int16;
                for (k = 0; k < total; k++)
                {
                   int64_t p = (int64_t)ob[k] * gain_q16;
@@ -788,7 +788,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                }
             }
             audio->write(audio_st->context_audio_data,
-                  audio_st->output_samples_conv_buf,
+                  audio_st->output_samples_int16,
                   out_frames * 2 * sizeof(int16_t));
          }
          return;
@@ -1056,10 +1056,10 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          output_frames       *= sizeof(float); /* Unit: bytes */
       else
       {
-         convert_float_to_s16(audio_st->output_samples_conv_buf,
+         convert_float_to_s16(audio_st->output_samples_int16,
                (const float*)output_data, output_frames * 2);
 
-         output_data          = audio_st->output_samples_conv_buf;
+         output_data          = audio_st->output_samples_int16;
          output_frames       *= sizeof(int16_t);  /* Unit: bytes */
       }
 
@@ -1141,8 +1141,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.input_data_int16               =
          (int16_t*)memalign_alloc(64, max_buffer_samples * sizeof(int16_t));
 #endif
-   audio_driver_st.output_samples_conv_buf        = out_conv_buf;
-   audio_driver_st.output_samples_conv_buf_length = outsamples_max * sizeof(int16_t);
+   audio_driver_st.output_samples_int16        = out_conv_buf;
+   audio_driver_st.output_samples_int16_length = outsamples_max * sizeof(int16_t);
    audio_driver_st.chunk_block_size               = AUDIO_CHUNK_SIZE_BLOCKING;
    audio_driver_st.chunk_nonblock_size            = AUDIO_CHUNK_SIZE_NONBLOCKING;
    audio_driver_st.chunk_size                     = AUDIO_CHUNK_SIZE_BLOCKING;
@@ -1349,12 +1349,12 @@ void audio_driver_sample(int16_t left, int16_t right)
    uint32_t runloop_flags;
    audio_driver_state_t *audio_st  = &audio_driver_st;
    recording_state_t *recording_st = NULL;
-   if (!audio_st || !audio_st->output_samples_conv_buf)
+   if (!audio_st || !audio_st->output_samples_int16)
       return;
    if (audio_st->flags & AUDIO_FLAG_SUSPENDED)
       return;
-   audio_st->output_samples_conv_buf[audio_st->data_ptr++] = left;
-   audio_st->output_samples_conv_buf[audio_st->data_ptr++] = right;
+   audio_st->output_samples_int16[audio_st->data_ptr++] = left;
+   audio_st->output_samples_int16[audio_st->data_ptr++] = right;
 
    if (audio_st->data_ptr < audio_st->chunk_size)
       return;
@@ -1368,7 +1368,7 @@ void audio_driver_sample(int16_t left, int16_t right)
    {
       struct record_audio_data ffemu_data;
 
-      ffemu_data.data               = audio_st->output_samples_conv_buf;
+      ffemu_data.data               = audio_st->output_samples_int16;
       ffemu_data.frames             = audio_st->data_ptr / 2;
 
       recording_st->driver->push_audio(recording_st->data, &ffemu_data);
@@ -1379,7 +1379,7 @@ void audio_driver_sample(int16_t left, int16_t right)
          || !(audio_st->output_samples_buf)))
       audio_driver_flush(audio_st,
             config_get_ptr()->floats.slowmotion_ratio,
-            audio_st->output_samples_conv_buf,
+            audio_st->output_samples_int16,
             audio_st->data_ptr, false,
             (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
             (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
@@ -1510,15 +1510,15 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
       /* The recorder consumes int16. Convert just this chunk into the
        * int16 scratch buffer (sized for >= a full chunk) and hand that
        * over; push_audio copies synchronously, matching how the int16
-       * single-sample path reuses output_samples_conv_buf. */
-      if (recording_push_audio && audio_st->output_samples_conv_buf)
+       * single-sample path reuses output_samples_int16. */
+      if (recording_push_audio && audio_st->output_samples_int16)
       {
          struct record_audio_data ffemu_data;
 
-         convert_float_to_s16(audio_st->output_samples_conv_buf,
+         convert_float_to_s16(audio_st->output_samples_int16,
                data, frames_to_write << 1);
 
-         ffemu_data.data   = audio_st->output_samples_conv_buf;
+         ffemu_data.data   = audio_st->output_samples_int16;
          ffemu_data.frames = frames_to_write;
 
          record_st->driver->push_audio(record_st->data, &ffemu_data);
@@ -1617,11 +1617,11 @@ void audio_driver_setup_rewind(void)
    {
       if (audio_st->rewind_ptr > 0)
          audio_st->rewind_buf[--audio_st->rewind_ptr] =
-            audio_st->output_samples_conv_buf[i + 1];
+            audio_st->output_samples_int16[i + 1];
 
       if (audio_st->rewind_ptr > 0)
          audio_st->rewind_buf[--audio_st->rewind_ptr] =
-            audio_st->output_samples_conv_buf[i + 0];
+            audio_st->output_samples_int16[i + 0];
    }
 
    audio_st->data_ptr = 0;

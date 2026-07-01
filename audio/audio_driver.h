@@ -206,11 +206,15 @@ typedef struct
 #endif
 
    /**
-    * A scratch buffer for processed audio output to be converted to 16-bit,
-    * so that it can be sent to the driver.
+    * The driver's int16 output staging buffer. Holds the final 16-bit samples
+    * that are sent to the audio driver and to recording, from whichever source
+    * produced them: the float->s16 conversion of the float resampler's output,
+    * the integer s16 resampler writing here directly, or the single-sample
+    * callback. Only the float path performs an int16 conversion into it; the
+    * other producers write s16 directly.
     */
-   int16_t *output_samples_conv_buf;
-   size_t output_samples_conv_buf_length;
+   int16_t *output_samples_int16;
+   size_t output_samples_int16_length;
 #ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *dsp;
 #endif
