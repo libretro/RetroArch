@@ -87,6 +87,8 @@ typedef struct rarch_sinc_resampler_int16
 #endif
    unsigned  ptr;
    uint32_t  time;
+   uint32_t  ratio_fixed; /* cached (uint32)(phases / ratio); recomputed only  */
+   uint64_t  ratio_bits;  /* when the double ratio's bit pattern changes        */
    double    kaiser_beta;
 } rarch_sinc_resampler_int16_t;
 
@@ -256,11 +258,30 @@ static void sinc_i16_init_table_lanczos(rarch_sinc_resampler_int16_t *re,
       } \
    } while (0)
 
+/* Convert the (double) ratio to the fixed-point time step. This is the only
+ * floating-point operation in the whole runtime path, and it is skipped unless
+ * the ratio actually changes: the double's bit pattern is compared as an
+ * integer, so a stable ratio (the common case, and the only one used for
+ * deterministic netplay) touches no FP after the first flush. Bit-exact with
+ * the previous inline (uint32_t)(phases / data->ratio). */
+static uint32_t sinc_i16_time_step(rarch_sinc_resampler_int16_t *re,
+      unsigned phases, double ratio)
+{
+   uint64_t bits;
+   memcpy(&bits, &ratio, sizeof(bits));
+   if (bits != re->ratio_bits)
+   {
+      re->ratio_bits  = bits;
+      re->ratio_fixed = (uint32_t)(phases / ratio);
+   }
+   return re->ratio_fixed;
+}
+
 static void sinc_i16_process_kaiser(rarch_sinc_resampler_int16_t *re,
       struct resampler_data_int16 *data)
 {
    unsigned phases   = 1u << (re->phase_bits + re->subphase_bits);
-   uint32_t ratio    = (uint32_t)(phases / data->ratio);
+   uint32_t ratio    = sinc_i16_time_step(re, phases, data->ratio);
    const int16_t *in = data->data_in;
    int16_t *output   = data->data_out;
    size_t frames     = data->input_frames;
@@ -337,7 +358,7 @@ static void sinc_i16_process_lanczos(rarch_sinc_resampler_int16_t *re,
       struct resampler_data_int16 *data)
 {
    unsigned phases   = 1u << (re->phase_bits + re->subphase_bits);
-   uint32_t ratio    = (uint32_t)(phases / data->ratio);
+   uint32_t ratio    = sinc_i16_time_step(re, phases, data->ratio);
    const int16_t *in = data->data_in;
    int16_t *output   = data->data_out;
    size_t frames     = data->input_frames;
