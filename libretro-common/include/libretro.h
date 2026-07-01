@@ -2696,6 +2696,36 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT (85 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/**
+ * Queries how much system memory the frontend has available.
+ *
+ * A core may use this to size large internal allocations (a memory pool,
+ * heap or asset cache) to the running machine instead of to a fixed
+ * compile-time default. The reported values are advisory snapshots: \c free
+ * in particular may include reclaimable cache and can change immediately
+ * after the call, so a core should take a fraction of it and clamp the
+ * result -- it must never assume it can allocate the whole amount.
+ *
+ * Frontends that do not implement this return \c false, in which case the
+ * core is expected to fall back to its own defaults.
+ *
+ * @param[out] data <tt>struct retro_memory_status *</tt>.
+ * @return \c true if the frontend filled in the structure, \c false otherwise.
+ * @see retro_memory_status
+ */
+#define RETRO_ENVIRONMENT_GET_MEMORY_STATUS (86 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
+ *
+ * Sizes are in bytes; a field the frontend cannot determine is left at 0.
+ */
+struct retro_memory_status
+{
+   uint64_t free;   /**< Physical memory currently available to allocate. */
+   uint64_t total;  /**< Total physical memory installed. */
+};
+
 /**@}*/
 
 /**

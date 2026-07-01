@@ -3363,6 +3363,18 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_MEMORY_STATUS:
+      {
+         struct retro_memory_status *memstat = (struct retro_memory_status *)data;
+         memstat->free  = frontend_driver_get_free_memory();
+         memstat->total = frontend_driver_get_total_memory();
+         /* If the active frontend driver cannot report memory, tell the core
+          * the call is unsupported so it falls back to its own defaults. */
+         if (memstat->free == 0 && memstat->total == 0)
+            return false;
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS:
          *(unsigned *)data = settings->uints.input_max_users;
          break;
