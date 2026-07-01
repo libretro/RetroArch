@@ -277,6 +277,7 @@ appstore_cores=(
     stella2023
     tgbdual
     theodore
+    tia
     tic80
     tyrquake
     uzem
