@@ -407,6 +407,11 @@ static bool audio_driver_deinit_internal(bool audio_enable)
       memalign_free(audio_st->synth_buf);
 
    audio_st->synth_buf  = NULL;
+#ifdef HAVE_DSP_FILTER
+   if (audio_st->input_data_int16)
+      memalign_free(audio_st->input_data_int16);
+   audio_st->input_data_int16 = NULL;
+#endif
    audio_st->data_ptr   = 0;
 
 #ifdef HAVE_REWIND
@@ -689,7 +694,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          && !(is_fastforward
                && config_get_ptr()->bools.audio_fastforward_speedup)
 #ifdef HAVE_DSP_FILTER
-         && !audio_st->dsp
+         && (!audio_st->dsp
+               || retro_dsp_filter_supports_int16(audio_st->dsp))
 #endif
 #ifdef HAVE_AUDIOMIXER
          && !(audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
@@ -706,8 +712,28 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       if (use_i16)
       {
          struct resampler_data_int16 s16;
+         const int16_t *rs_in = (const int16_t*)data;
+         unsigned rs_frames   = samples >> 1;
          double   i16_ratio;
          unsigned out_frames;
+
+#ifdef HAVE_DSP_FILTER
+         /* Run an int16-capable DSP chain in place on an int16 scratch copy
+          * (the core's buffer is const), then resample its output. */
+         if (audio_st->dsp && audio_st->input_data_int16)
+         {
+            struct retro_dsp_data_int16 dsp_data;
+            memcpy(audio_st->input_data_int16, data,
+                  samples * sizeof(int16_t));
+            dsp_data.input        = audio_st->input_data_int16;
+            dsp_data.input_frames = rs_frames;
+            dsp_data.output       = NULL;
+            dsp_data.output_frames = 0;
+            retro_dsp_filter_process_int16(audio_st->dsp, &dsp_data);
+            rs_in     = dsp_data.output;
+            rs_frames = dsp_data.output_frames;
+         }
+#endif
 
          /* Rate control - identical to the float resampler path below. */
          if (audio_st->flags & AUDIO_FLAG_CONTROL)
@@ -721,9 +747,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          if (is_slowmotion)
             i16_ratio *= slowmotion_ratio;
 
-         s16.data_in       = (const int16_t*)data;
+         s16.data_in       = rs_in;
          s16.data_out      = audio_st->output_samples_conv_buf;
-         s16.input_frames  = samples >> 1;
+         s16.input_frames  = rs_frames;
          s16.output_frames = 0;
          s16.ratio         = i16_ratio;
          sinc_resampler_int16_process(audio_st->resampler_data_int16, &s16);
@@ -1109,6 +1135,12 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.input_data                     = audio_buf;
    audio_driver_st.synth_buf                      = synth_buf;
    audio_driver_st.input_data_length              = audio_buf_length;
+#ifdef HAVE_DSP_FILTER
+   /* Same frame capacity as input_data, in int16. Used by the s16 fast path
+    * to run an int16-capable DSP chain without an int16<->float round-trip. */
+   audio_driver_st.input_data_int16               =
+         (int16_t*)memalign_alloc(64, max_buffer_samples * sizeof(int16_t));
+#endif
    audio_driver_st.output_samples_conv_buf        = out_conv_buf;
    audio_driver_st.output_samples_conv_buf_length = outsamples_max * sizeof(int16_t);
    audio_driver_st.chunk_block_size               = AUDIO_CHUNK_SIZE_BLOCKING;

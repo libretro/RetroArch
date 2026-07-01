@@ -109,6 +109,33 @@ Because resampling is linear, attenuation is bit-clean; a boost above 0 dB
 interacts with s16 saturation slightly differently than the float path's
 input-side gain, which is acceptable for s16-source content.
 
+### DSP filters (int16 chain)
+
+Previously any active audio DSP filter forced the float path. The DSP filter
+plugin ABI is now **version 2**, adding an optional `process_i16` entry point
+and `dspfilter_{input,output}_i16` structs (`libretro_dspfilter.h`). The
+framework gained:
+
+- `retro_dsp_filter_supports_int16(dsp)` - true only if every filter in the
+  chain provides `process_i16` (API version >= 2);
+- `retro_dsp_filter_process_int16(dsp, data)` - runs the chain in int16.
+
+`audio_driver_flush()` now keeps DSP inside the integer fast path when
+`retro_dsp_filter_supports_int16()` is true: it copies the core's s16 into an
+int16 scratch (`input_data_int16`), runs the int16 chain in place, then feeds
+the result to the integer resampler. If any filter in the chain is float-only,
+the whole flush falls back to the float path as before.
+
+The version check was relaxed from strict equality to a range, so existing
+float-only v1 plugins keep loading (their shorter struct is never over-read
+because `process_i16` is only touched after an `api_version >= 2` check).
+
+`panning` is converted as the reference v2 filter: the 2x2 mix runs in Q16
+fixed point (int64 accumulate, round-half-away, saturate) and measures 1 LSB
+worst case vs the float version. Other bundled filters remain float-only
+(`process_i16 == NULL`) until converted, so they transparently keep using the
+float path.
+
 ### Notes
 
 - For a float-output driver the integer path saturates to the s16 range before

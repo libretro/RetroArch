@@ -235,6 +235,10 @@ typedef struct
     */
    float *input_data;
    float *synth_buf;
+#ifdef HAVE_DSP_FILTER
+   /* int16 scratch for running a fully-int16 DSP chain in the fast path. */
+   int16_t *input_data_int16;
+#endif
    size_t input_data_length;
 #ifdef HAVE_AUDIOMIXER
    struct audio_mixer_stream mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
