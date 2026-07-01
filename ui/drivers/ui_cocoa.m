@@ -880,6 +880,13 @@ static NSStatusItem *statusBarItem = nil;
            RARCH_RELEASE(helpItem);
            RARCH_RELEASE(helpMenu);
            
+           [menu addItem:[NSMenuItem separatorItem]];
+           
+           NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:@"Quit" action:@selector(terminate:) keyEquivalent:@"q"];
+           [quitItem setTarget:NSApp];
+           [menu addItem:quitItem];
+           RARCH_RELEASE(quitItem);
+           
            statusBarItem.menu = menu;
            RARCH_RELEASE(menu);
        }
