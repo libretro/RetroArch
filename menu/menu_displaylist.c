@@ -7894,6 +7894,10 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
                         PARSE_ONLY_UINT, false) == 0)
                   count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_AUDIO_FASTPATH_S16,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
             }
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
