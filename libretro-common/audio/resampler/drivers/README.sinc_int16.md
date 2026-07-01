@@ -17,11 +17,14 @@ resampler (`drivers/sinc_resampler.c`).  It exists to:
 - `drivers/sinc_resampler_int16.{c,h}` — the driver (scalar, C89/MSVC-clean).
 - `test/test_sinc_int16.c`, `test/sinc_ref_float.{c,h}` — bit-exactness harness.
 
-Build & run the harness standalone:
+Build & run the harness standalone (the public header now lives in
+`libretro-common/include/audio/`, so point `-I` there):
 
-    cc -O2 -std=c89 -pedantic -Wall -Wextra \
-       test/test_sinc_int16.c drivers/sinc_resampler_int16.c \
-       test/sinc_ref_float.c -lm -o /tmp/test_sinc_int16 && /tmp/test_sinc_int16
+    cc -O2 -std=c89 -pedantic -Wall -Wextra -Ilibretro-common/include \
+       libretro-common/audio/resampler/test/test_sinc_int16.c \
+       libretro-common/audio/resampler/drivers/sinc_resampler_int16.c \
+       libretro-common/audio/resampler/test/sinc_ref_float.c \
+       -lm -o /tmp/test_sinc_int16 && /tmp/test_sinc_int16
 
 ## Measured vs the float driver (int16 endpoint)
 
@@ -50,72 +53,48 @@ anything the more correct of the two.
 - No implementation-defined signed shifts are used (all shifts operate on
   non-negative magnitudes), so the result is portable and deterministic.
 
-## Wiring the fast path into `audio/audio_driver.c`
+## Fast path in `audio/audio_driver.c` (wired)
 
-The shared `retro_resampler` vtable is float-typed, so rather than forcing an
-ABI change on `struct resampler_data`, keep the int16 driver as a **parallel
-handle** used by a fast path in `audio_driver_flush()`.
+The shared `retro_resampler` vtable is float-typed, so rather than change the
+float ABI, the integer driver is held as a parallel handle
+(`audio_driver_state_t::resampler_data_int16`) and used by a fast path in
+`audio_driver_flush()`.
 
-1. Add to `audio_driver_state_t`:
+- **Init** (`audio_driver_init_internal`): after `retro_resampler_realloc`, when
+  the selected backend's `short_ident` is `"sinc"`, an int16 instance is created
+  with `sinc_resampler_int16_init(src_ratio_orig, <mapped quality>)`. Logs
+  `"[Audio] SINC resampler: integer s16 fast path available"`.
+- **Deinit** (`audio_driver_deinit_resampler`): frees the int16 handle.
+- **Flush** (`audio_driver_flush`): a branch after the existing `write_raw`
+  fast path takes the integer route when **all** of these hold — int16 core
+  audio, an int16 handle exists, unity gain, no MIDI synth, no fast-forward
+  pitch EMA, and (config-gated) no DSP and no active mixer. It runs the same DRC
+  (`src_ratio_orig * audio_driver_compute_rate_adjust`) and slow-motion scaling
+  as the float path, resamples s16->s16 into `output_samples_conv_buf`, and
+  writes directly (or does a single s16->float pass for float-output drivers).
+  Any condition failing falls through to the float path unchanged.
 
-       void *resampler_int16_data;   /* rarch_sinc_resampler_int16_t* */
+### Which path is running — log
 
-2. In `audio_driver_init_internal()`, alongside `retro_resampler_realloc(...)`,
-   when the selected resampler ident is `"sinc"` create the int16 instance:
+`audio_driver_flush()` logs on every **transition** (not per-flush):
 
-       audio_st->resampler_int16_data =
-             sinc_resampler_int16_init(audio_st->src_ratio_orig, quality);
+    [Audio] SINC resampler active path: integer s16 (no float round-trip)
+    [Audio] SINC resampler active path: float
 
-   (Free it in `audio_driver_deinit_resampler()` next to the float handle.)
+So the line at startup tells you which path is live, and it re-logs whenever the
+conditions flip (e.g. a DSP plugin is toggled, the mixer starts, volume leaves
+0 dB, or fast-forward-with-speedup engages), which is exactly when it falls back
+to float.
 
-3. In `audio_driver_flush()`, add a branch *after* the existing `write_raw`
-   fast path (line ~650) and *before* the `convert_s16_to_float` path
-   (line ~672). Gate it on exactly the conditions that make a float-domain pass
-   unnecessary — the same set the `write_raw` path already uses:
+### Notes / follow-ups
 
-       if (!is_float
-             && audio_st->resampler_int16_data
-             && audio_volume_gain == 1.0f      /* gain applied in float otherwise */
-             && !midi_driver_synth_active()
-       #ifdef HAVE_DSP_FILTER
-             && !audio_st->dsp
-       #endif
-       #ifdef HAVE_AUDIOMIXER
-             && audio_st->mixer_streams_playing == 0
-       #endif
-          )
-       {
-          struct resampler_data_int16 s16;
-          /* DRC: identical mechanism to the float path (line ~745). */
-          double adjust = 1.0;
-          if (audio_st->flags & AUDIO_FLAG_CONTROL) { ... compute as today ... }
-          audio_st->src_ratio_curr = audio_st->src_ratio_orig * adjust;
-
-          s16.data_in       = (const int16_t*)data;
-          s16.input_frames  = samples >> 1;
-          s16.data_out      = audio_st->output_samples_conv_buf; /* int16 buf */
-          s16.ratio         = audio_st->src_ratio_curr;
-          sinc_resampler_int16_process(audio_st->resampler_int16_data, &s16);
-
-          /* For an s16 device: hand s16.data_out straight to write() — no
-           * convert_float_to_s16. For a float device: one convert_s16_to_float
-           * at the output rate (still one conversion, vs one on the float path,
-           * so neutral on work but deterministic). */
-          ... existing write/underrun handling, using s16.output_frames ...
-          return;
-       }
-
-   Notes:
-   - The DRC loop is unchanged — `ratio` is a `double` set per flush exactly as
-     the float path does (`src_ratio_orig * rate_adjust`).
-   - `output_samples_conv_buf` already exists as the int16 output staging buffer
-     (used by `convert_float_to_s16` at line ~913); reuse it directly.
-   - Volume/mute at non-unity gain falls through to the float path, which
-     handles arbitrary gain cleanly. A later refinement can apply a Q16 gain in
-     the int16 path to cover that case too.
-
-4. Optional config toggle `audio_fastpath_s16` (default on) to A/B it.
-
-The driver + harness in this patch are build- and bit-tested; step 3 touches the
-`#ifdef` matrix in `audio_driver_flush()` and should be compiled against a full
-tree before merge.
+- Non-unity volume/mute and active DSP/mixer/MIDI deliberately fall back to the
+  float path; a later refinement can apply a Q16 gain in the integer path to
+  cover volume too.
+- For a **float-output** driver the integer path saturates to the s16 range
+  before the s16->float pass, so it does not reproduce sinc overshoot headroom
+  a float endpoint could otherwise carry — intended for s16-source content and
+  determinism; the float path remains available for anyone who wants that
+  headroom.
+- Optional: gate the whole thing behind an `audio_fastpath_s16` setting
+  (default on) to A/B without changing resampler backends.

@@ -218,6 +218,11 @@ typedef struct
 
    void *resampler_data;
 
+   /* Optional deterministic integer (s16) sinc resampler, used by the
+    * fast path in audio_driver_flush() when the selected resampler is
+    * "sinc" and no float-domain stage is active. NULL otherwise. */
+   void *resampler_data_int16;
+
    /**
     * The current audio driver.
     */

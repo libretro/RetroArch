@@ -9,7 +9,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "sinc_resampler_int16.h"
+#include <audio/sinc_resampler_int16.h>
 #include "sinc_ref_float.h"
 
 #ifndef M_PI

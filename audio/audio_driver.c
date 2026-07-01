@@ -40,6 +40,7 @@
 #include <memalign.h>
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
+#include <audio/sinc_resampler_int16.h>
 #include <audio/conversion/dual_mono.h>
 #ifdef HAVE_AUDIOMIXER
 #include <audio/audio_mixer.h>
@@ -356,10 +357,30 @@ static void audio_driver_deinit_resampler(void)
    audio_driver_state_t *audio_st = &audio_driver_st;
    if (audio_st->resampler && audio_st->resampler_data)
       audio_st->resampler->free(audio_st->resampler_data);
+   if (audio_st->resampler_data_int16)
+      sinc_resampler_int16_free(audio_st->resampler_data_int16);
    audio_st->resampler          = NULL;
    audio_st->resampler_data     = NULL;
+   audio_st->resampler_data_int16 = NULL;
    audio_st->resampler_ident[0] = '\0';
    audio_st->resampler_quality  = RESAMPLER_QUALITY_DONTCARE;
+}
+
+/* Map the shared resampler quality enum onto the integer sinc driver's own
+ * quality enum (they use different orderings). */
+static enum sinc_int16_quality audio_sinc_int16_quality_map(
+      enum resampler_quality q)
+{
+   switch (q)
+   {
+      case RESAMPLER_QUALITY_LOWEST:  return SINC_INT16_QUALITY_LOWEST;
+      case RESAMPLER_QUALITY_LOWER:   return SINC_INT16_QUALITY_LOWER;
+      case RESAMPLER_QUALITY_HIGHER:  return SINC_INT16_QUALITY_HIGHER;
+      case RESAMPLER_QUALITY_HIGHEST: return SINC_INT16_QUALITY_HIGHEST;
+      case RESAMPLER_QUALITY_NORMAL:
+      case RESAMPLER_QUALITY_DONTCARE:
+      default:                        return SINC_INT16_QUALITY_NORMAL;
+   }
 }
 
 static bool audio_driver_deinit_internal(bool audio_enable)
@@ -647,6 +668,84 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       audio->write_raw(audio_st->context_audio_data,
             data, frames, input_rate, rate_adjust, audio_volume_gain);
       return;
+   }
+
+   /* Deterministic integer (s16) fast path.
+    *
+    * When the core delivered int16, the selected resampler is "sinc", and no
+    * float-domain stage is active (DSP, mixer, MIDI synth, non-unity gain, or
+    * the fast-forward pitch EMA), resample s16 -> s16 directly.  This removes
+    * the s16<->float round-trip, uses no FPU, and is bit-identical across
+    * platforms (netplay / rewind).  Any of those conditions failing falls
+    * through to the float resampler path below. */
+   {
+      static int audio_i16_path_logged = -1;
+      bool use_i16 =
+             (audio_st->resampler_data_int16 != NULL)
+         && !is_float
+         &&  audio_volume_gain == 1.0f
+         && !midi_driver_synth_active()
+         && !(is_fastforward
+               && config_get_ptr()->bools.audio_fastforward_speedup)
+#ifdef HAVE_DSP_FILTER
+         && !audio_st->dsp
+#endif
+#ifdef HAVE_AUDIOMIXER
+         && !(audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
+#endif
+         ;
+
+      if (audio_i16_path_logged != (int)use_i16)
+      {
+         RARCH_LOG("[Audio] SINC resampler active path: %s\n",
+               use_i16 ? "integer s16 (no float round-trip)" : "float");
+         audio_i16_path_logged = (int)use_i16;
+      }
+
+      if (use_i16)
+      {
+         struct resampler_data_int16 s16;
+         double   i16_ratio;
+         unsigned out_frames;
+
+         /* Rate control - identical to the float resampler path below. */
+         if (audio_st->flags & AUDIO_FLAG_CONTROL)
+         {
+            audio_st->samples_since_drc += samples;
+            if (audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
+               audio_st->src_ratio_curr = audio_st->src_ratio_orig *
+                     audio_driver_compute_rate_adjust(audio_st);
+         }
+         i16_ratio = audio_st->src_ratio_curr;
+         if (is_slowmotion)
+            i16_ratio *= slowmotion_ratio;
+
+         s16.data_in       = (const int16_t*)data;
+         s16.data_out      = audio_st->output_samples_conv_buf;
+         s16.input_frames  = samples >> 1;
+         s16.output_frames = 0;
+         s16.ratio         = i16_ratio;
+         sinc_resampler_int16_process(audio_st->resampler_data_int16, &s16);
+
+         out_frames = (unsigned)s16.output_frames;
+
+         if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
+         {
+            /* Float-output driver: a single s16 -> float pass at the output
+             * rate.  The integer resampler already saturated to the s16 range,
+             * so no additional clamp is required. */
+            convert_s16_to_float(audio_st->output_samples_buf,
+                  audio_st->output_samples_conv_buf, out_frames * 2, 1.0f);
+            audio->write(audio_st->context_audio_data,
+                  audio_st->output_samples_buf,
+                  out_frames * 2 * sizeof(float));
+         }
+         else
+            audio->write(audio_st->context_audio_data,
+                  audio_st->output_samples_conv_buf,
+                  out_frames * 2 * sizeof(int16_t));
+         return;
+      }
    }
 
    src_data.data_out                 = NULL;
@@ -1110,6 +1209,27 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             audio_driver_st.resampler_ident);
       audio_driver_st.flags &= ~AUDIO_FLAG_ACTIVE;
+   }
+
+   /* Deterministic integer (s16) sinc fast path: allocate an int16 resampler
+    * mirroring the float one when the selected backend is "sinc".  It is used
+    * by audio_driver_flush() only when no float-domain stage (DSP, mixer, MIDI
+    * synth, non-unity gain) is active; otherwise the float path runs. */
+   if (audio_driver_st.resampler_data_int16)
+   {
+      sinc_resampler_int16_free(audio_driver_st.resampler_data_int16);
+      audio_driver_st.resampler_data_int16 = NULL;
+   }
+   if (     audio_driver_st.resampler
+         && audio_driver_st.resampler->short_ident
+         && string_is_equal(audio_driver_st.resampler->short_ident, "sinc"))
+   {
+      audio_driver_st.resampler_data_int16 = sinc_resampler_int16_init(
+            audio_driver_st.src_ratio_orig,
+            audio_sinc_int16_quality_map(audio_driver_st.resampler_quality));
+      RARCH_LOG("[Audio] SINC resampler: integer s16 fast path %s.\n",
+            audio_driver_st.resampler_data_int16
+                  ? "available" : "unavailable");
    }
 
    audio_driver_st.data_ptr = 0;

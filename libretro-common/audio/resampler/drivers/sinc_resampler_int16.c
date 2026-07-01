@@ -51,7 +51,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "sinc_resampler_int16.h"
+#include <audio/sinc_resampler_int16.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
