@@ -53,6 +53,15 @@
 
 #include <audio/sinc_resampler_int16.h>
 
+/* On targets whose compiler can auto-vectorize an int16*int32->int64 MAC
+ * (e.g. AArch64/NEON via smlal), splitting the Kaiser inner loop into a
+ * branchless interpolation pass and a pure MAC pass lets the vectorizer take
+ * the MAC. On targets without that primitive (e.g. x86 SSE2) the fused loop is
+ * faster (no scratch round-trip), so this is gated to NEON only. */
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#define SINC_I16_KAISER_FISSION 1
+#endif
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -73,6 +82,9 @@ typedef struct rarch_sinc_resampler_int16
    uint32_t  subphase_mask;
    unsigned  taps;
    unsigned  window;      /* enum sinc_i16_window */
+#ifdef SINC_I16_KAISER_FISSION
+   int32_t  *coef_scratch;/* per-output effective Kaiser coeffs (NEON fission) */
+#endif
    unsigned  ptr;
    uint32_t  time;
    double    kaiser_beta;
@@ -275,6 +287,26 @@ static void sinc_i16_process_kaiser(rarch_sinc_resampler_int16_t *re,
             const int32_t *dt = pt + taps;
             uint32_t dsub     = re->time & sub_mask;
 
+#ifdef SINC_I16_KAISER_FISSION
+            {
+               int32_t *cs = re->coef_scratch;
+               /* Interp pass: coeff = pt[i] + trunc(dsub*dt[i] / 2^sb).
+                * Adding (2^sb-1) to negative products before the arithmetic
+                * shift turns floor into truncate-toward-zero (branchless, so
+                * the following MAC pass auto-vectorizes; bit-exact). */
+               for (i = 0; i < taps; i++)
+               {
+                  int64_t prod = (int64_t)dsub * dt[i];
+                  int64_t bias = (prod >> 63) & (((int64_t)1 << sb) - 1);
+                  cs[i]        = pt[i] + (int32_t)((prod + bias) >> sb);
+               }
+               for (i = 0; i < taps; i++)
+               {
+                  sum_l += (int64_t)buffer_l[i] * cs[i];
+                  sum_r += (int64_t)buffer_r[i] * cs[i];
+               }
+            }
+#else
             for (i = 0; i < taps; i++)
             {
                /* coeff = pt[i] + trunc(dsub * dt[i] / 2^sb); dsub >= 0. */
@@ -287,6 +319,7 @@ static void sinc_i16_process_kaiser(rarch_sinc_resampler_int16_t *re,
                sum_l += (int64_t)buffer_l[i] * c;
                sum_r += (int64_t)buffer_r[i] * c;
             }
+#endif
 
             output[0] = sinc_i16_sat(sinc_i16_round_shift(sum_l));
             output[1] = sinc_i16_sat(sinc_i16_round_shift(sum_r));
@@ -365,6 +398,9 @@ void sinc_resampler_int16_free(void *re_)
    {
       free(re->phase_table);
       free(re->buffer_l);
+#ifdef SINC_I16_KAISER_FISSION
+      free(re->coef_scratch);
+#endif
    }
    free(re);
 }
@@ -450,6 +486,12 @@ void *sinc_resampler_int16_init(double bandwidth_mod,
    if (!re->phase_table || !re->buffer_l)
       goto error;
    re->buffer_r    = re->buffer_l + 2 * re->taps;
+
+#ifdef SINC_I16_KAISER_FISSION
+   re->coef_scratch = (int32_t*)malloc(sizeof(int32_t) * (re->taps + 4u));
+   if (!re->coef_scratch)
+      goto error;
+#endif
 
    if (window == SINC_I16_WINDOW_KAISER)
       sinc_i16_init_table_kaiser(re, cutoff, re->phase_table,
