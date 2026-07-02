@@ -5008,6 +5008,7 @@ void video_driver_frame(const void *data, unsigned width,
                " Samples:  %8d\n"
                " Core Sample Format:     %s\n"
                " Frontend Sample Format: %s\n"
+               " Frontend Resampling:    %s\n"
                ,
                audio_state_get_ptr()->current_audio->ident,
                audio_stats.average_buffer_saturation,
@@ -5016,7 +5017,8 @@ void video_driver_frame(const void *data, unsigned width,
                audio_stats.close_to_blocking,
                audio_stats.samples,
                audio_state_get_ptr()->stat_core_is_float     ? "float" : "int16",
-               audio_state_get_ptr()->stat_frontend_is_float ? "float" : "int16");
+               audio_state_get_ptr()->stat_frontend_is_float ? "float" : "int16",
+               (audio_state_get_ptr()->src_ratio_orig == 1.0) ? "no" : "yes");
 
          /* TODO/FIXME - localize */
          __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",
