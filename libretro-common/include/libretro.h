@@ -1700,20 +1700,6 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
 
 /**
- * The frontend will try to use a "shared" context when setting up a hardware context.
- * Mostly applicable to OpenGL.
- *
- * In order for this to have any effect,
- * the core must call \c RETRO_ENVIRONMENT_SET_HW_RENDER at some point
- * if it hasn't already.
- *
- * @param data Ignored.
- * @returns \c true if the environment call is available
- * and the frontend supports shared hardware contexts.
- */
-#define RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (44 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-
-/**
  * Returns an interface that the core can use to access the file system.
  * Should be called as early as possible.
  *
@@ -2714,6 +2700,20 @@ enum retro_mod
  * @see retro_memory_status
  */
 #define RETRO_ENVIRONMENT_GET_MEMORY_STATUS (86 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * The frontend will try to use a "shared" context when setting up a hardware context.
+ * Mostly applicable to OpenGL.
+ *
+ * In order for this to have any effect,
+ * the core must call \c RETRO_ENVIRONMENT_SET_HW_RENDER at some point
+ * if it hasn't already.
+ *
+ * @param data Ignored.
+ * @returns \c true if the environment call is available
+ * and the frontend supports shared hardware contexts.
+ */
+#define RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (87 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
  * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
