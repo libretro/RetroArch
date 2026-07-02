@@ -1294,8 +1294,12 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
                   quality, stop_cb);
 #endif
             break;
-         case AUDIO_MIXER_TYPE_WAV:
          case AUDIO_MIXER_TYPE_MOD:
+#ifdef HAVE_IBXM
+            res = audio_mixer_play_mod(sound, voice, repeat, volume, stop_cb);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_WAV:
          case AUDIO_MIXER_TYPE_NONE:
             /* Remaining s16 voice types land in follow-up commits. */
             break;
@@ -1665,6 +1669,72 @@ again:
    {
       samplef     = (float)(*pcm++) * (1.0f / 0x8000);
       *buffer++  += samplef * volume;
+   }
+
+   voice->types.mod.position += buf_free;
+   voice->types.mod.samples  -= buf_free;
+}
+
+static void audio_mixer_mix_mod_s16(int16_t* buffer, size_t num_frames,
+      audio_mixer_voice_t* voice,
+      int32_t gain_q16)
+{
+   int i;
+   unsigned temp_samples = 0;
+   unsigned buf_free     = (unsigned)(num_frames * 2);
+   int     *pcm          = NULL;
+
+   if (voice->types.mod.samples == 0)
+   {
+again:
+      temp_samples = replay_get_audio(
+            voice->types.mod.stream, voice->types.mod.buffer, 0) * 2;
+
+      if (temp_samples == 0)
+      {
+         if (voice->repeat)
+         {
+            if (voice->stop_cb)
+               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
+            replay_seek(voice->types.mod.stream, 0);
+            goto again;
+         }
+         if (voice->stop_cb)
+            voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
+         audio_mixer_release(voice);
+         return;
+      }
+
+      voice->types.mod.position = 0;
+      voice->types.mod.samples  = temp_samples;
+   }
+
+   pcm = voice->types.mod.buffer + voice->types.mod.position;
+
+   /* ibxm emits fixed-point samples whose unity is FP_ONE (0x8000),
+    * which is exactly the s16 full-scale magnitude, so the rendered
+    * int sample needs no rescale: clamp it into s16 range (loud
+    * multi-channel mixes can exceed +/-FP_ONE, matching the downstream
+    * clamp on the float path), apply the Q16 gain, and accumulate with
+    * saturation.  No int16<->float round-trip and no resampler -- ibxm
+    * already renders at the mixer rate. */
+   if (voice->types.mod.samples < buf_free)
+   {
+      for (i = voice->types.mod.samples; i != 0; i--)
+      {
+         *buffer = audio_mixer_sat_s16((int32_t)*buffer
+               + audio_mixer_gain_s16(audio_mixer_sat_s16(*pcm++), gain_q16));
+         buffer++;
+      }
+      buf_free -= voice->types.mod.samples;
+      goto again;
+   }
+
+   for (i = buf_free; i != 0; --i)
+   {
+      *buffer = audio_mixer_sat_s16((int32_t)*buffer
+            + audio_mixer_gain_s16(audio_mixer_sat_s16(*pcm++), gain_q16));
+      buffer++;
    }
 
    voice->types.mod.position += buf_free;
@@ -2130,8 +2200,12 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
             audio_mixer_mix_mp3_s16(buffer, num_frames, voice, gain_q16);
 #endif
             break;
-         case AUDIO_MIXER_TYPE_WAV:
          case AUDIO_MIXER_TYPE_MOD:
+#ifdef HAVE_IBXM
+            audio_mixer_mix_mod_s16(buffer, num_frames, voice, gain_q16);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_WAV:
          case AUDIO_MIXER_TYPE_NONE:
             /* Remaining s16 voice types land in follow-up commits. */
             break;
