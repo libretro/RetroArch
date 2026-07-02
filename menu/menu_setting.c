@@ -10181,6 +10181,15 @@ typedef struct setting_desc
      0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
      0, 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_ACTION, 0, 0, 0 }
 
+/* String rows whose value target lives in settings_t.paths rather
+ * than settings_t.arrays (streaming title/url and friends). */
+#define SDESC_STRING_ROW_P(field, label, def, sd_flags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
+   { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     0.0f, 0.0f, 0.0f, (def), (_repr), (ok), \
+     (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
+     (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_STRING, 0, (uint8_t)(_uitype), 0 }
+
 #define SDESC_UINT_ROW(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
    { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
@@ -10255,20 +10264,20 @@ typedef struct setting_desc
 /* Path rows: value target lives in settings_t.paths; def is a static
  * default string.  The _DS variant takes another settings_t.paths field
  * as the runtime default (the dominant pattern: filter/asset dirs). */
-#define SDESC_PATH_ROW(field, label, def, sd_flags, cmd, vals, _repr) \
+#define SDESC_PATH_ROW(field, label, def, sd_flags, cmd, vals, _repr, _uitype) \
    { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      0.0f, 0.0f, 0.0f, (def), (_repr), NULL, \
      (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
-     NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_PATH, 0, 0, 0, \
+     NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_PATH, 0, (uint8_t)(_uitype), 0, \
      (vals), 0 }
-#define SDESC_PATH_ROW_DS(field, label, def_field, sd_flags, cmd, vals, _repr) \
+#define SDESC_PATH_ROW_DS(field, label, def_field, sd_flags, cmd, vals, _repr, _uitype) \
    { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      0.0f, 0.0f, 0.0f, NULL, (_repr), NULL, \
      (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
      NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_PATH, \
-     SDESC_FLG_DEF_SETTINGS, 0, 0, \
+     SDESC_FLG_DEF_SETTINGS, (uint8_t)(_uitype), 0, \
      (vals), (uint32_t)offsetof(settings_t, paths.def_field) }
 
 /* Directory rows: like path rows, but with the ST_DIR empty-value
@@ -12153,13 +12162,14 @@ static bool setting_append_list(
                   sav_desc_0, ARRAY_SIZE(sav_desc_0),
                   &group_info, &subgroup_info, parent_group);
          }
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
+         {
+            static const setting_desc_t saving2_desc_0[] = {
+               SDESC_ACTION_ROW(CLOUD_SYNC_SETTINGS),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  saving2_desc_0, ARRAY_SIZE(saving2_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
@@ -13433,67 +13443,28 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 #endif
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_scale_integer,
-                  MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-                  DEFAULT_SCALE_INTEGER,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                  list,
-                  list_info,
-                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_scale_integer_axis,
-                  MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_AXIS,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
-                  DEFAULT_SCALE_INTEGER_AXIS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_video_scale_integer_axis;
-            menu_settings_list_current_add_range(list, list_info, 0, VIDEO_SCALE_INTEGER_AXIS_LAST - 1, 1, true, true);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                  list,
-                  list_info,
-                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_scale_integer_scaling,
-                  MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_SCALING,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
-                  DEFAULT_SCALE_INTEGER_SCALING,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_video_scale_integer_scaling;
-            menu_settings_list_current_add_range(list, list_info, 0, VIDEO_SCALE_INTEGER_SCALING_LAST - 1, 1, true, true);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                  list,
-                  list_info,
-                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+         {
+            static const setting_desc_t video2_desc_0[] = {
+               SDESC_BOOL_ROW_EX(video_scale_integer, VIDEO_SCALE_INTEGER,
+                     DEFAULT_SCALE_INTEGER, SD_FLAG_NONE, 0, CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+               SDESC_UINT_ROW_EX(video_scale_integer_axis, VIDEO_SCALE_INTEGER_AXIS,
+                     DEFAULT_SCALE_INTEGER_AXIS,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                     0, VIDEO_SCALE_INTEGER_AXIS_LAST - 1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_video_scale_integer_axis,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_UINT_ROW_EX(video_scale_integer_scaling, VIDEO_SCALE_INTEGER_SCALING,
+                     DEFAULT_SCALE_INTEGER_SCALING,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                     0, VIDEO_SCALE_INTEGER_SCALING_LAST - 1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_video_scale_integer_scaling,
+                     NULL, NULL, NULL, NULL, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  video2_desc_0, ARRAY_SIZE(video2_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
 #ifdef GEKKO
             {
@@ -13964,7 +13935,7 @@ static bool setting_append_list(
                   SDESC_PATH_ROW_DS(path_softfilter_plugin, VIDEO_FILTER,
                         directory_video_filter, SD_FLAG_LAKKA_ADVANCED,
                         CMD_EVENT_VIDEO_FILTER_INIT, "filt",
-                        setting_get_string_representation_video_filter)
+                        setting_get_string_representation_video_filter, 0)
                };
                settings_list_add_desc(list, list_info, settings,
                      video_filter_desc, ARRAY_SIZE(video_filter_desc),
@@ -14352,7 +14323,7 @@ static bool setting_append_list(
             static const setting_desc_t audio_dsp_desc[] = {
                SDESC_PATH_ROW_DS(path_audio_dsp_plugin, AUDIO_DSP_PLUGIN,
                      directory_audio_filter, SD_FLAG_LAKKA_ADVANCED,
-                     CMD_EVENT_DSP_FILTER_INIT, "dsp", NULL)
+                     CMD_EVENT_DSP_FILTER_INIT, "dsp", NULL, 0)
             };
             settings_list_add_desc(list, list_info, settings,
                   audio_dsp_desc, ARRAY_SIZE(audio_dsp_desc),
@@ -14995,35 +14966,18 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-            CONFIG_PATH(
-               list, list_info,
-               settings->paths.path_record_config,
-               sizeof(settings->paths.path_record_config),
-               MENU_ENUM_LABEL_RECORD_CONFIG,
-               MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-            MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
-
-            CONFIG_STRING(
-                  list, list_info,
-                  settings->paths.streaming_title,
-                  sizeof(settings->paths.streaming_title),
-                  MENU_ENUM_LABEL_STREAMING_TITLE,
-                  MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
-                  "",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         {
+            static const setting_desc_t recording2_desc_0[] = {
+               SDESC_PATH_ROW(path_record_config, RECORD_CONFIG,
+                     "", SD_FLAG_NONE, 0, "cfg", NULL, 0),
+               SDESC_STRING_ROW_P(streaming_title, STREAMING_TITLE,
+                     "", SD_FLAG_ALLOW_INPUT, 0,
+                     NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_STRING_LINE_EDIT),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  recording2_desc_0, ARRAY_SIZE(recording2_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
             CONFIG_UINT(
                list, list_info,
@@ -15071,36 +15025,18 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-            CONFIG_PATH(
-               list, list_info,
-               settings->paths.path_stream_config,
-               sizeof(settings->paths.path_stream_config),
-               MENU_ENUM_LABEL_STREAM_CONFIG,
-               MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-            MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_FILE_SELECTOR;
-
-            CONFIG_STRING(
-               list, list_info,
-               settings->paths.path_stream_url,
-               sizeof(settings->paths.path_stream_url),
-               MENU_ENUM_LABEL_STREAMING_URL,
-               MENU_ENUM_LABEL_VALUE_STREAMING_URL,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         {
+            static const setting_desc_t recording2_desc_1[] = {
+               SDESC_PATH_ROW(path_stream_config, STREAM_CONFIG,
+                     "", SD_FLAG_NONE, 0, "cfg", NULL, 0),
+               SDESC_STRING_ROW_P(path_stream_url, STREAMING_URL,
+                     "", SD_FLAG_ALLOW_INPUT, 0,
+                     NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_STRING_LINE_EDIT),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  recording2_desc_1, ARRAY_SIZE(recording2_desc_1),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          {
             static const setting_desc_t recording_desc_2[] = {
@@ -15406,22 +15342,15 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-         CONFIG_PATH(
-               list, list_info,
-               settings->paths.path_font,
-               sizeof(settings->paths.path_font),
-               MENU_ENUM_LABEL_VIDEO_FONT_PATH,
-               MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
-               settings->paths.directory_assets,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_video_font_path;
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FONT_SELECTOR;
-         MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "ttf");
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+         {
+            static const setting_desc_t onscreen_not2_desc_0[] = {
+               SDESC_PATH_ROW_DS(path_font, VIDEO_FONT_PATH,
+                     directory_assets, SD_FLAG_NONE, CMD_EVENT_REINIT, "ttf", setting_get_string_representation_video_font_path, ST_UI_TYPE_FONT_SELECTOR),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  onscreen_not2_desc_0, ARRAY_SIZE(onscreen_not2_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
                   {
             static const setting_desc_t osn_desc_4[] = {
@@ -15764,20 +15693,15 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-         CONFIG_PATH(
-               list, list_info,
-               settings->paths.path_overlay,
-               sizeof(settings->paths.path_overlay),
-               MENU_ENUM_LABEL_OVERLAY_PRESET,
-               MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-               settings->paths.directory_overlay,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_INIT);
+         {
+            static const setting_desc_t overlay2_desc_0[] = {
+               SDESC_PATH_ROW_DS(path_overlay, OVERLAY_PRESET,
+                     directory_overlay, SD_FLAG_NONE, CMD_EVENT_OVERLAY_INIT, "cfg", NULL, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  overlay2_desc_0, ARRAY_SIZE(overlay2_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          {
             static const setting_desc_t ovl_desc_2[] = {
@@ -16116,19 +16040,15 @@ static bool setting_append_list(
          if (   string_is_not_equal(settings->arrays.menu_driver, "rgui")
              && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
          {
-            CONFIG_PATH(
-                  list, list_info,
-                  settings->paths.path_menu_wallpaper,
-                  sizeof(settings->paths.path_menu_wallpaper),
-                  MENU_ENUM_LABEL_MENU_WALLPAPER,
-                  MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
-                  settings->paths.directory_assets,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "png");
+         {
+            static const setting_desc_t menu2_desc_0[] = {
+               SDESC_PATH_ROW_DS(path_menu_wallpaper, MENU_WALLPAPER,
+                     directory_assets, SD_FLAG_NONE, 0, "png", NULL, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  menu2_desc_0, ARRAY_SIZE(menu2_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          {
             static const setting_desc_t menu_desc_0[] = {
@@ -16329,19 +16249,15 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-            CONFIG_PATH(
-                  list, list_info,
-                  settings->paths.path_rgui_theme_preset,
-                  sizeof(settings->paths.path_rgui_theme_preset),
-                  MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-                  settings->paths.directory_assets,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
+         {
+            static const setting_desc_t menu2_desc_1[] = {
+               SDESC_PATH_ROW_DS(path_rgui_theme_preset, RGUI_MENU_THEME_PRESET,
+                     directory_assets, SD_FLAG_NONE, 0, "cfg", NULL, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  menu2_desc_1, ARRAY_SIZE(menu2_desc_1),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
             /* ps2 and sdl_dingux/sdl_rs90 gfx drivers do
              * not support menu framebuffer transparency */
@@ -16494,21 +16410,16 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-         CONFIG_STRING(
-               list, list_info,
-               settings->paths.kiosk_mode_password,
-               sizeof(settings->paths.kiosk_mode_password),
-               MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,
-               MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
-         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         {
+            static const setting_desc_t menu2_desc_2[] = {
+               SDESC_STRING_ROW_P(kiosk_mode_password, MENU_KIOSK_MODE_PASSWORD,
+                     "", SD_FLAG_ALLOW_INPUT, 0,
+                     NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_PASSWORD_LINE_EDIT),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  menu2_desc_2, ARRAY_SIZE(menu2_desc_2),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
 #ifdef HAVE_THREADS
          {
@@ -16591,23 +16502,15 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-            CONFIG_PATH(
-                  list, list_info,
-                  settings->paths.path_menu_xmb_font,
-                  sizeof(settings->paths.path_menu_xmb_font),
-                  MENU_ENUM_LABEL_XMB_FONT,
-                  MENU_ENUM_LABEL_VALUE_XMB_FONT,
-                  settings->paths.directory_assets,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_video_font_path;
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FONT_SELECTOR;
-            MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "ttf");
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         {
+            static const setting_desc_t menu2_desc_3[] = {
+               SDESC_PATH_ROW_DS(path_menu_xmb_font, XMB_FONT,
+                     directory_assets, SD_FLAG_LAKKA_ADVANCED, CMD_EVENT_REINIT, "ttf", setting_get_string_representation_video_font_path, ST_UI_TYPE_FONT_SELECTOR),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  menu2_desc_3, ARRAY_SIZE(menu2_desc_3),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          {
             static const setting_desc_t menu_desc_20[] = {
@@ -16807,21 +16710,16 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-            CONFIG_STRING(
-               list, list_info,
-               settings->paths.menu_content_show_settings_password,
-               sizeof(settings->paths.menu_content_show_settings_password),
-               MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-               MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
-            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         {
+            static const setting_desc_t menu2_desc_4[] = {
+               SDESC_STRING_ROW_P(menu_content_show_settings_password, CONTENT_SHOW_SETTINGS_PASSWORD,
+                     "", SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED, 0,
+                     NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_PASSWORD_LINE_EDIT),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  menu2_desc_4, ARRAY_SIZE(menu2_desc_4),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          {
             static const setting_desc_t menu_desc_29[] = {
@@ -16957,23 +16855,15 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-            CONFIG_PATH(
-                  list, list_info,
-                  settings->paths.path_menu_ozone_font,
-                  sizeof(settings->paths.path_menu_ozone_font),
-                  MENU_ENUM_LABEL_OZONE_FONT,
-                  MENU_ENUM_LABEL_VALUE_OZONE_FONT,
-                  settings->paths.directory_assets,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_video_font_path;
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FONT_SELECTOR;
-            MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "ttf");
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         {
+            static const setting_desc_t menu2_desc_5[] = {
+               SDESC_PATH_ROW_DS(path_menu_ozone_font, OZONE_FONT,
+                     directory_assets, SD_FLAG_LAKKA_ADVANCED, CMD_EVENT_REINIT, "ttf", setting_get_string_representation_video_font_path, ST_UI_TYPE_FONT_SELECTOR),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  menu2_desc_5, ARRAY_SIZE(menu2_desc_5),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          {
             static const setting_desc_t menu_desc_32[] = {
@@ -18455,38 +18345,19 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_netplay_mitm_server;
 
-            CONFIG_STRING(
-                  list, list_info,
-                  settings->paths.netplay_custom_mitm_server,
-                  sizeof(settings->paths.netplay_custom_mitm_server),
-                  MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,
-                  MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-                  "",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
-
-            CONFIG_STRING(
-                  list, list_info,
-                  settings->paths.netplay_server,
-                  sizeof(settings->paths.netplay_server),
-                  MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
-                  MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
-                  "",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         {
+            static const setting_desc_t netplay2_desc_0[] = {
+               SDESC_STRING_ROW_P(netplay_custom_mitm_server, NETPLAY_CUSTOM_MITM_SERVER,
+                     "", SD_FLAG_ALLOW_INPUT, 0,
+                     NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_STRING_LINE_EDIT),
+               SDESC_STRING_ROW_P(netplay_server, NETPLAY_IP_ADDRESS,
+                     "", SD_FLAG_ALLOW_INPUT | SD_FLAG_ADVANCED, 0,
+                     NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_STRING_LINE_EDIT),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  netplay2_desc_0, ARRAY_SIZE(netplay2_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          {
             static const setting_desc_t np_desc_2[] = {
@@ -18514,37 +18385,19 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-            CONFIG_STRING(
-                  list, list_info,
-                  settings->paths.netplay_password,
-                  sizeof(settings->paths.netplay_password),
-                  MENU_ENUM_LABEL_NETPLAY_PASSWORD,
-                  MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
-                  "",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
-            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
-
-            CONFIG_STRING(
-                  list, list_info,
-                  settings->paths.netplay_spectate_password,
-                  sizeof(settings->paths.netplay_spectate_password),
-                  MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,
-                  MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
-                  "",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
-            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         {
+            static const setting_desc_t netplay2_desc_1[] = {
+               SDESC_STRING_ROW_P(netplay_password, NETPLAY_PASSWORD,
+                     "", SD_FLAG_ALLOW_INPUT, 0,
+                     NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_PASSWORD_LINE_EDIT),
+               SDESC_STRING_ROW_P(netplay_spectate_password, NETPLAY_SPECTATE_PASSWORD,
+                     "", SD_FLAG_ALLOW_INPUT, 0,
+                     NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_PASSWORD_LINE_EDIT),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  netplay2_desc_1, ARRAY_SIZE(netplay2_desc_1),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          {
             static const setting_desc_t np_desc_3[] = {
@@ -18985,36 +18838,19 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-         CONFIG_STRING(
-               list, list_info,
-               settings->paths.username,
-               sizeof(settings->paths.username),
-               MENU_ENUM_LABEL_NETPLAY_NICKNAME,
-               MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
-
-         CONFIG_STRING(
-               list, list_info,
-               settings->paths.browse_url,
-               sizeof(settings->paths.browse_url),
-               MENU_ENUM_LABEL_BROWSE_URL,
-               MENU_ENUM_LABEL_VALUE_BROWSE_URL,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         {
+            static const setting_desc_t user2_desc_0[] = {
+               SDESC_STRING_ROW_P(username, NETPLAY_NICKNAME,
+                     "", SD_FLAG_ALLOW_INPUT, 0,
+                     NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_STRING_LINE_EDIT),
+               SDESC_STRING_ROW_P(browse_url, BROWSE_URL,
+                     "", SD_FLAG_ALLOW_INPUT, 0,
+                     NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  user2_desc_0, ARRAY_SIZE(user2_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
 #ifdef HAVE_LANGEXTRA
          CONFIG_UINT(
