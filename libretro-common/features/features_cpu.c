@@ -812,6 +812,10 @@ uint64_t cpu_features_get(void)
          cpu |= RETRO_SIMD_MMX;
       if (flags[3] & (1 << 22))
          cpu |= RETRO_SIMD_MMXEXT;
+      /* LZCNT / ABM (ECX bit 5). macOS x86 uses the sysctl path above and
+       * does not report this bit; consumers there fall back accordingly. */
+      if (flags[2] & (1 << 5))
+         cpu |= RETRO_SIMD_LZCNT;
    }
 #elif defined(__linux__)
    if (check_arm_cpu_feature("neon"))

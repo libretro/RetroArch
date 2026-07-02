@@ -93,8 +93,7 @@ Unfortuantely rflac depends on this for a few things so we're just going to disa
 /* MSVC and clang-cl need <intrin.h> for the __lzcnt intrinsics used by the
  * LZCNT clz fast path (rflac__clz_lzcnt) and for _BitScanReverse. Runtime
  * feature detection itself is handled through libretro-common's shared
- * features_cpu interface (cpu_features_get / x86_cpuid) rather than an
- * in-tree cpuid. */
+ * features_cpu interface (cpu_features_get) rather than an in-tree cpuid. */
 #if defined(_MSC_VER) && (defined(RFLAC_X86) || defined(RFLAC_X64))
     #include <intrin.h>
 #endif
@@ -311,13 +310,13 @@ RFLAC_NO_THREAD_SANITIZE static void rflac__init_cpu_caps(void)
     static uint32_t isCPUCapsInitialized = RFLAC_FALSE;
 
     if (!isCPUCapsInitialized) {
-        /* LZCNT (ABM) via the shared features_cpu cpuid primitive. On macOS
-         * x86 (where x86_cpuid is unavailable) this stays unset and rflac__clz
-         * uses the software fallback. */
-#if defined(RFLAC_HAS_LZCNT_INTRINSIC) && !defined(__MACH__)
-        int32_t info[4] = {0};
-        x86_cpuid(0x80000001, info);
-        rflac__gIsLZCNTSupported = (info[2] & (1 << 5)) != 0;
+        /* LZCNT (ABM) via the shared features_cpu capability mask.  On
+         * platforms where it is not reported (e.g. macOS x86, which detects
+         * features via sysctl rather than cpuid) this stays unset and
+         * rflac__clz uses the software fallback. */
+#if defined(RFLAC_HAS_LZCNT_INTRINSIC)
+        rflac__gIsLZCNTSupported =
+              (cpu_features_get() & RETRO_SIMD_LZCNT) != 0;
 #endif
 
         /* SSE2 */
