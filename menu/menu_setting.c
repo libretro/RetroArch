@@ -10083,7 +10083,15 @@ static void new3ds_speedup_change_handler(rarch_setting_t *setting)
  *
  * Settings that need anything not expressible here (runtime default
  * values, runtime target pointers, custom change handlers, values
- * non OFF/ON boolean labels) simply stay imperative. */
+ * non OFF/ON boolean labels) simply stay imperative.
+ *
+ * Holdout taxonomy (each site annotated in place): value targets
+ * outside settings_t; non-general read/write handlers; runtime
+ * default values; loop-parametric registrations; dynamic runtime
+ * labels through the ALT macros; the BIND/HEX/SIZE classes; poke
+ * tails outside the descriptor grammar, chiefly change_handler,
+ * whose slot is deferred until rows are generated from a single
+ * source and raw initializers make per-slot macro growth free. */
 
 enum setting_desc_class
 {
@@ -10316,6 +10324,7 @@ static void settings_list_add_desc(
       switch (d->type)
       {
          case SDESC_BOOL:
+            /* Descriptor holdout: value target outside settings_t. */
             CONFIG_BOOL(
                   list, list_info,
                   (bool*)target,
@@ -10550,6 +10559,7 @@ static bool setting_append_list_input_player_options(
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),
             user + 1);
 
+      /* Descriptor holdout: dynamic runtime label through the ALT macro. */
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_joypad_index[user],
@@ -10855,6 +10865,7 @@ static bool setting_append_list_input_libretro_device_options(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE),
             sizeof(label_device_type));
 
+      /* Descriptor holdout: dynamic runtime label through the ALT macro. */
       CONFIG_UINT_ALT(
             list, list_info,
             input_config_get_device_ptr(user),
@@ -10921,6 +10932,7 @@ static bool setting_append_list_input_remap_port_options(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT),
             sizeof(label_port));
 
+      /* Descriptor holdout: dynamic runtime label through the ALT macro. */
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_remap_ports[user],
@@ -11057,6 +11069,7 @@ static bool setting_append_list(
             char ext_name[16];
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
             {
+               /* Descriptor holdout: value target outside settings_t. */
                CONFIG_ACTION(
                      list, list_info,
                      MENU_ENUM_LABEL_CORE_LIST,
@@ -11736,6 +11749,7 @@ static bool setting_append_list(
                      MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE)
                   continue;
 #endif
+               /* Descriptor holdout: value target outside settings_t. */
                CONFIG_BOOL(
                      list, list_info,
                      bool_entries[i].target,
@@ -11850,6 +11864,7 @@ static bool setting_append_list(
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
+               /* Descriptor holdout: value target outside settings_t. */
                CONFIG_BOOL(
                      list, list_info,
                      bool_entries[i].target,
@@ -11911,6 +11926,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
+            /* Descriptor holdout: change_handler poke; descriptor slot deferred to the single-source phase. */
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.frontend_log_level,
@@ -11955,6 +11971,7 @@ static bool setting_append_list(
 
             retroarch_ctl(RARCH_CTL_GET_PERFCNT, &tmp_b);
 
+            /* Descriptor holdout: value target outside settings_t. */
             CONFIG_BOOL(
                   list, list_info,
                   tmp_b,
@@ -12085,6 +12102,7 @@ static bool setting_append_list(
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
+               /* Descriptor holdout: value target outside settings_t. */
                CONFIG_BOOL(
                      list, list_info,
                      bool_entries[i].target,
@@ -12328,6 +12346,7 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+            /* Descriptor holdout: setting class not modelled by descriptor rows. */
             CONFIG_SIZE(
                   list, list_info,
                   &settings->sizes.rewind_buffer_size,
@@ -12403,6 +12422,7 @@ static bool setting_append_list(
                   NULL,NULL,
                   0,&setting_get_string_representation_uint,0,cheat_manager_get_size()-1,1);
 
+            /* Descriptor holdout: value target outside settings_t. */
             CONFIG_BOOL(
                   list, list_info,
                   &cheat_manager_state.working_cheat.state,
@@ -12659,6 +12679,7 @@ static bool setting_append_list(
                0,5,1);
          (*list)[list_info->index - 1].action_ok = &cheat_manager_initialize_memory;
 
+         /* Descriptor holdout: value target outside settings_t. */
          CONFIG_BOOL(
                list, list_info,
                &cheat_manager_state.big_endian,
@@ -12928,6 +12949,7 @@ static bool setting_append_list(
             if (string_is_equal(video_driver_get_ident(), "vulkan"))
             {
 #ifdef __APPLE__
+               /* Descriptor holdout: runtime default value. */
                CONFIG_BOOL(
                      list, list_info,
                      &settings->bools.video_use_metal_arg_buffers,
@@ -13137,6 +13159,7 @@ static bool setting_append_list(
                }
 
                {
+                  /* Descriptor holdout: runtime default value. */
                   CONFIG_FLOAT(
                      list, list_info,
                      &settings->floats.video_refresh_rate,
@@ -13587,6 +13610,7 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+               /* Descriptor holdout: poke tail outside the descriptor grammar. */
                CONFIG_UINT(
                      list, list_info,
                      &settings->uints.video_hdr_mode,
@@ -13698,6 +13722,7 @@ static bool setting_append_list(
             }
 
 #if defined(HAVE_THREADS) && !defined(__PSL1GHT__) && !defined(__PS3__) && !defined(__APPLE__)
+            /* Descriptor holdout: value target outside settings_t. */
             CONFIG_BOOL(
                   list, list_info,
                   video_driver_get_threaded(),
@@ -14072,6 +14097,7 @@ static bool setting_append_list(
                );
 
 #ifdef HAVE_AUDIOMIXER
+         /* Descriptor holdout: value target outside settings_t. */
          CONFIG_BOOL(
                list, list_info,
                audio_get_bool_ptr(AUDIO_ACTION_MIXER_MUTE_ENABLE),
@@ -14151,6 +14177,7 @@ static bool setting_append_list(
 
          /* The latency pair stays imperative: defaults come from
           * g_defaults at registration time. */
+         /* Descriptor holdout: runtime default value. */
          CONFIG_UINT(
                list, list_info,
                &settings->uints.audio_latency,
@@ -14223,6 +14250,7 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+         /* Descriptor holdout: value target outside settings_t. */
          CONFIG_FLOAT(
                list, list_info,
                audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA),
@@ -14392,6 +14420,7 @@ static bool setting_append_list(
 
          parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
 
+         /* Descriptor holdout: runtime default value. */
          CONFIG_UINT(
                list, list_info,
                &settings->uints.microphone_latency,
@@ -14720,6 +14749,7 @@ static bool setting_append_list(
             input_driver_t *current_input = st->current_driver;
             if (string_is_equal(current_input->ident, "android"))
             {
+               /* Descriptor holdout: value target outside settings_t. */
                CONFIG_ACTION(
                      list, list_info,
                      MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
@@ -14787,6 +14817,7 @@ static bool setting_append_list(
 #else
                unsigned orientation_default = 1;
 #endif
+               /* Descriptor holdout: runtime default value. */
                CONFIG_UINT(
                      list, list_info,
                      &settings->uints.input_sensor_orientation,
@@ -14867,6 +14898,7 @@ static bool setting_append_list(
                   snprintf(binds_label, sizeof(binds_label),
                         val_input_user_binds, user + 1);
 
+                  /* Descriptor holdout: dynamic runtime label through the ALT macro. */
                   CONFIG_ACTION_ALT(
                         list, list_info,
                         msg_hash_to_str((enum msg_hash_enums)
@@ -14979,6 +15011,7 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+            /* Descriptor holdout: non-general read/write handler. */
             CONFIG_UINT(
                list, list_info,
                &settings->uints.streaming_mode,
@@ -15177,6 +15210,7 @@ static bool setting_append_list(
          }
 
 #ifdef HAVE_RUNAHEAD
+         /* Descriptor holdout: value target outside settings_t. */
          CONFIG_UINT(
                list, list_info,
                &menu_state_get_ptr()->runahead_mode,
@@ -15197,6 +15231,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                MENU_RUNAHEAD_MODE_OFF, MENU_RUNAHEAD_MODE_LAST - 1, 1, true, true);
 
+         /* Descriptor holdout: change_handler poke; descriptor slot deferred to the single-source phase. */
          CONFIG_UINT(
                list, list_info,
                &settings->uints.run_ahead_frames,
@@ -15528,6 +15563,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+         /* Descriptor holdout: change_handler poke; descriptor slot deferred to the single-source phase. */
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.input_overlay_enable,
@@ -15611,6 +15647,7 @@ static bool setting_append_list(
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
+         /* Descriptor holdout: poke tail outside the descriptor grammar. */
          CONFIG_UINT(
                list, list_info,
                &settings->uints.input_overlay_show_inputs,
@@ -15631,6 +15668,7 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_input_overlay_show_inputs;
          menu_settings_list_current_add_range(list, list_info, 0, OVERLAY_SHOW_INPUT_LAST-1, 1, true, true);
 
+         /* Descriptor holdout: change_handler poke; descriptor slot deferred to the single-source phase. */
          CONFIG_UINT(
                list, list_info,
                &settings->uints.input_overlay_show_inputs_port,
@@ -15716,6 +15754,7 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+         /* Descriptor holdout: poke tail outside the descriptor grammar. */
          CONFIG_UINT(
                list, list_info,
                &settings->uints.input_overlay_dpad_diagonal_sensitivity,
@@ -15857,6 +15896,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+         /* Descriptor holdout: runtime default value. */
          CONFIG_PATH(
                list, list_info,
                settings->paths.path_osk_overlay,
@@ -15872,6 +15912,7 @@ static bool setting_append_list(
          MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_INIT);
 
+         /* Descriptor holdout: poke tail outside the descriptor grammar. */
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.input_osk_overlay_auto_scale,
@@ -17009,6 +17050,7 @@ static bool setting_append_list(
                left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
             }
 
+            /* Descriptor holdout: poke tail outside the descriptor grammar. */
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.gfx_thumbnails,
@@ -17355,6 +17397,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
          (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
+         /* Descriptor holdout: poke tail outside the descriptor grammar. */
          CONFIG_STRING(
                list, list_info,
                settings->arrays.ai_service_url,
@@ -17469,6 +17512,7 @@ static bool setting_append_list(
          }
          }
 
+         /* Descriptor holdout: change_handler poke; descriptor slot deferred to the single-source phase. */
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.new3ds_speedup_enable,
@@ -17499,6 +17543,7 @@ static bool setting_append_list(
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
 #endif
 
+         /* Descriptor holdout: runtime default value. */
          CONFIG_DIR(
                list, list_info,
                settings->paths.directory_bottom_assets,
@@ -17755,6 +17800,7 @@ static bool setting_append_list(
                   ui_desc_12, ARRAY_SIZE(ui_desc_12),
                   &group_info, &subgroup_info, parent_group);
          }
+         /* Descriptor holdout: poke tail outside the descriptor grammar. */
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_scroll_fast,
@@ -17956,6 +18002,7 @@ static bool setting_append_list(
          parent_group = MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS_STR;
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+         /* Descriptor holdout: non-general read/write handler. */
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.cheevos_enable,
@@ -18185,6 +18232,7 @@ static bool setting_append_list(
 #endif
          {
 
+            /* Descriptor holdout: poke tail outside the descriptor grammar. */
             CONFIG_STRING(
                   list, list_info,
                   settings->paths.network_buildbot_url,
@@ -18326,6 +18374,7 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+            /* Descriptor holdout: poke tail outside the descriptor grammar. */
             CONFIG_STRING(
                   list, list_info,
                   settings->arrays.netplay_mitm_server,
@@ -18436,6 +18485,7 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+            /* Descriptor holdout: value target outside settings_t. */
             CONFIG_INT(
                   list, list_info,
                   (int *) &settings->uints.netplay_input_latency_frames_min,
@@ -18494,6 +18544,7 @@ static bool setting_append_list(
                      msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_I), user + 1);
                snprintf(dev_req_value, sizeof(dev_req_value),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I), user + 1);
+               /* Descriptor holdout: dynamic runtime label through the ALT macro. */
                CONFIG_BOOL_ALT(
                      list, list_info,
                      &settings->bools.netplay_request_devices[user],
@@ -18533,6 +18584,7 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+            /* Descriptor holdout: non-general read/write handler. */
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.network_cmd_port,
@@ -18592,6 +18644,7 @@ static bool setting_append_list(
                   snprintf(s1 + _len, sizeof(s1) - _len, "_user_p%d", user + 1);
                   snprintf(s2, sizeof(s2), val_network_remote_enable, user + 1);
 
+                  /* Descriptor holdout: dynamic runtime label through the ALT macro. */
                   CONFIG_BOOL_ALT(
                         list, list_info,
                         &settings->bools.network_remote_enable_user[user],
@@ -18647,6 +18700,7 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES),
                   &group_info, &subgroup_info, parent_group);
+            /* Descriptor holdout: change_handler poke; descriptor slot deferred to the single-source phase. */
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.ssh_enable,
@@ -18853,6 +18907,7 @@ static bool setting_append_list(
          }
 
 #ifdef HAVE_LANGEXTRA
+         /* Descriptor holdout: value target outside settings_t. */
          CONFIG_UINT(
                list, list_info,
                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE),
@@ -18947,6 +19002,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+         /* Descriptor holdout: non-general read/write handler. */
          CONFIG_STRING(
                list, list_info,
                settings->arrays.youtube_stream_key,
@@ -19163,6 +19219,7 @@ static bool setting_append_list(
          }
          if (string_is_not_equal(settings->arrays.record_driver, "null"))
          {
+            /* Descriptor holdout: value target outside settings_t. */
             CONFIG_DIR(
                   list, list_info,
                   recording_st->output_dir,
@@ -19268,6 +19325,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
+         /* Descriptor holdout: value target outside settings_t. */
          CONFIG_DIR(
                list, list_info,
                dir_get_ptr(RARCH_DIR_SAVESTATE),
@@ -19361,6 +19419,7 @@ static bool setting_append_list(
                &group_info, &subgroup_info, parent_group);
 
 #if !defined(RARCH_CONSOLE)
+         /* Descriptor holdout: poke tail outside the descriptor grammar. */
          CONFIG_STRING(
                list, list_info,
                settings->arrays.midi_input,
@@ -19422,6 +19481,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State",
                &group_info, &subgroup_info, parent_group);
 
+         /* Descriptor holdout: value target outside settings_t. */
          CONFIG_STRING(
                list, list_info,
                manual_content_scan_get_system_name_custom_ptr(),
@@ -19634,6 +19694,7 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+         /* Descriptor holdout: non-general read/write handler. */
          CONFIG_STRING(
             list, list_info,
             settings->arrays.smb_client_server_address,
@@ -20184,6 +20245,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    (void)global;
 
 #if defined(GEKKO) || defined(_XBOX360)
+   /* Descriptor holdout: value target outside settings_t. */
    CONFIG_UINT(
          list, list_info,
          &global->console.screen.gamma_correction,
