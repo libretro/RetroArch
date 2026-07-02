@@ -66,21 +66,22 @@ typedef struct msg_hash_strtab
 
 typedef struct msg_hash_strtab_index
 {
-   const msg_hash_strtab_t *tab;     /* table this index describes */
-   uint32_t                *offsets; /* blob offset of row i        */
-   uint32_t                *order;   /* rows sorted by (id, row)    */
+   const msg_hash_strtab_t *tab;    /* table this index describes    */
+   uint32_t                *direct; /* MSG_LAST slots: blob offset+1,
+                                       0 = no row for that id        */
 } msg_hash_strtab_index_t;
 
-/* Build (or rebuild) the lookup index for @tab.  Called on language
- * activation; lookups never mutate state. */
+/* Build (or rebuild) the direct lookup index for @tab.  Invoked
+ * eagerly on language activation and lazily from the first lookup,
+ * so the hot path is always one bounds check plus one load. */
 void msg_hash_strtab_index_build(msg_hash_strtab_index_t *idx,
       const msg_hash_strtab_t *tab);
 
 /* Return the string for @id, or NULL if the table has no such row.
- * If @idx does not describe @tab (not yet built or allocation
- * failed), falls back to a read-only linear walk. */
+ * O(1): direct index by enum value.  Builds the index on first use;
+ * the linear blob walk exists only as an allocation-failure path. */
 const char *msg_hash_strtab_lookup(const msg_hash_strtab_t *tab,
-      const msg_hash_strtab_index_t *idx, uint32_t id);
+      msg_hash_strtab_index_t *idx, uint32_t id);
 
 /* Build the indices for the always-present US tables (values and,
  * with HAVE_MENU, labels).  Invoked from msg_hash_set_uint(). */

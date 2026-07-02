@@ -7807,26 +7807,15 @@ int menu_action_handle_setting(rarch_setting_t *setting,
  * unavailable for any reason, the find functions fall back to the
  * old linear scan. */
 static rarch_setting_t *settings_index_list      = NULL;
-static uint32_t        *settings_index_by_enum   = NULL;
+/* Direct enum index: one uint16 slot per msg_hash enum value holding
+ * (list position + 1), 0 = no setting for that enum.  Lookup is one
+ * bounds check plus one load - cheaper than the linear scan this
+ * replaced and cheaper than a binary search.  ~17KB (MSG_LAST * 2).
+ * Slots are only written for the first list entry with a given enum,
+ * preserving the first-in-list-order semantics of the old scan. */
+static uint16_t        *settings_index_by_enum   = NULL;
 static uint32_t        *settings_index_by_name   = NULL;
-static uint32_t         settings_index_enum_size = 0;
 static uint32_t         settings_index_name_size = 0;
-
-static int settings_index_enum_compare(const void *a, const void *b)
-{
-   uint32_t pa = *(const uint32_t*)a;
-   uint32_t pb = *(const uint32_t*)b;
-   int      ea = (int)settings_index_list[pa].enum_idx;
-   int      eb = (int)settings_index_list[pb].enum_idx;
-   if (ea != eb)
-      return (ea < eb) ? -1 : 1;
-   /* Tie-break on list position so that the leftmost match of a
-    * duplicated enum is the first one in list order, matching the
-    * behaviour of the old linear scan. */
-   if (pa != pb)
-      return (pa < pb) ? -1 : 1;
-   return 0;
-}
 
 static int settings_index_name_compare(const void *a, const void *b)
 {
@@ -7849,7 +7838,6 @@ static void menu_setting_index_free(void)
       free(settings_index_by_name);
    settings_index_by_enum   = NULL;
    settings_index_by_name   = NULL;
-   settings_index_enum_size = 0;
    settings_index_name_size = 0;
    settings_index_list      = NULL;
 }
@@ -7870,7 +7858,10 @@ static void menu_setting_index_build(rarch_setting_t *list)
    if (count == 0)
       return;
 
-   settings_index_by_enum = (uint32_t*)malloc(count * sizeof(uint32_t));
+   if (count >= 0xFFFF)
+      return; /* positions must fit uint16; fall back to linear scan */
+
+   settings_index_by_enum = (uint16_t*)calloc(MSG_LAST, sizeof(uint16_t));
    settings_index_by_name = (uint32_t*)malloc(count * sizeof(uint32_t));
 
    if (!settings_index_by_enum || !settings_index_by_name)
@@ -7887,14 +7878,14 @@ static void menu_setting_index_build(rarch_setting_t *list)
        * the old linear scans skipped everything past ST_GROUP. */
       if (list[i].type > ST_GROUP)
          continue;
-      if (list[i].enum_idx != MSG_UNKNOWN)
-         settings_index_by_enum[settings_index_enum_size++] = i;
+      if (     list[i].enum_idx != MSG_UNKNOWN
+            && (uint32_t)list[i].enum_idx < (uint32_t)MSG_LAST
+            && !settings_index_by_enum[list[i].enum_idx])
+         settings_index_by_enum[list[i].enum_idx] = (uint16_t)(i + 1);
       if (list[i].name)
          settings_index_by_name[settings_index_name_size++] = i;
    }
 
-   qsort(settings_index_by_enum, settings_index_enum_size,
-         sizeof(uint32_t), settings_index_enum_compare);
    qsort(settings_index_by_name, settings_index_name_size,
          sizeof(uint32_t), settings_index_name_compare);
 }
@@ -7902,28 +7893,16 @@ static void menu_setting_index_build(rarch_setting_t *list)
 static rarch_setting_t *menu_setting_index_find_enum(
       enum msg_hash_enums enum_idx)
 {
-   uint32_t lo = 0;
-   uint32_t hi = settings_index_enum_size;
+   uint16_t pos;
 
-   while (lo < hi)
-   {
-      uint32_t mid = lo + ((hi - lo) >> 1);
-      if ((int)settings_index_list[settings_index_by_enum[mid]].enum_idx
-            < (int)enum_idx)
-         lo = mid + 1;
-      else
-         hi = mid;
-   }
+   if ((uint32_t)enum_idx >= (uint32_t)MSG_LAST)
+      return NULL;
 
-   if (lo < settings_index_enum_size)
-   {
-      rarch_setting_t *setting =
-            &settings_index_list[settings_index_by_enum[lo]];
-      if (setting->enum_idx == enum_idx)
-         return setting;
-   }
+   pos = settings_index_by_enum[enum_idx];
+   if (!pos)
+      return NULL;
 
-   return NULL;
+   return &settings_index_list[pos - 1];
 }
 
 static rarch_setting_t *menu_setting_index_find_name(const char *label)

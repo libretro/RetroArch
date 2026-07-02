@@ -57,105 +57,62 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 
 
 #if defined(MSG_HASH_HAVE_STRTAB)
-/* qsort context: comparators receive row positions.  Building only
- * happens from msg_hash_set_uint() (single-threaded configuration
- * paths); lookups are read-only. */
-static const msg_hash_strtab_t *strtab_sort_tab = NULL;
-
-static int msg_hash_strtab_compare(const void *a, const void *b)
-{
-   uint32_t pa = *(const uint32_t*)a;
-   uint32_t pb = *(const uint32_t*)b;
-   uint32_t ia = strtab_sort_tab->ids[pa];
-   uint32_t ib = strtab_sort_tab->ids[pb];
-   if (ia != ib)
-      return (ia < ib) ? -1 : 1;
-   if (pa != pb)
-      return (pa < pb) ? -1 : 1;
-   return 0;
-}
-
 void msg_hash_strtab_index_build(msg_hash_strtab_index_t *idx,
       const msg_hash_strtab_t *tab)
 {
    uint32_t i;
+   uint32_t *direct;
    const char *p;
 
-   if (idx->offsets)
-      free(idx->offsets);
-   if (idx->order)
-      free(idx->order);
-   idx->offsets = NULL;
-   idx->order   = NULL;
-   idx->tab     = NULL;
+   if (idx->tab == tab && idx->direct)
+      return;
 
    if (!tab || tab->count == 0)
       return;
 
-   idx->offsets = (uint32_t*)malloc(tab->count * sizeof(uint32_t));
-   idx->order   = (uint32_t*)malloc(tab->count * sizeof(uint32_t));
-
-   if (!idx->offsets || !idx->order)
-   {
-      if (idx->offsets)
-         free(idx->offsets);
-      if (idx->order)
-         free(idx->order);
-      idx->offsets = NULL;
-      idx->order   = NULL;
+   direct = (uint32_t*)calloc(MSG_LAST, sizeof(uint32_t));
+   if (!direct)
       return;
-   }
 
    for (i = 0, p = tab->blob; i < tab->count; i++)
    {
-      idx->offsets[i] = (uint32_t)(p - tab->blob);
-      idx->order[i]   = i;
+      if (tab->ids[i] < (uint32_t)MSG_LAST)
+         direct[tab->ids[i]] = (uint32_t)(p - tab->blob) + 1;
       while (*p)
          p++;
       p++;
    }
 
-   strtab_sort_tab = tab;
-   qsort(idx->order, tab->count, sizeof(uint32_t),
-         msg_hash_strtab_compare);
-   strtab_sort_tab = NULL;
-
-   /* Publish last so a concurrent reader either sees a fully built
-    * index or takes the linear fallback. */
-   idx->tab = tab;
+   /* Publish the fully built index before marking it valid, so a
+    * concurrent reader either sees the complete index or takes the
+    * fallback path below. */
+   if (idx->direct)
+      free(idx->direct);
+   idx->direct = direct;
+   idx->tab    = tab;
 }
 
 const char *msg_hash_strtab_lookup(const msg_hash_strtab_t *tab,
-      const msg_hash_strtab_index_t *idx, uint32_t id)
+      msg_hash_strtab_index_t *idx, uint32_t id)
 {
    if (!tab || tab->count == 0)
       return NULL;
 
-   if (idx && idx->tab == tab)
+   if (idx->tab != tab || !idx->direct)
+      msg_hash_strtab_index_build(idx, tab);
+
+   if (idx->tab == tab && idx->direct)
    {
-      uint32_t lo = 0;
-      uint32_t hi = tab->count;
-
-      while (lo < hi)
+      if (id < (uint32_t)MSG_LAST)
       {
-         uint32_t mid = lo + ((hi - lo) >> 1);
-         if (tab->ids[idx->order[mid]] < id)
-            lo = mid + 1;
-         else
-            hi = mid;
+         uint32_t off = idx->direct[id];
+         if (off)
+            return tab->blob + (off - 1);
       }
-
-      if (lo < tab->count)
-      {
-         uint32_t pos = idx->order[lo];
-         if (tab->ids[pos] == id)
-            return tab->blob + idx->offsets[pos];
-      }
-
       return NULL;
    }
 
-   /* Read-only fallback when the index is unavailable. */
+   /* Allocation-failure path only. */
    {
       const char *p = tab->blob;
       uint32_t i;
