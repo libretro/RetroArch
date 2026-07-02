@@ -10093,6 +10093,7 @@ enum setting_desc_class
    SDESC_FLOAT,
    SDESC_STRING,
    SDESC_PATH,
+   SDESC_DIR,
    SDESC_ACTION
 };
 
@@ -10232,6 +10233,19 @@ typedef struct setting_desc
      SDESC_FLG_DEF_SETTINGS, 0, 0, \
      (vals), (uint32_t)offsetof(settings_t, paths.def_field) }
 
+/* Directory rows: like path rows, but with the ST_DIR empty-value
+ * label carried in the otherwise unused offset_by slot (documented
+ * dual use; msg_hash enums fit int16).  Defaults are address
+ * constants such as g_defaults.dirs[x], legal in static
+ * initializers, carried in the rounding slot. */
+#define SDESC_DIR_ROW(field, label, def, empty_label, sd_flags, cmd, _start) \
+   { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     0.0f, 0.0f, 0.0f, (def), NULL, NULL, \
+     (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
+     (_start), NULL, NULL, NULL, (uint16_t)(cmd), \
+     (int16_t)MENU_ENUM_LABEL_VALUE_##empty_label, SDESC_DIR, 0, 0, 0 }
+
 #define SDESC_RANGE_MINMAX \
    (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN | SDESC_FLG_ENFORCE_MAX)
 
@@ -10356,6 +10370,23 @@ static void settings_list_add_desc(
             if (d->flags != SD_FLAG_NONE)
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, d->flags);
             break;
+         case SDESC_DIR:
+            CONFIG_DIR(
+                  list, list_info,
+                  (char*)settings + d->value_offset,
+                  (size_t)d->def_i,
+                  d->name_enum,
+                  d->short_enum,
+                  d->rounding,
+                  (enum msg_hash_enums)(uint16_t)d->offset_by,
+                  group_info,
+                  subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            if (d->flags != SD_FLAG_NONE)
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, d->flags);
+            break;
          case SDESC_ACTION:
             CONFIG_ACTION(
                   list, list_info,
@@ -10381,7 +10412,7 @@ static void settings_list_add_desc(
          (*list)[list_info->index - 1].action_right = d->action_right;
       if (d->repr)
          (*list)[list_info->index - 1].get_string_representation = d->repr;
-      if (d->offset_by != 0)
+      if (d->offset_by != 0 && d->type != SDESC_DIR)
          (*list)[list_info->index - 1].offset_by = d->offset_by;
       if (d->desc_flags & SDESC_FLG_HAS_RANGE)
          menu_settings_list_current_add_range(list, list_info,
@@ -16900,6 +16931,8 @@ static bool setting_append_list(
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
                (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
+            /* Descriptor holdout: value target lives in recording_state,
+             * outside settings_t. */
             CONFIG_DIR(
                list, list_info,
                recording_st->output_dir,
@@ -24796,222 +24829,73 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_system,
-               sizeof(settings->paths.directory_system),
-               MENU_ENUM_LABEL_SYSTEM_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_core_assets,
-               sizeof(settings->paths.directory_core_assets),
-               MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_assets,
-               sizeof(settings->paths.directory_assets),
-               MENU_ENUM_LABEL_ASSETS_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_ASSETS],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_dynamic_wallpapers,
-               sizeof(settings->paths.directory_dynamic_wallpapers),
-               MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_thumbnails,
-               sizeof(settings->paths.directory_thumbnails),
-               MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_menu_content,
-               sizeof(settings->paths.directory_menu_content),
-               MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_menu_config,
-               sizeof(settings->paths.directory_menu_config),
-               MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_libretro,
-               sizeof(settings->paths.directory_libretro),
-               MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,
-               MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
-               g_defaults.dirs[DEFAULT_DIR_CORE],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_CORE_INFO_INIT);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.path_libretro_info,
-               sizeof(settings->paths.path_libretro_info),
-               MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,
-               MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
-               g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_CORE_INFO_INIT);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
+                  {
+            static const setting_desc_t dir_desc_0[] = {
+               SDESC_DIR_ROW(directory_system, SYSTEM_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+                     DIRECTORY_CONTENT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_core_assets, CORE_ASSETS_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_assets, ASSETS_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_ASSETS],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_dynamic_wallpapers, DYNAMIC_WALLPAPERS_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_thumbnails, THUMBNAILS_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_menu_content, RGUI_BROWSER_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_menu_config, RGUI_CONFIG_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_libretro, LIBRETRO_DIR_PATH,
+                     g_defaults.dirs[DEFAULT_DIR_CORE],
+                     DIRECTORY_NONE, SD_FLAG_NONE, CMD_EVENT_CORE_INFO_INIT,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(path_libretro_info, LIBRETRO_INFO_PATH,
+                     g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+                     DIRECTORY_NONE, SD_FLAG_NONE, CMD_EVENT_CORE_INFO_INIT,
+                     directory_action_start_generic),
 #ifdef HAVE_LIBRETRODB
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.path_content_database,
-               sizeof(settings->paths.path_content_database),
-               MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_DATABASE],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+               SDESC_DIR_ROW(path_content_database, CONTENT_DATABASE_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_DATABASE],
+                     DIRECTORY_NONE, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
 #endif
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.path_cheat_database,
-               sizeof(settings->paths.path_cheat_database),
-               MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,
-               MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
-               g_defaults.dirs[DEFAULT_DIR_CHEATS],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_video_filter,
-               sizeof(settings->paths.directory_video_filter),
-               MENU_ENUM_LABEL_VIDEO_FILTER_DIR,
-               MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
-               g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_audio_filter,
-               sizeof(settings->paths.directory_audio_filter),
-               MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
-               MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
-               g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
+               SDESC_DIR_ROW(path_cheat_database, CHEAT_DATABASE_PATH,
+                     g_defaults.dirs[DEFAULT_DIR_CHEATS],
+                     DIRECTORY_NONE, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_video_filter, VIDEO_FILTER_DIR,
+                     g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_audio_filter, AUDIO_FILTER_DIR,
+                     g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_video_shader,
-               sizeof(settings->paths.directory_video_shader),
-               MENU_ENUM_LABEL_VIDEO_SHADER_DIR,
-               MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-               g_defaults.dirs[DEFAULT_DIR_SHADER],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+               SDESC_DIR_ROW(directory_video_shader, VIDEO_SHADER_DIR,
+                     g_defaults.dirs[DEFAULT_DIR_SHADER],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
 #endif
-
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  dir_desc_0, ARRAY_SIZE(dir_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
          if (string_is_not_equal(settings->arrays.record_driver, "null"))
          {
             CONFIG_DIR(
@@ -25044,188 +24928,66 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_start = directory_action_start_generic;
          }
+         {
+            static const setting_desc_t dir_desc_1[] = {
 #ifdef HAVE_OVERLAY
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_overlay,
-               sizeof(settings->paths.directory_overlay),
-               MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_OVERLAY],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_osk_overlay,
-               sizeof(settings->paths.directory_osk_overlay),
-               MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+               SDESC_DIR_ROW(directory_overlay, OVERLAY_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_OVERLAY],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_osk_overlay, OSK_OVERLAY_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
 #endif
+               SDESC_DIR_ROW(directory_screenshot, SCREENSHOT_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+                     DIRECTORY_CONTENT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_autoconfig, JOYPAD_AUTOCONFIG_DIR,
+                     g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_input_remapping, INPUT_REMAPPING_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_REMAP],
+                     DIRECTORY_NONE, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_playlist, PLAYLIST_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_content_favorites, CONTENT_FAVORITES_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_CONTENT_FAVORITES],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_content_history, CONTENT_HISTORY_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_content_image_history, CONTENT_IMAGE_HISTORY_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_CONTENT_IMAGE_HISTORY],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_content_music_history, CONTENT_MUSIC_HISTORY_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_CONTENT_MUSIC_HISTORY],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_content_video_history, CONTENT_VIDEO_HISTORY_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_CONTENT_VIDEO_HISTORY],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(directory_runtime_log, RUNTIME_LOG_DIRECTORY,
+                     "",
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  dir_desc_1, ARRAY_SIZE(dir_desc_1),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_screenshot,
-               sizeof(settings->paths.directory_screenshot),
-               MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_autoconfig,
-               sizeof(settings->paths.directory_autoconfig),
-               MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,
-               MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-               g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_input_remapping,
-               sizeof(settings->paths.directory_input_remapping),
-               MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_REMAP],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-            (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_playlist,
-               sizeof(settings->paths.directory_playlist),
-               MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_content_favorites,
-               sizeof(settings->paths.directory_content_favorites),
-               MENU_ENUM_LABEL_CONTENT_FAVORITES_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_CONTENT_FAVORITES],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_content_history,
-               sizeof(settings->paths.directory_content_history),
-               MENU_ENUM_LABEL_CONTENT_HISTORY_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_content_image_history,
-               sizeof(settings->paths.directory_content_image_history),
-               MENU_ENUM_LABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_CONTENT_IMAGE_HISTORY],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_content_music_history,
-               sizeof(settings->paths.directory_content_music_history),
-               MENU_ENUM_LABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_CONTENT_MUSIC_HISTORY_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_CONTENT_MUSIC_HISTORY],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_content_video_history,
-               sizeof(settings->paths.directory_content_video_history),
-               MENU_ENUM_LABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_CONTENT_VIDEO_HISTORY_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_CONTENT_VIDEO_HISTORY],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_runtime_log,
-               sizeof(settings->paths.directory_runtime_log),
-               MENU_ENUM_LABEL_RUNTIME_LOG_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
-               "",
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
+         /* Descriptor holdouts: value targets resolved through
+          * dir_get_ptr() at runtime, outside settings_t. */
          CONFIG_DIR(
                list, list_info,
                dir_get_ptr(RARCH_DIR_SAVEFILE),
@@ -25256,35 +25018,21 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_cache,
-               sizeof(settings->paths.directory_cache),
-               MENU_ENUM_LABEL_CACHE_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_CACHE],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.log_dir,
-               sizeof(settings->paths.log_dir),
-               MENU_ENUM_LABEL_LOG_DIR,
-               MENU_ENUM_LABEL_VALUE_LOG_DIR,
-               g_defaults.dirs[DEFAULT_DIR_LOGS],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+                  {
+            static const setting_desc_t dir_desc_2[] = {
+               SDESC_DIR_ROW(directory_cache, CACHE_DIRECTORY,
+                     g_defaults.dirs[DEFAULT_DIR_CACHE],
+                     DIRECTORY_NONE, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+               SDESC_DIR_ROW(log_dir, LOG_DIR,
+                     g_defaults.dirs[DEFAULT_DIR_LOGS],
+                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
+                     directory_action_start_generic),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  dir_desc_2, ARRAY_SIZE(dir_desc_2),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
