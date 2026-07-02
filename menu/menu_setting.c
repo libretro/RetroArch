@@ -10101,6 +10101,8 @@ typedef struct setting_desc
    float                       def_f;          /* float default           */
    action_start_handler_t      action_start;   /* NULL = class default    */
    action_select_handler_t     action_select;  /* NULL = class default    */
+   action_left_handler_t       action_left;    /* NULL = class default    */
+   action_right_handler_t      action_right;   /* NULL = class default    */
    uint16_t                    cmd_trigger;    /* enum event_command      */
    int16_t                     offset_by;
    uint8_t                     type;           /* enum setting_desc_class */
@@ -10114,45 +10116,57 @@ typedef struct setting_desc
    { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      0.0f, 0.0f, 0.0f, NULL, NULL, NULL, \
-     (int32_t)(def), 0.0f, NULL, NULL, (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), 0, 0 }
+     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), 0, 0 }
 
 #define SDESC_UINT_ROW(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
    { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), 0, 0 }
+     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), 0, 0 }
 
 #define SDESC_INT_ROW(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
    { (uint32_t)offsetof(settings_t, ints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), 0, 0 }
+     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), 0, 0 }
 
 #define SDESC_FLOAT_ROW(field, label, def, _rounding, sd_flags, dflags, cmd, _min, _max, _step, ok, _repr) \
    { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      (float)(_min), (float)(_max), (float)(_step), (_rounding), (_repr), (ok), \
-     0, (float)(def), NULL, NULL, (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), 0, 0 }
+     0, (float)(def), NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), 0, 0 }
 
 #define SDESC_ACTION_ROW(label) \
    { 0, 0, \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      0.0f, 0.0f, 0.0f, NULL, NULL, NULL, \
-     0, 0.0f, NULL, NULL, 0, 0, SDESC_ACTION, 0, 0, 0 }
+     0, 0.0f, NULL, NULL, NULL, NULL, 0, 0, SDESC_ACTION, 0, 0, 0 }
 
 /* _EX variants add action_start / action_select / ui_type overrides
  * (0 / NULL keeps the class default). */
-#define SDESC_UINT_ROW_EX(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _uitype) \
-   { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
+#define SDESC_UINT_ROW_EX(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype) \
+   SDESC_UINT_ROW_AT_EX(offsetof(settings_t, uints.field), label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype)
+
+/* _AT variants take the settings_t offset expression directly, for
+ * value targets that are inside settings_t but not under the plain
+ * bools/ints/uints/floats structs (e.g. video_vp_custom members). */
+#define SDESC_UINT_ROW_AT_EX(offs, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype) \
+   { (uint32_t)(offs), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, (_start), (_select), (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), (uint8_t)(_uitype), 0 }
+     (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), (uint8_t)(_uitype), 0 }
 
-#define SDESC_FLOAT_ROW_EX(field, label, def, _rounding, sd_flags, dflags, cmd, _min, _max, _step, ok, _repr, _start, _select, _uitype) \
+#define SDESC_INT_ROW_AT(offs, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
+   { (uint32_t)(offs), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), 0, 0 }
+
+#define SDESC_FLOAT_ROW_EX(field, label, def, _rounding, sd_flags, dflags, cmd, _min, _max, _step, ok, _repr, _start, _select, _left, _right, _uitype) \
    { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      (float)(_min), (float)(_max), (float)(_step), (_rounding), (_repr), (ok), \
-     0, (float)(def), (_start), (_select), (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), (uint8_t)(_uitype), 0 }
+     0, (float)(def), (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), (uint8_t)(_uitype), 0 }
 
 #define SDESC_RANGE_MINMAX \
    (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN | SDESC_FLG_ENFORCE_MAX)
@@ -10263,6 +10277,10 @@ static void settings_list_add_desc(
          (*list)[list_info->index - 1].action_start = d->action_start;
       if (d->action_select)
          (*list)[list_info->index - 1].action_select = d->action_select;
+      if (d->action_left)
+         (*list)[list_info->index - 1].action_left = d->action_left;
+      if (d->action_right)
+         (*list)[list_info->index - 1].action_right = d->action_right;
       if (d->repr)
          (*list)[list_info->index - 1].get_string_representation = d->repr;
       if (d->offset_by != 0)
@@ -13901,7 +13919,7 @@ static bool setting_append_list(
                            setting_get_string_representation_st_float_video_refresh_rate_auto,
                            setting_action_start_video_refresh_rate_auto,
                            setting_action_ok_video_refresh_rate_auto,
-                           0)
+                           NULL, NULL, 0)
                   };
                   settings_list_add_desc(list, list_info, settings,
                         refresh_desc, ARRAY_SIZE(refresh_desc),
@@ -13938,7 +13956,7 @@ static bool setting_append_list(
                         0, AUTOSWITCH_REFRESH_RATE_LAST - 1, 1, 0,
                         setting_action_ok_uint,
                         setting_get_string_representation_uint_video_autoswitch_refresh_rate,
-                        NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
+                        NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
                   SDESC_FLOAT_ROW(video_autoswitch_pal_threshold, VIDEO_AUTOSWITCH_PAL_THRESHOLD,
                         DEFAULT_AUTOSWITCH_PAL_THRESHOLD, "%.3f Hz",
                         SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX,
@@ -13973,158 +13991,75 @@ static bool setting_append_list(
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Aspect", &group_info, &subgroup_info, parent_group);
 
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.video_vp_bias_x,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-                  DEFAULT_VIEWPORT_BIAS_X,
-                  "%.2f",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.05, true, true);
-            (*list)[list_info->index - 1].offset_by = 0;
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
-                                               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.video_vp_bias_y,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
-                  DEFAULT_VIEWPORT_BIAS_Y,
-                  "%.2f",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.05, true, true);
-            (*list)[list_info->index - 1].offset_by = 0;
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
-                                               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
+            {
+               static const setting_desc_t bias_desc[] = {
+                  SDESC_FLOAT_ROW(video_vp_bias_x, VIDEO_VIEWPORT_BIAS_X,
+                        DEFAULT_VIEWPORT_BIAS_X, "%.2f",
+                        SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
+                        SDESC_RANGE_MINMAX,
+                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                        0.0, 1.0, 0.05, NULL, NULL),
+                  SDESC_FLOAT_ROW(video_vp_bias_y, VIDEO_VIEWPORT_BIAS_Y,
+                        DEFAULT_VIEWPORT_BIAS_Y, "%.2f",
+                        SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
+                        SDESC_RANGE_MINMAX,
+                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                        0.0, 1.0, 0.05, NULL, NULL)
 #if defined(RARCH_MOBILE)
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.video_vp_bias_portrait_x,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-                  DEFAULT_VIEWPORT_BIAS_PORTRAIT_X,
-                  "%.2f",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.05, true, true);
-            (*list)[list_info->index - 1].offset_by = 0;
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
-                                               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.video_vp_bias_portrait_y,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-                  DEFAULT_VIEWPORT_BIAS_PORTRAIT_Y,
-                  "%.2f",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.05, true, true);
-            (*list)[list_info->index - 1].offset_by = 0;
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
-                                               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+                  ,
+                  SDESC_FLOAT_ROW(video_vp_bias_portrait_x, VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+                        DEFAULT_VIEWPORT_BIAS_PORTRAIT_X, "%.2f",
+                        SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
+                        SDESC_RANGE_MINMAX,
+                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                        0.0, 1.0, 0.05, NULL, NULL),
+                  SDESC_FLOAT_ROW(video_vp_bias_portrait_y, VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+                        DEFAULT_VIEWPORT_BIAS_PORTRAIT_Y, "%.2f",
+                        SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
+                        SDESC_RANGE_MINMAX,
+                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                        0.0, 1.0, 0.05, NULL, NULL)
 #endif
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     bias_desc, ARRAY_SIZE(bias_desc),
+                     &group_info, &subgroup_info, parent_group);
+            }
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_aspect_ratio_idx,
-                  MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-                  DEFAULT_ASPECT_RATIO_IDX,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                  list,
-                  list_info,
-                  CMD_EVENT_VIDEO_SET_ASPECT_RATIO);
-            menu_settings_list_current_add_range(list, list_info, 0, LAST_ASPECT_RATIO, 1, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_aspect_ratio_index;
-            (*list)[list_info->index - 1].action_left   = setting_uint_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right  = setting_uint_action_right_with_refresh;
+            {
+               static const setting_desc_t aspect_desc[] = {
+                  SDESC_UINT_ROW_EX(video_aspect_ratio_idx, VIDEO_ASPECT_RATIO_INDEX,
+                        DEFAULT_ASPECT_RATIO_IDX,
+                        SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_VIDEO_SET_ASPECT_RATIO,
+                        0, LAST_ASPECT_RATIO, 1, 0,
+                        setting_action_ok_uint,
+                        setting_get_string_representation_uint_aspect_ratio_index,
+                        NULL, NULL,
+                        setting_uint_action_left_with_refresh,
+                        setting_uint_action_right_with_refresh, 0),
+                  SDESC_FLOAT_ROW(video_aspect_ratio, VIDEO_ASPECT_RATIO,
+                        DEFAULT_ASPECT_RATIO, "%.2f",
+                        SD_FLAG_NONE,
+                        SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN,
+                        CMD_EVENT_VIDEO_SET_ASPECT_RATIO,
+                        0.1, 16.0, 0.01, NULL, NULL),
+                  SDESC_INT_ROW_AT(offsetof(settings_t, video_vp_custom.x),
+                        VIDEO_VIEWPORT_CUSTOM_X, 0,
+                        SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                        -9999, 9999, 1, -9999, NULL, NULL),
+                  SDESC_INT_ROW_AT(offsetof(settings_t, video_vp_custom.y),
+                        VIDEO_VIEWPORT_CUSTOM_Y, 0,
+                        SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                        -9999, 9999, 1, -9999, NULL, NULL)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     aspect_desc, ARRAY_SIZE(aspect_desc),
+                     &group_info, &subgroup_info, parent_group);
+            }
 
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.video_aspect_ratio,
-                  MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-                  DEFAULT_ASPECT_RATIO,
-                  "%.2f",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                  list,
-                  list_info,
-                  CMD_EVENT_VIDEO_SET_ASPECT_RATIO);
-            menu_settings_list_current_add_range(list, list_info, 0.1, 16.0, 0.01, true, false);
-
-            CONFIG_INT(
-                  list, list_info,
-                  &custom_vp->x,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-                  0,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, -9999, 9999, 1, true, true);
-            (*list)[list_info->index - 1].offset_by = -9999;
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
-                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-
-            CONFIG_INT(
-                  list, list_info,
-                  &custom_vp->y,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-                  0,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, -9999, 9999, 1, true, true);
-            (*list)[list_info->index - 1].offset_by = -9999;
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
-                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
 #if defined(GEKKO) || defined(PS2) || defined(__PS3__)
             if (true)
@@ -14169,47 +14104,31 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, -50, 50, 1, true, true);
 #endif
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &custom_vp->width,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-                  0,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 1, 9999, 1, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_custom_vp_width;
-            (*list)[list_info->index - 1].action_start = &setting_action_start_custom_vp_width;
-            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_custom_vp_width;
-            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_custom_vp_width;
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
-                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &custom_vp->height,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-                  0,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 1, 9999, 1, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_custom_vp_height;
-            (*list)[list_info->index - 1].action_start = &setting_action_start_custom_vp_height;
-            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_custom_vp_height;
-            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_custom_vp_height;
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
-                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+            {
+               static const setting_desc_t vp_size_desc[] = {
+                  SDESC_UINT_ROW_AT_EX(offsetof(settings_t, video_vp_custom.width),
+                        VIDEO_VIEWPORT_CUSTOM_WIDTH, 0,
+                        SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                        1, 9999, 1, 0, NULL,
+                        setting_get_string_representation_uint_custom_vp_width,
+                        setting_action_start_custom_vp_width, NULL,
+                        setting_uint_action_left_custom_vp_width,
+                        setting_uint_action_right_custom_vp_width, 0),
+                  SDESC_UINT_ROW_AT_EX(offsetof(settings_t, video_vp_custom.height),
+                        VIDEO_VIEWPORT_CUSTOM_HEIGHT, 0,
+                        SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
+                        1, 9999, 1, 0, NULL,
+                        setting_get_string_representation_uint_custom_vp_height,
+                        setting_action_start_custom_vp_height, NULL,
+                        setting_uint_action_left_custom_vp_height,
+                        setting_uint_action_right_custom_vp_height, 0)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     vp_size_desc, ARRAY_SIZE(vp_size_desc),
+                     &group_info, &subgroup_info, parent_group);
+            }
 
 #if defined(DINGUX)
             if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
