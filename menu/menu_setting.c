@@ -26450,7 +26450,136 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
  * Returns: settings list composed of all requested
  * settings on success, otherwise NULL.
  **/
+/* Validation harness for settings-list refactoring.
+ *
+ * When the RETROARCH_SETTINGS_DUMP environment variable is set to a
+ * file path, the fully constructed settings list is serialised there
+ * in a canonical text form at menu init.  Dumps taken before and
+ * after a registration refactor (e.g. converting imperative
+ * CONFIG_* runs to setting_desc_t tables) must be byte-identical.
+ *
+ * Handler pointers cannot be compared across binaries, so the
+ * handlers most affected by conversions are reported as symbolic
+ * tags, and get_string_representation is exercised directly for
+ * value types so that a wrongly wired representation callback shows
+ * up as a differing string rather than an invisible pointer.
+ *
+ * Zero cost unless the environment variable is set. */
+static void menu_setting_validation_dump(rarch_setting_t *list)
+{
+   unsigned i;
+   RFILE *f;
+   const char *path = getenv("RETROARCH_SETTINGS_DUMP");
+
+   if (!path || !list)
+      return;
+
+   f = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!f)
+      return;
+
+   for (i = 0; list[i].type != ST_NONE; i++)
+   {
+      char repr[512];
+      rarch_setting_t *s   = &list[i];
+      const char *ok_tag   = "-";
+      const char *left_tag = "-";
+      const char *rght_tag = "-";
+      char dflt[64];
+
+      if (s->action_ok == setting_bool_action_left_with_refresh)
+         ok_tag   = "boolrefL";
+      else if (s->action_ok == setting_action_ok_uint)
+         ok_tag   = "okuint";
+      if (s->action_left == setting_bool_action_left_with_refresh)
+         left_tag = "boolrefL";
+      if (s->action_right == setting_bool_action_right_with_refresh)
+         rght_tag = "boolrefR";
+
+      dflt[0] = '\0';
+      repr[0] = '\0';
+
+      switch (s->type)
+      {
+         case ST_BOOL:
+            snprintf(dflt, sizeof(dflt), "%d",
+                  s->default_value.boolean ? 1 : 0);
+            break;
+         case ST_INT:
+            snprintf(dflt, sizeof(dflt), "%d",
+                  s->default_value.integer);
+            break;
+         case ST_UINT:
+            snprintf(dflt, sizeof(dflt), "%u",
+                  s->default_value.unsigned_integer);
+            break;
+         case ST_SIZE:
+            snprintf(dflt, sizeof(dflt), "%u",
+                  (unsigned)s->default_value.sizet);
+            break;
+         case ST_FLOAT:
+            snprintf(dflt, sizeof(dflt), "%.6g",
+                  s->default_value.fraction);
+            break;
+         case ST_PATH:
+         case ST_DIR:
+         case ST_STRING:
+         case ST_STRING_OPTIONS:
+            snprintf(dflt, sizeof(dflt), "%s",
+                  s->default_value.string ? s->default_value.string : "");
+            break;
+         default:
+            break;
+      }
+
+      switch (s->type)
+      {
+         case ST_BOOL:
+         case ST_INT:
+         case ST_UINT:
+         case ST_SIZE:
+         case ST_FLOAT:
+            if (s->get_string_representation)
+               s->get_string_representation(s, repr, sizeof(repr));
+            break;
+         default:
+            break;
+      }
+
+      filestream_printf(f,
+            "%u|%s|%d|%d|%d|%08x|%02x|%.6g|%.6g|%.6g|%d|%d|%d|%d|%u|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n",
+            i,
+            s->name ? s->name : "",
+            (int)s->type,
+            (int)s->enum_idx,
+            (int)s->enum_value_idx,
+            (unsigned)s->flags,
+            (unsigned)s->free_flags,
+            (double)s->min,
+            (double)s->max,
+            (double)s->step,
+            (int)s->offset_by,
+            (int)s->ui_type,
+            (int)s->browser_selection_type,
+            (int)s->cmd_trigger_idx,
+            (unsigned)s->size,
+            dflt,
+            s->rounding_fraction ? s->rounding_fraction : "",
+            ok_tag, left_tag, rght_tag,
+            s->short_description ? s->short_description : "",
+            s->group ? s->group : "",
+            s->subgroup ? s->subgroup : "",
+            s->values ? s->values : "",
+            repr);
+   }
+
+   filestream_close(f);
+}
+
 rarch_setting_t *menu_setting_new(void)
+
 {
    rarch_setting_t* list           = NULL;
    rarch_setting_info_t *list_info = (rarch_setting_info_t*)
@@ -26465,6 +26594,8 @@ rarch_setting_t *menu_setting_new(void)
    list             = menu_setting_new_internal(list_info);
 
    menu_setting_index_build(list);
+
+   menu_setting_validation_dump(list);
 
    if (list_info)
       free(list_info);
