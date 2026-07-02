@@ -13876,22 +13876,18 @@ static bool setting_append_list(
             if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
                 || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_dingux_refresh_rate,
-                     MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-                     DEFAULT_DINGUX_REFRESH_RATE,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               (*list)[list_info->index - 1].get_string_representation =
-                     &setting_get_string_representation_uint_video_dingux_refresh_rate;
-               menu_settings_list_current_add_range(list, list_info, 0, DINGUX_REFRESH_RATE_LAST - 1, 1, true, true);
-               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+               static const setting_desc_t dingux_rr_desc[] = {
+                  SDESC_UINT_ROW_EX(video_dingux_refresh_rate, VIDEO_DINGUX_REFRESH_RATE,
+                        DEFAULT_DINGUX_REFRESH_RATE,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                        0, DINGUX_REFRESH_RATE_LAST - 1, 1, 0,
+                        setting_action_ok_uint,
+                        setting_get_string_representation_uint_video_dingux_refresh_rate,
+                        NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     dingux_rr_desc, ARRAY_SIZE(dingux_rr_desc),
+                     &group_info, &subgroup_info, parent_group);
             }
             else
 #endif
@@ -14134,24 +14130,15 @@ static bool setting_append_list(
             if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
                 || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
-               CONFIG_BOOL(
-                     list, list_info,
-                     &settings->bools.video_dingux_ipu_keep_aspect,
-                     MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-                     DEFAULT_DINGUX_IPU_KEEP_ASPECT,
-                     MENU_ENUM_LABEL_VALUE_OFF,
-                     MENU_ENUM_LABEL_VALUE_ON,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler,
-                     SD_FLAG_NONE);
-               MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                     list,
-                     list_info,
-                     CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+               static const setting_desc_t dingux_ka_desc[] = {
+                  SDESC_BOOL_ROW(video_dingux_ipu_keep_aspect, VIDEO_DINGUX_IPU_KEEP_ASPECT,
+                        DEFAULT_DINGUX_IPU_KEEP_ASPECT,
+                        SD_FLAG_NONE, 0,
+                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     dingux_ka_desc, ARRAY_SIZE(dingux_ka_desc),
+                     &group_info, &subgroup_info, parent_group);
             }
 #endif
 
@@ -14352,124 +14339,80 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
 #ifdef GEKKO
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_viwidth,
-                  MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
-                  DEFAULT_VIDEO_VI_WIDTH,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 640, 720, 2, true, true);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_vfilter,
-                  MENU_ENUM_LABEL_VIDEO_VFILTER,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-                  DEFAULT_VIDEO_VFILTER,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_overscan_correction_top,
-                  MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
-                  DEFAULT_VIDEO_OVERSCAN_CORRECTION_TOP,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 24, 1, true, true);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_overscan_correction_bottom,
-                  MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-                  DEFAULT_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 24, 1, true, true);
+            {
+               static const setting_desc_t gx_desc[] = {
+                  SDESC_UINT_ROW(video_viwidth, VIDEO_VI_WIDTH,
+                        DEFAULT_VIDEO_VI_WIDTH,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                        640, 720, 2, 0, NULL, NULL),
+                  SDESC_BOOL_ROW(video_vfilter, VIDEO_VFILTER,
+                        DEFAULT_VIDEO_VFILTER,
+                        SD_FLAG_NONE, 0, CMD_EVENT_NONE),
+                  SDESC_UINT_ROW(video_overscan_correction_top, VIDEO_OVERSCAN_CORRECTION_TOP,
+                        DEFAULT_VIDEO_OVERSCAN_CORRECTION_TOP,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                        0, 24, 1, 0, NULL, NULL),
+                  SDESC_UINT_ROW(video_overscan_correction_bottom, VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+                        DEFAULT_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                        0, 24, 1, 0, NULL, NULL)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     gx_desc, ARRAY_SIZE(gx_desc),
+                     &group_info, &subgroup_info, parent_group);
+            }
 #endif
 
 #if defined(DINGUX)
             if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
             {
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_dingux_ipu_filter_type,
-                     MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-                     DEFAULT_DINGUX_IPU_FILTER_TYPE,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               (*list)[list_info->index - 1].get_string_representation =
-                     &setting_get_string_representation_uint_video_dingux_ipu_filter_type;
-               menu_settings_list_current_add_range(list, list_info, 0, DINGUX_IPU_FILTER_LAST - 1, 1, true, true);
-               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+               static const setting_desc_t dingux_ipu_desc[] = {
+                  SDESC_UINT_ROW_EX(video_dingux_ipu_filter_type, VIDEO_DINGUX_IPU_FILTER_TYPE,
+                        DEFAULT_DINGUX_IPU_FILTER_TYPE,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                        0, DINGUX_IPU_FILTER_LAST - 1, 1, 0,
+                        setting_action_ok_uint,
+                        setting_get_string_representation_uint_video_dingux_ipu_filter_type,
+                        NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     dingux_ipu_desc, ARRAY_SIZE(dingux_ipu_desc),
+                     &group_info, &subgroup_info, parent_group);
             }
 #if defined(RS90) || defined(MIYOO)
             else if (string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_dingux_rs90_softfilter_type,
-                     MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-                     DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               (*list)[list_info->index - 1].get_string_representation =
-                     &setting_get_string_representation_uint_video_dingux_rs90_softfilter_type;
-               menu_settings_list_current_add_range(list, list_info, 0, DINGUX_RS90_SOFTFILTER_LAST - 1, 1, true, true);
-               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+               static const setting_desc_t dingux_rs90_desc[] = {
+                  SDESC_UINT_ROW_EX(video_dingux_rs90_softfilter_type, VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+                        DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                        0, DINGUX_RS90_SOFTFILTER_LAST - 1, 1, 0,
+                        setting_action_ok_uint,
+                        setting_get_string_representation_uint_video_dingux_rs90_softfilter_type,
+                        NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     dingux_rs90_desc, ARRAY_SIZE(dingux_rs90_desc),
+                     &group_info, &subgroup_info, parent_group);
             }
 #endif
             else
 #endif
             {
-               CONFIG_BOOL(
-                     list, list_info,
-                     &settings->bools.video_smooth,
-                     MENU_ENUM_LABEL_VIDEO_SMOOTH,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-                     DEFAULT_VIDEO_SMOOTH,
-                     MENU_ENUM_LABEL_VALUE_OFF,
-                     MENU_ENUM_LABEL_VALUE_ON,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler,
-                     SD_FLAG_NONE
-                     );
-               MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+               static const setting_desc_t smooth_desc[] = {
+                  SDESC_BOOL_ROW(video_smooth, VIDEO_SMOOTH,
+                        DEFAULT_VIDEO_SMOOTH,
+                        SD_FLAG_NONE, 0, CMD_EVENT_REINIT)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     smooth_desc, ARRAY_SIZE(smooth_desc),
+                     &group_info, &subgroup_info, parent_group);
             }
 
 #ifdef HAVE_ODROIDGO2
+            /* Stays imperative: label/value enums are a mismatched
+             * pair (LABEL_VIDEO_CTX_SCALING / VALUE_VIDEO_RGA_SCALING),
+             * which the single-token descriptor rows cannot express. */
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_ctx_scaling,
@@ -14488,38 +14431,27 @@ static bool setting_append_list(
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 #endif
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_rotation,
-                  MENU_ENUM_LABEL_VIDEO_ROTATION,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-                  0,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_video_rotation;
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.screen_orientation,
-                  MENU_ENUM_LABEL_SCREEN_ORIENTATION,
-                  MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-                  0,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_screen_orientation;
+            {
+               static const setting_desc_t rot_desc[] = {
+                  SDESC_UINT_ROW_EX(video_rotation, VIDEO_ROTATION,
+                        0,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                        0, 3, 1, 0,
+                        setting_action_ok_uint,
+                        setting_get_string_representation_uint_video_rotation,
+                        NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
+                  SDESC_UINT_ROW_EX(screen_orientation, SCREEN_ORIENTATION,
+                        0,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                        0, 3, 1, 0,
+                        setting_action_ok_uint,
+                        setting_get_string_representation_uint_screen_orientation,
+                        NULL, NULL, NULL, NULL, 0)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     rot_desc, ARRAY_SIZE(rot_desc),
+                     &group_info, &subgroup_info, parent_group);
+            }
 
             END_SUB_GROUP(list, list_info, parent_group);
 
