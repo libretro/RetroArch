@@ -1465,6 +1465,13 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
       return 0;
 
    option_index = string_to_unsigned(opt+1);
+
+   /* The core option set can shrink at runtime, leaving a stale
+    * entry index in the menu path.  Reject an out-of-range index
+    * before taking the address of coreopts->opts[option_index]. */
+   if (option_index >= coreopts->size)
+      return 0;
+
    val_d[0]     = '\0';
    snprintf(val_d, sizeof(val_d), "%d", option_index);
 
@@ -1472,7 +1479,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    option = (struct core_option*)&coreopts->opts[option_index];
    val    = core_option_manager_get_val(coreopts, option_index);
 
-   if (!option || !val || !*val)
+   if (!val || !*val)
       return 0;
 
    lbl_enabled  = msg_hash_to_str(MENU_ENUM_LABEL_ENABLED);
