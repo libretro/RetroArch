@@ -733,18 +733,19 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * integer domain, and the audio mixer is summed in float on top of the
     * resampled game audio in both output branches below.  Fast-forward
     * "speedup" pitch tracking is applied to the integer ratio too, so it no
-    * longer forces the float path; only a MIDI synth (whose PCM is float)
-    * still falls through.  This removes
-    * the s16<->float round-trip on the game signal, uses no FPU for the game
-    * resample, and is bit-identical across platforms for that signal (netplay /
-    * rewind).  Any condition failing falls through to the float path below. */
+    * longer forces the float path.  An in-process MIDI synth (whose PCM is
+    * float) no longer forces it either: its samples are converted to s16 and
+    * summed into the game audio before the integer DSP/resample, exactly where
+    * the float path sums them.  This removes the s16<->float round-trip on the
+    * game signal, uses no FPU for the game resample, and is bit-identical
+    * across platforms for that signal (netplay / rewind).  Any condition
+    * failing falls through to the float path below. */
    {
       static int audio_i16_path_logged = -1;
       bool use_i16 =
              (audio_st->resampler_data_int16 != NULL)
          &&  config_get_ptr()->bools.audio_fastpath_s16
          && !is_float
-         && !midi_driver_synth_active()
 #ifdef HAVE_DSP_FILTER
          && (!audio_st->dsp
                || retro_dsp_filter_supports_int16(audio_st->dsp))
@@ -765,15 +766,45 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          unsigned rs_frames   = samples >> 1;
          double   i16_ratio;
          unsigned out_frames;
+         bool     synth_on    = midi_driver_synth_active()
+               && audio_st->synth_buf && audio_st->input_data_int16;
+
+         /* If an in-process synth is sounding, render its PCM at the input
+          * rate and sum it (converted to s16, saturating) into a writable
+          * copy of the game audio before DSP/resampling - mirroring the float
+          * path, which sums the synth into its pre-resample buffer.  The synth
+          * is added unscaled; the output stage applies the master volume gain
+          * to the combined signal, matching the float path's (game+synth)*gain
+          * ordering. */
+         if (synth_on)
+         {
+            memcpy(audio_st->input_data_int16, data, samples * sizeof(int16_t));
+            if (midi_driver_render_audio(audio_st->synth_buf, rs_frames,
+                     (unsigned)audio_st->input))
+            {
+               size_t s;
+               for (s = 0; s < samples; s++)
+               {
+                  int32_t v = (int32_t)audio_st->input_data_int16[s]
+                            + (int32_t)(audio_st->synth_buf[s] * 0x8000);
+                  if      (v >  32767) v =  32767;
+                  else if (v < -32768) v = -32768;
+                  audio_st->input_data_int16[s] = (int16_t)v;
+               }
+            }
+            rs_in = audio_st->input_data_int16;
+         }
 
 #ifdef HAVE_DSP_FILTER
          /* Run an int16-capable DSP chain in place on an int16 scratch copy
-          * (the core's buffer is const), then resample its output. */
+          * (the core's buffer is const), then resample its output.  When a
+          * synth was summed above the copy already holds game+synth. */
          if (audio_st->dsp && audio_st->input_data_int16)
          {
             struct retro_dsp_data_int16 dsp_data;
-            memcpy(audio_st->input_data_int16, data,
-                  samples * sizeof(int16_t));
+            if (!synth_on)
+               memcpy(audio_st->input_data_int16, data,
+                     samples * sizeof(int16_t));
             dsp_data.input        = audio_st->input_data_int16;
             dsp_data.input_frames = rs_frames;
             dsp_data.output       = NULL;
