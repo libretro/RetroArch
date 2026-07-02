@@ -2134,6 +2134,11 @@ static void menu_input_get_touchscreen_hw_state(
    static int16_t last_y                        = 0;
    static bool last_select_pressed              = false;
    static bool last_cancel_pressed              = false;
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   bool dsu_touch_available                    = input_st
+         && input_st->dsu
+         && dsu_port_has_touch(input_st->dsu, 0);
+#endif
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
@@ -2172,7 +2177,7 @@ static void menu_input_get_touchscreen_hw_state(
    joypad_info.auto_binds                       = NULL;
    joypad_info.axis_threshold                   = 0.0f;
 
-   /* X pos */
+   /* X pos - read local first, let DSU override when actively touching */
    if (current_input->input_state)
       pointer_x                  = current_input->input_state(
             input_st->current_data,
@@ -2182,6 +2187,10 @@ static void menu_input_get_touchscreen_hw_state(
             keyboard_mapping_blocked,
             0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_X);
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   if (dsu_touch_available && dsu_get_pointer_count(input_st->dsu, 0) > 0)
+      pointer_x = dsu_get_pointer_x(input_st->dsu, 0, 0);
+#endif
    hw_state->x  = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
    hw_state->x *= input_touch_scale;
 
@@ -2203,7 +2212,7 @@ static void menu_input_get_touchscreen_hw_state(
       last_x = pointer_x;
    }
 
-   /* Y pos */
+   /* Y pos - read local first, let DSU override when actively touching */
    if (current_input->input_state)
       pointer_y = current_input->input_state(
             input_st->current_data,
@@ -2213,6 +2222,10 @@ static void menu_input_get_touchscreen_hw_state(
             keyboard_mapping_blocked,
             0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_Y);
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   if (dsu_touch_available && dsu_get_pointer_count(input_st->dsu, 0) > 0)
+      pointer_y = dsu_get_pointer_y(input_st->dsu, 0, 0);
+#endif
    hw_state->y  = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
    hw_state->y *= input_touch_scale;
 
@@ -2229,18 +2242,28 @@ static void menu_input_get_touchscreen_hw_state(
       last_y = pointer_y;
    }
 
-   /* Select (touch screen contact)
+   /* Select (touch screen contact) - OR local and DSU so both work simultaneously.
     * Note that releasing select also counts as activity */
-   if (current_input->input_state)
    {
-      if (current_input->input_state(
-            input_st->current_data,
-            joypad,
-            sec_joypad,
-            &joypad_info, (*binds),
-            keyboard_mapping_blocked,
-            0, pointer_device,
-            0, RETRO_DEVICE_ID_POINTER_PRESSED))
+      bool pressed = false;
+      if (current_input->input_state)
+      {
+         if (current_input->input_state(
+               input_st->current_data,
+               joypad,
+               sec_joypad,
+               &joypad_info, (*binds),
+               keyboard_mapping_blocked,
+               0, pointer_device,
+               0, RETRO_DEVICE_ID_POINTER_PRESSED))
+            pressed = true;
+      }
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+      if (dsu_touch_available && dsu_get_pointer_count(input_st->dsu, 0) > 0
+            && dsu_get_pointer_pressed(input_st->dsu, 0, 0))
+         pressed = true;
+#endif
+      if (pressed)
          hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_SELECT;
       else
          hw_state->flags &= ~MENU_INP_PTR_FLG_PRESS_SELECT;
@@ -2402,15 +2425,14 @@ static bool menu_driver_displaylist_push(
       file_list_t *entry_list,
       file_list_t *entry_stack)
 {
+   bool ret                   = false;
+   const char *label          = NULL;
+   const char *path           = NULL;
+   unsigned type              = 0;
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    menu_displaylist_info_t info;
-   const char *path               = NULL;
-   const char *label              = NULL;
-   unsigned type                  = 0;
-   bool ret                       = false;
-   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-   file_list_t *list              = MENU_LIST_GET(menu_st->entries.list, 0);
-   menu_file_list_cbs_t *cbs      = (menu_file_list_cbs_t*)
-      list->list[list->size - 1].actiondata;
+   file_list_t *list          = MENU_LIST_GET(menu_st->entries.list, 0);
+   menu_file_list_cbs_t *cbs  = NULL;
 
    menu_displaylist_info_init(&info);
 
@@ -2419,6 +2441,7 @@ static bool menu_driver_displaylist_push(
       path      = list->list[list->size - 1].path;
       label     = list->list[list->size - 1].label;
       type      = list->list[list->size - 1].type;
+      cbs       = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
    }
 
    if (cbs)
@@ -2443,11 +2466,14 @@ static bool menu_driver_displaylist_push(
       goto end;
    }
 
-   cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
-
-   if (cbs && cbs->action_deferred_push)
-      if (cbs->action_deferred_push(&info) != 0)
-         goto error;
+   if (cbs)
+   {
+      if (cbs->action_deferred_push)
+      {
+         if (cbs->action_deferred_push(&info) != 0)
+            goto error;
+      }
+   }
 
    ret = true;
 
@@ -2522,7 +2548,7 @@ static void menu_cbs_init(
       const char *path,
       const char *label,
       size_t lbl_len,
-      unsigned type, size_t idx)
+      unsigned type, size_t idx, size_t directory_ptr)
 {
    size_t menu_lbl_len;
    const char *menu_lbl           = NULL;
@@ -2548,7 +2574,7 @@ static void menu_cbs_init(
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_ok.c, then map this callback to the entry. */
-   menu_cbs_init_bind_ok(cbs, path, label, lbl_len, type, idx, menu_lbl, menu_lbl_len);
+   menu_cbs_init_bind_ok(cbs, path, label, lbl_len, type, directory_ptr, menu_lbl, menu_lbl_len);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_cancel.c, then map this callback to the entry. */
@@ -4202,7 +4228,7 @@ bool menu_entries_append(
 
    menu_cbs_init(menu_st,
          menu_st->driver_ctx,
-         list, cbs, path, label, lbl_len, type, idx);
+         list, cbs, path, label, lbl_len, type, idx, directory_ptr);
 
    return true;
 }
@@ -4286,7 +4312,7 @@ void menu_entries_prepend(file_list_t *list,
 
    menu_cbs_init(menu_st,
          menu_st->driver_ctx,
-         list, cbs, path, label, lbl_len, type, idx);
+         list, cbs, path, label, lbl_len, type, idx, directory_ptr);
 }
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)
@@ -7860,8 +7886,13 @@ int generic_menu_entry_action(
          break;
       case MENU_ACTION_OK:
          if (cbs && cbs->action_ok)
+         {
             ret = cbs->action_ok(entry->path,
                   entry->label, entry->type, i, entry->entry_idx);
+         }
+         else
+         {
+         }
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)

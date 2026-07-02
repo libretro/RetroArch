@@ -179,6 +179,123 @@ void streaming_set_state(bool state)
    recording_st->streaming_enable  = state;
 }
 
+/* ---- Auxiliary stream slot management (DSU multi-screen casting) ---- */
+
+static enum record_config_type
+aux_preset_from_bitrate(unsigned bitrate_kbps)
+{
+   if (bitrate_kbps == 0)
+      return RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY;
+   if (bitrate_kbps < 1500)
+      return RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY;
+   if (bitrate_kbps < 4000)
+      return RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY;
+   return RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY;
+}
+
+bool recording_init_aux(unsigned idx,
+      const char *url,
+      unsigned bitrate_kbps,
+      unsigned width, unsigned height, unsigned fps)
+{
+   struct record_params params          = {0};
+   settings_t *settings                 = config_get_ptr();
+   video_driver_state_t *video_st       = video_state_get_ptr();
+   struct retro_system_av_info *av_info = &video_st->av_info;
+   recording_state_t *rec_st            = &recording_state;
+   const enum retro_pixel_format pix    = video_st->pix_fmt;
+   int drv_idx;
+   const record_driver_t *drv           = NULL;
+
+   if (idx >= 4)
+      return false;
+   if (!url || !*url)
+      return false;
+
+   /* Deinit any existing instance before replacing. */
+   recording_deinit_aux(idx);
+
+   drv_idx = (int)driver_find_index("record_driver",
+         settings->arrays.record_driver);
+   if (drv_idx >= 0)
+      drv = (const record_driver_t*)record_drivers[drv_idx];
+   if (!drv)
+      drv = (const record_driver_t*)record_drivers[0];
+   if (!drv || !drv->init)
+   {
+      RARCH_ERR("[Recording] No record driver available for aux slot %u.\n", idx);
+      return false;
+   }
+
+   params.audio_resampler           = settings->arrays.audio_resampler;
+   params.video_gpu_record          = false; /* aux frames are CPU buffers from core */
+   params.video_record_scale_factor = settings->uints.video_record_scale_factor;
+   params.video_stream_scale_factor = settings->uints.video_stream_scale_factor;
+   params.video_record_threads      = settings->uints.video_record_threads;
+   params.streaming_mode            = STREAMING_MODE_CUSTOM;
+
+   params.out_width  = width  ? width  : av_info->geometry.base_width;
+   params.out_height = height ? height : av_info->geometry.base_height;
+   params.fb_width   = av_info->geometry.max_width
+      ? av_info->geometry.max_width  : params.out_width;
+   params.fb_height  = av_info->geometry.max_height
+      ? av_info->geometry.max_height : params.out_height;
+   params.channels   = 0;
+   params.filename   = url;
+   params.fps        = fps ? (double)fps : av_info->timing.fps;
+   params.samplerate = av_info->timing.sample_rate;
+   params.pix_fmt    = (pix == RETRO_PIXEL_FORMAT_XRGB8888)
+      ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
+   params.aspect_ratio = (av_info->geometry.aspect_ratio > 0.0f)
+      ? av_info->geometry.aspect_ratio
+      : (params.out_height > 0)
+         ? (float)params.out_width / (float)params.out_height : 1.0f;
+
+   params.config     = settings->paths.path_stream_config;
+   params.preset     = aux_preset_from_bitrate(bitrate_kbps);
+
+   RARCH_LOG("[Recording] Aux slot %u init: url='%s' %ux%u@%.2f preset=%d (bitrate hint %u kbps)\n",
+         idx, url, params.out_width, params.out_height,
+         params.fps, (int)params.preset, bitrate_kbps);
+
+   rec_st->aux_streams[idx].driver = drv;
+   rec_st->aux_streams[idx].data   = drv->init(&params);
+   if (!rec_st->aux_streams[idx].data)
+   {
+      RARCH_ERR("[Recording] Aux slot %u driver init failed.\n", idx);
+      rec_st->aux_streams[idx].driver = NULL;
+      rec_st->aux_streams[idx].active = false;
+      rec_st->aux_streams[idx].stream_url[0] = '\0';
+      return false;
+   }
+
+   strlcpy(rec_st->aux_streams[idx].stream_url, url,
+         sizeof(rec_st->aux_streams[idx].stream_url));
+   rec_st->aux_streams[idx].active = true;
+   return true;
+}
+
+bool recording_deinit_aux(unsigned idx)
+{
+   recording_state_t *rec_st = &recording_state;
+   if (idx >= 4)
+      return false;
+
+   rec_st->aux_streams[idx].active = false;
+
+   if (rec_st->aux_streams[idx].driver && rec_st->aux_streams[idx].data)
+   {
+      if (rec_st->aux_streams[idx].driver->finalize)
+         rec_st->aux_streams[idx].driver->finalize(rec_st->aux_streams[idx].data);
+      if (rec_st->aux_streams[idx].driver->free)
+         rec_st->aux_streams[idx].driver->free(rec_st->aux_streams[idx].data);
+   }
+   rec_st->aux_streams[idx].driver = NULL;
+   rec_st->aux_streams[idx].data   = NULL;
+   rec_st->aux_streams[idx].stream_url[0] = '\0';
+   return true;
+}
+
 bool recording_init(void)
 {
    char output[PATH_MAX_LENGTH];
@@ -343,7 +460,10 @@ bool recording_init(void)
       params.fb_width                     = next_pow2(vp.width);
       params.fb_height                    = next_pow2(vp.height);
 
-      if (video_force_aspect &&
+      if (recording_st->streaming_enable &&
+            (av_info->geometry.aspect_ratio > 0.0f))
+         params.aspect_ratio              = av_info->geometry.aspect_ratio;
+      else if (video_force_aspect &&
             (video_st->aspect_ratio > 0.0f))
          params.aspect_ratio              = video_st->aspect_ratio;
       else
@@ -368,7 +488,10 @@ bool recording_init(void)
          params.out_height = recording_state.height;
       }
 
-      if (video_force_aspect &&
+      if (recording_st->streaming_enable &&
+            (av_info->geometry.aspect_ratio > 0.0f))
+         params.aspect_ratio = av_info->geometry.aspect_ratio;
+      else if (video_force_aspect &&
             (video_st->aspect_ratio > 0.0f))
          params.aspect_ratio = video_st->aspect_ratio;
       else

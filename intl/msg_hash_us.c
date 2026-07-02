@@ -21,6 +21,10 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "../msg_hash.h"
 #include "../verbosity.h"
 

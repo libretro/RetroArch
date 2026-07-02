@@ -9,6 +9,7 @@ WHOLE_ARCHIVE_LINK         = 0
 BIG_STACK                  = 1
 HAVE_NETWORKING            = 1
 HAVE_IFINFO                = 1
+HAVE_DSU                   = 1
 PC_DEVELOPMENT_IP_ADDRESS  = 255.255.255.255
 PC_DEVELOPMENT_UDP_PORT    = 3490
 RARCH_CONSOLE              = 0
@@ -119,7 +120,7 @@ LIBS += -lwiiuse -lbte
 ifeq ($(USBGECKO), 1)
   LIBS += -ldb
 endif
- 
+
 ifeq ($(HAVE_LOGGER), 1)
   LIBS += -lbba
 endif
@@ -184,7 +185,7 @@ INCLUDE += -I./libretro-common/include \
            -Ideps/stb
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
-OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o memory/wii/mem2_manager.o gfx/drivers/gx_gfx_vi_encoder.o frontend/drivers/platform_wii.o input/drivers_hid/wiiusb_hid.o 
+OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o memory/wii/mem2_manager.o gfx/drivers/gx_gfx_vi_encoder.o frontend/drivers/platform_wii.o input/drivers_hid/wiiusb_hid.o
 
 ifeq ($(EXTERNAL_LIBOGC), 0)
    OBJ += wii/libogc/libfat/libfat.o wii/libogc/libfat/fatfile.o wii/libogc/libfat/file_allocation_table.o wii/libogc/libfat/cache.o wii/libogc/libfat/fatdir.o wii/libogc/libfat/partition.o wii/libogc/libfat/directory.o wii/libogc/libfat/filetime.o wii/libogc/libfat/disc.o

@@ -160,6 +160,7 @@ endif
       HAVE_LIBRETRODB = 1
       HAVE_NETWORKING = 1
       HAVE_IFINFO = 1
+      HAVE_DSU = 1
       HAVE_NETPLAYDISCOVERY = 1
       HAVE_CHEEVOS = 1
       #WANT_IFADDRS = 1

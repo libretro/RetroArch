@@ -38,6 +38,9 @@
 #include "input_overlay.h"
 #endif
 #include "input_osk.h"
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+#include "input_dsu.h"
+#endif
 
 #include "../msg_hash.h"
 #ifdef HAVE_HID
@@ -613,6 +616,9 @@ typedef struct
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   dsu_state_t *dsu;
+#endif
    char    *osk_grid[45];                                /* ptr alignment */
 #if defined(HAVE_TRANSLATE)
 #if defined(HAVE_ACCESSIBILITY)
@@ -1069,6 +1075,18 @@ input_remote_t *input_driver_init_remote(
 void input_remote_free(input_remote_t *handle, unsigned max_users);
 #endif
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+bool input_dsu_init(void);
+void input_dsu_deinit(void);
+void input_dsu_poll(void);
+void input_dsu_reassign_slots(void);
+void input_dsu_broadcast_current_state(void);
+void input_dsu_broadcast_stream_status(uint32_t state, uint32_t error_code,
+      uint32_t stream_type, uint8_t screen_id, const char *url);
+void input_dsu_broadcast_aux_stream_status(unsigned player, uint32_t state,
+      uint32_t error_code, uint32_t stream_type, const char *url);
+#endif
+
 void input_game_focus_free(void);
 
 /**
@@ -1124,6 +1142,8 @@ const input_sensor_map_t *input_config_get_sensor_map(unsigned port);
 void input_config_reset(void);
 
 const char *joypad_driver_name(unsigned i);
+
+bool input_joypad_port_has_hardware_gamepad(unsigned port);
 
 void joypad_driver_reinit(void *data, const char *joypad_driver_name);
 

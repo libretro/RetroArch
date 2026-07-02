@@ -77,6 +77,7 @@ else
    endif
 	HAVE_NETWORKING		:= 1
 	HAVE_IFINFO		:= 1
+	HAVE_DSU		:= 1
 	HAVE_NETPLAYDISCOVERY	:= 1
 	HAVE_SOCKET_LEGACY	:= 1
 	HAVE_MENU		:= 1
@@ -184,7 +185,7 @@ else
    FSELF_FLAGS := -s
 endif
 
-LIBS	:= $(WHOLE_START) 
+LIBS	:= $(WHOLE_START)
 
 ifeq ($(HAVE_STATIC_DUMMY),1)
   DEFINES += -DHAVE_STATIC_DUMMY
@@ -277,7 +278,7 @@ $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
 
 clean:
 	@$(if $(Q), echo $@,)
-	$(Q)rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 
+	$(Q)rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk
 	$(Q)rm -rf  deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
 	$(Q)rm -f $(OBJ:.o=.depend)
 

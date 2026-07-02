@@ -9503,7 +9503,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    video_driver_get_output_size(&width, &height);
 
    /* Also used as a tag for cursor animation */
-   ozone->default_theme                         = &ozone_theme_dark; 
+   ozone->default_theme                         = &ozone_theme_dark;
 
    ozone->last_framebuffer_opacity              = -1.0f;
    ozone->last_width                            = width;

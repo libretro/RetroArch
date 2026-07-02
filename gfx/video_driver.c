@@ -1256,6 +1256,51 @@ static void recording_dump_frame(
    record_st->driver->push_video(record_st->data, &ffemu_data);
 }
 
+void recording_dump_frame_ext(
+      const void *data, unsigned width,
+      unsigned height, size_t pitch, bool is_idle,
+      unsigned screen_id)
+{
+   struct record_video_data ffemu_data;
+   recording_state_t *record_st = recording_state_get_ptr();
+
+   RARCH_LOG("[Recording] recording_dump_frame_ext called: screen_id=%u width=%u height=%u data=%p\n", screen_id, width, height, data);
+
+   /* Main screen (0) uses existing path */
+   if (screen_id == 0)
+   {
+      recording_dump_frame(data, width, height, pitch, is_idle);
+      return;
+   }
+
+   /* Auxiliary screens (1-4) route to their own streaming contexts */
+   if (screen_id > 4)
+      return;
+
+   /* Check if there's an active aux stream for this screen */
+   if (!record_st->aux_streams[screen_id - 1].active)
+      return;
+
+   ffemu_data.data    = data;
+   ffemu_data.width   = width;
+   ffemu_data.height  = height;
+   ffemu_data.pitch   = (int)pitch;
+   ffemu_data.is_dupe = !data;
+
+   /* Push to auxiliary stream driver if available */
+   if (record_st->aux_streams[screen_id - 1].driver &&
+       record_st->aux_streams[screen_id - 1].driver->push_video)
+   {
+      RARCH_LOG("[Recording] Pushing frame to aux stream driver slot %u\n", screen_id - 1);
+      record_st->aux_streams[screen_id - 1].driver->push_video(
+            record_st->aux_streams[screen_id - 1].data, &ffemu_data);
+   }
+   else
+   {
+      RARCH_LOG("[Recording] Aux stream driver not available for slot %u\n", screen_id - 1);
+   }
+}
+
 const char *video_display_server_get_ident(void)
 {
    if (current_display_server)
@@ -4324,8 +4369,14 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    return true;
 }
 
-void video_driver_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch)
+void video_driver_frame_ext_wrapper(const void *data, unsigned width,
+      unsigned height, size_t pitch, unsigned screen_id)
+{
+   video_driver_frame_ext(data, width, height, pitch, screen_id);
+}
+
+void video_driver_frame_ext(const void *data, unsigned width,
+      unsigned height, size_t pitch, unsigned screen_id)
 {
    char status_text[256];
    settings_t *settings = config_get_ptr();
@@ -4359,6 +4410,23 @@ void video_driver_frame(const void *data, unsigned width,
    bool widgets_active            = p_dispwidget->active;
 #endif
    recording_state_t *recording_st= recording_state_get_ptr();
+
+   /* Multi-screen: only process screen 0 for display, cache other screens (1-4) */
+   if (screen_id > 0 && screen_id < 5)
+   {
+      /* Cache auxiliary screen data for recording/streaming */
+      if (data)
+      {
+         video_st->multi_screen_cache_data[screen_id]   = data;
+         video_st->multi_screen_cache_width[screen_id]  = width;
+         video_st->multi_screen_cache_height[screen_id] = height;
+         video_st->multi_screen_cache_pitch[screen_id]  = pitch;
+         video_st->active_screen_mask |= (1 << screen_id);
+      }
+      /* Record auxiliary screen separately if its stream slot is active */
+      recording_dump_frame_ext(data, width, height, pitch, runloop_idle, screen_id);
+      return;
+   }
 
    status_text[0]                 = '\0';
    video_driver_msg[0]            = '\0';
@@ -5173,6 +5241,12 @@ void video_driver_frame(const void *data, unsigned width,
    if (video_info.scanline_sync && !video_info.input_driver_nonblock_state)
       video_driver_scanline_after_frame(video_st,
             video_info.refresh_rate, video_info.frame_time_target, runloop_st->core_run_time);
+}
+
+void video_driver_frame(const void *data, unsigned width,
+      unsigned height, size_t pitch)
+{
+   video_driver_frame_ext(data, width, height, pitch, 0);
 }
 
 static void video_driver_reinit_context(settings_t *settings, int flags)

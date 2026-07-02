@@ -105,6 +105,7 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
+#include "../input/input_driver.h"
 
 #ifdef HAVE_PRESENCE
 #include "../network/presence.h"
@@ -1645,6 +1646,9 @@ static bool content_load(content_ctx_info_t *info,
 
    frontend_driver_process_args(rarch_argc_ptr, rarch_argv_ptr);
    frontend_driver_content_loaded();
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   input_dsu_broadcast_current_state();
+#endif
 
    return true;
 }

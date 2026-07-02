@@ -131,6 +131,14 @@ struct recording
    bool enable;
    bool streaming_enable;
    bool use_output_dir;
+
+   /* Multi-screen streaming support */
+   struct {
+      const record_driver_t *driver;
+      void *data;
+      bool active;
+      char stream_url[256];
+   } aux_streams[4]; /* Support for 4 auxiliary screens (indices 1-4) */
 };
 
 typedef struct recording recording_state_t;
@@ -159,7 +167,48 @@ bool recording_init(void);
 
 void streaming_set_state(bool state);
 
+/**
+ * recording_init_aux:
+ * Initialize a single auxiliary stream slot (idx 0..3, screen_id-1) with
+ * the supplied DSU stream parameters. The slot gets its own record driver
+ * instance that receives frames via recording_dump_frame_ext() when the
+ * core submits auxiliary screens through video_refresh_ext.
+ *
+ * @param idx          Slot index (0..3 for screen_id 1..4).
+ * @param url          Target URL (e.g. rtmp://..., udp://..., file path).
+ *                     When NULL/empty the slot stays inactive.
+ * @param bitrate_kbps Requested bitrate in kbps (0 = use quality preset).
+ * @param width        Output width  (0 = core av_info base_width).
+ * @param height       Output height (0 = core av_info base_height).
+ * @param fps          Output fps    (0 = core av_info timing.fps).
+ *
+ * @return true on success.
+ */
+bool recording_init_aux(unsigned idx,
+      const char *url,
+      unsigned bitrate_kbps,
+      unsigned width, unsigned height, unsigned fps);
+
+/* Deinit and free a single auxiliary stream slot. */
+bool recording_deinit_aux(unsigned idx);
+
 recording_state_t *recording_state_get_ptr(void);
+
+/**
+ * recording_dump_frame_ext:
+ * @data: Frame data
+ * @width: Frame width
+ * @height: Frame height
+ * @pitch: Frame pitch
+ * @is_idle: Whether core is idle
+ * @screen_id: Screen identifier (0 = main, 1+ = auxiliary)
+ *
+ * Records a video frame from a specific screen for multi-screen streaming.
+ */
+void recording_dump_frame_ext(
+      const void *data, unsigned width,
+      unsigned height, size_t pitch, bool is_idle,
+      unsigned screen_id);
 
 extern const record_driver_t *record_drivers[];
 
