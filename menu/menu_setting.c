@@ -13804,67 +13804,29 @@ static bool setting_append_list(
             }
 
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_fullscreen,
-                  MENU_ENUM_LABEL_VIDEO_FULLSCREEN,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-                  DEFAULT_FULLSCREEN,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_CMD_APPLY_AUTO);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
             {
-               CONFIG_BOOL(
-                     list, list_info,
-                     &settings->bools.video_windowed_fullscreen,
-                     MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-                     DEFAULT_WINDOWED_FULLSCREEN,
-                     MENU_ENUM_LABEL_VALUE_OFF,
-                     MENU_ENUM_LABEL_VALUE_ON,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler,
-                     SD_FLAG_NONE);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_fullscreen_x,
-                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-                     DEFAULT_FULLSCREEN_X,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
-               menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
-
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_fullscreen_y,
-                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-                     DEFAULT_FULLSCREEN_Y,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
-               menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+               static const setting_desc_t fs_desc[] = {
+                  SDESC_BOOL_ROW(video_fullscreen, VIDEO_FULLSCREEN,
+                        DEFAULT_FULLSCREEN,
+                        SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED, 0,
+                        CMD_EVENT_REINIT_FROM_TOGGLE),
+                  SDESC_BOOL_ROW(video_windowed_fullscreen, VIDEO_WINDOWED_FULLSCREEN,
+                        DEFAULT_WINDOWED_FULLSCREEN,
+                        SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_NONE),
+                  SDESC_UINT_ROW(video_fullscreen_x, VIDEO_FULLSCREEN_X,
+                        DEFAULT_FULLSCREEN_X,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE,
+                        0, 7680, 8, 0,
+                        setting_action_ok_uint_special, NULL),
+                  SDESC_UINT_ROW(video_fullscreen_y, VIDEO_FULLSCREEN_Y,
+                        DEFAULT_FULLSCREEN_Y,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE,
+                        0, 4320, 8, 0,
+                        setting_action_ok_uint_special, NULL)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     fs_desc, ARRAY_SIZE(fs_desc),
+                     &group_info, &subgroup_info, parent_group);
             }
 
 #if defined(DINGUX) && defined(DINGUX_BETA)
@@ -14289,97 +14251,41 @@ static bool setting_append_list(
 
             if (video_driver_has_windowed())
             {
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_scale,
-                     MENU_ENUM_LABEL_VIDEO_SCALE,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-                     DEFAULT_SCALE,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               (*list)[list_info->index - 1].offset_by = 1;
-               menu_settings_list_current_add_range(list, list_info, 1, 10, 1, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.window_position_width,
-                     MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-                     DEFAULT_WINDOW_WIDTH,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
-               menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.window_position_height,
-                     MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-                     DEFAULT_WINDOW_HEIGHT,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
-               menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.window_auto_width_max,
-                     MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-                     DEFAULT_WINDOW_AUTO_WIDTH_MAX,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
-               menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.window_auto_height_max,
-                     MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-                     DEFAULT_WINDOW_AUTO_HEIGHT_MAX,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
-               menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_window_opacity,
-                     MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-                     DEFAULT_WINDOW_OPACITY,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               (*list)[list_info->index - 1].offset_by = 1;
-               menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               static const setting_desc_t winscale_desc[] = {
+                  SDESC_UINT_ROW(video_scale, VIDEO_SCALE,
+                        DEFAULT_SCALE,
+                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_NONE, 1, 10, 1, 1,
+                        setting_action_ok_uint, NULL),
+                  SDESC_UINT_ROW(window_position_width, VIDEO_WINDOW_WIDTH,
+                        DEFAULT_WINDOW_WIDTH,
+                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_NONE, 0, 7680, 8, 0,
+                        setting_action_ok_uint_special, NULL),
+                  SDESC_UINT_ROW(window_position_height, VIDEO_WINDOW_HEIGHT,
+                        DEFAULT_WINDOW_HEIGHT,
+                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_NONE, 0, 4320, 8, 0,
+                        setting_action_ok_uint_special, NULL),
+                  SDESC_UINT_ROW(window_auto_width_max, VIDEO_WINDOW_AUTO_WIDTH_MAX,
+                        DEFAULT_WINDOW_AUTO_WIDTH_MAX,
+                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_NONE, 0, 7680, 8, 0,
+                        setting_action_ok_uint_special, NULL),
+                  SDESC_UINT_ROW(window_auto_height_max, VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+                        DEFAULT_WINDOW_AUTO_HEIGHT_MAX,
+                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_NONE, 0, 4320, 8, 0,
+                        setting_action_ok_uint_special, NULL),
+                  SDESC_UINT_ROW(video_window_opacity, VIDEO_WINDOW_OPACITY,
+                        DEFAULT_WINDOW_OPACITY,
+                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_NONE, 1, 100, 1, 1,
+                        setting_action_ok_uint, NULL)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     winscale_desc, ARRAY_SIZE(winscale_desc),
+                     &group_info, &subgroup_info, parent_group);
             }
 
             CONFIG_BOOL(
