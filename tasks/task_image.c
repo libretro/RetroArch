@@ -100,16 +100,6 @@ static int task_image_process(
    if (!image_transfer_is_valid(image->handle, image->type))
       return IMAGE_PROCESS_ERROR;
 
-   /* The decoder bakes the output channel order from supports_rgba, but
-    * the value stored on this task was sampled when the load was queued.
-    * VIDEO_FLAG_USE_RGBA is cleared on every video reinit (core start/
-    * stop), so a snapshot taken in that window can disagree with the
-    * driver's actual upload format and produce R/B-swapped images.
-    * Re-sample the live flag here, at decode time, once the reinit has
-    * settled. */
-   image->ti.supports_rgba = (video_driver_get_disp_flags()
-         & VIDEO_FLAG_USE_RGBA) ? true : false;
-
    if ((retval = image_transfer_process(
          image->handle,
          image->type,
@@ -231,6 +221,16 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
 
    /* Set image size */
    image->size                     = len;
+
+   /* The decoders bake the output channel order from supports_rgba.
+    * It was captured when this load was queued, but VIDEO_FLAG_USE_RGBA
+    * is cleared on every video reinit (core start/stop), so a value
+    * sampled in that window can disagree with the driver's actual upload
+    * format and yield R/B-swapped images.  Re-sample it here, once, at
+    * decode start (after any reinit has settled) - not in the per-chunk
+    * decode loop, where it would lock display_lock on every iteration. */
+   image->ti.supports_rgba = (video_driver_get_disp_flags()
+         & VIDEO_FLAG_USE_RGBA) ? true : false;
 
    /* Set task iteration duration */
    if (settings)
