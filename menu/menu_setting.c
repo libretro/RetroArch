@@ -15353,22 +15353,22 @@ static bool setting_append_list(
          /* Stays imperative: value target comes from
           * audio_get_float_ptr() and lives outside settings_t. */
 
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.audio_format_negotiation,
-               MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION,
-               MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
-               DEFAULT_AUDIO_FORMAT_NEGOTIATION,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_uint_audio_format_negotiation;
-         menu_settings_list_current_add_range(list, list_info, AUDIO_FORMAT_NEGOTIATION_INT16, AUDIO_FORMAT_NEGOTIATION_FLOAT, 1.0, true, true);
+         {
+            static const setting_desc_t audio_fmt_desc[] = {
+               SDESC_UINT_ROW_EX(audio_format_negotiation,
+                     AUDIO_FORMAT_NEGOTIATION,
+                     DEFAULT_AUDIO_FORMAT_NEGOTIATION,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     AUDIO_FORMAT_NEGOTIATION_INT16,
+                     AUDIO_FORMAT_NEGOTIATION_FLOAT, 1.0, 0,
+                     setting_action_ok_uint,
+                     setting_get_string_representation_uint_audio_format_negotiation,
+                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  audio_fmt_desc, ARRAY_SIZE(audio_fmt_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          CONFIG_FLOAT(
                list, list_info,
@@ -15525,21 +15525,15 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.microphone_enable,
-               MENU_ENUM_LABEL_MICROPHONE_ENABLE,
-               MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-               DEFAULT_AUDIO_ENABLE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
+         {
+            static const setting_desc_t mic_enable_desc[] = {
+               SDESC_BOOL_ROW(microphone_enable, MICROPHONE_ENABLE,
+                     DEFAULT_AUDIO_ENABLE, SD_FLAG_NONE, 0, 0)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mic_enable_desc, ARRAY_SIZE(mic_enable_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -15562,18 +15556,17 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef RARCH_MOBILE
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.microphone_block_frames,
-               MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
-               MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+         {
+            static const setting_desc_t mic_block_desc[] = {
+               SDESC_UINT_ROW(microphone_block_frames,
+                     MICROPHONE_BLOCK_FRAMES, 0,
+                     SD_FLAG_ADVANCED, 0, 0,
+                     0, 0, 0, 0, NULL, NULL)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mic_block_desc, ARRAY_SIZE(mic_block_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -15588,112 +15581,61 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+         {
+            static const setting_desc_t mic_misc_desc[] = {
 #if !defined(RARCH_CONSOLE)
-         CONFIG_STRING(
-               list, list_info,
-               settings->arrays.microphone_device,
-               sizeof(settings->arrays.microphone_device),
-               MENU_ENUM_LABEL_MICROPHONE_DEVICE,
-               MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
-         (*list)[list_info->index - 1].action_left   = &setting_string_action_left_microphone_device;
-         (*list)[list_info->index - 1].action_right  = &setting_string_action_right_microphone_device;
-         (*list)[list_info->index - 1].action_ok     = &setting_string_action_ok_microphone_device;
-         (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_string_audio_device;
+               SDESC_STRING_ROW(microphone_device, MICROPHONE_DEVICE,
+                     "", SD_FLAG_ALLOW_INPUT, 0,
+                     setting_string_action_ok_microphone_device,
+                     setting_get_string_representation_string_audio_device,
+                     setting_generic_action_start_default, NULL,
+                     setting_string_action_left_microphone_device,
+                     setting_string_action_right_microphone_device,
+                     ST_UI_TYPE_STRING_LINE_EDIT),
 #endif
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.microphone_sample_rate,
-               MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
-               MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
-               DEFAULT_INPUT_RATE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
-         menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.microphone_resampler_quality,
-               MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY,
-               MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-               DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_uint_audio_resampler_quality;
-         menu_settings_list_current_add_range(list, list_info, RESAMPLER_QUALITY_DONTCARE, RESAMPLER_QUALITY_HIGHEST, 1.0, true, true);
+               SDESC_UINT_ROW_EX(microphone_sample_rate,
+                     MICROPHONE_INPUT_RATE, DEFAULT_INPUT_RATE,
+                     SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0,
+                     1000, 192000, 100.0, 0,
+                     setting_action_ok_uint_special, NULL,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_UINT_ROW_EX(microphone_resampler_quality,
+                     MICROPHONE_RESAMPLER_QUALITY,
+                     DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     RESAMPLER_QUALITY_DONTCARE,
+                     RESAMPLER_QUALITY_HIGHEST, 1.0, 0,
+                     setting_action_ok_uint,
+                     setting_get_string_representation_uint_audio_resampler_quality,
+                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mic_misc_desc, ARRAY_SIZE(mic_misc_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
 #ifdef HAVE_WASAPI
          if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))
          {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.microphone_wasapi_exclusive_mode,
-                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-                  MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-                  DEFAULT_WASAPI_EXCLUSIVE_MODE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.microphone_wasapi_float_format,
-                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
-                  MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
-                  DEFAULT_WASAPI_FLOAT_FORMAT,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.microphone_wasapi_sh_buffer_length,
-                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-                  MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-                  DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
-            (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_microphone_wasapi_sh_buffer_length;
-            menu_settings_list_current_add_range(list, list_info, 0, 32.0f * 200, 32.0f, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+            static const setting_desc_t mic_wasapi_desc[] = {
+               SDESC_BOOL_ROW(microphone_wasapi_exclusive_mode,
+                     MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+                     DEFAULT_WASAPI_EXCLUSIVE_MODE, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(microphone_wasapi_float_format,
+                     MICROPHONE_WASAPI_FLOAT_FORMAT,
+                     DEFAULT_WASAPI_FLOAT_FORMAT, SD_FLAG_NONE, 0, 0),
+               SDESC_UINT_ROW_EX(microphone_wasapi_sh_buffer_length,
+                     MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+                     DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH,
+                     SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0,
+                     0, 32.0f * 200, 32.0f, 0,
+                     setting_action_ok_uint_special,
+                     setting_get_string_representation_uint_microphone_wasapi_sh_buffer_length,
+                     NULL, NULL, NULL, NULL, 0)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mic_wasapi_desc, ARRAY_SIZE(mic_wasapi_desc),
+                  &group_info, &subgroup_info, parent_group);
          }
 #endif
 
