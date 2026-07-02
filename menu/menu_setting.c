@@ -26333,8 +26333,36 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
          ok_tag   = "okuint";
       if (s->action_left == setting_bool_action_left_with_refresh)
          left_tag = "boolrefL";
+      else if (s->action_left == setting_uint_action_left_with_refresh)
+         left_tag = "uintrefL";
+      else if (s->action_left == setting_uint_action_left_default)
+         left_tag = "Du";
+      else if (s->action_left == setting_int_action_left_default)
+         left_tag = "Di";
+      else if (s->action_left == setting_bool_action_ok_default)
+         left_tag = "Db";
+      else if (s->action_left == setting_fraction_action_left_default)
+         left_tag = "Df";
+      else if (s->action_left)
+         left_tag = "C";
+      else
+         left_tag = "0";
       if (s->action_right == setting_bool_action_right_with_refresh)
          rght_tag = "boolrefR";
+      else if (s->action_right == setting_uint_action_right_with_refresh)
+         rght_tag = "uintrefR";
+      else if (s->action_right == setting_uint_action_right_default)
+         rght_tag = "Du";
+      else if (s->action_right == setting_int_action_right_default)
+         rght_tag = "Di";
+      else if (s->action_right == setting_bool_action_ok_default)
+         rght_tag = "Db";
+      else if (s->action_right == setting_fraction_action_right_default)
+         rght_tag = "Df";
+      else if (s->action_right)
+         rght_tag = "C";
+      else
+         rght_tag = "0";
       if (s->action_start == setting_generic_action_start_default)
          strt_tag = "D";
       else if (s->action_start)
