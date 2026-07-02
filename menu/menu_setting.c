@@ -10092,6 +10092,7 @@ enum setting_desc_class
    SDESC_UINT,
    SDESC_FLOAT,
    SDESC_STRING,
+   SDESC_PATH,
    SDESC_ACTION
 };
 
@@ -10103,6 +10104,9 @@ enum setting_desc_class
  * that the imperative blocks assign the *left* handler to action_ok
  * as well; that quirk is reproduced faithfully. */
 #define SDESC_FLG_REFRESH      (1 << 3)
+#define SDESC_FLG_DEF_SETTINGS (1 << 4) /* default string is a settings_t
+                                           field at def_offset, resolved at
+                                           list-build time */
 
 typedef struct setting_desc
 {
@@ -10129,6 +10133,12 @@ typedef struct setting_desc
    uint8_t                     desc_flags;     /* SDESC_FLG_*             */
    uint8_t                     ui_type;        /* 0 = class default       */
    uint8_t                     pad;
+   /* Fields below are absent from older row macros and zero-initialize
+    * under C89 partial aggregate initialization. */
+   const char                 *values;         /* browser extension filter */
+   uint32_t                    def_offset;     /* with SDESC_FLG_DEF_SETTINGS:
+                                                  offsetof of the settings_t
+                                                  field holding the default */
 } setting_desc_t;
 
 /* Row builders.  Field order must match setting_desc_t. */
@@ -10197,6 +10207,25 @@ typedef struct setting_desc
      0.0f, 0.0f, 0.0f, (def), (_repr), (ok), \
      (int32_t)sizeof(((settings_t*)0)->arrays.field), 0.0f, \
      (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_STRING, 0, (uint8_t)(_uitype), 0 }
+
+/* Path rows: value target lives in settings_t.paths; def is a static
+ * default string.  The _DS variant takes another settings_t.paths field
+ * as the runtime default (the dominant pattern: filter/asset dirs). */
+#define SDESC_PATH_ROW(field, label, def, sd_flags, cmd, vals, _repr) \
+   { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     0.0f, 0.0f, 0.0f, (def), (_repr), NULL, \
+     (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
+     NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_PATH, 0, 0, 0, \
+     (vals), 0 }
+#define SDESC_PATH_ROW_DS(field, label, def_field, sd_flags, cmd, vals, _repr) \
+   { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     0.0f, 0.0f, 0.0f, NULL, (_repr), NULL, \
+     (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
+     NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_PATH, \
+     SDESC_FLG_DEF_SETTINGS, 0, 0, \
+     (vals), (uint32_t)offsetof(settings_t, paths.def_field) }
 
 #define SDESC_RANGE_MINMAX \
    (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN | SDESC_FLG_ENFORCE_MAX)
@@ -10304,6 +10333,24 @@ static void settings_list_add_desc(
             if (d->flags != SD_FLAG_NONE)
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, d->flags);
             break;
+         case SDESC_PATH:
+            CONFIG_PATH(
+                  list, list_info,
+                  (char*)settings + d->value_offset,
+                  (size_t)d->def_i,
+                  d->name_enum,
+                  d->short_enum,
+                  (d->desc_flags & SDESC_FLG_DEF_SETTINGS)
+                        ? (const char*)settings + d->def_offset
+                        : d->rounding,
+                  group_info,
+                  subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            if (d->flags != SD_FLAG_NONE)
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, d->flags);
+            break;
          case SDESC_ACTION:
             CONFIG_ACTION(
                   list, list_info,
@@ -10342,6 +10389,8 @@ static void settings_list_add_desc(
       if (d->ui_type)
          (*list)[list_info->index - 1].ui_type =
                (enum ui_setting_type)d->ui_type;
+      if (d->values)
+         MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, d->values);
    }
 }
 
@@ -14871,24 +14920,17 @@ static bool setting_append_list(
                      misc_desc, ARRAY_SIZE(misc_desc),
                      &group_info, &subgroup_info, parent_group);
             }
-            CONFIG_PATH(
-                  list, list_info,
-                  settings->paths.path_softfilter_plugin,
-                  sizeof(settings->paths.path_softfilter_plugin),
-                  MENU_ENUM_LABEL_VIDEO_FILTER,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-                  settings->paths.directory_video_filter,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_video_filter;
-            MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "filt");
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
-                  CMD_EVENT_VIDEO_FILTER_INIT);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+            {
+               static const setting_desc_t video_filter_desc[] = {
+                  SDESC_PATH_ROW_DS(path_softfilter_plugin, VIDEO_FILTER,
+                        directory_video_filter, SD_FLAG_LAKKA_ADVANCED,
+                        CMD_EVENT_VIDEO_FILTER_INIT, "filt",
+                        setting_get_string_representation_video_filter)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     video_filter_desc, ARRAY_SIZE(video_filter_desc),
+                     &group_info, &subgroup_info, parent_group);
+            }
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
@@ -15419,21 +15461,16 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-         CONFIG_PATH(
-               list, list_info,
-               settings->paths.path_audio_dsp_plugin,
-               sizeof(settings->paths.path_audio_dsp_plugin),
-               MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
-               MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-               settings->paths.directory_audio_filter,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "dsp");
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_DSP_FILTER_INIT);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         {
+            static const setting_desc_t audio_dsp_desc[] = {
+               SDESC_PATH_ROW_DS(path_audio_dsp_plugin, AUDIO_DSP_PLUGIN,
+                     directory_audio_filter, SD_FLAG_LAKKA_ADVANCED,
+                     CMD_EVENT_DSP_FILTER_INIT, "dsp", NULL)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  audio_dsp_desc, ARRAY_SIZE(audio_dsp_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
 #ifdef HAVE_WASAPI
          if (string_is_equal(audio_driver_get_ident(), "wasapi"))
