@@ -19531,7 +19531,9 @@ static bool setting_append_list(
             CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
 
                      {
-            static const setting_desc_t ui_desc_1[] = {
+            /* NB: max depends on the runtime system model, so this table
+             * cannot be 'static const' (the initializer is non-constant). */
+            const setting_desc_t ui_desc_1[] = {
                SDESC_UINT_ROW_EX(video_3ds_display_mode, VIDEO_3DS_DISPLAY_MODE,
                      DEFAULT_VIDEO_3DS_DISPLAY_MODE,
                      SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
