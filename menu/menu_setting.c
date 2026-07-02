@@ -15293,21 +15293,21 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 1, MAX_RUNAHEAD_FRAMES, 1, true, true);
 #endif
 
+#ifdef ANDROID
          {
             static const setting_desc_t frame_throttli_desc_3[] = {
-#ifdef ANDROID
                SDESC_UINT_ROW_EX(input_block_timeout, INPUT_BLOCK_TIMEOUT,
                      DEFAULT_INPUT_BLOCK_TIMEOUT,
                      SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
                      0, 4, 1, 0,
                      setting_action_ok_uint, NULL,
                      NULL, NULL, NULL, NULL, 0),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
                   frame_throttli_desc_3, ARRAY_SIZE(frame_throttli_desc_3),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
@@ -16498,17 +16498,17 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
          (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
+#ifdef HAVE_THREADS
          {
             static const setting_desc_t menu_desc_17[] = {
-#ifdef HAVE_THREADS
                SDESC_BOOL_ROW(threaded_data_runloop_enable, THREADED_DATA_RUNLOOP_ENABLE,
                      DEFAULT_THREADED_DATA_RUNLOOP_ENABLE, SD_FLAG_ADVANCED, 0, 0),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_17, ARRAY_SIZE(menu_desc_17),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
          END_SUB_GROUP(list, list_info, parent_group);
 
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
@@ -17319,20 +17319,27 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         {
-            static const setting_desc_t power_manageme_desc_0[] = {
 #ifdef ANDROID
+         {
+            static const setting_desc_t power_manageme_desc_0_s0[] = {
                SDESC_BOOL_ROW(sustained_performance_mode, SUSTAINED_PERFORMANCE_MODE,
                      DEFAULT_SUSTAINED_PERFORMANCE_MODE, SD_FLAG_CMD_APPLY_AUTO, 0, 0),
-#endif
-#ifdef HAVE_LAKKA
-               SDESC_ACTION_ROW(CPU_PERFPOWER),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
-                  power_manageme_desc_0, ARRAY_SIZE(power_manageme_desc_0),
+                  power_manageme_desc_0_s0, ARRAY_SIZE(power_manageme_desc_0_s0),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
+#ifdef HAVE_LAKKA
+         {
+            static const setting_desc_t power_manageme_desc_0_s1[] = {
+               SDESC_ACTION_ROW(CPU_PERFPOWER),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  power_manageme_desc_0_s1, ARRAY_SIZE(power_manageme_desc_0_s1),
+                  &group_info, &subgroup_info, parent_group);
+         }
+#endif
 #ifndef HAVE_LAKKA
          if (frontend_driver_has_gamemode())
          {
@@ -19029,9 +19036,9 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_COMBOBOX;
 #endif
 
+#ifdef HAVE_GAME_AI
          {
             static const setting_desc_t user_desc_1[] = {
-#ifdef HAVE_GAME_AI
                SDESC_BOOL_ROW(quick_menu_show_game_ai, QUICK_MENU_SHOW_GAME_AI,
                      1, SD_FLAG_NONE, 0, 0),
                SDESC_BOOL_ROW(game_ai_override_p1, GAME_AI_OVERRIDE_P1,
@@ -19040,12 +19047,12 @@ static bool setting_append_list(
                      1, SD_FLAG_CMD_APPLY_AUTO, 0, 0),
                SDESC_BOOL_ROW(game_ai_show_debug, GAME_AI_SHOW_DEBUG,
                      1, SD_FLAG_CMD_APPLY_AUTO, 0, 0),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
                   user_desc_1, ARRAY_SIZE(user_desc_1),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -19059,24 +19066,31 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         {
-            static const setting_desc_t user_accounts_desc_0[] = {
 #ifdef HAVE_CHEEVOS
+         {
+            static const setting_desc_t user_accounts_desc_0_s0[] = {
                SDESC_ACTION_ROW(ACCOUNTS_RETRO_ACHIEVEMENTS),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  user_accounts_desc_0_s0, ARRAY_SIZE(user_accounts_desc_0_s0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #endif
 #ifdef HAVE_NETWORKING
+         {
+            static const setting_desc_t user_accounts_desc_0_s1[] = {
 #if !IOS
                SDESC_ACTION_ROW(ACCOUNTS_YOUTUBE),
                SDESC_ACTION_ROW(ACCOUNTS_TWITCH),
                SDESC_ACTION_ROW(ACCOUNTS_FACEBOOK),
                SDESC_ACTION_ROW(ACCOUNTS_KICK),
 #endif
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
-                  user_accounts_desc_0, ARRAY_SIZE(user_accounts_desc_0),
+                  user_accounts_desc_0_s1, ARRAY_SIZE(user_accounts_desc_0_s1),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
@@ -19480,17 +19494,17 @@ static bool setting_append_list(
          }
          }
 
+#ifdef HAVE_DISCORD
          {
             static const setting_desc_t privacy_desc_1[] = {
-#ifdef HAVE_DISCORD
                SDESC_BOOL_ROW(discord_enable, DISCORD_ALLOW,
                      false, SD_FLAG_NONE, 0, 0),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
                   privacy_desc_1, ARRAY_SIZE(privacy_desc_1),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
          if (string_is_not_equal(settings->arrays.location_driver, "null"))
          {
          {
