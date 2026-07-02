@@ -28,6 +28,21 @@
 
 #define MSG_HASH(Id, str) case Id: return str;
 
+/* Table-based message lookup.
+ *
+ * Translation headers under intl/ are consumed as constant string
+ * tables (a packed NUL-separated blob plus a uint32 id array per
+ * language) instead of per-language switch functions.  The headers
+ * are machine-written by the Crowdin sync and keep their exact
+ * MSG_HASH(ID, "...") row format; only the consumer changes.
+ *
+ * MSVC keeps the switch-based path: it caps concatenated string
+ * literals at 64K (fatal error C1091), which the per-language blobs
+ * exceed by a wide margin. */
+#if !defined(_MSC_VER)
+#define MSG_HASH_HAVE_STRTAB 1
+#endif
+
 #define MENU_LABEL(STR) \
    MENU_ENUM_LABEL_##STR, \
    MENU_ENUM_SUBLABEL_##STR, \
@@ -40,6 +55,37 @@
    MENU_ENUM_LABEL_HELP_##STR
 
 RETRO_BEGIN_DECLS
+
+#if defined(MSG_HASH_HAVE_STRTAB)
+typedef struct msg_hash_strtab
+{
+   const uint32_t *ids;   /* one id per row, header order      */
+   const char     *blob;  /* rows concatenated, NUL separated  */
+   uint32_t        count;
+} msg_hash_strtab_t;
+
+typedef struct msg_hash_strtab_index
+{
+   const msg_hash_strtab_t *tab;     /* table this index describes */
+   uint32_t                *offsets; /* blob offset of row i        */
+   uint32_t                *order;   /* rows sorted by (id, row)    */
+} msg_hash_strtab_index_t;
+
+/* Build (or rebuild) the lookup index for @tab.  Called on language
+ * activation; lookups never mutate state. */
+void msg_hash_strtab_index_build(msg_hash_strtab_index_t *idx,
+      const msg_hash_strtab_t *tab);
+
+/* Return the string for @id, or NULL if the table has no such row.
+ * If @idx does not describe @tab (not yet built or allocation
+ * failed), falls back to a read-only linear walk. */
+const char *msg_hash_strtab_lookup(const msg_hash_strtab_t *tab,
+      const msg_hash_strtab_index_t *idx, uint32_t id);
+
+/* Build the indices for the always-present US tables (values and,
+ * with HAVE_MENU, labels).  Invoked from msg_hash_set_uint(). */
+void msg_hash_us_index_init(void);
+#endif
 
 enum msg_hash_action
 {

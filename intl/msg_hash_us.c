@@ -521,6 +521,27 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
 
 #ifdef HAVE_MENU
+#if defined(MSG_HASH_HAVE_STRTAB)
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_us_lbl_blob[] =
+#include "msg_hash_lbl.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_us_lbl_ids[] = {
+#include "msg_hash_lbl.h"
+};
+#undef MSG_HASH
+#define MSG_HASH(Id, str) case Id: return str;
+
+static const msg_hash_strtab_t msg_hash_us_lbl_strtab =
+{ msg_hash_us_lbl_ids, msg_hash_us_lbl_blob,
+  (uint32_t)(sizeof(msg_hash_us_lbl_ids) / sizeof(msg_hash_us_lbl_ids[0])) };
+
+static msg_hash_strtab_index_t msg_hash_us_lbl_index;
+#endif
+
 static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 {
    if (   msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END
@@ -532,6 +553,14 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
       return hotkey_lbl;
    }
 
+#if defined(MSG_HASH_HAVE_STRTAB)
+   {
+      const char *ret = msg_hash_strtab_lookup(&msg_hash_us_lbl_strtab,
+            &msg_hash_us_lbl_index, (uint32_t)msg);
+      if (ret)
+         return ret;
+   }
+#else
    switch (msg)
    {
 #include "msg_hash_lbl.h"
@@ -541,8 +570,42 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 #endif
          break;
    }
+#endif
 
    return "null";
+}
+#endif
+
+#if defined(MSG_HASH_HAVE_STRTAB)
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_us_blob[] =
+#include "msg_hash_us.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_us_ids[] = {
+#include "msg_hash_us.h"
+};
+#undef MSG_HASH
+#define MSG_HASH(Id, str) case Id: return str;
+
+static const msg_hash_strtab_t msg_hash_us_strtab =
+{ msg_hash_us_ids, msg_hash_us_blob,
+  (uint32_t)(sizeof(msg_hash_us_ids) / sizeof(msg_hash_us_ids[0])) };
+
+static msg_hash_strtab_index_t msg_hash_us_index;
+
+void msg_hash_us_index_init(void)
+{
+   if (msg_hash_us_index.tab != &msg_hash_us_strtab)
+      msg_hash_strtab_index_build(&msg_hash_us_index,
+            &msg_hash_us_strtab);
+#ifdef HAVE_MENU
+   if (msg_hash_us_lbl_index.tab != &msg_hash_us_lbl_strtab)
+      msg_hash_strtab_index_build(&msg_hash_us_lbl_index,
+            &msg_hash_us_lbl_strtab);
+#endif
 }
 #endif
 
@@ -555,6 +618,14 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
        return ret;
 #endif
 
+#if defined(MSG_HASH_HAVE_STRTAB)
+    {
+       const char *s = msg_hash_strtab_lookup(&msg_hash_us_strtab,
+             &msg_hash_us_index, (uint32_t)msg);
+       if (s)
+          return s;
+    }
+#else
     switch (msg)
     {
 #include "msg_hash_us.h"
@@ -567,6 +638,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 #endif
             break;
     }
+#endif
 
     return "null";
 }

@@ -55,6 +55,124 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
    return ret;
 }
 
+
+#if defined(MSG_HASH_HAVE_STRTAB)
+/* qsort context: comparators receive row positions.  Building only
+ * happens from msg_hash_set_uint() (single-threaded configuration
+ * paths); lookups are read-only. */
+static const msg_hash_strtab_t *strtab_sort_tab = NULL;
+
+static int msg_hash_strtab_compare(const void *a, const void *b)
+{
+   uint32_t pa = *(const uint32_t*)a;
+   uint32_t pb = *(const uint32_t*)b;
+   uint32_t ia = strtab_sort_tab->ids[pa];
+   uint32_t ib = strtab_sort_tab->ids[pb];
+   if (ia != ib)
+      return (ia < ib) ? -1 : 1;
+   if (pa != pb)
+      return (pa < pb) ? -1 : 1;
+   return 0;
+}
+
+void msg_hash_strtab_index_build(msg_hash_strtab_index_t *idx,
+      const msg_hash_strtab_t *tab)
+{
+   uint32_t i;
+   const char *p;
+
+   if (idx->offsets)
+      free(idx->offsets);
+   if (idx->order)
+      free(idx->order);
+   idx->offsets = NULL;
+   idx->order   = NULL;
+   idx->tab     = NULL;
+
+   if (!tab || tab->count == 0)
+      return;
+
+   idx->offsets = (uint32_t*)malloc(tab->count * sizeof(uint32_t));
+   idx->order   = (uint32_t*)malloc(tab->count * sizeof(uint32_t));
+
+   if (!idx->offsets || !idx->order)
+   {
+      if (idx->offsets)
+         free(idx->offsets);
+      if (idx->order)
+         free(idx->order);
+      idx->offsets = NULL;
+      idx->order   = NULL;
+      return;
+   }
+
+   for (i = 0, p = tab->blob; i < tab->count; i++)
+   {
+      idx->offsets[i] = (uint32_t)(p - tab->blob);
+      idx->order[i]   = i;
+      while (*p)
+         p++;
+      p++;
+   }
+
+   strtab_sort_tab = tab;
+   qsort(idx->order, tab->count, sizeof(uint32_t),
+         msg_hash_strtab_compare);
+   strtab_sort_tab = NULL;
+
+   /* Publish last so a concurrent reader either sees a fully built
+    * index or takes the linear fallback. */
+   idx->tab = tab;
+}
+
+const char *msg_hash_strtab_lookup(const msg_hash_strtab_t *tab,
+      const msg_hash_strtab_index_t *idx, uint32_t id)
+{
+   if (!tab || tab->count == 0)
+      return NULL;
+
+   if (idx && idx->tab == tab)
+   {
+      uint32_t lo = 0;
+      uint32_t hi = tab->count;
+
+      while (lo < hi)
+      {
+         uint32_t mid = lo + ((hi - lo) >> 1);
+         if (tab->ids[idx->order[mid]] < id)
+            lo = mid + 1;
+         else
+            hi = mid;
+      }
+
+      if (lo < tab->count)
+      {
+         uint32_t pos = idx->order[lo];
+         if (tab->ids[pos] == id)
+            return tab->blob + idx->offsets[pos];
+      }
+
+      return NULL;
+   }
+
+   /* Read-only fallback when the index is unavailable. */
+   {
+      const char *p = tab->blob;
+      uint32_t i;
+      for (i = 0; i < tab->count; i++)
+      {
+         if (tab->ids[i] == id)
+            return p;
+         while (*p)
+            p++;
+         p++;
+      }
+   }
+
+   return NULL;
+}
+#endif /* MSG_HASH_HAVE_STRTAB */
+
 const char *get_user_language_iso639_1(bool limit)
 {
    switch (uint_user_language)
@@ -148,6 +266,617 @@ const char *get_user_language_iso639_1(bool limit)
 }
 
 #ifdef HAVE_LANGEXTRA
+#if defined(MSG_HASH_HAVE_STRTAB)
+
+/* Per-language string tables.
+ *
+ * Each translation header is included twice with MSG_HASH
+ * redefined: once concatenating every row into a single packed,
+ * NUL-separated blob, and once producing a bare uint32 id array.
+ * Table overhead is therefore 4 bytes per row with zero
+ * relocations, replacing one switch function (code plus a dense
+ * jump table spanning the whole enum range) per language.
+ *
+ * The headers themselves are machine-written by the Crowdin sync
+ * (intl/crowdin_sync.py -> json2h.py) and MUST keep their exact
+ * MSG_HASH(ID, "...") row format; this consumes them as-is and
+ * makes no assumption about row order (ordering is recovered at
+ * language activation, see msg_hash_strtab_index_build). */
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_he[] =
+#include "intl/msg_hash_he.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_he[] = {
+#include "intl/msg_hash_he.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_sk[] =
+#include "intl/msg_hash_sk.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_sk[] = {
+#include "intl/msg_hash_sk.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_uk[] =
+#include "intl/msg_hash_uk.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_uk[] = {
+#include "intl/msg_hash_uk.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_eo[] =
+#include "intl/msg_hash_eo.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_eo[] = {
+#include "intl/msg_hash_eo.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_pl[] =
+#include "intl/msg_hash_pl.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_pl[] = {
+#include "intl/msg_hash_pl.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_fi[] =
+#include "intl/msg_hash_fi.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_fi[] = {
+#include "intl/msg_hash_fi.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_hu[] =
+#include "intl/msg_hash_hu.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_hu[] = {
+#include "intl/msg_hash_hu.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_be[] =
+#include "intl/msg_hash_be.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_be[] = {
+#include "intl/msg_hash_be.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_en[] =
+#include "intl/msg_hash_en.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_en[] = {
+#include "intl/msg_hash_en.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_it[] =
+#include "intl/msg_hash_it.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_it[] = {
+#include "intl/msg_hash_it.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_fa[] =
+#include "intl/msg_hash_fa.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_fa[] = {
+#include "intl/msg_hash_fa.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_ast[] =
+#include "intl/msg_hash_ast.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_ast[] = {
+#include "intl/msg_hash_ast.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_nl[] =
+#include "intl/msg_hash_nl.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_nl[] = {
+#include "intl/msg_hash_nl.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_sv[] =
+#include "intl/msg_hash_sv.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_sv[] = {
+#include "intl/msg_hash_sv.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_id[] =
+#include "intl/msg_hash_id.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_id[] = {
+#include "intl/msg_hash_id.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_cs[] =
+#include "intl/msg_hash_cs.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_cs[] = {
+#include "intl/msg_hash_cs.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_ar[] =
+#include "intl/msg_hash_ar.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_ar[] = {
+#include "intl/msg_hash_ar.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_fr[] =
+#include "intl/msg_hash_fr.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_fr[] = {
+#include "intl/msg_hash_fr.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_cht[] =
+#include "intl/msg_hash_cht.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_cht[] = {
+#include "intl/msg_hash_cht.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_de[] =
+#include "intl/msg_hash_de.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_de[] = {
+#include "intl/msg_hash_de.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_es[] =
+#include "intl/msg_hash_es.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_es[] = {
+#include "intl/msg_hash_es.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_ca[] =
+#include "intl/msg_hash_ca.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_ca[] = {
+#include "intl/msg_hash_ca.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_el[] =
+#include "intl/msg_hash_el.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_el[] = {
+#include "intl/msg_hash_el.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_jp[] =
+#include "intl/msg_hash_ja.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_jp[] = {
+#include "intl/msg_hash_ja.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_ko[] =
+#include "intl/msg_hash_ko.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_ko[] = {
+#include "intl/msg_hash_ko.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_pt_pt[] =
+#include "intl/msg_hash_pt_pt.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_pt_pt[] = {
+#include "intl/msg_hash_pt_pt.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_ru[] =
+#include "intl/msg_hash_ru.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_ru[] = {
+#include "intl/msg_hash_ru.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_tr[] =
+#include "intl/msg_hash_tr.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_tr[] = {
+#include "intl/msg_hash_tr.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_val[] =
+#include "intl/msg_hash_val.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_val[] = {
+#include "intl/msg_hash_val.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_vn[] =
+#include "intl/msg_hash_vn.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_vn[] = {
+#include "intl/msg_hash_vn.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_chs[] =
+#include "intl/msg_hash_chs.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_chs[] = {
+#include "intl/msg_hash_chs.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_pt_br[] =
+#include "intl/msg_hash_pt_br.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_pt_br[] = {
+#include "intl/msg_hash_pt_br.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_gl[] =
+#include "intl/msg_hash_gl.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_gl[] = {
+#include "intl/msg_hash_gl.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_no[] =
+#include "intl/msg_hash_no.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_no[] = {
+#include "intl/msg_hash_no.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_ga[] =
+#include "intl/msg_hash_ga.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_ga[] = {
+#include "intl/msg_hash_ga.h"
+};
+
+#undef MSG_HASH
+#define MSG_HASH(Id, str) str "\0"
+static const char msg_hash_blob_th[] =
+#include "intl/msg_hash_th.h"
+;
+#undef MSG_HASH
+#define MSG_HASH(Id, str) (uint32_t)Id,
+static const uint32_t msg_hash_ids_th[] = {
+#include "intl/msg_hash_th.h"
+};
+
+/* Restore the default expansion for any later consumer. */
+#undef MSG_HASH
+#define MSG_HASH(Id, str) case Id: return str;
+
+static const msg_hash_strtab_t msg_hash_strtab_he =
+{ msg_hash_ids_he, msg_hash_blob_he,
+  (uint32_t)(sizeof(msg_hash_ids_he) / sizeof(msg_hash_ids_he[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_sk =
+{ msg_hash_ids_sk, msg_hash_blob_sk,
+  (uint32_t)(sizeof(msg_hash_ids_sk) / sizeof(msg_hash_ids_sk[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_uk =
+{ msg_hash_ids_uk, msg_hash_blob_uk,
+  (uint32_t)(sizeof(msg_hash_ids_uk) / sizeof(msg_hash_ids_uk[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_eo =
+{ msg_hash_ids_eo, msg_hash_blob_eo,
+  (uint32_t)(sizeof(msg_hash_ids_eo) / sizeof(msg_hash_ids_eo[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_pl =
+{ msg_hash_ids_pl, msg_hash_blob_pl,
+  (uint32_t)(sizeof(msg_hash_ids_pl) / sizeof(msg_hash_ids_pl[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_fi =
+{ msg_hash_ids_fi, msg_hash_blob_fi,
+  (uint32_t)(sizeof(msg_hash_ids_fi) / sizeof(msg_hash_ids_fi[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_hu =
+{ msg_hash_ids_hu, msg_hash_blob_hu,
+  (uint32_t)(sizeof(msg_hash_ids_hu) / sizeof(msg_hash_ids_hu[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_be =
+{ msg_hash_ids_be, msg_hash_blob_be,
+  (uint32_t)(sizeof(msg_hash_ids_be) / sizeof(msg_hash_ids_be[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_en =
+{ msg_hash_ids_en, msg_hash_blob_en,
+  (uint32_t)(sizeof(msg_hash_ids_en) / sizeof(msg_hash_ids_en[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_it =
+{ msg_hash_ids_it, msg_hash_blob_it,
+  (uint32_t)(sizeof(msg_hash_ids_it) / sizeof(msg_hash_ids_it[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_fa =
+{ msg_hash_ids_fa, msg_hash_blob_fa,
+  (uint32_t)(sizeof(msg_hash_ids_fa) / sizeof(msg_hash_ids_fa[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_ast =
+{ msg_hash_ids_ast, msg_hash_blob_ast,
+  (uint32_t)(sizeof(msg_hash_ids_ast) / sizeof(msg_hash_ids_ast[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_nl =
+{ msg_hash_ids_nl, msg_hash_blob_nl,
+  (uint32_t)(sizeof(msg_hash_ids_nl) / sizeof(msg_hash_ids_nl[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_sv =
+{ msg_hash_ids_sv, msg_hash_blob_sv,
+  (uint32_t)(sizeof(msg_hash_ids_sv) / sizeof(msg_hash_ids_sv[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_id =
+{ msg_hash_ids_id, msg_hash_blob_id,
+  (uint32_t)(sizeof(msg_hash_ids_id) / sizeof(msg_hash_ids_id[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_cs =
+{ msg_hash_ids_cs, msg_hash_blob_cs,
+  (uint32_t)(sizeof(msg_hash_ids_cs) / sizeof(msg_hash_ids_cs[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_ar =
+{ msg_hash_ids_ar, msg_hash_blob_ar,
+  (uint32_t)(sizeof(msg_hash_ids_ar) / sizeof(msg_hash_ids_ar[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_fr =
+{ msg_hash_ids_fr, msg_hash_blob_fr,
+  (uint32_t)(sizeof(msg_hash_ids_fr) / sizeof(msg_hash_ids_fr[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_cht =
+{ msg_hash_ids_cht, msg_hash_blob_cht,
+  (uint32_t)(sizeof(msg_hash_ids_cht) / sizeof(msg_hash_ids_cht[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_de =
+{ msg_hash_ids_de, msg_hash_blob_de,
+  (uint32_t)(sizeof(msg_hash_ids_de) / sizeof(msg_hash_ids_de[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_es =
+{ msg_hash_ids_es, msg_hash_blob_es,
+  (uint32_t)(sizeof(msg_hash_ids_es) / sizeof(msg_hash_ids_es[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_ca =
+{ msg_hash_ids_ca, msg_hash_blob_ca,
+  (uint32_t)(sizeof(msg_hash_ids_ca) / sizeof(msg_hash_ids_ca[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_el =
+{ msg_hash_ids_el, msg_hash_blob_el,
+  (uint32_t)(sizeof(msg_hash_ids_el) / sizeof(msg_hash_ids_el[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_jp =
+{ msg_hash_ids_jp, msg_hash_blob_jp,
+  (uint32_t)(sizeof(msg_hash_ids_jp) / sizeof(msg_hash_ids_jp[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_ko =
+{ msg_hash_ids_ko, msg_hash_blob_ko,
+  (uint32_t)(sizeof(msg_hash_ids_ko) / sizeof(msg_hash_ids_ko[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_pt_pt =
+{ msg_hash_ids_pt_pt, msg_hash_blob_pt_pt,
+  (uint32_t)(sizeof(msg_hash_ids_pt_pt) / sizeof(msg_hash_ids_pt_pt[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_ru =
+{ msg_hash_ids_ru, msg_hash_blob_ru,
+  (uint32_t)(sizeof(msg_hash_ids_ru) / sizeof(msg_hash_ids_ru[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_tr =
+{ msg_hash_ids_tr, msg_hash_blob_tr,
+  (uint32_t)(sizeof(msg_hash_ids_tr) / sizeof(msg_hash_ids_tr[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_val =
+{ msg_hash_ids_val, msg_hash_blob_val,
+  (uint32_t)(sizeof(msg_hash_ids_val) / sizeof(msg_hash_ids_val[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_vn =
+{ msg_hash_ids_vn, msg_hash_blob_vn,
+  (uint32_t)(sizeof(msg_hash_ids_vn) / sizeof(msg_hash_ids_vn[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_chs =
+{ msg_hash_ids_chs, msg_hash_blob_chs,
+  (uint32_t)(sizeof(msg_hash_ids_chs) / sizeof(msg_hash_ids_chs[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_pt_br =
+{ msg_hash_ids_pt_br, msg_hash_blob_pt_br,
+  (uint32_t)(sizeof(msg_hash_ids_pt_br) / sizeof(msg_hash_ids_pt_br[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_gl =
+{ msg_hash_ids_gl, msg_hash_blob_gl,
+  (uint32_t)(sizeof(msg_hash_ids_gl) / sizeof(msg_hash_ids_gl[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_no =
+{ msg_hash_ids_no, msg_hash_blob_no,
+  (uint32_t)(sizeof(msg_hash_ids_no) / sizeof(msg_hash_ids_no[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_ga =
+{ msg_hash_ids_ga, msg_hash_blob_ga,
+  (uint32_t)(sizeof(msg_hash_ids_ga) / sizeof(msg_hash_ids_ga[0])) };
+static const msg_hash_strtab_t msg_hash_strtab_th =
+{ msg_hash_ids_th, msg_hash_blob_th,
+  (uint32_t)(sizeof(msg_hash_ids_th) / sizeof(msg_hash_ids_th[0])) };
+
+static msg_hash_strtab_index_t msg_hash_lang_index;
+
+static const msg_hash_strtab_t *msg_hash_lang_strtab(unsigned lang)
+{
+   switch (lang)
+   {
+      case RETRO_LANGUAGE_FRENCH:
+         return &msg_hash_strtab_fr;
+      case RETRO_LANGUAGE_GERMAN:
+         return &msg_hash_strtab_de;
+      case RETRO_LANGUAGE_SPANISH:
+         return &msg_hash_strtab_es;
+      case RETRO_LANGUAGE_ITALIAN:
+         return &msg_hash_strtab_it;
+      case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
+         return &msg_hash_strtab_pt_br;
+      case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
+         return &msg_hash_strtab_pt_pt;
+      case RETRO_LANGUAGE_DUTCH:
+         return &msg_hash_strtab_nl;
+      case RETRO_LANGUAGE_ESPERANTO:
+         return &msg_hash_strtab_eo;
+      case RETRO_LANGUAGE_POLISH:
+         return &msg_hash_strtab_pl;
+      case RETRO_LANGUAGE_RUSSIAN:
+         return &msg_hash_strtab_ru;
+      case RETRO_LANGUAGE_JAPANESE:
+         return &msg_hash_strtab_jp;
+      case RETRO_LANGUAGE_KOREAN:
+         return &msg_hash_strtab_ko;
+      case RETRO_LANGUAGE_VIETNAMESE:
+         return &msg_hash_strtab_vn;
+      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+         return &msg_hash_strtab_chs;
+      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+         return &msg_hash_strtab_cht;
+      case RETRO_LANGUAGE_ARABIC:
+         return &msg_hash_strtab_ar;
+      case RETRO_LANGUAGE_GREEK:
+         return &msg_hash_strtab_el;
+      case RETRO_LANGUAGE_TURKISH:
+         return &msg_hash_strtab_tr;
+      case RETRO_LANGUAGE_SLOVAK:
+         return &msg_hash_strtab_sk;
+      case RETRO_LANGUAGE_PERSIAN:
+         return &msg_hash_strtab_fa;
+      case RETRO_LANGUAGE_HEBREW:
+         return &msg_hash_strtab_he;
+      case RETRO_LANGUAGE_ASTURIAN:
+         return &msg_hash_strtab_ast;
+      case RETRO_LANGUAGE_FINNISH:
+         return &msg_hash_strtab_fi;
+      case RETRO_LANGUAGE_INDONESIAN:
+         return &msg_hash_strtab_id;
+      case RETRO_LANGUAGE_SWEDISH:
+         return &msg_hash_strtab_sv;
+      case RETRO_LANGUAGE_UKRAINIAN:
+         return &msg_hash_strtab_uk;
+      case RETRO_LANGUAGE_CZECH:
+         return &msg_hash_strtab_cs;
+      case RETRO_LANGUAGE_CATALAN_VALENCIA:
+         return &msg_hash_strtab_val;
+      case RETRO_LANGUAGE_CATALAN:
+         return &msg_hash_strtab_ca;
+      case RETRO_LANGUAGE_BRITISH_ENGLISH:
+         return &msg_hash_strtab_en;
+      case RETRO_LANGUAGE_HUNGARIAN:
+         return &msg_hash_strtab_hu;
+      case RETRO_LANGUAGE_BELARUSIAN:
+         return &msg_hash_strtab_be;
+      case RETRO_LANGUAGE_GALICIAN:
+         return &msg_hash_strtab_gl;
+      case RETRO_LANGUAGE_NORWEGIAN:
+         return &msg_hash_strtab_no;
+      case RETRO_LANGUAGE_IRISH:
+         return &msg_hash_strtab_ga;
+      case RETRO_LANGUAGE_THAI:
+         return &msg_hash_strtab_th;
+      default:
+         break;
+   }
+   return NULL;
+}
+
+#else /* MSG_HASH_HAVE_STRTAB */
 static const char *msg_hash_to_str_he(enum msg_hash_enums msg)
 {
    switch (msg)
@@ -579,6 +1308,7 @@ static const char *msg_hash_to_str_th(enum msg_hash_enums msg)
 
    return "null";
 }
+#endif /* MSG_HASH_HAVE_STRTAB */
 #endif
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
@@ -586,6 +1316,15 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
    const char *ret = NULL;
 
 #ifdef HAVE_LANGEXTRA
+#if defined(MSG_HASH_HAVE_STRTAB)
+   {
+      const msg_hash_strtab_t *tab =
+            msg_hash_lang_strtab(uint_user_language);
+      if (tab)
+         ret = msg_hash_strtab_lookup(tab,
+               &msg_hash_lang_index, (uint32_t)msg);
+   }
+#else
    switch (uint_user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
@@ -699,6 +1438,7 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
       default:
          break;
    }
+#endif /* MSG_HASH_HAVE_STRTAB */
 #endif
    if (ret && strcmp(ret, "null") != 0)
       return ret;
@@ -872,6 +1612,13 @@ void msg_hash_set_uint(enum msg_hash_action type, unsigned val)
    {
       case MSG_HASH_USER_LANGUAGE:
          uint_user_language = val;
+#if defined(MSG_HASH_HAVE_STRTAB)
+         msg_hash_us_index_init();
+#ifdef HAVE_LANGEXTRA
+         msg_hash_strtab_index_build(&msg_hash_lang_index,
+               msg_hash_lang_strtab(val));
+#endif
+#endif
          break;
       case MSG_HASH_NONE:
          break;
