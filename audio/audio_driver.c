@@ -698,7 +698,15 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                || retro_dsp_filter_supports_int16(audio_st->dsp))
 #endif
 #ifdef HAVE_AUDIOMIXER
-         && !(audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
+         /* The mixer is a float-domain stage, but we can still take the s16
+          * game-resampling fast path when the output driver consumes float:
+          * the game audio is resampled in int16 (deterministic, no s16<->float
+          * round-trip on the dominant signal) and the mixer voices are then
+          * summed in float during the single s16 -> float output pass, exactly
+          * as the float path below does.  For s16-output drivers the mixer
+          * still forces the float path for now. */
+         && !(   (audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
+              && !(audio_st->flags & AUDIO_FLAG_USE_FLOAT))
 #endif
          ;
 
@@ -764,6 +772,27 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             convert_s16_to_float(audio_st->output_samples_buf,
                   audio_st->output_samples_int16, out_frames * 2,
                   audio_volume_gain);
+#ifdef HAVE_AUDIOMIXER
+            /* Sum the mixer voices in float on top of the (already
+             * volume-scaled) game audio, mirroring the float path: game gets
+             * the master gain above, voices get mixer_gain here, and
+             * audio_mixer_mix() clamps the summed buffer as its final step. */
+            if (audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
+            {
+               bool override                       = true;
+               float mixer_gain                    = 0.0f;
+               bool audio_driver_mixer_mute_enable = audio_st->mixer_mute_enable;
+
+               if (!audio_driver_mixer_mute_enable)
+               {
+                  if (audio_st->mixer_volume_gain == 1.0f)
+                     override                      = false;
+                  mixer_gain                       = audio_st->mixer_volume_gain;
+               }
+               audio_mixer_mix(audio_st->output_samples_buf,
+                     out_frames, mixer_gain, override);
+            }
+#endif
             audio->write(audio_st->context_audio_data,
                   audio_st->output_samples_buf,
                   out_frames * 2 * sizeof(float));
