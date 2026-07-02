@@ -1,6 +1,7 @@
 /* rmp3 - MP3 decoder implementation (minimp3-derived).
  * Declarations live in <formats/rmp3.h>; this file is the implementation. */
 #include <formats/rmp3.h>
+#include <features/features_cpu.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -68,51 +69,18 @@
 #define RMP3_VMUL_S(x, s)  _mm_mul_ps(x, _mm_set1_ps(s))
 #define RMP3_VREV(x) _mm_shuffle_ps(x, x, _MM_SHUFFLE(0, 1, 2, 3))
 typedef __m128 rmp3_f4;
-#if defined(_MSC_VER) || defined(RMP3_ONLY_SIMD)
-#define rmp3_cpuid __cpuid
-#else
-static INLINE __attribute__((always_inline)) void rmp3_cpuid(int CPUInfo[], const int InfoType)
-{
-#if defined(__PIC__)
-    __asm__ __volatile__(
-#if defined(__x86_64__)
-        "push %%rbx\n"
-        "cpuid\n"
-        "xchgl %%ebx, %1\n"
-        "pop  %%rbx\n"
-#else
-        "xchgl %%ebx, %1\n"
-        "cpuid\n"
-        "xchgl %%ebx, %1\n"
-#endif
-        : "=a" (CPUInfo[0]), "=r" (CPUInfo[1]), "=c" (CPUInfo[2]), "=d" (CPUInfo[3])
-        : "a" (InfoType));
-#else
-    __asm__ __volatile__(
-        "cpuid"
-        : "=a" (CPUInfo[0]), "=b" (CPUInfo[1]), "=c" (CPUInfo[2]), "=d" (CPUInfo[3])
-        : "a" (InfoType));
-#endif
-}
-#endif
 static int rmp3_have_simd(void)
 {
 #ifdef RMP3_ONLY_SIMD
     return 1;
 #else
-    static int g_have_simd;
-    int CPUInfo[4];
-    if (g_have_simd)
-        return g_have_simd - 1;
-    rmp3_cpuid(CPUInfo, 0);
-    if (CPUInfo[0] > 0)
-    {
-        rmp3_cpuid(CPUInfo, 1);
-        g_have_simd = (CPUInfo[3] & (1 << 26)) + 1; /* SSE2 */
-        return g_have_simd - 1;
-    }
-    g_have_simd = 1;
-    return 0;
+    /* Detect SSE2 via libretro-common's shared, cached CPU feature query
+     * rather than an in-tree cpuid. Memoised here so the SIMD dispatch in
+     * the decode loops stays a plain branch. */
+    static int g_have_simd; /* 0 = unknown, 1 = no SSE2, 2 = SSE2 */
+    if (!g_have_simd)
+        g_have_simd = (cpu_features_get() & RETRO_SIMD_SSE2) ? 2 : 1;
+    return g_have_simd - 1;
 #endif
 }
 #elif defined(__ARM_NEON) || defined(__aarch64__) || defined(__ARM_NEON__) || defined(_M_ARM64)
