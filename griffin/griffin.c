@@ -825,6 +825,7 @@ AUDIO RESAMPLER
 #include "../libretro-common/audio/resampler/drivers/sinc_resampler_int16.c"
 #ifdef HAVE_NEAREST_RESAMPLER
 #include "../libretro-common/audio/resampler/drivers/nearest_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/nearest_resampler_int16.c"
 #endif
 #ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"

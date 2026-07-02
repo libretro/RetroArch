@@ -39,6 +39,7 @@
 #include <audio/audio_mixer.h>
 #endif
 #include <audio/audio_resampler.h>
+#include <audio/sinc_resampler_int16.h>
 
 #include "audio_defines.h"
 
@@ -222,10 +223,14 @@ typedef struct
 
    void *resampler_data;
 
-   /* Optional deterministic integer (s16) sinc resampler, used by the
-    * fast path in audio_driver_flush() when the selected resampler is
-    * "sinc" and no float-domain stage is active. NULL otherwise. */
+   /* Optional deterministic integer (s16) resampler, used by the fast path
+    * in audio_driver_flush() when the selected resampler has an int16
+    * implementation ("sinc", "nearest", "CC") and no float-domain stage is
+    * active.  NULL otherwise.  The process/free entry points are selected
+    * alongside the handle so the fast path is backend-agnostic. */
    void *resampler_data_int16;
+   void (*resampler_int16_process)(void *, struct resampler_data_int16 *);
+   void (*resampler_int16_free)(void *);
 
    /**
     * The current audio driver.

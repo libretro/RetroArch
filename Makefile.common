@@ -427,6 +427,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_int16.o
 ifeq ($(HAVE_NEAREST_RESAMPLER), 1)
    DEFINES += -DHAVE_NEAREST_RESAMPLER
    OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o
+   OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler_int16.o
 endif
 
 OBJ += \

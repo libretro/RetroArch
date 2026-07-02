@@ -41,6 +41,9 @@
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
 #include <audio/sinc_resampler_int16.h>
+#ifdef HAVE_NEAREST_RESAMPLER
+#include <audio/nearest_resampler_int16.h>
+#endif
 #include <audio/conversion/dual_mono.h>
 #ifdef HAVE_AUDIOMIXER
 #include <audio/audio_mixer.h>
@@ -357,11 +360,13 @@ static void audio_driver_deinit_resampler(void)
    audio_driver_state_t *audio_st = &audio_driver_st;
    if (audio_st->resampler && audio_st->resampler_data)
       audio_st->resampler->free(audio_st->resampler_data);
-   if (audio_st->resampler_data_int16)
-      sinc_resampler_int16_free(audio_st->resampler_data_int16);
+   if (audio_st->resampler_data_int16 && audio_st->resampler_int16_free)
+      audio_st->resampler_int16_free(audio_st->resampler_data_int16);
    audio_st->resampler          = NULL;
    audio_st->resampler_data     = NULL;
    audio_st->resampler_data_int16 = NULL;
+   audio_st->resampler_int16_process = NULL;
+   audio_st->resampler_int16_free    = NULL;
    audio_st->resampler_ident[0] = '\0';
    audio_st->resampler_quality  = RESAMPLER_QUALITY_DONTCARE;
 }
@@ -797,7 +802,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          s16.input_frames  = rs_frames;
          s16.output_frames = 0;
          s16.ratio         = i16_ratio;
-         sinc_resampler_int16_process(audio_st->resampler_data_int16, &s16);
+         audio_st->resampler_int16_process(audio_st->resampler_data_int16, &s16);
 
          out_frames = (unsigned)s16.output_frames;
 
@@ -1339,27 +1344,45 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_st.flags &= ~AUDIO_FLAG_ACTIVE;
    }
 
-   /* Deterministic integer (s16) sinc fast path: allocate an int16 resampler
-    * mirroring the float one when the selected backend is "sinc".  It is used
-    * by audio_driver_flush() for int16 cores unless a MIDI synth is sounding
-    * or a float-only DSP filter is loaded; DSP (int16-capable), the mixer,
-    * non-unity gain and fast-forward speedup are all handled in the integer
-    * domain.  Otherwise the float path runs. */
-   if (audio_driver_st.resampler_data_int16)
+   /* Deterministic integer (s16) fast path: allocate an int16 resampler
+    * mirroring the float one when the selected backend has an int16
+    * implementation.  It is used by audio_driver_flush() for int16 cores
+    * unless a MIDI synth is sounding or a float-only DSP filter is loaded;
+    * DSP (int16-capable), the mixer, non-unity gain and fast-forward speedup
+    * are all handled in the integer domain.  Otherwise the float path runs. */
+   if (audio_driver_st.resampler_data_int16 && audio_driver_st.resampler_int16_free)
    {
-      sinc_resampler_int16_free(audio_driver_st.resampler_data_int16);
+      audio_driver_st.resampler_int16_free(audio_driver_st.resampler_data_int16);
       audio_driver_st.resampler_data_int16 = NULL;
    }
+   audio_driver_st.resampler_data_int16  = NULL;
+   audio_driver_st.resampler_int16_process = NULL;
+   audio_driver_st.resampler_int16_free    = NULL;
    if (     audio_driver_st.resampler
-         && audio_driver_st.resampler->short_ident
-         && string_is_equal(audio_driver_st.resampler->short_ident, "sinc"))
+         && audio_driver_st.resampler->short_ident)
    {
-      audio_driver_st.resampler_data_int16 = sinc_resampler_int16_init(
-            audio_driver_st.src_ratio_orig,
-            audio_sinc_int16_quality_map(audio_driver_st.resampler_quality));
-      RARCH_LOG("[Audio] SINC resampler: integer s16 fast path %s.\n",
-            audio_driver_st.resampler_data_int16
-                  ? "available" : "unavailable");
+      const char *rs_ident = audio_driver_st.resampler->short_ident;
+      if (string_is_equal(rs_ident, "sinc"))
+      {
+         audio_driver_st.resampler_data_int16 = sinc_resampler_int16_init(
+               audio_driver_st.src_ratio_orig,
+               audio_sinc_int16_quality_map(audio_driver_st.resampler_quality));
+         audio_driver_st.resampler_int16_process = sinc_resampler_int16_process;
+         audio_driver_st.resampler_int16_free    = sinc_resampler_int16_free;
+      }
+#ifdef HAVE_NEAREST_RESAMPLER
+      else if (string_is_equal(rs_ident, "nearest"))
+      {
+         audio_driver_st.resampler_data_int16 = nearest_resampler_int16_init();
+         audio_driver_st.resampler_int16_process = nearest_resampler_int16_process;
+         audio_driver_st.resampler_int16_free    = nearest_resampler_int16_free;
+      }
+#endif
+      if (audio_driver_st.resampler_int16_process)
+         RARCH_LOG("[Audio] %s resampler: integer s16 fast path %s.\n",
+               rs_ident,
+               audio_driver_st.resampler_data_int16
+                     ? "available" : "unavailable");
    }
 
    audio_driver_st.data_ptr = 0;
