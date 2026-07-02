@@ -22,7 +22,7 @@
  */
 
 static size_t flac_decoder_read_callback(void *userdata, void *buffer, size_t bytes);
-static rflac_bool32 flac_decoder_seek_callback(void *userdata, int offset, rflac_seek_origin origin);
+static uint32_t flac_decoder_seek_callback(void *userdata, int offset, rflac_seek_origin origin);
 static void flac_decoder_metadata_callback(void *userdata, rflac_metadata *metadata);
 static void flac_decoder_write_callback(void *userdata, void *buffer, size_t bytes);
 
@@ -172,7 +172,7 @@ uint32_t flac_decoder_finish(flac_decoder* decoder)
 	 * as one shared object those macros aren't visible, so the equivalent
 	 * arithmetic over the (public) bitstream fields is spelled out here. */
 	position -= ((sizeof(flac->bs.cacheL2) / sizeof(flac->bs.cacheL2[0]))
-			- flac->bs.nextL2Line) * sizeof(rflac_cache_t);
+			- flac->bs.nextL2Line) * sizeof(size_t);
 	position -= ((sizeof(flac->bs.cache) * 8) - flac->bs.consumedBits) / 8;
 	position -= flac->bs.unalignedByteCount;
 
@@ -287,7 +287,7 @@ static void flac_decoder_write_callback(void *userdata, void *buffer, size_t byt
  *-------------------------------------------------
  */
 
-static rflac_bool32 flac_decoder_seek_callback(void *userdata, int offset, rflac_seek_origin origin)
+static uint32_t flac_decoder_seek_callback(void *userdata, int offset, rflac_seek_origin origin)
 {
 	flac_decoder * decoder = (flac_decoder *)userdata;
 	uint32_t length = decoder->compressed_length + decoder->compressed2_length;

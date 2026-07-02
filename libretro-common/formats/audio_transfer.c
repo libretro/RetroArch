@@ -192,7 +192,7 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          if (!fl || !fl->handle)
             return AUDIO_PROCESS_ERROR;
          produced = (size_t)rflac_read_pcm_frames_s16(
-               fl->handle, (rflac_uint64)frames, out);
+               fl->handle, (uint64_t)frames, out);
          break;
       }
 #endif
@@ -223,7 +223,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          if (!fl || !fl->handle)
             return AUDIO_PROCESS_ERROR;
          produced = (size_t)rflac_read_pcm_frames_f32(
-               fl->handle, (rflac_uint64)frames, out);
+               fl->handle, (uint64_t)frames, out);
          break;
       }
 #endif
@@ -252,7 +252,7 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          if (!fl || !fl->handle)
             return false;
          return rflac_seek_to_pcm_frame(fl->handle,
-               (rflac_uint64)frame) != 0;
+               (uint64_t)frame) != 0;
       }
 #endif
       case AUDIO_TYPE_WAV:
