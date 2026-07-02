@@ -678,11 +678,14 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    /* Deterministic integer (s16) fast path.
     *
     * When enabled by the 'Resample to Fixed Integer' hint, the core delivered
-    * int16, the selected resampler is "sinc", and no float-domain stage is
-    * active (DSP, mixer, MIDI synth, or the fast-forward pitch EMA), resample
-    * s16 -> s16 directly.  Volume is applied in fixed point (Q16), so non-unity
-    * gain no longer forces the float path.  This removes the s16<->float
-    * round-trip, uses no FPU, and is bit-identical across platforms (netplay /
+    * int16, and the selected resampler is "sinc", resample s16 -> s16
+    * directly.  Volume is applied in fixed point (Q16), so non-unity gain no
+    * longer forces the float path; an int16-capable DSP chain runs in the
+    * integer domain, and the audio mixer is summed in float on top of the
+    * resampled game audio in both output branches below.  A MIDI synth or the
+    * fast-forward pitch EMA still fall through to the float path.  This removes
+    * the s16<->float round-trip on the game signal, uses no FPU for the game
+    * resample, and is bit-identical across platforms for that signal (netplay /
     * rewind).  Any condition failing falls through to the float path below. */
    {
       static int audio_i16_path_logged = -1;
@@ -696,17 +699,6 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #ifdef HAVE_DSP_FILTER
          && (!audio_st->dsp
                || retro_dsp_filter_supports_int16(audio_st->dsp))
-#endif
-#ifdef HAVE_AUDIOMIXER
-         /* The mixer is a float-domain stage, but we can still take the s16
-          * game-resampling fast path when the output driver consumes float:
-          * the game audio is resampled in int16 (deterministic, no s16<->float
-          * round-trip on the dominant signal) and the mixer voices are then
-          * summed in float during the single s16 -> float output pass, exactly
-          * as the float path below does.  For s16-output drivers the mixer
-          * still forces the float path for now. */
-         && !(   (audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
-              && !(audio_st->flags & AUDIO_FLAG_USE_FLOAT))
 #endif
          ;
 
@@ -816,6 +808,46 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                   ob[k] = (int16_t)v;
                }
             }
+#ifdef HAVE_AUDIOMIXER
+            /* Sum the mixer voices in float on top of the (already
+             * volume-scaled) game audio, then fold the result into the int16
+             * output.  Voices are mixed into output_samples_buf -- unused by
+             * this s16-output branch -- so the float mixer and its final clamp
+             * are reused verbatim; each summed sample is then converted to s16
+             * (truncating * 0x8000, matching convert_float_to_s16) and
+             * saturating-added to the game audio.  The game keeps its Q16
+             * master gain above and the voices carry mixer_gain, matching the
+             * float path's ordering. */
+            if (audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
+            {
+               bool     override                   = true;
+               float    mixer_gain                 = 0.0f;
+               bool audio_driver_mixer_mute_enable  = audio_st->mixer_mute_enable;
+               unsigned k;
+               unsigned total                      = out_frames * 2;
+               int16_t *ob                         = audio_st->output_samples_int16;
+               float   *mb                         = audio_st->output_samples_buf;
+
+               if (!audio_driver_mixer_mute_enable)
+               {
+                  if (audio_st->mixer_volume_gain == 1.0f)
+                     override                      = false;
+                  mixer_gain                       = audio_st->mixer_volume_gain;
+               }
+
+               memset(mb, 0, total * sizeof(float));
+               audio_mixer_mix(mb, out_frames, mixer_gain, override);
+
+               for (k = 0; k < total; k++)
+               {
+                  int32_t vv = (int32_t)(mb[k] * 0x8000);
+                  int32_t s  = (int32_t)ob[k] + vv;
+                  if      (s >  32767) s =  32767;
+                  else if (s < -32768) s = -32768;
+                  ob[k]      = (int16_t)s;
+               }
+            }
+#endif
             audio->write(audio_st->context_audio_data,
                   audio_st->output_samples_int16,
                   out_frames * 2 * sizeof(int16_t));
