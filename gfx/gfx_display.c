@@ -116,6 +116,9 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_sdl2,
 #endif
 #endif
+#ifdef HAVE_DEKO3D
+   &gfx_display_ctx_deko3d,
+#endif
    NULL,
 };
 

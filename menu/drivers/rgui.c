@@ -1436,7 +1436,8 @@ static const rgui_pixel_format_entry rgui_pixel_format_map[] =
    { "metal",      argb32_to_bgra4444, true  }, /* Metal */
    { "sdl_dingux", argb32_to_rgb565,   false }, /* DINGUX SDL */
    { "sdl_rs90",   argb32_to_rgb565,   false },
-   { "xvideo",     argb32_to_rgb565,   false }
+   { "xvideo",     argb32_to_rgb565,   false },
+   { "deko3d",     argb32_to_rgba4444, true  }  /* Switch deko3d */
 };
 
 /* Returns true if current pixel format supports

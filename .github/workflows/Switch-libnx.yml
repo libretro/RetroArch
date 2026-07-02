@@ -22,6 +22,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install deko3d SDK
+      run: |
+        dkp-pacman -S --noconfirm deko3d
+
     - name: Compile RA
       run: |
         make -f Makefile.libnx -j$(getconf _NPROCESSORS_ONLN) clean
