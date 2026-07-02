@@ -12049,7 +12049,12 @@ static bool setting_append_list(
                bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 #endif
-            for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
+            /* Iterate the filled count, not the array capacity:
+             * the capacities above are upper bounds and iterating
+             * ARRAY_SIZE registered one setting from uninitialized
+             * stack memory (garbage label/flags/default and, worst,
+             * a garbage value target pointer). */
+            for (i = 0; i < listing; i++)
             {
 #if !defined(HAVE_CORE_INFO_CACHE)
                if (bool_entries[i].name_enum_idx ==
