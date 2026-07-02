@@ -138,6 +138,9 @@ struct audio_mixer_voice
          unsigned    samples;
          unsigned    buf_samples;
          float       ratio;
+         /* s16 pipeline (parallel; used when voice->is_s16) */
+         int16_t*    buffer_s16;
+         void*       resampler_int16;
       } ogg;
 #endif
 
@@ -659,6 +662,82 @@ static void audio_mixer_release_ogg(audio_mixer_voice_t* voice)
       voice->types.ogg.resampler->free(voice->types.ogg.resampler_data);
    if (voice->types.ogg.buffer)
       memalign_free(voice->types.ogg.buffer);
+   if (voice->types.ogg.buffer_s16)
+      memalign_free(voice->types.ogg.buffer_s16);
+   if (voice->types.ogg.resampler_int16)
+      sinc_resampler_int16_free(voice->types.ogg.resampler_int16);
+}
+
+static bool audio_mixer_play_ogg_s16(
+      audio_mixer_sound_t* sound,
+      audio_mixer_voice_t* voice,
+      bool repeat, float volume,
+      enum resampler_quality quality,
+      audio_mixer_stop_cb_t stop_cb)
+{
+   double   ratio       = 1.0;
+   unsigned samples     = 0;
+   unsigned channels    = 0;
+   unsigned rate        = 0;
+   void    *ogg_buffer  = NULL;
+   void    *resamp_i16  = NULL;
+   void    *xfer        = audio_transfer_new(AUDIO_TYPE_VORBIS);
+   (void)repeat;
+   (void)volume;
+   (void)stop_cb;
+
+   if (!xfer)
+      return false;
+   audio_transfer_set_buffer_ptr(xfer, AUDIO_TYPE_VORBIS,
+         (void*)sound->types.ogg.data, sound->types.ogg.size);
+   if (!audio_transfer_start(xfer, AUDIO_TYPE_VORBIS))
+   {
+      audio_transfer_free(xfer, AUDIO_TYPE_VORBIS);
+      return false;
+   }
+   audio_transfer_info(xfer, AUDIO_TYPE_VORBIS, &channels, &rate, NULL);
+
+   /* Stereo-only, matching the float path's stack-buffer sizing. */
+   if (channels != 2)
+      goto error;
+
+   if (rate != s_rate)
+   {
+      ratio      = (double)s_rate / (double)rate;
+      resamp_i16 = sinc_resampler_int16_init(
+            (ratio < 1.0) ? ratio : 1.0,
+            audio_mixer_i16_quality(quality));
+      if (!resamp_i16)
+         goto error;
+   }
+
+   samples     = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
+   ogg_buffer  = memalign_alloc(16,
+         (((samples + 16) + 15) & ~15) * sizeof(int16_t));
+
+   if (!ogg_buffer)
+   {
+      if (resamp_i16)
+         sinc_resampler_int16_free(resamp_i16);
+      goto error;
+   }
+
+   voice->types.ogg.resampler       = NULL;
+   voice->types.ogg.resampler_data  = NULL;
+   voice->types.ogg.buffer          = NULL;
+   voice->types.ogg.resampler_int16 = resamp_i16;
+   voice->types.ogg.buffer_s16      = (int16_t*)ogg_buffer;
+   voice->types.ogg.buf_samples     = samples;
+   voice->types.ogg.ratio           = (float)ratio;
+   voice->types.ogg.stream          = xfer;
+   voice->types.ogg.position        = 0;
+   voice->types.ogg.samples         = 0;
+
+   return true;
+
+error:
+   audio_transfer_free(xfer, AUDIO_TYPE_VORBIS);
+   return false;
 }
 
 #endif
@@ -1124,8 +1203,13 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
                   quality, stop_cb);
 #endif
             break;
-         case AUDIO_MIXER_TYPE_WAV:
          case AUDIO_MIXER_TYPE_OGG:
+#ifdef HAVE_RVORBIS
+            res = audio_mixer_play_ogg_s16(sound, voice, repeat, volume,
+                  quality, stop_cb);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_WAV:
          case AUDIO_MIXER_TYPE_MOD:
          case AUDIO_MIXER_TYPE_MP3:
          case AUDIO_MIXER_TYPE_NONE:
@@ -1343,6 +1427,90 @@ again:
 cleanup:
    if (temp_buffer != NULL)
       free(temp_buffer);
+}
+
+static void audio_mixer_mix_ogg_s16(int16_t* buffer, size_t num_frames,
+      audio_mixer_voice_t* voice,
+      int32_t gain_q16)
+{
+   int i;
+   struct resampler_data_int16 info;
+   int16_t  temp_buffer[AUDIO_MIXER_TEMP_BUFFER];
+   unsigned buf_free     = (unsigned)(num_frames * 2);
+   unsigned temp_samples = 0;
+   int16_t *pcm          = NULL;
+
+   if (!voice->types.ogg.stream)
+      return;
+
+   if (voice->types.ogg.samples == 0)
+   {
+again:
+      {
+         size_t got = 0;
+         audio_transfer_read_s16(voice->types.ogg.stream, AUDIO_TYPE_VORBIS,
+               temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+         temp_samples = (unsigned)(got * 2);
+      }
+      if (temp_samples == 0)
+      {
+         if (voice->repeat)
+         {
+            if (voice->stop_cb)
+               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
+            audio_transfer_seek(voice->types.ogg.stream, AUDIO_TYPE_VORBIS, 0);
+            goto again;
+         }
+         if (voice->stop_cb)
+            voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
+         audio_mixer_release(voice);
+         return;
+      }
+
+      info.data_in       = temp_buffer;
+      info.data_out      = voice->types.ogg.buffer_s16;
+      info.input_frames  = temp_samples / 2;
+      info.output_frames = 0;
+      info.ratio         = voice->types.ogg.ratio;
+
+      if (voice->types.ogg.resampler_int16)
+      {
+         sinc_resampler_int16_process(
+               voice->types.ogg.resampler_int16, &info);
+         voice->types.ogg.samples = (unsigned)(info.output_frames * 2);
+      }
+      else
+      {
+         memcpy(voice->types.ogg.buffer_s16, temp_buffer,
+               temp_samples * sizeof(int16_t));
+         voice->types.ogg.samples = temp_samples;
+      }
+      voice->types.ogg.position = 0;
+   }
+
+   pcm = voice->types.ogg.buffer_s16 + voice->types.ogg.position;
+
+   if (voice->types.ogg.samples < buf_free)
+   {
+      for (i = voice->types.ogg.samples; i != 0; i--)
+      {
+         *buffer = audio_mixer_sat_s16((int32_t)*buffer
+               + audio_mixer_gain_s16(*pcm++, gain_q16));
+         buffer++;
+      }
+      buf_free -= voice->types.ogg.samples;
+      goto again;
+   }
+
+   for (i = buf_free; i != 0; --i)
+   {
+      *buffer = audio_mixer_sat_s16((int32_t)*buffer
+            + audio_mixer_gain_s16(*pcm++, gain_q16));
+      buffer++;
+   }
+
+   voice->types.ogg.position += buf_free;
+   voice->types.ogg.samples  -= buf_free;
 }
 #endif
 
@@ -1771,8 +1939,12 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
             audio_mixer_mix_flac_s16(buffer, num_frames, voice, gain_q16);
 #endif
             break;
-         case AUDIO_MIXER_TYPE_WAV:
          case AUDIO_MIXER_TYPE_OGG:
+#ifdef HAVE_RVORBIS
+            audio_mixer_mix_ogg_s16(buffer, num_frames, voice, gain_q16);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_WAV:
          case AUDIO_MIXER_TYPE_MOD:
          case AUDIO_MIXER_TYPE_MP3:
          case AUDIO_MIXER_TYPE_NONE:
