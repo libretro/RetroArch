@@ -606,6 +606,47 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
    audio_st->drc_threshold_int16s = threshold;
 }
 
+/* Fast-forward "speedup" pitch tracking, shared by the float and the
+ * deterministic s16 fast paths.  Measures the real wall-clock time between
+ * flushes, keeps an exponential moving average of it over the last
+ * AUDIO_FF_EXP_AVG_SAMPLES flushes, and returns a multiplier for the
+ * resampler ratio so the audio time-stretches to track the actual output
+ * speed rather than crackling or being muted.  The EMA smooths the estimate
+ * so pitches stay recognizable (it is not needed to avoid crackling -- the
+ * generated waves are continuous either way -- but it avoids time
+ * compression/decompression every frame; see
+ * https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average).
+ *
+ * The state (last_flush_time, avg_flush_delta) lives on audio_st and the
+ * arithmetic is identical regardless of caller, so it is float/int16
+ * agnostic: a session may move between the two paths mid-fast-forward and the
+ * wall-clock series stays continuous.  Returns 1.0 (no adjustment) on the
+ * first flush, seeding last_flush_time for the next one. */
+static double audio_driver_fastforward_ratio_mult(
+      audio_driver_state_t *audio_st, size_t input_frames)
+{
+   const retro_time_t flush_time = cpu_features_get_time_usec();
+   double mult                   = 1.0;
+
+   if (audio_st->last_flush_time > 0)
+   {
+      /* What we should see if the speed was 1.0x, converted to microsecs. */
+      const double expected_flush_delta =
+            (input_frames / audio_st->input * 1000000);
+      const retro_time_t n      = AUDIO_FF_EXP_AVG_SAMPLES;
+      audio_st->avg_flush_delta = audio_st->avg_flush_delta * (n - 1) / n +
+            (flush_time - audio_st->last_flush_time) / n;
+
+      /* How much does avg_flush_delta deviate from the 1.0x delta? */
+      mult = MAX(AUDIO_MIN_RATIO,
+            MIN(AUDIO_MAX_RATIO,
+               audio_st->avg_flush_delta / expected_flush_delta));
+   }
+
+   audio_st->last_flush_time = flush_time;
+   return mult;
+}
+
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       const void *data, size_t samples, bool is_float,
@@ -682,8 +723,10 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * directly.  Volume is applied in fixed point (Q16), so non-unity gain no
     * longer forces the float path; an int16-capable DSP chain runs in the
     * integer domain, and the audio mixer is summed in float on top of the
-    * resampled game audio in both output branches below.  A MIDI synth or the
-    * fast-forward pitch EMA still fall through to the float path.  This removes
+    * resampled game audio in both output branches below.  Fast-forward
+    * "speedup" pitch tracking is applied to the integer ratio too, so it no
+    * longer forces the float path; only a MIDI synth (whose PCM is float)
+    * still falls through.  This removes
     * the s16<->float round-trip on the game signal, uses no FPU for the game
     * resample, and is bit-identical across platforms for that signal (netplay /
     * rewind).  Any condition failing falls through to the float path below. */
@@ -694,8 +737,6 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          &&  config_get_ptr()->bools.audio_fastpath_s16
          && !is_float
          && !midi_driver_synth_active()
-         && !(is_fastforward
-               && config_get_ptr()->bools.audio_fastforward_speedup)
 #ifdef HAVE_DSP_FILTER
          && (!audio_st->dsp
                || retro_dsp_filter_supports_int16(audio_st->dsp))
@@ -746,6 +787,10 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          i16_ratio = audio_st->src_ratio_curr;
          if (is_slowmotion)
             i16_ratio *= slowmotion_ratio;
+         if (     is_fastforward
+               && config_get_ptr()->bools.audio_fastforward_speedup)
+            i16_ratio *= audio_driver_fastforward_ratio_mult(
+                  audio_st, rs_frames);
 
          s16.data_in       = rs_in;
          s16.data_out      = audio_st->output_samples_int16;
@@ -973,39 +1018,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       src_data.ratio       *= slowmotion_ratio;
 
    if (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
-   {
-      const retro_time_t flush_time = cpu_features_get_time_usec();
-
-      if (audio_st->last_flush_time > 0)
-      {
-         /* What we should see if the speed was 1.0x, converted to microsecs */
-         const double expected_flush_delta =
-            (src_data.input_frames / audio_st->input * 1000000);
-         /* Exponential moving average of the last AUDIO_FF_EXP_AVG_SAMPLES
-            samples. This helps make sure pitches are recognizable by avoiding
-            too much variance flush-to-flush.
-
-            It's not needed to avoid crackling (the generated waves are going to
-            be continuous either way), but it's important to avoid time
-            compression and decompression every single frame, which would make
-            sounds irrecognizable.
-
-            https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-          */
-         const retro_time_t n      = AUDIO_FF_EXP_AVG_SAMPLES;
-         audio_st->avg_flush_delta = audio_st->avg_flush_delta * (n - 1) / n +
-            (flush_time - audio_st->last_flush_time) / n;
-
-         /* How much does the avg_flush_delta deviate
-          * from the delta at 1.0x speed? */
-         src_data.ratio *=
-            MAX(AUDIO_MIN_RATIO,
-                  MIN(AUDIO_MAX_RATIO,
-                     audio_st->avg_flush_delta / expected_flush_delta));
-      }
-
-      audio_st->last_flush_time = flush_time;
-   }
+      src_data.ratio *= audio_driver_fastforward_ratio_mult(
+            audio_st, src_data.input_frames);
 
    audio_st->resampler->process(audio_st->resampler_data, &src_data);
 
@@ -1327,8 +1341,10 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 
    /* Deterministic integer (s16) sinc fast path: allocate an int16 resampler
     * mirroring the float one when the selected backend is "sinc".  It is used
-    * by audio_driver_flush() only when no float-domain stage (DSP, mixer, MIDI
-    * synth, non-unity gain) is active; otherwise the float path runs. */
+    * by audio_driver_flush() for int16 cores unless a MIDI synth is sounding
+    * or a float-only DSP filter is loaded; DSP (int16-capable), the mixer,
+    * non-unity gain and fast-forward speedup are all handled in the integer
+    * domain.  Otherwise the float path runs. */
    if (audio_driver_st.resampler_data_int16)
    {
       sinc_resampler_int16_free(audio_driver_st.resampler_data_int16);
