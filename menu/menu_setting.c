@@ -14557,51 +14557,32 @@ static bool setting_append_list(
 
                /* if (settings->uints.video_hdr_mode > 0) */
                {
-                  CONFIG_FLOAT(
-                        list, list_info,
-                        &settings->floats.video_hdr_menu_nits,
-                        MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS,
-                        MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
-                        DEFAULT_MENU_HDR_BRIGHTNESS_NITS,
-                        "%.0f",
-                        &group_info,
-                        &subgroup_info,
-                        parent_group,
-                        general_write_handler,
-                        general_read_handler);
-                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-                  menu_settings_list_current_add_range(list, list_info, 40.0, 1000.0, 10.0, true, true);
-
-                  CONFIG_FLOAT(
-                        list, list_info,
-                        &settings->floats.video_hdr_paper_white_nits,
-                        MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-                        DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS,
-                        "%.0f",
-                        &group_info,
-                        &subgroup_info,
-                        parent_group,
-                        general_write_handler,
-                        general_read_handler);
-                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-                  menu_settings_list_current_add_range(list, list_info, 0.0, 10000.0, 10.0, true, true);
-
-                  CONFIG_UINT(
-                        list, list_info,
-                        &settings->uints.video_hdr_expand_gamut,
-                        MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-                        DEFAULT_VIDEO_HDR_EXPAND_GAMUT,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group,
-                        general_write_handler,
-                        general_read_handler);
-                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-                  (*list)[list_info->index - 1].get_string_representation =
-                        &setting_get_string_representation_video_hdr_expand_gamut;
-                  menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+                  {
+                     static const setting_desc_t hdr_desc[] = {
+                        SDESC_FLOAT_ROW_EX(video_hdr_menu_nits, MENU_HDR_BRIGHTNESS_NITS,
+                              DEFAULT_MENU_HDR_BRIGHTNESS_NITS, "%.0f",
+                              SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                              40.0, 1000.0, 10.0,
+                              setting_action_ok_uint, NULL,
+                              NULL, NULL, NULL, NULL, 0),
+                        SDESC_FLOAT_ROW_EX(video_hdr_paper_white_nits, VIDEO_HDR_PAPER_WHITE_NITS,
+                              DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS, "%.0f",
+                              SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                              0.0, 10000.0, 10.0,
+                              setting_action_ok_uint, NULL,
+                              NULL, NULL, NULL, NULL, 0),
+                        SDESC_UINT_ROW_EX(video_hdr_expand_gamut, VIDEO_HDR_EXPAND_GAMUT,
+                              DEFAULT_VIDEO_HDR_EXPAND_GAMUT,
+                              SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                              0, 3, 1, 0,
+                              setting_action_ok_uint,
+                              setting_get_string_representation_video_hdr_expand_gamut,
+                              NULL, NULL, NULL, NULL, 0)
+                     };
+                     settings_list_add_desc(list, list_info, settings,
+                           hdr_desc, ARRAY_SIZE(hdr_desc),
+                           &group_info, &subgroup_info, parent_group);
+                  }
 
                   START_SUB_GROUP(list, list_info, "HDR", &group_info, &subgroup_info, parent_group);
 
@@ -14613,44 +14594,23 @@ static bool setting_append_list(
                         &subgroup_info,
                         parent_group);
 
-                  CONFIG_BOOL(
-                        list, list_info,
-                        &settings->bools.video_hdr_scanlines,
-                        MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
-                        DEFAULT_VIDEO_HDR_SCANLINES,
-                        MENU_ENUM_LABEL_VALUE_OFF,
-                        MENU_ENUM_LABEL_VALUE_ON,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group,
-                        general_write_handler,
-                        general_read_handler,
-                        SD_FLAG_NONE);
-                  (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
-                  (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
-                  (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
-                  MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                        list,
-                        list_info,
-                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-
                   {
-                     CONFIG_UINT(
-                           list, list_info,
-                           &settings->uints.video_hdr_subpixel_layout,
-                           MENU_ENUM_LABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
-                           MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
-                           DEFAULT_VIDEO_HDR_SUBPIXEL_LAYOUT,
-                           &group_info,
-                           &subgroup_info,
-                           parent_group,
-                           general_write_handler,
-                           general_read_handler);
-                     (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-                     (*list)[list_info->index - 1].get_string_representation =
-                           &setting_get_string_representation_video_hdr_subpixel_layout;
-                     menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+                     static const setting_desc_t hdr_desc2[] = {
+                        SDESC_BOOL_ROW(video_hdr_scanlines, VIDEO_HDR_SCANLINES,
+                              DEFAULT_VIDEO_HDR_SCANLINES,
+                              SD_FLAG_NONE, SDESC_FLG_REFRESH,
+                              CMD_EVENT_VIDEO_APPLY_STATE_CHANGES),
+                        SDESC_UINT_ROW_EX(video_hdr_subpixel_layout, VIDEO_HDR_SUBPIXEL_LAYOUT,
+                              DEFAULT_VIDEO_HDR_SUBPIXEL_LAYOUT,
+                              SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                              0, 2, 1, 0,
+                              setting_action_ok_uint,
+                              setting_get_string_representation_video_hdr_subpixel_layout,
+                              NULL, NULL, NULL, NULL, 0)
+                     };
+                     settings_list_add_desc(list, list_info, settings,
+                           hdr_desc2, ARRAY_SIZE(hdr_desc2),
+                           &group_info, &subgroup_info, parent_group);
                   }
 
                   END_SUB_GROUP(list, list_info, parent_group);
