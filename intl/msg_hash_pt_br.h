@@ -1376,7 +1376,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Driver de entrada a ser usado. Alguns drivers de vídeo forçam um driver de entrada diferente. (Reinício necessário)"
+   "Driver de entrada a ser usado. Alguns drivers de vídeo forçam um driver de entrada diferente. (Requer reinicialização)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
@@ -1894,7 +1894,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
-   "Usar Buffers de Argumento do Metal (Reinício necessário)"
+   "Usar Buffers de Argumento do Metal (Requer renicialização)"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
@@ -1977,7 +1977,7 @@ MSG_HASH(
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Otimizar para o controle do Wii U (necessário reiniciar)"
+   "Otimizar para o Controle do Wii U (Requer renicialização)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
@@ -2866,6 +2866,10 @@ MSG_HASH(
    "Reduza este valor para favorecer o melhor desempenho/menor latência ao custo da qualidade do áudio, aumente para uma qualidade melhor do áudio à custa da performance/baixa latência."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
+   "Reamostrar para Ponto Fixo (Dica)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    "Frequência da saída de áudio (Hz)"
    )
@@ -3046,11 +3050,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Quantidade máxima de usuários suportada pelo RetroArch. (Requer Reinicialização)"
+   "Quantidade máxima de usuários suportada pelo RetroArch. (Requer reinicialização)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Comportamento de Sondagem (Reinício necessário)"
+   "Comportamento de Sondagem (Requer renicialização)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3087,7 +3091,7 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Desativar teclas de atalho do Windows (requer reinício)"
+   "Desativar Atalhos do Windows (Requer reinicialização)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
@@ -11751,7 +11755,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Encurtar Nomes da Playlist (Requer reinício)"
+   "Encurtar Nomes da Playlist (Requer reinicialização)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -11759,7 +11763,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "Ordenar Playlists Após Encurtamento do Nome (Requer reinício)"
+   "Ordenar Playlists Após Encurtamento do Nome (Requer reinicialização)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -15047,7 +15051,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Seleciona o Modo de Exibição (Reinício Necessário)"
+   "Seleciona o Modo de Exibição (Requer reinicialização)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

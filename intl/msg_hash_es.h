@@ -2906,6 +2906,10 @@ MSG_HASH(
    "Reduce este valor para favorecer el rendimiento y la latencia a costa de perder calidad del audio o auméntalo para mejorarla a costa de perder rendimiento y latencia."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
+   "Remuestrear a número entero fijo (sugerencia)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    "Frecuencia de salida (Hz)"
    )

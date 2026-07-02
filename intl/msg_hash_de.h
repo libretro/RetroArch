@@ -2818,6 +2818,10 @@ MSG_HASH(
    "Diesen Wert verkleinern, für bessere Leistung/kleinere Latenz zu Lasten der Audioqualität; erhöhen, für bessere Audioqualität auf Kosten der Leistung/kleinerer Latenz."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
+   "Auf feste Ganzzahl resamplen (Hinweis)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    "Ausgaberate (Hz)"
    )

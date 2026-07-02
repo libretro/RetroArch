@@ -2910,6 +2910,10 @@ MSG_HASH(
    "Ísligh an luach seo chun feidhmíocht/moill níos ísle a chur chun cinn thar cháilíocht fuaime, méadaigh é chun cáilíocht fuaime níos fearr a fháil ar chostas feidhmíochta/moill níos ísle."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
+   "Athshampláil go Slánuimhir Sheasta (Leid)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    "Ráta Aschuir (Hz)"
    )
@@ -6969,6 +6973,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
    "Roghnaigh íomhá le socrú mar chúlra an roghchláir. Sáróidh íomhánna láimhe agus dinimiciúla 'Téama Datha'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
+   "Teimhneacht Íomhá an Chúlra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+   "Modhnaigh leibhéal teimhneachta an íomhá chúlra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
@@ -11556,6 +11568,14 @@ MSG_HASH(
    "An beochan a spreagtar nuair a osclaítear fo-roghchlár."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+   "Fachtóir Teimhneachta Téama Datha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
+   "Modhnaigh céatadán teimhneachta an téama datha."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    "Deilbhín an Roghchláir Reatha"
    )
@@ -11582,6 +11602,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Roghnaigh cló príomhúil difriúil le húsáid ag an roghchlár."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "Dath Cló: Dearg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "Dath Cló: Glas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "Dath Cló: Gorm"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -11660,20 +11692,40 @@ MSG_HASH(
    "Fachtóir Céimnithe Ingearach"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Coigeartaigh leibhéal céimnithe míreanna infheicthe gar do imill an scáileáin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
    "Taispeáin Liosta Cothrománach"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Cumasaigh an príomhliosta cluaisíní cothrománacha le haghaidh loingseoireachta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Taispeáin Ceanntásc an Teidil"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
+   "Taispeáin suíomh reatha an roghchláir sa cheanntásc."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
    "Imeall Teidil"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
+   "Coigeartaigh an fad idir ceanntásc an teidil agus imeall an scáileáin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    "Fritháireamh Cothrománach Imeall Teidil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   "Coigeartaigh an fad cothrománach idir ceanntásc an teidil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -15828,12 +15880,24 @@ MSG_HASH(
    "Taispeáin cló an roghchláir ag bun an leathanaigh. Cumasaigh chun cur síos ar na cnaipí a thaispeáint ar an scáileán ag bun an leathanaigh. Ní áirítear leis seo dáta an stáit shábhála."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   "Dath Cló: Dearg"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "Coigeartaigh dath dearg cló bun an scáileáin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   "Dath Cló: Glas"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "Coigeartaigh dath glas cló bun an scáileáin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "Dath Cló: Gorm"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,

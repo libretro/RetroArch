@@ -2918,6 +2918,10 @@ MSG_HASH(
    "Malpliigu ĉi tiun valoron por favori rendimenton kaj malpli respondotempon pli ol sona kvalito. Pliigu ĝin por pli bona sona kvalito kontraŭ rendimento kaj malpli da respondotempo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
+   "Resonpecigi al fiksita entjero (aludo)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    "Ofteco de eligo (Hz)"
    )
@@ -6981,6 +6985,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
    "Elekti bildon agordota kiel menua fono. Permanaj kaj dinamikaj bildoj transpasos \"Kolora etoso\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
+   "Maldiafano de fona bildo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+   "Modifi la maldiafanan nivelon de la fona bildo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
@@ -11564,6 +11576,14 @@ MSG_HASH(
    "La animacio okazanta kiam oni malfermas submenuon."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+   "Faktoro de maldiafano de kolora etoso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
+   "Modifi la procento de maldiafano de la kolora etoso."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    "Kuranta menua piktogramo"
    )
@@ -11590,6 +11610,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Elekti malsaman ĉefan tiparon uzota de la menuo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "Tipara koloro: ruĝeco"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "Tipara koloro: verdeco"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "Tipara koloro: blueco"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -11668,20 +11700,40 @@ MSG_HASH(
    "Vertikala malaperiga faktoro"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Alĝustigi la malaperigan nivelon de videblaj eroj proksimaj al ekranaj randoj."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
-   "Montri horizontala listo"
+   "Montri horizontalan liston"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Ebligi la ĉefan horizontalan sekciliston por navigado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Montri titolan paĝokapon"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
+   "Montri la kurantan menuan lokon en la paĝokapo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
    "Titola marĝeno"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
+   "Alĝustigi la distancon de la titola paĝokapo de la ekrana rando."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    "Horizontala deŝovo de titola marĝeno"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   "Alĝustigi la horizontalan distancon de la titola paĝokapo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -15852,12 +15904,24 @@ MSG_HASH(
    "Montri malsupran menuan tiparon. Ebligi por montri butonaj priskriboj en la malsupra ekrano. Ĉi tio ekskluzivas la konservostatan daton."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   "Tipara koloro: ruĝeco"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
    "Alĝustigi la ruĝecon de la tiparo de la malsupra ekrano."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   "Tipara koloro: verdeco"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
    "Alĝustigi la verdecon de la tiparo de la malsupra ekrano."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "Tipara koloro: blueco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
