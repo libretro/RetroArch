@@ -10171,6 +10171,11 @@ typedef struct setting_desc
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      0.0f, 0.0f, 0.0f, NULL, NULL, NULL, \
      0, 0.0f, NULL, NULL, NULL, NULL, 0, 0, SDESC_ACTION, 0, 0, 0 }
+#define SDESC_ACTION_ROW_EX(label, ok) \
+   { 0, 0, \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     0.0f, 0.0f, 0.0f, NULL, NULL, (ok), \
+     0, 0.0f, NULL, NULL, NULL, NULL, 0, 0, SDESC_ACTION, 0, 0, 0 }
 
 /* _EX variants add action_start / action_select / ui_type overrides
  * (0 / NULL keeps the class default). */
@@ -15475,52 +15480,35 @@ static bool setting_append_list(
 #ifdef HAVE_WASAPI
          if (string_is_equal(audio_driver_get_ident(), "wasapi"))
          {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.audio_wasapi_exclusive_mode,
-                  MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-                  MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
-                  DEFAULT_WASAPI_EXCLUSIVE_MODE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.audio_wasapi_sh_buffer_length,
-                  MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-                  MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-                  DEFAULT_WASAPI_SH_BUFFER_LENGTH,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
-            (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_audio_wasapi_sh_buffer_length;
-            menu_settings_list_current_add_range(list, list_info, 0, 32.0f * 200, 32.0f, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+            static const setting_desc_t audio_wasapi_desc[] = {
+               SDESC_BOOL_ROW(audio_wasapi_exclusive_mode,
+                     AUDIO_WASAPI_EXCLUSIVE_MODE,
+                     DEFAULT_WASAPI_EXCLUSIVE_MODE, SD_FLAG_NONE, 0, 0),
+               SDESC_UINT_ROW_EX(audio_wasapi_sh_buffer_length,
+                     AUDIO_WASAPI_SH_BUFFER_LENGTH,
+                     DEFAULT_WASAPI_SH_BUFFER_LENGTH,
+                     SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0,
+                     0, 32.0f * 200, 32.0f, 0,
+                     setting_action_ok_uint_special,
+                     setting_get_string_representation_uint_audio_wasapi_sh_buffer_length,
+                     NULL, NULL, NULL, NULL, 0)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  audio_wasapi_desc, ARRAY_SIZE(audio_wasapi_desc),
+                  &group_info, &subgroup_info, parent_group);
          }
 #endif
 
 #ifdef HAVE_ASIO
          if (string_is_equal(audio_driver_get_ident(), "asio"))
          {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_AUDIO_ASIO_CONTROL_PANEL,
-                  MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-            (*list)[list_info->index - 1].action_ok = &setting_action_asio_control_panel;
+            static const setting_desc_t audio_asio_desc[] = {
+               SDESC_ACTION_ROW_EX(AUDIO_ASIO_CONTROL_PANEL,
+                     setting_action_asio_control_panel)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  audio_asio_desc, ARRAY_SIZE(audio_asio_desc),
+                  &group_info, &subgroup_info, parent_group);
          }
 #endif
 
