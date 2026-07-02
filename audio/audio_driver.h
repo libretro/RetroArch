@@ -316,6 +316,16 @@ typedef struct
    double   cached_rate_adjust;        /* last computed factor; default 1.0 */
    size_t   samples_since_drc;         /* int16 samples submitted since last update */
    size_t   drc_threshold_int16s;      /* one frame's worth of stereo int16 at the current rate */
+
+   /* Last-flush sample-format diagnostics for the on-screen statistics
+    * overlay. stat_core_is_float records whether the core delivered float
+    * (audio_driver_sample_batch_float) or int16 (audio_driver_sample_batch)
+    * samples; stat_frontend_is_float records whether the frontend processed
+    * that audio through the float resampler path (true) or an integer path
+    * (false: either the write_raw raw-int16 fast path or the deterministic
+    * s16 resampler path). */
+   bool     stat_core_is_float;
+   bool     stat_frontend_is_float;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);

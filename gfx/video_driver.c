@@ -4975,6 +4975,8 @@ void video_driver_frame(const void *data, unsigned width,
                " Underrun:   %6.2f %%\n"
                " Blocking:   %6.2f %%\n"
                " Samples:  %8d\n"
+               " Core Sample Format:     %s\n"
+               " Frontend Sample Format: %s\n"
                ,
                frame_cache_width,
                frame_cache_height,
@@ -5005,7 +5007,9 @@ void video_driver_frame(const void *data, unsigned width,
                audio_stats.std_deviation_percentage,
                audio_stats.close_to_underrun,
                audio_stats.close_to_blocking,
-               audio_stats.samples);
+               audio_stats.samples,
+               audio_state_get_ptr()->stat_core_is_float     ? "float" : "int16",
+               audio_state_get_ptr()->stat_frontend_is_float ? "float" : "int16");
 
          /* TODO/FIXME - localize */
          __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",

@@ -676,6 +676,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       return;
    }
 
+   /* Record the core's delivered sample format for the statistics overlay. */
+   audio_st->stat_core_is_float = is_float;
+
    /* Fast path: if driver handles resampling and no DSP/mixer is active,
     * bypass software resampling entirely. An active in-process MIDI synth
     * also disables the fast path, since its PCM is mixed into the float
@@ -717,6 +720,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          rate_adjust                *= slowmotion_ratio;
 
       /* Note: mute/volume is not applied here - driver must handle or ignore */
+      audio_st->stat_frontend_is_float = false;
       audio->write_raw(audio_st->context_audio_data,
             data, frames, input_rate, rate_adjust, audio_volume_gain);
       return;
@@ -766,6 +770,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          unsigned out_frames;
          bool     synth_on    = midi_driver_synth_active()
                && audio_st->synth_buf && audio_st->input_data_int16;
+
+         audio_st->stat_frontend_is_float = false;
 
          /* If an in-process synth is sounding, render its PCM at the input
           * rate and sum it (converted to s16, saturating) into a writable
@@ -941,6 +947,12 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
    /* We'll assign a proper output to the resampler later in this function */
+
+   /* Reached only when neither integer fast path above returned: the core is
+    * float-native, or an int16 core fell through (fast path disabled, or a
+    * float-only DSP/condition forced conversion). Either way the pipeline
+    * runs in float from here. */
+   audio_st->stat_frontend_is_float = true;
 
    /* Bring the core's audio into the float input buffer the resampler/DSP
     * operate on. For a float-native core this is just a gain-scaled copy
