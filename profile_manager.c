@@ -492,3 +492,15 @@ void profile_manager_get_sysicons_dir(char *dir, size_t len)
    fill_pathname_application_special(dir, len,
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS);
 }
+
+bool profile_manager_set_icon(int index, const char *image_name)
+{
+   profile_manager_ensure_init();
+   if (index < 0 || index >= g_profile_list.count)
+      return false;
+   strlcpy(g_profile_list.profiles[index].image_path,
+         image_name ? image_name : "",
+         sizeof(g_profile_list.profiles[index].image_path));
+   profile_manager_flush();
+   return true;
+}
