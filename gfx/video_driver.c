@@ -4969,14 +4969,6 @@ void video_driver_frame(const void *data, unsigned width,
                " - Deviation:%6.2f %%\n"
                " Frames:   %8" PRIu64"\n"
                " - Dropped:   %5u\n"
-               "AUDIO: %s\n"
-               " Saturation: %6.2f %%\n"
-               " Deviation:  %6.2f %%\n"
-               " Underrun:   %6.2f %%\n"
-               " Blocking:   %6.2f %%\n"
-               " Samples:  %8d\n"
-               " Core Sample Format:     %s\n"
-               " Frontend Sample Format: %s\n"
                ,
                frame_cache_width,
                frame_cache_height,
@@ -5001,7 +4993,22 @@ void video_driver_frame(const void *data, unsigned width,
                frame_time / 1000.0f,
                100.0f * stddev,
                video_st->frame_count,
-               video_st->frame_drop_count,
+               video_st->frame_drop_count);
+
+         /* Split from the block above: a single concatenated format
+          * literal exceeded the 509-byte minimum ISO C90 guarantees
+          * (-Werror=overlength-strings in the C89 lane). */
+         __len += snprintf(video_info.stat_text + __len,
+               sizeof(video_info.stat_text) - __len,
+               "AUDIO: %s\n"
+               " Saturation: %6.2f %%\n"
+               " Deviation:  %6.2f %%\n"
+               " Underrun:   %6.2f %%\n"
+               " Blocking:   %6.2f %%\n"
+               " Samples:  %8d\n"
+               " Core Sample Format:     %s\n"
+               " Frontend Sample Format: %s\n"
+               ,
                audio_state_get_ptr()->current_audio->ident,
                audio_stats.average_buffer_saturation,
                audio_stats.std_deviation_percentage,
