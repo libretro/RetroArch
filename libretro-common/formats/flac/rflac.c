@@ -8,6 +8,7 @@ GitHub: https://github.com/mackron/dr_libs
 */
 
 #include <formats/rflac.h>
+#include <features/features_cpu.h>
 
 /* Disable some annoying warnings. */
 #if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
@@ -117,47 +118,13 @@ Unfortuantely rflac depends on this for a few things so we're just going to disa
 #endif
 
 /* Compile-time CPU feature support. */
-#if !defined(RFLAC_NO_SIMD) && (defined(RFLAC_X86) || defined(RFLAC_X64))
-    #if defined(_MSC_VER) && !defined(__clang__)
-        #if _MSC_VER >= 1400
-            #include <intrin.h>
-            static void rflac__cpuid(int info[4], int fid)
-            {
-                __cpuid(info, fid);
-            }
-        #else
-            #define RFLAC_NO_CPUID
-        #endif
-    #else
-        #if defined(__GNUC__) || defined(__clang__)
-            static void rflac__cpuid(int info[4], int fid)
-            {
-                /*
-                It looks like the -fPIC option uses the ebx register which GCC complains about. We can work around this by just using a different register, the
-                specific register of which I'm letting the compiler decide on. The "k" prefix is used to specify a 32-bit register. The {...} syntax is for
-                supporting different assembly dialects.
-
-                What's basically happening is that we're saving and restoring the ebx register manually.
-                */
-                #if defined(RFLAC_X86) && defined(__PIC__)
-                    __asm__ __volatile__ (
-                        "xchg{l} {%%}ebx, %k1;"
-                        "cpuid;"
-                        "xchg{l} {%%}ebx, %k1;"
-                        : "=a"(info[0]), "=&r"(info[1]), "=c"(info[2]), "=d"(info[3]) : "a"(fid), "c"(0)
-                    );
-                #else
-                    __asm__ __volatile__ (
-                        "cpuid" : "=a"(info[0]), "=b"(info[1]), "=c"(info[2]), "=d"(info[3]) : "a"(fid), "c"(0)
-                    );
-                #endif
-            }
-        #else
-            #define RFLAC_NO_CPUID
-        #endif
-    #endif
-#else
-    #define RFLAC_NO_CPUID
+/* MSVC and clang-cl need <intrin.h> for the __lzcnt intrinsics used by the
+ * LZCNT clz fast path (rflac__clz_lzcnt) and for _BitScanReverse. Runtime
+ * feature detection itself is handled through libretro-common's shared
+ * features_cpu interface (cpu_features_get / x86_cpuid) rather than an
+ * in-tree cpuid. */
+#if defined(_MSC_VER) && (defined(RFLAC_X86) || defined(RFLAC_X64))
+    #include <intrin.h>
 #endif
 
 static RFLAC_INLINE uint32_t rflac_has_sse2(void)
@@ -169,13 +136,7 @@ static RFLAC_INLINE uint32_t rflac_has_sse2(void)
         #elif (defined(_M_IX86_FP) && _M_IX86_FP == 2) || defined(__SSE2__)
             return RFLAC_TRUE;    /* If the compiler is allowed to freely generate SSE2 code we can assume support. */
         #else
-            #if defined(RFLAC_NO_CPUID)
-                return RFLAC_FALSE;
-            #else
-                int info[4];
-                rflac__cpuid(info, 1);
-                return (info[3] & (1 << 26)) != 0;
-            #endif
+            return (cpu_features_get() & RETRO_SIMD_SSE2) != 0;
         #endif
     #else
         return RFLAC_FALSE;       /* SSE2 is only supported on x86 and x64 architectures. */
@@ -192,13 +153,7 @@ static RFLAC_INLINE uint32_t rflac_has_sse41(void)
         #if defined(__SSE4_1__) || defined(__AVX__)
             return RFLAC_TRUE;    /* If the compiler is allowed to freely generate SSE41 code we can assume support. */
         #else
-            #if defined(RFLAC_NO_CPUID)
-                return RFLAC_FALSE;
-            #else
-                int info[4];
-                rflac__cpuid(info, 1);
-                return (info[2] & (1 << 19)) != 0;
-            #endif
+            return (cpu_features_get() & RETRO_SIMD_SSE4) != 0;
         #endif
     #else
         return RFLAC_FALSE;       /* SSE41 is only supported on x86 and x64 architectures. */
@@ -390,7 +345,7 @@ typedef int32_t rflac_result;
 static uint32_t rflac__gIsLZCNTSupported = RFLAC_FALSE;
 #endif
 
-#ifndef RFLAC_NO_CPUID
+#if defined(RFLAC_X86) || defined(RFLAC_X64)
 static uint32_t rflac__gIsSSE2Supported  = RFLAC_FALSE;
 static uint32_t rflac__gIsSSE41Supported = RFLAC_FALSE;
 
@@ -405,10 +360,12 @@ RFLAC_NO_THREAD_SANITIZE static void rflac__init_cpu_caps(void)
     static uint32_t isCPUCapsInitialized = RFLAC_FALSE;
 
     if (!isCPUCapsInitialized) {
-        /* LZCNT */
-#if defined(RFLAC_HAS_LZCNT_INTRINSIC)
-        int info[4] = {0};
-        rflac__cpuid(info, 0x80000001);
+        /* LZCNT (ABM) via the shared features_cpu cpuid primitive. On macOS
+         * x86 (where x86_cpuid is unavailable) this stays unset and rflac__clz
+         * uses the software fallback. */
+#if defined(RFLAC_HAS_LZCNT_INTRINSIC) && !defined(__MACH__)
+        int32_t info[4] = {0};
+        x86_cpuid(0x80000001, info);
         rflac__gIsLZCNTSupported = (info[2] & (1 << 5)) != 0;
 #endif
 

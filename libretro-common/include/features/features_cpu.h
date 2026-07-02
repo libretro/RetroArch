@@ -74,6 +74,18 @@ retro_time_t cpu_features_get_time_usec(void);
  */
 uint64_t cpu_features_get(void);
 
+#if (defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86) && _MSC_VER > 1310)) && !defined(__MACH__)
+/**
+ * Executes the x86 CPUID instruction for the requested leaf, writing the
+ * EAX, EBX, ECX and EDX result registers into flags[0], flags[1], flags[2]
+ * and flags[3] respectively. Available on x86/x86-64 targets only.
+ *
+ * @param func     The CPUID leaf (function number) to query.
+ * @param[out] flags Array of four 32-bit words receiving EAX/EBX/ECX/EDX.
+ */
+void x86_cpuid(int func, int32_t flags[4]);
+#endif
+
 /**
  * @return The number of CPU cores available,
  * or 1 if the number of cores could not be determined.
