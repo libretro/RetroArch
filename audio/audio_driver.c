@@ -415,11 +415,9 @@ static bool audio_driver_deinit_internal(bool audio_enable)
       memalign_free(audio_st->synth_buf);
 
    audio_st->synth_buf  = NULL;
-#ifdef HAVE_DSP_FILTER
    if (audio_st->input_data_int16)
       memalign_free(audio_st->input_data_int16);
    audio_st->input_data_int16 = NULL;
-#endif
    audio_st->data_ptr   = 0;
 
 #ifdef HAVE_REWIND
@@ -1249,12 +1247,11 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.input_data                     = audio_buf;
    audio_driver_st.synth_buf                      = synth_buf;
    audio_driver_st.input_data_length              = audio_buf_length;
-#ifdef HAVE_DSP_FILTER
    /* Same frame capacity as input_data, in int16. Used by the s16 fast path
-    * to run an int16-capable DSP chain without an int16<->float round-trip. */
+    * to run an int16-capable DSP chain and/or sum an in-process synth without
+    * an int16<->float round-trip. */
    audio_driver_st.input_data_int16               =
          (int16_t*)memalign_alloc(64, max_buffer_samples * sizeof(int16_t));
-#endif
    audio_driver_st.output_samples_int16        = out_conv_buf;
    audio_driver_st.output_samples_int16_length = outsamples_max * sizeof(int16_t);
    audio_driver_st.chunk_block_size               = AUDIO_CHUNK_SIZE_BLOCKING;
