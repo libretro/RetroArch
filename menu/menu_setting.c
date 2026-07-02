@@ -15192,23 +15192,19 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.audio_sync,
-               MENU_ENUM_LABEL_AUDIO_SYNC,
-               MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-               DEFAULT_AUDIO_SYNC,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         {
+            static const setting_desc_t audio_sync_desc[] = {
+               SDESC_BOOL_ROW(audio_sync, AUDIO_SYNC,
+                     DEFAULT_AUDIO_SYNC,
+                     SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_NONE)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  audio_sync_desc, ARRAY_SIZE(audio_sync_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
+         /* The latency pair stays imperative: defaults come from
+          * g_defaults at registration time. */
          CONFIG_UINT(
                list, list_info,
                &settings->uints.audio_latency,
@@ -15243,37 +15239,26 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
 
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.audio_resampler_quality,
-               MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
-               MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-               DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_uint_audio_resampler_quality;
-         menu_settings_list_current_add_range(list, list_info, RESAMPLER_QUALITY_DONTCARE, RESAMPLER_QUALITY_HIGHEST, 1.0, true, true);
+         {
+            static const setting_desc_t audio_rq_desc[] = {
+               SDESC_UINT_ROW_EX(audio_resampler_quality, AUDIO_RESAMPLER_QUALITY,
+                     DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     RESAMPLER_QUALITY_DONTCARE, RESAMPLER_QUALITY_HIGHEST, 1.0, 0,
+                     setting_action_ok_uint,
+                     setting_get_string_representation_uint_audio_resampler_quality,
+                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
+               SDESC_BOOL_ROW(audio_fastpath_s16, AUDIO_FASTPATH_S16,
+                     DEFAULT_AUDIO_FASTPATH_S16,
+                     SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  audio_rq_desc, ARRAY_SIZE(audio_rq_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.audio_fastpath_s16,
-               MENU_ENUM_LABEL_AUDIO_FASTPATH_S16,
-               MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
-               DEFAULT_AUDIO_FASTPATH_S16,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED);
+         /* Stays imperative: value target comes from
+          * audio_get_float_ptr() and lives outside settings_t. */
 
          CONFIG_FLOAT(
                list, list_info,
@@ -15291,50 +15276,31 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0.0, 0.020, 0.001, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.audio_max_timing_skew,
-               MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
-               MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-               DEFAULT_MAX_TIMING_SKEW,
-               "%.3f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0.0, 0.5, 0.01, true, true);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-
+         {
+            static const setting_desc_t audio_skew_desc[] = {
+               SDESC_FLOAT_ROW_EX(audio_max_timing_skew, AUDIO_MAX_TIMING_SKEW,
+                     DEFAULT_MAX_TIMING_SKEW, "%.3f",
+                     SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0,
+                     0.0, 0.5, 0.01,
+                     setting_action_ok_uint, NULL,
+                     NULL, NULL, NULL, NULL, 0)
 #ifdef RARCH_MOBILE
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.audio_block_frames,
-               MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
-               MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+               ,
+               SDESC_UINT_ROW(audio_block_frames, AUDIO_BLOCK_FRAMES,
+                     0, SD_FLAG_ADVANCED, 0, 0,
+                     0, 0, 0, 0, NULL, NULL)
 #ifdef HAVE_MICROPHONE
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.microphone_block_frames,
-               MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
-               MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+               ,
+               SDESC_UINT_ROW(microphone_block_frames, MICROPHONE_BLOCK_FRAMES,
+                     0, SD_FLAG_ADVANCED, 0, 0,
+                     0, 0, 0, 0, NULL, NULL)
 #endif
 #endif
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  audio_skew_desc, ARRAY_SIZE(audio_skew_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          END_SUB_GROUP(list, list_info, parent_group);
 
