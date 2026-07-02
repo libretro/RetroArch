@@ -7,6 +7,7 @@ David Reid - mackron@gmail.com
 GitHub: https://github.com/mackron/dr_libs
 */
 
+#include <retro_inline.h>
 #include <formats/rflac.h>
 #include <features/features_cpu.h>
 
@@ -33,35 +34,6 @@ GitHub: https://github.com/mackron/dr_libs
 
 #include <stdlib.h>
 #include <string.h>
-
-/* Inline */
-#ifdef _MSC_VER
-    #define RFLAC_INLINE __forceinline
-#elif defined(__GNUC__)
-    /*
-    I've had a bug report where GCC is emitting warnings about functions possibly not being inlineable. This warning happens when
-    the __attribute__((always_inline)) attribute is defined without an "inline" statement. I think therefore there must be some
-    case where "__inline__" is not always defined, thus the compiler emitting these warnings. When using -std=c89 or -ansi on the
-    command line, we cannot use the "inline" keyword and instead need to use "__inline__". In an attempt to work around this issue
-    I am using "__inline__" only when we're compiling in strict ANSI mode.
-    */
-    #if defined(__STRICT_ANSI__)
-        #define RFLAC_GNUC_INLINE_HINT __inline__
-    #else
-        #define RFLAC_GNUC_INLINE_HINT inline
-    #endif
-
-    #if (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)) || defined(__clang__)
-        #define RFLAC_INLINE RFLAC_GNUC_INLINE_HINT __attribute__((always_inline))
-    #else
-        #define RFLAC_INLINE RFLAC_GNUC_INLINE_HINT
-    #endif
-#elif defined(__WATCOMC__)
-    #define RFLAC_INLINE __inline
-#else
-    #define RFLAC_INLINE
-#endif
-/* End Inline */
 
 /*
 Intrinsics Support
@@ -127,7 +99,7 @@ Unfortuantely rflac depends on this for a few things so we're just going to disa
     #include <intrin.h>
 #endif
 
-static RFLAC_INLINE uint32_t rflac_has_sse2(void)
+static INLINE uint32_t rflac_has_sse2(void)
 {
 #if defined(RFLAC_SUPPORT_SSE2)
     #if (defined(RFLAC_X64) || defined(RFLAC_X86)) && !defined(RFLAC_NO_SSE2)
@@ -146,7 +118,7 @@ static RFLAC_INLINE uint32_t rflac_has_sse2(void)
 #endif
 }
 
-static RFLAC_INLINE uint32_t rflac_has_sse41(void)
+static INLINE uint32_t rflac_has_sse41(void)
 {
 #if defined(RFLAC_SUPPORT_SSE41)
     #if (defined(RFLAC_X64) || defined(RFLAC_X86)) && !defined(RFLAC_NO_SSE41)
@@ -224,27 +196,6 @@ static RFLAC_INLINE uint32_t rflac_has_sse41(void)
     parm [eax edx]  \
     value [eax edx] \
     modify nomemory;
-#endif
-
-
-/* Standard library stuff. */
-#ifndef RFLAC_MALLOC
-#define RFLAC_MALLOC(sz)                   malloc((sz))
-#endif
-#ifndef RFLAC_REALLOC
-#define RFLAC_REALLOC(p, sz)               realloc((p), (sz))
-#endif
-#ifndef RFLAC_FREE
-#define RFLAC_FREE(p)                      free((p))
-#endif
-#ifndef RFLAC_COPY_MEMORY
-#define RFLAC_COPY_MEMORY(dst, src, sz)    memcpy((dst), (src), (sz))
-#endif
-#ifndef RFLAC_ZERO_MEMORY
-#define RFLAC_ZERO_MEMORY(p, sz)           memset((p), 0, (sz))
-#endif
-#ifndef RFLAC_ZERO_OBJECT
-#define RFLAC_ZERO_OBJECT(p)               RFLAC_ZERO_MEMORY((p), sizeof(*(p)))
 #endif
 
 #define RFLAC_MAX_SIMD_VECTOR_SIZE                     64  /* 64 for AVX-512 in the future. */
@@ -382,7 +333,7 @@ RFLAC_NO_THREAD_SANITIZE static void rflac__init_cpu_caps(void)
 #else
 static uint32_t rflac__gIsNEONSupported  = RFLAC_FALSE;
 
-static RFLAC_INLINE uint32_t rflac__has_neon(void)
+static INLINE uint32_t rflac__has_neon(void)
 {
 #if defined(RFLAC_SUPPORT_NEON)
     #if defined(RFLAC_ARM) && !defined(RFLAC_NO_NEON)
@@ -410,21 +361,7 @@ RFLAC_NO_THREAD_SANITIZE static void rflac__init_cpu_caps(void)
 }
 #endif
 
-
-/* Endian Management */
-static RFLAC_INLINE uint32_t rflac__is_little_endian(void)
-{
-#if defined(RFLAC_X86) || defined(RFLAC_X64)
-    return RFLAC_TRUE;
-#elif defined(__BYTE_ORDER) && defined(__LITTLE_ENDIAN) && __BYTE_ORDER == __LITTLE_ENDIAN
-    return RFLAC_TRUE;
-#else
-    int n = 1;
-    return (*(char*)&n) == 1;
-#endif
-}
-
-static RFLAC_INLINE uint16_t rflac__swap_endian_uint16(uint16_t n)
+static INLINE uint16_t rflac__swap_endian_uint16(uint16_t n)
 {
 #ifdef RFLAC_HAS_BYTESWAP16_INTRINSIC
     #if defined(_MSC_VER) && !defined(__clang__)
@@ -442,7 +379,7 @@ static RFLAC_INLINE uint16_t rflac__swap_endian_uint16(uint16_t n)
 #endif
 }
 
-static RFLAC_INLINE uint32_t rflac__swap_endian_uint32(uint32_t n)
+static INLINE uint32_t rflac__swap_endian_uint32(uint32_t n)
 {
 #ifdef RFLAC_HAS_BYTESWAP32_INTRINSIC
     #if defined(_MSC_VER) && !defined(__clang__)
@@ -475,7 +412,7 @@ static RFLAC_INLINE uint32_t rflac__swap_endian_uint32(uint32_t n)
 #endif
 }
 
-static RFLAC_INLINE uint64_t rflac__swap_endian_uint64(uint64_t n)
+static INLINE uint64_t rflac__swap_endian_uint64(uint64_t n)
 {
 #ifdef RFLAC_HAS_BYTESWAP64_INTRINSIC
     #if defined(_MSC_VER) && !defined(__clang__)
@@ -501,51 +438,57 @@ static RFLAC_INLINE uint64_t rflac__swap_endian_uint64(uint64_t n)
 }
 
 
-static RFLAC_INLINE uint16_t rflac__be2host_16(uint16_t n)
+static INLINE uint16_t rflac__be2host_16(uint16_t n)
 {
-    if (rflac__is_little_endian()) {
-        return rflac__swap_endian_uint16(n);
-    }
-
+#ifdef MSB_FIRST
     return n;
+#else
+    return rflac__swap_endian_uint16(n);
+#endif
 }
 
-static RFLAC_INLINE uint32_t rflac__be2host_32(uint32_t n)
+static INLINE uint32_t rflac__be2host_32(uint32_t n)
 {
-    if (rflac__is_little_endian())
-        return rflac__swap_endian_uint32(n);
+#ifdef MSB_FIRST
     return n;
+#else
+    return rflac__swap_endian_uint32(n);
+#endif
 }
 
-static RFLAC_INLINE uint32_t rflac__be2host_32_ptr_unaligned(const void* pData)
+static INLINE uint32_t rflac__be2host_32_ptr_unaligned(const void* pData)
 {
     const uint8_t* pNum = (uint8_t*)pData;
     return *(pNum) << 24 | *(pNum+1) << 16 | *(pNum+2) << 8 | *(pNum+3);
 }
 
-static RFLAC_INLINE uint64_t rflac__be2host_64(uint64_t n)
+static INLINE uint64_t rflac__be2host_64(uint64_t n)
 {
-    if (rflac__is_little_endian())
-        return rflac__swap_endian_uint64(n);
+#ifdef MSB_FIRST
     return n;
+#else
+    return rflac__swap_endian_uint64(n);
+#endif
 }
 
 
-static RFLAC_INLINE uint32_t rflac__le2host_32(uint32_t n)
+static INLINE uint32_t rflac__le2host_32(uint32_t n)
 {
-    if (!rflac__is_little_endian())
-        return rflac__swap_endian_uint32(n);
+#ifdef MSB_FIRST
     return n;
+#else
+    return rflac__swap_endian_uint32(n);
+#endif
 }
 
-static RFLAC_INLINE uint32_t rflac__le2host_32_ptr_unaligned(const void* pData)
+static INLINE uint32_t rflac__le2host_32_ptr_unaligned(const void* pData)
 {
     const uint8_t* pNum = (uint8_t*)pData;
     return *pNum | *(pNum+1) << 8 |  *(pNum+2) << 16 | *(pNum+3) << 24;
 }
 
 
-static RFLAC_INLINE uint32_t rflac__unsynchsafe_32(uint32_t n)
+static INLINE uint32_t rflac__unsynchsafe_32(uint32_t n)
 {
     uint32_t result = 0;
     result |= (n & 0x7F000000) >> 3;
@@ -611,12 +554,12 @@ static uint16_t rflac__crc16_table[] = {
     0x8213, 0x0216, 0x021C, 0x8219, 0x0208, 0x820D, 0x8207, 0x0202
 };
 
-static RFLAC_INLINE uint8_t rflac_crc8_byte(uint8_t crc, uint8_t data)
+static INLINE uint8_t rflac_crc8_byte(uint8_t crc, uint8_t data)
 {
     return rflac__crc8_table[crc ^ data];
 }
 
-static RFLAC_INLINE uint8_t rflac_crc8(uint8_t crc, uint32_t data, uint32_t count)
+static INLINE uint8_t rflac_crc8(uint8_t crc, uint32_t data, uint32_t count)
 {
 #ifdef RFLAC_NO_CRC
     (void)crc;
@@ -647,12 +590,12 @@ static RFLAC_INLINE uint8_t rflac_crc8(uint8_t crc, uint32_t data, uint32_t coun
 #endif
 }
 
-static RFLAC_INLINE uint16_t rflac_crc16_byte(uint16_t crc, uint8_t data)
+static INLINE uint16_t rflac_crc16_byte(uint16_t crc, uint8_t data)
 {
     return (crc << 8) ^ rflac__crc16_table[(uint8_t)(crc >> 8) ^ data];
 }
 
-static RFLAC_INLINE uint16_t rflac_crc16_cache(uint16_t crc, size_t data)
+static INLINE uint16_t rflac_crc16_cache(uint16_t crc, size_t data)
 {
 #ifdef RFLAC_64BIT
     crc = rflac_crc16_byte(crc, (uint8_t)((data >> 56) & 0xFF));
@@ -668,7 +611,7 @@ static RFLAC_INLINE uint16_t rflac_crc16_cache(uint16_t crc, size_t data)
     return crc;
 }
 
-static RFLAC_INLINE uint16_t rflac_crc16_bytes(uint16_t crc, size_t data, uint32_t byteCount)
+static INLINE uint16_t rflac_crc16_bytes(uint16_t crc, size_t data, uint32_t byteCount)
 {
     switch (byteCount)
     {
@@ -716,13 +659,13 @@ from onRead() is read into.
 
 
 #ifndef RFLAC_NO_CRC
-static RFLAC_INLINE void rflac__reset_crc16(rflac_bs* bs)
+static INLINE void rflac__reset_crc16(rflac_bs* bs)
 {
     bs->crc16 = 0;
     bs->crc16CacheIgnoredBytes = bs->consumedBits >> 3;
 }
 
-static RFLAC_INLINE void rflac__update_crc16(rflac_bs* bs)
+static INLINE void rflac__update_crc16(rflac_bs* bs)
 {
     if (bs->crc16CacheIgnoredBytes == 0) {
         bs->crc16 = rflac_crc16_cache(bs->crc16, bs->crc16Cache);
@@ -732,7 +675,7 @@ static RFLAC_INLINE void rflac__update_crc16(rflac_bs* bs)
     }
 }
 
-static RFLAC_INLINE uint16_t rflac__flush_crc16(rflac_bs* bs)
+static INLINE uint16_t rflac__flush_crc16(rflac_bs* bs)
 {
     /*
     The bits that were read from the L1 cache need to be accumulated. The number of bytes needing to be accumulated is determined
@@ -755,7 +698,7 @@ static RFLAC_INLINE uint16_t rflac__flush_crc16(rflac_bs* bs)
 }
 #endif
 
-static RFLAC_INLINE uint32_t rflac__reload_l1_cache_from_l2(rflac_bs* bs)
+static INLINE uint32_t rflac__reload_l1_cache_from_l2(rflac_bs* bs)
 {
     size_t bytesRead;
     size_t alignedL1LineCount;
@@ -875,7 +818,7 @@ static void rflac__reset_cache(rflac_bs* bs)
 }
 
 
-static RFLAC_INLINE uint32_t rflac__read_uint32(rflac_bs* bs, unsigned int bitCount, uint32_t* pResultOut)
+static INLINE uint32_t rflac__read_uint32(rflac_bs* bs, unsigned int bitCount, uint32_t* pResultOut)
 {
     if (bs->consumedBits == RFLAC_CACHE_L1_SIZE_BITS(bs))
     {
@@ -1101,7 +1044,7 @@ static uint32_t rflac__find_and_seek_to_next_sync_code(rflac_bs* bs)
 #define RFLAC_IMPLEMENT_CLZ_MRC
 #endif
 
-static RFLAC_INLINE uint32_t rflac__clz_software(size_t x)
+static INLINE uint32_t rflac__clz_software(size_t x)
 {
     uint32_t n;
     static uint32_t clz_table_4[] = {
@@ -1135,7 +1078,7 @@ static RFLAC_INLINE uint32_t rflac__clz_software(size_t x)
 }
 
 #ifdef RFLAC_IMPLEMENT_CLZ_LZCNT
-static RFLAC_INLINE uint32_t rflac__is_lzcnt_supported(void)
+static INLINE uint32_t rflac__is_lzcnt_supported(void)
 {
     /* Fast compile time check for ARM. */
 #if defined(RFLAC_HAS_LZCNT_INTRINSIC) && defined(RFLAC_ARM) && (defined(__ARM_ARCH) && __ARM_ARCH >= 5)
@@ -1152,7 +1095,7 @@ static RFLAC_INLINE uint32_t rflac__is_lzcnt_supported(void)
 #endif
 }
 
-static RFLAC_INLINE uint32_t rflac__clz_lzcnt(size_t x)
+static INLINE uint32_t rflac__clz_lzcnt(size_t x)
 {
     /*
     It's critical for competitive decoding performance that this function be highly optimal. With MSVC we can use the __lzcnt64() and __lzcnt() intrinsics
@@ -1232,7 +1175,7 @@ static RFLAC_INLINE uint32_t rflac__clz_lzcnt(size_t x)
 #ifdef RFLAC_IMPLEMENT_CLZ_MSVC
 #include <intrin.h> /* For BitScanReverse(). */
 
-static RFLAC_INLINE uint32_t rflac__clz_msvc(size_t x)
+static INLINE uint32_t rflac__clz_msvc(size_t x)
 {
     uint32_t n;
     if (x == 0)
@@ -1266,7 +1209,7 @@ static __inline uint32_t rflac__clz_watcom (uint32_t);
 #endif
 #endif
 
-static RFLAC_INLINE uint32_t rflac__clz(size_t x)
+static INLINE uint32_t rflac__clz(size_t x)
 {
 #ifdef RFLAC_IMPLEMENT_CLZ_LZCNT
     if (rflac__is_lzcnt_supported()) {
@@ -1289,7 +1232,7 @@ static RFLAC_INLINE uint32_t rflac__clz(size_t x)
 }
 
 
-static RFLAC_INLINE uint32_t rflac__seek_past_next_set_bit(rflac_bs* bs, unsigned int* pOffsetOut)
+static INLINE uint32_t rflac__seek_past_next_set_bit(rflac_bs* bs, unsigned int* pOffsetOut)
 {
     uint32_t zeroCounter = 0;
     uint32_t setBitOffsetPlus1;
@@ -1417,7 +1360,7 @@ static rflac_result rflac__read_utf8_coded_number(rflac_bs* bs, uint64_t* pNumbe
 }
 
 
-static RFLAC_INLINE uint32_t rflac__ilog2_u32(uint32_t x)
+static INLINE uint32_t rflac__ilog2_u32(uint32_t x)
 {
 #if 1   /* Needs optimizing. */
     uint32_t result = 0;
@@ -1430,7 +1373,7 @@ static RFLAC_INLINE uint32_t rflac__ilog2_u32(uint32_t x)
 #endif
 }
 
-static RFLAC_INLINE uint32_t rflac__use_64_bit_prediction(uint32_t bitsPerSample, uint32_t order, uint32_t precision)
+static INLINE uint32_t rflac__use_64_bit_prediction(uint32_t bitsPerSample, uint32_t order, uint32_t precision)
 {
     /* https://web.archive.org/web/20220205005724/https://github.com/ietf-wg-cellar/flac-specification/blob/37a49aa48ba4ba12e8757badfc59c0df35435fec/rfc_backmatter.md */
     return bitsPerSample + precision + rflac__ilog2_u32(order) > 32;
@@ -1446,7 +1389,7 @@ safe to assume this will be slower on 32-bit platforms so we use a more optimal 
 #if defined(__clang__)
 __attribute__((no_sanitize("signed-integer-overflow")))
 #endif
-static RFLAC_INLINE int32_t rflac__calculate_prediction_32(uint32_t order, int32_t shift, const int32_t* coefficients, int32_t* pDecodedSamples)
+static INLINE int32_t rflac__calculate_prediction_32(uint32_t order, int32_t shift, const int32_t* coefficients, int32_t* pDecodedSamples)
 {
     int32_t prediction = 0;
 
@@ -1492,7 +1435,7 @@ static RFLAC_INLINE int32_t rflac__calculate_prediction_32(uint32_t order, int32
     return (int32_t)(prediction >> shift);
 }
 
-static RFLAC_INLINE int32_t rflac__calculate_prediction_64(uint32_t order, int32_t shift, const int32_t* coefficients, int32_t* pDecodedSamples)
+static INLINE int32_t rflac__calculate_prediction_64(uint32_t order, int32_t shift, const int32_t* coefficients, int32_t* pDecodedSamples)
 {
     int64_t prediction;
 
@@ -1671,7 +1614,7 @@ static RFLAC_INLINE int32_t rflac__calculate_prediction_64(uint32_t order, int32
     return (int32_t)(prediction >> shift);
 }
 
-static RFLAC_INLINE uint32_t rflac__read_rice_parts_x1(rflac_bs* bs, uint8_t riceParam, uint32_t* pZeroCounterOut, uint32_t* pRiceParamPartOut)
+static INLINE uint32_t rflac__read_rice_parts_x1(rflac_bs* bs, uint8_t riceParam, uint32_t* pZeroCounterOut, uint32_t* pRiceParamPartOut)
 {
     uint32_t  riceParamPlus1 = riceParam + 1;
     /*size_t riceParamPlus1Mask  = RFLAC_CACHE_L1_SELECTION_MASK(riceParamPlus1);*/
@@ -1795,7 +1738,7 @@ static RFLAC_INLINE uint32_t rflac__read_rice_parts_x1(rflac_bs* bs, uint8_t ric
     return RFLAC_TRUE;
 }
 
-static RFLAC_INLINE uint32_t rflac__seek_rice_parts(rflac_bs* bs, uint8_t riceParam)
+static INLINE uint32_t rflac__seek_rice_parts(rflac_bs* bs, uint8_t riceParam)
 {
     uint32_t  riceParamPlus1 = riceParam + 1;
     uint32_t  riceParamPlus1MaxConsumedBits = RFLAC_CACHE_L1_SIZE_BITS(bs) - riceParamPlus1;
@@ -2047,7 +1990,7 @@ static uint32_t rflac__decode_samples_with_residual__rice__scalar(rflac_bs* bs, 
 }
 
 #if defined(RFLAC_SUPPORT_SSE2)
-static RFLAC_INLINE __m128i rflac__mm_packs_interleaved_epi32(__m128i a, __m128i b)
+static INLINE __m128i rflac__mm_packs_interleaved_epi32(__m128i a, __m128i b)
 {
     __m128i r;
 
@@ -2066,24 +2009,24 @@ static RFLAC_INLINE __m128i rflac__mm_packs_interleaved_epi32(__m128i a, __m128i
 #endif
 
 #if defined(RFLAC_SUPPORT_SSE41)
-static RFLAC_INLINE __m128i rflac__mm_not_si128(__m128i a)
+static INLINE __m128i rflac__mm_not_si128(__m128i a)
 {
     return _mm_xor_si128(a, _mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128()));
 }
 
-static RFLAC_INLINE __m128i rflac__mm_hadd_epi32(__m128i x)
+static INLINE __m128i rflac__mm_hadd_epi32(__m128i x)
 {
     __m128i x64 = _mm_add_epi32(x, _mm_shuffle_epi32(x, _MM_SHUFFLE(1, 0, 3, 2)));
     __m128i x32 = _mm_shufflelo_epi16(x64, _MM_SHUFFLE(1, 0, 3, 2));
     return _mm_add_epi32(x64, x32);
 }
 
-static RFLAC_INLINE __m128i rflac__mm_hadd_epi64(__m128i x)
+static INLINE __m128i rflac__mm_hadd_epi64(__m128i x)
 {
     return _mm_add_epi64(x, _mm_shuffle_epi32(x, _MM_SHUFFLE(1, 0, 3, 2)));
 }
 
-static RFLAC_INLINE __m128i rflac__mm_srai_epi64(__m128i x, int count)
+static INLINE __m128i rflac__mm_srai_epi64(__m128i x, int count)
 {
     /*
     To simplify this we are assuming count < 32. This restriction allows us to work on a low side and a high side. The low side
@@ -2506,35 +2449,35 @@ static uint32_t rflac__decode_samples_with_residual__rice__sse41(rflac_bs* bs, u
 #endif
 
 #if defined(RFLAC_SUPPORT_NEON)
-static RFLAC_INLINE void rflac__vst2q_s32(int32_t* p, int32x4x2_t x)
+static INLINE void rflac__vst2q_s32(int32_t* p, int32x4x2_t x)
 {
     vst1q_s32(p+0, x.val[0]);
     vst1q_s32(p+4, x.val[1]);
 }
 
-static RFLAC_INLINE void rflac__vst2q_u32(uint32_t* p, uint32x4x2_t x)
+static INLINE void rflac__vst2q_u32(uint32_t* p, uint32x4x2_t x)
 {
     vst1q_u32(p+0, x.val[0]);
     vst1q_u32(p+4, x.val[1]);
 }
 
-static RFLAC_INLINE void rflac__vst2q_f32(float* p, float32x4x2_t x)
+static INLINE void rflac__vst2q_f32(float* p, float32x4x2_t x)
 {
     vst1q_f32(p+0, x.val[0]);
     vst1q_f32(p+4, x.val[1]);
 }
 
-static RFLAC_INLINE void rflac__vst2q_s16(int16_t* p, int16x4x2_t x)
+static INLINE void rflac__vst2q_s16(int16_t* p, int16x4x2_t x)
 {
     vst1q_s16(p, vcombine_s16(x.val[0], x.val[1]));
 }
 
-static RFLAC_INLINE void rflac__vst2q_u16(uint16_t* p, uint16x4x2_t x)
+static INLINE void rflac__vst2q_u16(uint16_t* p, uint16x4x2_t x)
 {
     vst1q_u16(p, vcombine_u16(x.val[0], x.val[1]));
 }
 
-static RFLAC_INLINE int32x4_t rflac__vdupq_n_s32x4(int32_t x3, int32_t x2, int32_t x1, int32_t x0)
+static INLINE int32x4_t rflac__vdupq_n_s32x4(int32_t x3, int32_t x2, int32_t x1, int32_t x0)
 {
     int32_t x[4];
     x[3] = x3;
@@ -2544,7 +2487,7 @@ static RFLAC_INLINE int32x4_t rflac__vdupq_n_s32x4(int32_t x3, int32_t x2, int32
     return vld1q_s32(x);
 }
 
-static RFLAC_INLINE int32x4_t rflac__valignrq_s32_1(int32x4_t a, int32x4_t b)
+static INLINE int32x4_t rflac__valignrq_s32_1(int32x4_t a, int32x4_t b)
 {
     /* Equivalent to SSE's _mm_alignr_epi8(a, b, 4) */
 
@@ -2559,7 +2502,7 @@ static RFLAC_INLINE int32x4_t rflac__valignrq_s32_1(int32x4_t a, int32x4_t b)
     return vextq_s32(b, a, 1);
 }
 
-static RFLAC_INLINE uint32x4_t rflac__valignrq_u32_1(uint32x4_t a, uint32x4_t b)
+static INLINE uint32x4_t rflac__valignrq_u32_1(uint32x4_t a, uint32x4_t b)
 {
     /* Equivalent to SSE's _mm_alignr_epi8(a, b, 4) */
 
@@ -2574,7 +2517,7 @@ static RFLAC_INLINE uint32x4_t rflac__valignrq_u32_1(uint32x4_t a, uint32x4_t b)
     return vextq_u32(b, a, 1);
 }
 
-static RFLAC_INLINE int32x2_t rflac__vhaddq_s32(int32x4_t x)
+static INLINE int32x2_t rflac__vhaddq_s32(int32x4_t x)
 {
     /* The sum must end up in position 0. */
 
@@ -2590,12 +2533,12 @@ static RFLAC_INLINE int32x2_t rflac__vhaddq_s32(int32x4_t x)
     return vpadd_s32(r, r);
 }
 
-static RFLAC_INLINE int64x1_t rflac__vhaddq_s64(int64x2_t x)
+static INLINE int64x1_t rflac__vhaddq_s64(int64x2_t x)
 {
     return vadd_s64(vget_high_s64(x), vget_low_s64(x));
 }
 
-static RFLAC_INLINE int32x4_t rflac__vrevq_s32(int32x4_t x)
+static INLINE int32x4_t rflac__vrevq_s32(int32x4_t x)
 {
     /* Reference */
     /*return rflac__vdupq_n_s32x4(
@@ -2608,12 +2551,12 @@ static RFLAC_INLINE int32x4_t rflac__vrevq_s32(int32x4_t x)
     return vrev64q_s32(vcombine_s32(vget_high_s32(x), vget_low_s32(x)));
 }
 
-static RFLAC_INLINE int32x4_t rflac__vnotq_s32(int32x4_t x)
+static INLINE int32x4_t rflac__vnotq_s32(int32x4_t x)
 {
     return veorq_s32(x, vdupq_n_s32(0xFFFFFFFF));
 }
 
-static RFLAC_INLINE uint32x4_t rflac__vnotq_u32(uint32x4_t x)
+static INLINE uint32x4_t rflac__vnotq_u32(uint32x4_t x)
 {
     return veorq_u32(x, vdupq_n_u32(0xFFFFFFFF));
 }
@@ -3329,11 +3272,9 @@ static uint32_t rflac__decode_samples__lpc(rflac_bs* bs, uint32_t blockSize, uin
     Emphasis on the "signed two's-complement". In practice there does not seem to be any encoders nor decoders supporting negative shifts. For now rflac is
     not going to support negative shifts as I don't have any reference files. However, when a reference file comes through I will consider adding support.
     */
-    if (lpcShift < 0) {
+    if (lpcShift < 0)
         return RFLAC_FALSE;
-    }
-
-    RFLAC_ZERO_MEMORY(coefficients, sizeof(coefficients));
+    memset(coefficients, 0, sizeof(coefficients));
     for (i = 0; i < lpcOrder; ++i) {
         if (!rflac__read_int32(bs, lpcPrecision, coefficients + i)) {
             return RFLAC_FALSE;
@@ -3692,7 +3633,7 @@ static uint32_t rflac__seek_subframe(rflac_bs* bs, rflac_frame* frame, int subfr
 }
 
 
-static RFLAC_INLINE uint8_t rflac__get_channel_count_from_channel_assignment(int8_t channelAssignment)
+static INLINE uint8_t rflac__get_channel_count_from_channel_assignment(int8_t channelAssignment)
 {
     uint8_t lookup[] = {1, 2, 3, 4, 5, 6, 7, 8, 2, 2, 2};
     return lookup[channelAssignment];
@@ -3709,7 +3650,7 @@ static rflac_result rflac__decode_flac_frame(rflac* pFlac)
 #endif
 
     /* This function should be called while the stream is sitting on the first byte after the frame header. */
-    RFLAC_ZERO_MEMORY(pFlac->currentFLACFrame.subframes, sizeof(pFlac->currentFLACFrame.subframes));
+    memset(pFlac->currentFLACFrame.subframes, 0, sizeof(pFlac->currentFLACFrame.subframes));
 
     /* The frame block size must never be larger than the maximum block size defined by the FLAC stream. */
     if (pFlac->currentFLACFrame.header.blockSizeInPCMFrames > pFlac->maxBlockSizeInPCMFrames)
@@ -3828,16 +3769,13 @@ static void rflac__get_pcm_frame_range_of_current_flac_frame(rflac* pFlac, uint6
 
 static uint32_t rflac__seek_to_first_frame(rflac* pFlac)
 {
-    uint32_t result;
-    result = rflac__seek_to_byte(&pFlac->bs, pFlac->firstFLACFramePosInBytes);
-
-    RFLAC_ZERO_MEMORY(&pFlac->currentFLACFrame, sizeof(pFlac->currentFLACFrame));
+    uint32_t result = rflac__seek_to_byte(&pFlac->bs, pFlac->firstFLACFramePosInBytes);
+    memset(&pFlac->currentFLACFrame, 0, sizeof(pFlac->currentFLACFrame));
     pFlac->currentPCMFrame = 0;
-
     return result;
 }
 
-static RFLAC_INLINE rflac_result rflac__seek_to_next_flac_frame(rflac* pFlac)
+static INLINE rflac_result rflac__seek_to_next_flac_frame(rflac* pFlac)
 {
     /* This function should only ever be called while the decoder is sitting on the first byte past the FRAME_HEADER section. */
     return rflac__seek_flac_frame(pFlac);
@@ -4005,11 +3943,15 @@ static uint32_t rflac__seek_to_approximate_flac_frame_to_byte(rflac* pFlac, uint
             /* Halve the byte location and continue. */
             targetByte = rangeLo + ((rangeHi - rangeLo)/2);
             rangeHi = targetByte;
-        } else {
-            /* Getting here should mean that we have seeked to an appropriate byte. */
+        }
+        else
+        {
+            /* Getting here should mean that we have 
+             * seeked to an appropriate byte. */
 
-            /* Clear the details of the FLAC frame so we don't misreport data. */
-            RFLAC_ZERO_MEMORY(&pFlac->currentFLACFrame, sizeof(pFlac->currentFLACFrame));
+            /* Clear the details of the FLAC frame 
+             * so we don't misreport data. */
+            memset(&pFlac->currentFLACFrame, 0, sizeof(pFlac->currentFLACFrame));
 
             /*
             Now seek to the next FLAC frame. We need to decode the entire frame (not just the header) because it's possible for the header to incorrectly pass the
@@ -4385,7 +4327,7 @@ typedef struct
 #endif
 } rflac_init_info;
 
-static RFLAC_INLINE void rflac__decode_block_header(uint32_t blockHeader, uint8_t* isLastBlock, uint8_t* blockType, uint32_t* blockSize)
+static INLINE void rflac__decode_block_header(uint32_t blockHeader, uint8_t* isLastBlock, uint8_t* blockType, uint32_t* blockSize)
 {
     blockHeader = rflac__be2host_32(blockHeader);
     *isLastBlock = (uint8_t)((blockHeader & 0x80000000UL) >> 31);
@@ -4393,7 +4335,7 @@ static RFLAC_INLINE void rflac__decode_block_header(uint32_t blockHeader, uint8_
     *blockSize   =                (blockHeader & 0x00FFFFFFUL);
 }
 
-static RFLAC_INLINE uint32_t rflac__read_and_decode_block_header(rflac_read_proc onRead, void* pUserData, uint8_t* isLastBlock, uint8_t* blockType, uint32_t* blockSize)
+static INLINE uint32_t rflac__read_and_decode_block_header(rflac_read_proc onRead, void* pUserData, uint8_t* isLastBlock, uint8_t* blockType, uint32_t* blockSize)
 {
     uint32_t blockHeader;
 
@@ -4440,50 +4382,12 @@ static uint32_t rflac__read_streaminfo(rflac_read_proc onRead, void* pUserData, 
     pStreamInfo->channels                = (uint8_t )((importantProps &  (((uint64_t)0x0000000E << 16) << 24)) >> 41) + 1;
     pStreamInfo->bitsPerSample           = (uint8_t )((importantProps &  (((uint64_t)0x0000001F << 16) << 20)) >> 36) + 1;
     pStreamInfo->totalPCMFrameCount      =                ((importantProps & ((((uint64_t)0x0000000F << 16) << 16) | 0xFFFFFFFF)));
-    RFLAC_COPY_MEMORY(pStreamInfo->md5, md5, sizeof(md5));
+    memcpy(pStreamInfo->md5, md5, sizeof(md5));
 
     return RFLAC_TRUE;
 }
 
-
-static void* rflac__malloc_default(size_t sz, void* pUserData)
-{
-    return RFLAC_MALLOC(sz);
-}
-
-static void* rflac__realloc_default(void* p, size_t sz, void* pUserData)
-{
-    return RFLAC_REALLOC(p, sz);
-}
-
-static void rflac__free_default(void* p, void* pUserData)
-{
-    RFLAC_FREE(p);
-}
-
-static void* rflac__malloc_from_callbacks(size_t sz, const rflac_allocation_callbacks* pAllocationCallbacks)
-{
-    if (pAllocationCallbacks == NULL)
-        return NULL;
-    if (pAllocationCallbacks->onMalloc != NULL)
-        return pAllocationCallbacks->onMalloc(sz, pAllocationCallbacks->pUserData);
-
-    /* Try using realloc(). */
-    if (pAllocationCallbacks->onRealloc != NULL)
-        return pAllocationCallbacks->onRealloc(NULL, sz, pAllocationCallbacks->pUserData);
-
-    return NULL;
-}
-
-static void rflac__free_from_callbacks(void* p, const rflac_allocation_callbacks* pAllocationCallbacks)
-{
-    if (p == NULL || pAllocationCallbacks == NULL)
-        return;
-    if (pAllocationCallbacks->onFree != NULL)
-        pAllocationCallbacks->onFree(p, pAllocationCallbacks->pUserData);
-}
-
-static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData, void* pUserDataMD, uint64_t* pFirstFramePos, uint64_t* pSeektablePos, uint32_t* pSeekpointCount, rflac_allocation_callbacks* pAllocationCallbacks)
+static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData, void* pUserDataMD, uint64_t* pFirstFramePos, uint64_t* pSeektablePos, uint32_t* pSeekpointCount)
 {
     /*
     We want to keep track of the byte position in the stream of the seektable. At the time of calling this function we know that
@@ -4513,13 +4417,14 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                 if (blockSize < 4)
                     return RFLAC_FALSE;
 
-                if (onMeta) {
-                    void* pRawData = rflac__malloc_from_callbacks(blockSize, pAllocationCallbacks);
+                if (onMeta)
+                {
+                    void* pRawData = malloc(blockSize);
                     if (pRawData == NULL)
                         return RFLAC_FALSE;
 
                     if (onRead(pUserData, pRawData, blockSize) != blockSize) {
-                        rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        free(pRawData);
                         return RFLAC_FALSE;
                     }
 
@@ -4530,7 +4435,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                     metadata.data.application.dataSize = blockSize - sizeof(uint32_t);
                     onMeta(pUserDataMD, &metadata);
 
-                    rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                    free(pRawData);
                 }
             } break;
 
@@ -4546,17 +4451,16 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
 
                     seekpointCount = blockSize/RFLAC_SEEKPOINT_SIZE_IN_BYTES;
 
-                    pRawData = rflac__malloc_from_callbacks(seekpointCount * sizeof(rflac_seekpoint), pAllocationCallbacks);
-                    if (pRawData == NULL) {
+                    pRawData = malloc(seekpointCount * sizeof(rflac_seekpoint));
+                    if (pRawData == NULL)
                         return RFLAC_FALSE;
-                    }
 
                     /* We need to read seekpoint by seekpoint and do some processing. */
                     for (iSeekpoint = 0; iSeekpoint < seekpointCount; ++iSeekpoint) {
                         rflac_seekpoint* pSeekpoint = (rflac_seekpoint*)pRawData + iSeekpoint;
 
                         if (onRead(pUserData, pSeekpoint, RFLAC_SEEKPOINT_SIZE_IN_BYTES) != RFLAC_SEEKPOINT_SIZE_IN_BYTES) {
-                            rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                            free(pRawData);
                             return RFLAC_FALSE;
                         }
 
@@ -4573,7 +4477,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
 
                     onMeta(pUserDataMD, &metadata);
 
-                    rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                    free(pRawData);
                 }
             } break;
 
@@ -4589,13 +4493,12 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                     const char* pRunningDataEnd;
                     uint32_t i;
 
-                    pRawData = rflac__malloc_from_callbacks(blockSize, pAllocationCallbacks);
-                    if (pRawData == NULL) {
+                    pRawData = malloc(blockSize);
+                    if (pRawData == NULL)
                         return RFLAC_FALSE;
-                    }
 
                     if (onRead(pUserData, pRawData, blockSize) != blockSize) {
-                        rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        free(pRawData);
                         return RFLAC_FALSE;
                     }
 
@@ -4609,7 +4512,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
 
                     /* Need space for the rest of the block */
                     if ((pRunningDataEnd - pRunningData) - 4 < (int64_t)metadata.data.vorbis_comment.vendorLength) { /* <-- Note the order of operations to avoid overflow to a valid value */
-                        rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        free(pRawData);
                         return RFLAC_FALSE;
                     }
                     metadata.data.vorbis_comment.vendor       = pRunningData;                                            pRunningData += metadata.data.vorbis_comment.vendorLength;
@@ -4617,7 +4520,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
 
                     /* Need space for 'commentCount' comments after the block, which at minimum is a uint32_t per comment */
                     if ((pRunningDataEnd - pRunningData) / sizeof(uint32_t) < metadata.data.vorbis_comment.commentCount) { /* <-- Note the order of operations to avoid overflow to a valid value */
-                        rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        free(pRawData);
                         return RFLAC_FALSE;
                     }
                     metadata.data.vorbis_comment.pComments    = pRunningData;
@@ -4627,13 +4530,13 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                         uint32_t commentLength;
 
                         if (pRunningDataEnd - pRunningData < 4) {
-                            rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                            free(pRawData);
                             return RFLAC_FALSE;
                         }
 
                         commentLength = rflac__le2host_32_ptr_unaligned(pRunningData); pRunningData += 4;
                         if (pRunningDataEnd - pRunningData < (int64_t)commentLength) { /* <-- Note the order of operations to avoid overflow to a valid value */
-                            rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                            free(pRawData);
                             return RFLAC_FALSE;
                         }
                         pRunningData += commentLength;
@@ -4641,7 +4544,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
 
                     onMeta(pUserDataMD, &metadata);
 
-                    rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                    free(pRawData);
                 }
             } break;
 
@@ -4664,13 +4567,12 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                     This needs to be loaded in two passes. The first pass is used to calculate the size of the memory allocation
                     we need for storing the necessary data. The second pass will fill that buffer with usable data.
                     */
-                    pRawData = rflac__malloc_from_callbacks(blockSize, pAllocationCallbacks);
-                    if (pRawData == NULL) {
+                    pRawData = malloc(blockSize);
+                    if (pRawData == NULL)
                         return RFLAC_FALSE;
-                    }
 
                     if (onRead(pUserData, pRawData, blockSize) != blockSize) {
-                        rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        free(pRawData);
                         return RFLAC_FALSE;
                     }
 
@@ -4680,7 +4582,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                     pRunningData    = (const char*)pRawData;
                     pRunningDataEnd = (const char*)pRawData + blockSize;
 
-                    RFLAC_COPY_MEMORY(metadata.data.cuesheet.catalog, pRunningData, 128);                              pRunningData += 128;
+                    memcpy(metadata.data.cuesheet.catalog, pRunningData, 128);                              pRunningData += 128;
                     metadata.data.cuesheet.leadInSampleCount = rflac__be2host_64(*(const uint64_t*)pRunningData); pRunningData += 8;
                     metadata.data.cuesheet.isCD              = (pRunningData[0] & 0x80) != 0;                           pRunningData += 259;
                     metadata.data.cuesheet.trackCount        = pRunningData[0];                                         pRunningData += 1;
@@ -4697,7 +4599,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                             uint32_t indexPointSize;
 
                             if (pRunningDataEnd - pRunningData < RFLAC_CUESHEET_TRACK_SIZE_IN_BYTES) {
-                                rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                                free(pRawData);
                                 return RFLAC_FALSE;
                             }
 
@@ -4712,7 +4614,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                             /* Quick validation check. */
                             indexPointSize = indexCount * RFLAC_CUESHEET_TRACK_INDEX_SIZE_IN_BYTES;
                             if (pRunningDataEnd - pRunningData < (int64_t)indexPointSize) {
-                                rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                                free(pRawData);
                                 return RFLAC_FALSE;
                             }
 
@@ -4726,9 +4628,10 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                     {
                         char* pRunningTrackData;
 
-                        pTrackData = rflac__malloc_from_callbacks(bufferSize, pAllocationCallbacks);
-                        if (pTrackData == NULL) {
-                            rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        pTrackData = malloc(bufferSize);
+                        if (pTrackData == NULL)
+                        {
+                            free(pRawData);
                             return RFLAC_FALSE;
                         }
 
@@ -4737,7 +4640,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                         for (iTrack = 0; iTrack < metadata.data.cuesheet.trackCount; ++iTrack) {
                             uint8_t indexCount;
 
-                            RFLAC_COPY_MEMORY(pRunningTrackData, pRunningData, RFLAC_CUESHEET_TRACK_SIZE_IN_BYTES);
+                            memcpy(pRunningTrackData, pRunningData, RFLAC_CUESHEET_TRACK_SIZE_IN_BYTES);
                             pRunningData      += RFLAC_CUESHEET_TRACK_SIZE_IN_BYTES-1; /* Skip forward, but not beyond the last byte in the CUESHEET_TRACK block which is the index count. */
                             pRunningTrackData += RFLAC_CUESHEET_TRACK_SIZE_IN_BYTES-1;
 
@@ -4750,7 +4653,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                             for (iIndex = 0; iIndex < indexCount; ++iIndex) {
                                 rflac_cuesheet_track_index* pTrackIndex = (rflac_cuesheet_track_index*)pRunningTrackData;
 
-                                RFLAC_COPY_MEMORY(pRunningTrackData, pRunningData, RFLAC_CUESHEET_TRACK_INDEX_SIZE_IN_BYTES);
+                                memcpy(pRunningTrackData, pRunningData, RFLAC_CUESHEET_TRACK_INDEX_SIZE_IN_BYTES);
                                 pRunningData      += RFLAC_CUESHEET_TRACK_INDEX_SIZE_IN_BYTES;
                                 pRunningTrackData += sizeof(rflac_cuesheet_track_index);
 
@@ -4762,12 +4665,12 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                     }
 
                     /* The original data is no longer needed. */
-                    rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                    free(pRawData);
                     pRawData = NULL;
 
                     onMeta(pUserDataMD, &metadata);
 
-                    rflac__free_from_callbacks(pTrackData, pAllocationCallbacks);
+                    free(pTrackData);
                     pTrackData = NULL;
                 }
             } break;
@@ -4779,17 +4682,14 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                 }
 
                 if (onMeta) {
-                    void* pRawData;
                     const char* pRunningData;
                     const char* pRunningDataEnd;
-
-                    pRawData = rflac__malloc_from_callbacks(blockSize, pAllocationCallbacks);
-                    if (pRawData == NULL) {
+                    void *pRawData = malloc(blockSize);
+                    if (pRawData == NULL)
                         return RFLAC_FALSE;
-                    }
 
                     if (onRead(pUserData, pRawData, blockSize) != blockSize) {
-                        rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        free(pRawData);
                         return RFLAC_FALSE;
                     }
 
@@ -4804,7 +4704,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
 
                     /* Need space for the rest of the block */
                     if ((pRunningDataEnd - pRunningData) - 24 < (int64_t)metadata.data.picture.mimeLength) { /* <-- Note the order of operations to avoid overflow to a valid value */
-                        rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        free(pRawData);
                         return RFLAC_FALSE;
                     }
                     metadata.data.picture.mime              = pRunningData;                                   pRunningData += metadata.data.picture.mimeLength;
@@ -4812,7 +4712,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
 
                     /* Need space for the rest of the block */
                     if ((pRunningDataEnd - pRunningData) - 20 < (int64_t)metadata.data.picture.descriptionLength) { /* <-- Note the order of operations to avoid overflow to a valid value */
-                        rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        free(pRawData);
                         return RFLAC_FALSE;
                     }
                     metadata.data.picture.description     = pRunningData;                                   pRunningData += metadata.data.picture.descriptionLength;
@@ -4825,13 +4725,13 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
 
                     /* Need space for the picture after the block */
                     if (pRunningDataEnd - pRunningData < (int64_t)metadata.data.picture.pictureDataSize) { /* <-- Note the order of operations to avoid overflow to a valid value */
-                        rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        free(pRawData);
                         return RFLAC_FALSE;
                     }
 
                     onMeta(pUserDataMD, &metadata);
 
-                    rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                    free(pRawData);
                 }
             } break;
 
@@ -4866,13 +4766,12 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                 can at the very least report the chunk to the application and let it look at the raw data.
                 */
                 if (onMeta) {
-                    void* pRawData = rflac__malloc_from_callbacks(blockSize, pAllocationCallbacks);
-                    if (pRawData == NULL) {
+                    void* pRawData = malloc(blockSize);
+                    if (pRawData == NULL)
                         return RFLAC_FALSE;
-                    }
 
                     if (onRead(pUserData, pRawData, blockSize) != blockSize) {
-                        rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                        free(pRawData);
                         return RFLAC_FALSE;
                     }
 
@@ -4880,7 +4779,7 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                     metadata.rawDataSize = blockSize;
                     onMeta(pUserDataMD, &metadata);
 
-                    rflac__free_from_callbacks(pRawData, pAllocationCallbacks);
+                    free(pRawData);
                 }
             } break;
         }
@@ -5054,7 +4953,7 @@ static uint32_t rflac__crc32_table[] = {
 };
 #endif
 
-static RFLAC_INLINE uint32_t rflac_crc32_byte(uint32_t crc32, uint8_t data)
+static INLINE uint32_t rflac_crc32_byte(uint32_t crc32, uint8_t data)
 {
 #ifndef RFLAC_NO_CRC
     return (crc32 << 8) ^ rflac__crc32_table[(uint8_t)((crc32 >> 24) & 0xFF) ^ data];
@@ -5064,7 +4963,7 @@ static RFLAC_INLINE uint32_t rflac_crc32_byte(uint32_t crc32, uint8_t data)
 #endif
 }
 
-static RFLAC_INLINE uint32_t rflac_crc32_buffer(uint32_t crc32, uint8_t* pData, uint32_t dataSize)
+static INLINE uint32_t rflac_crc32_buffer(uint32_t crc32, uint8_t* pData, uint32_t dataSize)
 {
     /* This can be optimized. */
     uint32_t i;
@@ -5075,17 +4974,17 @@ static RFLAC_INLINE uint32_t rflac_crc32_buffer(uint32_t crc32, uint8_t* pData, 
 }
 
 
-static RFLAC_INLINE uint32_t rflac_ogg__is_capture_pattern(uint8_t pattern[4])
+static INLINE uint32_t rflac_ogg__is_capture_pattern(uint8_t pattern[4])
 {
     return pattern[0] == 'O' && pattern[1] == 'g' && pattern[2] == 'g' && pattern[3] == 'S';
 }
 
-static RFLAC_INLINE uint32_t rflac_ogg__get_page_header_size(rflac_ogg_page_header* pHeader)
+static INLINE uint32_t rflac_ogg__get_page_header_size(rflac_ogg_page_header* pHeader)
 {
     return 27 + pHeader->segmentCount;
 }
 
-static RFLAC_INLINE uint32_t rflac_ogg__get_page_body_size(rflac_ogg_page_header* pHeader)
+static INLINE uint32_t rflac_ogg__get_page_body_size(rflac_ogg_page_header* pHeader)
 {
     uint32_t pageBodySize = 0;
     int i;
@@ -5118,10 +5017,10 @@ static rflac_result rflac_ogg__read_page_header_after_capture_pattern(rflac_read
 
     pHeader->structureVersion = data[0];
     pHeader->headerType       = data[1];
-    RFLAC_COPY_MEMORY(&pHeader->granulePosition, &data[ 2], 8);
-    RFLAC_COPY_MEMORY(&pHeader->serialNumber,    &data[10], 4);
-    RFLAC_COPY_MEMORY(&pHeader->sequenceNumber,  &data[14], 4);
-    RFLAC_COPY_MEMORY(&pHeader->checksum,        &data[18], 4);
+    memcpy(&pHeader->granulePosition, &data[ 2], 8);
+    memcpy(&pHeader->serialNumber,    &data[10], 4);
+    memcpy(&pHeader->sequenceNumber,  &data[14], 4);
+    memcpy(&pHeader->checksum,        &data[18], 4);
     pHeader->segmentCount     = data[22];
 
     /* Calculate the CRC. Note that for the calculation the checksum part of the page needs to be set to 0. */
@@ -5329,7 +5228,7 @@ static size_t rflac__on_read_ogg(void* pUserData, void* bufferOut, size_t bytesT
         size_t bytesRemainingToRead = bytesToRead - bytesRead;
 
         if (oggbs->bytesRemainingInPage >= bytesRemainingToRead) {
-            RFLAC_COPY_MEMORY(pRunningBufferOut, oggbs->pageData + (oggbs->pageDataSize - oggbs->bytesRemainingInPage), bytesRemainingToRead);
+            memcpy(pRunningBufferOut, oggbs->pageData + (oggbs->pageDataSize - oggbs->bytesRemainingInPage), bytesRemainingToRead);
             bytesRead += bytesRemainingToRead;
             oggbs->bytesRemainingInPage -= (uint32_t)bytesRemainingToRead;
             break;
@@ -5337,7 +5236,7 @@ static size_t rflac__on_read_ogg(void* pUserData, void* bufferOut, size_t bytesT
 
         /* If we get here it means some of the requested data is contained in the next pages. */
         if (oggbs->bytesRemainingInPage > 0) {
-            RFLAC_COPY_MEMORY(pRunningBufferOut, oggbs->pageData + (oggbs->pageDataSize - oggbs->bytesRemainingInPage), oggbs->bytesRemainingInPage);
+            memcpy(pRunningBufferOut, oggbs->pageData + (oggbs->pageDataSize - oggbs->bytesRemainingInPage), oggbs->bytesRemainingInPage);
             bytesRead += oggbs->bytesRemainingInPage;
             pRunningBufferOut += oggbs->bytesRemainingInPage;
             oggbs->bytesRemainingInPage = 0;
@@ -5717,7 +5616,7 @@ static uint32_t rflac__init_private(rflac_init_info* pInit, rflac_read_proc onRe
         return RFLAC_FALSE;
     }
 
-    RFLAC_ZERO_MEMORY(pInit, sizeof(*pInit));
+    memset(pInit, 0, sizeof(*pInit));
     pInit->onRead       = onRead;
     pInit->onSeek       = onSeek;
     pInit->onMeta       = onMeta;
@@ -5746,26 +5645,23 @@ static uint32_t rflac__init_private(rflac_init_info* pInit, rflac_read_proc onRe
             uint8_t flags;
             uint32_t headerSize;
 
-            if (onRead(pUserData, header, 6) != 6) {
+            if (onRead(pUserData, header, 6) != 6)
                 return RFLAC_FALSE;    /* Ran out of data. */
-            }
             pInit->runningFilePos += 6;
 
             flags = header[1];
 
-            RFLAC_COPY_MEMORY(&headerSize, header+2, 4);
+            memcpy(&headerSize, header+2, 4);
             headerSize = rflac__unsynchsafe_32(rflac__be2host_32(headerSize));
-            if (flags & 0x10) {
+            if (flags & 0x10)
                 headerSize += 10;
-            }
 
-            if (!onSeek(pUserData, headerSize, rflac_seek_origin_current)) {
+            if (!onSeek(pUserData, headerSize, rflac_seek_origin_current))
                 return RFLAC_FALSE;    /* Failed to seek past the tag. */
-            }
             pInit->runningFilePos += headerSize;
-        } else {
-            break;
         }
+        else
+            break;
     }
 
     if (id[0] == 'f' && id[1] == 'L' && id[2] == 'a' && id[3] == 'C') {
@@ -5795,7 +5691,7 @@ static uint32_t rflac__init_private(rflac_init_info* pInit, rflac_read_proc onRe
 
 static void rflac__init_from_info(rflac* pFlac, const rflac_init_info* pInit)
 {
-    RFLAC_ZERO_MEMORY(pFlac, sizeof(*pFlac));
+    memset(pFlac, 0, sizeof(*pFlac));
     pFlac->bs                      = pInit->bs;
     pFlac->onMeta                  = pInit->onMeta;
     pFlac->pUserDataMD             = pInit->pUserDataMD;
@@ -5830,18 +5726,10 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
         return NULL;
     }
 
-    if (pAllocationCallbacks != NULL) {
+    if (pAllocationCallbacks != NULL)
         allocationCallbacks = *pAllocationCallbacks;
-        if (allocationCallbacks.onFree == NULL || (allocationCallbacks.onMalloc == NULL && allocationCallbacks.onRealloc == NULL)) {
-            return NULL;    /* Invalid allocation callbacks. */
-        }
-    } else {
+    else
         allocationCallbacks.pUserData = NULL;
-        allocationCallbacks.onMalloc  = rflac__malloc_default;
-        allocationCallbacks.onRealloc = rflac__realloc_default;
-        allocationCallbacks.onFree    = rflac__free_default;
-    }
-
 
     /*
     The size of the allocation for the rflac object needs to be large enough to fit the following:
@@ -5874,19 +5762,18 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     if (init.container == rflac_container_ogg) {
         allocationSize += sizeof(rflac_oggbs);
 
-        pOggbs = (rflac_oggbs*)rflac__malloc_from_callbacks(sizeof(*pOggbs), &allocationCallbacks);
-        if (pOggbs == NULL) {
+        pOggbs = (rflac_oggbs*)malloc(sizeof(*pOggbs));
+        if (pOggbs == NULL)
             return NULL; /*RFLAC_OUT_OF_MEMORY;*/
-        }
 
-        RFLAC_ZERO_MEMORY(pOggbs, sizeof(*pOggbs));
-        pOggbs->onRead = onRead;
-        pOggbs->onSeek = onSeek;
-        pOggbs->pUserData = pUserData;
-        pOggbs->currentBytePos = init.oggFirstBytePos;
-        pOggbs->firstBytePos = init.oggFirstBytePos;
-        pOggbs->serialNumber = init.oggSerial;
-        pOggbs->bosPageHeader = init.oggBosHeader;
+        memset(pOggbs, 0, sizeof(*pOggbs));
+        pOggbs->onRead               = onRead;
+        pOggbs->onSeek               = onSeek;
+        pOggbs->pUserData            = pUserData;
+        pOggbs->currentBytePos       = init.oggFirstBytePos;
+        pOggbs->firstBytePos         = init.oggFirstBytePos;
+        pOggbs->serialNumber         = init.oggSerial;
+        pOggbs->bosPageHeader        = init.oggBosHeader;
         pOggbs->bytesRemainingInPage = 0;
     }
 #endif
@@ -5912,9 +5799,9 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
         }
 #endif
 
-        if (!rflac__read_and_decode_metadata(onReadOverride, onSeekOverride, onMeta, pUserDataOverride, pUserDataMD, &firstFramePos, &seektablePos, &seekpointCount, &allocationCallbacks)) {
+        if (!rflac__read_and_decode_metadata(onReadOverride, onSeekOverride, onMeta, pUserDataOverride, pUserDataMD, &firstFramePos, &seektablePos, &seekpointCount)) {
 #ifndef RFLAC_NO_OGG
-           rflac__free_from_callbacks(pOggbs, &allocationCallbacks);
+           free(pOggbs);
 #endif
             return NULL;
         }
@@ -5923,11 +5810,11 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     }
 
 
-    pFlac = (rflac*)rflac__malloc_from_callbacks(allocationSize, &allocationCallbacks);
+    pFlac = (rflac*)malloc(allocationSize);
     if (pFlac == NULL) {
-    #ifndef RFLAC_NO_OGG
-        rflac__free_from_callbacks(pOggbs, &allocationCallbacks);
-    #endif
+#ifndef RFLAC_NO_OGG
+        free(pOggbs);
+#endif
         return NULL;
     }
 
@@ -5938,10 +5825,10 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
 #ifndef RFLAC_NO_OGG
     if (init.container == rflac_container_ogg) {
         rflac_oggbs* pInternalOggbs = (rflac_oggbs*)((uint8_t*)pFlac->pDecodedSamples + decodedSamplesAllocationSize + (seekpointCount * sizeof(rflac_seekpoint)));
-        RFLAC_COPY_MEMORY(pInternalOggbs, pOggbs, sizeof(*pOggbs));
+        memcpy(pInternalOggbs, pOggbs, sizeof(*pOggbs));
 
         /* At this point the pOggbs object has been handed over to pInternalOggbs and can be freed. */
-        rflac__free_from_callbacks(pOggbs, &allocationCallbacks);
+        free(pOggbs);
         pOggbs = NULL;
 
         /* The Ogg bistream needs to be layered on top of the original bitstream. */
@@ -5989,7 +5876,7 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
 
                 /* We need to seek back to where we were. If this fails it's a critical error. */
                 if (!pFlac->bs.onSeek(pFlac->bs.pUserData, (int)pFlac->firstFLACFramePosInBytes, rflac_seek_origin_start)) {
-                    rflac__free_from_callbacks(pFlac, &allocationCallbacks);
+                    free(pFlac);
                     return NULL;
                 }
             } else {
@@ -6005,21 +5892,28 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     If we get here, but don't have a STREAMINFO block, it means we've opened the stream in relaxed mode and need to decode
     the first frame.
     */
-    if (!init.hasStreamInfoBlock) {
+    if (!init.hasStreamInfoBlock)
+    {
         pFlac->currentFLACFrame.header = init.firstFrameHeader;
-        for (;;) {
+        for (;;)
+	{
             rflac_result result = rflac__decode_flac_frame(pFlac);
-            if (result == RFLAC_SUCCESS) {
+            if (result == RFLAC_SUCCESS)
                 break;
-            } else {
-                if (result == RFLAC_CRC_MISMATCH) {
-                    if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header)) {
-                        rflac__free_from_callbacks(pFlac, &allocationCallbacks);
+	    else
+	    {
+                if (result == RFLAC_CRC_MISMATCH)
+		{
+                    if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
+		    {
+                        free(pFlac);
                         return NULL;
                     }
                     continue;
-                } else {
-                    rflac__free_from_callbacks(pFlac, &allocationCallbacks);
+                }
+		else
+		{
+                    free(pFlac);
                     return NULL;
                 }
             }
@@ -6038,8 +5932,9 @@ static size_t rflac__on_read_memory(void* pUserData, void* bufferOut, size_t byt
     if (bytesToRead > bytesRemaining)
         bytesToRead = bytesRemaining;
 
-    if (bytesToRead > 0) {
-        RFLAC_COPY_MEMORY(bufferOut, memoryStream->data + memoryStream->currentReadPos, bytesToRead);
+    if (bytesToRead > 0)
+    {
+        memcpy(bufferOut, memoryStream->data + memoryStream->currentReadPos, bytesToRead);
         memoryStream->currentReadPos += bytesToRead;
     }
 
@@ -6114,10 +6009,10 @@ RFLAC_API rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_pro
 RFLAC_API void rflac_close(rflac* pFlac)
 {
     if (pFlac)
-       rflac__free_from_callbacks(pFlac, &pFlac->allocationCallbacks);
+       free(pFlac);
 }
 
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_left_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_left_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6176,7 +6071,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_left_side__scalar(rfl
 }
 
 #if defined(RFLAC_SUPPORT_SSE2)
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_left_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_left_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6211,7 +6106,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_left_side__sse2(rflac
 #endif
 
 #if defined(RFLAC_SUPPORT_NEON)
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_left_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_left_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6254,7 +6149,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_left_side__neon(rflac
 }
 #endif
 
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_left_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_left_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
 #if defined(RFLAC_SUPPORT_SSE2)
     if (rflac__gIsSSE2Supported && pFlac->bitsPerSample <= 24) {
@@ -6271,7 +6166,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_left_side(rflac* pFla
     }
 }
 
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_right_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_right_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6330,7 +6225,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_right_side__scalar(rf
 }
 
 #if defined(RFLAC_SUPPORT_SSE2)
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_right_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_right_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6365,7 +6260,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_right_side__sse2(rfla
 #endif
 
 #if defined(RFLAC_SUPPORT_NEON)
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_right_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_right_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6408,7 +6303,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_right_side__neon(rfla
 }
 #endif
 
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_right_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_right_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
 #if defined(RFLAC_SUPPORT_SSE2)
     if (rflac__gIsSSE2Supported && pFlac->bitsPerSample <= 24) {
@@ -6425,7 +6320,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_right_side(rflac* pFl
     }
 }
 
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_mid_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6558,7 +6453,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_mid_side__scalar(rfla
 }
 
 #if defined(RFLAC_SUPPORT_SSE2)
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_mid_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6632,7 +6527,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_mid_side__sse2(rflac*
 #endif
 
 #if defined(RFLAC_SUPPORT_NEON)
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_mid_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6714,7 +6609,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_mid_side__neon(rflac*
 }
 #endif
 
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_mid_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_mid_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
 #if defined(RFLAC_SUPPORT_SSE2)
     if (rflac__gIsSSE2Supported && pFlac->bitsPerSample <= 24) {
@@ -6731,7 +6626,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_mid_side(rflac* pFlac
     }
 }
 
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6778,7 +6673,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__s
 }
 
 #if defined(RFLAC_SUPPORT_SSE2)
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6806,7 +6701,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__s
 #endif
 
 #if defined(RFLAC_SUPPORT_NEON)
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6838,7 +6733,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__n
 }
 #endif
 
-static RFLAC_INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, int16_t* pOutputSamples)
 {
 #if defined(RFLAC_SUPPORT_SSE2)
     if (rflac__gIsSSE2Supported && pFlac->bitsPerSample <= 24) {
@@ -6933,7 +6828,7 @@ RFLAC_API uint64_t rflac_read_pcm_frames_s16(rflac* pFlac, uint64_t framesToRead
     return framesRead;
 }
 
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_left_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_left_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -6981,7 +6876,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_left_side__scalar(rfl
 }
 
 #if defined(RFLAC_SUPPORT_SSE2)
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_left_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_left_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7016,7 +6911,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_left_side__sse2(rflac
 #endif
 
 #if defined(RFLAC_SUPPORT_NEON)
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_left_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_left_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7059,7 +6954,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_left_side__neon(rflac
 }
 #endif
 
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_left_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_left_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
 #if defined(RFLAC_SUPPORT_SSE2)
     if (rflac__gIsSSE2Supported && pFlac->bitsPerSample <= 24) {
@@ -7076,7 +6971,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_left_side(rflac* pFla
     }
 }
 
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_right_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_right_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7123,7 +7018,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_right_side__scalar(rf
 }
 
 #if defined(RFLAC_SUPPORT_SSE2)
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_right_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_right_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7158,7 +7053,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_right_side__sse2(rfla
 #endif
 
 #if defined(RFLAC_SUPPORT_NEON)
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_right_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_right_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7201,7 +7096,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_right_side__neon(rfla
 }
 #endif
 
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_right_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_right_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
 #if defined(RFLAC_SUPPORT_SSE2)
     if (rflac__gIsSSE2Supported && pFlac->bitsPerSample <= 24) {
@@ -7218,7 +7113,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_right_side(rflac* pFl
     }
 }
 
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_mid_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_mid_side__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7332,7 +7227,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_mid_side__scalar(rfla
 }
 
 #if defined(RFLAC_SUPPORT_SSE2)
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_mid_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_mid_side__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7417,7 +7312,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_mid_side__sse2(rflac*
 #endif
 
 #if defined(RFLAC_SUPPORT_NEON)
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_mid_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_mid_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7503,7 +7398,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_mid_side__neon(rflac*
 }
 #endif
 
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_mid_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_mid_side(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
 #if defined(RFLAC_SUPPORT_SSE2)
     if (rflac__gIsSSE2Supported && pFlac->bitsPerSample <= 24) {
@@ -7520,7 +7415,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_mid_side(rflac* pFlac
     }
 }
 
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo__scalar(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7558,7 +7453,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo__s
 }
 
 #if defined(RFLAC_SUPPORT_SSE2)
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo__sse2(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7594,7 +7489,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo__s
 #endif
 
 #if defined(RFLAC_SUPPORT_NEON)
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
     uint64_t frameCount4 = frameCount >> 2;
@@ -7630,7 +7525,7 @@ static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo__n
 }
 #endif
 
-static RFLAC_INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
+static INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
 #if defined(RFLAC_SUPPORT_SSE2)
     if (rflac__gIsSSE2Supported && pFlac->bitsPerSample <= 24) {
@@ -7832,14 +7727,6 @@ RFLAC_API uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex)
     #endif
 #endif
 /* End SIZE_MAX */
-
-RFLAC_API void rflac_free(void* p, const rflac_allocation_callbacks* pAllocationCallbacks)
-{
-    if (pAllocationCallbacks != NULL)
-        rflac__free_from_callbacks(p, pAllocationCallbacks);
-    else
-        rflac__free_default(p, NULL);
-}
 
 #if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
     #pragma GCC diagnostic pop

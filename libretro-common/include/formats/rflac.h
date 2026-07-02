@@ -733,12 +733,7 @@ RFLAC_API rflac* rflac_open_memory(const void* pData, size_t dataSize, const rfl
 /*
 Frees memory that was allocated internally by rflac.
 
-Set pAllocationCallbacks to the same object that was passed to rflac_open_*_and_read_pcm_frames_*(). If you originally passed in NULL, pass in NULL for this.
-*/
-RFLAC_API void rflac_free(void* p, const rflac_allocation_callbacks* pAllocationCallbacks);
-
-
-/* Structure representing an iterator for vorbis comments in a VORBIS_COMMENT metadata block. */
+Structure representing an iterator for vorbis comments in a VORBIS_COMMENT metadata block. */
 typedef struct
 {
     uint32_t countRemaining;
