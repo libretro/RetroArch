@@ -4959,6 +4959,7 @@ void video_driver_frame(const void *data, unsigned width,
                " Aspect:      %3.3f\n"
                " FPS:         %3.2f\n"
                " Sample Rate: %6.2f\n"
+               " Sample Format: %s\n"
                "VIDEO: %s\n"
                " Viewport:    %u x %u\n"
                " - Scale:     %u x %u\n"
@@ -4979,6 +4980,7 @@ void video_driver_frame(const void *data, unsigned width,
                av_info->geometry.aspect_ratio,
                av_info->timing.fps,
                av_info->timing.sample_rate,
+               audio_state_get_ptr()->stat_core_is_float ? "float" : "int16",
                vid->ident,
                video_info.width,
                video_info.height,
@@ -5006,9 +5008,8 @@ void video_driver_frame(const void *data, unsigned width,
                " Underrun:   %6.2f %%\n"
                " Blocking:   %6.2f %%\n"
                " Samples:  %8d\n"
-               " Core Sample Format:     %s\n"
-               " Frontend Sample Format: %s\n"
-               " Frontend Resampling:    %s\n"
+               " Sample Format: %s\n"
+               " Resampling: %s\n"
                ,
                audio_state_get_ptr()->current_audio->ident,
                audio_stats.average_buffer_saturation,
@@ -5016,7 +5017,6 @@ void video_driver_frame(const void *data, unsigned width,
                audio_stats.close_to_underrun,
                audio_stats.close_to_blocking,
                audio_stats.samples,
-               audio_state_get_ptr()->stat_core_is_float     ? "float" : "int16",
                audio_state_get_ptr()->stat_frontend_is_float ? "float" : "int16",
                (audio_state_get_ptr()->src_ratio_orig == 1.0) ? "no" : "yes");
 
