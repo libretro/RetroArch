@@ -12930,17 +12930,17 @@ static bool setting_append_list(
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
          {
             static const setting_desc_t vid_desc_0[] = {
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
                SDESC_BOOL_ROW(ui_suspend_screensaver_enable, SUSPEND_SCREENSAVER_ENABLE,
                      true, SD_FLAG_LAKKA_ADVANCED, 0, 0),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_0, ARRAY_SIZE(vid_desc_0),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Platform-specific", &group_info,
                   &subgroup_info, parent_group);
@@ -12968,17 +12968,17 @@ static bool setting_append_list(
             /* prevent unused function warning on unsupported builds */
             (void)setting_get_string_representation_int_gpu_index;
 
+#if defined(ANDROID) || TARGET_OS_IOS
          {
             static const setting_desc_t vid_desc_2[] = {
-#if defined(ANDROID) || TARGET_OS_IOS
                SDESC_BOOL_ROW(video_notch_write_over_enable, VIDEO_NOTCH_WRITE_OVER,
                      DEFAULT_NOTCH_WRITE_OVER_ENABLE, SD_FLAG_NONE, 0, 0),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_2, ARRAY_SIZE(vid_desc_2),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
 #ifdef HAVE_VULKAN
             if (string_is_equal(video_driver_get_ident(), "vulkan"))
             {
@@ -13091,17 +13091,17 @@ static bool setting_append_list(
             }
 #endif
 
+#ifdef WIIU
          {
             static const setting_desc_t vid_desc_8[] = {
-#ifdef WIIU
                SDESC_BOOL_ROW(video_wiiu_prefer_drc, VIDEO_WIIU_PREFER_DRC,
                      DEFAULT_WIIU_PREFER_DRC, SD_FLAG_NONE, 0, 0),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_8, ARRAY_SIZE(vid_desc_8),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
             if (video_driver_has_windowed())
             {
          {
@@ -13335,9 +13335,9 @@ static bool setting_append_list(
          }
             }
 
+#if defined(HAVE_WINDOW_OFFSET)
          {
             static const setting_desc_t vid_desc_12[] = {
-#if defined(HAVE_WINDOW_OFFSET)
                SDESC_INT_ROW_EX(video_window_offset_x, VIDEO_WINDOW_OFFSET_X,
                      DEFAULT_WINDOW_OFFSET_X,
                      SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
@@ -13350,12 +13350,12 @@ static bool setting_append_list(
                      -50, 50, 1, 0,
                      NULL, NULL,
                      NULL, NULL, NULL, NULL, 0),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_12, ARRAY_SIZE(vid_desc_12),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
             {
                static const setting_desc_t vp_size_desc[] = {
                   SDESC_UINT_ROW_AT_EX(offsetof(settings_t, video_vp_custom.width),
@@ -13463,17 +13463,17 @@ static bool setting_append_list(
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
          {
             static const setting_desc_t vid_desc_15[] = {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
                SDESC_BOOL_ROW(ui_menubar_enable, UI_MENUBAR_ENABLE,
                      DEFAULT_UI_MENUBAR_ENABLE, SD_FLAG_NONE, 0, CMD_EVENT_REINIT),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_15, ARRAY_SIZE(vid_desc_15),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
     (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
          {
