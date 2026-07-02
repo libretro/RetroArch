@@ -3253,6 +3253,14 @@ static size_t setting_get_string_representation_max_users(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_stylus_pressure_sensitivity(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+      return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+   return 0;
+}
+
 #if defined(HAVE_CHEEVOS) || defined(HAVE_CLOUDSYNC)
 static size_t setting_get_string_representation_password(
       rarch_setting_t *setting, char *s, size_t len)
@@ -16587,22 +16595,89 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
-            input_driver_state_t *st = input_state_get_ptr();
-            input_driver_t *current_input = st->current_driver;
-            if (string_is_equal(current_input->ident, "android"))
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_stylus_enable,
+                  MENU_ENUM_LABEL_INPUT_STYLUS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_stylus_require_contact_for_click,
+                  MENU_ENUM_LABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+                  MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_stylus_hover_moves_pointer,
+                  MENU_ENUM_LABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
+                  MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HOVER_MOVES_POINTER,
+                  false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_stylus_pressure_sensitivity,
+                  MENU_ENUM_LABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
+                  MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
+                  70,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].offset_by = 1;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_stylus_pressure_sensitivity;
+            menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
+
             {
-               CONFIG_ACTION(
-                     list, list_info,
-                     MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
-                     MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group);
-               (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_select_physical_keyboard;
-               (*list)[list_info->index - 1].read_handler              = &general_read_handler;
-               (*list)[list_info->index - 1].change_handler            = &general_write_handler;
-               (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_android_physical_keyboard;
-               (*list)[list_info->index - 1].default_value.string      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+               input_driver_state_t *st      = input_state_get_ptr();
+               input_driver_t *current_input = st->current_driver;
+               if (string_is_equal(current_input->ident, "android"))
+               {
+                  CONFIG_ACTION(
+                        list, list_info,
+                        MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+                        MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group);
+                  (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_select_physical_keyboard;
+                  (*list)[list_info->index - 1].read_handler              = &general_read_handler;
+                  (*list)[list_info->index - 1].change_handler            = &general_write_handler;
+                  (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_android_physical_keyboard;
+                  (*list)[list_info->index - 1].default_value.string      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+               }
             }
 #endif
 

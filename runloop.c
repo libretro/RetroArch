@@ -97,6 +97,9 @@
 
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
+/* Defined in input/drivers/android_input.c. True for ~2s after any S-Pen event;
+ * used below to auto-hide the on-screen touch overlay while the stylus is in use. */
+extern bool android_input_stylus_recently_active(void);
 #endif
 
 #ifdef HAVE_PRESENCE
@@ -5870,6 +5873,39 @@ static enum runloop_state_enum runloop_check_state(
 
          last_controller_connected = controller_connected;
       }
+
+#if defined(ANDROID)
+      /* Auto-hide the on-screen overlay while an S-Pen / stylus is active, since
+       * the overlay's input zones conflict with stylus taps. Restore it once no
+       * stylus event has occurred for ~2s (window owned by android_input.c) so the
+       * touch menu remains reachable when the pen is set down. Mirrors the
+       * gamepad-hide block above (edge-triggered via a static bool).
+       *
+       * Always FULLY UNLOAD on stylus active, regardless of
+       * input_overlay_pointer_enable. Native S-Pen events in android_input.c
+       * write directly to android->pointer[0..2].x/y and bypass overlay_ptr
+       * entirely, so unloading does not lose any stylus input surface. A
+       * loaded overlay with pointer_enable=true intercepts RETRO_DEVICE_POINTER
+       * queries and answers from its own touch tracker (count=1 PRESSED=true)
+       * instead of the native pointer state (count=0 PRESSED=false for hover),
+       * which breaks the count-independent hover contract that S-Pen-aware
+       * cores (e.g. snes9x stylus/spen-support) rely on. Hardware-validated
+       * on Mario Paint (CRC 266B220E) — hover stops driving the in-game cursor
+       * when the overlay is kept resident via soft-hide. */
+      {
+         static bool last_stylus_hidden = false;
+         bool stylus_hidden             = android_input_stylus_recently_active();
+
+         if (stylus_hidden != last_stylus_hidden)
+         {
+            if (stylus_hidden)
+               input_overlay_unload();
+            else
+               input_overlay_init();
+            last_stylus_hidden = stylus_hidden;
+         }
+      }
+#endif
 
       /* Check next overlay hotkey */
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
