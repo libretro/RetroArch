@@ -9,7 +9,6 @@ GitHub: https://github.com/mackron/dr_libs
 
 #include <formats/rflac.h>
 
-
 /* Disable some annoying warnings. */
 #if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
     #pragma GCC diagnostic push
