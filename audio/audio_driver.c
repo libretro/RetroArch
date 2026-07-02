@@ -44,6 +44,9 @@
 #ifdef HAVE_NEAREST_RESAMPLER
 #include <audio/nearest_resampler_int16.h>
 #endif
+#ifdef HAVE_CC_RESAMPLER
+#include <audio/cc_resampler_int16.h>
+#endif
 #include <audio/conversion/dual_mono.h>
 #ifdef HAVE_AUDIOMIXER
 #include <audio/audio_mixer.h>
@@ -1376,6 +1379,15 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          audio_driver_st.resampler_data_int16 = nearest_resampler_int16_init();
          audio_driver_st.resampler_int16_process = nearest_resampler_int16_process;
          audio_driver_st.resampler_int16_free    = nearest_resampler_int16_free;
+      }
+#endif
+#ifdef HAVE_CC_RESAMPLER
+      else if (string_is_equal(rs_ident, "cc"))
+      {
+         audio_driver_st.resampler_data_int16 = cc_resampler_int16_init(
+               audio_driver_st.src_ratio_orig);
+         audio_driver_st.resampler_int16_process = cc_resampler_int16_process;
+         audio_driver_st.resampler_int16_free    = cc_resampler_int16_free;
       }
 #endif
       if (audio_driver_st.resampler_int16_process)

@@ -829,6 +829,7 @@ AUDIO RESAMPLER
 #endif
 #ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"
+#include "../audio/drivers_resampler/cc_resampler_int16.c"
 #endif
 
 /*============================================================

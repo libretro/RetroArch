@@ -475,6 +475,7 @@ endif
 ifeq ($(HAVE_CC_RESAMPLER), 1)
    DEFINES += -DHAVE_CC_RESAMPLER
    OBJ += audio/drivers_resampler/cc_resampler.o
+   OBJ += audio/drivers_resampler/cc_resampler_int16.o
 
 ifeq ($(HAVE_NEON),1)
    OBJ += audio/drivers_resampler/cc_resampler_neon.o
