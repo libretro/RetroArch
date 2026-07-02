@@ -3003,7 +3003,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
-   "Use the fixed-point (integer) SINC resampler instead of the floating-point one when a core outputs 16-bit audio. Avoids the integer-to-float round-trip and produces bit-identical output on every platform, which helps netplay determinism. Has no effect on cores that output floating-point audio, and falls back to the floating-point path while an incompatible DSP filter or the audio mixer is active."
+   "Use the fixed-point (integer) resampler instead of the floating-point one when a core outputs 16-bit audio. Avoids the integer-to-float round-trip and produces bit-identical output on every platform, which helps netplay determinism. Has no effect on cores that output floating-point audio, and falls back to the floating-point path while an incompatible DSP filter is active."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
