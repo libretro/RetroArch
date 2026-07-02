@@ -21,6 +21,9 @@
 #else
 #include <unistd.h>
 #endif
+#include <stdlib.h>
+#include <string.h>
+
 #include <libretro.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
@@ -7788,6 +7791,167 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    return -1;
 }
 
+/* Sorted lookup indices over the settings list.
+ *
+ * menu_setting_find() and menu_setting_find_enum() were linear
+ * scans over the entire settings array (roughly a thousand entries
+ * of 224 bytes each), and menu_displaylist builds call them once
+ * per displayed entry.  Keep two position indices, sorted by
+ * (enum_idx, position) and (name, position) respectively, and
+ * binary-search the leftmost match so that the first-in-list-order
+ * semantics of the previous linear scan are preserved exactly.
+ *
+ * The settings list is a singleton (menu_st->entries.list_settings)
+ * created by menu_setting_new() and released by menu_setting_free(),
+ * so the indices live alongside it here.  If the indices are
+ * unavailable for any reason, the find functions fall back to the
+ * old linear scan. */
+static rarch_setting_t *settings_index_list      = NULL;
+static uint32_t        *settings_index_by_enum   = NULL;
+static uint32_t        *settings_index_by_name   = NULL;
+static uint32_t         settings_index_enum_size = 0;
+static uint32_t         settings_index_name_size = 0;
+
+static int settings_index_enum_compare(const void *a, const void *b)
+{
+   uint32_t pa = *(const uint32_t*)a;
+   uint32_t pb = *(const uint32_t*)b;
+   int      ea = (int)settings_index_list[pa].enum_idx;
+   int      eb = (int)settings_index_list[pb].enum_idx;
+   if (ea != eb)
+      return (ea < eb) ? -1 : 1;
+   /* Tie-break on list position so that the leftmost match of a
+    * duplicated enum is the first one in list order, matching the
+    * behaviour of the old linear scan. */
+   if (pa != pb)
+      return (pa < pb) ? -1 : 1;
+   return 0;
+}
+
+static int settings_index_name_compare(const void *a, const void *b)
+{
+   uint32_t pa = *(const uint32_t*)a;
+   uint32_t pb = *(const uint32_t*)b;
+   int       c = strcmp(settings_index_list[pa].name,
+         settings_index_list[pb].name);
+   if (c != 0)
+      return c;
+   if (pa != pb)
+      return (pa < pb) ? -1 : 1;
+   return 0;
+}
+
+static void menu_setting_index_free(void)
+{
+   if (settings_index_by_enum)
+      free(settings_index_by_enum);
+   if (settings_index_by_name)
+      free(settings_index_by_name);
+   settings_index_by_enum   = NULL;
+   settings_index_by_name   = NULL;
+   settings_index_enum_size = 0;
+   settings_index_name_size = 0;
+   settings_index_list      = NULL;
+}
+
+static void menu_setting_index_build(rarch_setting_t *list)
+{
+   uint32_t i;
+   uint32_t count = 0;
+
+   menu_setting_index_free();
+
+   if (!list)
+      return;
+
+   while (list[count].type != ST_NONE)
+      count++;
+
+   if (count == 0)
+      return;
+
+   settings_index_by_enum = (uint32_t*)malloc(count * sizeof(uint32_t));
+   settings_index_by_name = (uint32_t*)malloc(count * sizeof(uint32_t));
+
+   if (!settings_index_by_enum || !settings_index_by_name)
+   {
+      menu_setting_index_free();
+      return;
+   }
+
+   settings_index_list = list;
+
+   for (i = 0; i < count; i++)
+   {
+      /* Only entries the find functions can return are indexed;
+       * the old linear scans skipped everything past ST_GROUP. */
+      if (list[i].type > ST_GROUP)
+         continue;
+      if (list[i].enum_idx != MSG_UNKNOWN)
+         settings_index_by_enum[settings_index_enum_size++] = i;
+      if (list[i].name)
+         settings_index_by_name[settings_index_name_size++] = i;
+   }
+
+   qsort(settings_index_by_enum, settings_index_enum_size,
+         sizeof(uint32_t), settings_index_enum_compare);
+   qsort(settings_index_by_name, settings_index_name_size,
+         sizeof(uint32_t), settings_index_name_compare);
+}
+
+static rarch_setting_t *menu_setting_index_find_enum(
+      enum msg_hash_enums enum_idx)
+{
+   uint32_t lo = 0;
+   uint32_t hi = settings_index_enum_size;
+
+   while (lo < hi)
+   {
+      uint32_t mid = lo + ((hi - lo) >> 1);
+      if ((int)settings_index_list[settings_index_by_enum[mid]].enum_idx
+            < (int)enum_idx)
+         lo = mid + 1;
+      else
+         hi = mid;
+   }
+
+   if (lo < settings_index_enum_size)
+   {
+      rarch_setting_t *setting =
+            &settings_index_list[settings_index_by_enum[lo]];
+      if (setting->enum_idx == enum_idx)
+         return setting;
+   }
+
+   return NULL;
+}
+
+static rarch_setting_t *menu_setting_index_find_name(const char *label)
+{
+   uint32_t lo = 0;
+   uint32_t hi = settings_index_name_size;
+
+   while (lo < hi)
+   {
+      uint32_t mid = lo + ((hi - lo) >> 1);
+      if (strcmp(settings_index_list[settings_index_by_name[mid]].name,
+            label) < 0)
+         lo = mid + 1;
+      else
+         hi = mid;
+   }
+
+   if (lo < settings_index_name_size)
+   {
+      rarch_setting_t *setting =
+            &settings_index_list[settings_index_by_name[lo]];
+      if (string_is_equal(setting->name, label))
+         return setting;
+   }
+
+   return NULL;
+}
+
 /**
  * menu_setting_find:
  * @label              : name of setting to search for
@@ -7809,6 +7973,20 @@ rarch_setting_t *menu_setting_find(const char *label)
 
    if (!setting)
       return NULL;
+
+   if (settings_index_list == setting && settings_index_by_name)
+   {
+      if (!(setting = menu_setting_index_find_name(label)))
+         return NULL;
+
+      if (!setting->short_description || !*setting->short_description)
+         return NULL;
+
+      if (setting->read_handler)
+         setting->read_handler(setting);
+
+      return setting;
+   }
 
    for (; setting->type != ST_NONE; setting++)
    {
@@ -7843,6 +8021,24 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
 
    if (!setting)
       return NULL;
+
+   if (settings_index_list == setting && settings_index_by_enum)
+   {
+      const char *short_description;
+
+      if (!(setting = menu_setting_index_find_enum(enum_idx)))
+         return NULL;
+
+      short_description = setting->short_description;
+      if (!short_description || !*short_description)
+         return NULL;
+
+      if (setting->read_handler)
+         setting->read_handler(setting);
+
+      return setting;
+   }
+
    for (; setting->type != ST_NONE; (*list = *list + 1))
    {
       if (
@@ -26001,6 +26197,9 @@ void menu_setting_free(rarch_setting_t *setting)
    if (!setting)
       return;
 
+   if (setting == settings_index_list)
+      menu_setting_index_free();
+
    list                   = (rarch_setting_t**)&setting;
 
    /* Free data which was previously tagged */
@@ -26219,6 +26418,8 @@ rarch_setting_t *menu_setting_new(void)
    list_info->size  = 32;
 
    list             = menu_setting_new_internal(list_info);
+
+   menu_setting_index_build(list);
 
    if (list_info)
       free(list_info);
