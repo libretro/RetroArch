@@ -13230,9 +13230,8 @@ static bool setting_append_list(
                         SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
                         SDESC_RANGE_MINMAX,
                         CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
-                        0.0, 1.0, 0.05, NULL, NULL)
+                        0.0, 1.0, 0.05, NULL, NULL),
 #if defined(RARCH_MOBILE)
-                  ,
                   SDESC_FLOAT_ROW(video_vp_bias_portrait_x, VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
                         DEFAULT_VIEWPORT_BIAS_PORTRAIT_X, "%.2f",
                         SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
@@ -13760,10 +13759,9 @@ static bool setting_append_list(
 #undef S_UINT
 #undef S_INT
 #ifdef HAVE_D3DKMT
-                  ,
                   SDESC_BOOL_ROW(video_scanline_sync, VIDEO_SCANLINE_SYNC,
                         DEFAULT_SCANLINE_SYNC,
-                        SD_FLAG_NONE, 0, CMD_EVENT_NONE)
+                        SD_FLAG_NONE, 0, CMD_EVENT_NONE),
 #endif
                };
                settings_list_add_desc(list, list_info, settings,
@@ -13900,12 +13898,11 @@ static bool setting_append_list(
                         SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE),
                   SDESC_BOOL_ROW(video_crop_overscan, VIDEO_CROP_OVERSCAN,
                         DEFAULT_CROP_OVERSCAN,
-                        SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_NONE)
+                        SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_NONE),
 #ifdef HAVE_VIDEO_FILTER
-                  ,
                   SDESC_BOOL_ROW(video_filter_enable, VIDEO_FILTER_ENABLE,
                         true,
-                        SD_FLAG_NONE, 0, CMD_EVENT_NONE)
+                        SD_FLAG_NONE, 0, CMD_EVENT_NONE),
 #endif
                };
                settings_list_add_desc(list, list_info, settings,
@@ -14093,15 +14090,14 @@ static bool setting_append_list(
                      SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
                      -80, 12, 1.0,
                      setting_action_ok_uint, NULL,
-                     NULL, NULL, NULL, NULL, 0)
+                     NULL, NULL, NULL, NULL, 0),
 #ifdef HAVE_AUDIOMIXER
-               ,
                SDESC_FLOAT_ROW_EX(audio_mixer_volume, AUDIO_MIXER_VOLUME,
                      DEFAULT_AUDIO_MIXER_VOLUME, "%.1f",
                      SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, 0,
                      -80, 12, 1.0,
                      setting_action_ok_uint, NULL,
-                     NULL, NULL, NULL, NULL, 0)
+                     NULL, NULL, NULL, NULL, 0),
 #endif
             };
             settings_list_add_desc(list, list_info, settings,
@@ -14231,17 +14227,15 @@ static bool setting_append_list(
                      SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0,
                      0.0, 0.5, 0.01,
                      setting_action_ok_uint, NULL,
-                     NULL, NULL, NULL, NULL, 0)
+                     NULL, NULL, NULL, NULL, 0),
 #ifdef RARCH_MOBILE
-               ,
                SDESC_UINT_ROW(audio_block_frames, AUDIO_BLOCK_FRAMES,
                      0, SD_FLAG_ADVANCED, 0, 0,
-                     0, 0, 0, 0, NULL, NULL)
+                     0, 0, 0, 0, NULL, NULL),
 #ifdef HAVE_MICROPHONE
-               ,
                SDESC_UINT_ROW(microphone_block_frames, MICROPHONE_BLOCK_FRAMES,
                      0, SD_FLAG_ADVANCED, 0, 0,
-                     0, 0, 0, 0, NULL, NULL)
+                     0, 0, 0, 0, NULL, NULL),
 #endif
 #endif
             };
@@ -14288,15 +14282,14 @@ static bool setting_append_list(
                      SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0,
                      1000, 192000, 100.0, 0,
                      setting_action_ok_uint_special, NULL,
-                     NULL, NULL, NULL, NULL, 0)
+                     NULL, NULL, NULL, NULL, 0),
 #ifdef HAVE_MICROPHONE
-               ,
                SDESC_UINT_ROW_EX(microphone_sample_rate, MICROPHONE_INPUT_RATE,
                      DEFAULT_INPUT_RATE,
                      SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0,
                      1000, 192000, 100.0, 0,
                      setting_action_ok_uint_special, NULL,
-                     NULL, NULL, NULL, NULL, 0)
+                     NULL, NULL, NULL, NULL, 0),
 #endif
             };
             settings_list_add_desc(list, list_info, settings,
