@@ -40,15 +40,6 @@ extern "C" {
 #endif
 /* End Decorations */
 
-/* Allocation Callbacks */
-typedef struct
-{
-    void* pUserData;
-    void* (* onMalloc)(size_t sz, void* pUserData);
-    void* (* onRealloc)(void* p, size_t sz, void* pUserData);
-    void  (* onFree)(void* p, void* pUserData);
-} rflac_allocation_callbacks;
-/* End Allocation Callbacks */
 
 /*
 As data is read from the client it is placed into an internal buffer for fast access. This controls the size of that buffer. Larger values means more speed,
@@ -422,9 +413,6 @@ typedef struct
     /* The user data posted to the metadata callback function. */
     void* pUserDataMD;
 
-    /* Memory allocation callbacks. */
-    rflac_allocation_callbacks allocationCallbacks;
-
 
     /* The sample rate. Will be set to something like 44100. */
     uint32_t sampleRate;
@@ -507,9 +495,6 @@ onSeek (in)
 pUserData (in, optional)
     A pointer to application defined data that will be passed to onRead and onSeek.
 
-pAllocationCallbacks (in, optional)
-    A pointer to application defined callbacks for managing memory allocations.
-
 
 Return Value
 ------------
@@ -520,7 +505,6 @@ Remarks
 -------
 Close the decoder with `rflac_close()`.
 
-`pAllocationCallbacks` can be NULL in which case it will use `RFLAC_MALLOC`, `RFLAC_REALLOC` and `RFLAC_FREE`.
 
 This function will automatically detect whether or not you are attempting to open a native or Ogg encapsulated FLAC, both of which should work seamlessly
 without any manual intervention. Ogg encapsulation also works with multiplexed streams which basically means it can play FLAC encoded audio tracks in videos.
@@ -538,7 +522,7 @@ rflac_open_memory()
 rflac_open_with_metadata()
 rflac_close()
 */
-RFLAC_API rflac* rflac_open(rflac_read_proc onRead, rflac_seek_proc onSeek, void* pUserData, const rflac_allocation_callbacks* pAllocationCallbacks);
+RFLAC_API rflac* rflac_open(rflac_read_proc onRead, rflac_seek_proc onSeek, void* pUserData);
 
 /*
 Opens a FLAC decoder and notifies the caller of the metadata chunks (album art, etc.).
@@ -558,9 +542,6 @@ onMeta (in)
 pUserData (in, optional)
     A pointer to application defined data that will be passed to onRead, onSeek and onMeta.
 
-pAllocationCallbacks (in, optional)
-    A pointer to application defined callbacks for managing memory allocations.
-
 
 Return Value
 ------------
@@ -571,7 +552,6 @@ Remarks
 -------
 Close the decoder with `rflac_close()`.
 
-`pAllocationCallbacks` can be NULL in which case it will use `RFLAC_MALLOC`, `RFLAC_REALLOC` and `RFLAC_FREE`.
 
 This is slower than `rflac_open()`, so avoid this one if you don't need metadata. Internally, this will allocate and free memory on the heap for every
 metadata block except for STREAMINFO and PADDING blocks.
@@ -593,7 +573,7 @@ Seek Also
 rflac_open()
 rflac_close()
 */
-RFLAC_API rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData, const rflac_allocation_callbacks* pAllocationCallbacks);
+RFLAC_API rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData);
 
 /*
 Closes the given FLAC decoder.
@@ -707,9 +687,6 @@ pData (in)
 dataSize (in)
     The size in bytes of `data`.
 
-pAllocationCallbacks (in)
-    A pointer to application defined callbacks for managing memory allocations.
-
 
 Return Value
 ------------
@@ -726,14 +703,11 @@ See Also
 rflac_open()
 rflac_close()
 */
-RFLAC_API rflac* rflac_open_memory(const void* pData, size_t dataSize, const rflac_allocation_callbacks* pAllocationCallbacks);
+RFLAC_API rflac* rflac_open_memory(const void* pData, size_t dataSize);
 
 /* High Level APIs */
 
-/*
-Frees memory that was allocated internally by rflac.
-
-Structure representing an iterator for vorbis comments in a VORBIS_COMMENT metadata block. */
+/* Structure representing an iterator for vorbis comments in a VORBIS_COMMENT metadata block. */
 typedef struct
 {
     uint32_t countRemaining;

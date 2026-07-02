@@ -77,7 +77,7 @@ static int flac_decoder_internal_reset(flac_decoder* decoder)
 	flac_decoder_free(decoder);
 	decoder->decoder = rflac_open_with_metadata(
 		flac_decoder_read_callback, flac_decoder_seek_callback,
-		flac_decoder_metadata_callback, decoder, NULL);
+		flac_decoder_metadata_callback, decoder);
 	return (decoder->decoder != NULL);
 }
 

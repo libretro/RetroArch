@@ -250,7 +250,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
          if (!fl || !fl->data)
             return false;
-         fl->handle = rflac_open_memory(fl->data, fl->size, NULL);
+         fl->handle = rflac_open_memory(fl->data, fl->size);
          return fl->handle != NULL;
       }
 #endif

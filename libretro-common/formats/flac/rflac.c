@@ -5704,7 +5704,7 @@ static void rflac__init_from_info(rflac* pFlac, const rflac_init_info* pInit)
 }
 
 
-static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, rflac_container container, void* pUserData, void* pUserDataMD, const rflac_allocation_callbacks* pAllocationCallbacks)
+static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, rflac_container container, void* pUserData, void* pUserDataMD)
 {
     rflac_init_info init;
     uint32_t allocationSize;
@@ -5716,7 +5716,6 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     uint64_t firstFramePos;
     uint64_t seektablePos;
     uint32_t seekpointCount;
-    rflac_allocation_callbacks allocationCallbacks;
     rflac* pFlac;
 
     /* CPU support first. */
@@ -5725,11 +5724,6 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     if (!rflac__init_private(&init, onRead, onSeek, onMeta, container, pUserData, pUserDataMD)) {
         return NULL;
     }
-
-    if (pAllocationCallbacks != NULL)
-        allocationCallbacks = *pAllocationCallbacks;
-    else
-        allocationCallbacks.pUserData = NULL;
 
     /*
     The size of the allocation for the rflac object needs to be large enough to fit the following:
@@ -5819,7 +5813,6 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     }
 
     rflac__init_from_info(pFlac, &init);
-    pFlac->allocationCallbacks = allocationCallbacks;
     pFlac->pDecodedSamples = (int32_t*)RFLAC_ALIGN((size_t)pFlac->pExtraData, RFLAC_MAX_SIMD_VECTOR_SIZE);
 
 #ifndef RFLAC_NO_OGG
@@ -5966,7 +5959,7 @@ static uint32_t rflac__on_seek_memory(void* pUserData, int offset, rflac_seek_or
     return RFLAC_TRUE;
 }
 
-RFLAC_API rflac* rflac_open_memory(const void* pData, size_t dataSize, const rflac_allocation_callbacks* pAllocationCallbacks)
+RFLAC_API rflac* rflac_open_memory(const void* pData, size_t dataSize)
 {
     rflac__memory_stream memoryStream;
     rflac* pFlac;
@@ -5974,7 +5967,7 @@ RFLAC_API rflac* rflac_open_memory(const void* pData, size_t dataSize, const rfl
     memoryStream.data = (const uint8_t*)pData;
     memoryStream.dataSize = dataSize;
     memoryStream.currentReadPos = 0;
-    pFlac = rflac_open(rflac__on_read_memory, rflac__on_seek_memory, &memoryStream, pAllocationCallbacks);
+    pFlac = rflac_open(rflac__on_read_memory, rflac__on_seek_memory, &memoryStream);
     if (pFlac == NULL)
         return NULL;
 
@@ -5996,14 +5989,14 @@ RFLAC_API rflac* rflac_open_memory(const void* pData, size_t dataSize, const rfl
     return pFlac;
 }
 
-RFLAC_API rflac* rflac_open(rflac_read_proc onRead, rflac_seek_proc onSeek, void* pUserData, const rflac_allocation_callbacks* pAllocationCallbacks)
+RFLAC_API rflac* rflac_open(rflac_read_proc onRead, rflac_seek_proc onSeek, void* pUserData)
 {
-    return rflac_open_with_metadata_private(onRead, onSeek, NULL, rflac_container_unknown, pUserData, pUserData, pAllocationCallbacks);
+    return rflac_open_with_metadata_private(onRead, onSeek, NULL, rflac_container_unknown, pUserData, pUserData);
 }
 
-RFLAC_API rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData, const rflac_allocation_callbacks* pAllocationCallbacks)
+RFLAC_API rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData)
 {
-    return rflac_open_with_metadata_private(onRead, onSeek, onMeta, rflac_container_unknown, pUserData, pUserData, pAllocationCallbacks);
+    return rflac_open_with_metadata_private(onRead, onSeek, onMeta, rflac_container_unknown, pUserData, pUserData);
 }
 
 RFLAC_API void rflac_close(rflac* pFlac)
