@@ -15094,22 +15094,21 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.audio_enable,
-               MENU_ENUM_LABEL_AUDIO_ENABLE,
-               MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-               DEFAULT_AUDIO_ENABLE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
+         {
+            static const setting_desc_t audio_en_desc[] = {
+               SDESC_BOOL_ROW(audio_enable, AUDIO_ENABLE,
+                     DEFAULT_AUDIO_ENABLE,
+                     SD_FLAG_NONE, 0, CMD_EVENT_NONE)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  audio_en_desc, ARRAY_SIZE(audio_en_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
+         /* The two mute settings stay imperative: their value
+          * targets come from audio_get_bool_ptr() at registration
+          * time and live outside settings_t, which offset-based
+          * descriptor rows cannot express. */
          CONFIG_BOOL(
                list, list_info,
                audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE),
@@ -15144,105 +15143,42 @@ static bool setting_append_list(
                );
 #endif
 
+         {
+            static const setting_desc_t audio_state_desc[] = {
 #if TARGET_OS_IOS
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.audio_respect_silent_mode,
-               MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE,
-               MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
-               DEFAULT_AUDIO_RESPECT_SILENT_MODE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
+               SDESC_BOOL_ROW(audio_respect_silent_mode, AUDIO_RESPECT_SILENT_MODE,
+                     DEFAULT_AUDIO_RESPECT_SILENT_MODE,
+                     SD_FLAG_NONE, 0, CMD_EVENT_NONE),
 #endif
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.audio_fastforward_mute,
-               MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,
-               MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-               DEFAULT_AUDIO_FASTFORWARD_MUTE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.audio_fastforward_speedup,
-               MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,
-               MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-               DEFAULT_AUDIO_FASTFORWARD_SPEEDUP,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.audio_rewind_mute,
-               MENU_ENUM_LABEL_AUDIO_REWIND_MUTE,
-               MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
-               DEFAULT_AUDIO_REWIND_MUTE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.audio_volume,
-               MENU_ENUM_LABEL_AUDIO_VOLUME,
-               MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-               DEFAULT_AUDIO_VOLUME,
-               "%.1f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
-
+               SDESC_BOOL_ROW(audio_fastforward_mute, AUDIO_FASTFORWARD_MUTE,
+                     DEFAULT_AUDIO_FASTFORWARD_MUTE,
+                     SD_FLAG_NONE, 0, CMD_EVENT_NONE),
+               SDESC_BOOL_ROW(audio_fastforward_speedup, AUDIO_FASTFORWARD_SPEEDUP,
+                     DEFAULT_AUDIO_FASTFORWARD_SPEEDUP,
+                     SD_FLAG_NONE, 0, CMD_EVENT_NONE),
+               SDESC_BOOL_ROW(audio_rewind_mute, AUDIO_REWIND_MUTE,
+                     DEFAULT_AUDIO_REWIND_MUTE,
+                     SD_FLAG_NONE, 0, CMD_EVENT_NONE),
+               SDESC_FLOAT_ROW_EX(audio_volume, AUDIO_VOLUME,
+                     DEFAULT_AUDIO_VOLUME, "%.1f",
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     -80, 12, 1.0,
+                     setting_action_ok_uint, NULL,
+                     NULL, NULL, NULL, NULL, 0)
 #ifdef HAVE_AUDIOMIXER
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.audio_mixer_volume,
-               MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
-               MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-               DEFAULT_AUDIO_MIXER_VOLUME,
-               "%.1f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               ,
+               SDESC_FLOAT_ROW_EX(audio_mixer_volume, AUDIO_MIXER_VOLUME,
+                     DEFAULT_AUDIO_MIXER_VOLUME, "%.1f",
+                     SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, 0,
+                     -80, 12, 1.0,
+                     setting_action_ok_uint, NULL,
+                     NULL, NULL, NULL, NULL, 0)
 #endif
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  audio_state_desc, ARRAY_SIZE(audio_state_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          END_SUB_GROUP(list, list_info, parent_group);
 
