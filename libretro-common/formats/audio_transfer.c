@@ -138,7 +138,7 @@ static size_t audio_transfer_mp3_read_s16(struct audio_transfer_mp3 *m,
    {
       size_t want = frames - done;
       size_t req  = (want < (size_t)cap_frames) ? want : (size_t)cap_frames;
-      size_t got  = (size_t)rmp3_read_f32(&m->handle, (rmp3_uint64)req, chunk);
+      size_t got  = (size_t)rmp3_read_f32(&m->handle, (uint64_t)req, chunk);
 
       if (got == 0)
          break;
@@ -466,7 +466,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
          if (!m || !m->inited)
             return AUDIO_PROCESS_ERROR;
-         produced = (size_t)rmp3_read_f32(&m->handle, (rmp3_uint64)frames, out);
+         produced = (size_t)rmp3_read_f32(&m->handle, (uint64_t)frames, out);
          break;
       }
 #endif
@@ -516,7 +516,7 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
          if (!m || !m->inited)
             return false;
-         return rmp3_seek_to_frame(&m->handle, (rmp3_uint64)frame) != 0;
+         return rmp3_seek_to_frame(&m->handle, (uint64_t)frame) != 0;
       }
 #endif
       case AUDIO_TYPE_WAV:

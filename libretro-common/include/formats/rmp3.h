@@ -9,16 +9,6 @@ extern "C" {
 #include <stdint.h>
 #include <retro_inline.h>
 
-typedef int8_t           rmp3_int8;
-typedef uint8_t          rmp3_uint8;
-typedef int16_t          rmp3_int16;
-typedef uint16_t         rmp3_uint16;
-typedef int32_t          rmp3_int32;
-typedef uint32_t         rmp3_uint32;
-typedef int64_t          rmp3_int64;
-typedef uint64_t         rmp3_uint64;
-typedef rmp3_uint8      rmp3_bool8;
-typedef rmp3_uint32     rmp3_bool32;
 #define RMP3_TRUE       1
 #define RMP3_FALSE      0
 
@@ -57,7 +47,7 @@ int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_bytes, 
  * ===================*/
 
 typedef struct rmp3_src rmp3_src;
-typedef rmp3_uint64 (* rmp3_src_read_proc)(rmp3_src* pSRC, rmp3_uint64 frameCount, void* pFramesOut, void* pUserData); /* Returns the number of frames that were read. */
+typedef uint64_t (* rmp3_src_read_proc)(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut, void* pUserData); /* Returns the number of frames that were read. */
 
 typedef enum
 {
@@ -70,17 +60,17 @@ typedef struct
 {
     rmp3_src* pSRC;
     float pCachedFrames[2 * RMP3_SRC_CACHE_SIZE_IN_FRAMES];
-    rmp3_uint32 cachedFrameCount;
-    rmp3_uint32 iNextFrame;
+    uint32_t cachedFrameCount;
+    uint32_t iNextFrame;
 } rmp3_src_cache;
 
 typedef struct
 {
-    rmp3_uint32 sampleRateIn;
-    rmp3_uint32 sampleRateOut;
-    rmp3_uint32 channels;
+    uint32_t sampleRateIn;
+    uint32_t sampleRateOut;
+    uint32_t channels;
     rmp3_src_algorithm algorithm;
-    rmp3_uint32 cacheSizeInFrames;  /* The number of frames to read from the client at a time. */
+    uint32_t cacheSizeInFrames;  /* The number of frames to read from the client at a time. */
 } rmp3_src_config;
 
 struct rmp3_src
@@ -95,8 +85,8 @@ struct rmp3_src
         struct
         {
             float alpha;
-            rmp3_bool32 isPrevFramesLoaded : 1;
-            rmp3_bool32 isNextFramesLoaded : 1;
+            uint32_t isPrevFramesLoaded : 1;
+            uint32_t isNextFramesLoaded : 1;
         } linear;
     } algo;
 };
@@ -131,36 +121,36 @@ typedef size_t (* rmp3_read_proc)(void* pUserData, void* pBufferOut, size_t byte
  * Whether or not it is relative to the beginning or current position is determined by the "origin" parameter which
  * will be either rmp3_seek_origin_start or rmp3_seek_origin_current.
  */
-typedef rmp3_bool32 (* rmp3_seek_proc)(void* pUserData, int offset, rmp3_seek_origin origin);
+typedef uint32_t (* rmp3_seek_proc)(void* pUserData, int offset, rmp3_seek_origin origin);
 
 typedef struct
 {
-    rmp3_uint32 outputChannels;
-    rmp3_uint32 outputSampleRate;
+    uint32_t outputChannels;
+    uint32_t outputSampleRate;
 } rmp3_config;
 
 typedef struct
 {
     rmp3dec decoder;
     rmp3dec_frame_info frameInfo;
-    rmp3_uint32 channels;
-    rmp3_uint32 sampleRate;
+    uint32_t channels;
+    uint32_t sampleRate;
     rmp3_read_proc onRead;
     rmp3_seek_proc onSeek;
     void* pUserData;
-    rmp3_uint32 frameChannels;     /* The number of channels in the currently loaded MP3 frame. Internal use only. */
-    rmp3_uint32 frameSampleRate;   /* The sample rate of the currently loaded MP3 frame. Internal use only */
-    rmp3_uint32 framesConsumed;
-    rmp3_uint32 framesRemaining;
-    rmp3_int16 frames[RMP3_MAX_SAMPLES_PER_FRAME];
+    uint32_t frameChannels;     /* The number of channels in the currently loaded MP3 frame. Internal use only. */
+    uint32_t frameSampleRate;   /* The sample rate of the currently loaded MP3 frame. Internal use only */
+    uint32_t framesConsumed;
+    uint32_t framesRemaining;
+    int16_t frames[RMP3_MAX_SAMPLES_PER_FRAME];
     rmp3_src src;
     size_t dataSize;
     size_t dataCapacity;
-    rmp3_uint8* pData;
-    rmp3_bool32 atEnd : 1;
+    uint8_t* pData;
+    uint32_t atEnd : 1;
     struct
     {
-        const rmp3_uint8* pData;
+        const uint8_t* pData;
         size_t dataSize;
         size_t currentReadPos;
     } memory;   /* Only used for decoders that were opened against a block of memory. */
@@ -178,7 +168,7 @@ typedef struct
  *
  * See also: rmp3_init_file(), rmp3_init_memory(), rmp3_uninit()
  */
-rmp3_bool32 rmp3_init(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc onSeek, void* pUserData, const rmp3_config* pConfig);
+uint32_t rmp3_init(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc onSeek, void* pUserData, const rmp3_config* pConfig);
 
 /* Initializes an MP3 decoder from a block of memory.
  *
@@ -187,7 +177,7 @@ rmp3_bool32 rmp3_init(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc onSeek, 
  *
  * The buffer should contain the contents of the entire MP3 file.
  */
-rmp3_bool32 rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize, const rmp3_config* pConfig);
+uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize, const rmp3_config* pConfig);
 
 /* Uninitializes an MP3 decoder. */
 void rmp3_uninit(rmp3* pMP3);
@@ -196,13 +186,13 @@ void rmp3_uninit(rmp3* pMP3);
  *
  * Note that framesToRead specifies the number of PCM frames to read, _not_ the number of MP3 frames.
  */
-rmp3_uint64 rmp3_read_f32(rmp3* pMP3, rmp3_uint64 framesToRead, float* pBufferOut);
+uint64_t rmp3_read_f32(rmp3* pMP3, uint64_t framesToRead, float* pBufferOut);
 
 /* Seeks to a specific frame.
  *
  * Note that this is _not_ an MP3 frame, but rather a PCM frame.
  */
-rmp3_bool32 rmp3_seek_to_frame(rmp3* pMP3, rmp3_uint64 frameIndex);
+uint32_t rmp3_seek_to_frame(rmp3* pMP3, uint64_t frameIndex);
 
 
 /* Frees any memory that was allocated by a public rmp3 API. */
