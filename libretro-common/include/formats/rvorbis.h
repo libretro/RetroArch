@@ -250,11 +250,11 @@ typedef struct
    uint32_t lookup_values;
    rvorbis_codetype *multiplicands;
    uint32_t *codewords;
-   #ifdef RVORBIS_FAST_HUFFMAN_SHORT
+#ifdef RVORBIS_FAST_HUFFMAN_SHORT
     int16_t  fast_huffman[FAST_HUFFMAN_TABLE_SIZE];
-   #else
+#else
     int32_t  fast_huffman[FAST_HUFFMAN_TABLE_SIZE];
-   #endif
+#endif
    uint32_t *sorted_codewords;
    int    *sorted_values;
    int     sorted_entries;
@@ -671,9 +671,9 @@ static void compute_accelerated_huffman(Codebook *c)
       c->fast_huffman[i] = -1;
 
    len = c->sparse ? c->sorted_entries : c->entries;
-   #ifdef RVORBIS_FAST_HUFFMAN_SHORT
+#ifdef RVORBIS_FAST_HUFFMAN_SHORT
    if (len > 32767) len = 32767; /* largest possible value we can encode! */
-   #endif
+#endif
    for (i=0; i < len; ++i) {
       if (c->codeword_lengths[i] <= RVORBIS_FAST_HUFFMAN_LENGTH) {
          uint32_t z = c->sparse ? bit_reverse(c->sorted_codewords[i]) : c->codewords[i];
@@ -2923,13 +2923,13 @@ static int start_decoder(vorb *f)
          }
         skip:;
 
-         #ifdef RVORBIS_CODEBOOK_FLOATS
+#ifdef RVORBIS_CODEBOOK_FLOATS
          if (c->lookup_type == 2 && c->sequence_p) {
             for (j=1; j < (int) c->lookup_values; ++j)
                c->multiplicands[j] = c->multiplicands[j-1];
             c->sequence_p = 0;
          }
-         #endif
+#endif
       }
    }
 

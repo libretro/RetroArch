@@ -6,7 +6,4 @@
 #else
 #include <alloca.h>
 #endif
-#define RVORBIS_NO_PUSHDATA_API
-#define RVORBIS_NO_STDIO
-#define RVORBIS_NO_CRT
 #include <formats/rvorbis.h>
