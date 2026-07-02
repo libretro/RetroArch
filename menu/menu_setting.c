@@ -26404,6 +26404,8 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
       const char *ok_tag   = "-";
       const char *left_tag = "-";
       const char *rght_tag = "-";
+      const char *strt_tag = "0";
+      const char *sel_tag  = "0";
       char dflt[64];
 
       if (s->action_ok == setting_bool_action_left_with_refresh)
@@ -26414,6 +26416,14 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
          left_tag = "boolrefL";
       if (s->action_right == setting_bool_action_right_with_refresh)
          rght_tag = "boolrefR";
+      if (s->action_start == setting_generic_action_start_default)
+         strt_tag = "D";
+      else if (s->action_start)
+         strt_tag = "C";
+      if (s->action_select == setting_generic_action_ok_default)
+         sel_tag  = "D";
+      else if (s->action_select)
+         sel_tag  = "C";
 
       dflt[0] = '\0';
       repr[0] = '\0';
@@ -26466,7 +26476,7 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
       }
 
       filestream_printf(f,
-            "%u|%s|%d|%d|%d|%08x|%02x|%.6g|%.6g|%.6g|%d|%d|%d|%d|%u|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n",
+            "%u|%s|%d|%d|%d|%08x|%02x|%.6g|%.6g|%.6g|%d|%d|%d|%d|%u|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n",
             i,
             s->name ? s->name : "",
             (int)s->type,
@@ -26484,7 +26494,7 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
             (unsigned)s->size,
             dflt,
             s->rounding_fraction ? s->rounding_fraction : "",
-            ok_tag, left_tag, rght_tag,
+            ok_tag, left_tag, rght_tag, strt_tag, sel_tag,
             s->short_description ? s->short_description : "",
             s->group ? s->group : "",
             s->subgroup ? s->subgroup : "",
