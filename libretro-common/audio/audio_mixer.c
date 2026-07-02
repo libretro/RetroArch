@@ -331,6 +331,9 @@ static int32_t audio_mixer_gain_s16(int16_t s, int32_t gain_q16)
    return (p >= 0) ? (p >> 16) : -((-p) >> 16);
 }
 
+#if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3)
+/* Only the WAV and streaming s16 resample paths consult this; a MOD-only or
+ * no-codec build would otherwise flag it as unused. */
 static enum sinc_int16_quality audio_mixer_i16_quality(enum resampler_quality q)
 {
    switch (q)
@@ -344,6 +347,7 @@ static enum sinc_int16_quality audio_mixer_i16_quality(enum resampler_quality q)
       default:                        return SINC_INT16_QUALITY_NORMAL;
    }
 }
+#endif
 
 #ifdef HAVE_RWAV
 static bool wav_to_s16(const rwav_t* wav, int16_t** pcm, size_t len)
