@@ -2065,7 +2065,7 @@ uint32_t rmp3_init(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc onSeek, voi
     if (pMP3 == NULL || onRead == NULL)
         return RMP3_FALSE;
 
-    memset((&pMP3), 0, sizeof(*(&pMP3)));
+    memset(pMP3, 0, sizeof(*pMP3));
     return rmp3_init_internal(pMP3, onRead, onSeek, pUserData, pConfig);
 }
 
@@ -2122,7 +2122,7 @@ uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize, const 
     if (pMP3 == NULL)
         return RMP3_FALSE;
 
-    memset((&pMP3), 0, sizeof(*(&pMP3)));
+    memset(pMP3, 0, sizeof(*pMP3));
 
     if (pData == NULL || dataSize == 0)
         return RMP3_FALSE;
