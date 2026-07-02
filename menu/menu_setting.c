@@ -14727,82 +14727,47 @@ static bool setting_append_list(
                         MINIMUM_HARD_SYNC_FRAMES,
                         MAXIMUM_HARD_SYNC_FRAMES, 1, 0,
                         setting_action_ok_uint, NULL)
+#ifdef HAVE_D3DKMT
+                  ,
+                  SDESC_BOOL_ROW(video_scanline_sync, VIDEO_SCANLINE_SYNC,
+                        DEFAULT_SCANLINE_SYNC,
+                        SD_FLAG_NONE, 0, CMD_EVENT_NONE)
+#endif
                };
                settings_list_add_desc(list, list_info, settings,
                      sync_desc, ARRAY_SIZE(sync_desc),
                      &group_info, &subgroup_info, parent_group);
             }
 
-#ifdef HAVE_D3DKMT
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_scanline_sync,
-                  MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
-                  DEFAULT_SCANLINE_SYNC,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-#endif
-
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
             {
-               CONFIG_BOOL(
-                     list, list_info,
-                     &settings->bools.video_adaptive_vsync,
-                     MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-                     DEFAULT_ADAPTIVE_VSYNC,
-                     MENU_ENUM_LABEL_VALUE_OFF,
-                     MENU_ENUM_LABEL_VALUE_ON,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler,
-                     SD_FLAG_NONE
-                     );
+               static const setting_desc_t avsync_desc[] = {
+                  SDESC_BOOL_ROW(video_adaptive_vsync, VIDEO_ADAPTIVE_VSYNC,
+                        DEFAULT_ADAPTIVE_VSYNC,
+                        SD_FLAG_NONE, 0, CMD_EVENT_NONE)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     avsync_desc, ARRAY_SIZE(avsync_desc),
+                     &group_info, &subgroup_info, parent_group);
             }
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_frame_delay,
-                  MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-                  DEFAULT_FRAME_DELAY,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0, MAXIMUM_FRAME_DELAY, 1, true, true);
-            (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_video_frame_delay;
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_frame_delay_auto,
-                  MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-                  DEFAULT_FRAME_DELAY_AUTO,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+            {
+               static const setting_desc_t fdelay_desc[] = {
+                  SDESC_UINT_ROW_EX(video_frame_delay, VIDEO_FRAME_DELAY,
+                        DEFAULT_FRAME_DELAY,
+                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, 0,
+                        0, MAXIMUM_FRAME_DELAY, 1, 0,
+                        setting_action_ok_uint,
+                        setting_get_string_representation_video_frame_delay,
+                        NULL, NULL, NULL, NULL, 0),
+                  SDESC_BOOL_ROW(video_frame_delay_auto, VIDEO_FRAME_DELAY_AUTO,
+                        DEFAULT_FRAME_DELAY_AUTO,
+                        SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_NONE)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     fdelay_desc, ARRAY_SIZE(fdelay_desc),
+                     &group_info, &subgroup_info, parent_group);
+            }
 
             /* Unlike all other shader-related menu entries
              * (which appear in the shaders quick menu, and
@@ -14823,20 +14788,18 @@ static bool setting_append_list(
                      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
                      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
                {
-                  CONFIG_UINT(
-                        list, list_info,
-                        &settings->uints.video_shader_delay,
-                        MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-                        DEFAULT_SHADER_DELAY,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group,
-                        general_write_handler,
-                        general_read_handler);
-                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-                  menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
-                  SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+                  static const setting_desc_t sdelay_desc[] = {
+                     SDESC_UINT_ROW_EX(video_shader_delay, VIDEO_SHADER_DELAY,
+                           DEFAULT_SHADER_DELAY,
+                           SD_FLAG_ADVANCED,
+                           SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN, 0,
+                           0, 0, 1, 0,
+                           setting_action_ok_uint, NULL,
+                           NULL, NULL, NULL, NULL, 0)
+                  };
+                  settings_list_add_desc(list, list_info, settings,
+                        sdelay_desc, ARRAY_SIZE(sdelay_desc),
+                        &group_info, &subgroup_info, parent_group);
                }
             }
 #endif
