@@ -77,6 +77,7 @@ struct audio_mixer_sound
       {
          /* wav */
          const float* pcm;
+         const int16_t* pcm_s16;
          unsigned frames;
       } wav;
 
@@ -393,6 +394,118 @@ static enum sinc_int16_quality audio_mixer_i16_quality(enum resampler_quality q)
    }
 }
 
+#ifdef HAVE_RWAV
+static bool wav_to_s16(const rwav_t* wav, int16_t** pcm, size_t len)
+{
+   size_t i;
+   /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes */
+   int16_t *s = (int16_t*)memalign_alloc(16,
+         ((len + 15) & ~15) * sizeof(int16_t));
+
+   if (!s)
+      return false;
+
+   *pcm = s;
+
+   /* Native s16 conversion (no float detour). 16-bit samples are copied
+    * verbatim; 8-bit unsigned samples are centered and scaled to s16
+    * ((u8 - 128) << 8, i.e. the same magnitude as wav_to_float's
+    * (u8 - 128) / 128 mapped to full scale); mono is duplicated to
+    * stereo, matching wav_to_float's channel handling. For the common
+    * 16-bit stereo case this is a straight copy, so the s16 voice path
+    * never touches float. */
+   if (wav->bitspersample == 8)
+   {
+      const uint8_t *u8 = (const uint8_t*)wav->samples;
+
+      if (wav->numchannels == 1)
+      {
+         for (i = wav->numsamples; i != 0; i--)
+         {
+            int16_t v = (int16_t)(((int)*u8++ - 128) << 8);
+            *s++      = v;
+            *s++      = v;
+         }
+      }
+      else if (wav->numchannels == 2)
+      {
+         for (i = wav->numsamples; i != 0; i--)
+         {
+            *s++ = (int16_t)(((int)*u8++ - 128) << 8);
+            *s++ = (int16_t)(((int)*u8++ - 128) << 8);
+         }
+      }
+   }
+   else
+   {
+      const int16_t *s16 = (const int16_t*)wav->samples;
+
+      if (wav->numchannels == 1)
+      {
+         for (i = wav->numsamples; i != 0; i--)
+         {
+            int16_t v = *s16++;
+            *s++      = v;
+            *s++      = v;
+         }
+      }
+      else if (wav->numchannels == 2)
+      {
+         for (i = wav->numsamples; i != 0; i--)
+         {
+            *s++ = *s16++;
+            *s++ = *s16++;
+         }
+      }
+   }
+
+   return true;
+}
+
+static bool one_shot_resample_s16(const int16_t* in, size_t samples_in,
+      unsigned rate, enum resampler_quality quality,
+      int16_t** out, size_t* samples_out)
+{
+   struct resampler_data_int16 info;
+   size_t alloc_samples;
+   void  *re    = NULL;
+   double ratio = (double)s_rate / (double)rate;
+
+   re = sinc_resampler_int16_init((ratio < 1.0) ? ratio : 1.0,
+         audio_mixer_i16_quality(quality));
+
+   if (!re)
+      return false;
+
+   /* Size by the predicted output count plus a 16-sample safeguard, exactly
+    * like one_shot_resample, so the s16 buffer carries the same frame count
+    * as the float buffer and audio_mixer_sound.wav.frames stays valid for
+    * both. The buffer is zeroed so any undershoot tail reads as silence. */
+   *samples_out  = (size_t)(samples_in * ratio);
+   alloc_samples = ((*samples_out + 16) + 15) & ~15;
+   *out          = (int16_t*)memalign_alloc(16,
+         alloc_samples * sizeof(int16_t));
+
+   if (*out == NULL)
+   {
+      sinc_resampler_int16_free(re);
+      return false;
+   }
+
+   memset(*out, 0, alloc_samples * sizeof(int16_t));
+
+   info.data_in       = in;
+   info.data_out      = *out;
+   info.input_frames  = samples_in / 2;
+   info.output_frames = 0;
+   info.ratio         = ratio;
+
+   sinc_resampler_int16_process(re, &info);
+   sinc_resampler_int16_free(re);
+   return true;
+}
+#endif
+
 audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
       const char *resampler_ident, enum resampler_quality quality)
 {
@@ -402,6 +515,9 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
    /* WAV samples converted to float */
    float* pcm                 = NULL;
    size_t samples             = 0;
+   /* WAV samples converted natively to s16 (parallel float-free path) */
+   int16_t* pcm16             = NULL;
+   size_t samples16           = 0;
    /* Result */
    audio_mixer_sound_t* sound = NULL;
 
@@ -416,21 +532,44 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
       return NULL;
 
    samples       = wav.numsamples * 2;
+   samples16     = samples;
 
    if (!wav_to_float(&wav, &pcm, samples))
       return NULL;
 
+   if (!wav_to_s16(&wav, &pcm16, samples16))
+   {
+      memalign_free((void*)pcm);
+      return NULL;
+   }
+
    if (wav.samplerate != s_rate)
    {
       float* resampled           = NULL;
+      int16_t* resampled16       = NULL;
 
       if (!one_shot_resample(pcm, samples, wav.samplerate,
             resampler_ident, quality,
             &resampled, &samples))
+      {
+         memalign_free((void*)pcm);
+         memalign_free((void*)pcm16);
          return NULL;
+      }
 
       memalign_free((void*)pcm);
       pcm = resampled;
+
+      if (!one_shot_resample_s16(pcm16, samples16, wav.samplerate,
+            quality, &resampled16, &samples16))
+      {
+         memalign_free((void*)pcm);
+         memalign_free((void*)pcm16);
+         return NULL;
+      }
+
+      memalign_free((void*)pcm16);
+      pcm16 = resampled16;
    }
 
    sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
@@ -438,12 +577,14 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
    if (!sound)
    {
       memalign_free((void*)pcm);
+      memalign_free((void*)pcm16);
       return NULL;
    }
 
-   sound->type             = AUDIO_MIXER_TYPE_WAV;
-   sound->types.wav.frames = (unsigned)(samples / 2);
-   sound->types.wav.pcm    = pcm;
+   sound->type              = AUDIO_MIXER_TYPE_WAV;
+   sound->types.wav.frames  = (unsigned)(samples / 2);
+   sound->types.wav.pcm     = pcm;
+   sound->types.wav.pcm_s16 = pcm16;
 
    rwav_free(&wav);
 
@@ -540,6 +681,9 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
    {
       case AUDIO_MIXER_TYPE_WAV:
          handle = (void*)sound->types.wav.pcm;
+         if (handle)
+            memalign_free(handle);
+         handle = (void*)sound->types.wav.pcm_s16;
          if (handle)
             memalign_free(handle);
          break;
@@ -1300,8 +1444,9 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
 #endif
             break;
          case AUDIO_MIXER_TYPE_WAV:
+            res = audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
+            break;
          case AUDIO_MIXER_TYPE_NONE:
-            /* Remaining s16 voice types land in follow-up commits. */
             break;
       }
 
@@ -1425,6 +1570,58 @@ again:
    {
       for (i = buf_free; i != 0; i--)
          *buffer++ += *pcm++ * volume;
+
+      voice->types.wav.position += buf_free;
+   }
+}
+
+static void audio_mixer_mix_wav_s16(int16_t* buffer, size_t num_frames,
+      audio_mixer_voice_t* voice,
+      int32_t gain_q16)
+{
+   int i;
+   unsigned buf_free                = (unsigned)(num_frames * 2);
+   const audio_mixer_sound_t* sound = voice->sound;
+   unsigned pcm_available           = sound->types.wav.frames
+      * 2 - voice->types.wav.position;
+   const int16_t* pcm               = sound->types.wav.pcm_s16 +
+      voice->types.wav.position;
+
+again:
+   if (pcm_available < buf_free)
+   {
+      for (i = pcm_available; i != 0; i--)
+      {
+         *buffer = audio_mixer_sat_s16((int32_t)*buffer
+               + audio_mixer_gain_s16(*pcm++, gain_q16));
+         buffer++;
+      }
+
+      if (voice->repeat)
+      {
+         if (voice->stop_cb)
+            voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
+
+         buf_free                  -= pcm_available;
+         pcm_available              = sound->types.wav.frames * 2;
+         pcm                        = sound->types.wav.pcm_s16;
+         voice->types.wav.position  = 0;
+         goto again;
+      }
+
+      if (voice->stop_cb)
+         voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
+
+      audio_mixer_release(voice);
+   }
+   else
+   {
+      for (i = buf_free; i != 0; i--)
+      {
+         *buffer = audio_mixer_sat_s16((int32_t)*buffer
+               + audio_mixer_gain_s16(*pcm++, gain_q16));
+         buffer++;
+      }
 
       voice->types.wav.position += buf_free;
    }
@@ -2206,8 +2403,9 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
 #endif
             break;
          case AUDIO_MIXER_TYPE_WAV:
+            audio_mixer_mix_wav_s16(buffer, num_frames, voice, gain_q16);
+            break;
          case AUDIO_MIXER_TYPE_NONE:
-            /* Remaining s16 voice types land in follow-up commits. */
             break;
       }
 
