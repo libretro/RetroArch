@@ -1533,7 +1533,7 @@ static void audio_mixer_mix_flac_s16(int16_t* buffer, size_t num_frames,
    unsigned temp_samples = 0;
    int16_t *pcm          = NULL;
 
-   if (voice->types.flac.position == voice->types.flac.samples)
+   if (voice->types.flac.samples == 0)
    {
 again:
       {
@@ -1564,13 +1564,18 @@ again:
       info.ratio         = voice->types.flac.ratio;
 
       if (voice->types.flac.resampler_int16)
+      {
          sinc_resampler_int16_process(
                voice->types.flac.resampler_int16, &info);
+         voice->types.flac.samples = (unsigned)(info.output_frames * 2);
+      }
       else
+      {
          memcpy(voice->types.flac.buffer_s16, temp_buffer,
                temp_samples * sizeof(int16_t));
+         voice->types.flac.samples = temp_samples;
+      }
       voice->types.flac.position = 0;
-      voice->types.flac.samples  = voice->types.flac.buf_samples;
    }
 
    pcm = voice->types.flac.buffer_s16 + voice->types.flac.position;
