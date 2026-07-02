@@ -1356,7 +1356,7 @@ static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
    if (!voice->types.ogg.stream)
       return;
 
-   if (voice->types.ogg.position == voice->types.ogg.samples)
+   if (voice->types.ogg.samples == 0)
    {
 again:
       if (temp_buffer == NULL)
@@ -1398,13 +1398,16 @@ again:
 
          voice->types.ogg.resampler->process(
                voice->types.ogg.resampler_data, &info);
+         voice->types.ogg.samples = (unsigned)(info.output_frames * 2);
       }
       else
+      {
          memcpy(voice->types.ogg.buffer, temp_buffer,
                temp_samples * sizeof(float));
+         voice->types.ogg.samples = temp_samples;
+      }
 
       voice->types.ogg.position = 0;
-      voice->types.ogg.samples  = voice->types.ogg.buf_samples;
    }
 
    pcm = voice->types.ogg.buffer + voice->types.ogg.position;
@@ -1597,7 +1600,7 @@ static void audio_mixer_mix_flac(float* buffer, size_t num_frames,
    unsigned temp_samples            = 0;
    float *pcm                       = NULL;
 
-   if (voice->types.flac.position == voice->types.flac.samples)
+   if (voice->types.flac.samples == 0)
    {
 again:
       /* rflac_read_pcm_frames_f32 takes a frame count and
@@ -1664,12 +1667,17 @@ again:
       info.ratio                = voice->types.flac.ratio;
 
       if (voice->types.flac.resampler)
+      {
          voice->types.flac.resampler->process(
                voice->types.flac.resampler_data, &info);
+         voice->types.flac.samples = (unsigned)(info.output_frames * 2);
+      }
       else
+      {
          memcpy(voice->types.flac.buffer, temp_buffer, temp_samples * sizeof(float));
+         voice->types.flac.samples = temp_samples;
+      }
       voice->types.flac.position = 0;
-      voice->types.flac.samples  = voice->types.flac.buf_samples;
    }
 
    pcm = voice->types.flac.buffer + voice->types.flac.position;
@@ -1784,7 +1792,7 @@ static void audio_mixer_mix_mp3(float* buffer, size_t num_frames,
    unsigned temp_samples            = 0;
    float* pcm                       = NULL;
 
-   if (voice->types.mp3.position == voice->types.mp3.samples)
+   if (voice->types.mp3.samples == 0)
    {
 again:
       {
@@ -1819,13 +1827,18 @@ again:
       info.ratio                = voice->types.mp3.ratio;
 
       if (voice->types.mp3.resampler)
+      {
          voice->types.mp3.resampler->process(
                voice->types.mp3.resampler_data, &info);
+         voice->types.mp3.samples = (unsigned)(info.output_frames * 2);
+      }
       else
+      {
          memcpy(voice->types.mp3.buffer, temp_buffer,
                temp_samples * sizeof(float));
+         voice->types.mp3.samples = temp_samples;
+      }
       voice->types.mp3.position = 0;
-      voice->types.mp3.samples  = voice->types.mp3.buf_samples;
    }
 
    pcm = voice->types.mp3.buffer + voice->types.mp3.position;
