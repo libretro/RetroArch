@@ -3552,6 +3552,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                (struct retro_audio_sample_float_callback*)data;
          if (!cb)
             return false;
+         /* The 'Resample to Fixed Integer' hint (audio_fastpath_s16) asks for
+          * a deterministic integer audio pipeline. Advertising float here
+          * would defeat it: a float-native core forces the float resampler
+          * path regardless of the hint. So when the hint is set we decline,
+          * and the core keeps using its int16 batch callback - leaving the
+          * whole chain in the integer domain. The hint takes precedence over
+          * float advertisement. This is queried once at core init, so
+          * toggling the hint takes effect on the next core load. */
+         if (config_get_ptr()->bools.audio_fastpath_s16)
+            return false;
          /* RetroArch's resampler and DSP chain are float-native, so we
           * advertise float audio output and hand the core our float
           * batch entry point. The core then bypasses int16 entirely.
