@@ -10155,6 +10155,32 @@ typedef struct setting_desc
      (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
      (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), (uint8_t)(_uitype), 0 }
 
+/* _LV variants take the label and value enums as separate tokens for
+ * the few registrations whose pair is mismatched. */
+#define SDESC_BOOL_ROW_LV(field, label, value, def, sd_flags, dflags, cmd) \
+   { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
+     0.0f, 0.0f, 0.0f, NULL, NULL, NULL, \
+     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, \
+     (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), 0, 0 }
+#define SDESC_FLOAT_ROW_LV(field, label, value, def, _rounding, sd_flags, dflags, cmd) \
+   { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
+     0.0f, 0.0f, 0.0f, (_rounding), NULL, NULL, \
+     0, (float)(def), NULL, NULL, NULL, NULL, \
+     (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), 0, 0 }
+#define SDESC_STRING_ROW_LV(field, label, value, def, sd_flags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
+   { (uint32_t)offsetof(settings_t, arrays.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
+     0.0f, 0.0f, 0.0f, (def), (_repr), (ok), \
+     (int32_t)sizeof(((settings_t*)0)->arrays.field), 0.0f, \
+     (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_STRING, 0, (uint8_t)(_uitype), 0 }
+#define SDESC_ACTION_ROW_LV(label, value, sd_flags, ok, _repr, cmd) \
+   { 0, (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
+     0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
+     0, 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_ACTION, 0, 0, 0 }
+
 #define SDESC_UINT_ROW(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
    { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
@@ -11190,13 +11216,15 @@ static bool setting_append_list(
 #if !defined(IOS)
          /* Apple rejects iOS apps that let you forcibly quit them. */
 #ifdef HAVE_LAKKA
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_QUIT_RETROARCH,
-               MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+         {
+            static const setting_desc_t quit_lakka_desc[] = {
+               SDESC_ACTION_ROW_LV(QUIT_RETROARCH, RESTART_RETROARCH,
+                     SD_FLAG_NONE, NULL, NULL, 0)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  quit_lakka_desc, ARRAY_SIZE(quit_lakka_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #else
          {
             static const setting_desc_t mm_desc_9[] = {
@@ -13539,25 +13567,16 @@ static bool setting_append_list(
             }
 
 #ifdef HAVE_ODROIDGO2
-            /* Stays imperative: label/value enums are a mismatched
-             * pair (LABEL_VIDEO_CTX_SCALING / VALUE_VIDEO_RGA_SCALING),
-             * which the single-token descriptor rows cannot express. */
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_ctx_scaling,
-                  MENU_ENUM_LABEL_VIDEO_CTX_SCALING,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
-                  DEFAULT_VIDEO_CTX_SCALING,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+                        {
+               static const setting_desc_t vid_ctx_desc[] = {
+                  SDESC_BOOL_ROW_LV(video_ctx_scaling, VIDEO_CTX_SCALING,
+                        VIDEO_RGA_SCALING, DEFAULT_VIDEO_CTX_SCALING,
+                        SD_FLAG_NONE, 0, CMD_EVENT_REINIT)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     vid_ctx_desc, ARRAY_SIZE(vid_ctx_desc),
+                     &group_info, &subgroup_info, parent_group);
+            }
 #endif
 
             {
@@ -15198,22 +15217,16 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_throttle_framerate,
-               MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
-               MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-               true,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED
-               );
-
+         {
+            static const setting_desc_t menu_thr_desc[] = {
+               SDESC_BOOL_ROW_LV(menu_throttle_framerate, MENU_THROTTLE_FRAMERATE,
+                     MENU_ENUM_THROTTLE_FRAMERATE, true,
+                     SD_FLAG_ADVANCED, 0, 0)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  menu_thr_desc, ARRAY_SIZE(menu_thr_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
          {
             static const setting_desc_t frame_throttli_desc_1[] = {
                SDESC_FLOAT_ROW_EX(slowmotion_ratio, SLOWMOTION_RATIO,
@@ -15352,18 +15365,17 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 #else
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.menu_widget_scale_factor,
-               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,
-               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-               DEFAULT_MENU_WIDGET_SCALE_FACTOR,
-               "%.2fx",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
+         {
+            static const setting_desc_t widget_fs_desc[] = {
+               SDESC_FLOAT_ROW_LV(menu_widget_scale_factor, MENU_WIDGET_SCALE_FACTOR,
+                     MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+                     DEFAULT_MENU_WIDGET_SCALE_FACTOR, "%.2fx",
+                     SD_FLAG_NONE, 0, 0)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  widget_fs_desc, ARRAY_SIZE(widget_fs_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #endif
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
@@ -16736,20 +16748,16 @@ static bool setting_append_list(
          }
 
 #ifdef HAVE_LAKKA
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.menu_show_quit_retroarch,
-                  MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
-                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
-                  DEFAULT_MENU_SHOW_RESTART,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
+         {
+            static const setting_desc_t menu_quit_lakka_desc[] = {
+               SDESC_BOOL_ROW_LV(menu_show_quit_retroarch, MENU_SHOW_QUIT_RETROARCH,
+                     MENU_SHOW_RESTART_RETROARCH, DEFAULT_MENU_SHOW_RESTART,
+                     SD_FLAG_NONE, 0, 0)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  menu_quit_lakka_desc, ARRAY_SIZE(menu_quit_lakka_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #elif !defined(IOS)
          {
             static const setting_desc_t menu_desc_25[] = {
@@ -19077,19 +19085,19 @@ static bool setting_append_list(
          }
 #endif
 #ifdef HAVE_NETWORKING
+#if !IOS
          {
             static const setting_desc_t user_accounts_desc_0_s1[] = {
-#if !IOS
                SDESC_ACTION_ROW(ACCOUNTS_YOUTUBE),
                SDESC_ACTION_ROW(ACCOUNTS_TWITCH),
                SDESC_ACTION_ROW(ACCOUNTS_FACEBOOK),
                SDESC_ACTION_ROW(ACCOUNTS_KICK),
-#endif
             };
             settings_list_add_desc(list, list_info, settings,
                   user_accounts_desc_0_s1, ARRAY_SIZE(user_accounts_desc_0_s1),
                   &group_info, &subgroup_info, parent_group);
          }
+#endif
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -19216,39 +19224,25 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
 #ifdef HAVE_CHEEVOS
-         CONFIG_STRING(
-               list, list_info,
-               settings->arrays.cheevos_username,
-               sizeof(settings->arrays.cheevos_username),
-               MENU_ENUM_LABEL_CHEEVOS_USERNAME,
-               MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
-
-         CONFIG_STRING(
-               list, list_info,
-               settings->arrays.cheevos_password,
-               sizeof(settings->arrays.cheevos_password),
-               MENU_ENUM_LABEL_CHEEVOS_PASSWORD,
-               MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_password;
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
-         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         {
+            static const setting_desc_t cheevos_acct_desc[] = {
+               SDESC_STRING_ROW_LV(cheevos_username, CHEEVOS_USERNAME,
+                     ACCOUNTS_CHEEVOS_USERNAME, "",
+                     SD_FLAG_ALLOW_INPUT, 0,
+                     NULL, NULL,
+                     setting_generic_action_start_default, NULL, NULL, NULL,
+                     ST_UI_TYPE_STRING_LINE_EDIT),
+               SDESC_STRING_ROW_LV(cheevos_password, CHEEVOS_PASSWORD,
+                     ACCOUNTS_CHEEVOS_PASSWORD, "",
+                     SD_FLAG_ALLOW_INPUT, 0,
+                     NULL, setting_get_string_representation_password,
+                     setting_generic_action_start_default, NULL, NULL, NULL,
+                     ST_UI_TYPE_PASSWORD_LINE_EDIT)
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  cheevos_acct_desc, ARRAY_SIZE(cheevos_acct_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
