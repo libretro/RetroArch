@@ -10189,7 +10189,11 @@ typedef struct setting_desc
 #define SDESC_UINT_ROW_EX(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype) \
    SDESC_UINT_ROW_AT_EX(offsetof(settings_t, uints.field), label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype)
 #define SDESC_INT_ROW_EX(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype) \
-   SDESC_UINT_ROW_AT_EX(offsetof(settings_t, ints.field), label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype)
+   { (uint32_t)offsetof(settings_t, ints.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
+     (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), (uint8_t)(_uitype), 0 }
 
 /* _AT variants take the settings_t offset expression directly, for
  * value targets that are inside settings_t but not under the plain
@@ -12657,206 +12661,67 @@ static bool setting_append_list(
                      bool_entries[i].flags);
             }
 
+         {
+            static const setting_desc_t sav_desc_0[] = {
 #ifdef HAVE_THREADS
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.autosave_interval,
-                  MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
-                  MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-                  DEFAULT_AUTOSAVE_INTERVAL,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_AUTOSAVE_INIT);
-            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_autosave_interval;
+               SDESC_UINT_ROW_EX(autosave_interval, AUTOSAVE_INTERVAL,
+                     DEFAULT_AUTOSAVE_INTERVAL,
+                     SD_FLAG_CMD_APPLY_AUTO, (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN), CMD_EVENT_AUTOSAVE_INIT,
+                     0, 0, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_autosave_interval,
+                     NULL, NULL, NULL, NULL, 0),
 #endif
-
 #ifdef HAVE_THREADS
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.savestate_automatic_interval,
-                  MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL,
-                  MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
-                  DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_autosave_interval;
+               SDESC_UINT_ROW_EX(savestate_automatic_interval, SAVESTATE_AUTOMATIC_INTERVAL,
+                     DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL,
+                     SD_FLAG_CMD_APPLY_AUTO, (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN), 0,
+                     0, 0, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_autosave_interval,
+                     NULL, NULL, NULL, NULL, 0),
 #endif
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.savestate_auto_index,
-                  MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,
-                  MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-                  DEFAULT_SAVESTATE_AUTO_INDEX,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.savestate_max_keep,
-                  MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP,
-                  MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-                  DEFAULT_SAVESTATE_MAX_KEEP,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0, 999, 1, true, true);
-
+               SDESC_BOOL_ROW_EX(savestate_auto_index, SAVESTATE_AUTO_INDEX,
+                     DEFAULT_SAVESTATE_AUTO_INDEX, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+               SDESC_UINT_ROW_EX(savestate_max_keep, SAVESTATE_MAX_KEEP,
+                     DEFAULT_SAVESTATE_MAX_KEEP,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 999, 1, 0,
+                     setting_action_ok_uint, NULL,
+                     NULL, NULL, NULL, NULL, 0),
 #ifdef HAVE_BSV_MOVIE
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.replay_auto_index,
-                  MENU_ENUM_LABEL_REPLAY_AUTO_INDEX,
-                  MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-                  DEFAULT_REPLAY_AUTO_INDEX,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.replay_max_keep,
-                  MENU_ENUM_LABEL_REPLAY_MAX_KEEP,
-                  MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
-                  DEFAULT_REPLAY_MAX_KEEP,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0, 999, 1, true, true);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.replay_checkpoint_interval,
-                  MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL,
-                  MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-                  DEFAULT_REPLAY_CHECKPOINT_INTERVAL,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_replay_checkpoint_interval;
-            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.replay_checkpoint_deserialize,
-                  MENU_ENUM_LABEL_REPLAY_CHECKPOINT_DESERIALIZE,
-                  MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
-                  DEFAULT_REPLAY_CHECKPOINT_DESERIALIZE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
+               SDESC_BOOL_ROW_EX(replay_auto_index, REPLAY_AUTO_INDEX,
+                     DEFAULT_REPLAY_AUTO_INDEX, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+               SDESC_UINT_ROW_EX(replay_max_keep, REPLAY_MAX_KEEP,
+                     DEFAULT_REPLAY_MAX_KEEP,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 999, 1, 0,
+                     setting_action_ok_uint, NULL,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_UINT_ROW_EX(replay_checkpoint_interval, REPLAY_CHECKPOINT_INTERVAL,
+                     DEFAULT_REPLAY_CHECKPOINT_INTERVAL,
+                     SD_FLAG_CMD_APPLY_AUTO, (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN), 0,
+                     0, 0, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_replay_checkpoint_interval,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_BOOL_ROW(replay_checkpoint_deserialize, REPLAY_CHECKPOINT_DESERIALIZE,
+                     DEFAULT_REPLAY_CHECKPOINT_DESERIALIZE, SD_FLAG_NONE, 0, 0),
 #endif
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.content_runtime_log,
-                  MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,
-                  MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
-                  DEFAULT_CONTENT_RUNTIME_LOG,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.content_runtime_log_aggregate,
-                  MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
-                  MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-                  DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-
+               SDESC_BOOL_ROW(content_runtime_log, CONTENT_RUNTIME_LOG,
+                     DEFAULT_CONTENT_RUNTIME_LOG, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(content_runtime_log_aggregate, CONTENT_RUNTIME_LOG_AGGREGATE,
+                     DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE, SD_FLAG_NONE, 0, 0),
 #if defined(HAVE_ZLIB)
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.save_file_compression,
-                  MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,
-                  MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-                  DEFAULT_SAVE_FILE_COMPRESSION,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.savestate_file_compression,
-                  MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,
-                  MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-                  DEFAULT_SAVESTATE_FILE_COMPRESSION,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED);
+               SDESC_BOOL_ROW(save_file_compression, SAVE_FILE_COMPRESSION,
+                     DEFAULT_SAVE_FILE_COMPRESSION, SD_FLAG_ADVANCED, 0, 0),
+               SDESC_BOOL_ROW(savestate_file_compression, SAVESTATE_FILE_COMPRESSION,
+                     DEFAULT_SAVESTATE_FILE_COMPRESSION, SD_FLAG_ADVANCED, 0, 0),
 #endif
-
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  sav_desc_0, ARRAY_SIZE(sav_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
             CONFIG_ACTION(
                   list, list_info,
                   MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,
@@ -17230,57 +17095,33 @@ static bool setting_append_list(
                parent_group);
 
 #ifdef HAVE_GFX_WIDGETS
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_enable_widgets,
-               MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,
-               MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-               DEFAULT_MENU_ENABLE_WIDGETS,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_widget_scale_auto,
-               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO,
-               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
-               DEFAULT_MENU_WIDGET_SCALE_AUTO,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+                  {
+            static const setting_desc_t osn_desc_0[] = {
+               SDESC_BOOL_ROW_EX(menu_enable_widgets, MENU_WIDGETS_ENABLE,
+                     DEFAULT_MENU_ENABLE_WIDGETS, SD_FLAG_NONE, 0, CMD_EVENT_REINIT,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+               SDESC_BOOL_ROW_EX(menu_widget_scale_auto, MENU_WIDGET_SCALE_AUTO,
+                     DEFAULT_MENU_WIDGET_SCALE_AUTO, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  osn_desc_0, ARRAY_SIZE(osn_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
 #if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.menu_widget_scale_factor,
-               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,
-               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
-               DEFAULT_MENU_WIDGET_SCALE_FACTOR,
-               "%.2fx",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
+                  {
+            static const setting_desc_t osn_desc_1[] = {
+               SDESC_FLOAT_ROW(menu_widget_scale_factor, MENU_WIDGET_SCALE_FACTOR,
+                     DEFAULT_MENU_WIDGET_SCALE_FACTOR, "%.2fx",
+                     SD_FLAG_NONE, 0, 0,
+                     0, 0, 0,
+                     NULL, NULL),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  osn_desc_1, ARRAY_SIZE(osn_desc_1),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #else
          CONFIG_FLOAT(
                list, list_info,
@@ -17299,41 +17140,30 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
 
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.menu_widget_scale_factor_windowed,
-               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-               DEFAULT_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-               "%.2fx",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+                  {
+            static const setting_desc_t osn_desc_2[] = {
+               SDESC_FLOAT_ROW_EX(menu_widget_scale_factor_windowed, MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+                     DEFAULT_MENU_WIDGET_SCALE_FACTOR_WINDOWED, "%.2fx",
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0.2, 5.0, 0.01,
+                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  osn_desc_2, ARRAY_SIZE(osn_desc_2),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #endif
 #endif
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_font_enable,
-               MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,
-               MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
-               DEFAULT_FONT_ENABLE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+                  {
+            static const setting_desc_t osn_desc_3[] = {
+               SDESC_BOOL_ROW_EX(video_font_enable, VIDEO_FONT_ENABLE,
+                     DEFAULT_FONT_ENABLE, SD_FLAG_NONE, 0, CMD_EVENT_REINIT,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  osn_desc_3, ARRAY_SIZE(osn_desc_3),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          CONFIG_PATH(
                list, list_info,
@@ -17352,579 +17182,168 @@ static bool setting_append_list(
          MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "ttf");
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.video_font_size,
-               MENU_ENUM_LABEL_VIDEO_FONT_SIZE,
-               MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-               DEFAULT_FONT_SIZE,
-               "%.1f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 1.00, 100.00, 1.0, true, true);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
-
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.video_msg_pos_x,
-               MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
-               DEFAULT_MESSAGE_POS_OFFSET_X,
-               "%.3f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
-
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.video_msg_pos_y,
-               MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
-               DEFAULT_MESSAGE_POS_OFFSET_Y,
-               "%.3f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
-
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.video_msg_color_r,
-               MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-               ((DEFAULT_MESSAGE_COLOR >> 16) & 0xff) / 255.0f,
-               "%.3f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_float_video_msg_color;
-         menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0f/255.0f, true, true);
-
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.video_msg_color_g,
-               MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-               ((DEFAULT_MESSAGE_COLOR >> 8) & 0xff) / 255.0f,
-               "%.3f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_float_video_msg_color;
-         menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0f/255.0f, true, true);
-
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.video_msg_color_b,
-               MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-               ((DEFAULT_MESSAGE_COLOR >> 0) & 0xff) / 255.0f,
-               "%.3f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_float_video_msg_color;
-         menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0f/255.0f, true, true);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_msg_bgcolor_enable,
-               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-               DEFAULT_MESSAGE_BGCOLOR_ENABLE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_msg_bgcolor_red,
-               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
-               DEFAULT_MESSAGE_BGCOLOR_RED,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_msg_bgcolor_green,
-               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
-               DEFAULT_MESSAGE_BGCOLOR_GREEN,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_msg_bgcolor_blue,
-               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
-               DEFAULT_MESSAGE_BGCOLOR_BLUE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
-
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.video_msg_bgcolor_opacity,
-               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-               DEFAULT_MESSAGE_BGCOLOR_OPACITY,
-               "%.2f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+                  {
+            static const setting_desc_t osn_desc_4[] = {
+               SDESC_FLOAT_ROW_EX(video_font_size, VIDEO_FONT_SIZE,
+                     DEFAULT_FONT_SIZE, "%.1f",
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT,
+                     1.00, 100.00, 1.0,
+                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
+               SDESC_FLOAT_ROW_EX(video_msg_pos_x, VIDEO_MESSAGE_POS_X,
+                     DEFAULT_MESSAGE_POS_OFFSET_X, "%.3f",
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 1, 0.01,
+                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
+               SDESC_FLOAT_ROW_EX(video_msg_pos_y, VIDEO_MESSAGE_POS_Y,
+                     DEFAULT_MESSAGE_POS_OFFSET_Y, "%.3f",
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 1, 0.01,
+                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
+               SDESC_FLOAT_ROW_EX(video_msg_color_r, VIDEO_MESSAGE_COLOR_RED,
+                     ((DEFAULT_MESSAGE_COLOR >> 16) & 0xff) / 255.0f, "%.3f",
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 1, 1.0f/255.0f,
+                     NULL, setting_get_string_representation_float_video_msg_color, NULL, NULL, NULL, NULL, 0),
+               SDESC_FLOAT_ROW_EX(video_msg_color_g, VIDEO_MESSAGE_COLOR_GREEN,
+                     ((DEFAULT_MESSAGE_COLOR >> 8) & 0xff) / 255.0f, "%.3f",
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 1, 1.0f/255.0f,
+                     NULL, setting_get_string_representation_float_video_msg_color, NULL, NULL, NULL, NULL, 0),
+               SDESC_FLOAT_ROW_EX(video_msg_color_b, VIDEO_MESSAGE_COLOR_BLUE,
+                     ((DEFAULT_MESSAGE_COLOR >> 0) & 0xff) / 255.0f, "%.3f",
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 1, 1.0f/255.0f,
+                     NULL, setting_get_string_representation_float_video_msg_color, NULL, NULL, NULL, NULL, 0),
+               SDESC_BOOL_ROW_EX(video_msg_bgcolor_enable, VIDEO_MESSAGE_BGCOLOR_ENABLE,
+                     DEFAULT_MESSAGE_BGCOLOR_ENABLE, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+               SDESC_UINT_ROW_EX(video_msg_bgcolor_red, VIDEO_MESSAGE_BGCOLOR_RED,
+                     DEFAULT_MESSAGE_BGCOLOR_RED,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 255, 1, 0,
+                     NULL, NULL,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_UINT_ROW_EX(video_msg_bgcolor_green, VIDEO_MESSAGE_BGCOLOR_GREEN,
+                     DEFAULT_MESSAGE_BGCOLOR_GREEN,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 255, 1, 0,
+                     NULL, NULL,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_UINT_ROW_EX(video_msg_bgcolor_blue, VIDEO_MESSAGE_BGCOLOR_BLUE,
+                     DEFAULT_MESSAGE_BGCOLOR_BLUE,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 255, 1, 0,
+                     setting_action_ok_uint, NULL,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_FLOAT_ROW_EX(video_msg_bgcolor_opacity, VIDEO_MESSAGE_BGCOLOR_OPACITY,
+                     DEFAULT_MESSAGE_BGCOLOR_OPACITY, "%.2f",
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 1, 0.01,
+                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  osn_desc_4, ARRAY_SIZE(osn_desc_4),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Notification Views", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_fps_show,
-               MENU_ENUM_LABEL_FPS_SHOW,
-               MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-               DEFAULT_FPS_SHOW,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.fps_update_interval,
-               MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,
-               MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-               DEFAULT_FPS_UPDATE_INTERVAL,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
-         menu_settings_list_current_add_range(list, list_info, 1, 512, 1, true, true);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_memory_show,
-               MENU_ENUM_LABEL_MEMORY_SHOW,
-               MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
-               DEFAULT_MEMORY_SHOW,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.memory_update_interval,
-               MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL,
-               MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
-               DEFAULT_MEMORY_UPDATE_INTERVAL,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
-         menu_settings_list_current_add_range(list, list_info, 1, 512, 1, true, true);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_time_show,
-               MENU_ENUM_LABEL_TIME_SHOW,
-               MENU_ENUM_LABEL_VALUE_TIME_SHOW,
-               DEFAULT_TIME_SHOW,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_with_refresh;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_uint_time_show;
-         menu_settings_list_current_add_range(list, list_info, 0, TIME_SHOW_LAST - 1, 1, true, true);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_statistics_show,
-               MENU_ENUM_LABEL_STATISTICS_SHOW,
-               MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-               DEFAULT_STATISTICS_SHOW,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_framecount_show,
-               MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
-               MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-               DEFAULT_FRAMECOUNT_SHOW,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
+                  {
+            static const setting_desc_t osn_desc_5[] = {
+               SDESC_BOOL_ROW_EX(video_fps_show, FPS_SHOW,
+                     DEFAULT_FPS_SHOW, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+               SDESC_UINT_ROW_EX(fps_update_interval, FPS_UPDATE_INTERVAL,
+                     DEFAULT_FPS_UPDATE_INTERVAL,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     1, 512, 1, 0,
+                     setting_action_ok_uint_special, NULL,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_BOOL_ROW_EX(video_memory_show, MEMORY_SHOW,
+                     DEFAULT_MEMORY_SHOW, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+               SDESC_UINT_ROW_EX(memory_update_interval, MEMORY_UPDATE_INTERVAL,
+                     DEFAULT_MEMORY_UPDATE_INTERVAL,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     1, 512, 1, 0,
+                     setting_action_ok_uint_special, NULL,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_UINT_ROW_EX(video_time_show, TIME_SHOW,
+                     DEFAULT_TIME_SHOW,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, TIME_SHOW_LAST - 1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_time_show,
+                     NULL, NULL, setting_uint_action_left_with_refresh, setting_uint_action_right_with_refresh, ST_UI_TYPE_UINT_COMBOBOX),
+               SDESC_BOOL_ROW(video_statistics_show, STATISTICS_SHOW,
+                     DEFAULT_STATISTICS_SHOW, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(video_framecount_show, FRAMECOUNT_SHOW,
+                     DEFAULT_FRAMECOUNT_SHOW, SD_FLAG_NONE, 0, 0),
 #ifdef HAVE_GFX_WIDGETS
 #ifdef HAVE_NETWORKING
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.netplay_ping_show,
-               MENU_ENUM_LABEL_NETPLAY_PING_SHOW,
-               MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
-               DEFAULT_NETPLAY_PING_SHOW,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         (*list)[list_info->index - 1].action_ok    = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left  = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+               SDESC_BOOL_ROW_EX(netplay_ping_show, NETPLAY_PING_SHOW,
+                     DEFAULT_NETPLAY_PING_SHOW, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
 #endif
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_show_load_content_animation,
-               MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-               MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-               DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+               SDESC_BOOL_ROW(menu_show_load_content_animation, MENU_SHOW_LOAD_CONTENT_ANIMATION,
+                     DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION, SD_FLAG_NONE, 0, 0),
 #endif
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_autoconfig,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
-               DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_autoconfig_fails,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
-               DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
+               SDESC_BOOL_ROW(notification_show_autoconfig, NOTIFICATION_SHOW_AUTOCONFIG,
+                     DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(notification_show_autoconfig_fails, NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+                     DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG_FAILS, SD_FLAG_NONE, 0, 0),
 #ifdef HAVE_CHEATS
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_cheats_applied,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
-               DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+               SDESC_BOOL_ROW(notification_show_cheats_applied, NOTIFICATION_SHOW_CHEATS_APPLIED,
+                     DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED, SD_FLAG_NONE, 0, 0),
 #endif
 #ifdef HAVE_PATCH
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_patch_applied,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
-               DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+               SDESC_BOOL_ROW(notification_show_patch_applied, NOTIFICATION_SHOW_PATCH_APPLIED,
+                     DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED, SD_FLAG_NONE, 0, 0),
 #endif
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_remap_load,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
-               DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_config_override_load,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-               DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_set_initial_disk,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-               DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_disk_control,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_DISK_CONTROL,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
-               DEFAULT_NOTIFICATION_SHOW_DISK_CONTROL,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_save_state,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_SAVE_STATE,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
-               DEFAULT_NOTIFICATION_SHOW_SAVE_STATE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_fast_forward,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-               DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
+               SDESC_BOOL_ROW(notification_show_remap_load, NOTIFICATION_SHOW_REMAP_LOAD,
+                     DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(notification_show_config_override_load, NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+                     DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(notification_show_set_initial_disk, NOTIFICATION_SHOW_SET_INITIAL_DISK,
+                     DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(notification_show_disk_control, NOTIFICATION_SHOW_DISK_CONTROL,
+                     DEFAULT_NOTIFICATION_SHOW_DISK_CONTROL, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(notification_show_save_state, NOTIFICATION_SHOW_SAVE_STATE,
+                     DEFAULT_NOTIFICATION_SHOW_SAVE_STATE, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(notification_show_fast_forward, NOTIFICATION_SHOW_FAST_FORWARD,
+                     DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD, SD_FLAG_NONE, 0, 0),
 #ifdef HAVE_SCREENSHOTS
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_screenshot,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
-               DEFAULT_NOTIFICATION_SHOW_SCREENSHOT,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-
+               SDESC_BOOL_ROW_EX(notification_show_screenshot, NOTIFICATION_SHOW_SCREENSHOT,
+                     DEFAULT_NOTIFICATION_SHOW_SCREENSHOT, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
 #ifdef HAVE_GFX_WIDGETS
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.notification_show_screenshot_duration,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-               DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_uint_notification_show_screenshot_duration;
-         menu_settings_list_current_add_range(list, list_info, 0, NOTIFICATION_SHOW_SCREENSHOT_DURATION_LAST-1, 1, true, true);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.notification_show_screenshot_flash,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-               DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_uint_notification_show_screenshot_flash;
-         menu_settings_list_current_add_range(list, list_info, 0, NOTIFICATION_SHOW_SCREENSHOT_FLASH_LAST-1, 1, true, true);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+               SDESC_UINT_ROW_EX(notification_show_screenshot_duration, NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+                     DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, NOTIFICATION_SHOW_SCREENSHOT_DURATION_LAST-1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_notification_show_screenshot_duration,
+                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
+               SDESC_UINT_ROW_EX(notification_show_screenshot_flash, NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+                     DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, NOTIFICATION_SHOW_SCREENSHOT_FLASH_LAST-1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_notification_show_screenshot_flash,
+                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
 #endif
 #endif
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_refresh_rate,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
-               DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
+               SDESC_BOOL_ROW(notification_show_refresh_rate, NOTIFICATION_SHOW_REFRESH_RATE,
+                     DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE, SD_FLAG_NONE, 0, 0),
 #ifdef HAVE_NETWORKING
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_netplay_extra,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-               DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+               SDESC_BOOL_ROW(notification_show_netplay_extra, NOTIFICATION_SHOW_NETPLAY_EXTRA,
+                     DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA, SD_FLAG_NONE, 0, 0),
 #endif
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.notification_show_when_menu_is_alive,
-               MENU_ENUM_LABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-               DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+               SDESC_BOOL_ROW(notification_show_when_menu_is_alive, NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+                     DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE, SD_FLAG_NONE, 0, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  osn_desc_5, ARRAY_SIZE(osn_desc_5),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -22011,39 +21430,22 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "History", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.history_list_enable,
-               MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,
-               MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-               DEFAULT_HISTORY_LIST_ENABLE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED
-               );
-         (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.content_history_size,
-               MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,
-               MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
-               DEFAULT_CONTENT_HISTORY_SIZE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].offset_by     = 1;
-         menu_settings_list_current_add_range(list, list_info, 1.0f, 9999.0f, 1.0f, true, true);
+                  {
+            static const setting_desc_t pl_desc_0[] = {
+               SDESC_BOOL_ROW_EX(history_list_enable, HISTORY_LIST_ENABLE,
+                     DEFAULT_HISTORY_LIST_ENABLE, SD_FLAG_ADVANCED, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+               SDESC_UINT_ROW_EX(content_history_size, CONTENT_HISTORY_SIZE,
+                     DEFAULT_CONTENT_HISTORY_SIZE,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     1.0f, 9999.0f, 1.0f, 1,
+                     setting_action_ok_uint, NULL,
+                     NULL, NULL, NULL, NULL, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  pl_desc_0, ARRAY_SIZE(pl_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -22053,337 +21455,115 @@ static bool setting_append_list(
           * history size, but they are in fact unrelated. We
           * therefore place this entry outside the "History"
           * sub group. */
-         CONFIG_INT(
-               list, list_info,
-               &settings->ints.content_favorites_size,
-               MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE,
-               MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
-               DEFAULT_CONTENT_FAVORITES_SIZE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].offset_by     = -1;
-         menu_settings_list_current_add_range(list, list_info, -1.0f, 9999.0f, 1.0f, true, true);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.playlist_entry_rename,
-               MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-               DEFAULT_PLAYLIST_ENTRY_RENAME,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.playlist_entry_remove_enable,
-               MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
-               DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_playlist_entry_remove_enable;
-         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_ENTRY_REMOVE_ENABLE_LAST-1, 1, true, true);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.playlist_sort_alphabetical,
-               MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
-               DEFAULT_PLAYLIST_SORT_ALPHABETICAL,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.playlist_use_old_format,
-               MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
-               DEFAULT_PLAYLIST_USE_OLD_FORMAT,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
+                  {
+            static const setting_desc_t pl_desc_1[] = {
+               SDESC_INT_ROW_EX(content_favorites_size, CONTENT_FAVORITES_SIZE,
+                     DEFAULT_CONTENT_FAVORITES_SIZE,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     -1.0f, 9999.0f, 1.0f, -1,
+                     setting_action_ok_uint, NULL,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_BOOL_ROW(playlist_entry_rename, PLAYLIST_ENTRY_RENAME,
+                     DEFAULT_PLAYLIST_ENTRY_RENAME, SD_FLAG_NONE, 0, 0),
+               SDESC_UINT_ROW_EX(playlist_entry_remove_enable, PLAYLIST_ENTRY_REMOVE,
+                     DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, PLAYLIST_ENTRY_REMOVE_ENABLE_LAST-1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_playlist_entry_remove_enable,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_BOOL_ROW(playlist_sort_alphabetical, PLAYLIST_SORT_ALPHABETICAL,
+                     DEFAULT_PLAYLIST_SORT_ALPHABETICAL, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(playlist_use_old_format, PLAYLIST_USE_OLD_FORMAT,
+                     DEFAULT_PLAYLIST_USE_OLD_FORMAT, SD_FLAG_NONE, 0, 0),
 #if defined(HAVE_ZLIB)
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.playlist_compression,
-               MENU_ENUM_LABEL_PLAYLIST_COMPRESSION,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
-               DEFAULT_PLAYLIST_COMPRESSION,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
+               SDESC_BOOL_ROW(playlist_compression, PLAYLIST_COMPRESSION,
+                     DEFAULT_PLAYLIST_COMPRESSION, SD_FLAG_NONE, 0, 0),
 #endif
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.playlist_show_sublabels,
-               MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
-               DEFAULT_PLAYLIST_SHOW_SUBLABELS,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+               SDESC_BOOL_ROW_EX(playlist_show_sublabels, PLAYLIST_SHOW_SUBLABELS,
+                     DEFAULT_PLAYLIST_SHOW_SUBLABELS, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  pl_desc_1, ARRAY_SIZE(pl_desc_1),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          /* Playlist entry index display and content specific history icon
           * are currently supported only by Ozone & XMB */
          if (   string_is_equal(settings->arrays.menu_driver, "xmb")
              || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.playlist_show_history_icons,
-                  MENU_ENUM_LABEL_PLAYLIST_SHOW_HISTORY_ICONS,
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
-                  DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_playlist_show_history_icons;
-            menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_SHOW_HISTORY_ICONS_LAST-1, 1, true, true);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.playlist_show_entry_idx,
-                  MENU_ENUM_LABEL_PLAYLIST_SHOW_ENTRY_IDX,
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
-                  DEFAULT_PLAYLIST_SHOW_ENTRY_IDX,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
+                     {
+            static const setting_desc_t pl_desc_2[] = {
+               SDESC_UINT_ROW_EX(playlist_show_history_icons, PLAYLIST_SHOW_HISTORY_ICONS,
+                     DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, PLAYLIST_SHOW_HISTORY_ICONS_LAST-1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_playlist_show_history_icons,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_BOOL_ROW(playlist_show_entry_idx, PLAYLIST_SHOW_ENTRY_IDX,
+                     DEFAULT_PLAYLIST_SHOW_ENTRY_IDX, SD_FLAG_NONE, 0, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  pl_desc_2, ARRAY_SIZE(pl_desc_2),
+                  &group_info, &subgroup_info, parent_group);
+         }
          }
 
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.playlist_sublabel_runtime_type,
-               MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-               DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_playlist_sublabel_runtime_type;
-         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_RUNTIME_LAST-1, 1, true, true);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.playlist_sublabel_last_played_style,
-               MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-               DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_playlist_sublabel_last_played_style;
-         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_LAST_PLAYED_STYLE_LAST-1, 1, true, true);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.playlist_show_inline_core_name,
-               MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
-               DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_playlist_inline_core_display_type;
-         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_INLINE_CORE_DISPLAY_LAST-1, 1, true, true);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.playlist_fuzzy_archive_match,
-               MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-               DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.scan_without_core_match,
-               MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,
-               MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-               DEFAULT_SCAN_WITHOUT_CORE_MATCH,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.scan_serial_and_crc,
-               MENU_ENUM_LABEL_SCAN_SERIAL_AND_CRC,
-               MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-               DEFAULT_SCAN_SERIAL_AND_CRC,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.playlist_portable_paths,
-               MENU_ENUM_LABEL_PLAYLIST_PORTABLE_PATHS,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
-               DEFAULT_PLAYLIST_PORTABLE_PATHS,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-            );
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.playlist_use_filename,
-               MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-               DEFAULT_PLAYLIST_USE_FILENAME,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-            );
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.playlist_allow_non_png,
-               MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
-               DEFAULT_PLAYLIST_ALLOW_NON_PNG,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-            );
+                  {
+            static const setting_desc_t pl_desc_3[] = {
+               SDESC_UINT_ROW_EX(playlist_sublabel_runtime_type, PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+                     DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, PLAYLIST_RUNTIME_LAST-1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_playlist_sublabel_runtime_type,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_UINT_ROW_EX(playlist_sublabel_last_played_style, PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+                     DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, PLAYLIST_LAST_PLAYED_STYLE_LAST-1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_playlist_sublabel_last_played_style,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_UINT_ROW_EX(playlist_show_inline_core_name, PLAYLIST_SHOW_INLINE_CORE_NAME,
+                     DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, PLAYLIST_INLINE_CORE_DISPLAY_LAST-1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_playlist_inline_core_display_type,
+                     NULL, NULL, NULL, NULL, 0),
+               SDESC_BOOL_ROW(playlist_fuzzy_archive_match, PLAYLIST_FUZZY_ARCHIVE_MATCH,
+                     DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(scan_without_core_match, SCAN_WITHOUT_CORE_MATCH,
+                     DEFAULT_SCAN_WITHOUT_CORE_MATCH, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(scan_serial_and_crc, SCAN_SERIAL_AND_CRC,
+                     DEFAULT_SCAN_SERIAL_AND_CRC, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(playlist_portable_paths, PLAYLIST_PORTABLE_PATHS,
+                     DEFAULT_PLAYLIST_PORTABLE_PATHS, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(playlist_use_filename, PLAYLIST_USE_FILENAME,
+                     DEFAULT_PLAYLIST_USE_FILENAME, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(playlist_allow_non_png, PLAYLIST_ALLOW_NON_PNG,
+                     DEFAULT_PLAYLIST_ALLOW_NON_PNG, SD_FLAG_NONE, 0, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  pl_desc_3, ARRAY_SIZE(pl_desc_3),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
          if (   string_is_equal(settings->arrays.menu_driver, "ozone")
              || string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.ozone_truncate_playlist_name,
-                  MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-                  MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-                  DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.ozone_sort_after_truncate_playlist_name,
-                  MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-                  MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-                  DEFAULT_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
+                     {
+            static const setting_desc_t pl_desc_4[] = {
+               SDESC_BOOL_ROW_EX(ozone_truncate_playlist_name, OZONE_TRUNCATE_PLAYLIST_NAME,
+                     DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+               SDESC_BOOL_ROW(ozone_sort_after_truncate_playlist_name, OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+                     DEFAULT_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME, SD_FLAG_NONE, 0, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  pl_desc_4, ARRAY_SIZE(pl_desc_4),
+                  &group_info, &subgroup_info, parent_group);
+         }
          }
 #endif
 
@@ -22627,136 +21807,33 @@ static bool setting_append_list(
          parent_group = MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS_STR;
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_UINT(
-            list, list_info,
-            &settings->uints.cheevos_visibility_summary,
-            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SUMMARY,
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
-            DEFAULT_CHEEVOS_VISIBILITY_SUMMARY,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_uint_cheevos_visibility_summary;
-         menu_settings_list_current_add_range(list, list_info, 0, RCHEEVOS_SUMMARY_LAST - 1, 1, true, true);
-         (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_UINT_COMBOBOX;
-
-         CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.cheevos_visibility_unlock,
-            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_UNLOCK,
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
-            DEFAULT_CHEEVOS_VISIBILITY_UNLOCK,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-         );
-
-         CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.cheevos_visibility_mastery,
-            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_MASTERY,
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
-            DEFAULT_CHEEVOS_VISIBILITY_MASTERY,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-         );
-
-         CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.cheevos_challenge_indicators,
-            MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS,
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
-            true,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-         );
-
-         CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.cheevos_visibility_progress_tracker,
-            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
-            DEFAULT_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-         );
-
-         CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.cheevos_visibility_lboard_start,
-            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_START,
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
-            DEFAULT_CHEEVOS_VISIBILITY_LBOARD_START,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-         );
-
-         CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.cheevos_visibility_lboard_submit,
-            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
-            DEFAULT_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-         );
-
-         CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.cheevos_visibility_lboard_cancel,
-            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
-            DEFAULT_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-         );
+                  {
+            static const setting_desc_t chv_desc_0[] = {
+               SDESC_UINT_ROW_EX(cheevos_visibility_summary, CHEEVOS_VISIBILITY_SUMMARY,
+                     DEFAULT_CHEEVOS_VISIBILITY_SUMMARY,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, RCHEEVOS_SUMMARY_LAST - 1, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_cheevos_visibility_summary,
+                     NULL, NULL, setting_uint_action_left_with_refresh, setting_uint_action_right_with_refresh, ST_UI_TYPE_UINT_COMBOBOX),
+               SDESC_BOOL_ROW(cheevos_visibility_unlock, CHEEVOS_VISIBILITY_UNLOCK,
+                     DEFAULT_CHEEVOS_VISIBILITY_UNLOCK, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(cheevos_visibility_mastery, CHEEVOS_VISIBILITY_MASTERY,
+                     DEFAULT_CHEEVOS_VISIBILITY_MASTERY, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(cheevos_challenge_indicators, CHEEVOS_CHALLENGE_INDICATORS,
+                     true, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(cheevos_visibility_progress_tracker, CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+                     DEFAULT_CHEEVOS_VISIBILITY_PROGRESS_TRACKER, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(cheevos_visibility_lboard_start, CHEEVOS_VISIBILITY_LBOARD_START,
+                     DEFAULT_CHEEVOS_VISIBILITY_LBOARD_START, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(cheevos_visibility_lboard_submit, CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+                     DEFAULT_CHEEVOS_VISIBILITY_LBOARD_SUBMIT, SD_FLAG_NONE, 0, 0),
+               SDESC_BOOL_ROW(cheevos_visibility_lboard_cancel, CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+                     DEFAULT_CHEEVOS_VISIBILITY_LBOARD_CANCEL, SD_FLAG_NONE, 0, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  chv_desc_0, ARRAY_SIZE(chv_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          CONFIG_BOOL(
             list, list_info,
@@ -22774,37 +21851,17 @@ static bool setting_append_list(
             SD_FLAG_NONE
          );
 
-         CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.cheevos_verbose_enable,
-            MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-            true,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_ADVANCED
-         );
-
-         CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.cheevos_visibility_account,
-            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_ACCOUNT,
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
-            DEFAULT_CHEEVOS_VISIBILITY_ACCOUNT,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_ADVANCED
-         );
+                  {
+            static const setting_desc_t chv_desc_1[] = {
+               SDESC_BOOL_ROW(cheevos_verbose_enable, CHEEVOS_VERBOSE_ENABLE,
+                     true, SD_FLAG_ADVANCED, 0, 0),
+               SDESC_BOOL_ROW(cheevos_visibility_account, CHEEVOS_VISIBILITY_ACCOUNT,
+                     DEFAULT_CHEEVOS_VISIBILITY_ACCOUNT, SD_FLAG_ADVANCED, 0, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  chv_desc_1, ARRAY_SIZE(chv_desc_1),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
 
          END_SUB_GROUP(list, list_info, parent_group);
