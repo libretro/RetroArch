@@ -179,45 +179,58 @@ def decode_c_literal(src):
     return bytes(out)
 
 def encode_c_literal(b):
-    """Encode bytes as C string literal text (without surrounding quotes)."""
+    """Encode bytes as pure-ASCII C string literal text (no quotes).
+
+    Every byte outside printable ASCII is emitted as a fixed 3-digit
+    octal escape, so the source is codepage-proof on compilers without
+    a UTF-8 execution charset (MSVC before 2012 interprets raw bytes
+    through the system ANSI codepage).  Fixed-width octal cannot be
+    extended by a following digit, so no literal splitting is needed."""
     out = []
-    prev_octal = False
     for byte in b:
-        if prev_octal and chr(byte) in '0123456789':
-            out.append('" "')       # split literal so octal cannot extend
-        prev_octal = False
         if   byte == 0x22: out.append('\\"')
         elif byte == 0x5c: out.append('\\\\')
         elif byte == 0x0a: out.append('\\n')
         elif byte == 0x09: out.append('\\t')
         elif byte == 0x0d: out.append('\\r')
-        elif byte < 0x20:
-            out.append('\\%o' % byte)
-            prev_octal = True
+        elif byte < 0x20 or byte >= 0x7f:
+            out.append('\\%03o' % byte)
         else:
-            out.append(chr(byte) if byte < 0x80 else None or chr(byte))
+            out.append(chr(byte))
     return ''.join(out)
 
-def encode_chunk_bytes(b):
-    # work on unicode-safe re-encoding: bytes -> utf-8 text with escapes
-    text = b.decode('utf-8')
-    out = []
-    prev_octal = False
-    for ch in text:
-        if prev_octal and ch in '0123456789':
-            out.append('" "')
-        prev_octal = False
-        if   ch == '"':  out.append('\\"')
-        elif ch == '\\': out.append('\\\\')
-        elif ch == '\n': out.append('\\n')
-        elif ch == '\t': out.append('\\t')
-        elif ch == '\r': out.append('\\r')
-        elif ord(ch) < 0x20:
-            out.append('\\%o' % ord(ch))
-            prev_octal = True
+def encode_chunk_lines(b, width=96, indent='   '):
+    """Encode bytes as one or more adjacent pure-ASCII C literals.
+
+    Escaped output can reach 4 source chars per byte; long chunks are
+    wrapped into adjacent concatenated literals so source lines stay
+    within the ISO C90 minimum line-length guarantee.  Concatenation
+    happens before the 509-char literal limit is measured, and chunk
+    execution length stays <= 500 bytes, so the C89 lane is unaffected."""
+    tokens = []
+    for byte in b:
+        if   byte == 0x22: tokens.append('\\"')
+        elif byte == 0x5c: tokens.append('\\\\')
+        elif byte == 0x0a: tokens.append('\\n')
+        elif byte == 0x09: tokens.append('\\t')
+        elif byte == 0x0d: tokens.append('\\r')
+        elif byte < 0x20 or byte >= 0x7f:
+            tokens.append('\\%03o' % byte)
         else:
-            out.append(ch)
-    return ''.join(out)
+            tokens.append(chr(byte))
+    lines = []
+    cur   = []
+    n     = 0
+    for t in tokens:
+        if n + len(t) > width and cur:
+            lines.append(''.join(cur))
+            cur = []
+            n   = 0
+        cur.append(t)
+        n += len(t)
+    if cur or not lines:
+        lines.append(''.join(cur))
+    return ('"\n%s"' % indent).join(lines)
 
 def chunk_bytes(b, limit):
     """Split bytes at UTF-8 codepoint boundaries, chunks <= limit bytes."""
@@ -257,12 +270,15 @@ def parse_rows_with_guards(text):
     return rows
 
 PRAGMA_BLOCK = (
-'#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)\n'
-'#if (_MSC_VER >= 1700)\n'
-'/* https://support.microsoft.com/en-us/kb/980263 */\n'
-'#pragma execution_character_set("utf-8")\n'
-'#endif\n'
-'#pragma warning(disable:4566)\n'
+'/* Pure-ASCII source: every non-ASCII byte is a fixed 3-digit octal\n'
+' * escape, so no execution-charset pragma is needed and the encoded\n'
+' * UTF-8 bytes survive any compiler codepage (including MSVC 2003-2010,\n'
+' * which have no way to consume raw UTF-8 source reliably).\n'
+' * C4045 is disabled for old MSVC: non-final chunk members are sized\n'
+' * without a NUL slot, which is valid C89; the sizeof compile check\n'
+' * below still catches any real size mismatch. */\n'
+'#if defined(_MSC_VER) && (_MSC_VER < 1900)\n'
+'#pragma warning(disable:4045)\n'
 '#endif\n')
 
 def emit_guard_transition(out, prev, cur):
@@ -292,7 +308,7 @@ def pack(text, lang):
             size = len(cb) + (1 if last else 0)
             name = 's%u' % r if len(chunks) == 1 else 's%u_%u' % (r, ci)
             members.append(('   char %s[%u];' % (name, size), guard))
-            inits.append(('   "%s",' % encode_chunk_bytes(cb), guard))
+            inits.append(('   "%s",' % encode_chunk_lines(cb), guard))
             row_total += size
         if guard:
             sizes.append((row_total, guard))
