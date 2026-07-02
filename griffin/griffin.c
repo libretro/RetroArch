@@ -1000,7 +1000,10 @@ DRIVERS
 #if defined(HAVE_RVORBIS)
 #include "../libretro-common/formats/vorbis/rvorbis.c"
 #endif
-#if defined(HAVE_RFLAC) || defined(HAVE_RVORBIS)
+#if defined(HAVE_RMP3)
+#include "../libretro-common/formats/mp3/rmp3.c"
+#endif
+#if defined(HAVE_RFLAC) || defined(HAVE_RVORBIS) || defined(HAVE_RMP3)
 #include "../libretro-common/formats/audio_transfer.c"
 #endif
 #include "../libretro-common/audio/audio_mixer.c"

@@ -46,11 +46,8 @@
 #include <formats/audio.h>
 #endif
 
-#ifdef HAVE_DR_MP3
-#define DR_MP3_IMPLEMENTATION
-#include <retro_assert.h>
-#define DRMP3_ASSERT(expression) retro_assert(expression)
-#include <dr/dr_mp3.h>
+#ifdef HAVE_RMP3
+#include <formats/audio.h>
 #endif
 
 #ifdef HAVE_IBXM
@@ -101,7 +98,7 @@ struct audio_mixer_sound
       } flac;
 #endif
 
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
       struct
       {
           /* mp */
@@ -161,10 +158,10 @@ struct audio_mixer_voice
       } flac;
 #endif
 
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
       struct
       {
-         drmp3       stream;
+         void       *stream;
          void        *resampler_data;
          const retro_resampler_t *resampler;
          float*      buffer;
@@ -493,7 +490,7 @@ audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size)
 
 audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size)
 {
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
    if (!sound)
@@ -562,7 +559,7 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
 #endif
          break;
       case AUDIO_MIXER_TYPE_MP3:
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
          handle = (void*)sound->types.mp3.data;
          if (handle)
             free(handle);
@@ -923,7 +920,7 @@ error:
 }
 #endif
 
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
 static bool audio_mixer_play_mp3(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
@@ -932,21 +929,28 @@ static bool audio_mixer_play_mp3(
       enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb)
 {
+   unsigned rate                   = 0;
    float ratio                     = 1.0f;
    unsigned samples                = 0;
    void *mp3_buffer                = NULL;
    void *resampler_data            = NULL;
    const retro_resampler_t* resamp = NULL;
-   bool res;
+   void *xfer                      = audio_transfer_new(AUDIO_TYPE_MP3);
 
-   res = drmp3_init_memory(&voice->types.mp3.stream, (const unsigned char*)sound->types.mp3.data, sound->types.mp3.size, NULL);
-
-   if (!res)
+   if (!xfer)
       return false;
 
-   if (voice->types.mp3.stream.sampleRate != s_rate)
+   audio_transfer_set_buffer_ptr(xfer, AUDIO_TYPE_MP3,
+         (void*)sound->types.mp3.data, sound->types.mp3.size);
+
+   if (!audio_transfer_start(xfer, AUDIO_TYPE_MP3))
+      goto error;
+
+   audio_transfer_info(xfer, AUDIO_TYPE_MP3, NULL, &rate, NULL);
+
+   if (rate != s_rate)
    {
-      ratio = (double)s_rate / (double)(voice->types.mp3.stream.sampleRate);
+      ratio = (double)s_rate / (double)rate;
 
       if (!retro_resampler_realloc(&resampler_data,
                &resamp, resampler_ident, quality,
@@ -976,13 +980,14 @@ static bool audio_mixer_play_mp3(
    voice->types.mp3.buffer         = (float*)mp3_buffer;
    voice->types.mp3.buf_samples    = samples;
    voice->types.mp3.ratio          = ratio;
+   voice->types.mp3.stream         = xfer;
    voice->types.mp3.position       = 0;
    voice->types.mp3.samples        = 0;
 
    return true;
 
 error:
-   drmp3_uninit(&voice->types.mp3.stream);
+   audio_transfer_free(xfer, AUDIO_TYPE_MP3);
    return false;
 }
 
@@ -992,8 +997,8 @@ static void audio_mixer_release_mp3(audio_mixer_voice_t* voice)
       voice->types.mp3.resampler->free(voice->types.mp3.resampler_data);
    if (voice->types.mp3.buffer)
       memalign_free(voice->types.mp3.buffer);
-   if (voice->types.mp3.stream.pData)
-      drmp3_uninit(&voice->types.mp3.stream);
+   if (voice->types.mp3.stream)
+      audio_transfer_free(voice->types.mp3.stream, AUDIO_TYPE_MP3);
 }
 
 #endif
@@ -1050,7 +1055,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
 #endif
             break;
          case AUDIO_MIXER_TYPE_MP3:
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
             res = audio_mixer_play_mp3(sound, voice, repeat, volume,
                   resampler_ident, quality, stop_cb);
 #endif
@@ -1175,7 +1180,7 @@ static void audio_mixer_release(audio_mixer_voice_t* voice)
          audio_mixer_release_flac(voice);
          break;
 #endif
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
       case AUDIO_MIXER_TYPE_MP3:
          audio_mixer_release_mp3(voice);
          break;
@@ -1594,7 +1599,7 @@ again:
 }
 #endif
 
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
 static void audio_mixer_mix_mp3(float* buffer, size_t num_frames,
       audio_mixer_voice_t* voice,
       float volume)
@@ -1609,9 +1614,12 @@ static void audio_mixer_mix_mp3(float* buffer, size_t num_frames,
    if (voice->types.mp3.position == voice->types.mp3.samples)
    {
 again:
-      temp_samples = (unsigned)drmp3_read_f32(
-            &voice->types.mp3.stream,
-            AUDIO_MIXER_TEMP_BUFFER / 2, temp_buffer) * 2;
+      {
+         size_t got = 0;
+         audio_transfer_read_f32(voice->types.mp3.stream, AUDIO_TYPE_MP3,
+               temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+         temp_samples = (unsigned)(got * 2);
+      }
 
       if (temp_samples == 0)
       {
@@ -1620,7 +1628,7 @@ again:
             if (voice->stop_cb)
                voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
 
-            drmp3_seek_to_frame(&voice->types.mp3.stream,0);
+            audio_transfer_seek(voice->types.mp3.stream, AUDIO_TYPE_MP3, 0);
             goto again;
          }
 
@@ -1709,7 +1717,7 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
 #endif
             break;
             case AUDIO_MIXER_TYPE_MP3:
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
             audio_mixer_mix_mp3(buffer, num_frames, voice, volume);
 #endif
             break;

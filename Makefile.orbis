@@ -69,7 +69,7 @@ else
 	HAVE_STB_FONT					:= 1
 	HAVE_RVORBIS				:= 1
 	HAVE_DR_FLAC					:= 1
-	HAVE_DR_MP3						:= 1
+	HAVE_RMP3						:= 1
 	HAVE_MATERIALUI 			:= 1
 	HAVE_XMB							:= 1
 	HAVE_OZONE						:= 1

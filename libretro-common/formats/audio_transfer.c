@@ -34,6 +34,9 @@
 #define RVORBIS_HEADER_ONLY
 #include <formats/rvorbis.h>
 #endif
+#ifdef HAVE_RMP3
+#include <formats/rmp3.h>
+#endif
 
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
@@ -56,10 +59,40 @@ struct audio_transfer_vorbis
    rvorbis    *handle;
    int         channels; /* cached from rvorbis_get_info at start           */
 };
+#endif
 
-/* Vorbis is a float-internal codec with no integer decode API, so the s16
- * read decodes float and quantises at the boundary (round-half-away, clamp).
- * This is a single quantisation, not an int16<->float round-trip. */
+#ifdef HAVE_RMP3
+struct audio_transfer_mp3
+{
+   const void *data;
+   size_t      size;
+   rmp3        handle;   /* dr_mp3 initialises this in place (by value)      */
+   int         inited;   /* handle is embedded, so track init state a flag   */
+};
+#endif
+
+#if defined(HAVE_RVORBIS) || defined(HAVE_RMP3)
+/* Vorbis and MP3 are float-internal codecs with no integer decode API, so the
+ * s16 read decodes float and quantises at the boundary (round-half-away from
+ * zero, clamped). This is a single quantisation, not an int16<->float
+ * round-trip. */
+static void audio_transfer_f32_to_s16(int16_t *out, const float *in, size_t samples)
+{
+   size_t i;
+   for (i = 0; i < samples; i++)
+   {
+      float s = in[i] * 32768.0f;
+      int   q = (int)(s + ((s >= 0.0f) ? 0.5f : -0.5f));
+      if (q >  32767)
+         q =  32767;
+      if (q < -32768)
+         q = -32768;
+      out[i] = (int16_t)q;
+   }
+}
+#endif
+
+#ifdef HAVE_RVORBIS
 static size_t audio_transfer_vorbis_read_s16(struct audio_transfer_vorbis *v,
       int16_t *out, size_t frames)
 {
@@ -76,24 +109,44 @@ static size_t audio_transfer_vorbis_read_s16(struct audio_transfer_vorbis *v,
       int want = (int)(frames - done);
       int req  = (want < cap_frames) ? want : cap_frames;
       int got  = rvorbis_get_samples_float_interleaved(v->handle, ch, chunk, req * ch);
-      int i, n;
 
       if (got <= 0)
          break;
 
-      n = got * ch;
-      for (i = 0; i < n; i++)
-      {
-         float s = chunk[i] * 32768.0f;
-         int   q = (int)(s + ((s >= 0.0f) ? 0.5f : -0.5f));
-         if (q >  32767)
-            q =  32767;
-         if (q < -32768)
-            q = -32768;
-         out[(done * (size_t)ch) + (size_t)i] = (int16_t)q;
-      }
-
+      audio_transfer_f32_to_s16(out + (done * (size_t)ch), chunk,
+            (size_t)got * (size_t)ch);
       done += (size_t)got;
+      if (got < req)
+         break;
+   }
+   return done;
+}
+#endif
+
+#ifdef HAVE_RMP3
+static size_t audio_transfer_mp3_read_s16(struct audio_transfer_mp3 *m,
+      int16_t *out, size_t frames)
+{
+   float    chunk[512];
+   size_t   done       = 0;
+   int      ch         = (int)m->handle.channels;
+   int      cap_frames = (ch > 0) ? (int)((sizeof(chunk) / sizeof(chunk[0])) / ch) : 0;
+
+   if (cap_frames <= 0)
+      return 0;
+
+   while (done < frames)
+   {
+      size_t want = frames - done;
+      size_t req  = (want < (size_t)cap_frames) ? want : (size_t)cap_frames;
+      size_t got  = (size_t)rmp3_read_f32(&m->handle, (rmp3_uint64)req, chunk);
+
+      if (got == 0)
+         break;
+
+      audio_transfer_f32_to_s16(out + (done * (size_t)ch), chunk,
+            got * (size_t)ch);
+      done += got;
       if (got < req)
          break;
    }
@@ -128,8 +181,11 @@ void *audio_transfer_new(enum audio_type_enum type)
       case AUDIO_TYPE_VORBIS:
          return calloc(1, sizeof(struct audio_transfer_vorbis));
 #endif
-      case AUDIO_TYPE_WAV:
+#ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
+         return calloc(1, sizeof(struct audio_transfer_mp3));
+#endif
+      case AUDIO_TYPE_WAV:
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -166,8 +222,19 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          break;
       }
 #endif
-      case AUDIO_TYPE_WAV:
+#ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         if (m)
+         {
+            m->data = ptr;
+            m->size = len;
+         }
+         break;
+      }
+#endif
+      case AUDIO_TYPE_WAV:
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -203,8 +270,17 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          return true;
       }
 #endif
-      case AUDIO_TYPE_WAV:
+#ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         if (!m || !m->data)
+            return false;
+         m->inited = (rmp3_init_memory(&m->handle, m->data, m->size, NULL) != 0);
+         return m->inited != 0;
+      }
+#endif
+      case AUDIO_TYPE_WAV:
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -230,8 +306,14 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
          return (v && v->handle);
       }
 #endif
-      case AUDIO_TYPE_WAV:
+#ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         return (m && m->inited);
+      }
+#endif
+      case AUDIO_TYPE_WAV:
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -276,8 +358,22 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
-      case AUDIO_TYPE_WAV:
+#ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         if (!m || !m->inited)
+            return false;
+         if (channels)
+            *channels     = (unsigned)m->handle.channels;
+         if (rate)
+            *rate         = (unsigned)m->handle.sampleRate;
+         if (total_frames) /* streaming; length not tracked here */
+            *total_frames = 0;
+         return true;
+      }
+#endif
+      case AUDIO_TYPE_WAV:
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -313,8 +409,17 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          break;
       }
 #endif
-      case AUDIO_TYPE_WAV:
+#ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         if (!m || !m->inited)
+            return AUDIO_PROCESS_ERROR;
+         produced = audio_transfer_mp3_read_s16(m, out, frames);
+         break;
+      }
+#endif
+      case AUDIO_TYPE_WAV:
       case AUDIO_TYPE_NONE:
       default:
          return AUDIO_PROCESS_ERROR;
@@ -356,8 +461,17 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          break;
       }
 #endif
-      case AUDIO_TYPE_WAV:
+#ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         if (!m || !m->inited)
+            return AUDIO_PROCESS_ERROR;
+         produced = (size_t)rmp3_read_f32(&m->handle, (rmp3_uint64)frames, out);
+         break;
+      }
+#endif
+      case AUDIO_TYPE_WAV:
       case AUDIO_TYPE_NONE:
       default:
          return AUDIO_PROCESS_ERROR;
@@ -397,8 +511,16 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          return rvorbis_seek(v->handle, (unsigned int)frame) != 0;
       }
 #endif
-      case AUDIO_TYPE_WAV:
+#ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         if (!m || !m->inited)
+            return false;
+         return rmp3_seek_to_frame(&m->handle, (rmp3_uint64)frame) != 0;
+      }
+#endif
+      case AUDIO_TYPE_WAV:
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -431,8 +553,16 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          break;
       }
 #endif
-      case AUDIO_TYPE_WAV:
+#ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         if (m->inited)
+            rmp3_uninit(&m->handle);
+         break;
+      }
+#endif
+      case AUDIO_TYPE_WAV:
       case AUDIO_TYPE_NONE:
       default:
          break;

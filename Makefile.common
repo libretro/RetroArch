@@ -232,8 +232,14 @@ ifneq ($(GIT_VERSION),)  # Enable version_git.o?
 endif
 
 # General object files
-ifeq ($(HAVE_DR_MP3), 1)
-   DEFINES += -DHAVE_DR_MP3
+ifeq ($(HAVE_RMP3), 1)
+   DEFINES += -DHAVE_RMP3
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.o
+ifneq ($(HAVE_BUILTINFLAC),1)
+ifneq ($(HAVE_RVORBIS),1)
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
+endif
 endif
 
 OBJ += frontend/frontend_driver.o \
