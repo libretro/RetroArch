@@ -53,4 +53,6 @@ const rarch_profile_list_t *profile_manager_get_list(void);
 /* Return the path to the system icons directory. */
 void profile_manager_get_sysicons_dir(char *dir, size_t len);
 
+bool profile_manager_set_icon(int index, const char *image_name);
+
 #endif

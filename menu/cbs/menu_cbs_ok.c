@@ -4145,6 +4145,7 @@ DEFAULT_ACTION_DIALOG_START(action_ok_save_as_config,
    menu_input_st_string_cb_config_file_save_as)
 
 static char g_cached_profile_name[128] = {0};
+static int g_cached_change_icon_idx    = -1;
 
 static void menu_input_st_string_cb_profile_create(void *userdata, const char *str)
 {
@@ -4303,29 +4304,61 @@ static int action_ok_profile_delete(const char *path, const char *label, unsigne
 
 static int action_ok_profile_icon_select(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   if (path && *path && g_cached_profile_name[0])
+   if (path && *path)
    {
       char msg[256];
       size_t _len;
       struct menu_state *menu_st = menu_state_get_ptr();
       size_t new_selection_ptr  = menu_st->selection_ptr;
-      bool success = profile_manager_create(g_cached_profile_name, path);
-      if (success)
+
+      if (g_cached_change_icon_idx >= 0)
       {
-         _len = snprintf(msg, sizeof(msg), "Profile '%s' created successfully!", g_cached_profile_name);
-         runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+         int ci_idx = g_cached_change_icon_idx;
+         const char *pname = profile_manager_get_list()->profiles[ci_idx].name;
+         g_cached_change_icon_idx = -1;
+         if (profile_manager_set_icon(ci_idx, path))
+         {
+            _len = snprintf(msg, sizeof(msg), "Icon changed for '%s'.", pname);
+            runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+         }
+         else
+         {
+            _len = snprintf(msg, sizeof(msg), "Failed to change icon for '%s'!", pname);
+            runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         }
       }
-      else
+      else if (g_cached_profile_name[0])
       {
-         _len = snprintf(msg, sizeof(msg), "Failed to create profile '%s'!", g_cached_profile_name);
-         runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         bool success = profile_manager_create(g_cached_profile_name, path);
+         if (success)
+         {
+            _len = snprintf(msg, sizeof(msg), "Profile '%s' created successfully!", g_cached_profile_name);
+            runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+         }
+         else
+         {
+            _len = snprintf(msg, sizeof(msg), "Failed to create profile '%s'!", g_cached_profile_name);
+            runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         }
+         g_cached_profile_name[0] = '\0';
       }
-      g_cached_profile_name[0] = '\0';
-      /* Pop icon selection screen and refresh the profiles list beneath it */
+
       menu_entries_pop_stack(&new_selection_ptr, 0, 1);
       menu_st->selection_ptr = new_selection_ptr;
       menu_st->flags        |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    }
+   return 0;
+}
+
+static int action_ok_profile_change_icon(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   int profile_idx = profile_index_from_label(label, "profile_change_icon_");
+   if (profile_idx < 0)
+      profile_idx = (int)entry_idx;
+   g_cached_change_icon_idx = profile_idx;
+   generic_action_ok_displaylist_push(NULL, NULL,
+         MENU_ENUM_LABEL_PROFILE_ICON_SELECT_STR, 0, 0, 0,
+         ACTION_OK_DL_PUSH_DEFAULT);
    return 0;
 }
 
@@ -9698,6 +9731,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PROFILE_SAVE_CURRENT,                action_ok_profile_save_current},
          {MENU_ENUM_LABEL_PROFILE_SELECT,                      action_ok_profile_select},
          {MENU_ENUM_LABEL_PROFILE_DELETE,                      action_ok_profile_delete},
+         {MENU_ENUM_LABEL_PROFILE_CHANGE_ICON,                 action_ok_profile_change_icon},
          {MENU_ENUM_LABEL_PROFILE_ICON_SELECT,                 action_ok_profile_icon_select},
          {MENU_ENUM_LABEL_HELP_LIST,                           action_ok_push_default},
          {MENU_ENUM_LABEL_INFORMATION_LIST,                    action_ok_push_default},

@@ -3473,15 +3473,14 @@ static int menu_displaylist_parse_load_content_settings(
        *   subsequently requires the menu stack to be flushed
        *   in order to prevent the display of an empty
        *   'No items' menu */
-      if (settings->bools.quick_menu_show_close_content)
-         if (menu_entries_append(list,
+      if (menu_entries_append(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT),
                MENU_ENUM_LABEL_CLOSE_CONTENT_STR,
                MENU_ENUM_LABEL_CLOSE_CONTENT,
                horizontal ? MENU_SETTING_ACTION_CLOSE_HORIZONTAL :
                      MENU_SETTING_ACTION_CLOSE,
                0, 0, NULL))
-            count++;
+          count++;
 
       if (     savestates_enabled
             && settings->bools.quick_menu_show_savestate_submenu)
@@ -11264,6 +11263,21 @@ unsigned menu_displaylist_build_list(
                            del_display,
                            del_label,
                            MENU_ENUM_LABEL_PROFILE_DELETE,
+                           MENU_SETTING_ACTION, 0, i, NULL))
+                     count++;
+               }
+
+               /* Change Icon */
+               {
+                  char icon_label[64];
+                  char icon_display[192];
+                  snprintf(icon_label, sizeof(icon_label), "profile_change_icon_%d", i);
+                  snprintf(icon_display, sizeof(icon_display), "  [Change Icon] %s",
+                        profile_list->profiles[i].name);
+                  if (menu_entries_append(list,
+                           icon_display,
+                           icon_label,
+                           MENU_ENUM_LABEL_PROFILE_CHANGE_ICON,
                            MENU_SETTING_ACTION, 0, i, NULL))
                      count++;
                }

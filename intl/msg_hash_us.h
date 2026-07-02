@@ -264,6 +264,14 @@ MSG_HASH(
    "Remove this profile permanently."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PROFILE_CHANGE_ICON,
+   "Change Icon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PROFILE_CHANGE_ICON,
+   "Change the icon for this profile."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
    "Help"
    )

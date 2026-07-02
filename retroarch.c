@@ -3951,6 +3951,10 @@ bool command_event(enum event_command cmd, void *data)
             menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          }
+         else
+         {
+            menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+         }
 #else
          command_event(CMD_EVENT_QUIT, NULL);
 #endif
