@@ -31,7 +31,6 @@
 #include <formats/rflac.h>
 #endif
 #ifdef HAVE_RVORBIS
-#define RVORBIS_HEADER_ONLY
 #include <formats/rvorbis.h>
 #endif
 #ifdef HAVE_RMP3
