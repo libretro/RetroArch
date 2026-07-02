@@ -403,6 +403,7 @@ typedef struct xmb_handle
    float x;
    float alpha;
    float alpha_list;
+   float bg_alpha;
    float above_subitem_offset;
    float above_item_offset;
    float active_item_factor;
@@ -8787,8 +8788,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             NULL);
    }
 
-   gfx_display_set_alpha(coord_black, MIN((float)alpha_factor / 100, xmb->alpha));
-   gfx_display_set_alpha(coord_white, xmb->alpha);
+   gfx_display_set_alpha(coord_black, MIN((float)alpha_factor / 100, xmb->bg_alpha));
+   gfx_display_set_alpha(coord_white, xmb->bg_alpha);
 
    if (dispctx)
       xmb_draw_bg(
@@ -8799,9 +8800,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_height,
             menu_shader_pipeline,
             color_theme,
-            MIN(xmb->alpha, menu_wallpaper_opacity),
+            MIN(xmb->bg_alpha, menu_wallpaper_opacity),
             libretro_running,
-            MIN(xmb->alpha, alpha_factor / 100),
+            MIN(xmb->bg_alpha, alpha_factor / 100),
             tex_bg,
             xmb->bg_file_path,
             coord_black,
@@ -9942,6 +9943,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->old_depth                     = 1;
    xmb->alpha                         = 0.0f;
    xmb->alpha_list                    = 1.0f;
+   xmb->bg_alpha                      = 0.0f;
    xmb->is_first_frame                = true;
 
    xmb_refresh_system_tabs_list(xmb);
@@ -10374,16 +10376,43 @@ static void xmb_toggle(void *userdata, bool menu_on)
 {
    xmb_handle_t *xmb          = (xmb_handle_t*)userdata;
    struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   file_list_t *selection_buf = NULL;
+   float spacing              = 0.0f;
+   float target_categories_x  = 0.0f;
+   uintptr_t alpha_tag        = 0;
+   uintptr_t bg_alpha_tag     = 0;
+   uintptr_t cat_tag          = 0;
+   uintptr_t list_tag         = 0;
+   gfx_animation_ctx_entry_t anim_entry;
+   bool menu_horizontal_animation = false;
 
    if (!xmb)
       return;
+
+   menu_horizontal_animation = settings->bools.menu_horizontal_animation;
 
    /* Reset */
    xmb->alpha_list = 1.0f;
 
    if (!menu_on)
    {
+      alpha_tag = (uintptr_t)&xmb->alpha;
+      bg_alpha_tag = (uintptr_t)&xmb->bg_alpha;
+      cat_tag   = (uintptr_t)&xmb->categories_x_pos;
+      gfx_animation_kill_by_tag(&alpha_tag);
+      gfx_animation_kill_by_tag(&bg_alpha_tag);
+      gfx_animation_kill_by_tag(&cat_tag);
+
+      selection_buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+      if (selection_buf)
+      {
+         list_tag = (uintptr_t)selection_buf;
+         gfx_animation_kill_by_tag(&list_tag);
+      }
+
       xmb->alpha = 0;
+      xmb->bg_alpha = 0;
       return;
    }
 
@@ -10409,7 +10438,113 @@ static void xmb_toggle(void *userdata, bool menu_on)
 
    xmb_toggle_horizontal_list(xmb);
 
-   xmb->alpha = xmb->items_active_alpha;
+   if (menu_horizontal_animation && settings->bools.menu_xmb_intro_animation)
+   {
+      alpha_tag = (uintptr_t)&xmb->alpha;
+      bg_alpha_tag = (uintptr_t)&xmb->bg_alpha;
+      cat_tag   = (uintptr_t)&xmb->categories_x_pos;
+      gfx_animation_kill_by_tag(&alpha_tag);
+      gfx_animation_kill_by_tag(&bg_alpha_tag);
+      gfx_animation_kill_by_tag(&cat_tag);
+
+      xmb->alpha = 0.0f;
+      xmb->bg_alpha = 0.0f;
+
+      spacing = xmb->icon_spacing_horizontal;
+      if (spacing == 0.0f)
+      {
+         float scale_factor = xmb->last_scale_factor;
+         float scale_cap = (settings->floats.menu_scale_factor > 1.0f) ? settings->floats.menu_scale_factor : 1;
+         spacing = 192.0f * scale_factor / scale_cap;
+      }
+
+      target_categories_x = spacing * -(float)xmb->categories_selection_ptr;
+      xmb->categories_x_pos = target_categories_x + (spacing * 3.5f);
+
+      anim_entry.duration     = XMB_DELAY * 6;
+      anim_entry.target_value = 1.0f;
+      anim_entry.subject      = &xmb->bg_alpha;
+      anim_entry.easing_enum  = EASING_OUT_QUAD;
+      anim_entry.tag          = bg_alpha_tag;
+      anim_entry.cb           = NULL;
+      anim_entry.userdata     = xmb;
+      gfx_animation_push(&anim_entry);
+
+      anim_entry.duration     = XMB_DELAY * 9;
+      anim_entry.target_value = xmb->items_active_alpha;
+      anim_entry.subject      = &xmb->alpha;
+      anim_entry.easing_enum  = EASING_OUT_CIRC;
+      anim_entry.tag          = alpha_tag;
+      anim_entry.cb           = NULL;
+      anim_entry.userdata     = xmb;
+      gfx_animation_push(&anim_entry);
+
+      anim_entry.duration     = XMB_DELAY * 9;
+      anim_entry.target_value = target_categories_x;
+      anim_entry.subject      = &xmb->categories_x_pos;
+      anim_entry.easing_enum  = EASING_OUT_CUBIC;
+      anim_entry.tag          = cat_tag;
+      anim_entry.cb           = NULL;
+      anim_entry.userdata     = xmb;
+      gfx_animation_push(&anim_entry);
+
+      selection_buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+      if (selection_buf)
+      {
+         unsigned i;
+         size_t end;
+         end = selection_buf->size;
+         list_tag = (uintptr_t)selection_buf;
+
+         gfx_animation_kill_by_tag(&list_tag);
+
+         for (i = 0; i < end; i++)
+         {
+            xmb_node_t *node;
+            float target_ia;
+
+            node = (xmb_node_t*)selection_buf->list[i].userdata;
+            if (!node)
+               continue;
+
+            node->x = spacing * 3.5f;
+            node->alpha = 0.0f;
+            node->label_alpha = 0.0f;
+
+            target_ia = (i == menu_st->selection_ptr) ? xmb->items_active_alpha : xmb->items_passive_alpha;
+
+            anim_entry.duration     = XMB_DELAY * 9;
+            anim_entry.target_value = target_ia;
+            anim_entry.subject      = &node->alpha;
+            anim_entry.easing_enum  = EASING_OUT_CIRC;
+            anim_entry.tag          = list_tag;
+            anim_entry.cb           = NULL;
+            anim_entry.userdata     = xmb;
+            gfx_animation_push(&anim_entry);
+
+            anim_entry.subject      = &node->label_alpha;
+            gfx_animation_push(&anim_entry);
+
+            anim_entry.target_value = 0.0f;
+            anim_entry.subject      = &node->x;
+            anim_entry.easing_enum  = EASING_OUT_CUBIC;
+            gfx_animation_push(&anim_entry);
+         }
+      }
+   }
+   else
+   {
+      xmb->alpha = xmb->items_active_alpha;
+      xmb->bg_alpha = 1.0f;
+      spacing = xmb->icon_spacing_horizontal;
+      if (spacing == 0.0f)
+      {
+         float scale_factor = xmb->last_scale_factor;
+         float scale_cap = (settings->floats.menu_scale_factor > 1.0f) ? settings->floats.menu_scale_factor : 1;
+         spacing = 192.0f * scale_factor / scale_cap;
+      }
+      xmb->categories_x_pos = spacing * -(float)xmb->categories_selection_ptr;
+   }
 }
 
 static int xmb_deferred_push_content_actions(menu_displaylist_info_t *info)

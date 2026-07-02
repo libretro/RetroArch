@@ -1178,6 +1178,7 @@
 #define MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME_STR "xmb_menu_color_theme"
 #define MENU_ENUM_LABEL_XMB_RIBBON_ENABLE_STR "xmb_ribbon_enable"
 #define MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE_STR "xmb_shadows_enable"
+#define MENU_ENUM_LABEL_XMB_INTRO_ANIMATION_STR "xmb_intro_animation"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY_STR "content_show_history"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY_STR "content_show_add_entry"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS_STR "content_show_playlists"

@@ -911,6 +911,7 @@ typedef struct settings
       bool menu_xmb_entry_icons;
       bool menu_xmb_switch_icons;
       bool menu_xmb_vertical_thumbnails;
+      bool menu_xmb_intro_animation;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
       bool menu_content_show_favorites_first;
