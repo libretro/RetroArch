@@ -10178,11 +10178,11 @@ typedef struct setting_desc
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      0.0f, 0.0f, 0.0f, NULL, NULL, NULL, \
      0, 0.0f, NULL, NULL, NULL, NULL, 0, 0, SDESC_ACTION, 0, 0, 0 }
-#define SDESC_ACTION_ROW_EX(label, ok) \
-   { 0, 0, \
+#define SDESC_ACTION_ROW_EX(label, sd_flags, ok, _repr, cmd) \
+   { 0, (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, NULL, NULL, (ok), \
-     0, 0.0f, NULL, NULL, NULL, NULL, 0, 0, SDESC_ACTION, 0, 0, 0 }
+     0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
+     0, 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_ACTION, 0, 0, 0 }
 
 /* _EX variants add action_start / action_select / ui_type overrides
  * (0 / NULL keeps the class default). */
@@ -10407,6 +10407,8 @@ static void settings_list_add_desc(
                   group_info,
                   subgroup_info,
                   parent_group);
+            if (d->flags != SD_FLAG_NONE)
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, d->flags);
             break;
          default:
             break;
@@ -10981,93 +10983,37 @@ static bool setting_append_list(
          MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_MAIN_MENU);
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_INT(
-               list, list_info,
-               &settings->ints.state_slot,
-               MENU_ENUM_LABEL_STATE_SLOT,
-               MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].offset_by     = -1;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_state_slot;
-         menu_settings_list_current_add_range(list, list_info, -1, 999, 1, true, true);
-
+         {
+            static const setting_desc_t mm_desc_0[] = {
+               SDESC_INT_ROW_EX(state_slot, STATE_SLOT,
+                     0,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     -1, 999, 1, -1,
+                     setting_action_ok_uint, setting_get_string_representation_state_slot,
+                     NULL, NULL, NULL, NULL, 0),
 #ifdef HAVE_BSV_MOVIE
-         CONFIG_INT(
-               list, list_info,
-               &settings->ints.replay_slot,
-               MENU_ENUM_LABEL_REPLAY_SLOT,
-               MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].offset_by     = -1;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_state_slot;
-         menu_settings_list_current_add_range(list, list_info, -1, 999, 1, true, true);
+               SDESC_INT_ROW_EX(replay_slot, REPLAY_SLOT,
+                     0,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     -1, 999, 1, -1,
+                     setting_action_ok_uint, setting_get_string_representation_state_slot,
+                     NULL, NULL, NULL, NULL, 0),
 #endif
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_START_CORE,
-               MENU_ENUM_LABEL_VALUE_START_CORE,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
+               SDESC_ACTION_ROW(START_CORE),
 #if defined(HAVE_VIDEOPROCESSOR)
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
-               MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(START_VIDEO_PROCESSOR),
 #endif
-
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_START_NET_RETROPAD,
-               MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(START_NET_RETROPAD),
 #endif
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CONTENT_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE,
-               MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(CONTENT_SETTINGS),
+               SDESC_ACTION_ROW(XMB_MAIN_MENU_ENABLE_SETTINGS),
+               SDESC_ACTION_ROW(MENU_DISABLE_KIOSK_MODE),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_0, ARRAY_SIZE(mm_desc_0),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
 #ifndef HAVE_DYNAMIC
          if (frontend_driver_has_fork())
@@ -11089,41 +11035,37 @@ static bool setting_append_list(
                MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_LOAD_CORE);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_BROWSER_ACTION);
 
-               CONFIG_ACTION(
-                     list, list_info,
-                     MENU_ENUM_LABEL_CORE_LIST_UNLOAD,
-                     MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group);
+         {
+            static const setting_desc_t mm_desc_1[] = {
+               SDESC_ACTION_ROW(CORE_LIST_UNLOAD),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_1, ARRAY_SIZE(mm_desc_1),
+                  &group_info, &subgroup_info, parent_group);
+         }
             }
          }
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_LOAD_CONTENT_LIST,
-               MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+         {
+            static const setting_desc_t mm_desc_2[] = {
+               SDESC_ACTION_ROW(LOAD_CONTENT_LIST),
+               SDESC_ACTION_ROW(SUBSYSTEM_SETTINGS),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_2, ARRAY_SIZE(mm_desc_2),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          if (settings->bools.history_list_enable)
          {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
-                  MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
+         {
+            static const setting_desc_t mm_desc_3[] = {
+               SDESC_ACTION_ROW(LOAD_CONTENT_HISTORY),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_3, ARRAY_SIZE(mm_desc_3),
+                  &group_info, &subgroup_info, parent_group);
+         }
          }
 
 #ifdef HAVE_CDROM
@@ -11136,31 +11078,18 @@ static bool setting_append_list(
             {
                if (drive_list->size)
                {
-                  CONFIG_ACTION(
-                        list, list_info,
-                        MENU_ENUM_LABEL_LOAD_DISC,
-                        MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group);
-
-                  CONFIG_ACTION(
-                        list, list_info,
-                        MENU_ENUM_LABEL_DUMP_DISC,
-                        MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group);
-
+         {
+            static const setting_desc_t mm_desc_4[] = {
+               SDESC_ACTION_ROW(LOAD_DISC),
+               SDESC_ACTION_ROW(DUMP_DISC),
 #ifdef HAVE_LAKKA
-                  CONFIG_ACTION(
-                        list, list_info,
-                        MENU_ENUM_LABEL_EJECT_DISC,
-                        MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group);
+               SDESC_ACTION_ROW(EJECT_DISC),
 #endif
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_4, ARRAY_SIZE(mm_desc_4),
+                  &group_info, &subgroup_info, parent_group);
+         }
                }
 
                string_list_free(drive_list);
@@ -11173,228 +11102,91 @@ static bool setting_append_list(
                && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
 #endif
          {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_ADD_CONTENT_LIST,
-                  MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
+         {
+            static const setting_desc_t mm_desc_5[] = {
+               SDESC_ACTION_ROW(ADD_CONTENT_LIST),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_5, ARRAY_SIZE(mm_desc_5),
+                  &group_info, &subgroup_info, parent_group);
+         }
          }
 
+         {
+            static const setting_desc_t mm_desc_6[] = {
 #if defined(HAVE_NETWORKING)
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_NETPLAY,
-               MENU_ENUM_LABEL_VALUE_NETPLAY,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ONLINE_UPDATER,
-               MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(NETPLAY),
+               SDESC_ACTION_ROW(ONLINE_UPDATER),
 #endif
-
 #ifdef HAVE_MIST
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,
-               MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(CORE_MANAGER_STEAM_LIST),
 #endif
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_INFORMATION_LIST,
-               MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(SETTINGS),
+               SDESC_ACTION_ROW(INFORMATION_LIST),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_6, ARRAY_SIZE(mm_desc_6),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
 #if !defined(IOS) && !defined(HAVE_LAKKA)
          if (frontend_driver_has_fork())
          {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_RESTART_RETROARCH,
-                  MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_RESTART_RETROARCH);
+         {
+            static const setting_desc_t mm_desc_7[] = {
+               SDESC_ACTION_ROW_EX(RESTART_RETROARCH, SD_FLAG_NONE,
+                     NULL, NULL, CMD_EVENT_RESTART_RETROARCH),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_7, ARRAY_SIZE(mm_desc_7),
+                  &group_info, &subgroup_info, parent_group);
+         }
          }
 #endif
 
+         {
+            static const setting_desc_t mm_desc_8[] = {
 #ifdef HAVE_CLOUDSYNC
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW,
-               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_CLOUD_SYNC);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
-               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_LOCAL);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
-               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_SERVER);
+               SDESC_ACTION_ROW_EX(CLOUD_SYNC_SYNC_NOW, SD_FLAG_NONE,
+                     NULL, NULL, CMD_EVENT_CLOUD_SYNC),
+               SDESC_ACTION_ROW_EX(CLOUD_SYNC_RESOLVE_KEEP_LOCAL, SD_FLAG_NONE,
+                     NULL, NULL, CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_LOCAL),
+               SDESC_ACTION_ROW_EX(CLOUD_SYNC_RESOLVE_KEEP_SERVER, SD_FLAG_NONE,
+                     NULL, NULL, CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_SERVER),
 #endif
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
-               MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CONFIGURATIONS,
-               MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
-               MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
-               MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_SAVE_CONFIG);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
-               MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-               MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-               MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-               MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-               MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-               MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-               MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_HELP_LIST,
-               MENU_ENUM_LABEL_VALUE_HELP_LIST,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               SDESC_ACTION_ROW_EX(CONFIGURATIONS_LIST, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW_EX(CONFIGURATIONS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW_EX(SAVE_CURRENT_CONFIG, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG),
+               SDESC_ACTION_ROW_EX(SAVE_NEW_CONFIG, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, CMD_EVENT_MENU_SAVE_CONFIG),
+               SDESC_ACTION_ROW_EX(RESET_TO_DEFAULT_CONFIG, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG),
+               SDESC_ACTION_ROW_EX(SAVE_CURRENT_CONFIG_OVERRIDE_CORE, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
+               SDESC_ACTION_ROW_EX(SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
+               SDESC_ACTION_ROW_EX(SAVE_CURRENT_CONFIG_OVERRIDE_GAME, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
+               SDESC_ACTION_ROW_EX(REMOVE_CURRENT_CONFIG_OVERRIDE_CORE, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE),
+               SDESC_ACTION_ROW_EX(REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
+               SDESC_ACTION_ROW_EX(REMOVE_CURRENT_CONFIG_OVERRIDE_GAME, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME),
+               SDESC_ACTION_ROW_EX(HELP_LIST, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
 #ifdef HAVE_QT
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SHOW_WIMP,
-               MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_UI_COMPANION_TOGGLE);
+               SDESC_ACTION_ROW_EX(SHOW_WIMP, SD_FLAG_NONE,
+                     NULL, NULL, CMD_EVENT_UI_COMPANION_TOGGLE),
 #endif
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_8, ARRAY_SIZE(mm_desc_8),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #if !defined(IOS)
          /* Apple rejects iOS apps that let you forcibly quit them. */
 #ifdef HAVE_LAKKA
@@ -11406,395 +11198,120 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 #else
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_QUIT_RETROARCH,
-               MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+         {
+            static const setting_desc_t mm_desc_9[] = {
+               SDESC_ACTION_ROW(QUIT_RETROARCH),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_9, ARRAY_SIZE(mm_desc_9),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #endif
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_QUIT);
 #endif
 
+         {
+            static const setting_desc_t mm_desc_10[] = {
 #ifdef HAVE_LIBNX
-        CONFIG_ACTION(
-              list, list_info,
-              MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
-              MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-              &group_info,
-              &subgroup_info,
-              parent_group);
+               SDESC_ACTION_ROW(SWITCH_CPU_PROFILE),
 #endif
-
 #if defined(HAVE_LAKKA)
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_REBOOT,
-               MENU_ENUM_LABEL_VALUE_REBOOT,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REBOOT);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SHUTDOWN,
-               MENU_ENUM_LABEL_VALUE_SHUTDOWN,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_SHUTDOWN);
+               SDESC_ACTION_ROW_EX(REBOOT, SD_FLAG_NONE,
+                     NULL, NULL, CMD_EVENT_REBOOT),
+               SDESC_ACTION_ROW_EX(SHUTDOWN, SD_FLAG_NONE,
+                     NULL, NULL, CMD_EVENT_SHUTDOWN),
 #endif
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_DRIVER_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_VIDEO_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_AUDIO_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
+               SDESC_ACTION_ROW_EX(DRIVER_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW(VIDEO_SETTINGS),
+               SDESC_ACTION_ROW(CRT_SWITCHRES_SETTINGS),
+               SDESC_ACTION_ROW(VIDEO_OUTPUT_SETTINGS),
+               SDESC_ACTION_ROW(AUDIO_SETTINGS),
 #ifdef HAVE_AUDIOMIXER
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               SDESC_ACTION_ROW_EX(AUDIO_MIXER_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
 #endif
-
 #ifdef HAVE_AUDIOMIXER
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_MENU_SOUNDS,
-               MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(MENU_SOUNDS),
 #endif
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_INPUT_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_LATENCY_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CORE_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SAVING_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_LOGGING_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_REWIND_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CHEAT_DETAILS_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(INPUT_SETTINGS),
+               SDESC_ACTION_ROW_EX(LATENCY_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW(CORE_SETTINGS),
+               SDESC_ACTION_ROW_EX(CONFIGURATION_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW_EX(SAVING_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW(LOGGING_SETTINGS),
+               SDESC_ACTION_ROW_EX(FRAME_THROTTLE_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW(REWIND_SETTINGS),
+               SDESC_ACTION_ROW_EX(FRAME_TIME_COUNTER_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW(CHEAT_DETAILS_SETTINGS),
+               SDESC_ACTION_ROW(CHEAT_SEARCH_SETTINGS),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_10, ARRAY_SIZE(mm_desc_10),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          if (string_is_not_equal(settings->arrays.record_driver, "null"))
          {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_RECORDING_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         {
+            static const setting_desc_t mm_desc_11[] = {
+               SDESC_ACTION_ROW_EX(RECORDING_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_11, ARRAY_SIZE(mm_desc_11),
+                  &group_info, &subgroup_info, parent_group);
+         }
          }
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
+         {
+            static const setting_desc_t mm_desc_12[] = {
+               SDESC_ACTION_ROW_EX(ONSCREEN_DISPLAY_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
 #ifdef HAVE_OVERLAY
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               SDESC_ACTION_ROW_EX(ONSCREEN_OVERLAY_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW_EX(OVERLAY_LIGHTGUN_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW_EX(OVERLAY_MOUSE_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW_EX(OSK_OVERLAY_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
 #endif
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_MENU_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW_EX(ONSCREEN_NOTIFICATIONS_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW(ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS),
+               SDESC_ACTION_ROW(MENU_SETTINGS),
 #ifdef _3DS
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(MENU_BOTTOM_SETTINGS),
 #endif
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
+               SDESC_ACTION_ROW(MENU_VIEWS_SETTINGS),
+               SDESC_ACTION_ROW(QUICK_MENU_VIEWS_SETTINGS),
+               SDESC_ACTION_ROW(SETTINGS_VIEWS_SETTINGS),
+               SDESC_ACTION_ROW(USER_INTERFACE_SETTINGS),
+               SDESC_ACTION_ROW(AI_SERVICE_SETTINGS),
 #ifdef HAVE_ACCESSIBILITY
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(ACCESSIBILITY_SETTINGS),
 #endif
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
+               SDESC_ACTION_ROW(POWER_MANAGEMENT_SETTINGS),
+               SDESC_ACTION_ROW_EX(MENU_FILE_BROWSER_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
 #ifdef HAVE_CHEEVOS
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(RETRO_ACHIEVEMENTS_SETTINGS),
+               SDESC_ACTION_ROW(CHEEVOS_APPEARANCE_SETTINGS),
+               SDESC_ACTION_ROW(CHEEVOS_VISIBILITY_SETTINGS),
 #endif
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_UPDATER_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(UPDATER_SETTINGS),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_12, ARRAY_SIZE(mm_desc_12),
+                  &group_info, &subgroup_info, parent_group);
+         }
 #ifdef HAVE_LAKKA
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 #endif
@@ -11803,135 +11320,70 @@ static bool setting_append_list(
          if (string_is_not_equal(
                   settings->arrays.bluetooth_driver, "null"))
          {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
+         {
+            static const setting_desc_t mm_desc_13[] = {
+               SDESC_ACTION_ROW(BLUETOOTH_SETTINGS),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_13, ARRAY_SIZE(mm_desc_13),
+                  &group_info, &subgroup_info, parent_group);
+         }
          }
 #endif
 
 #if defined(HAVE_LAKKA) || defined(HAVE_WIFI)
          if (string_is_not_equal(settings->arrays.wifi_driver, "null"))
          {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_WIFI_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
+         {
+            static const setting_desc_t mm_desc_14[] = {
+               SDESC_ACTION_ROW(WIFI_SETTINGS),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_14, ARRAY_SIZE(mm_desc_14),
+                  &group_info, &subgroup_info, parent_group);
+         }
          }
 #endif
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_NETWORK_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
+         {
+            static const setting_desc_t mm_desc_15[] = {
+               SDESC_ACTION_ROW_EX(NETWORK_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
 #ifdef HAVE_LAKKA
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_LAKKA_SERVICES,
-               MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(LAKKA_SERVICES),
 #endif
 #ifdef HAVE_LAKKA_SWITCH
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,
-               MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(LAKKA_SWITCH_OPTIONS),
 #endif
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_PLAYLIST_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_USER_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_DIRECTORY_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_PRIVACY_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
+               SDESC_ACTION_ROW_EX(PLAYLIST_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+               SDESC_ACTION_ROW(USER_SETTINGS),
+               SDESC_ACTION_ROW(DIRECTORY_SETTINGS),
+               SDESC_ACTION_ROW(PRIVACY_SETTINGS),
+               SDESC_ACTION_ROW(AUDIO_OUTPUT_SETTINGS),
 #ifdef HAVE_MICROPHONE
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_MICROPHONE_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(MICROPHONE_SETTINGS),
 #endif
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
+               SDESC_ACTION_ROW(AUDIO_SYNCHRONIZATION_SETTINGS),
 #ifdef HAVE_MIST
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_STEAM_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+               SDESC_ACTION_ROW(STEAM_SETTINGS),
 #endif
-
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_15, ARRAY_SIZE(mm_desc_15),
+                  &group_info, &subgroup_info, parent_group);
+         }
          if (string_is_not_equal(settings->arrays.midi_driver, "null"))
          {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_MIDI_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         {
+            static const setting_desc_t mm_desc_16[] = {
+               SDESC_ACTION_ROW_EX(MIDI_SETTINGS, SD_FLAG_LAKKA_ADVANCED,
+                     NULL, NULL, 0),
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  mm_desc_16, ARRAY_SIZE(mm_desc_16),
+                  &group_info, &subgroup_info, parent_group);
+         }
          }
 
          for (user = 0; user < MAX_USERS; user++)
@@ -15407,8 +14859,8 @@ static bool setting_append_list(
          if (string_is_equal(audio_driver_get_ident(), "asio"))
          {
             static const setting_desc_t audio_asio_desc[] = {
-               SDESC_ACTION_ROW_EX(AUDIO_ASIO_CONTROL_PANEL,
-                     setting_action_asio_control_panel)
+               SDESC_ACTION_ROW_EX(AUDIO_ASIO_CONTROL_PANEL, SD_FLAG_NONE,
+                     setting_action_asio_control_panel, NULL, 0)
             };
             settings_list_add_desc(list, list_info, settings,
                   audio_asio_desc, ARRAY_SIZE(audio_asio_desc),
