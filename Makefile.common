@@ -2097,6 +2097,14 @@ else ifeq ($(HAVE_FLAC),1)
    LIBS    += $(FLAC_LIBS)
 endif
 
+ifeq ($(HAVE_RVORBIS),1)
+   DEFINES += -DHAVE_RVORBIS
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.o
+ifneq ($(HAVE_BUILTINFLAC),1)
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
+endif
+
 ifeq ($(HAVE_BUILTINZLIB), 1)
    HAVE_ZLIB_COMMON = 1
    OBJ += $(DEPS_DIR)/libz/adler32.o \

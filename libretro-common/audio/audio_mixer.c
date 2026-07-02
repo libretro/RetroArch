@@ -38,12 +38,8 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef HAVE_STB_VORBIS
-#define STB_VORBIS_NO_PUSHDATA_API
-#define STB_VORBIS_NO_STDIO
-#define STB_VORBIS_NO_CRT
-
-#include <stb/stb_vorbis.h>
+#ifdef HAVE_RVORBIS
+#include <formats/audio.h>
 #endif
 
 #ifdef HAVE_RFLAC
@@ -87,7 +83,7 @@ struct audio_mixer_sound
          unsigned frames;
       } wav;
 
-#ifdef HAVE_STB_VORBIS
+#ifdef HAVE_RVORBIS
       struct
       {
          /* ogg */
@@ -134,10 +130,10 @@ struct audio_mixer_voice
          unsigned position;
       } wav;
 
-#ifdef HAVE_STB_VORBIS
+#ifdef HAVE_RVORBIS
       struct
       {
-         stb_vorbis *stream;
+         void *stream;
          void       *resampler_data;
          const retro_resampler_t *resampler;
          float      *buffer;
@@ -456,7 +452,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
 
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 {
-#ifdef HAVE_STB_VORBIS
+#ifdef HAVE_RVORBIS
    audio_mixer_sound_t* sound;
 
    if (!buffer || size <= 0)
@@ -545,7 +541,7 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
             memalign_free(handle);
          break;
       case AUDIO_MIXER_TYPE_OGG:
-#ifdef HAVE_STB_VORBIS
+#ifdef HAVE_RVORBIS
          handle = (void*)sound->types.ogg.data;
          if (handle)
             free(handle);
@@ -587,7 +583,7 @@ static bool audio_mixer_play_wav(audio_mixer_sound_t* sound,
    return true;
 }
 
-#ifdef HAVE_STB_VORBIS
+#ifdef HAVE_RVORBIS
 static bool audio_mixer_play_ogg(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
@@ -596,25 +592,28 @@ static bool audio_mixer_play_ogg(
       enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb)
 {
-   stb_vorbis_info info;
-   int res                         = 0;
+   unsigned rate                   = 0;
    float ratio                     = 1.0f;
    unsigned samples                = 0;
    void *ogg_buffer                = NULL;
    void *resampler_data            = NULL;
    const retro_resampler_t* resamp = NULL;
-   stb_vorbis *stb_vorbis          = stb_vorbis_open_memory(
-         (const unsigned char*)sound->types.ogg.data,
-         sound->types.ogg.size, &res, NULL);
+   void *xfer                      = audio_transfer_new(AUDIO_TYPE_VORBIS);
 
-   if (!stb_vorbis)
+   if (!xfer)
       return false;
 
-   info                    = stb_vorbis_get_info(stb_vorbis);
+   audio_transfer_set_buffer_ptr(xfer, AUDIO_TYPE_VORBIS,
+         (void*)sound->types.ogg.data, sound->types.ogg.size);
 
-   if (info.sample_rate != s_rate)
+   if (!audio_transfer_start(xfer, AUDIO_TYPE_VORBIS))
+      goto error;
+
+   audio_transfer_info(xfer, AUDIO_TYPE_VORBIS, NULL, &rate, NULL);
+
+   if (rate != s_rate)
    {
-      ratio = (double)s_rate / (double)info.sample_rate;
+      ratio = (double)s_rate / (double)rate;
 
       if (!retro_resampler_realloc(&resampler_data,
                &resamp, resampler_ident, quality,
@@ -644,21 +643,21 @@ static bool audio_mixer_play_ogg(
    voice->types.ogg.buffer         = (float*)ogg_buffer;
    voice->types.ogg.buf_samples    = samples;
    voice->types.ogg.ratio          = ratio;
-   voice->types.ogg.stream         = stb_vorbis;
+   voice->types.ogg.stream         = xfer;
    voice->types.ogg.position       = 0;
    voice->types.ogg.samples        = 0;
 
    return true;
 
 error:
-   stb_vorbis_close(stb_vorbis);
+   audio_transfer_free(xfer, AUDIO_TYPE_VORBIS);
    return false;
 }
 
 static void audio_mixer_release_ogg(audio_mixer_voice_t* voice)
 {
    if (voice->types.ogg.stream)
-      stb_vorbis_close(voice->types.ogg.stream);
+      audio_transfer_free(voice->types.ogg.stream, AUDIO_TYPE_VORBIS);
    if (voice->types.ogg.resampler && voice->types.ogg.resampler_data)
       voice->types.ogg.resampler->free(voice->types.ogg.resampler_data);
    if (voice->types.ogg.buffer)
@@ -1034,7 +1033,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
             res = audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
             break;
          case AUDIO_MIXER_TYPE_OGG:
-#ifdef HAVE_STB_VORBIS
+#ifdef HAVE_RVORBIS
             res = audio_mixer_play_ogg(sound, voice, repeat, volume,
                   resampler_ident, quality, stop_cb);
 #endif
@@ -1161,7 +1160,7 @@ static void audio_mixer_release(audio_mixer_voice_t* voice)
 
    switch (voice->type)
    {
-#ifdef HAVE_STB_VORBIS
+#ifdef HAVE_RVORBIS
       case AUDIO_MIXER_TYPE_OGG:
          audio_mixer_release_ogg(voice);
          break;
@@ -1254,7 +1253,7 @@ again:
    }
 }
 
-#ifdef HAVE_STB_VORBIS
+#ifdef HAVE_RVORBIS
 static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
       audio_mixer_voice_t* voice,
       float volume)
@@ -1274,9 +1273,12 @@ again:
       if (temp_buffer == NULL)
          temp_buffer = (float*)malloc(AUDIO_MIXER_TEMP_BUFFER * sizeof(float));
 
-      temp_samples = stb_vorbis_get_samples_float_interleaved(
-            voice->types.ogg.stream, 2, temp_buffer,
-            AUDIO_MIXER_TEMP_BUFFER) * 2;
+      {
+         size_t got = 0;
+         audio_transfer_read_f32(voice->types.ogg.stream, AUDIO_TYPE_VORBIS,
+               temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+         temp_samples = (unsigned)(got * 2);
+      }
 
       if (temp_samples == 0)
       {
@@ -1285,7 +1287,7 @@ again:
             if (voice->stop_cb)
                voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
 
-            stb_vorbis_seek_start(voice->types.ogg.stream);
+            audio_transfer_seek(voice->types.ogg.stream, AUDIO_TYPE_VORBIS, 0);
             goto again;
          }
 
@@ -1692,7 +1694,7 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
             audio_mixer_mix_wav(buffer, num_frames, voice, volume);
             break;
          case AUDIO_MIXER_TYPE_OGG:
-#ifdef HAVE_STB_VORBIS
+#ifdef HAVE_RVORBIS
             audio_mixer_mix_ogg(buffer, num_frames, voice, volume);
 #endif
             break;

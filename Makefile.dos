@@ -14,7 +14,7 @@ GRIFFIN_BUILD           = 0
 
 OBJ :=
 
-DEFINES := -DHAVE_DJGPP=1 -U__linux__ -U__linux -DRARCH_INTERNAL -DHAVE_STB_VORBIS
+DEFINES := -DHAVE_DJGPP=1 -U__linux__ -U__linux -DRARCH_INTERNAL -DHAVE_RVORBIS
 CC := i586-pc-msdosdjgpp-gcc
 CXX := i586-pc-msdosdjgpp-g++
 TARGET := retrodos.exe
@@ -64,7 +64,7 @@ HAVE_STDIN_CMD           := 1
 HAVE_CMD                 := 1
 HAVE_CHEEVOS = 0
 HAVE_CHD = 1
-HAVE_STB_VORBIS = 1
+HAVE_RVORBIS = 1
 HAVE_IBXM = 1
 HAVE_CORE_INFO_CACHE = 1
 HAVE_XDELTA = 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
