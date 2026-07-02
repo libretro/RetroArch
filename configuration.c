@@ -2401,7 +2401,7 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("fastforward_ratio",            &settings->floats.fastforward_ratio, true, DEFAULT_FASTFORWARD_RATIO, false);
    SETTING_FLOAT("slowmotion_ratio",             &settings->floats.slowmotion_ratio,  true, DEFAULT_SLOWMOTION_RATIO, false);
 
-   SETTING_FLOAT("audio_rate_control_delta",     audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA), true, DEFAULT_RATE_CONTROL_DELTA, false);
+   SETTING_FLOAT("audio_rate_control_delta",     &settings->floats.audio_rate_control_delta, true, DEFAULT_RATE_CONTROL_DELTA, false);
    SETTING_FLOAT("audio_max_timing_skew",        &settings->floats.audio_max_timing_skew, true, DEFAULT_MAX_TIMING_SKEW, false);
    SETTING_FLOAT("audio_volume",                 &settings->floats.audio_volume, true, DEFAULT_AUDIO_VOLUME, false);
 #ifdef HAVE_AUDIOMIXER
@@ -3136,6 +3136,7 @@ void config_set_defaults(void *data)
 #ifdef HAVE_AUDIOMIXER
    audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
 #endif
+   audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, settings->floats.audio_rate_control_delta);
 
 #ifdef HAVE_MICROPHONE
    if (DEFAULT_MICROPHONE_DEVICE)
@@ -4292,6 +4293,7 @@ static bool config_load_file(global_t *global,
 #ifdef HAVE_AUDIOMIXER
    audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
 #endif
+   audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, settings->floats.audio_rate_control_delta);
 
 #ifdef HAVE_WASAPI
    {

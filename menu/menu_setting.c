@@ -8642,7 +8642,6 @@ static void general_read_handler(rarch_setting_t *setting)
          *setting->value.target.fraction = settings->floats.audio_max_timing_skew;
          break;
       case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
-         *setting->value.target.fraction = *(audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA));
          if (*setting->value.target.fraction < 0.0005)
          {
             configuration_set_bool(settings, settings->bools.audio_rate_control, false);
@@ -14183,9 +14182,6 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-         /* Stays imperative: value target comes from
-          * audio_get_float_ptr() and lives outside settings_t. */
-
          {
             static const setting_desc_t audio_fmt_desc[] = {
                SDESC_UINT_ROW_EX(audio_format_negotiation,
@@ -14203,10 +14199,9 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
-         /* Descriptor holdout: value target outside settings_t. */
          CONFIG_FLOAT(
                list, list_info,
-               audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA),
+               &settings->floats.audio_rate_control_delta,
                MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
                MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
                DEFAULT_RATE_CONTROL_DELTA,

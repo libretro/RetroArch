@@ -484,6 +484,7 @@ typedef struct settings
       float cheevos_appearance_padding_v;
 
       float audio_max_timing_skew;
+      float audio_rate_control_delta;
       float audio_volume; /* dB scale. */
       float audio_mixer_volume; /* dB scale. */
 
