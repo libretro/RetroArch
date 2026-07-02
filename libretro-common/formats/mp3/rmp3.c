@@ -232,9 +232,7 @@ static int rmp3_hdr_frame_bytes(const uint8_t *h, int free_format_size)
 {
     int frame_bytes = rmp3_hdr_frame_samples(h)*rmp3_hdr_bitrate_kbps(h)*125/rmp3_hdr_sample_rate_hz(h);
     if (RMP3_HDR_IS_LAYER_1(h))
-    {
         frame_bytes &= ~3; /* slot align */
-    }
     return frame_bytes ? frame_bytes : free_format_size;
 }
 
@@ -243,7 +241,6 @@ static int rmp3_hdr_padding(const uint8_t *h)
     return RMP3_HDR_TEST_PADDING(h) ? (RMP3_HDR_IS_LAYER_1(h) ? 4 : 1) : 0;
 }
 
-#ifndef RMP3_ONLY_MP3
 static const rmp3_L12_subband_alloc *rmp3_L12_subband_alloc_table(const uint8_t *hdr, rmp3_L12_scale_info *sci)
 {
     const rmp3_L12_subband_alloc *alloc;
@@ -255,20 +252,20 @@ static const rmp3_L12_subband_alloc *rmp3_L12_subband_alloc_table(const uint8_t 
         static const rmp3_L12_subband_alloc g_alloc_L1[] = { { 76, 4, 32 } };
         alloc = g_alloc_L1;
         nbands = 32;
-    } else if (!RMP3_HDR_TEST_MPEG1(hdr))
+    }
+    else if (!RMP3_HDR_TEST_MPEG1(hdr))
     {
         static const rmp3_L12_subband_alloc g_alloc_L2M2[] = { { 60, 4, 4 }, { 44, 3, 7 }, { 44, 2, 19 } };
         alloc = g_alloc_L2M2;
         nbands = 30;
-    } else
+    }
+    else
     {
         static const rmp3_L12_subband_alloc g_alloc_L2M1[] = { { 0, 4, 3 }, { 16, 4, 8 }, { 32, 3, 12 }, { 40, 2, 7 } };
         int sample_rate_idx = RMP3_HDR_GET_SAMPLE_RATE(hdr);
         unsigned kbps = rmp3_hdr_bitrate_kbps(hdr) >> (int)(mode != RMP3_MODE_MONO);
         if (!kbps) /* free-format */
-        {
             kbps = 192;
-        }
 
         alloc = g_alloc_L2M1;
         nbands = 27;
@@ -277,10 +274,9 @@ static const rmp3_L12_subband_alloc *rmp3_L12_subband_alloc_table(const uint8_t 
             static const rmp3_L12_subband_alloc g_alloc_L2M1_lowrate[] = { { 44, 4, 2 }, { 44, 3, 10 } };
             alloc = g_alloc_L2M1_lowrate;
             nbands = sample_rate_idx == 2 ? 12 : 8;
-        } else if (kbps >= 96 && sample_rate_idx != 1)
-        {
-            nbands = 30;
         }
+        else if (kbps >= 96 && sample_rate_idx != 1)
+            nbands = 30;
     }
 
     sci->total_bands = (uint8_t)nbands;
@@ -342,23 +338,17 @@ static void rmp3_L12_read_scale_info(const uint8_t *hdr, rmp3_bs *bs, rmp3_L12_s
         ba = ba_code_tab[rmp3_bs_get_bits(bs, ba_bits)];
         sci->bitalloc[2*i] = ba;
         if (i < sci->stereo_bands)
-        {
             ba = ba_code_tab[rmp3_bs_get_bits(bs, ba_bits)];
-        }
         sci->bitalloc[2*i + 1] = sci->stereo_bands ? ba : 0;
     }
 
     for (i = 0; i < 2*sci->total_bands; i++)
-    {
         sci->scfcod[i] = (uint8_t)(sci->bitalloc[i] ? RMP3_HDR_IS_LAYER_1(hdr) ? 2 : rmp3_bs_get_bits(bs, 2) : 6);
-    }
 
     rmp3_L12_read_scalefactors(bs, sci->bitalloc, sci->scfcod, sci->total_bands*2, sci->scf);
 
     for (i = sci->stereo_bands; i < sci->total_bands; i++)
-    {
         sci->bitalloc[2*i + 1] = 0;
-    }
 }
 
 static int rmp3_L12_dequantize_granule(float *grbuf, rmp3_bs *bs, rmp3_L12_scale_info *sci, int group_size)
@@ -384,9 +374,7 @@ static int rmp3_L12_dequantize_granule(float *grbuf, rmp3_bs *bs, rmp3_L12_scale
                     unsigned mod = (2 << (ba - 17)) + 1;    /* 3, 5, 9 */
                     unsigned code = rmp3_bs_get_bits(bs, mod + 2 - (mod >> 3));  /* 5, 7, 10 */
                     for (k = 0; k < group_size; k++, code /= mod)
-                    {
                         dst[k] = (float)((int)(code % mod - mod/2));
-                    }
                 }
             }
             dst += choff;
@@ -396,7 +384,8 @@ static int rmp3_L12_dequantize_granule(float *grbuf, rmp3_bs *bs, rmp3_L12_scale
     return group_size*4;
 }
 
-static void rmp3_L12_apply_scf_384(rmp3_L12_scale_info *sci, const float *scf, float *dst)
+static void rmp3_L12_apply_scf_384(rmp3_L12_scale_info *sci,
+      const float *scf, float *dst)
 {
     int i, k;
     memcpy(dst + 576 + sci->stereo_bands*18, dst + sci->stereo_bands*18, (sci->total_bands - sci->stereo_bands)*18*sizeof(float));
@@ -409,7 +398,6 @@ static void rmp3_L12_apply_scf_384(rmp3_L12_scale_info *sci, const float *scf, f
         }
     }
 }
-#endif
 
 static int rmp3_L3_read_side_info(rmp3_bs *bs, rmp3_L3_gr_info *gr, const uint8_t *hdr)
 {
@@ -457,24 +445,19 @@ static int rmp3_L3_read_side_info(rmp3_bs *bs, rmp3_L3_gr_info *gr, const uint8_
         gr_count *= 2;
         main_data_begin = rmp3_bs_get_bits(bs, 9);
         scfsi = rmp3_bs_get_bits(bs, 7 + gr_count);
-    } else
-    {
-        main_data_begin = rmp3_bs_get_bits(bs, 8 + gr_count) >> gr_count;
     }
+    else
+        main_data_begin = rmp3_bs_get_bits(bs, 8 + gr_count) >> gr_count;
 
     do
     {
         if (RMP3_HDR_IS_MONO(hdr))
-        {
             scfsi <<= 4;
-        }
         gr->part_23_length = (uint16_t)rmp3_bs_get_bits(bs, 12);
         part_23_sum += gr->part_23_length;
         gr->big_values = (uint16_t)rmp3_bs_get_bits(bs,  9);
         if (gr->big_values > 288)
-        {
             return -1;
-        }
         gr->global_gain = (uint8_t)rmp3_bs_get_bits(bs, 8);
         gr->scalefac_compress = (uint16_t)rmp3_bs_get_bits(bs, RMP3_HDR_TEST_MPEG1(hdr) ? 4 : 9);
         gr->sfbtab = g_scf_long[sr_idx];
@@ -484,9 +467,7 @@ static int rmp3_L3_read_side_info(rmp3_bs *bs, rmp3_L3_gr_info *gr, const uint8_
         {
             gr->block_type = (uint8_t)rmp3_bs_get_bits(bs, 2);
             if (!gr->block_type)
-            {
                 return -1;
-            }
             gr->mixed_block_flag = (uint8_t)rmp3_bs_get_bits(bs, 1);
             gr->region_count[0] = 7;
             gr->region_count[1] = 255;
@@ -499,7 +480,8 @@ static int rmp3_L3_read_side_info(rmp3_bs *bs, rmp3_L3_gr_info *gr, const uint8_
                     gr->sfbtab = g_scf_short[sr_idx];
                     gr->n_long_sfb = 0;
                     gr->n_short_sfb = 39;
-                } else
+                }
+                else
                 {
                     gr->sfbtab = g_scf_mixed[sr_idx];
                     gr->n_long_sfb = RMP3_HDR_TEST_MPEG1(hdr) ? 8 : 6;
@@ -511,7 +493,8 @@ static int rmp3_L3_read_side_info(rmp3_bs *bs, rmp3_L3_gr_info *gr, const uint8_
             gr->subblock_gain[0] = (uint8_t)rmp3_bs_get_bits(bs, 3);
             gr->subblock_gain[1] = (uint8_t)rmp3_bs_get_bits(bs, 3);
             gr->subblock_gain[2] = (uint8_t)rmp3_bs_get_bits(bs, 3);
-        } else
+        }
+        else
         {
             gr->block_type = 0;
             gr->mixed_block_flag = 0;
@@ -532,10 +515,7 @@ static int rmp3_L3_read_side_info(rmp3_bs *bs, rmp3_L3_gr_info *gr, const uint8_
     } while(--gr_count);
 
     if (part_23_sum + bs->pos > bs->limit + main_data_begin*8)
-    {
         return -1;
-    }
-
     return main_data_begin;
 }
 
@@ -546,16 +526,16 @@ static void rmp3_L3_read_scalefactors(uint8_t *scf, uint8_t *ist_pos, const uint
     {
         int cnt = scf_count[i];
         if (scfsi & 8)
-        {
             memcpy(scf, ist_pos, cnt);
-        } else
+        else
         {
             int bits = scf_size[i];
             if (!bits)
             {
                 memset(scf, 0, cnt);
                 memset(ist_pos, 0, cnt);
-            } else
+            }
+            else
             {
                 int max_scf = (scfsi < 0) ? (1 << bits) - 1 : -1;
                 for (k = 0; k < cnt; k++)
@@ -602,7 +582,8 @@ static void rmp3_L3_decode_scalefactors(const uint8_t *hdr, uint8_t *ist_pos, rm
         int part = g_scfc_decode[gr->scalefac_compress];
         scf_size[1] = scf_size[0] = (uint8_t)(part >> 2);
         scf_size[3] = scf_size[2] = (uint8_t)(part & 3);
-    } else
+    }
+    else
     {
         static const uint8_t g_mod[6*4] = { 5,5,4,4,5,5,4,1,4,3,1,1,5,6,6,1,4,4,4,1,4,3,1,1 };
         int k, modprod, sfc, ist = RMP3_HDR_TEST_I_STEREO(hdr) && ch;
@@ -633,17 +614,13 @@ static void rmp3_L3_decode_scalefactors(const uint8_t *hdr, uint8_t *ist_pos, rm
     {
         static const uint8_t g_preamp[10] = { 1,1,1,1,2,2,3,3,3,2 };
         for (i = 0; i < 10; i++)
-        {
             iscf[11 + i] += g_preamp[i];
-        }
     }
 
     gain_exp = gr->global_gain + RMP3_BITS_DEQUANTIZER_OUT*4 - 210 - (RMP3_HDR_IS_MS_STEREO(hdr) ? 2 : 0);
     gain = rmp3_L3_ldexp_q2(1 << (RMP3_MAX_SCFI/4),  RMP3_MAX_SCFI - gain_exp);
     for (i = 0; i < (int)(gr->n_long_sfb + gr->n_short_sfb); i++)
-    {
         scf[i] = rmp3_L3_ldexp_q2(gain, iscf[i] << scf_shift);
-    }
 }
 
 static float rmp3_L3_pow_43(int x)
@@ -755,14 +732,10 @@ static void rmp3_L3_huffman(float *dst, rmp3_bs *bs, const rmp3_L3_gr_info *gr_i
         const uint8_t *codebook_count1 = (gr_info->count1_table) ? tab33 : tab32;
         int leaf = codebook_count1[RMP3_PEEK_BITS(4)];
         if (!(leaf & 8))
-        {
             leaf = codebook_count1[(leaf >> 3) + (bs_cache << 4 >> (32 - (leaf & 3)))];
-        }
         RMP3_FLUSH_BITS(leaf & 7);
         if (RMP3_BSPOS > layer3gr_limit)
-        {
             break;
-        }
 #define RMP3_RELOAD_SCALEFACTOR  if (!--np) { np = *sfb++/2; if (!np) break; one = *scf++; }
 #define RMP3_DEQ_COUNT1(s) if (leaf & (128 >> s)) { dst[s] = ((int32_t)bs_cache < 0) ? -one : one; RMP3_FLUSH_BITS(1) }
         RMP3_RELOAD_SCALEFACTOR;
@@ -809,7 +782,8 @@ static void rmp3_L3_midside_stereo(float *left, int n)
     }
 }
 
-static void rmp3_L3_intensity_stereo_band(float *left, int n, float kl, float kr)
+static void rmp3_L3_intensity_stereo_band(
+      float *left, int n, float kl, float kr)
 {
     int i;
     for (i = 0; i < n; i++)
@@ -819,7 +793,9 @@ static void rmp3_L3_intensity_stereo_band(float *left, int n, float kl, float kr
     }
 }
 
-static void rmp3_L3_stereo_top_band(const float *right, const uint8_t *sfb, int nbands, int max_band[3])
+static void rmp3_L3_stereo_top_band(
+      const float *right, const uint8_t *sfb,
+      int nbands, int max_band[3])
 {
     int i, k;
 
@@ -839,7 +815,9 @@ static void rmp3_L3_stereo_top_band(const float *right, const uint8_t *sfb, int 
     }
 }
 
-static void rmp3_L3_stereo_process(float *left, const uint8_t *ist_pos, const uint8_t *sfb, const uint8_t *hdr, int max_band[3], int mpeg2_sh)
+static void rmp3_L3_stereo_process(
+      float *left, const uint8_t *ist_pos, const uint8_t *sfb,
+      const uint8_t *hdr, int max_band[3], int mpeg2_sh)
 {
     static const float g_pan[7*2] = { 0,1,0.21132487f,0.78867513f,0.36602540f,0.63397460f,0.5f,0.5f,0.63397460f,0.36602540f,0.78867513f,0.21132487f,1,0 };
     unsigned i, max_pos = RMP3_HDR_TEST_MPEG1(hdr) ? 7 : 64;
@@ -871,7 +849,9 @@ static void rmp3_L3_stereo_process(float *left, const uint8_t *ist_pos, const ui
     }
 }
 
-static void rmp3_L3_intensity_stereo(float *left, uint8_t *ist_pos, const rmp3_L3_gr_info *gr, const uint8_t *hdr)
+static void rmp3_L3_intensity_stereo(
+      float *left, uint8_t *ist_pos, const rmp3_L3_gr_info *gr,
+      const uint8_t *hdr)
 {
     int max_band[3], n_sfb = gr->n_long_sfb + gr->n_short_sfb;
     int i, max_blocks = gr->n_short_sfb ? 3 : 1;
@@ -1118,9 +1098,7 @@ static void rmp3_L3_save_reservoir(rmp3dec *h, rmp3dec_scratch *s)
         remains = RMP3_MAX_BITRESERVOIR_BYTES;
     }
     if (remains > 0)
-    {
         memmove(h->reserv_buf, s->maindata + pos, remains);
-    }
     h->reserv = remains;
 }
 
@@ -1336,8 +1314,7 @@ static short rmp3d_scale_pcm(float sample)
 
 static void rmp3d_synth_pair(short *pcm, int nch, const float *z)
 {
-    float a;
-    a  = (z[14*64] - z[    0]) * 29;
+    float a  = (z[14*64] - z[    0]) * 29;
     a += (z[ 1*64] + z[13*64]) * 213;
     a += (z[12*64] - z[ 2*64]) * 459;
     a += (z[ 3*64] + z[11*64]) * 2037;
@@ -1489,24 +1466,19 @@ static void rmp3d_synth_granule(float *qmf_state, float *grbuf, int nbands, int 
 {
     int i;
     for (i = 0; i < nch; i++)
-    {
         rmp3d_DCT_II(grbuf + 576*i, nbands);
-    }
 
     memcpy(lins, qmf_state, sizeof(float)*15*64);
 
     for (i = 0; i < nbands; i += 2)
-    {
         rmp3d_synth(grbuf + i, pcm + 32*nch*i, nch, lins + i*64);
-    }
 #ifndef RMP3_NONSTANDARD_BUT_LOGICAL
     if (nch == 1)
     {
         for (i = 0; i < 15*64; i += 2)
-        {
             qmf_state[i] = lins[nbands*64 + i];
-        }
-    } else
+    }
+    else
 #endif
     {
         memcpy(qmf_state, lins + nbands*64, sizeof(float)*15*64);
@@ -1581,9 +1553,7 @@ int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_bytes, 
     {
         frame_size = rmp3_hdr_frame_bytes(mp3, dec->free_format_bytes) + rmp3_hdr_padding(mp3);
         if (frame_size != mp3_bytes && (frame_size + RMP3_HDR_SIZE > mp3_bytes || !rmp3_hdr_compare(mp3, mp3 + frame_size)))
-        {
             frame_size = 0;
-        }
     }
     if (!frame_size)
     {
@@ -1629,9 +1599,6 @@ int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_bytes, 
         rmp3_L3_save_reservoir(dec, &scratch);
     } else
     {
-#ifdef RMP3_ONLY_MP3
-        return 0;
-#else
         rmp3_L12_scale_info sci[1];
         rmp3_L12_read_scale_info(hdr, bs_frame, sci);
 
@@ -1652,13 +1619,9 @@ int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_bytes, 
                 return 0;
             }
         }
-#endif
     }
     return success*rmp3_hdr_frame_samples(dec->header);
 }
-
-
-
 
 /*
  *
@@ -1675,29 +1638,6 @@ int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_bytes, 
 #endif
 
 /* Standard library stuff. */
-#ifndef RMP3_COPY_MEMORY
-#define RMP3_COPY_MEMORY(dst, src, sz) memcpy((dst), (src), (sz))
-#endif
-#ifndef RMP3_ZERO_MEMORY
-#define RMP3_ZERO_MEMORY(p, sz) memset((p), 0, (sz))
-#endif
-#define RMP3_ZERO_OBJECT(p) RMP3_ZERO_MEMORY((p), sizeof(*(p)))
-#ifndef RMP3_MALLOC
-#define RMP3_MALLOC(sz) malloc((sz))
-#endif
-#ifndef RMP3_REALLOC
-#define RMP3_REALLOC(p, sz) realloc((p), (sz))
-#endif
-#ifndef RMP3_FREE
-#define RMP3_FREE(p) free((p))
-#endif
-
-#define rmp3_copy_memory   RMP3_COPY_MEMORY
-#define rmp3_zero_memory   RMP3_ZERO_MEMORY
-#define rmp3_zero_object   RMP3_ZERO_OBJECT
-#define rmp3_malloc        RMP3_MALLOC
-#define rmp3_realloc       RMP3_REALLOC
-
 #define rmp3_countof(x)  (sizeof(x) / sizeof(x[0]))
 #define rmp3_max(x, y)   (((x) > (y)) ? (x) : (y))
 #define rmp3_min(x, y)   (((x) < (y)) ? (x) : (y))
@@ -1737,7 +1677,7 @@ uint64_t rmp3_src_cache_read_frames(rmp3_src_cache* pCache, uint64_t frameCount,
       if (framesToReadFromMemory > framesRemainingInMemory)
          framesToReadFromMemory = framesRemainingInMemory;
 
-      rmp3_copy_memory(pFramesOut, pCache->pCachedFrames + pCache->iNextFrame*channels, (uint32_t)(framesToReadFromMemory * channels * sizeof(float)));
+      memcpy(pFramesOut, pCache->pCachedFrames + pCache->iNextFrame*channels, (uint32_t)(framesToReadFromMemory * channels * sizeof(float)));
       pCache->iNextFrame += (uint32_t)framesToReadFromMemory;
 
       totalFramesRead += framesToReadFromMemory;
@@ -1774,7 +1714,7 @@ uint64_t rmp3_src_read_frames_linear(rmp3_src* pSRC, uint64_t frameCount, void* 
 uint32_t rmp3_src_init(const rmp3_src_config* pConfig, rmp3_src_read_proc onRead, void* pUserData, rmp3_src* pSRC)
 {
     if (pSRC == NULL) return RMP3_FALSE;
-    rmp3_zero_object(pSRC);
+    memset((pSRC), 0, sizeof(*(pSRC)));
 
     if (pConfig == NULL || onRead == NULL) return RMP3_FALSE;
     if (pConfig->channels == 0 || pConfig->channels > 2) return RMP3_FALSE;
@@ -1945,8 +1885,7 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
              uint8_t* pNewData = NULL;
              pMP3->dataCapacity    = RMP3_DATA_CHUNK_SIZE;
 
-             pNewData              = (uint8_t*)
-                rmp3_realloc(pMP3->pData, pMP3->dataCapacity);
+             pNewData              = (uint8_t*)realloc(pMP3->pData, pMP3->dataCapacity);
              if (pNewData == NULL)
                 return RMP3_FALSE; /* Out of memory. */
 
@@ -1995,7 +1934,7 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
              /* No room. Expand. */
              pMP3->dataCapacity   += RMP3_DATA_CHUNK_SIZE;
 
-             pNewData              = (uint8_t*)rmp3_realloc(pMP3->pData, pMP3->dataCapacity);
+             pNewData              = (uint8_t*)realloc(pMP3->pData, pMP3->dataCapacity);
              if (pNewData == NULL)
                 return RMP3_FALSE; /* Out of memory. */
 
@@ -2087,7 +2026,7 @@ uint32_t rmp3_init_internal(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc on
    if (pConfig != NULL)
       config = *pConfig;
    else
-      rmp3_zero_object(&config);
+      memset((&config), 0, sizeof(*(&config)));
 
    pMP3->channels = config.outputChannels;
    if (pMP3->channels == 0)
@@ -2106,7 +2045,7 @@ uint32_t rmp3_init_internal(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc on
    pMP3->pUserData = pUserData;
 
    /* We need a sample rate converter for converting the sample rate from the MP3 frames to the requested output sample rate. */
-   rmp3_zero_object(&srcConfig);
+   memset((&srcConfig), 0, sizeof(*(&srcConfig)));
    srcConfig.sampleRateIn = RMP3_DEFAULT_SAMPLE_RATE;
    srcConfig.sampleRateOut = pMP3->sampleRate;
    srcConfig.channels = pMP3->channels;
@@ -2126,7 +2065,7 @@ uint32_t rmp3_init(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc onSeek, voi
     if (pMP3 == NULL || onRead == NULL)
         return RMP3_FALSE;
 
-    rmp3_zero_object(pMP3);
+    memset((&pMP3), 0, sizeof(*(&pMP3)));
     return rmp3_init_internal(pMP3, onRead, onSeek, pUserData, pConfig);
 }
 
@@ -2142,7 +2081,7 @@ static size_t rmp3__on_read_memory(void* pUserData, void* pBufferOut, size_t byt
 
     if (bytesToRead > 0)
     {
-        rmp3_copy_memory(pBufferOut, pMP3->memory.pData + pMP3->memory.currentReadPos, bytesToRead);
+        memcpy(pBufferOut, pMP3->memory.pData + pMP3->memory.currentReadPos, bytesToRead);
         pMP3->memory.currentReadPos += bytesToRead;
     }
 
@@ -2183,7 +2122,7 @@ uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize, const 
     if (pMP3 == NULL)
         return RMP3_FALSE;
 
-    rmp3_zero_object(pMP3);
+    memset((&pMP3), 0, sizeof(*(&pMP3)));
 
     if (pData == NULL || dataSize == 0)
         return RMP3_FALSE;
@@ -2258,7 +2197,7 @@ uint32_t rmp3_seek_to_frame(rmp3* pMP3, uint64_t frameIndex)
 
 void rmp3_free(void* p)
 {
-    RMP3_FREE(p);
+    free(p);
 }
 
 
