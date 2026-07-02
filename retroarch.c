@@ -2908,13 +2908,13 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_M4A:
 #endif
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
-#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_STB_VORBIS)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RVORBIS)
       case FILE_TYPE_OGG:
 #endif
-#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_MP3)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RMP3)
       case FILE_TYPE_MP3:
 #endif
-#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_FLAC)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RFLAC)
       case FILE_TYPE_FLAC:
 #endif
 #if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RWAV)

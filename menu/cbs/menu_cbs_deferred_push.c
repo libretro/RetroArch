@@ -410,13 +410,13 @@ static int general_push(menu_displaylist_info_t *info,
 #if defined(HAVE_AUDIOMIXER)
             if (multimedia_builtin_mediaplayer_enable)
             {
-#if defined(HAVE_DR_MP3)
+#if defined(HAVE_RMP3)
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "mp3");
 #endif
-#if defined(HAVE_STB_VORBIS)
+#if defined(HAVE_RVORBIS)
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "ogg");
 #endif
-#if defined(HAVE_DR_FLAC)
+#if defined(HAVE_RFLAC)
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "flac");
 #endif
 #if defined(HAVE_RWAV)

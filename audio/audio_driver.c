@@ -1640,7 +1640,7 @@ bool audio_driver_get_devices_list(void **data)
 #ifdef HAVE_AUDIOMIXER
 bool audio_driver_mixer_extension_supported(const char *ext)
 {
-#ifdef HAVE_STB_VORBIS
+#ifdef HAVE_RVORBIS
    if (string_is_equal_noncase("ogg", ext))
       return true;
 #endif
@@ -1652,11 +1652,11 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    if (string_is_equal_noncase("xm", ext))
       return true;
 #endif
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
    if (string_is_equal_noncase("flac", ext))
       return true;
 #endif
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
    if (string_is_equal_noncase("mp3", ext))
       return true;
 #endif
@@ -1871,12 +1871,12 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          handle = audio_mixer_load_mod(buf, (int32_t)params->bufsize);
          break;
       case AUDIO_MIXER_TYPE_FLAC:
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
          handle = audio_mixer_load_flac(buf, (int32_t)params->bufsize);
 #endif
          break;
       case AUDIO_MIXER_TYPE_MP3:
-#ifdef HAVE_DR_MP3
+#ifdef HAVE_RMP3
          handle = audio_mixer_load_mp3(buf, (int32_t)params->bufsize);
 #endif
          break;

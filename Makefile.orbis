@@ -68,7 +68,7 @@ else
 	HAVE_RGUI							:= 1
 	HAVE_STB_FONT					:= 1
 	HAVE_RVORBIS				:= 1
-	HAVE_DR_FLAC					:= 1
+	HAVE_RFLAC					:= 1
 	HAVE_RMP3						:= 1
 	HAVE_MATERIALUI 			:= 1
 	HAVE_XMB							:= 1

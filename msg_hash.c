@@ -800,13 +800,13 @@ enum msg_file_type msg_hash_to_file_type(const char *value)
       { "wma",       FILE_TYPE_WMA },
 #endif
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
-#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_MP3)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RMP3)
       { "mp3",       FILE_TYPE_MP3 },
 #endif
-#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_STB_VORBIS)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RVORBIS)
       { "ogg",       FILE_TYPE_OGG },
 #endif
-#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_FLAC)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RFLAC)
       { "flac",      FILE_TYPE_FLAC },
 #endif
 #if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RWAV)
