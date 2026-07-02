@@ -13748,60 +13748,17 @@ static bool setting_append_list(
                /* Synchronization block: contiguous descriptor run.
                 * Row order is list order and must be preserved. */
                static const setting_desc_t sync_desc[] = {
-                  SDESC_BOOL_ROW(video_vsync, VIDEO_VSYNC,
-                        DEFAULT_VSYNC,
-                        SD_FLAG_NONE, SDESC_FLG_REFRESH,
-                        CMD_EVENT_NONE),
-                  SDESC_UINT_ROW(video_swap_interval, VIDEO_SWAP_INTERVAL,
-                        DEFAULT_SWAP_INTERVAL,
-                        SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED,
-                        SDESC_RANGE_MINMAX,
-                        CMD_EVENT_REINIT, 0, 4, 1, 0,
-                        setting_action_ok_uint,
-                        setting_get_string_representation_video_swap_interval),
-                  SDESC_UINT_ROW(video_shader_subframes, VIDEO_SHADER_SUBFRAMES,
-                        DEFAULT_SHADER_SUBFRAMES,
-                        SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED,
-                        SDESC_RANGE_MINMAX,
-                        CMD_EVENT_REINIT, 1, 16, 1, 1,
-                        setting_action_ok_uint,
-                        setting_get_string_representation_shader_subframes),
-                  SDESC_BOOL_ROW(video_scan_subframes, VIDEO_SCAN_SUBFRAMES,
-                        DEFAULT_SCAN_SUBFRAMES,
-                        SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH,
-                        CMD_EVENT_REINIT),
-                  SDESC_UINT_ROW(video_max_swapchain_images, VIDEO_MAX_SWAPCHAIN_IMAGES,
-                        DEFAULT_MAX_SWAPCHAIN_IMAGES,
-                        SD_FLAG_CMD_APPLY_AUTO,
-                        SDESC_RANGE_MINMAX,
-                        CMD_EVENT_REINIT,
-                        MINIMUM_MAX_SWAPCHAIN_IMAGES,
-                        MAXIMUM_MAX_SWAPCHAIN_IMAGES, 1,
-                        MINIMUM_MAX_SWAPCHAIN_IMAGES,
-                        setting_action_ok_uint, NULL),
-                  SDESC_BOOL_ROW(video_waitable_swapchains, VIDEO_WAITABLE_SWAPCHAINS,
-                        DEFAULT_WAITABLE_SWAPCHAINS,
-                        SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH,
-                        CMD_EVENT_REINIT),
-                  SDESC_INT_ROW(video_max_frame_latency, VIDEO_MAX_FRAME_LATENCY,
-                        DEFAULT_MAX_FRAME_LATENCY,
-                        SD_FLAG_CMD_APPLY_AUTO,
-                        SDESC_RANGE_MINMAX,
-                        CMD_EVENT_REINIT, -1,
-                        MAXIMUM_MAX_FRAME_LATENCY, 1, -1,
-                        setting_action_ok_uint, NULL),
-                  SDESC_BOOL_ROW(video_hard_sync, VIDEO_HARD_SYNC,
-                        DEFAULT_HARD_SYNC,
-                        SD_FLAG_NONE, SDESC_FLG_REFRESH,
-                        CMD_EVENT_NONE),
-                  SDESC_UINT_ROW(video_hard_sync_frames, VIDEO_HARD_SYNC_FRAMES,
-                        DEFAULT_HARD_SYNC_FRAMES,
-                        SD_FLAG_NONE,
-                        SDESC_RANGE_MINMAX,
-                        CMD_EVENT_NONE,
-                        MINIMUM_HARD_SYNC_FRAMES,
-                        MAXIMUM_HARD_SYNC_FRAMES, 1, 0,
-                        setting_action_ok_uint, NULL)
+/* GENERATED: rows come from settings_def_video_sync.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#include "../settings_def_video_sync.h"
+#undef S_BOOL
+#undef S_UINT
+#undef S_INT
 #ifdef HAVE_D3DKMT
                   ,
                   SDESC_BOOL_ROW(video_scanline_sync, VIDEO_SCANLINE_SYNC,

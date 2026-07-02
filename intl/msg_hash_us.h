@@ -1872,25 +1872,26 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
    "Adjusts the number of frames displayed in the bfi sequence that are black. More black frames increases motion clarity but reduces brightness. Not applicable at 120hz as there is only one total extra 60hz frame, so it must be black otherwise BFI would not be active at all."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
-   "Shader Sub-frames"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "WARNING: Rapid flickering may cause image persistence on some displays. Use at your own risk // Simulates a basic rolling scanline over multiple sub-frames by dividing the screen up vertically and rendering each part of the screen according to how many sub-frames there are."
-   )
+/* GENERATED REGION: video synchronization group.  The VALUE and
+   SUBLABEL rows come from settings_def_video_sync.h; edit strings
+   there.  Expansion is in terms of MSG_HASH, so every consumer pass
+   of this file picks them up unchanged. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#include "../settings_def_video_sync.h"
+#undef S_BOOL
+#undef S_UINT
+#undef S_INT
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "Inserts extra shader frame(s) inbetween frames for any possible shader effects that are designed to run faster than content rate. Only use option designated for your current display refresh rate. Not for use at refresh rates that are non-multiples of 60Hz such as 144Hz, 165Hz, etc. Do not combine with Swap Interval > 1, BFI, Frame Delay, or Sync to Exact Content Framerate. Leaving system VRR on is ok, just not that setting."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   "Rolling scanline simulation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "WARNING: Rapid flickering may cause image persistence on some displays. Use at your own risk // Simulates a basic rolling scanline over multiple sub-frames by dividing the screen up vertically and rendering each part of the screen according to how many sub-frames there are."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
@@ -2591,22 +2592,6 @@ MSG_HASH(
 /* Settings > Video > Synchronization */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   "Vertical Sync (VSync)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   "Synchronize the output video of the graphics card to the refresh rate of the screen. Recommended."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   "VSync Swap Interval"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Use a custom swap interval for VSync. Effectively reduces monitor refresh rate by the specified factor. 'Auto' sets factor based on core-reported frame rate, providing improved frame pacing when running e.g. 30 fps content on a 60 Hz display or 60 fps content on a 120 Hz display."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    "Auto"
    )
@@ -2665,22 +2650,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    "effective"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   "Hard GPU Sync"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   "Hard GPU Sync Frames"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "Set how many frames the CPU can run ahead of the GPU when using 'Hard GPU Sync'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
@@ -13832,32 +13801,8 @@ MSG_HASH(
    "Kbd"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Max Swapchain Images"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Tells the video driver to explicitly use a specified buffering mode."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Maximum amount of swapchain images. This can tell the video driver to use a specific video buffering mode.\nSingle buffering - 1\nDouble buffering - 2\nTriple buffering - 3\nSetting the right buffering mode can have a big impact on latency."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
-   "Waitable Swapchains"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   "Max Frame Latency"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
-   "Tells the video driver to explicitly use a specified buffering mode."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
