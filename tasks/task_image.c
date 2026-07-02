@@ -100,6 +100,16 @@ static int task_image_process(
    if (!image_transfer_is_valid(image->handle, image->type))
       return IMAGE_PROCESS_ERROR;
 
+   /* The decoder bakes the output channel order from supports_rgba, but
+    * the value stored on this task was sampled when the load was queued.
+    * VIDEO_FLAG_USE_RGBA is cleared on every video reinit (core start/
+    * stop), so a snapshot taken in that window can disagree with the
+    * driver's actual upload format and produce R/B-swapped images.
+    * Re-sample the live flag here, at decode time, once the reinit has
+    * settled. */
+   image->ti.supports_rgba = (video_driver_get_disp_flags()
+         & VIDEO_FLAG_USE_RGBA) ? true : false;
+
    if ((retval = image_transfer_process(
          image->handle,
          image->type,
