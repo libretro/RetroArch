@@ -578,9 +578,23 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 #endif
 
 #if defined(MSG_HASH_HAVE_STRTAB)
+/* The hand-maintained MSG_HASH rows are expanded three times: once
+ * into exactly-sized members of a packed blob struct (named by the
+ * id token, so mutually exclusive guarded duplicates stay legal),
+ * once into its initializer, and once into the id array.  This
+ * keeps the file freely hand-editable and h2json-parseable while
+ * eliminating the string pointer array and its relocations, the
+ * same layout the generated translation headers use. */
+#undef MSG_HASH
+#define MSG_HASH(Id, str) char m_##Id[sizeof(str)];
+static const struct msg_hash_us_blob_s
+{
+#include "msg_hash_us.h"
+}
 #undef MSG_HASH
 #define MSG_HASH(Id, str) str,
-static const char *const msg_hash_us_strs[] = {
+msg_hash_us_blob =
+{
 #include "msg_hash_us.h"
 };
 #undef MSG_HASH
@@ -592,9 +606,9 @@ static const uint32_t msg_hash_us_ids[] = {
 #define MSG_HASH(Id, str) case Id: return str;
 
 static const msg_hash_strtab_t msg_hash_us_strtab =
-{ msg_hash_us_ids, msg_hash_us_strs,
+{ msg_hash_us_ids, NULL,
   (uint32_t)(sizeof(msg_hash_us_ids) / sizeof(msg_hash_us_ids[0])),
-  NULL };
+  (const char*)&msg_hash_us_blob };
 
 static msg_hash_strtab_index_t msg_hash_us_index;
 
