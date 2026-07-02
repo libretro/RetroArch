@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#if defined(_WIN32)
-#include <malloc.h> /* alloca */
-#elif !defined(__DJGPP__)
-#include <alloca.h> /* DJGPP declares alloca in <stdlib.h> (already included) */
+#if defined(_MSC_VER)
+#include <malloc.h> /* MSVC provides alloca here */
+#elif !defined(alloca)
+#define alloca __builtin_alloca /* gcc/clang builtin: no header, portable everywhere */
 #endif
 #include <formats/rvorbis.h>
 
