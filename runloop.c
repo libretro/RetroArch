@@ -3562,6 +3562,22 @@ bool runloop_environment_cb(unsigned cmd, void *data)
           * toggling the hint takes effect on the next core load. */
          if (config_get_ptr()->bools.audio_fastpath_s16)
             return false;
+         /* Only advertise float when the audio driver actually runs a float
+          * output format. If it negotiated s16 (the device rejected float, or
+          * the format-negotiation hint asked for s16), a float core would just
+          * be converted straight back to s16 for the device - so decline and
+          * let the core keep its int16 batch callback. When the driver is not
+          * yet initialised (queried before drivers_init, e.g. a direct CLI
+          * load) we cannot read its real format, so fall back to the
+          * format-negotiation hint, which is what it will request. */
+         if (audio_state_get_ptr()->flags & AUDIO_FLAG_ACTIVE)
+         {
+            if (!(audio_state_get_ptr()->flags & AUDIO_FLAG_USE_FLOAT))
+               return false;
+         }
+         else if (config_get_ptr()->uints.audio_format_negotiation
+               != AUDIO_FORMAT_NEGOTIATION_FLOAT)
+            return false;
          /* RetroArch's resampler and DSP chain are float-native, so we
           * advertise float audio output and hand the core our float
           * batch entry point. The core then bypasses int16 entirely.
