@@ -2026,7 +2026,7 @@ uint32_t rmp3_init_internal(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc on
    if (pConfig != NULL)
       config = *pConfig;
    else
-      memset((&config), 0, sizeof(*(&config)));
+      memset(&config, 0, sizeof(config));
 
    pMP3->channels = config.outputChannels;
    if (pMP3->channels == 0)
@@ -2045,7 +2045,7 @@ uint32_t rmp3_init_internal(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc on
    pMP3->pUserData = pUserData;
 
    /* We need a sample rate converter for converting the sample rate from the MP3 frames to the requested output sample rate. */
-   memset((&srcConfig), 0, sizeof(*(&srcConfig)));
+   memset(&srcConfig, 0, sizeof(srcConfig));
    srcConfig.sampleRateIn = RMP3_DEFAULT_SAMPLE_RATE;
    srcConfig.sampleRateOut = pMP3->sampleRate;
    srcConfig.channels = pMP3->channels;
