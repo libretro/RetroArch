@@ -888,7 +888,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_output_rate,             MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_dsp_plugin,              MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_dsp_plugin_remove,       MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_exclusive_mode,   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_float_format,     MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_sh_buffer_length, MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH)
 
 #ifdef HAVE_MICROPHONE
@@ -1001,6 +1000,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_confirm,                  
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_navigation_wraparound,                 MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_quality,               MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_fastpath_s16,                    MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_format_negotiation,              MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_host,                   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_client,                 MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_disconnect,                    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT)
@@ -2584,6 +2584,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_FASTPATH_S16:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_fastpath_s16);
             break;
+         case MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_format_negotiation);
+            break;
 #ifdef HAVE_MICROPHONE
          case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_resampler_quality);
@@ -4011,9 +4014,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_wasapi_exclusive_mode);
-            break;
-         case MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_wasapi_float_format);
             break;
          case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_wasapi_sh_buffer_length);

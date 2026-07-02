@@ -1295,6 +1295,10 @@
  * fixed-point (int16) SINC resampler over the float one for any needed
  * resampling. Avoids the s16<->float round-trip and is bit-reproducible. */
 #define DEFAULT_AUDIO_FASTPATH_S16 true
+/* Requested output sample format for negotiable audio drivers:
+ * AUDIO_FORMAT_NEGOTIATION_INT16 (0) or AUDIO_FORMAT_NEGOTIATION_FLOAT (1).
+ * Float by default, matching RetroArch's historical driver behaviour. */
+#define DEFAULT_AUDIO_FORMAT_NEGOTIATION AUDIO_FORMAT_NEGOTIATION_FLOAT
 /* Automatically mute audio when rewind is enabled. */
 #define DEFAULT_AUDIO_REWIND_MUTE false
 

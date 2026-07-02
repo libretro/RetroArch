@@ -49,6 +49,7 @@
 #endif
 
 #include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct xaudio2 xaudio2_t;
@@ -325,7 +326,7 @@ static void *xa_device_list_new(void *u)
 }
 
 static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
-      unsigned latency, size_t len, const char *dev_id)
+      unsigned latency, size_t len, bool float_fmt, const char *dev_id)
 {
    int32_t idx_found        = -1;
    WAVEFORMATEX desired_wf  = {0};
@@ -360,7 +361,7 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
    if (FAILED(XAudio2Create(&handle->pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
       goto error;
 
-   xaudio2_set_format(&desired_wf, true, channels, *rate);
+   xaudio2_set_format(&desired_wf, float_fmt, channels, *rate);
    RARCH_DBG("[XAudio2] Requesting %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          desired_wf.wBitsPerSample,
          desired_wf.nChannels,
@@ -467,6 +468,8 @@ static void *xa_init(const char *dev_id, unsigned rate, unsigned latency,
       unsigned block_frames, unsigned *new_rate)
 {
    size_t bufsize;
+   bool want_float = (config_get_ptr()->uints.audio_format_negotiation
+         == AUDIO_FORMAT_NEGOTIATION_FLOAT);
    xa_t *xa    = (xa_t*)calloc(1, sizeof(*xa));
 
    if (!xa)
@@ -476,9 +479,9 @@ static void *xa_init(const char *dev_id, unsigned rate, unsigned latency,
       latency  = 8; /* Do not allow shenanigans. */
 
    bufsize     = latency * rate / 1000;
-   xa->bufsize = bufsize * 2 * sizeof(float);
+   xa->bufsize = bufsize * 2 * (want_float ? sizeof(float) : sizeof(int16_t));
 
-   if (!(xa->xa = xaudio2_new(&rate, 2, latency, xa->bufsize, dev_id)))
+   if (!(xa->xa = xaudio2_new(&rate, 2, latency, xa->bufsize, want_float, dev_id)))
    {
       RARCH_ERR("[XAudio2] Failed to init driver.\n");
       free(xa);

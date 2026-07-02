@@ -32,6 +32,7 @@
 #include "SDL_audio.h"
 
 #include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../msg_hash.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
@@ -562,7 +563,12 @@ static void *sdl_audio_init(const char *device,
    /* First, let's initialize the output device. */
    spec.freq     = rate;
 #ifdef HAVE_SDL2
-   spec.format   = AUDIO_F32SYS;
+   /* SDL2 can open either format; honour the negotiation hint (SDL converts
+    * transparently if the device's native format differs). SDL1.2 output is
+    * int16 only. */
+   spec.format   = (config_get_ptr()->uints.audio_format_negotiation
+         == AUDIO_FORMAT_NEGOTIATION_INT16)
+         ? AUDIO_S16SYS : AUDIO_F32SYS;
 #else
    spec.format   = AUDIO_S16SYS;
 #endif

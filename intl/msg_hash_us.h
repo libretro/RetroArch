@@ -3006,6 +3006,22 @@ MSG_HASH(
    "Use the fixed-point (integer) SINC resampler instead of the floating-point one when a core outputs 16-bit audio. Avoids the integer-to-float round-trip and produces bit-identical output on every platform, which helps netplay determinism. Has no effect on cores that output floating-point audio, and falls back to the floating-point path while an incompatible DSP filter or the audio mixer is active."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
+   "Audio Format Negotiation (Hint)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
+   "Sample format the audio driver requests from the output device. 'Float' asks for 32-bit floating-point, 'Int16' for 16-bit integer. Only affects drivers that can negotiate the format (WASAPI, DirectSound, XAudio2, ALSA, SDL2); others use their fixed format. A hint only: a driver falls back if the device rejects the requested format. 'Int16' pairs with the 'Resample to Fixed Integer' hint to keep the whole audio path in the integer domain."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_INT16,
+   "Int16"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
+   "Float"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    "Output Rate (Hz)"
    )

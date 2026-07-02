@@ -6923,6 +6923,24 @@ static size_t setting_get_string_representation_uint_audio_resampler_quality(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_audio_format_negotiation(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case AUDIO_FORMAT_NEGOTIATION_INT16:
+            return strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_INT16), len);
+         case AUDIO_FORMAT_NEGOTIATION_FLOAT:
+            return strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT), len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_libretro_device(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -9206,9 +9224,9 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
       case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
       case MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY:
+      case MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION:
 #ifdef HAVE_WASAPI
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
-      case MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
 #endif
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
@@ -15288,6 +15306,23 @@ static bool setting_append_list(
          /* Stays imperative: value target comes from
           * audio_get_float_ptr() and lives outside settings_t. */
 
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.audio_format_negotiation,
+               MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION,
+               MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
+               DEFAULT_AUDIO_FORMAT_NEGOTIATION,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_audio_format_negotiation;
+         menu_settings_list_current_add_range(list, list_info, AUDIO_FORMAT_NEGOTIATION_INT16, AUDIO_FORMAT_NEGOTIATION_FLOAT, 1.0, true, true);
+
          CONFIG_FLOAT(
                list, list_info,
                audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA),
@@ -15409,22 +15444,6 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
                   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
                   DEFAULT_WASAPI_EXCLUSIVE_MODE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.audio_wasapi_float_format,
-                  MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-                  MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-                  DEFAULT_WASAPI_FLOAT_FORMAT,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,

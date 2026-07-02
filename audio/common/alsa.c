@@ -21,6 +21,7 @@
 #include "alsa.h"
 
 #include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 int alsa_init_pcm(snd_pcm_t **pcm,
@@ -73,8 +74,17 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       goto error;
    }
 
-   format = (snd_pcm_hw_params_test_format(*pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
-         ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
+   /* Honour the audio format-negotiation hint for playback: 'Int16' skips
+    * the float request and uses S16 directly. Capture (microphone) keeps
+    * probing float-first. Either way we fall back to S16 if float is
+    * unavailable. */
+   if (     stream == SND_PCM_STREAM_PLAYBACK
+         && config_get_ptr()->uints.audio_format_negotiation
+               == AUDIO_FORMAT_NEGOTIATION_INT16)
+      format = SND_PCM_FORMAT_S16;
+   else
+      format = (snd_pcm_hw_params_test_format(*pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
+            ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
    stream_info->has_float = (format == SND_PCM_FORMAT_FLOAT);
 
    RARCH_LOG("[ALSA] Using %s sample format for %s device \"%s\".\n",

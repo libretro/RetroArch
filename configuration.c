@@ -1932,7 +1932,6 @@ static struct config_bool_setting *populate_settings_bool(
 
 #ifdef HAVE_WASAPI
    SETTING_BOOL("audio_wasapi_exclusive_mode",   &settings->bools.audio_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
-   SETTING_BOOL("audio_wasapi_float_format",     &settings->bools.audio_wasapi_float_format, true, DEFAULT_WASAPI_FLOAT_FORMAT, false);
 #endif
 
 #ifdef HAVE_MICROPHONE
@@ -2547,6 +2546,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("audio_out_rate",                &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
    SETTING_UINT("audio_latency",                 &settings->uints.audio_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",       &settings->uints.audio_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
+   SETTING_UINT("audio_format_negotiation",      &settings->uints.audio_format_negotiation, true, DEFAULT_AUDIO_FORMAT_NEGOTIATION, false);
    SETTING_UINT("audio_block_frames",            &settings->uints.audio_block_frames, true, 0, false);
    SETTING_UINT("midi_volume",                   &settings->uints.midi_volume, true, DEFAULT_MIDI_VOLUME, false);
 
