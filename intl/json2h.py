@@ -29,19 +29,6 @@ p = re.compile(
     r'MSG_HASH\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\(\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*[a-zA-Z0-9_]+\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*,\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\".*\"\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\)')
 
 
-def c89_cut(old_str):
-    if old_str.endswith('[...]'):
-        return old_str
-    new_str = ''
-    byte_count = 0
-    for c in old_str:
-        byte_count += len(c.encode('utf-8'))
-        if byte_count > 500:
-            return new_str + '[...]'
-        new_str += c
-    return new_str
-
-
 def parse_message(message):
     # remove all comments before the value (= the string)
     a = message.find('/*')
@@ -101,8 +88,6 @@ def update(messages, template, source_messages):
             tl_msg_val = re.sub(r'\\\\(?=[nrt])', r'\\', tl_msg_val)
             # escape other symbols
             tl_msg_val = tl_msg_val.replace('"', '\\\"').replace('\n', '')
-            if tp_msg['key'].find('_QT_') < 0:
-                tl_msg_val = c89_cut(tl_msg_val)
             # Replace last match, in case the key contains the value string
             new_msg = old_msg[::-1].replace(tp_msg_val[::-1], tl_msg_val[::-1], 1)[::-1]
             translation = translation.replace(old_msg, new_msg)
