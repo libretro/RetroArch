@@ -993,10 +993,13 @@ DRIVERS
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail.c"
-#ifdef HAVE_AUDIOMIXER
-#if defined(HAVE_RFLAC)
+/* rflac is used by the audio mixer (HAVE_RFLAC) and by the CHD FLAC
+ * decoder in libchdr (HAVE_CHD). Include its implementation once, ahead
+ * of both consumers, whenever either of them is present. */
+#if defined(HAVE_RFLAC) || defined(HAVE_CHD)
 #include "../libretro-common/formats/flac/rflac.c"
 #endif
+#ifdef HAVE_AUDIOMIXER
 #if defined(HAVE_RVORBIS)
 #include "../libretro-common/formats/vorbis/rvorbis.c"
 #endif

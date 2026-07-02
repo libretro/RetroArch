@@ -12,9 +12,7 @@
 #include <boolean.h>
 
 #include <libchdr/flac.h>
-#ifdef HAVE_RFLAC
 #include <formats/rflac.h>
-#endif
 
 /***************************************************************************
  *  FLAC DECODER

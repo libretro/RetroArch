@@ -2244,6 +2244,11 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
       ifeq ($(HAVE_FLAC),1)
          OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+         # libchdr decodes CHD FLAC through rflac; when the built-in FLAC
+         # library is not in use it has not already added the object.
+         ifneq ($(HAVE_BUILTINFLAC),1)
+            OBJ += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
+         endif
       endif
 
       ifeq ($(HAVE_7ZIP), 1)
