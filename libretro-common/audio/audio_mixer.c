@@ -46,11 +46,8 @@
 #include <stb/stb_vorbis.h>
 #endif
 
-#ifdef HAVE_DR_FLAC
-#include <retro_inline.h>
-#define DR_FLAC_IMPLEMENTATION
-#define DRFLAC_API static INLINE
-#include <dr/dr_flac.h>
+#ifdef HAVE_RFLAC
+#include <formats/audio.h>
 #endif
 
 #ifdef HAVE_DR_MP3
@@ -99,7 +96,7 @@ struct audio_mixer_sound
       } ogg;
 #endif
 
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
       struct
       {
           /* flac */
@@ -151,11 +148,11 @@ struct audio_mixer_voice
       } ogg;
 #endif
 
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
       struct
       {
          float*      buffer;
-         drflac      *stream;
+         void        *stream; /* audio_transfer ctx (AUDIO_TYPE_FLAC) */
          void        *resampler_data;
          const retro_resampler_t *resampler;
          unsigned    position;
@@ -482,7 +479,7 @@ audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size)
 {
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
    if (!sound)
@@ -562,7 +559,7 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
 #endif
          break;
       case AUDIO_MIXER_TYPE_FLAC:
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
          handle = (void*)sound->types.flac.data;
          if (handle)
             free(handle);
@@ -751,7 +748,7 @@ static void audio_mixer_release_mod(audio_mixer_voice_t* voice)
 }
 #endif
 
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
 static bool audio_mixer_play_flac(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
@@ -762,17 +759,29 @@ static bool audio_mixer_play_flac(
 {
    float ratio                     = 1.0f;
    unsigned samples                = 0;
-   void *flac_buffer                = NULL;
+   unsigned channels               = 0;
+   unsigned rate                   = 0;
+   void *flac_buffer               = NULL;
    void *resampler_data            = NULL;
    const retro_resampler_t* resamp = NULL;
-   drflac *dr_flac          = drflac_open_memory((const unsigned char*)sound->types.flac.data, sound->types.flac.size, NULL);
+   void *xfer                      = audio_transfer_new(AUDIO_TYPE_FLAC);
 
-   if (!dr_flac)
+   if (!xfer)
       return false;
+
+   audio_transfer_set_buffer_ptr(xfer, AUDIO_TYPE_FLAC,
+         (void*)sound->types.flac.data, sound->types.flac.size);
+   if (!audio_transfer_start(xfer, AUDIO_TYPE_FLAC))
+   {
+      audio_transfer_free(xfer, AUDIO_TYPE_FLAC);
+      return false;
+   }
+
+   audio_transfer_info(xfer, AUDIO_TYPE_FLAC, &channels, &rate, NULL);
 
    /* The downstream mixer (audio_mixer_mix_flac) requests
     * AUDIO_MIXER_TEMP_BUFFER / 2 frames into a stack buffer
-    * sized AUDIO_MIXER_TEMP_BUFFER floats.  drflac writes
+    * sized AUDIO_MIXER_TEMP_BUFFER floats.  rflac writes
     * frame_count * channel_count floats, so this only fits
     * exactly for stereo.  Mono fits but the downstream
     * accounting is wrong (per existing comment); >2 channels
@@ -782,15 +791,12 @@ static bool audio_mixer_play_flac(
     * stack overflow during mix.  Mono should be fixed
     * separately by adjusting the mixer's per-channel
     * accounting. */
-   if (dr_flac->channels != 2)
-   {
-      drflac_close(dr_flac);
-      return false;
-   }
+   if (channels != 2)
+      goto error;
 
-   if (dr_flac->sampleRate != s_rate)
+   if (rate != s_rate)
    {
-      ratio = (double)s_rate / (double)(dr_flac->sampleRate);
+      ratio = (double)s_rate / (double)rate;
 
       if (!retro_resampler_realloc(&resampler_data,
                &resamp, resampler_ident, quality,
@@ -820,21 +826,21 @@ static bool audio_mixer_play_flac(
    voice->types.flac.buffer         = (float*)flac_buffer;
    voice->types.flac.buf_samples    = samples;
    voice->types.flac.ratio          = ratio;
-   voice->types.flac.stream         = dr_flac;
+   voice->types.flac.stream         = xfer;
    voice->types.flac.position       = 0;
    voice->types.flac.samples        = 0;
 
    return true;
 
 error:
-   drflac_close(dr_flac);
+   audio_transfer_free(xfer, AUDIO_TYPE_FLAC);
    return false;
 }
 
 static void audio_mixer_release_flac(audio_mixer_voice_t* voice)
 {
    if (voice->types.flac.stream)
-      drflac_close(voice->types.flac.stream);
+      audio_transfer_free(voice->types.flac.stream, AUDIO_TYPE_FLAC);
    if (voice->types.flac.resampler && voice->types.flac.resampler_data)
       voice->types.flac.resampler->free(voice->types.flac.resampler_data);
    if (voice->types.flac.buffer)
@@ -854,28 +860,33 @@ static bool audio_mixer_play_flac_s16(
 {
    double   ratio       = 1.0;
    unsigned samples     = 0;
+   unsigned channels    = 0;
+   unsigned rate        = 0;
    void    *flac_buffer = NULL;
    void    *resamp_i16  = NULL;
-   drflac  *dr_flac     = drflac_open_memory(
-         (const unsigned char*)sound->types.flac.data,
-         sound->types.flac.size, NULL);
+   void    *xfer        = audio_transfer_new(AUDIO_TYPE_FLAC);
    (void)repeat;
    (void)volume;
    (void)stop_cb;
 
-   if (!dr_flac)
+   if (!xfer)
       return false;
-
-   /* Stereo-only, matching the float path's stack-buffer sizing. */
-   if (dr_flac->channels != 2)
+   audio_transfer_set_buffer_ptr(xfer, AUDIO_TYPE_FLAC,
+         (void*)sound->types.flac.data, sound->types.flac.size);
+   if (!audio_transfer_start(xfer, AUDIO_TYPE_FLAC))
    {
-      drflac_close(dr_flac);
+      audio_transfer_free(xfer, AUDIO_TYPE_FLAC);
       return false;
    }
+   audio_transfer_info(xfer, AUDIO_TYPE_FLAC, &channels, &rate, NULL);
 
-   if (dr_flac->sampleRate != s_rate)
+   /* Stereo-only, matching the float path's stack-buffer sizing. */
+   if (channels != 2)
+      goto error;
+
+   if (rate != s_rate)
    {
-      ratio      = (double)s_rate / (double)(dr_flac->sampleRate);
+      ratio      = (double)s_rate / (double)rate;
       resamp_i16 = sinc_resampler_int16_init(
             (ratio < 1.0) ? ratio : 1.0,
             audio_mixer_i16_quality(quality));
@@ -901,14 +912,14 @@ static bool audio_mixer_play_flac_s16(
    voice->types.flac.buffer_s16      = (int16_t*)flac_buffer;
    voice->types.flac.buf_samples     = samples;
    voice->types.flac.ratio           = (float)ratio;
-   voice->types.flac.stream          = dr_flac;
+   voice->types.flac.stream          = xfer;
    voice->types.flac.position        = 0;
    voice->types.flac.samples         = 0;
 
    return true;
 
 error:
-   drflac_close(dr_flac);
+   audio_transfer_free(xfer, AUDIO_TYPE_FLAC);
    return false;
 }
 #endif
@@ -1034,7 +1045,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
 #endif
             break;
          case AUDIO_MIXER_TYPE_FLAC:
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
             res = audio_mixer_play_flac(sound, voice, repeat, volume,
                   resampler_ident, quality, stop_cb);
 #endif
@@ -1104,7 +1115,7 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
       switch (sound->type)
       {
          case AUDIO_MIXER_TYPE_FLAC:
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
             res = audio_mixer_play_flac_s16(sound, voice, repeat, volume,
                   quality, stop_cb);
 #endif
@@ -1160,7 +1171,7 @@ static void audio_mixer_release(audio_mixer_voice_t* voice)
          audio_mixer_release_mod(voice);
          break;
 #endif
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
       case AUDIO_MIXER_TYPE_FLAC:
          audio_mixer_release_flac(voice);
          break;
@@ -1399,7 +1410,7 @@ again:
 }
 #endif
 
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
 static void audio_mixer_mix_flac(float* buffer, size_t num_frames,
       audio_mixer_voice_t* voice,
       float volume)
@@ -1414,7 +1425,7 @@ static void audio_mixer_mix_flac(float* buffer, size_t num_frames,
    if (voice->types.flac.position == voice->types.flac.samples)
    {
 again:
-      /* drflac_read_pcm_frames_f32 takes a frame count and
+      /* rflac_read_pcm_frames_f32 takes a frame count and
        * writes frame_count * channel_count floats into the
        * output buffer.  Request at most AUDIO_MIXER_TEMP_BUFFER
        * / 2 frames so a stereo FLAC fills temp_buffer[AUDIO_
@@ -1428,7 +1439,7 @@ again:
        * Pre-patch this passed AUDIO_MIXER_TEMP_BUFFER as the
        * frame count without the '/ 2' and stored the return as
        * 'temp_samples' without the '* 2'.  For a stereo FLAC
-       * (by far the most common case) drflac wrote 2 *
+       * (by far the most common case) rflac wrote 2 *
        * AUDIO_MIXER_TEMP_BUFFER = 16384 floats into a 8192-
        * float stack buffer - a 32 KiB stack overflow.  Any
        * stereo FLAC asset played through the mixer (cheevo
@@ -1447,9 +1458,12 @@ again:
        * per-channel adjustment) rather than introducing new
        * mono handling here.  Fixing mono playback is a separate
        * change. */
-      temp_samples = (unsigned)drflac_read_pcm_frames_f32(
-            voice->types.flac.stream,
-            AUDIO_MIXER_TEMP_BUFFER / 2, temp_buffer) * 2;
+      {
+         size_t got = 0;
+         audio_transfer_read_f32(voice->types.flac.stream, AUDIO_TYPE_FLAC,
+               temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+         temp_samples = (unsigned)(got * 2);
+      }
       if (temp_samples == 0)
       {
          if (voice->repeat)
@@ -1457,7 +1471,7 @@ again:
             if (voice->stop_cb)
                voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
 
-            drflac_seek_to_pcm_frame(voice->types.flac.stream,0);
+            audio_transfer_seek(voice->types.flac.stream, AUDIO_TYPE_FLAC, 0);
             goto again;
          }
 
@@ -1515,16 +1529,19 @@ static void audio_mixer_mix_flac_s16(int16_t* buffer, size_t num_frames,
    if (voice->types.flac.position == voice->types.flac.samples)
    {
 again:
-      temp_samples = (unsigned)drflac_read_pcm_frames_s16(
-            voice->types.flac.stream,
-            AUDIO_MIXER_TEMP_BUFFER / 2, temp_buffer) * 2;
+      {
+         size_t got = 0;
+         audio_transfer_read_s16(voice->types.flac.stream, AUDIO_TYPE_FLAC,
+               temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+         temp_samples = (unsigned)(got * 2);
+      }
       if (temp_samples == 0)
       {
          if (voice->repeat)
          {
             if (voice->stop_cb)
                voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
-            drflac_seek_to_pcm_frame(voice->types.flac.stream, 0);
+            audio_transfer_seek(voice->types.flac.stream, AUDIO_TYPE_FLAC, 0);
             goto again;
          }
          if (voice->stop_cb)
@@ -1685,7 +1702,7 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
 #endif
             break;
          case AUDIO_MIXER_TYPE_FLAC:
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
             audio_mixer_mix_flac(buffer, num_frames, voice, volume);
 #endif
             break;
@@ -1735,7 +1752,7 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
       switch (voice->type)
       {
          case AUDIO_MIXER_TYPE_FLAC:
-#ifdef HAVE_DR_FLAC
+#ifdef HAVE_RFLAC
             audio_mixer_mix_flac_s16(buffer, num_frames, voice, gain_q16);
 #endif
             break;

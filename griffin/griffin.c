@@ -994,6 +994,10 @@ DRIVERS
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail.c"
 #ifdef HAVE_AUDIOMIXER
+#if defined(HAVE_RFLAC)
+#include "../libretro-common/formats/flac/rflac.c"
+#include "../libretro-common/formats/audio_transfer.c"
+#endif
 #include "../libretro-common/audio/audio_mixer.c"
 #endif
 
