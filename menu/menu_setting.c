@@ -10099,10 +10099,14 @@ typedef struct setting_desc
    action_ok_handler_t         action_ok;      /* NULL = class default    */
    int32_t                     def_i;          /* bool/int/uint default   */
    float                       def_f;          /* float default           */
+   action_start_handler_t      action_start;   /* NULL = class default    */
+   action_select_handler_t     action_select;  /* NULL = class default    */
    uint16_t                    cmd_trigger;    /* enum event_command      */
    int16_t                     offset_by;
    uint8_t                     type;           /* enum setting_desc_class */
    uint8_t                     desc_flags;     /* SDESC_FLG_*             */
+   uint8_t                     ui_type;        /* 0 = class default       */
+   uint8_t                     pad;
 } setting_desc_t;
 
 /* Row builders.  Field order must match setting_desc_t. */
@@ -10110,31 +10114,45 @@ typedef struct setting_desc
    { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      0.0f, 0.0f, 0.0f, NULL, NULL, NULL, \
-     (int32_t)(def), 0.0f, (uint16_t)(cmd), 0, SDESC_BOOL, (dflags) }
+     (int32_t)(def), 0.0f, NULL, NULL, (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), 0, 0 }
 
 #define SDESC_UINT_ROW(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
    { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags) }
+     (int32_t)(def), 0.0f, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), 0, 0 }
 
 #define SDESC_INT_ROW(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
    { (uint32_t)offsetof(settings_t, ints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags) }
+     (int32_t)(def), 0.0f, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), 0, 0 }
 
 #define SDESC_FLOAT_ROW(field, label, def, _rounding, sd_flags, dflags, cmd, _min, _max, _step, ok, _repr) \
    { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      (float)(_min), (float)(_max), (float)(_step), (_rounding), (_repr), (ok), \
-     0, (float)(def), (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags) }
+     0, (float)(def), NULL, NULL, (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), 0, 0 }
 
 #define SDESC_ACTION_ROW(label) \
    { 0, 0, \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      0.0f, 0.0f, 0.0f, NULL, NULL, NULL, \
-     0, 0.0f, 0, 0, SDESC_ACTION, 0 }
+     0, 0.0f, NULL, NULL, 0, 0, SDESC_ACTION, 0, 0, 0 }
+
+/* _EX variants add action_start / action_select / ui_type overrides
+ * (0 / NULL keeps the class default). */
+#define SDESC_UINT_ROW_EX(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _uitype) \
+   { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (int32_t)(def), 0.0f, (_start), (_select), (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), (uint8_t)(_uitype), 0 }
+
+#define SDESC_FLOAT_ROW_EX(field, label, def, _rounding, sd_flags, dflags, cmd, _min, _max, _step, ok, _repr, _start, _select, _uitype) \
+   { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     (float)(_min), (float)(_max), (float)(_step), (_rounding), (_repr), (ok), \
+     0, (float)(def), (_start), (_select), (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), (uint8_t)(_uitype), 0 }
 
 #define SDESC_RANGE_MINMAX \
    (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN | SDESC_FLG_ENFORCE_MAX)
@@ -10241,6 +10259,10 @@ static void settings_list_add_desc(
 
       if (d->action_ok)
          (*list)[list_info->index - 1].action_ok = d->action_ok;
+      if (d->action_start)
+         (*list)[list_info->index - 1].action_start = d->action_start;
+      if (d->action_select)
+         (*list)[list_info->index - 1].action_select = d->action_select;
       if (d->repr)
          (*list)[list_info->index - 1].get_string_representation = d->repr;
       if (d->offset_by != 0)
@@ -10253,6 +10275,9 @@ static void settings_list_add_desc(
       if (d->cmd_trigger != CMD_EVENT_NONE)
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
                (enum event_command)d->cmd_trigger);
+      if (d->ui_type)
+         (*list)[list_info->index - 1].ui_type =
+               (enum ui_setting_type)d->ui_type;
    }
 }
 
@@ -13855,40 +13880,33 @@ static bool setting_append_list(
             {
                float actual_refresh_rate = video_driver_get_refresh_rate();
 
-               CONFIG_FLOAT(
-                     list, list_info,
-                     &settings->floats.video_refresh_rate,
-                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-                     DEFAULT_REFRESH_RATE,
-                     "%.3f Hz",
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-               CONFIG_FLOAT(
-                     list, list_info,
-                     &settings->floats.video_refresh_rate,
-                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-                     DEFAULT_REFRESH_RATE,
-                     "%.3f Hz",
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
-               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_auto;
-               (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
-               (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_st_float_video_refresh_rate_auto;
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               {
+                  /* video_refresh_rate is intentionally the value
+                   * target of the next two rows as well; the polled
+                   * variant below stays imperative because its
+                   * default is read from the video driver at
+                   * registration time. */
+                  static const setting_desc_t refresh_desc[] = {
+                     SDESC_FLOAT_ROW(video_refresh_rate, VIDEO_REFRESH_RATE,
+                           DEFAULT_REFRESH_RATE, "%.3f Hz",
+                           SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
+                           SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN,
+                           CMD_EVENT_NONE, 0, 0, 0.001,
+                           NULL, NULL),
+                     SDESC_FLOAT_ROW_EX(video_refresh_rate, VIDEO_REFRESH_RATE_AUTO,
+                           DEFAULT_REFRESH_RATE, "%.3f Hz",
+                           SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_NONE,
+                           0, 0, 0,
+                           setting_action_ok_video_refresh_rate_auto,
+                           setting_get_string_representation_st_float_video_refresh_rate_auto,
+                           setting_action_start_video_refresh_rate_auto,
+                           setting_action_ok_video_refresh_rate_auto,
+                           0)
+                  };
+                  settings_list_add_desc(list, list_info, settings,
+                        refresh_desc, ARRAY_SIZE(refresh_desc),
+                        &group_info, &subgroup_info, parent_group);
+               }
 
                {
                   CONFIG_FLOAT(
@@ -13912,37 +13930,25 @@ static bool setting_append_list(
                }
             }
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_autoswitch_refresh_rate,
-                  MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-                  DEFAULT_AUTOSWITCH_REFRESH_RATE,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_video_autoswitch_refresh_rate;
-            menu_settings_list_current_add_range(list, list_info, 0, AUTOSWITCH_REFRESH_RATE_LAST - 1, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.video_autoswitch_pal_threshold,
-                  MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-                  DEFAULT_AUTOSWITCH_PAL_THRESHOLD,
-                  "%.3f Hz",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-               menu_settings_list_current_add_range(list, list_info, 50, 56, 0.1, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            {
+               static const setting_desc_t autoswitch_desc[] = {
+                  SDESC_UINT_ROW_EX(video_autoswitch_refresh_rate, VIDEO_AUTOSWITCH_REFRESH_RATE,
+                        DEFAULT_AUTOSWITCH_REFRESH_RATE,
+                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE,
+                        0, AUTOSWITCH_REFRESH_RATE_LAST - 1, 1, 0,
+                        setting_action_ok_uint,
+                        setting_get_string_representation_uint_video_autoswitch_refresh_rate,
+                        NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
+                  SDESC_FLOAT_ROW(video_autoswitch_pal_threshold, VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+                        DEFAULT_AUTOSWITCH_PAL_THRESHOLD, "%.3f Hz",
+                        SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX,
+                        CMD_EVENT_NONE, 50, 56, 0.1,
+                        NULL, NULL)
+               };
+               settings_list_add_desc(list, list_info, settings,
+                     autoswitch_desc, ARRAY_SIZE(autoswitch_desc),
+                     &group_info, &subgroup_info, parent_group);
+            }
 
             if (string_is_equal(settings->arrays.video_driver, "gl"))
             {
