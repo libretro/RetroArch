@@ -10065,7 +10065,7 @@ static void new3ds_speedup_change_handler(rarch_setting_t *setting)
  *
  * Settings that need anything not expressible here (runtime default
  * values, runtime target pointers, custom change handlers, values
- * strings, non OFF/ON boolean labels) simply stay imperative. */
+ * non OFF/ON boolean labels) simply stay imperative. */
 
 enum setting_desc_class
 {
@@ -10073,6 +10073,7 @@ enum setting_desc_class
    SDESC_INT,
    SDESC_UINT,
    SDESC_FLOAT,
+   SDESC_STRING,
    SDESC_ACTION
 };
 
@@ -10094,7 +10095,8 @@ typedef struct setting_desc
    float                       min;
    float                       max;
    float                       step;
-   const char                 *rounding;       /* SDESC_FLOAT only        */
+   const char                 *rounding;      /* float rows: printf rounding
+                                                 string rows: default value  */
    get_string_representation_t repr;           /* NULL = class default    */
    action_ok_handler_t         action_ok;      /* NULL = class default    */
    int32_t                     def_i;          /* bool/int/uint default   */
@@ -10167,6 +10169,16 @@ typedef struct setting_desc
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      (float)(_min), (float)(_max), (float)(_step), (_rounding), (_repr), (ok), \
      0, (float)(def), (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), (uint8_t)(_uitype), 0 }
+
+/* String rows: value target is a char array inside settings_t;
+ * def_i carries the buffer size and the rounding slot carries the
+ * default string (see the field comment). */
+#define SDESC_STRING_ROW(field, label, def, sd_flags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
+   { (uint32_t)offsetof(settings_t, arrays.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     0.0f, 0.0f, 0.0f, (def), (_repr), (ok), \
+     (int32_t)sizeof(((settings_t*)0)->arrays.field), 0.0f, \
+     (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_STRING, 0, (uint8_t)(_uitype), 0 }
 
 #define SDESC_RANGE_MINMAX \
    (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN | SDESC_FLG_ENFORCE_MAX)
@@ -10249,6 +10261,22 @@ static void settings_list_add_desc(
                   d->name_enum,
                   d->short_enum,
                   d->def_f,
+                  d->rounding,
+                  group_info,
+                  subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            if (d->flags != SD_FLAG_NONE)
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, d->flags);
+            break;
+         case SDESC_STRING:
+            CONFIG_STRING(
+                  list, list_info,
+                  (char*)settings + d->value_offset,
+                  (size_t)d->def_i,
+                  d->name_enum,
+                  d->short_enum,
                   d->rounding,
                   group_info,
                   subgroup_info,
@@ -15314,81 +15342,47 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+         {
+            static const setting_desc_t audio_dev_desc[] = {
 #if !defined(RARCH_CONSOLE)
-         CONFIG_STRING(
-               list, list_info,
-               settings->arrays.audio_device,
-               sizeof(settings->arrays.audio_device),
-               MENU_ENUM_LABEL_AUDIO_DEVICE,
-               MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start  = &setting_string_action_start_audio_device;
-         (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
-         (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
-         (*list)[list_info->index - 1].action_ok     = &setting_string_action_ok_audio_device;
-         (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_string_audio_device;
-
+               SDESC_STRING_ROW(audio_device, AUDIO_DEVICE,
+                     "", SD_FLAG_NONE, 0,
+                     setting_string_action_ok_audio_device,
+                     setting_get_string_representation_string_audio_device,
+                     setting_string_action_start_audio_device, NULL,
+                     setting_string_action_left_audio_device,
+                     setting_string_action_right_audio_device, 0),
 #ifdef HAVE_MICROPHONE
-         CONFIG_STRING(
-               list, list_info,
-               settings->arrays.microphone_device,
-               sizeof(settings->arrays.microphone_device),
-               MENU_ENUM_LABEL_MICROPHONE_DEVICE,
-               MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-         (*list)[list_info->index - 1].action_start  = setting_string_action_start_microphone_device;
-         (*list)[list_info->index - 1].action_left   = &setting_string_action_left_microphone_device;
-         (*list)[list_info->index - 1].action_right  = &setting_string_action_right_microphone_device;
-         (*list)[list_info->index - 1].action_ok     = &setting_string_action_ok_microphone_device;
-         (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_string_audio_device;
+               SDESC_STRING_ROW(microphone_device, MICROPHONE_DEVICE,
+                     "", SD_FLAG_ALLOW_INPUT, 0,
+                     setting_string_action_ok_microphone_device,
+                     setting_get_string_representation_string_audio_device,
+                     setting_string_action_start_microphone_device, NULL,
+                     setting_string_action_left_microphone_device,
+                     setting_string_action_right_microphone_device,
+                     ST_UI_TYPE_STRING_LINE_EDIT),
 #endif
 #endif
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.audio_output_sample_rate,
-               MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
-               MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-               DEFAULT_OUTPUT_RATE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
-         menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-
+               SDESC_UINT_ROW_EX(audio_output_sample_rate, AUDIO_OUTPUT_RATE,
+                     DEFAULT_OUTPUT_RATE,
+                     SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0,
+                     1000, 192000, 100.0, 0,
+                     setting_action_ok_uint_special, NULL,
+                     NULL, NULL, NULL, NULL, 0)
 #ifdef HAVE_MICROPHONE
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.microphone_sample_rate,
-               MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
-               MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
-               DEFAULT_INPUT_RATE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
-         menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+               ,
+               SDESC_UINT_ROW_EX(microphone_sample_rate, MICROPHONE_INPUT_RATE,
+                     DEFAULT_INPUT_RATE,
+                     SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0,
+                     1000, 192000, 100.0, 0,
+                     setting_action_ok_uint_special, NULL,
+                     NULL, NULL, NULL, NULL, 0)
 #endif
+            };
+            settings_list_add_desc(list, list_info, settings,
+                  audio_dev_desc, ARRAY_SIZE(audio_dev_desc),
+                  &group_info, &subgroup_info, parent_group);
+         }
 
          CONFIG_PATH(
                list, list_info,
