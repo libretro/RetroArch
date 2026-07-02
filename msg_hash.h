@@ -31,14 +31,17 @@
 /* Table-based message lookup.
  *
  * Translation headers under intl/ are consumed as constant string
- * tables (a packed NUL-separated blob plus a uint32 id array per
+ * tables (a string-pointer array plus a uint32 id array per
  * language) instead of per-language switch functions.  The headers
  * are machine-written by the Crowdin sync and keep their exact
- * MSG_HASH(ID, "...") row format; only the consumer changes.
+ * MSG_HASH(ID, "...") row format; only the consumer changes.  Every
+ * row is an ordinary short string literal (the Crowdin pipeline
+ * already truncates entries to 500 bytes for C89), so the tables
+ * are plain strict-C89 constructs.
  *
- * MSVC keeps the switch-based path: it caps concatenated string
- * literals at 64K (fatal error C1091), which the per-language blobs
- * exceed by a wide margin. */
+ * MSVC keeps the switch-based path for now: the translation headers
+ * carry a #pragma inside what would become an initializer list, and
+ * that placement is unverified on MSVC. */
 #if !defined(_MSC_VER)
 #define MSG_HASH_HAVE_STRTAB 1
 #endif
@@ -59,27 +62,27 @@ RETRO_BEGIN_DECLS
 #if defined(MSG_HASH_HAVE_STRTAB)
 typedef struct msg_hash_strtab
 {
-   const uint32_t *ids;   /* one id per row, header order      */
-   const char     *blob;  /* rows concatenated, NUL separated  */
-   uint32_t        count;
+   const uint32_t     *ids;  /* one id per row, header order */
+   const char *const  *strs; /* one string per row           */
+   uint32_t            count;
 } msg_hash_strtab_t;
 
 typedef struct msg_hash_strtab_index
 {
    const msg_hash_strtab_t *tab;    /* table this index describes    */
-   uint32_t                *direct; /* MSG_LAST slots: blob offset+1,
-                                       0 = no row for that id        */
+   uint32_t                *id_slots; /* MSG_LAST slots: row index+1,
+                                         0 = no row for that id     */
 } msg_hash_strtab_index_t;
 
-/* Build (or rebuild) the direct lookup index for @tab.  Invoked
+/* Build (or rebuild) the id_slots lookup index for @tab.  Invoked
  * eagerly on language activation and lazily from the first lookup,
  * so the hot path is always one bounds check plus one load. */
 void msg_hash_strtab_index_build(msg_hash_strtab_index_t *idx,
       const msg_hash_strtab_t *tab);
 
 /* Return the string for @id, or NULL if the table has no such row.
- * O(1): direct index by enum value.  Builds the index on first use;
- * the linear blob walk exists only as an allocation-failure path. */
+ * O(1) by enum value.  Builds the index on first use; the linear
+ * scan exists only as an allocation-failure path. */
 const char *msg_hash_strtab_lookup(const msg_hash_strtab_t *tab,
       msg_hash_strtab_index_t *idx, uint32_t id);
 

@@ -523,10 +523,10 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 #ifdef HAVE_MENU
 #if defined(MSG_HASH_HAVE_STRTAB)
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_us_lbl_blob[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_us_lbl_strs[] = {
 #include "msg_hash_lbl.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_us_lbl_ids[] = {
@@ -536,7 +536,7 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define MSG_HASH(Id, str) case Id: return str;
 
 static const msg_hash_strtab_t msg_hash_us_lbl_strtab =
-{ msg_hash_us_lbl_ids, msg_hash_us_lbl_blob,
+{ msg_hash_us_lbl_ids, msg_hash_us_lbl_strs,
   (uint32_t)(sizeof(msg_hash_us_lbl_ids) / sizeof(msg_hash_us_lbl_ids[0])) };
 
 static msg_hash_strtab_index_t msg_hash_us_lbl_index;
@@ -578,10 +578,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 
 #if defined(MSG_HASH_HAVE_STRTAB)
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_us_blob[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_us_strs[] = {
 #include "msg_hash_us.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_us_ids[] = {
@@ -591,7 +591,7 @@ static const uint32_t msg_hash_us_ids[] = {
 #define MSG_HASH(Id, str) case Id: return str;
 
 static const msg_hash_strtab_t msg_hash_us_strtab =
-{ msg_hash_us_ids, msg_hash_us_blob,
+{ msg_hash_us_ids, msg_hash_us_strs,
   (uint32_t)(sizeof(msg_hash_us_ids) / sizeof(msg_hash_us_ids[0])) };
 
 static msg_hash_strtab_index_t msg_hash_us_index;

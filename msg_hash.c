@@ -61,34 +61,30 @@ void msg_hash_strtab_index_build(msg_hash_strtab_index_t *idx,
       const msg_hash_strtab_t *tab)
 {
    uint32_t i;
-   uint32_t *direct;
-   const char *p;
+   uint32_t *id_slots;
 
-   if (idx->tab == tab && idx->direct)
+   if (idx->tab == tab && idx->id_slots)
       return;
 
    if (!tab || tab->count == 0)
       return;
 
-   direct = (uint32_t*)calloc(MSG_LAST, sizeof(uint32_t));
-   if (!direct)
+   id_slots = (uint32_t*)calloc(MSG_LAST, sizeof(uint32_t));
+   if (!id_slots)
       return;
 
-   for (i = 0, p = tab->blob; i < tab->count; i++)
+   for (i = 0; i < tab->count; i++)
    {
       if (tab->ids[i] < (uint32_t)MSG_LAST)
-         direct[tab->ids[i]] = (uint32_t)(p - tab->blob) + 1;
-      while (*p)
-         p++;
-      p++;
+         id_slots[tab->ids[i]] = i + 1;
    }
 
    /* Publish the fully built index before marking it valid, so a
     * concurrent reader either sees the complete index or takes the
     * fallback path below. */
-   if (idx->direct)
-      free(idx->direct);
-   idx->direct = direct;
+   if (idx->id_slots)
+      free(idx->id_slots);
+   idx->id_slots = id_slots;
    idx->tab    = tab;
 }
 
@@ -98,31 +94,27 @@ const char *msg_hash_strtab_lookup(const msg_hash_strtab_t *tab,
    if (!tab || tab->count == 0)
       return NULL;
 
-   if (idx->tab != tab || !idx->direct)
+   if (idx->tab != tab || !idx->id_slots)
       msg_hash_strtab_index_build(idx, tab);
 
-   if (idx->tab == tab && idx->direct)
+   if (idx->tab == tab && idx->id_slots)
    {
       if (id < (uint32_t)MSG_LAST)
       {
-         uint32_t off = idx->direct[id];
-         if (off)
-            return tab->blob + (off - 1);
+         uint32_t slot = idx->id_slots[id];
+         if (slot)
+            return tab->strs[slot - 1];
       }
       return NULL;
    }
 
    /* Allocation-failure path only. */
    {
-      const char *p = tab->blob;
       uint32_t i;
       for (i = 0; i < tab->count; i++)
       {
          if (tab->ids[i] == id)
-            return p;
-         while (*p)
-            p++;
-         p++;
+            return tab->strs[i];
       }
    }
 
@@ -228,11 +220,11 @@ const char *get_user_language_iso639_1(bool limit)
 /* Per-language string tables.
  *
  * Each translation header is included twice with MSG_HASH
- * redefined: once concatenating every row into a single packed,
- * NUL-separated blob, and once producing a bare uint32 id array.
- * Table overhead is therefore 4 bytes per row with zero
- * relocations, replacing one switch function (code plus a dense
- * jump table spanning the whole enum range) per language.
+ * redefined: once producing a string-pointer array (one ordinary
+ * short literal per row - strict-C89 clean, the Crowdin pipeline
+ * already caps entries at 500 bytes) and once producing a bare
+ * uint32 id array.  This replaces one switch function (code plus a
+ * dense jump table spanning the whole enum range) per language.
  *
  * The headers themselves are machine-written by the Crowdin sync
  * (intl/crowdin_sync.py -> json2h.py) and MUST keep their exact
@@ -241,10 +233,10 @@ const char *get_user_language_iso639_1(bool limit)
  * language activation, see msg_hash_strtab_index_build). */
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_he[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_he[] = {
 #include "intl/msg_hash_he.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_he[] = {
@@ -252,10 +244,10 @@ static const uint32_t msg_hash_ids_he[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_sk[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_sk[] = {
 #include "intl/msg_hash_sk.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_sk[] = {
@@ -263,10 +255,10 @@ static const uint32_t msg_hash_ids_sk[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_uk[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_uk[] = {
 #include "intl/msg_hash_uk.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_uk[] = {
@@ -274,10 +266,10 @@ static const uint32_t msg_hash_ids_uk[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_eo[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_eo[] = {
 #include "intl/msg_hash_eo.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_eo[] = {
@@ -285,10 +277,10 @@ static const uint32_t msg_hash_ids_eo[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_pl[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_pl[] = {
 #include "intl/msg_hash_pl.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_pl[] = {
@@ -296,10 +288,10 @@ static const uint32_t msg_hash_ids_pl[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_fi[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_fi[] = {
 #include "intl/msg_hash_fi.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_fi[] = {
@@ -307,10 +299,10 @@ static const uint32_t msg_hash_ids_fi[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_hu[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_hu[] = {
 #include "intl/msg_hash_hu.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_hu[] = {
@@ -318,10 +310,10 @@ static const uint32_t msg_hash_ids_hu[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_be[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_be[] = {
 #include "intl/msg_hash_be.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_be[] = {
@@ -329,10 +321,10 @@ static const uint32_t msg_hash_ids_be[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_en[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_en[] = {
 #include "intl/msg_hash_en.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_en[] = {
@@ -340,10 +332,10 @@ static const uint32_t msg_hash_ids_en[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_it[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_it[] = {
 #include "intl/msg_hash_it.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_it[] = {
@@ -351,10 +343,10 @@ static const uint32_t msg_hash_ids_it[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_fa[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_fa[] = {
 #include "intl/msg_hash_fa.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_fa[] = {
@@ -362,10 +354,10 @@ static const uint32_t msg_hash_ids_fa[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_ast[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_ast[] = {
 #include "intl/msg_hash_ast.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_ast[] = {
@@ -373,10 +365,10 @@ static const uint32_t msg_hash_ids_ast[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_nl[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_nl[] = {
 #include "intl/msg_hash_nl.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_nl[] = {
@@ -384,10 +376,10 @@ static const uint32_t msg_hash_ids_nl[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_sv[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_sv[] = {
 #include "intl/msg_hash_sv.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_sv[] = {
@@ -395,10 +387,10 @@ static const uint32_t msg_hash_ids_sv[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_id[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_id[] = {
 #include "intl/msg_hash_id.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_id[] = {
@@ -406,10 +398,10 @@ static const uint32_t msg_hash_ids_id[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_cs[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_cs[] = {
 #include "intl/msg_hash_cs.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_cs[] = {
@@ -417,10 +409,10 @@ static const uint32_t msg_hash_ids_cs[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_ar[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_ar[] = {
 #include "intl/msg_hash_ar.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_ar[] = {
@@ -428,10 +420,10 @@ static const uint32_t msg_hash_ids_ar[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_fr[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_fr[] = {
 #include "intl/msg_hash_fr.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_fr[] = {
@@ -439,10 +431,10 @@ static const uint32_t msg_hash_ids_fr[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_cht[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_cht[] = {
 #include "intl/msg_hash_cht.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_cht[] = {
@@ -450,10 +442,10 @@ static const uint32_t msg_hash_ids_cht[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_de[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_de[] = {
 #include "intl/msg_hash_de.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_de[] = {
@@ -461,10 +453,10 @@ static const uint32_t msg_hash_ids_de[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_es[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_es[] = {
 #include "intl/msg_hash_es.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_es[] = {
@@ -472,10 +464,10 @@ static const uint32_t msg_hash_ids_es[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_ca[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_ca[] = {
 #include "intl/msg_hash_ca.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_ca[] = {
@@ -483,10 +475,10 @@ static const uint32_t msg_hash_ids_ca[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_el[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_el[] = {
 #include "intl/msg_hash_el.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_el[] = {
@@ -494,10 +486,10 @@ static const uint32_t msg_hash_ids_el[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_jp[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_jp[] = {
 #include "intl/msg_hash_ja.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_jp[] = {
@@ -505,10 +497,10 @@ static const uint32_t msg_hash_ids_jp[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_ko[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_ko[] = {
 #include "intl/msg_hash_ko.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_ko[] = {
@@ -516,10 +508,10 @@ static const uint32_t msg_hash_ids_ko[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_pt_pt[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_pt_pt[] = {
 #include "intl/msg_hash_pt_pt.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_pt_pt[] = {
@@ -527,10 +519,10 @@ static const uint32_t msg_hash_ids_pt_pt[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_ru[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_ru[] = {
 #include "intl/msg_hash_ru.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_ru[] = {
@@ -538,10 +530,10 @@ static const uint32_t msg_hash_ids_ru[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_tr[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_tr[] = {
 #include "intl/msg_hash_tr.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_tr[] = {
@@ -549,10 +541,10 @@ static const uint32_t msg_hash_ids_tr[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_val[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_val[] = {
 #include "intl/msg_hash_val.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_val[] = {
@@ -560,10 +552,10 @@ static const uint32_t msg_hash_ids_val[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_vn[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_vn[] = {
 #include "intl/msg_hash_vn.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_vn[] = {
@@ -571,10 +563,10 @@ static const uint32_t msg_hash_ids_vn[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_chs[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_chs[] = {
 #include "intl/msg_hash_chs.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_chs[] = {
@@ -582,10 +574,10 @@ static const uint32_t msg_hash_ids_chs[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_pt_br[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_pt_br[] = {
 #include "intl/msg_hash_pt_br.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_pt_br[] = {
@@ -593,10 +585,10 @@ static const uint32_t msg_hash_ids_pt_br[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_gl[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_gl[] = {
 #include "intl/msg_hash_gl.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_gl[] = {
@@ -604,10 +596,10 @@ static const uint32_t msg_hash_ids_gl[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_no[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_no[] = {
 #include "intl/msg_hash_no.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_no[] = {
@@ -615,10 +607,10 @@ static const uint32_t msg_hash_ids_no[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_ga[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_ga[] = {
 #include "intl/msg_hash_ga.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_ga[] = {
@@ -626,10 +618,10 @@ static const uint32_t msg_hash_ids_ga[] = {
 };
 
 #undef MSG_HASH
-#define MSG_HASH(Id, str) str "\0"
-static const char msg_hash_blob_th[] =
+#define MSG_HASH(Id, str) str,
+static const char *const msg_hash_strs_th[] = {
 #include "intl/msg_hash_th.h"
-;
+};
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_ids_th[] = {
@@ -641,112 +633,112 @@ static const uint32_t msg_hash_ids_th[] = {
 #define MSG_HASH(Id, str) case Id: return str;
 
 static const msg_hash_strtab_t msg_hash_strtab_he =
-{ msg_hash_ids_he, msg_hash_blob_he,
+{ msg_hash_ids_he, msg_hash_strs_he,
   (uint32_t)(sizeof(msg_hash_ids_he) / sizeof(msg_hash_ids_he[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_sk =
-{ msg_hash_ids_sk, msg_hash_blob_sk,
+{ msg_hash_ids_sk, msg_hash_strs_sk,
   (uint32_t)(sizeof(msg_hash_ids_sk) / sizeof(msg_hash_ids_sk[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_uk =
-{ msg_hash_ids_uk, msg_hash_blob_uk,
+{ msg_hash_ids_uk, msg_hash_strs_uk,
   (uint32_t)(sizeof(msg_hash_ids_uk) / sizeof(msg_hash_ids_uk[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_eo =
-{ msg_hash_ids_eo, msg_hash_blob_eo,
+{ msg_hash_ids_eo, msg_hash_strs_eo,
   (uint32_t)(sizeof(msg_hash_ids_eo) / sizeof(msg_hash_ids_eo[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_pl =
-{ msg_hash_ids_pl, msg_hash_blob_pl,
+{ msg_hash_ids_pl, msg_hash_strs_pl,
   (uint32_t)(sizeof(msg_hash_ids_pl) / sizeof(msg_hash_ids_pl[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_fi =
-{ msg_hash_ids_fi, msg_hash_blob_fi,
+{ msg_hash_ids_fi, msg_hash_strs_fi,
   (uint32_t)(sizeof(msg_hash_ids_fi) / sizeof(msg_hash_ids_fi[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_hu =
-{ msg_hash_ids_hu, msg_hash_blob_hu,
+{ msg_hash_ids_hu, msg_hash_strs_hu,
   (uint32_t)(sizeof(msg_hash_ids_hu) / sizeof(msg_hash_ids_hu[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_be =
-{ msg_hash_ids_be, msg_hash_blob_be,
+{ msg_hash_ids_be, msg_hash_strs_be,
   (uint32_t)(sizeof(msg_hash_ids_be) / sizeof(msg_hash_ids_be[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_en =
-{ msg_hash_ids_en, msg_hash_blob_en,
+{ msg_hash_ids_en, msg_hash_strs_en,
   (uint32_t)(sizeof(msg_hash_ids_en) / sizeof(msg_hash_ids_en[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_it =
-{ msg_hash_ids_it, msg_hash_blob_it,
+{ msg_hash_ids_it, msg_hash_strs_it,
   (uint32_t)(sizeof(msg_hash_ids_it) / sizeof(msg_hash_ids_it[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_fa =
-{ msg_hash_ids_fa, msg_hash_blob_fa,
+{ msg_hash_ids_fa, msg_hash_strs_fa,
   (uint32_t)(sizeof(msg_hash_ids_fa) / sizeof(msg_hash_ids_fa[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_ast =
-{ msg_hash_ids_ast, msg_hash_blob_ast,
+{ msg_hash_ids_ast, msg_hash_strs_ast,
   (uint32_t)(sizeof(msg_hash_ids_ast) / sizeof(msg_hash_ids_ast[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_nl =
-{ msg_hash_ids_nl, msg_hash_blob_nl,
+{ msg_hash_ids_nl, msg_hash_strs_nl,
   (uint32_t)(sizeof(msg_hash_ids_nl) / sizeof(msg_hash_ids_nl[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_sv =
-{ msg_hash_ids_sv, msg_hash_blob_sv,
+{ msg_hash_ids_sv, msg_hash_strs_sv,
   (uint32_t)(sizeof(msg_hash_ids_sv) / sizeof(msg_hash_ids_sv[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_id =
-{ msg_hash_ids_id, msg_hash_blob_id,
+{ msg_hash_ids_id, msg_hash_strs_id,
   (uint32_t)(sizeof(msg_hash_ids_id) / sizeof(msg_hash_ids_id[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_cs =
-{ msg_hash_ids_cs, msg_hash_blob_cs,
+{ msg_hash_ids_cs, msg_hash_strs_cs,
   (uint32_t)(sizeof(msg_hash_ids_cs) / sizeof(msg_hash_ids_cs[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_ar =
-{ msg_hash_ids_ar, msg_hash_blob_ar,
+{ msg_hash_ids_ar, msg_hash_strs_ar,
   (uint32_t)(sizeof(msg_hash_ids_ar) / sizeof(msg_hash_ids_ar[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_fr =
-{ msg_hash_ids_fr, msg_hash_blob_fr,
+{ msg_hash_ids_fr, msg_hash_strs_fr,
   (uint32_t)(sizeof(msg_hash_ids_fr) / sizeof(msg_hash_ids_fr[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_cht =
-{ msg_hash_ids_cht, msg_hash_blob_cht,
+{ msg_hash_ids_cht, msg_hash_strs_cht,
   (uint32_t)(sizeof(msg_hash_ids_cht) / sizeof(msg_hash_ids_cht[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_de =
-{ msg_hash_ids_de, msg_hash_blob_de,
+{ msg_hash_ids_de, msg_hash_strs_de,
   (uint32_t)(sizeof(msg_hash_ids_de) / sizeof(msg_hash_ids_de[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_es =
-{ msg_hash_ids_es, msg_hash_blob_es,
+{ msg_hash_ids_es, msg_hash_strs_es,
   (uint32_t)(sizeof(msg_hash_ids_es) / sizeof(msg_hash_ids_es[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_ca =
-{ msg_hash_ids_ca, msg_hash_blob_ca,
+{ msg_hash_ids_ca, msg_hash_strs_ca,
   (uint32_t)(sizeof(msg_hash_ids_ca) / sizeof(msg_hash_ids_ca[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_el =
-{ msg_hash_ids_el, msg_hash_blob_el,
+{ msg_hash_ids_el, msg_hash_strs_el,
   (uint32_t)(sizeof(msg_hash_ids_el) / sizeof(msg_hash_ids_el[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_jp =
-{ msg_hash_ids_jp, msg_hash_blob_jp,
+{ msg_hash_ids_jp, msg_hash_strs_jp,
   (uint32_t)(sizeof(msg_hash_ids_jp) / sizeof(msg_hash_ids_jp[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_ko =
-{ msg_hash_ids_ko, msg_hash_blob_ko,
+{ msg_hash_ids_ko, msg_hash_strs_ko,
   (uint32_t)(sizeof(msg_hash_ids_ko) / sizeof(msg_hash_ids_ko[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_pt_pt =
-{ msg_hash_ids_pt_pt, msg_hash_blob_pt_pt,
+{ msg_hash_ids_pt_pt, msg_hash_strs_pt_pt,
   (uint32_t)(sizeof(msg_hash_ids_pt_pt) / sizeof(msg_hash_ids_pt_pt[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_ru =
-{ msg_hash_ids_ru, msg_hash_blob_ru,
+{ msg_hash_ids_ru, msg_hash_strs_ru,
   (uint32_t)(sizeof(msg_hash_ids_ru) / sizeof(msg_hash_ids_ru[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_tr =
-{ msg_hash_ids_tr, msg_hash_blob_tr,
+{ msg_hash_ids_tr, msg_hash_strs_tr,
   (uint32_t)(sizeof(msg_hash_ids_tr) / sizeof(msg_hash_ids_tr[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_val =
-{ msg_hash_ids_val, msg_hash_blob_val,
+{ msg_hash_ids_val, msg_hash_strs_val,
   (uint32_t)(sizeof(msg_hash_ids_val) / sizeof(msg_hash_ids_val[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_vn =
-{ msg_hash_ids_vn, msg_hash_blob_vn,
+{ msg_hash_ids_vn, msg_hash_strs_vn,
   (uint32_t)(sizeof(msg_hash_ids_vn) / sizeof(msg_hash_ids_vn[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_chs =
-{ msg_hash_ids_chs, msg_hash_blob_chs,
+{ msg_hash_ids_chs, msg_hash_strs_chs,
   (uint32_t)(sizeof(msg_hash_ids_chs) / sizeof(msg_hash_ids_chs[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_pt_br =
-{ msg_hash_ids_pt_br, msg_hash_blob_pt_br,
+{ msg_hash_ids_pt_br, msg_hash_strs_pt_br,
   (uint32_t)(sizeof(msg_hash_ids_pt_br) / sizeof(msg_hash_ids_pt_br[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_gl =
-{ msg_hash_ids_gl, msg_hash_blob_gl,
+{ msg_hash_ids_gl, msg_hash_strs_gl,
   (uint32_t)(sizeof(msg_hash_ids_gl) / sizeof(msg_hash_ids_gl[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_no =
-{ msg_hash_ids_no, msg_hash_blob_no,
+{ msg_hash_ids_no, msg_hash_strs_no,
   (uint32_t)(sizeof(msg_hash_ids_no) / sizeof(msg_hash_ids_no[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_ga =
-{ msg_hash_ids_ga, msg_hash_blob_ga,
+{ msg_hash_ids_ga, msg_hash_strs_ga,
   (uint32_t)(sizeof(msg_hash_ids_ga) / sizeof(msg_hash_ids_ga[0])) };
 static const msg_hash_strtab_t msg_hash_strtab_th =
-{ msg_hash_ids_th, msg_hash_blob_th,
+{ msg_hash_ids_th, msg_hash_strs_th,
   (uint32_t)(sizeof(msg_hash_ids_th) / sizeof(msg_hash_ids_th[0])) };
 
 static msg_hash_strtab_index_t msg_hash_lang_index;
