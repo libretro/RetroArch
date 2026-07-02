@@ -537,7 +537,8 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 
 static const msg_hash_strtab_t msg_hash_us_lbl_strtab =
 { msg_hash_us_lbl_ids, msg_hash_us_lbl_strs,
-  (uint32_t)(sizeof(msg_hash_us_lbl_ids) / sizeof(msg_hash_us_lbl_ids[0])) };
+  (uint32_t)(sizeof(msg_hash_us_lbl_ids) / sizeof(msg_hash_us_lbl_ids[0])),
+  NULL };
 
 static msg_hash_strtab_index_t msg_hash_us_lbl_index;
 #endif
@@ -592,7 +593,8 @@ static const uint32_t msg_hash_us_ids[] = {
 
 static const msg_hash_strtab_t msg_hash_us_strtab =
 { msg_hash_us_ids, msg_hash_us_strs,
-  (uint32_t)(sizeof(msg_hash_us_ids) / sizeof(msg_hash_us_ids[0])) };
+  (uint32_t)(sizeof(msg_hash_us_ids) / sizeof(msg_hash_us_ids[0])),
+  NULL };
 
 static msg_hash_strtab_index_t msg_hash_us_index;
 
