@@ -51,6 +51,7 @@
 
 #include "../../msg_hash_lbl_str.h"
 #include "../../configuration.h"
+#include "../../profile_manager.h"
 #include "../../file_path_special.h"
 #include "../../input/input_osk.h"
 #include "../../tasks/tasks_internal.h"
@@ -5531,6 +5532,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       unsigned term_mid_point        = 0;
       size_t powerstate_len          = 0;
       size_t timedate_len            = 0;
+      size_t profile_len             = 0;
 
       /* Cache mini thumbnail related parameters, if required */
       if (show_mini_thumbnails)
@@ -5661,9 +5663,34 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                rgui->colors.shadow_color);
       }
 
+      /* Profile Name */
+      {
+         char profile_name[128];
+         char profile_icon[PATH_MAX_LENGTH];
+         profile_manager_get_active(profile_name, sizeof(profile_name), profile_icon, sizeof(profile_icon));
+
+         if (profile_name[0])
+         {
+            profile_len = utf8len(profile_name);
+            if (powerstate_len || timedate_len)
+               profile_len++;
+
+            rgui_blit_line(rgui,
+                  fb_width,
+                  (int)(term_end_x
+                        - (powerstate_len * rgui->font_width_stride)
+                        - (timedate_len * rgui->font_width_stride)
+                        - (profile_len * rgui->font_width_stride)),
+                  title_y,
+                  profile_name,
+                  rgui->colors.hover_color,
+                  rgui->colors.shadow_color);
+         }
+      }
+
       /* Print title */
-      title_max_len = rgui->term_layout.width - powerstate_len - timedate_len;
-      if (powerstate_len || timedate_len)
+      title_max_len = rgui->term_layout.width - powerstate_len - timedate_len - profile_len;
+      if (powerstate_len || timedate_len || profile_len)
          title_max_len--;
 
       title_buf[0] = '\0';
