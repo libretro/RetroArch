@@ -291,10 +291,37 @@ def emit_guard_transition(out, prev, cur):
         if in_else:
             out.append('#else')
 
+def djb2(s):
+    h = 5381
+    for ch in s:
+        h = ((h * 33) + ord(ch)) & 0xffffffff
+    return h
+
+def member_base_names(rows):
+    """Stable member names: djb2 hash of the msg-hash key.
+
+    Positional names (s0, s1, ...) meant a single inserted or removed
+    row renamed every later member, rewriting the whole header on
+    routine translation syncs.  Key-hashed names only change when the
+    row itself changes.  Hash collisions between distinct keys are
+    disambiguated deterministically by sorted key order."""
+    by_hash = {}
+    for key, _val, _guard in rows:
+        by_hash.setdefault(djb2(key), []).append(key)
+    names = {}
+    for h, keys in by_hash.items():
+        if len(keys) == 1:
+            names[keys[0]] = 's_%08x' % h
+        else:
+            for n, key in enumerate(sorted(keys)):
+                names[key] = 's_%08x_c%u' % (h, n)
+    return names
+
 def pack(text, lang):
     rows = parse_rows_with_guards(text)
     if not rows:
         raise SystemExit('packed emitter: no rows for ' + lang)
+    mnames = member_base_names(rows)
     members = []   # (text, guard)
     inits   = []   # (text, guard)
     sizes   = []   # (row_total_bytes, guard)
@@ -306,7 +333,8 @@ def pack(text, lang):
         for ci, cb in enumerate(chunks):
             last = (ci == len(chunks) - 1)
             size = len(cb) + (1 if last else 0)
-            name = 's%u' % r if len(chunks) == 1 else 's%u_%u' % (r, ci)
+            name = mnames[key] if len(chunks) == 1 \
+                  else '%s_%u' % (mnames[key], ci)
             members.append(('   char %s[%u];' % (name, size), guard))
             inits.append(('   "%s",' % encode_chunk_lines(cb), guard))
             row_total += size
