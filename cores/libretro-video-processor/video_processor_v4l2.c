@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2016 Jared McNeill <jmcneill@invisible.ca>
+ * Copyright (c) 2026 Xitee <59659167+Xitee1@users.noreply.github.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,6 +59,7 @@
 
 #ifdef HAVE_ALSA
 #include <alsa/asoundlib.h>
+#include <pthread.h>
 #endif
 
 #ifdef HAVE_UDEV
@@ -129,11 +131,6 @@ struct v4l2_capability caps;
 
 static float   dummy_pos=0;
 
-/* True while retro_run() reloads the core after an option change: a failing
- * device is survivable then (blank frames, options stay editable), so
- * retro_load_game must not fall back to the dummy source. */
-static bool device_reloading;
-
 static int      video_half_feed_rate=0; /* for interlaced captures */
 static uint32_t video_cap_width;
 static uint32_t video_cap_height;
@@ -163,6 +160,10 @@ int ft_fcount;
  */
 #ifdef HAVE_ALSA
 static snd_pcm_t *audio_handle;
+/* Serializes audio_handle access between the frontend's async audio
+ * callback (which runs on the frontend's audio thread) and the main-thread
+ * (re)configuration paths; see close_audio_device(). */
+static pthread_mutex_t audio_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 /*
@@ -179,16 +180,30 @@ static retro_input_state_t VIDEOPROC_CORE_PREFIX(input_state_cb);
 static void audio_callback(void)
 {
    int16_t audio_data[128];
+   int frames  = -1;
+   bool opened = false;
 
+   pthread_mutex_lock(&audio_lock);
    if (audio_handle)
    {
-      const int frames = snd_pcm_readi(audio_handle,
+      opened = true;
+      frames = snd_pcm_readi(audio_handle,
             audio_data, sizeof(audio_data) / 4);
 
       if (frames < 0)
          snd_pcm_recover(audio_handle, frames, true);
-      else
-         VIDEOPROC_CORE_PREFIX(audio_sample_batch_cb)(audio_data, frames);
+   }
+   pthread_mutex_unlock(&audio_lock);
+
+   if (frames >= 0)
+      VIDEOPROC_CORE_PREFIX(audio_sample_batch_cb)(audio_data, frames);
+   else if (!opened)
+   {
+      /* No capture device: the frontend's audio thread paces itself on this
+       * callback blocking in snd_pcm_readi(), and it cannot be unregistered
+       * (SET_AUDIO_CALLBACK(NULL) is ignored). Sleep briefly so the thread
+       * doesn't spin at 100% CPU while audio capture is off. */
+      usleep(10000);
    }
 }
 
@@ -303,6 +318,7 @@ static void enumerate_audio_devices(char *s, size_t len)
       name = snd_device_name_get_hint(*n, "NAME");
       if (name == NULL || strstr(name, "front:") == NULL)
       {
+         free(ioid);
          free(name);
          name = NULL;
          continue;
@@ -313,8 +329,8 @@ static void enumerate_audio_devices(char *s, size_t len)
       descr = snd_device_name_get_hint(*n, "DESC");
       if (!descr)
       {
-         free(descr);
-         descr = NULL;
+         free(ioid);
+         free(name);
          continue;
       }
 
@@ -459,6 +475,10 @@ static void list_resolutions(char *capture_resolutions, size_t len,
 
    for (token = strtok(devices, "|"); token != NULL; token = strtok(NULL, "|"))
    {
+      /* The menu label ends in "; ", so the first token carries a leading
+       * space — trim it or the first device is never matched. */
+      while (*token == ' ')
+         token++;
       if (!string_starts_with(token, "/dev/video"))
          continue;
       count = probe_resolutions(token, probed, count, ARRAY_SIZE(probed));
@@ -491,6 +511,10 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    char video_devices[ENVVAR_BUFLEN];
    char audio_devices[ENVVAR_BUFLEN];
    static char capture_resolutions[ENVVAR_BUFLEN];
+   /* Device selection the resolution list was probed from; statics survive
+    * core restarts when the core is statically linked into the frontend, so
+    * an empty-buffer check alone would never refresh the list. */
+   static char probed_for[ENVVAR_BUFLEN];
    struct retro_variable videodev = { "videoproc_videodev", NULL };
    struct retro_variable envvars[] = {
       { "videoproc_videodev", NULL },
@@ -519,11 +543,21 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    envvars[0].value = video_devices;
    envvars[1].key   = "videoproc_audiodev";
    envvars[1].value = audio_devices;
+   envvars[3].key   = "videoproc_capture_resolution";
+   envvars[3].value = capture_resolutions;
 
-   /* Register the options once before the resolution list is known: this
-    * seeds the frontend with the saved values, and a variable can only be
-    * resolved after it has been registered with its value list — so the
-    * saved device selection only becomes queryable now. */
+   /* Register the options once before the probed resolution list is known:
+    * this seeds the frontend with the saved values, and a variable can only
+    * be resolved after it has been registered with its value list — so the
+    * saved device selection only becomes queryable now. Values must not be
+    * NULL (only the {NULL, NULL} entry terminates the array), so seed the
+    * resolution list with the built-in table; it is rebuilt from the actual
+    * device below. */
+   if (capture_resolutions[0] == '\0')
+   {
+      list_resolutions(capture_resolutions, sizeof(capture_resolutions), "");
+      appendstr(capture_resolutions, "|auto", ENVVAR_BUFLEN);
+   }
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
 
@@ -531,19 +565,20 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
     * than offering a fixed table the hardware may not honour. Probe only the
     * selected device when it is known, so the option list reflects what that
     * device actually supports; on a fresh configuration (no device selected
-    * yet) probe every enumerated device. Probing opens the device(s), so do
-    * it only once and reuse the list on subsequent calls; restart the core
-    * after switching devices to refresh it. */
-   if (capture_resolutions[0] == '\0')
+    * yet) probe every enumerated device. Probing opens the device(s), so
+    * cache the list and rebuild it only when the probed selection changes
+    * (i.e. on the first core start after switching devices). */
    {
       const char *probe_target =
             (videodev.value && string_starts_with(videodev.value, "/dev/video"))
             ? videodev.value : video_devices;
-      list_resolutions(capture_resolutions, sizeof(capture_resolutions), probe_target);
-      appendstr(capture_resolutions, "|auto", ENVVAR_BUFLEN);
+      if (strcmp(probed_for, probe_target) != 0)
+      {
+         list_resolutions(capture_resolutions, sizeof(capture_resolutions), probe_target);
+         appendstr(capture_resolutions, "|auto", ENVVAR_BUFLEN);
+         strlcpy(probed_for, probe_target, sizeof(probed_for));
+      }
    }
-   envvars[3].key   = "videoproc_capture_resolution";
-   envvars[3].value = capture_resolutions;
    printf("captures: %s\n", envvars[3].value);
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
@@ -661,7 +696,9 @@ static int open_audio_device(const char *device)
       return error;
    }
 
+   pthread_mutex_lock(&audio_lock);
    audio_handle = handle;
+   pthread_mutex_unlock(&audio_lock);
    printf("Using ALSA device %s for audio input\n", device);
    return 0;
 
@@ -669,6 +706,36 @@ fail:
    snd_pcm_hw_params_free(hw_params);
    snd_pcm_close(handle);
    return error;
+}
+
+/* Open the ALSA device with a brief retry (reopening a device that was
+ * closed a moment ago can fail transiently with EBUSY while the frontend's
+ * audio thread winds down). Audio is optional: on failure, tell the user on
+ * screen and continue without audio. Returns true when capturing. */
+static bool start_audio_capture(const char *device)
+{
+   int attempt;
+   int error = -EBUSY;
+
+   for (attempt = 0; attempt < 5 && error == -EBUSY; attempt++)
+   {
+      if (attempt > 0)
+         usleep(20000);
+      error = open_audio_device(device);
+   }
+   if (error != 0)
+   {
+      /* Surface the problem in the frontend, too: a silent core with no
+       * on-screen hint is hard to diagnose from the menu. The specific
+       * reason is printed to the terminal by open_audio_device(). */
+      struct retro_message msg =
+            { "Audio capture could not be started - continuing without audio", 240 };
+      printf("Audio device %s could not be started (non-fatal), continuing without audio\n",
+            device);
+      VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+      return false;
+   }
+   return true;
 }
 #endif
 
@@ -728,36 +795,16 @@ static bool open_devices(void)
     * capture callback is still running (which races and returns EBUSY).
     *
     * Audio is optional: failing to bring it up must not prevent video capture
-    * from starting. Reopening the device that was closed a moment ago (an
-    * audio device change) can still fail transiently with EBUSY while the
-    * frontend's audio thread winds down, so retry briefly before giving up. */
+    * from starting. */
    if (audio_handle == NULL && audiodev.value && strcmp(audiodev.value, "none") != 0)
-   {
-      int attempt;
-      error = -EBUSY;
-      for (attempt = 0; attempt < 5 && error == -EBUSY; attempt++)
-      {
-         if (attempt > 0)
-            usleep(20000);
-         error = open_audio_device(audiodev.value);
-      }
-      if (error != 0)
-      {
-         /* Surface the problem in the frontend, too: a silent core with no
-          * on-screen hint is hard to diagnose from the menu. */
-         struct retro_message msg =
-               { "Audio capture device is busy - continuing without audio", 240 };
-         printf("Audio device %s could not be started (non-fatal), continuing without audio\n",
-               audiodev.value);
-         VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
-      }
-   }
+      start_audio_capture(audiodev.value);
 #endif
 
    return true;
 }
 
 static void unload_game_internal(bool keep_audio);
+static bool load_game_internal(bool allow_fallback);
 
 /* Stop the frontend from invoking audio_callback before the ALSA handle is
  * closed; otherwise the async callback races snd_pcm_close() and can read
@@ -773,18 +820,18 @@ static void unregister_audio_callback(void)
 static void close_audio_device(void)
 {
 #ifdef HAVE_ALSA
-   snd_pcm_t *handle = audio_handle;
+   snd_pcm_t *handle;
+   /* Unpublish the handle under the lock: RetroArch ignores
+    * SET_AUDIO_CALLBACK(NULL), so the async audio callback may still be
+    * registered. Taking the lock waits for an in-flight snd_pcm_readi() to
+    * drain, and later invocations see NULL — the handle is never closed
+    * underneath a reader. */
+   pthread_mutex_lock(&audio_lock);
+   handle       = audio_handle;
+   audio_handle = NULL;
+   pthread_mutex_unlock(&audio_lock);
    if (handle)
-   {
-      /* Unpublish the handle first: RetroArch ignores
-       * SET_AUDIO_CALLBACK(NULL), so the async audio callback may still be
-       * registered. New invocations then see NULL; give an in-flight
-       * snd_pcm_readi() (64 frames, ~1.3ms) a moment to drain before the
-       * handle is closed underneath it. */
-      audio_handle = NULL;
-      usleep(5000);
       snd_pcm_close(handle);
-   }
 #endif
 }
 
@@ -821,34 +868,35 @@ static void release_video_buffers(void)
  * and the device option remains editable from the menu. */
 static void setup_dummy_source(void)
 {
+   uint32_t height;
+
    if (strcmp(video_capture_mode, "interlaced") == 0)
    {
-       video_format.fmt.pix.height = 480;
-       video_cap_height            = 480;
-       video_buf.field             = V4L2_FIELD_INTERLACED;
+      height          = 480;
+      video_buf.field = V4L2_FIELD_INTERLACED;
    }
    else if (     strcmp(video_capture_mode, "alternate") == 0
               || strcmp(video_capture_mode, "top") == 0
               || strcmp(video_capture_mode, "bottom") == 0
               || strcmp(video_capture_mode, "alternate_hack") == 0)
    {
-       video_format.fmt.pix.height = 240;
-       video_cap_height            = 240;
-       video_buf.field             = V4L2_FIELD_TOP;
+      height          = 240;
+      video_buf.field = V4L2_FIELD_TOP;
    }
    else
    {
-       /* "deinterlaced": full frames. Without this branch the height stayed
-        * 0 (or stale from a previous device) and the zero-height geometry
-        * reported to the frontend crashed its video driver. */
-       video_format.fmt.pix.height = 480;
-       video_cap_height            = 480;
-       video_buf.field             = V4L2_FIELD_NONE;
+      /* "deinterlaced": full frames. Without this branch the height stayed
+       * 0 (or stale from a previous device) and the zero-height geometry
+       * reported to the frontend crashed its video driver. */
+      height          = 480;
+      video_buf.field = V4L2_FIELD_NONE;
    }
 
-   dummy_pos                  = 0;
-   video_format.fmt.pix.width = 640;
-   video_cap_width            = 640;
+   video_format.fmt.pix.height = height;
+   video_cap_height            = height;
+   dummy_pos                   = 0;
+   video_format.fmt.pix.width  = 640;
+   video_cap_width             = 640;
 }
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_deinit)(void)
@@ -897,6 +945,23 @@ static bool rate_to_timeperframe(const char *s, uint32_t *num, uint32_t *den)
    *num = 1;
    *den = (uint32_t)r;
    return true;
+}
+
+/* The av_info most recently reported to the frontend, used to skip the
+ * expensive SET_SYSTEM_AV_INFO (a full frontend AV reinit) after an option
+ * change that granted identical geometry and timing. */
+static struct retro_system_av_info video_last_av_info;
+
+static bool av_info_equal(const struct retro_system_av_info *a,
+      const struct retro_system_av_info *b)
+{
+   return a->geometry.base_width   == b->geometry.base_width
+       && a->geometry.base_height  == b->geometry.base_height
+       && a->geometry.max_width    == b->geometry.max_width
+       && a->geometry.max_height   == b->geometry.max_height
+       && a->geometry.aspect_ratio == b->geometry.aspect_ratio
+       && a->timing.fps            == b->timing.fps
+       && a->timing.sample_rate    == b->timing.sample_rate;
 }
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
@@ -951,9 +1016,13 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
          /* No analog standard (e.g. UVC/HDMI capture): use the actual frame
           * rate from VIDIOC_G_PARM. It is the buffer delivery rate, so it maps
           * directly to the frontend rate, except in "interlaced" mode where the
-          * deinterlacer emits two outputs (one per field) per captured frame. */
+          * deinterlacer emits two outputs (one per field) per captured frame.
+          * That only happens when the driver really granted an interlaced
+          * format; if it clamped the request to progressive, buffers arrive
+          * (and are output) once per frame at cap_fps. */
          double cap_fps = (double)video_cap_rate_d / (double)video_cap_rate_n;
-         info->timing.fps = (strcmp(video_capture_mode, "interlaced") == 0)
+         info->timing.fps = (   strcmp(video_capture_mode, "interlaced") == 0
+                             && video_format.fmt.pix.field == V4L2_FIELD_INTERLACED)
                             ? cap_fps * 2.0 : cap_fps;
       }
       else
@@ -961,10 +1030,19 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
       info->timing.sample_rate   = AUDIO_SAMPLE_RATE;
 
       /* TODO/FIXME Allow for fixed 4:3 and 16:9 modes */
-      if (error == 0)
+      /* Default to square pixels when the driver reports no cropping/pixel
+       * aspect information (common for UVC/HDMI grabbers and v4l2loopback);
+       * leaving the field unset would push uninitialized stack data to the
+       * frontend through SET_SYSTEM_AV_INFO in retro_run(). */
+      if (error == 0 && cc.pixelaspect.numerator != 0 && cc.pixelaspect.denominator != 0)
          info->geometry.aspect_ratio = (double)info->geometry.base_width / (double)info->geometry.max_height /
             ((double)cc.pixelaspect.numerator / (double)cc.pixelaspect.denominator);
+      else
+         info->geometry.aspect_ratio = (double)info->geometry.base_width /
+               (double)info->geometry.max_height;
    }
+
+   video_last_av_info = *info;
 
    printf("Aspect ratio: %f\n",info->geometry.aspect_ratio);
    printf("Buffer Resolution %ux%u %f fps\n", info->geometry.base_width,
@@ -979,8 +1057,11 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_controller_port_device)(unsigned 
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_reset)(void)
 {
-   close_devices();
-   open_devices();
+   /* Tear the whole pipeline down and bring it back up. Merely closing and
+    * reopening the device fds (the old behaviour) left the V4L2 stream dead
+    * — no S_FMT/REQBUFS/STREAMON — until the next option change. */
+   unload_game_internal(false);
+   load_game_internal(true);
 }
 
 /* TODO improve this mess and make it generic enough for use with dummy mode */
@@ -1082,7 +1163,13 @@ void source_dummy(int width, int height)
  * Copy no more than that, and never read past the captured buffer. */
 static void copy_frame_cap(const struct v4l2_capbuf *capbuf)
 {
-   size_t copy_size = MIN((size_t)video_cap_width * video_cap_height * 3,
+   size_t copy_size;
+   /* alternate_hack re-maps its buffer every frame; a transient mmap failure
+    * leaves the pointer invalid. Keep the previous frame instead of reading
+    * from a bad mapping. */
+   if (capbuf->start == NULL || capbuf->start == MAP_FAILED)
+      return;
+   copy_size = MIN((size_t)video_cap_width * video_cap_height * 3,
          capbuf->len);
    memcpy(frame_cap, capbuf->start, copy_size);
 }
@@ -1153,7 +1240,8 @@ void source_v4l2_alternate_hack(int width, int height)
    bufcp = video_buf;
    copy_frame_cap(&v4l2_capbuf[video_buf.index]);
 
-   v4l2_munmap(v4l2_capbuf[0].start, v4l2_capbuf[0].len);
+   if (v4l2_capbuf[0].start && v4l2_capbuf[0].start != MAP_FAILED)
+      v4l2_munmap(v4l2_capbuf[0].start, v4l2_capbuf[0].len);
 
    if (video_buf.field == V4L2_FIELD_TOP)
        fmt.fmt.pix.field = V4L2_FIELD_BOTTOM;
@@ -1178,7 +1266,9 @@ void source_v4l2_alternate_hack(int width, int height)
    {
       printf("VIDIOC_REQBUFS failed: %s\n", strerror(errno));
    }
-   v4l2_ncapbuf = reqbufs.count;
+   /* The driver can grant more buffers than requested; v4l2_capbuf[] only
+    * holds VIDEO_BUFFERS_MAX entries and only that many are mapped/queued. */
+   v4l2_ncapbuf = MIN(reqbufs.count, VIDEO_BUFFERS_MAX);
    /* printf("GOT v4l2_ncapbuf=%ld\n", v4l2_ncapbuf); */
 
    index            = 0;
@@ -1187,10 +1277,17 @@ void source_v4l2_alternate_hack(int width, int height)
    video_buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    video_buf.memory = V4L2_MEMORY_MMAP;
 
-   v4l2_ioctl(video_device_fd, VIDIOC_QUERYBUF, &video_buf);
+   if (v4l2_ioctl(video_device_fd, VIDIOC_QUERYBUF, &video_buf) != 0)
+      printf("VIDIOC_QUERYBUF failed: %s\n", strerror(errno));
    v4l2_capbuf[index].len   = video_buf.length;
    v4l2_capbuf[index].start = v4l2_mmap(NULL, video_buf.length,
          PROT_READ|PROT_WRITE, MAP_SHARED, video_device_fd, video_buf.m.offset);
+   if (v4l2_capbuf[index].start == MAP_FAILED)
+   {
+      printf("v4l2_mmap failed: %s\n", strerror(errno));
+      v4l2_capbuf[index].start = NULL;
+      v4l2_capbuf[index].len   = 0;
+   }
    memset(&video_buf, 0, sizeof(struct v4l2_buffer));
 
    video_buf.index  = index;
@@ -1380,34 +1477,51 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
 
       if (video_changed || audio_changed)
       {
-          /* Keep the audio device alive across a video-only reconfigure so the
-           * running ALSA capture isn't torn down and reopened (which races its
-           * async callback and fails with EBUSY). Switching to the dummy device
-           * stops audio capture, so tear it down in that case. */
-          bool keep_audio = !audio_changed && (audio_device[0] != '\0')
-                && videodev.value && (strcmp(videodev.value, "dummy") != 0);
-          unload_game_internal(keep_audio);
-          /* This core does not cares for the retro_game_info * argument? */
-          device_reloading = true;
-          if (!VIDEOPROC_CORE_PREFIX(retro_load_game)(NULL))
-          {
-             /* Reload failed: the buffers we just freed are gone. Output a
-              * blank frame and stay idle rather than dereferencing them; the
-              * user can pick a working configuration to retry. */
-             device_reloading = false;
-             VIDEOPROC_CORE_PREFIX(video_refresh_cb)(NULL, 0, 0, 0);
-             return;
-          }
-          device_reloading = false;
-          /* The device may have granted a different geometry or frame rate
-           * than the previous configuration; push the new av_info so the
-           * frontend adjusts its buffers and pacing (required whenever the
-           * max geometry can grow). */
-          {
-             struct retro_system_av_info av_info;
-             VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(&av_info);
-             VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &av_info);
-          }
+         bool reload = true;
+#ifdef HAVE_ALSA
+         /* When only the audio device changed and audio capture is already
+          * running, swap the ALSA device in place instead of rebuilding the
+          * whole video pipeline. Enabling audio from "none" still takes the
+          * reload path: SET_AUDIO_CALLBACK is only honoured during
+          * retro_load_game. */
+         if (!video_changed && audio_handle != NULL && audiodev.value)
+         {
+            close_audio_device();
+            strlcpy(audio_device, audiodev.value, sizeof(audio_device));
+            if (strcmp(audiodev.value, "none") != 0)
+               start_audio_capture(audiodev.value);
+            reload = false;
+         }
+#endif
+         if (reload)
+         {
+            /* Keep the audio device alive across a video-only reconfigure so
+             * the running ALSA capture isn't torn down and reopened (which
+             * races its async callback and fails with EBUSY). Switching to
+             * the dummy device stops audio capture, so tear it down in that
+             * case. */
+            bool keep_audio = !audio_changed && (audio_device[0] != '\0')
+                  && videodev.value && (strcmp(videodev.value, "dummy") != 0);
+            struct retro_system_av_info av_info;
+            struct retro_system_av_info prev_av_info = video_last_av_info;
+            unload_game_internal(keep_audio);
+            if (!load_game_internal(false))
+            {
+               /* Reload failed: the buffers we just freed are gone. Output a
+                * blank frame and stay idle rather than dereferencing them;
+                * the user can pick a working configuration to retry. */
+               VIDEOPROC_CORE_PREFIX(video_refresh_cb)(NULL, 0, 0, 0);
+               return;
+            }
+            /* The device may have granted a different geometry or frame rate
+             * than the previous configuration; push the new av_info so the
+             * frontend adjusts its buffers and pacing — but only when it
+             * really changed, since SET_SYSTEM_AV_INFO makes the frontend
+             * reinitialize its video/audio drivers. */
+            VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(&av_info);
+            if (!av_info_equal(&av_info, &prev_av_info))
+               VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &av_info);
+         }
       }
 
       if (frametimes.value != NULL)
@@ -1550,7 +1664,13 @@ static void videoinput_set_control_v4l2( uint32_t id, double val)
 }
 #endif
 
-RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_info *game)
+/* Device bring-up shared by retro_load_game and the runtime-reconfigure path
+ * in retro_run. allow_fallback selects the failure policy: on the initial
+ * load a failing device falls back to the built-in test pattern (the device
+ * choice is persisted, and a broken one would otherwise prevent the core
+ * from ever starting again), while a failed reconfigure of a running core is
+ * survivable as a plain error (blank frames, options stay editable). */
+static bool load_game_internal(bool allow_fallback)
 {
    struct retro_variable videodev     = { "videoproc_videodev", NULL };
    struct retro_variable audiodev     = { "videoproc_audiodev", NULL };
@@ -1577,9 +1697,10 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
 
    if (open_devices() == false)
    {
+      /* Nothing to clean up here: open_devices() leaves no half-open video
+       * fd behind, and the fallback/error paths below release whatever else
+       * is held. */
       printf("Couldn't open capture device\n");
-      unregister_audio_callback();
-      close_devices();
       goto device_fallback;
    }
 
@@ -1808,7 +1929,11 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
          printf("VIDIOC_REQBUFS failed: %s\n", strerror(errno));
          goto device_fallback;
       }
-      v4l2_ncapbuf = reqbufs.count;
+      /* The driver can grant more buffers than requested (some need 3+ to
+       * operate); v4l2_capbuf[] only holds VIDEO_BUFFERS_MAX entries, and
+       * only the buffers actually mapped and queued here are ever returned
+       * by VIDIOC_DQBUF. Going past the array corrupts adjacent state. */
+      v4l2_ncapbuf = MIN(reqbufs.count, VIDEO_BUFFERS_MAX);
       printf("GOT v4l2_ncapbuf=%" PRI_SIZET "\n", v4l2_ncapbuf);
 
       /* Forget any previous session's pointers before the mmap loop so a
@@ -1943,12 +2068,7 @@ device_ready:
    return true;
 
 device_fallback:
-   /* While the core is already running, a failed reconfigure is survivable
-    * (blank frames, options stay editable), so treat it as a plain error and
-    * let the user retry. Only on the *initial* load fall back to the built-in
-    * test pattern: the device choice is persisted, and a broken one would
-    * otherwise prevent the core from ever starting again. */
-   if (device_reloading)
+   if (!allow_fallback)
       goto error;
    printf("Capture device could not be started, falling back to the dummy video source\n");
    {
@@ -1980,6 +2100,12 @@ error:
    return false;
 }
 
+RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_info *game)
+{
+   /* This core ignores the content argument (SET_SUPPORT_NO_GAME). */
+   return load_game_internal(true);
+}
+
 /* keep_audio leaves the audio device, its async callback and audio_device[]
  * untouched. Used for a video-only reconfigure (resolution/capture mode/output
  * mode change) so the running ALSA capture isn't bounced; see open_devices(). */
@@ -1988,12 +2114,8 @@ static void unload_game_internal(bool keep_audio)
    int i;
    struct v4l2_requestbuffers reqbufs;
 
-#ifdef HAVE_ALSA
-   if (!keep_audio && audio_handle != NULL)
-   {
-       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, NULL);
-   }
-#endif
+   if (!keep_audio)
+      unregister_audio_callback();
 
    if ((strcmp(video_device, "dummy") != 0) && (video_device_fd != -1))
    {
