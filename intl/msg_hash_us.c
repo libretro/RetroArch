@@ -527,26 +527,46 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 static const char *const msg_hash_us_lbl_strs[] = {
 #include "msg_hash_lbl.h"
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) n,
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) n,
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) n,
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) n,
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) n,
-#include "../settings_def_video_sync.h"
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) n,
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) n,
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) n,
 #include "../settings_def_video_fullscreen.h"
+#include "../settings_def_video_sync.h"
 #undef S_BOOL
+#undef S_BOOL_NS
 #undef S_UINT
+#undef S_UINT_NS
 #undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
 };
 #undef MSG_HASH
 #define MSG_HASH(Id, str) (uint32_t)Id,
 static const uint32_t msg_hash_us_lbl_ids[] = {
 #include "msg_hash_lbl.h"
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
-#include "../settings_def_video_sync.h"
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings_def_video_fullscreen.h"
+#include "../settings_def_video_sync.h"
 #undef S_BOOL
+#undef S_BOOL_NS
 #undef S_UINT
+#undef S_UINT_NS
 #undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
 };
 #undef MSG_HASH
 #define MSG_HASH(Id, str) case Id: return str;
