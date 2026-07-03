@@ -29,6 +29,102 @@ p = re.compile(
     r'MSG_HASH\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\(\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*[a-zA-Z0-9_]+\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*,\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\".*\"\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\)')
 
 
+def strip_define_bodies(text):
+    """Remove #define directives and their continuation lines so macro
+    bodies containing MSG_HASH text are never parsed as rows."""
+    out = []
+    skipping = False
+    for line in text.split('\n'):
+        if skipping:
+            skipping = line.rstrip().endswith('\\')
+            continue
+        if line.lstrip().startswith('#define'):
+            skipping = line.rstrip().endswith('\\')
+            continue
+        out.append(line)
+    return '\n'.join(out)
+
+
+def expand_def_includes(text, base_dir):
+    """Replace generated-region includes of settings_def_*.h with the
+    literal MSG_HASH rows their S_ rows denote, preserving guard lines
+    from the def file, so the template contains exactly what the
+    compiler sees."""
+    import os as _os
+
+    def def_to_rows(def_text):
+        out = []
+        i = 0
+        while i < len(def_text):
+            line_end = def_text.find('\n', i)
+            if line_end < 0:
+                line_end = len(def_text)
+            ls = def_text[i:line_end].strip()
+            if ls.startswith('#'):
+                out.append(def_text[i:line_end])
+                i = line_end + 1
+                continue
+            m = re.match(r'S_(BOOL|UINT|INT|FLOAT)(_NS)?\s*\(', def_text[i:])
+            if not m:
+                i = line_end + 1
+                continue
+            jx = i + m.end()
+            depth = 1
+            args = ['']
+            inq = False
+            while depth:
+                ch = def_text[jx]
+                if inq:
+                    args[-1] += ch
+                    if ch == '\\':
+                        args[-1] += def_text[jx+1]; jx += 1
+                    elif ch == '"':
+                        inq = False
+                elif ch == '"':
+                    inq = True; args[-1] += ch
+                elif ch == '(':
+                    depth += 1; args[-1] += ch
+                elif ch == ')':
+                    depth -= 1
+                    if depth: args[-1] += ch
+                elif ch == ',' and depth == 1:
+                    args.append('')
+                else:
+                    args[-1] += ch
+                jx += 1
+            token = args[1].strip()
+            if m.group(2):
+                pairs = (('MENU_ENUM_LABEL_VALUE_', args[-1]),)
+            else:
+                pairs = (('MENU_ENUM_LABEL_VALUE_', args[-2]),
+                         ('MENU_ENUM_SUBLABEL_', args[-1]))
+            for pfx, val in pairs:
+                c = val.find('"'); d = val.rfind('"')
+                if c >= 0 and d > c:
+                    out.append('MSG_HASH(')
+                    out.append('   ' + pfx + token + ',')
+                    out.append('   "' + val[c+1:d] + '"')
+                    out.append('   )')
+            i = jx
+        return out
+
+    lines = []
+    for line in text.split('\n'):
+        im = re.match(r'#include "((?:\.\./)?settings_def_\w+\.h)"', line.strip())
+        if im:
+            p = _os.path.normpath(_os.path.join(base_dir, im.group(1)))
+            if _os.path.exists(p):
+                with open(p, encoding='utf-8') as f:
+                    lines.extend(def_to_rows(f.read()))
+                continue
+        lines.append(line)
+    return '\n'.join(lines)
+
+
+def expand_template(text, base_dir='.'):
+    return strip_define_bodies(expand_def_includes(text, base_dir))
+
+
 def parse_message(message):
     # remove all comments before the value (= the string)
     a = message.find('/*')
@@ -250,6 +346,8 @@ def parse_rows_with_guards(text):
                 i += 1
                 block.append(lines[i])
             key, val = parse_message('\n'.join(block))
+            if not key_is_sane(key):
+                raise SystemExit('packed emitter: insane key ' + repr(key))
             rows.append((key, val, tuple((g[0], g[1]) for g in stack)))
         i += 1
     return rows
@@ -303,9 +401,6 @@ def member_base_names(rows):
         by_hash.setdefault(djb2(key), []).append(key)
     names = {}
     for h, keys in by_hash.items():
-        if not key_is_sane(h):
-            print("skipping insane key: " + repr(h))
-            continue
         if len(keys) == 1:
             names[keys[0]] = 's_%08x' % h
         else:
@@ -317,6 +412,28 @@ def pack(text, lang):
     rows = parse_rows_with_guards(text)
     if not rows:
         raise SystemExit('packed emitter: no rows for ' + lang)
+    seen_keys = set()
+    for key, _v, _g in rows:
+        if key in seen_keys:
+            raise SystemExit('packed emitter: duplicate key ' + key)
+        seen_keys.add(key)
+    import os as _os
+    if _os.path.exists('msg_hash_us.json'):
+        with open('msg_hash_us.json', encoding='utf-8') as _f:
+            _src = set(json.load(_f))
+        _alien = set()
+        for _k in seen_keys - _src:
+            # h2json legitimately omits language-name rows and rows with
+            # preprocessor branches inside the invocation; everything
+            # else missing from the source json is garbage.
+            if _k.startswith('MENU_ENUM_LABEL_VALUE_LANG_'):
+                continue
+            if re.search(r'\b%s\s*,[^)]*#' % re.escape(_k), text):
+                continue
+            _alien.add(_k)
+        if _alien:
+            raise SystemExit('packed emitter: keys not in source: '
+                             + ', '.join(sorted(_alien)[:5]))
     mnames = member_base_names(rows)
     members = []   # (text, guard)
     inits   = []   # (text, guard)
@@ -388,7 +505,7 @@ if repack_mode:
     sys.exit(0)
 
 with open('msg_hash_us.h', 'r', encoding='utf-8') as template_file:
-    template = template_file.read()
+    template = expand_template(template_file.read())
     with open('msg_hash_us.json', 'r+', encoding='utf-8') as source_json_file:
         source_messages = json.load(source_json_file)
         with open(json_filename, 'r+', encoding='utf-8') as json_file:
