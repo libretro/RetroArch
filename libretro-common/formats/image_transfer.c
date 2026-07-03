@@ -480,3 +480,87 @@ const uint32_t *image_transfer_anim_get_frame(void *anim,
    }
    return NULL;
 }
+
+/* ---- Streaming animation ---- */
+
+void *image_transfer_anim_stream_new(void *buf, size_t len,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         return rwebp_anim_stream_open((const uint8_t*)buf, len);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return NULL;
+}
+
+void image_transfer_anim_stream_free(void *stream,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         rwebp_anim_stream_close((rwebp_anim_stream_t*)stream);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
+void image_transfer_anim_stream_get_info(void *stream,
+      enum image_type_enum type,
+      unsigned *width, unsigned *height, int *num_frames, int *loop_count)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         rwebp_anim_stream_get_info((const rwebp_anim_stream_t*)stream,
+               width, height, num_frames, loop_count);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
+const uint32_t *image_transfer_anim_stream_next(void *stream,
+      enum image_type_enum type, int *duration_ms)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         return rwebp_anim_stream_next((rwebp_anim_stream_t*)stream,
+               duration_ms);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return NULL;
+}
+
+void image_transfer_anim_stream_rewind(void *stream,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         rwebp_anim_stream_rewind((rwebp_anim_stream_t*)stream);
+#endif
+         break;
+      default:
+         break;
+   }
+}

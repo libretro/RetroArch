@@ -114,6 +114,28 @@ void image_transfer_anim_get_info(void *anim, enum image_type_enum type,
 const uint32_t *image_transfer_anim_get_frame(void *anim,
       enum image_type_enum type, int index, int *duration_ms);
 
+/* Streaming animation: memory use independent of frame count. The
+ * buffer passed to image_transfer_anim_stream_new is BORROWED and must
+ * outlive the stream. next() returns the stream's internal canvas
+ * (valid until the next call, do not free); NULL means end of one
+ * pass - rewind to loop. */
+
+void *image_transfer_anim_stream_new(void *buf, size_t len,
+      enum image_type_enum type);
+
+void image_transfer_anim_stream_free(void *stream,
+      enum image_type_enum type);
+
+void image_transfer_anim_stream_get_info(void *stream,
+      enum image_type_enum type,
+      unsigned *width, unsigned *height, int *num_frames, int *loop_count);
+
+const uint32_t *image_transfer_anim_stream_next(void *stream,
+      enum image_type_enum type, int *duration_ms);
+
+void image_transfer_anim_stream_rewind(void *stream,
+      enum image_type_enum type);
+
 RETRO_END_DECLS
 
 #endif
