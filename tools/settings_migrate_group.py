@@ -49,6 +49,19 @@ def defs(mk):
 ms = open('menu/menu_setting.c').read()
 tm = re.search(r'static const setting_desc_t %s\[\] = \{\n(.*?)\n( *)\};' % TABLE, ms, re.S)
 assert tm, TABLE
+def guard_of(text, pat):
+    m = re.search(pat, text)
+    if not m:
+        return None
+    stack = []
+    for gl in re.finditer(r'^[ \t]*#(if\w*[^\n]*|else|endif)', text[:m.start()], re.M):
+        s = gl.group(1)
+        if s.startswith('if'):
+            stack.append('#' + s.strip())
+        elif s.startswith('endif') and stack:
+            stack.pop()
+    return tuple(stack)
+
 guards = {}
 body = tm.group(1)
 for gm in re.finditer(r'#if(\w* [^\n]+)\n(.*?)#endif(?:\n|$)', body, re.S):
@@ -124,7 +137,24 @@ for k, f, T, a in rows:
                ' * configuration.c row stays literal for this setting. */\n'
                '#ifndef SETTINGS_DEF_CONFIG_PASS\n' % ck) + row + '\n#endif'
     if f in guards:
-        row = guards[f] + '\n' + row + '\n#endif'
+        g = guards[f]
+        if g.startswith('#ifdef '):
+            cond = 'defined(%s)' % g[len('#ifdef '):].strip()
+        elif g.startswith('#ifndef '):
+            cond = '!defined(%s)' % g[len('#ifndef '):].strip()
+        else:
+            cond = g[len('#if '):].strip()
+        us_g  = guard_of(open('intl/msg_hash_us.h').read(), r'MENU_ENUM_LABEL_VALUE_%s,' % T)
+        lbl_g = guard_of(open('intl/msg_hash_lbl.h').read(), r'MENU_ENUM_LABEL_%s,' % T)
+        strings_guarded = bool(us_g) and bool(lbl_g)
+        strings_free    = not us_g and not lbl_g
+        assert strings_guarded or strings_free, (T, us_g, lbl_g, 'mixed string-guard topology')
+        if strings_free:
+            row = ('/* Descriptor and configuration rows are %s; the string\n'
+                   ' * tables always carry this row via the strings pass. */\n'
+                   '#if %s || defined(SETTINGS_DEF_STRINGS_PASS)\n' % (g, cond)) + row + '\n#endif'
+        else:
+            row = g + '\n' + row + '\n#endif'
     out.append(row)
 open(DEF, 'w').write('\n'.join(out) + '\n')
 
@@ -133,6 +163,7 @@ for s, e in sorted(usspan, reverse=True): us = us[:s] + us[e:]
 mk_us = lambda b, has_sub: (' \\\nMSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \\\nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)'
                             if has_sub else ' \\\nMSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)')
 region = ('/* GENERATED REGION: %s (see %s). */\n' % (TITLE, DEF)
+          + '#define SETTINGS_DEF_STRINGS_PASS\n'
           + defs(mk_us) + '\n#include "../%s"\n' % DEF + UNDEFS + '\n#undef SETTINGS_DEF_STRINGS_PASS\n')
 us = us[:first] + region + us[first:]
 us = re.sub(r'#if[^\n]*\n#endif\n', '', us)

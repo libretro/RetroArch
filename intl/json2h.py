@@ -54,6 +54,7 @@ def expand_def_includes(text, base_dir):
 
     def def_to_rows(def_text):
         out = []
+        skip_endif = []
         i = 0
         while i < len(def_text):
             line_end = def_text.find('\n', i)
@@ -61,6 +62,21 @@ def expand_def_includes(text, base_dir):
                 line_end = len(def_text)
             ls = def_text[i:line_end].strip()
             if ls.startswith('#'):
+                # A guard alternated with the strings pass is always true
+                # for string consumers; this expansion mirrors the us.h
+                # consumer, which defines the pass, so drop the pair.
+                if 'SETTINGS_DEF_STRINGS_PASS' in ls:
+                    skip_endif.append(True)
+                    i = line_end + 1
+                    continue
+                if ls.startswith('#endif') and skip_endif and skip_endif[-1]:
+                    skip_endif.pop()
+                    i = line_end + 1
+                    continue
+                if ls.startswith('#if'):
+                    skip_endif.append(False)
+                elif ls.startswith('#endif') and skip_endif:
+                    skip_endif.pop()
                 out.append(def_text[i:line_end])
                 i = line_end + 1
                 continue
