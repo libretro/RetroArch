@@ -537,6 +537,7 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_cheevos_visibility.h"
 #include "../settings/settings_def_ui_focus.h"
 #include "../settings/settings_def_multimedia.h"
 #include "../settings/settings_def_menu_rgui_thumbnails.h"
@@ -580,6 +581,7 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_cheevos_visibility.h"
 #include "../settings/settings_def_ui_focus.h"
 #include "../settings/settings_def_multimedia.h"
 #include "../settings/settings_def_menu_rgui_thumbnails.h"
