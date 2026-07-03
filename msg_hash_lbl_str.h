@@ -1218,8 +1218,6 @@
 #define MENU_ENUM_LABEL_RENAME_ENTRY_STR "rename_entry"
 #define MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH_STR "menu_show_quit_retroarch"
 #define MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH_STR "menu_show_restart_retroarch"
-#define MENU_ENUM_LABEL_MENU_SHOW_REBOOT_STR "menu_show_reboot"
-#define MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN_STR "menu_show_shutdown"
 #define MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING_STR "quick_menu_start_recording"
 #define MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING_STR "quick_menu_start_streaming"
 #define MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING_STR "quick_menu_stop_recording"
