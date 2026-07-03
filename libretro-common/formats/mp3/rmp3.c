@@ -46,11 +46,6 @@
 
 #if !defined(RMP3_NO_SIMD)
 
-#if !defined(RMP3_ONLY_SIMD) && (defined(_M_X64) || defined(_M_ARM64) || defined(__x86_64__) || defined(__aarch64__))
-/* x64 always have SSE2, arm64 always have neon, no need for generic code */
-#define RMP3_ONLY_SIMD
-#endif
-
 #if (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))) || ((defined(__i386__) || defined(__x86_64__)) && defined(__SSE2__))
 #if defined(_MSC_VER)
 #include <intrin.h>
@@ -71,9 +66,6 @@
 typedef __m128 rmp3_f4;
 static int rmp3_have_simd(void)
 {
-#ifdef RMP3_ONLY_SIMD
-    return 1;
-#else
     /* Detect SSE2 via libretro-common's shared, cached CPU feature query
      * rather than an in-tree cpuid. Memoised here so the SIMD dispatch in
      * the decode loops stays a plain branch. */
@@ -81,7 +73,6 @@ static int rmp3_have_simd(void)
     if (!g_have_simd)
         g_have_simd = (cpu_features_get() & RETRO_SIMD_SSE2) ? 2 : 1;
     return g_have_simd - 1;
-#endif
 }
 #elif defined(__ARM_NEON) || defined(__aarch64__) || defined(__ARM_NEON__) || defined(_M_ARM64)
 #include <arm_neon.h>
@@ -98,14 +89,11 @@ static int rmp3_have_simd(void)
 #define RMP3_VREV(x) vcombine_f32(vget_high_f32(vrev64q_f32(x)), vget_low_f32(vrev64q_f32(x)))
 typedef float32x4_t rmp3_f4;
 static int rmp3_have_simd(void)
-{   /* TODO: detect neon for !RMP3_ONLY_SIMD */
+{   /* TODO: detect neon */
     return 1;
 }
 #else
 #define RMP3_HAVE_SIMD 0
-#ifdef RMP3_ONLY_SIMD
-#error RMP3_ONLY_SIMD used, but SSE/NEON not enabled
-#endif
 #endif
 
 #else
@@ -911,7 +899,6 @@ static void rmp3_L3_antialias(float *grbuf, int nbands)
             RMP3_VSTORE(grbuf + 14 - i, RMP3_VREV(vd));
         }
 #endif
-#ifndef RMP3_ONLY_SIMD
         for(; i < 8; i++)
         {
             float u = grbuf[18 + i];
@@ -919,7 +906,6 @@ static void rmp3_L3_antialias(float *grbuf, int nbands)
             grbuf[18 + i] = u*g_aa[0][i] - d*g_aa[1][i];
             grbuf[17 - i] = u*g_aa[1][i] + d*g_aa[0][i];
         }
-#endif
     }
 }
 
@@ -1236,9 +1222,6 @@ static void rmp3d_DCT_II(float *grbuf, int n)
         }
     } else
 #endif
-#ifdef RMP3_ONLY_SIMD
-    {}
-#else
     for (; k < n; k++)
     {
         float t[4][8], *x, *y = grbuf + k;
@@ -1297,19 +1280,22 @@ static void rmp3d_DCT_II(float *grbuf, int n)
         y[2*18] = t[1][7];
         y[3*18] = t[3][7];
     }
-#endif
 }
 
-static short rmp3d_scale_pcm(float sample)
+static int16_t rmp3d_scale_pcm(float sample)
 {
    int s;
-   if (sample >  32767.0) return (short) 32767;
-   if (sample < -32768.0) return (short)-32768;
+   if (sample >  32767.0)
+      return (int16_t) 32767;
+   if (sample < -32768.0)
+      return (int16_t)-32768;
    s = (int)(sample + .5f);
    s -= (s < 0);   /* away from zero, to be compliant */
-   if (s >  32767) return (short) 32767;
-   if (s < -32768) return (short)-32768;
-   return (short)s;
+   if (s >  32767)
+      return (int16_t) 32767;
+   if (s < -32768)
+      return (int16_t)-32768;
+   return (int16_t)s;
 }
 
 static void rmp3d_synth_pair(short *pcm, int nch, const float *z)
@@ -1428,9 +1414,6 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
         }
     } else
 #endif
-#ifdef RMP3_ONLY_SIMD
-    {}
-#else
     for (i = 14; i >= 0; i--)
     {
 #define RMP3_LOAD(k) float w0 = *w++; float w1 = *w++; float *vz = &zlin[4*i - k*64]; float *vy = &zlin[4*i - (15 - k)*64];
@@ -1459,7 +1442,6 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
         dstl[(47 - i)*nch] = rmp3d_scale_pcm(a[2]);
         dstl[(49 + i)*nch] = rmp3d_scale_pcm(b[2]);
     }
-#endif
 }
 
 static void rmp3d_synth_granule(float *qmf_state, float *grbuf, int nbands, int nch, short *pcm, float *lins)
@@ -1713,51 +1695,59 @@ uint64_t rmp3_src_read_frames_linear(rmp3_src* pSRC, uint64_t frameCount, void* 
 
 uint32_t rmp3_src_init(const rmp3_src_config* pConfig, rmp3_src_read_proc onRead, void* pUserData, rmp3_src* pSRC)
 {
-    if (pSRC == NULL) return RMP3_FALSE;
+    if (!pSRC)
+       return 0;
     memset((pSRC), 0, sizeof(*(pSRC)));
 
-    if (pConfig == NULL || onRead == NULL) return RMP3_FALSE;
-    if (pConfig->channels == 0 || pConfig->channels > 2) return RMP3_FALSE;
+    if (!pConfig || !onRead)
+       return 0;
+    if (pConfig->channels == 0 || pConfig->channels > 2)
+       return 0;
 
-    pSRC->config = *pConfig;
-    pSRC->onRead = onRead;
+    pSRC->config    = *pConfig;
+    pSRC->onRead    = onRead;
     pSRC->pUserData = pUserData;
 
-    if (pSRC->config.cacheSizeInFrames > RMP3_SRC_CACHE_SIZE_IN_FRAMES || pSRC->config.cacheSizeInFrames == 0)
+    if (   pSRC->config.cacheSizeInFrames > RMP3_SRC_CACHE_SIZE_IN_FRAMES 
+        || pSRC->config.cacheSizeInFrames == 0)
         pSRC->config.cacheSizeInFrames = RMP3_SRC_CACHE_SIZE_IN_FRAMES;
 
     rmp3_src_cache_init(pSRC, &pSRC->cache);
-    return RMP3_TRUE;
+    return 1;
 }
 
 uint32_t rmp3_src_set_input_sample_rate(rmp3_src* pSRC, uint32_t sampleRateIn)
 {
-    if (pSRC == NULL) return RMP3_FALSE;
+    if (!pSRC)
+       return 0;
 
     /* Must have a sample rate of > 0. */
     if (sampleRateIn == 0)
-        return RMP3_FALSE;
+        return 0;
 
     pSRC->config.sampleRateIn = sampleRateIn;
-    return RMP3_TRUE;
+    return 1;
 }
 
 uint32_t rmp3_src_set_output_sample_rate(rmp3_src* pSRC, uint32_t sampleRateOut)
 {
-    if (pSRC == NULL) return RMP3_FALSE;
+    if (!pSRC)
+       return 0;
 
     /* Must have a sample rate of > 0. */
     if (sampleRateOut == 0)
-        return RMP3_FALSE;
+        return 0;
 
     pSRC->config.sampleRateOut = sampleRateOut;
-    return RMP3_TRUE;
+    return 1;
 }
 
-uint64_t rmp3_src_read_frames_ex(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut, uint32_t flush)
+uint64_t rmp3_src_read_frames_ex(rmp3_src* pSRC,
+      uint64_t frameCount, void* pFramesOut, uint32_t flush)
 {
    rmp3_src_algorithm algorithm;
-   if (pSRC == NULL || frameCount == 0 || pFramesOut == NULL) return 0;
+   if (!pSRC || frameCount == 0 || !pFramesOut)
+      return 0;
 
    algorithm = pSRC->config.algorithm;
 
@@ -1776,7 +1766,7 @@ uint64_t rmp3_src_read_frames_ex(rmp3_src* pSRC, uint64_t frameCount, void* pFra
 
 uint64_t rmp3_src_read_frames(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut)
 {
-    return rmp3_src_read_frames_ex(pSRC, frameCount, pFramesOut, RMP3_FALSE);
+    return rmp3_src_read_frames_ex(pSRC, frameCount, pFramesOut, 0);
 }
 
 uint64_t rmp3_src_read_frames_passthrough(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut, uint32_t flush)
@@ -1797,14 +1787,14 @@ uint64_t rmp3_src_read_frames_linear(rmp3_src* pSRC, uint64_t frameCount, void* 
       uint64_t framesRead = rmp3_src_cache_read_frames(&pSRC->cache, 1, pSRC->bin);
       if (framesRead == 0)
          return 0;
-      pSRC->algo.linear.isPrevFramesLoaded = RMP3_TRUE;
+      pSRC->algo.linear.isPrevFramesLoaded = 1;
    }
    if (!pSRC->algo.linear.isNextFramesLoaded)
    {
       uint64_t framesRead = rmp3_src_cache_read_frames(&pSRC->cache, 1, pSRC->bin + pSRC->config.channels);
       if (framesRead == 0)
          return 0;
-      pSRC->algo.linear.isNextFramesLoaded = RMP3_TRUE;
+      pSRC->algo.linear.isNextFramesLoaded = 1;
    }
 
    factor = (float)pSRC->config.sampleRateIn / pSRC->config.sampleRateOut;
@@ -1840,11 +1830,11 @@ uint64_t rmp3_src_read_frames_linear(rmp3_src* pSRC, uint64_t frameCount, void* 
                pNextFrame[j] = 0;
 
             if (pSRC->algo.linear.isNextFramesLoaded)
-               pSRC->algo.linear.isNextFramesLoaded = RMP3_FALSE;
+               pSRC->algo.linear.isNextFramesLoaded = 0;
             else
             {
                if (flush)
-                  pSRC->algo.linear.isPrevFramesLoaded = RMP3_FALSE;
+                  pSRC->algo.linear.isPrevFramesLoaded = 0;
             }
 
             break;
@@ -1868,7 +1858,7 @@ uint64_t rmp3_src_read_frames_linear(rmp3_src* pSRC, uint64_t frameCount, void* 
 static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
 {
     if (pMP3->atEnd)
-        return RMP3_FALSE;
+        return 0;
 
     do
     {
@@ -1882,12 +1872,13 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
 
           if (pMP3->dataCapacity < RMP3_DATA_CHUNK_SIZE)
           {
-             uint8_t* pNewData = NULL;
-             pMP3->dataCapacity    = RMP3_DATA_CHUNK_SIZE;
+             uint8_t* pNewData  = NULL;
+             pMP3->dataCapacity = RMP3_DATA_CHUNK_SIZE;
 
-             pNewData              = (uint8_t*)realloc(pMP3->pData, pMP3->dataCapacity);
-             if (pNewData == NULL)
-                return RMP3_FALSE; /* Out of memory. */
+             pNewData           = (uint8_t*)realloc(pMP3->pData,
+                   pMP3->dataCapacity);
+             if (!pNewData)
+                return 0; /* Out of memory. */
 
              pMP3->pData = pNewData;
           }
@@ -1895,8 +1886,8 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
           bytesRead = pMP3->onRead(pMP3->pUserData, pMP3->pData + pMP3->dataSize, (pMP3->dataCapacity - pMP3->dataSize));
           if (bytesRead == 0)
           {
-             pMP3->atEnd = RMP3_TRUE;
-             return RMP3_FALSE; /* No data. */
+             pMP3->atEnd = 1;
+             return 0; /* No data. */
           }
 
           pMP3->dataSize += bytesRead;
@@ -1904,8 +1895,8 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
 
        if (pMP3->dataSize > INT_MAX)
        {
-          pMP3->atEnd = RMP3_TRUE;
-          return RMP3_FALSE; /* File too big. */
+          pMP3->atEnd = 1;
+          return 0; /* File too big. */
        }
 
        samplesRead = rmp3dec_decode_frame(&pMP3->decoder, pMP3->pData, (int)pMP3->dataSize, pMP3->frames, &info);    /* <-- Safe size_t -> int conversion thanks to the check above. */
@@ -1930,13 +1921,14 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
           /* Need more data. minimp3 recommends doing data submission in 16K chunks. */
           if (pMP3->dataCapacity == pMP3->dataSize)
           {
-             uint8_t *pNewData = NULL;
+             uint8_t *pNewData   = NULL;
              /* No room. Expand. */
-             pMP3->dataCapacity   += RMP3_DATA_CHUNK_SIZE;
+             pMP3->dataCapacity += RMP3_DATA_CHUNK_SIZE;
 
-             pNewData              = (uint8_t*)realloc(pMP3->pData, pMP3->dataCapacity);
-             if (pNewData == NULL)
-                return RMP3_FALSE; /* Out of memory. */
+             pNewData            = (uint8_t*)realloc(
+                   pMP3->pData, pMP3->dataCapacity);
+             if (!pNewData)
+                return 0; /* Out of memory. */
 
              pMP3->pData = pNewData;
           }
@@ -1945,24 +1937,22 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
           bytesRead = pMP3->onRead(pMP3->pUserData, pMP3->pData + pMP3->dataSize, (pMP3->dataCapacity - pMP3->dataSize));
           if (bytesRead == 0)
           {
-             pMP3->atEnd = RMP3_TRUE;
-             return RMP3_FALSE; /* Error reading more data. */
+             pMP3->atEnd = 1;
+             return 0; /* Error reading more data. */
           }
 
           pMP3->dataSize += bytesRead;
        }
-    } while (RMP3_TRUE);
+    } while (1);
 
-    return RMP3_TRUE;
+    return 1;
 }
 
 static uint64_t rmp3_read_src(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut, void* pUserData)
 {
-   float* pFramesOutF;
    uint32_t totalFramesRead = 0;
-   rmp3* pMP3 = (rmp3*)pUserData;
-
-   pFramesOutF = (float*)pFramesOut;
+   rmp3 *pMP3         = (rmp3*)pUserData;
+   float *pFramesOutF = (float*)pFramesOut;
 
    while (frameCount > 0)
    {
@@ -1971,42 +1961,45 @@ static uint64_t rmp3_read_src(rmp3_src* pSRC, uint64_t frameCount, void* pFrames
       {
          if (pMP3->frameChannels == 1)
          {
-            if (pMP3->channels == 1)
-            {
-               /* Mono -> Mono. */
+            if (pMP3->channels == 1) /* Mono -> Mono. */
                pFramesOutF[0] = pMP3->frames[pMP3->framesConsumed] / 32768.0f;
-            } else {
+            else
+            {
                /* Mono -> Stereo. */
                pFramesOutF[0] = pMP3->frames[pMP3->framesConsumed] / 32768.0f;
                pFramesOutF[1] = pMP3->frames[pMP3->framesConsumed] / 32768.0f;
             }
-         } else {
-            if (pMP3->channels == 1)
+         }
+         else
+         {
+            if (pMP3->channels == 1) /* Stereo -> Mono */
             {
-               /* Stereo -> Mono */
-               float sample = 0;
-               sample += pMP3->frames[(pMP3->framesConsumed*pMP3->frameChannels)+0] / 32768.0f;
-               sample += pMP3->frames[(pMP3->framesConsumed*pMP3->frameChannels)+1] / 32768.0f;
+               float sample   = pMP3->frames[(pMP3->framesConsumed*pMP3->frameChannels)+0] / 32768.0f;
+               sample        += pMP3->frames[(pMP3->framesConsumed*pMP3->frameChannels)+1] / 32768.0f;
                pFramesOutF[0] = sample * 0.5f;
-            } else {
+            }
+            else
+            {
                /* Stereo -> Stereo */
                pFramesOutF[0] = pMP3->frames[(pMP3->framesConsumed*pMP3->frameChannels)+0] / 32768.0f;
                pFramesOutF[1] = pMP3->frames[(pMP3->framesConsumed*pMP3->frameChannels)+1] / 32768.0f;
             }
          }
 
-         pMP3->framesConsumed += 1;
+         pMP3->framesConsumed  += 1;
          pMP3->framesRemaining -= 1;
-         frameCount -= 1;
-         totalFramesRead += 1;
-         pFramesOutF += pSRC->config.channels;
+         frameCount            -= 1;
+         totalFramesRead       += 1;
+         pFramesOutF           += pSRC->config.channels;
       }
 
       if (frameCount == 0)
          break;
 
-      /* At this point we have exhausted our in-memory buffer so we need to re-fill. Note that the sample rate may have changed
-       * at this point which means we'll also need to update our sample rate conversion pipeline. */
+      /* At this point we have exhausted our in-memory buffer, 
+       * so we need to re-fill. Note that the sample rate may have changed
+       * at this point which means we'll also need to update our sample rate 
+       * conversion pipeline. */
       if (!rmp3_decode_next_frame(pMP3))
          break;
    }
@@ -2014,16 +2007,18 @@ static uint64_t rmp3_read_src(rmp3_src* pSRC, uint64_t frameCount, void* pFrames
    return totalFramesRead;
 }
 
-uint32_t rmp3_init_internal(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc onSeek, void* pUserData, const rmp3_config* pConfig)
+uint32_t rmp3_init_internal(rmp3* pMP3, rmp3_read_proc onRead,
+      rmp3_seek_proc onSeek, void* pUserData, const rmp3_config* pConfig)
 {
    rmp3_config config;
    rmp3_src_config srcConfig;
 
-   /* This function assumes the output object has already been reset to 0. Do not do that here, otherwise things will break. */
+   /* This function assumes the output object has already been 
+    * reset to 0. Do not do that here, otherwise things will break. */
    rmp3dec_init(&pMP3->decoder);
 
    /* The config can be null in which case we use defaults. */
-   if (pConfig != NULL)
+   if (pConfig)
       config = *pConfig;
    else
       memset(&config, 0, sizeof(config));
@@ -2044,26 +2039,29 @@ uint32_t rmp3_init_internal(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc on
    pMP3->onSeek = onSeek;
    pMP3->pUserData = pUserData;
 
-   /* We need a sample rate converter for converting the sample rate from the MP3 frames to the requested output sample rate. */
+   /* We need a sample rate converter for converting the sample rate 
+    * from the MP3 frames to the requested output sample rate. */
    memset(&srcConfig, 0, sizeof(srcConfig));
-   srcConfig.sampleRateIn = RMP3_DEFAULT_SAMPLE_RATE;
+   srcConfig.sampleRateIn  = RMP3_DEFAULT_SAMPLE_RATE;
    srcConfig.sampleRateOut = pMP3->sampleRate;
-   srcConfig.channels = pMP3->channels;
-   srcConfig.algorithm = rmp3_src_algorithm_linear;
+   srcConfig.channels      = pMP3->channels;
+   srcConfig.algorithm     = rmp3_src_algorithm_linear;
    if (!rmp3_src_init(&srcConfig, rmp3_read_src, pMP3, &pMP3->src))
-      return RMP3_FALSE;
+      return 0;
 
-   /* Decode the first frame to confirm that it is indeed a valid MP3 stream. */
+   /* Decode the first frame to confirm that it is indeed 
+    * a valid MP3 stream. */
    if (!rmp3_decode_next_frame(pMP3))
-      return RMP3_FALSE; /* Not a valid MP3 stream. */
+      return 0; /* Not a valid MP3 stream. */
 
-   return RMP3_TRUE;
+   return 1;
 }
 
-uint32_t rmp3_init(rmp3* pMP3, rmp3_read_proc onRead, rmp3_seek_proc onSeek, void* pUserData, const rmp3_config* pConfig)
+uint32_t rmp3_init(rmp3* pMP3, rmp3_read_proc onRead,
+   rmp3_seek_proc onSeek, void* pUserData, const rmp3_config* pConfig)
 {
-    if (pMP3 == NULL || onRead == NULL)
-        return RMP3_FALSE;
+    if (!pMP3 || !onRead)
+        return 0;
 
     memset(pMP3, 0, sizeof(*pMP3));
     return rmp3_init_internal(pMP3, onRead, onSeek, pUserData, pConfig);
@@ -2114,18 +2112,18 @@ static uint32_t rmp3__on_seek_memory(void* pUserData, int byteOffset, rmp3_seek_
             pMP3->memory.currentReadPos = pMP3->memory.dataSize;  /* Trying to seek too far forward. */
     }
 
-    return RMP3_TRUE;
+    return 1;
 }
 
 uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize, const rmp3_config* pConfig)
 {
-    if (pMP3 == NULL)
-        return RMP3_FALSE;
+    if (!pMP3)
+        return 0;
 
     memset(pMP3, 0, sizeof(*pMP3));
 
-    if (pData == NULL || dataSize == 0)
-        return RMP3_FALSE;
+    if (!pData || dataSize == 0)
+        return 0;
 
     pMP3->memory.pData = (const uint8_t*)pData;
     pMP3->memory.dataSize = dataSize;
@@ -2136,16 +2134,18 @@ uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize, const 
 
 void rmp3_uninit(rmp3* pMP3)
 {
-    if (pMP3 == NULL) return;
+    if (!pMP3)
+       return;
     rmp3_free(pMP3->pData);
 }
 
 uint64_t rmp3_read_f32(rmp3* pMP3, uint64_t framesToRead, float* pBufferOut)
 {
     uint64_t totalFramesRead = 0;
-    if (pMP3 == NULL || pMP3->onRead == NULL) return 0;
+    if (!pMP3 || !pMP3->onRead)
+       return 0;
 
-    if (pBufferOut == NULL)
+    if (!pBufferOut)
     {
        float temp[4096];
        while (framesToRead > 0)
@@ -2162,9 +2162,9 @@ uint64_t rmp3_read_f32(rmp3* pMP3, uint64_t framesToRead, float* pBufferOut)
           framesToRead -= framesJustRead;
           totalFramesRead += framesJustRead;
        }
-    } else {
-        totalFramesRead = rmp3_src_read_frames_ex(&pMP3->src, framesToRead, pBufferOut, RMP3_TRUE);
     }
+    else
+        totalFramesRead = rmp3_src_read_frames_ex(&pMP3->src, framesToRead, pBufferOut, 1);
 
     return totalFramesRead;
 }
@@ -2173,26 +2173,26 @@ uint32_t rmp3_seek_to_frame(rmp3* pMP3, uint64_t frameIndex)
 {
    uint64_t framesRead;
 
-   if (pMP3 == NULL || pMP3->onSeek == NULL) return RMP3_FALSE;
+   if (!pMP3 || !pMP3->onSeek)
+      return 0;
 
    /* Seek to the start of the stream to begin with. */
    if (!pMP3->onSeek(pMP3->pUserData, 0, rmp3_seek_origin_start))
-      return RMP3_FALSE;
+      return 0;
 
    /* Clear any cached data. */
    pMP3->framesConsumed = 0;
    pMP3->framesRemaining = 0;
    pMP3->dataSize = 0;
-   pMP3->atEnd = RMP3_FALSE;
+   pMP3->atEnd = 0;
 
    /* TODO: Optimize.
     *
     * This is inefficient. We simply read frames from the start of the stream. */
    framesRead = rmp3_read_f32(pMP3, frameIndex, NULL);
    if (framesRead != frameIndex)
-      return RMP3_FALSE;
-
-   return RMP3_TRUE;
+      return 0;
+   return 1;
 }
 
 void rmp3_free(void* p)
