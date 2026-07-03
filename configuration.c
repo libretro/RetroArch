@@ -1976,6 +1976,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
 #include "settings/settings_def_video_filter_rotation.h"
 #ifdef HAVE_CHEEVOS
@@ -2243,7 +2244,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("playlist_use_filename",         &settings->bools.playlist_use_filename, true, DEFAULT_PLAYLIST_USE_FILENAME, false);
    SETTING_BOOL("playlist_allow_non_png",        &settings->bools.playlist_allow_non_png, true, DEFAULT_PLAYLIST_ALLOW_NON_PNG, false);
 
-   SETTING_BOOL("frame_time_counter_auto_reset",                 &settings->bools.frame_time_counter_auto_reset, true, DEFAULT_FRAME_TIME_COUNTER_AUTO_RESET, false);
 
 #ifdef HAVE_COMMAND
    SETTING_BOOL("network_cmd_enable",            &settings->bools.network_cmd_enable, true, DEFAULT_NETWORK_CMD_ENABLE, false);
@@ -2343,6 +2343,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
 #include "settings/settings_def_video_filter_rotation.h"
 #ifdef HAVE_CHEEVOS
@@ -2637,6 +2638,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
 #include "settings/settings_def_video_filter_rotation.h"
 #ifdef HAVE_CHEEVOS
@@ -2906,6 +2908,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
 #include "settings/settings_def_video_filter_rotation.h"
 #ifdef HAVE_CHEEVOS
