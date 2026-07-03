@@ -1955,7 +1955,6 @@ static struct config_bool_setting *populate_settings_bool(
 
 
    SETTING_BOOL("video_allow_rotate",            &settings->bools.video_allow_rotate, true, DEFAULT_ALLOW_ROTATE, false);
-   SETTING_BOOL("video_windowed_fullscreen",     &settings->bools.video_windowed_fullscreen, true, DEFAULT_WINDOWED_FULLSCREEN, false);
    SETTING_BOOL("video_crop_overscan",           &settings->bools.video_crop_overscan, true, DEFAULT_CROP_OVERSCAN, false);
    SETTING_BOOL("video_scale_integer",           &settings->bools.video_scale_integer, true, DEFAULT_SCALE_INTEGER, false);
    SETTING_BOOL("video_smooth",                  &settings->bools.video_smooth, true, DEFAULT_VIDEO_SMOOTH, false);
@@ -1973,7 +1972,6 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    SETTING_BOOL("video_font_enable",             &settings->bools.video_font_enable, true, DEFAULT_FONT_ENABLE, false);
    SETTING_BOOL("video_force_srgb_disable",      &settings->bools.video_force_srgb_disable, true, false, false);
-   SETTING_BOOL("video_fullscreen",              &settings->bools.video_fullscreen, true, DEFAULT_FULLSCREEN, false);
    SETTING_BOOL("video_hdr_scanlines",           &settings->bools.video_hdr_scanlines, true, DEFAULT_VIDEO_HDR_SCANLINES, false);
    /* GENERATED: video synchronization group (bool rows) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
@@ -1981,6 +1979,7 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
 #include "settings_def_video_sync.h"
+#include "settings_def_video_fullscreen.h"
 #undef S_BOOL
 #undef S_UINT
 #undef S_INT
@@ -2585,8 +2584,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_window_auto_width_max",   &settings->uints.window_auto_width_max,    true, DEFAULT_WINDOW_AUTO_WIDTH_MAX, false);
    SETTING_UINT("video_window_auto_height_max",  &settings->uints.window_auto_height_max,    true, DEFAULT_WINDOW_AUTO_HEIGHT_MAX, false);
 #ifdef __WINRT__
-   SETTING_UINT("video_fullscreen_x",            &settings->uints.video_fullscreen_x, true, uwp_get_width(), false);
-   SETTING_UINT("video_fullscreen_y",            &settings->uints.video_fullscreen_y, true, uwp_get_height(), false);
 #else
    SETTING_UINT("video_fullscreen_x",            &settings->uints.video_fullscreen_x, true, DEFAULT_FULLSCREEN_X, false);
    SETTING_UINT("video_fullscreen_y",            &settings->uints.video_fullscreen_y, true, DEFAULT_FULLSCREEN_Y, false);
@@ -2610,6 +2607,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT(n, &settings->uints.f, true, d, false);
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
 #include "settings_def_video_sync.h"
+#include "settings_def_video_fullscreen.h"
 #undef S_BOOL
 #undef S_UINT
 #undef S_INT
@@ -2820,6 +2818,7 @@ static struct config_int_setting *populate_settings_int(
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
    SETTING_INT(n, &settings->ints.f, true, d, false);
 #include "settings_def_video_sync.h"
+#include "settings_def_video_fullscreen.h"
 #undef S_BOOL
 #undef S_UINT
 #undef S_INT

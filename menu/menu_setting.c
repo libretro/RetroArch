@@ -13084,23 +13084,17 @@ static bool setting_append_list(
 
             {
                static const setting_desc_t fs_desc[] = {
-                  SDESC_BOOL_ROW(video_fullscreen, VIDEO_FULLSCREEN,
-                        DEFAULT_FULLSCREEN,
-                        SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED, 0,
-                        CMD_EVENT_REINIT_FROM_TOGGLE),
-                  SDESC_BOOL_ROW(video_windowed_fullscreen, VIDEO_WINDOWED_FULLSCREEN,
-                        DEFAULT_WINDOWED_FULLSCREEN,
-                        SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_NONE),
-                  SDESC_UINT_ROW(video_fullscreen_x, VIDEO_FULLSCREEN_X,
-                        DEFAULT_FULLSCREEN_X,
-                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE,
-                        0, 7680, 8, 0,
-                        setting_action_ok_uint_special, NULL),
-                  SDESC_UINT_ROW(video_fullscreen_y, VIDEO_FULLSCREEN_Y,
-                        DEFAULT_FULLSCREEN_Y,
-                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE,
-                        0, 4320, 8, 0,
-                        setting_action_ok_uint_special, NULL)
+/* GENERATED: rows come from settings_def_video_fullscreen.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#include "../settings_def_video_fullscreen.h"
+#undef S_BOOL
+#undef S_UINT
+#undef S_INT
                };
                settings_list_add_desc(list, list_info, settings,
                      fs_desc, ARRAY_SIZE(fs_desc),

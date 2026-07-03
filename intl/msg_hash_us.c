@@ -530,6 +530,7 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) n,
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) n,
 #include "../settings_def_video_sync.h"
+#include "../settings_def_video_fullscreen.h"
 #undef S_BOOL
 #undef S_UINT
 #undef S_INT
@@ -542,6 +543,7 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings_def_video_sync.h"
+#include "../settings_def_video_fullscreen.h"
 #undef S_BOOL
 #undef S_UINT
 #undef S_INT
