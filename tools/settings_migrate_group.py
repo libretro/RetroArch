@@ -62,6 +62,7 @@ def guard_of(text, pat):
     m = re.search(pat, text)
     return guard_at(text, m.start()) if m else None
 
+table_guard = tuple(guard_at(ms, tm.start()))
 guards = {}
 body = tm.group(1)
 # Depth-aware: record the FULL stack of enclosing #if guards for each row.
@@ -169,8 +170,9 @@ for k, f, T, a in rows:
         row = ('/* config key %s differs from the label string; the\n'
                ' * configuration.c row stays literal for this setting. */\n'
                '#ifndef SETTINGS_DEF_CONFIG_PASS\n' % ck) + row + '\n#endif'
-    if f in guards:
-        gs = guards[f]
+    row_gs = list(table_guard) + (list(guards[f]) if f in guards else [])
+    if row_gs:
+        gs = row_gs
         def _cond(g):
             if g.startswith('#ifdef '):
                 return 'defined(%s)' % g[len('#ifdef '):].strip()
