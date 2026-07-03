@@ -1243,6 +1243,187 @@ static void vp8_loop_filter_simple(uint8_t *y, int ys,
    }
 }
 
+/* VP8 Normal Loop Filter (RFC 6386 section 15.3), ported from libvpx
+ * loopfilter_filters.c. Kernels operate in the signed (^0x80) domain. */
+
+static INLINE int vp8_nlf_mask(int lim, int blim,
+      int p3, int p2, int p1, int p0, int q0, int q1, int q2, int q3)
+{
+   int m = 0;
+   m |= (px_abs(p3 - p2) > lim);
+   m |= (px_abs(p2 - p1) > lim);
+   m |= (px_abs(p1 - p0) > lim);
+   m |= (px_abs(q1 - q0) > lim);
+   m |= (px_abs(q2 - q1) > lim);
+   m |= (px_abs(q3 - q2) > lim);
+   m |= (px_abs(p0 - q0) * 2 + px_abs(p1 - q1) / 2 > blim);
+   return m - 1; /* 0 -> -1 (all ones), 1 -> 0 */
+}
+
+static INLINE int vp8_nlf_hev(int thr, int p1, int p0, int q0, int q1)
+{
+   int h = 0;
+   h |= (px_abs(p1 - p0) > thr) * -1;
+   h |= (px_abs(q1 - q0) > thr) * -1;
+   return h;
+}
+
+/* Inner (sub-block) 4-tap filter: adjusts p1,p0,q0,q1. */
+static void vp8_nlf_inner(int mask, int hev,
+      uint8_t *op1, uint8_t *op0, uint8_t *oq0, uint8_t *oq1)
+{
+   int ps1 = (int)*op1 - 128, ps0 = (int)*op0 - 128;
+   int qs0 = (int)*oq0 - 128, qs1 = (int)*oq1 - 128;
+   int fv, f1, f2;
+
+   fv = vp8_sc(ps1 - qs1);
+   fv &= hev;
+   fv = vp8_sc(fv + 3 * (qs0 - ps0));
+   fv &= mask;
+
+   f1 = vp8_sc(fv + 4) >> 3;
+   f2 = vp8_sc(fv + 3) >> 3;
+   *oq0 = (uint8_t)(vp8_sc(qs0 - f1) + 128);
+   *op0 = (uint8_t)(vp8_sc(ps0 + f2) + 128);
+
+   fv = (f1 + 1) >> 1;
+   fv &= ~hev;
+   *oq1 = (uint8_t)(vp8_sc(qs1 - fv) + 128);
+   *op1 = (uint8_t)(vp8_sc(ps1 + fv) + 128);
+}
+
+/* Macroblock-edge 6-tap filter: adjusts p2..q2. */
+static void vp8_nlf_mb(int mask, int hev,
+      uint8_t *op2, uint8_t *op1, uint8_t *op0,
+      uint8_t *oq0, uint8_t *oq1, uint8_t *oq2)
+{
+   int ps2 = (int)*op2 - 128, ps1 = (int)*op1 - 128, ps0 = (int)*op0 - 128;
+   int qs0 = (int)*oq0 - 128, qs1 = (int)*oq1 - 128, qs2 = (int)*oq2 - 128;
+   int fv, f1, f2, u;
+
+   fv = vp8_sc(ps1 - qs1);
+   fv = vp8_sc(fv + 3 * (qs0 - ps0));
+   fv &= mask;
+
+   f2 = fv & hev;
+   f1 = vp8_sc(f2 + 4) >> 3;
+   f2 = vp8_sc(f2 + 3) >> 3;
+   qs0 = vp8_sc(qs0 - f1);
+   ps0 = vp8_sc(ps0 + f2);
+
+   fv &= ~hev;
+
+   u = vp8_sc((63 + fv * 27) >> 7);
+   *oq0 = (uint8_t)(vp8_sc(qs0 - u) + 128);
+   *op0 = (uint8_t)(vp8_sc(ps0 + u) + 128);
+
+   u = vp8_sc((63 + fv * 18) >> 7);
+   *oq1 = (uint8_t)(vp8_sc(qs1 - u) + 128);
+   *op1 = (uint8_t)(vp8_sc(ps1 + u) + 128);
+
+   u = vp8_sc((63 + fv * 9) >> 7);
+   *oq2 = (uint8_t)(vp8_sc(qs2 - u) + 128);
+   *op2 = (uint8_t)(vp8_sc(ps2 + u) + 128);
+}
+
+/* Walk one edge: n filtered positions, taps tp apart, positions sp apart. */
+static void vp8_nlf_edge(uint8_t *s, int tp, int sp, int n,
+      int edge_lim, int lim, int thr, int is_mb)
+{
+   int i;
+   for (i = 0; i < n; i++)
+   {
+      int p3 = s[-4*tp], p2 = s[-3*tp], p1 = s[-2*tp], p0 = s[-1*tp];
+      int q0 = s[0],     q1 = s[1*tp],  q2 = s[2*tp],  q3 = s[3*tp];
+      int mask = vp8_nlf_mask(lim, edge_lim, p3, p2, p1, p0, q0, q1, q2, q3);
+      int hev  = vp8_nlf_hev(thr, p1, p0, q0, q1);
+      if (is_mb)
+         vp8_nlf_mb(mask, hev, s-3*tp, s-2*tp, s-1*tp, s, s+1*tp, s+2*tp);
+      else
+         vp8_nlf_inner(mask, hev, s-2*tp, s-1*tp, s, s+1*tp);
+      s += sp;
+   }
+}
+
+static void vp8_loop_filter_normal(uint8_t *y, int ys,
+   uint8_t *u, uint8_t *v_plane, int uvs,
+   int mbw, int mbh, int lf_level, int sharpness,
+   int seg_enabled, int seg_abs, const int *seg_lf,
+   int lf_delta_enabled, const int *ref_lf_delta, const int *mode_lf_delta,
+   const uint8_t *seg_map, const uint8_t *skip_lf_map, const uint8_t *bpred_map)
+{
+   int mx, my, e;
+   for (my = 0; my < mbh; my++)
+   {
+      for (mx = 0; mx < mbw; mx++)
+      {
+         int n = my * mbw + mx;
+         int lvl = lf_level;
+         int lim, blim, mblim, thr, skip_lf, is_bpred;
+         uint8_t *my0 = y + my * 16 * ys + mx * 16;
+         uint8_t *mu0 = u + my * 8 * uvs + mx * 8;
+         uint8_t *mv0 = v_plane + my * 8 * uvs + mx * 8;
+
+         if (seg_enabled && seg_abs)
+            lvl = seg_lf[seg_map ? seg_map[n] : 0];
+         else if (seg_enabled)
+            lvl = lf_level + seg_lf[seg_map ? seg_map[n] : 0];
+         if (lvl < 0) lvl = 0;
+         if (lvl > 63) lvl = 63;
+         is_bpred = bpred_map ? bpred_map[n] : 0;
+         /* Keyframe delta adjustment (libvpx vp8_loop_filter_frame_init):
+          * INTRA ref delta applies to all MBs; mode delta 0 to B_PRED. */
+         if (lf_delta_enabled)
+         {
+            lvl += ref_lf_delta[0];
+            if (is_bpred) lvl += mode_lf_delta[0];
+            if (lvl < 0) lvl = 0;
+            if (lvl > 63) lvl = 63;
+         }
+         if (lvl == 0) continue;
+
+         /* Limits per vp8_loop_filter_update_sharpness */
+         lim = lvl >> ((sharpness > 0) + (sharpness > 4));
+         if (sharpness > 0 && lim > 9 - sharpness) lim = 9 - sharpness;
+         if (lim < 1) lim = 1;
+         mblim = 2 * (lvl + 2) + lim;
+         blim  = 2 * lvl + lim;
+         /* Keyframe high-edge-variance threshold */
+         thr = (lvl >= 40) ? 2 : (lvl >= 15) ? 1 : 0;
+
+         skip_lf = skip_lf_map ? skip_lf_map[n] : 0;
+
+         /* Edge order per libvpx: mbv, bv, mbh, bh; chroma included. */
+         if (mx > 0)
+         {
+            vp8_nlf_edge(my0, 1, ys, 16, mblim, lim, thr, 1);
+            vp8_nlf_edge(mu0, 1, uvs, 8, mblim, lim, thr, 1);
+            vp8_nlf_edge(mv0, 1, uvs, 8, mblim, lim, thr, 1);
+         }
+         if (!skip_lf)
+         {
+            for (e = 4; e <= 12; e += 4)
+               vp8_nlf_edge(my0 + e, 1, ys, 16, blim, lim, thr, 0);
+            vp8_nlf_edge(mu0 + 4, 1, uvs, 8, blim, lim, thr, 0);
+            vp8_nlf_edge(mv0 + 4, 1, uvs, 8, blim, lim, thr, 0);
+         }
+         if (my > 0)
+         {
+            vp8_nlf_edge(my0, ys, 1, 16, mblim, lim, thr, 1);
+            vp8_nlf_edge(mu0, uvs, 1, 8, mblim, lim, thr, 1);
+            vp8_nlf_edge(mv0, uvs, 1, 8, mblim, lim, thr, 1);
+         }
+         if (!skip_lf)
+         {
+            for (e = 4; e <= 12; e += 4)
+               vp8_nlf_edge(my0 + e * ys, ys, 1, 16, blim, lim, thr, 0);
+            vp8_nlf_edge(mu0 + 4 * uvs, uvs, 1, 8, blim, lim, thr, 0);
+            vp8_nlf_edge(mv0 + 4 * uvs, uvs, 1, 8, blim, lim, thr, 0);
+         }
+      }
+   }
+}
+
 static void vp8_pred16(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl,
       int up_avail, int left_avail)
 {
@@ -1295,11 +1476,14 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    int qp, y1_dc_q, y1_ac_q, y2_dc_q, y2_ac_q, uv_dc_q, uv_ac_q;
    int skip_enabled, prob_skip, log2parts, num_parts;
    int filter_type, lf_level, sharpness;
+   int lf_delta_enabled = 0;
+   int ref_lf_delta[4] = {0,0,0,0}, mode_lf_delta[4] = {0,0,0,0};
    int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
    vp8b br;
    vp8b tbr[8]; /* up to 8 token partitions */
    uint8_t *seg_map_buf = NULL;
    uint8_t *skip_lf_buf = NULL;
+   uint8_t *bpred_buf = NULL;
    const uint8_t *p0;
    uint8_t *yb = NULL, *ub = NULL, *vb = NULL;
    uint32_t *pix = NULL;
@@ -1338,10 +1522,12 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    }
 
    filter_type = vp8b_bit(&br); lf_level = (int)vp8b_lit(&br,6); sharpness = (int)vp8b_lit(&br,3);
-   { int mrd = vp8b_bit(&br);
-     if (mrd && vp8b_bit(&br))
-     { for(i=0;i<4;i++) if(vp8b_bit(&br)) vp8b_sig(&br,6);
-       for(i=0;i<4;i++) if(vp8b_bit(&br)) vp8b_sig(&br,6); } }
+   lf_delta_enabled = vp8b_bit(&br);
+   if (lf_delta_enabled && vp8b_bit(&br))
+   {
+      for(i=0;i<4;i++) if(vp8b_bit(&br)) ref_lf_delta[i] = vp8b_sig(&br,6);
+      for(i=0;i<4;i++) if(vp8b_bit(&br)) mode_lf_delta[i] = vp8b_sig(&br,6);
+   }
    log2parts = vp8b_lit(&br,2);
    num_parts = 1 << log2parts;
 
@@ -1456,6 +1642,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    ys = mbw * 16; uvs = mbw * 8;
    seg_map_buf = (uint8_t*)calloc(mbw * mbh, 1);
    skip_lf_buf = (uint8_t*)calloc(mbw * mbh, 1);
+   bpred_buf = (uint8_t*)calloc(mbw * mbh, 1);
    yb = (uint8_t*)calloc(ys * mbh * 16, 1);
    ub = (uint8_t*)calloc(uvs * mbh * 8, 1);
    vb = (uint8_t*)calloc(uvs * mbh * 8, 1);
@@ -1677,6 +1864,15 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                      else if (bx < 3 && my > 0) { for(i=0;i<4;i++) sa[4+i]=yb[(my*16-1)*ys+mx*16+bx*4+4+i]; }
                      else if (bx < 3) { for(i=0;i<4;i++) sa[4+i]=127; }
                      else if (my > 0 && mx < mbw-1) { for(i=0;i<4;i++) sa[4+i]=yb[(my*16-1)*ys+mx*16+16+i]; }
+                     else if (my > 0)
+                     {
+                        /* Last MB column: libvpx's border extension
+                         * (vp8_extend_mb_row) replicates the last real
+                         * pixel of the row above across the right border,
+                         * so above-right = 4 copies of that pixel. */
+                        uint8_t rep = yb[(my*16-1)*ys + mbw*16 - 1];
+                        for(i=0;i<4;i++) sa[4+i]=rep;
+                     }
                      else { for(i=0;i<4;i++) sa[4+i]=127; }
                      if (bx > 0) { for(i=0;i<4;i++) sl[i]=sb_dst[i*ys-1]; }
                      else if (mx > 0) { for(i=0;i<4;i++) sl[i]=yb[(my*16+by*4+i)*ys+mx*16-1]; }
@@ -1792,6 +1988,8 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          if (skip_lf_buf)
             skip_lf_buf[my * mbw + mx] =
                (uint8_t)(((is_skip || !mb_has_coeffs) && ym != 4) ? 1 : 0);
+         if (bpred_buf)
+            bpred_buf[my * mbw + mx] = (uint8_t)(ym == 4 ? 1 : 0);
 
       }
    }
@@ -1799,9 +1997,18 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    free(above_nz_y); free(above_nz_u); free(above_nz_v); free(above_nz_dc); free(above_bmodes);
    } /* end context tracking block */
 
-   /* Apply post-decode simple loop filter */
-   if (filter_type == 1 && lf_level > 0)
-      vp8_loop_filter_simple(yb, ys, mbw, mbh, lf_level, sharpness, seg_enabled, seg_abs, seg_lf, seg_map_buf, skip_lf_buf);
+   /* Apply post-decode loop filter */
+   if (lf_level > 0)
+   {
+      if (filter_type == 1)
+         vp8_loop_filter_simple(yb, ys, mbw, mbh, lf_level, sharpness,
+               seg_enabled, seg_abs, seg_lf, seg_map_buf, skip_lf_buf);
+      else
+         vp8_loop_filter_normal(yb, ys, ub, vb, uvs, mbw, mbh, lf_level,
+               sharpness, seg_enabled, seg_abs, seg_lf,
+               lf_delta_enabled, ref_lf_delta, mode_lf_delta,
+               seg_map_buf, skip_lf_buf, bpred_buf);
+   }
 
    /* YUV -> ARGB */
    pix = (uint32_t*)malloc((size_t)w * h * sizeof(uint32_t));
@@ -1813,11 +2020,11 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          vp8_yuv2rgb(yb[j*ys+i], ub[(j>>1)*uvs+(i>>1)], vb[(j>>1)*uvs+(i>>1)], &r, &g, &b2);
          pix[j*w+i] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | (uint32_t)b2;
       }
-   free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf);
+   free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf); free(bpred_buf);
    *ow = (unsigned)w; *oh = (unsigned)h;
    return pix;
 lfail:
-   free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf); free(pix);
+   free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf); free(bpred_buf); free(pix);
    return NULL;
 }
 
