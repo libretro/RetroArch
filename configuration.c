@@ -1982,6 +1982,11 @@ static struct config_bool_setting *populate_settings_bool(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_thumbnails.h"
+#endif
+#endif
+#ifdef HAVE_MENU
 #include "settings/settings_def_menu_power_views.h"
 #endif
 #include "settings/settings_def_recording_video.h"
@@ -2138,8 +2143,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("rgui_border_filler_enable",               &settings->bools.menu_rgui_border_filler_enable, true, true, false);
    SETTING_BOOL("menu_rgui_transparency",                  &settings->bools.menu_rgui_transparency, true, DEFAULT_RGUI_TRANSPARENCY, false);
    SETTING_BOOL("menu_rgui_shadows",                       &settings->bools.menu_rgui_shadows, true, DEFAULT_RGUI_SHADOWS, false);
-   SETTING_BOOL("rgui_inline_thumbnails",                  &settings->bools.menu_rgui_inline_thumbnails, true, DEFAULT_RGUI_INLINE_THUMBNAILS, false);
-   SETTING_BOOL("rgui_swap_thumbnails",                    &settings->bools.menu_rgui_swap_thumbnails, true, DEFAULT_RGUI_SWAP_THUMBNAILS, false);
    SETTING_BOOL("rgui_extended_ascii",                     &settings->bools.menu_rgui_extended_ascii, true, DEFAULT_RGUI_EXTENDED_ASCII, false);
    SETTING_BOOL("rgui_switch_icons",                       &settings->bools.menu_rgui_switch_icons, true, DEFAULT_RGUI_SWITCH_ICONS, false);
    SETTING_BOOL("rgui_particle_effect_screensaver",        &settings->bools.menu_rgui_particle_effect_screensaver, true, DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER, false);
@@ -2345,6 +2348,11 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_thumbnails.h"
+#endif
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_power_views.h"
 #endif
@@ -2624,6 +2632,11 @@ static struct config_uint_setting *populate_settings_uint(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_thumbnails.h"
+#endif
+#endif
+#ifdef HAVE_MENU
 #include "settings/settings_def_menu_power_views.h"
 #endif
 #include "settings/settings_def_recording_video.h"
@@ -2876,6 +2889,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_thumbnails.h"
+#endif
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_power_views.h"
 #endif
