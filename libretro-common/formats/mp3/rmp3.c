@@ -44,8 +44,6 @@
 #define RMP3_MIN(a, b)           ((a) > (b) ? (b) : (a))
 #define RMP3_MAX(a, b)           ((a) < (b) ? (b) : (a))
 
-#if !defined(RMP3_NO_SIMD)
-
 #if (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))) || ((defined(__i386__) || defined(__x86_64__)) && defined(__SSE2__))
 #if defined(_MSC_VER)
 #include <intrin.h>
@@ -94,12 +92,6 @@ static int rmp3_have_simd(void)
 }
 #else
 #define RMP3_HAVE_SIMD 0
-#endif
-
-#else
-
-#define RMP3_HAVE_SIMD 0
-
 #endif
 
 typedef struct
@@ -1519,90 +1511,85 @@ static int rmp3d_find_frame(const uint8_t *mp3, int mp3_bytes, int *free_format_
     return i;
 }
 
-void rmp3dec_init(rmp3dec *dec)
+static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_bytes, short *pcm, rmp3dec_frame_info *info)
 {
-    dec->header[0] = 0;
-}
+   int i = 0, igr, frame_size = 0, success = 1;
+   const uint8_t *hdr;
+   rmp3_bs bs_frame[1];
+   rmp3dec_scratch scratch;
 
-int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_bytes, short *pcm, rmp3dec_frame_info *info)
-{
-    int i = 0, igr, frame_size = 0, success = 1;
-    const uint8_t *hdr;
-    rmp3_bs bs_frame[1];
-    rmp3dec_scratch scratch;
+   if (mp3_bytes > 4 && dec->header[0] == 0xff && rmp3_hdr_compare(dec->header, mp3))
+   {
+      frame_size = rmp3_hdr_frame_bytes(mp3, dec->free_format_bytes) + rmp3_hdr_padding(mp3);
+      if (frame_size != mp3_bytes && (frame_size + RMP3_HDR_SIZE > mp3_bytes || !rmp3_hdr_compare(mp3, mp3 + frame_size)))
+         frame_size = 0;
+   }
+   if (!frame_size)
+   {
+      memset(dec, 0, sizeof(rmp3dec));
+      i = rmp3d_find_frame(mp3, mp3_bytes, &dec->free_format_bytes, &frame_size);
+      if (!frame_size || i + frame_size > mp3_bytes)
+      {
+         info->frame_bytes = i;
+         return 0;
+      }
+   }
 
-    if (mp3_bytes > 4 && dec->header[0] == 0xff && rmp3_hdr_compare(dec->header, mp3))
-    {
-        frame_size = rmp3_hdr_frame_bytes(mp3, dec->free_format_bytes) + rmp3_hdr_padding(mp3);
-        if (frame_size != mp3_bytes && (frame_size + RMP3_HDR_SIZE > mp3_bytes || !rmp3_hdr_compare(mp3, mp3 + frame_size)))
-            frame_size = 0;
-    }
-    if (!frame_size)
-    {
-        memset(dec, 0, sizeof(rmp3dec));
-        i = rmp3d_find_frame(mp3, mp3_bytes, &dec->free_format_bytes, &frame_size);
-        if (!frame_size || i + frame_size > mp3_bytes)
-        {
-            info->frame_bytes = i;
+   hdr = mp3 + i;
+   memcpy(dec->header, hdr, RMP3_HDR_SIZE);
+   info->frame_bytes = i + frame_size;
+   info->channels = RMP3_HDR_IS_MONO(hdr) ? 1 : 2;
+   info->hz = rmp3_hdr_sample_rate_hz(hdr);
+   info->layer = 4 - RMP3_HDR_GET_LAYER(hdr);
+   info->bitrate_kbps = rmp3_hdr_bitrate_kbps(hdr);
+
+   rmp3_bs_init(bs_frame, hdr + RMP3_HDR_SIZE, frame_size - RMP3_HDR_SIZE);
+   if (RMP3_HDR_IS_CRC(hdr))
+      rmp3_bs_get_bits(bs_frame, 16);
+
+   if (info->layer == 3)
+   {
+      int main_data_begin = rmp3_L3_read_side_info(bs_frame, scratch.gr_info, hdr);
+      if (main_data_begin < 0 || bs_frame->pos > bs_frame->limit)
+      {
+         dec->header[0] = 0;
+         return 0;
+      }
+      success = rmp3_L3_restore_reservoir(dec, bs_frame, &scratch, main_data_begin);
+      if (success)
+      {
+         for (igr = 0; igr < (RMP3_HDR_TEST_MPEG1(hdr) ? 2 : 1); igr++, pcm += 576*info->channels)
+         {
+            memset(scratch.grbuf[0], 0, 576*2*sizeof(float));
+            rmp3_L3_decode(dec, &scratch, scratch.gr_info + igr*info->channels, info->channels);
+            rmp3d_synth_granule(dec->qmf_state, scratch.grbuf[0], 18, info->channels, pcm, scratch.syn[0]);
+         }
+      }
+      rmp3_L3_save_reservoir(dec, &scratch);
+   } else
+   {
+      rmp3_L12_scale_info sci[1];
+      rmp3_L12_read_scale_info(hdr, bs_frame, sci);
+
+      memset(scratch.grbuf[0], 0, 576*2*sizeof(float));
+      for (i = 0, igr = 0; igr < 3; igr++)
+      {
+         if (12 == (i += rmp3_L12_dequantize_granule(scratch.grbuf[0] + i, bs_frame, sci, info->layer | 1)))
+         {
+            i = 0;
+            rmp3_L12_apply_scf_384(sci, sci->scf + igr, scratch.grbuf[0]);
+            rmp3d_synth_granule(dec->qmf_state, scratch.grbuf[0], 12, info->channels, pcm, scratch.syn[0]);
+            memset(scratch.grbuf[0], 0, 576*2*sizeof(float));
+            pcm += 384*info->channels;
+         }
+         if (bs_frame->pos > bs_frame->limit)
+         {
+            dec->header[0] = 0;
             return 0;
-        }
-    }
-
-    hdr = mp3 + i;
-    memcpy(dec->header, hdr, RMP3_HDR_SIZE);
-    info->frame_bytes = i + frame_size;
-    info->channels = RMP3_HDR_IS_MONO(hdr) ? 1 : 2;
-    info->hz = rmp3_hdr_sample_rate_hz(hdr);
-    info->layer = 4 - RMP3_HDR_GET_LAYER(hdr);
-    info->bitrate_kbps = rmp3_hdr_bitrate_kbps(hdr);
-
-    rmp3_bs_init(bs_frame, hdr + RMP3_HDR_SIZE, frame_size - RMP3_HDR_SIZE);
-    if (RMP3_HDR_IS_CRC(hdr))
-        rmp3_bs_get_bits(bs_frame, 16);
-
-    if (info->layer == 3)
-    {
-        int main_data_begin = rmp3_L3_read_side_info(bs_frame, scratch.gr_info, hdr);
-        if (main_data_begin < 0 || bs_frame->pos > bs_frame->limit)
-        {
-            rmp3dec_init(dec);
-            return 0;
-        }
-        success = rmp3_L3_restore_reservoir(dec, bs_frame, &scratch, main_data_begin);
-        if (success)
-        {
-            for (igr = 0; igr < (RMP3_HDR_TEST_MPEG1(hdr) ? 2 : 1); igr++, pcm += 576*info->channels)
-            {
-                memset(scratch.grbuf[0], 0, 576*2*sizeof(float));
-                rmp3_L3_decode(dec, &scratch, scratch.gr_info + igr*info->channels, info->channels);
-                rmp3d_synth_granule(dec->qmf_state, scratch.grbuf[0], 18, info->channels, pcm, scratch.syn[0]);
-            }
-        }
-        rmp3_L3_save_reservoir(dec, &scratch);
-    } else
-    {
-        rmp3_L12_scale_info sci[1];
-        rmp3_L12_read_scale_info(hdr, bs_frame, sci);
-
-        memset(scratch.grbuf[0], 0, 576*2*sizeof(float));
-        for (i = 0, igr = 0; igr < 3; igr++)
-        {
-            if (12 == (i += rmp3_L12_dequantize_granule(scratch.grbuf[0] + i, bs_frame, sci, info->layer | 1)))
-            {
-                i = 0;
-                rmp3_L12_apply_scf_384(sci, sci->scf + igr, scratch.grbuf[0]);
-                rmp3d_synth_granule(dec->qmf_state, scratch.grbuf[0], 12, info->channels, pcm, scratch.syn[0]);
-                memset(scratch.grbuf[0], 0, 576*2*sizeof(float));
-                pcm += 384*info->channels;
-            }
-            if (bs_frame->pos > bs_frame->limit)
-            {
-                rmp3dec_init(dec);
-                return 0;
-            }
-        }
-    }
-    return success*rmp3_hdr_frame_samples(dec->header);
+         }
+      }
+   }
+   return success*rmp3_hdr_frame_samples(dec->header);
 }
 
 /*
@@ -2015,7 +2002,7 @@ uint32_t rmp3_init_internal(rmp3* pMP3, rmp3_read_proc onRead,
 
    /* This function assumes the output object has already been 
     * reset to 0. Do not do that here, otherwise things will break. */
-   rmp3dec_init(&pMP3->decoder);
+   pMP3->decoder.header[0] = 0;
 
    /* The config can be null in which case we use defaults. */
    if (pConfig)

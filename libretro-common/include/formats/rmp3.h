@@ -36,13 +36,6 @@ typedef struct
     unsigned char reserv_buf[511];
 } rmp3dec;
 
-/* Initializes a low level decoder. */
-void rmp3dec_init(rmp3dec *dec);
-
-/* Reads a frame from a low level decoder. */
-int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_bytes, short *pcm, rmp3dec_frame_info *info);
-
-
 /* Main API (Pull API)
  * ===================*/
 
