@@ -1966,9 +1966,6 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, DEFAULT_VIDEO_THREADED, false);
    SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, DEFAULT_VIDEO_SHARED_CONTEXT, false);
-#ifdef GEKKO
-   SETTING_BOOL("video_vfilter",                 &settings->bools.video_vfilter, true, DEFAULT_VIDEO_VFILTER, false);
-#endif
    SETTING_BOOL("video_font_enable",             &settings->bools.video_font_enable, true, DEFAULT_FONT_ENABLE, false);
    SETTING_BOOL("video_force_srgb_disable",      &settings->bools.video_force_srgb_disable, true, false, false);
    SETTING_BOOL("video_hdr_scanlines",           &settings->bools.video_hdr_scanlines, true, DEFAULT_VIDEO_HDR_SCANLINES, false);
@@ -1986,6 +1983,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef GEKKO
+#include "settings/settings_def_video_gamecube.h"
+#endif
 #include "settings/settings_def_menu_sounds.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_main_views.h"
@@ -2347,6 +2347,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef GEKKO
+#include "settings/settings_def_video_gamecube.h"
+#endif
 #include "settings/settings_def_menu_sounds.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_main_views.h"
@@ -2586,8 +2589,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_shader_delay",            &settings->uints.video_shader_delay, true, DEFAULT_SHADER_DELAY, false);
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
-   SETTING_UINT("video_overscan_correction_top",    &settings->uints.video_overscan_correction_top, true, DEFAULT_VIDEO_OVERSCAN_CORRECTION_TOP, false);
-   SETTING_UINT("video_overscan_correction_bottom", &settings->uints.video_overscan_correction_bottom, true, DEFAULT_VIDEO_OVERSCAN_CORRECTION_BOTTOM, false);
 #endif
    SETTING_UINT("video_frame_delay",             &settings->uints.video_frame_delay,      true, DEFAULT_FRAME_DELAY, false);
    SETTING_UINT("video_black_frame_insertion",   &settings->uints.video_black_frame_insertion, true, DEFAULT_BLACK_FRAME_INSERTION, false);
@@ -2606,6 +2607,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef GEKKO
+#include "settings/settings_def_video_gamecube.h"
+#endif
 #include "settings/settings_def_menu_sounds.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_main_views.h"
@@ -2838,6 +2842,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef GEKKO
+#include "settings/settings_def_video_gamecube.h"
+#endif
 #include "settings/settings_def_menu_sounds.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_main_views.h"

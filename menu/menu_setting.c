@@ -13495,21 +13495,32 @@ static bool setting_append_list(
 #ifdef GEKKO
             {
                static const setting_desc_t gx_desc[] = {
-                  SDESC_UINT_ROW(video_viwidth, VIDEO_VI_WIDTH,
-                        DEFAULT_VIDEO_VI_WIDTH,
-                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                        640, 720, 2, 0, NULL, NULL),
-                  SDESC_BOOL_ROW(video_vfilter, VIDEO_VFILTER,
-                        DEFAULT_VIDEO_VFILTER,
-                        SD_FLAG_NONE, 0, CMD_EVENT_NONE),
-                  SDESC_UINT_ROW(video_overscan_correction_top, VIDEO_OVERSCAN_CORRECTION_TOP,
-                        DEFAULT_VIDEO_OVERSCAN_CORRECTION_TOP,
-                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                        0, 24, 1, 0, NULL, NULL),
-                  SDESC_UINT_ROW(video_overscan_correction_bottom, VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-                        DEFAULT_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-                        SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                        0, 24, 1, 0, NULL, NULL)
+/* GENERATED: rows come from settings_def_video_gamecube.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#include "../settings/settings_def_video_gamecube.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
                };
                settings_list_add_desc(list, list_info, settings,
                      gx_desc, ARRAY_SIZE(gx_desc),
