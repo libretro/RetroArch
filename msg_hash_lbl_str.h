@@ -990,8 +990,6 @@
 #define MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS_STR "user_interface_settings"
 #define MENU_ENUM_LABEL_USER_LANGUAGE_STR "user_language"
 #define MENU_ENUM_LABEL_USER_SETTINGS_STR "user_settings"
-#define MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER_STR "use_builtin_image_viewer"
-#define MENU_ENUM_LABEL_USE_BUILTIN_PLAYER_STR "use_builtin_player"
 #define MENU_ENUM_LABEL_USE_THIS_DIRECTORY_STR "use_this_directory"
 #define MENU_ENUM_LABEL_BRIGHTNESS_CONTROL_STR "screen_brightness"
 #define MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE_STR "video_allow_rotate"
