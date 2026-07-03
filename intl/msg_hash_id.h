@@ -504,10 +504,12 @@ static const struct
    char s_28f025c5[119];
    char s_32f9494f[26];
    char s_daf6d7e2[64];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[25];
    char s_ada81f6a[28];
    char s_c85198e6[33];
    char s_1ef8917a[28];
+#endif
    char s_7c68a1ee[23];
    char s_9c702ee1[39];
    char s_5c2cc60f[70];
@@ -643,10 +645,10 @@ static const struct
    char s_93bae0e3[13];
    char s_25f1508f[7];
    char s_2c04084b[22];
-   char s_ffb12f4f[28];
-   char s_7c5226bd[36];
    char s_a85eb9f5[31];
    char s_b91e9f23[39];
+   char s_ffb12f4f[28];
+   char s_7c5226bd[36];
    char s_b861d3d4[20];
    char s_59a0ee82[34];
    char s_8644c442[21];
@@ -1476,10 +1478,12 @@ static const struct
    "n dihapus dari memori.",
    "Atur volume stream audio.",
    "Putar stream audio secara bersamaan, meski dalam tampilan menu.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Nyalakan efek suara 'OK'",
    "Nyalakan efek suara 'Batal'",
    "Nyalakan efek suara 'Notifikasi'",
    "Nyalakan efek 'Suara Latar'",
+#endif
    "Jumlah Maksimal Pemain",
    "Ubah Letak Stik Kendali untuk Core Ini",
    "Timpa input bind dengan bind yang telah diubah untuk 'core' saat ini.",
@@ -1620,10 +1624,10 @@ static const struct
    "Sekali Pakai",
    "Kustom",
    "Munculkan Layar Mulai",
-   "Tampilkan 'Mulai Siar Alir'",
-   "Menampilkan opsi 'Mulai Siar Alir'.",
    "Tampilkan 'Tambah ke Kesukaan'",
    "Menampilkan opsi 'Tambah ke Kesukaan'.",
+   "Tampilkan 'Mulai Siar Alir'",
+   "Menampilkan opsi 'Mulai Siar Alir'.",
    "Tampilkan 'Capaian'",
    "Menampilkan pengaturan 'Capaian'.",
    "Tampilkan 'Jejaring'",
@@ -1937,7 +1941,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26790u
+      (sizeof(msg_hash_id_blob) == (26676u
 #ifdef HAVE_LAKKA
        + 17u
        + 43u
@@ -1981,6 +1985,12 @@ typedef char msg_hash_id_blob_check[
        + 20u
        + 29u
        + 90u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 25u
+       + 28u
+       + 33u
+       + 28u
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 47u
@@ -2508,10 +2518,12 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
@@ -2647,10 +2659,10 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,

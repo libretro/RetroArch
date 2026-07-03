@@ -331,10 +331,12 @@ static const struct
    char s_40084357[7];
    char s_f7e668f4[8];
    char s_daf6d7e2[57];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[25];
    char s_ada81f6a[29];
    char s_c85198e6[29];
    char s_1ef8917a[26];
+#endif
    char s_7c68a1ee[18];
    char s_9c702ee1[35];
    char s_e28bc72f[27];
@@ -438,13 +440,15 @@ static const struct
    char s_645ae416[39];
    char s_dcbffdfe[38];
    char s_7a2033d4[40];
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    char s_5e519829[40];
 #endif
-   char s_7816d5d5[31];
+#endif
    char s_11926382[35];
    char s_63af41a7[48];
    char s_f228c6c5[28];
+   char s_7816d5d5[31];
    char s_2b1f17e8[41];
    char s_b4c3612a[42];
    char s_02056693[26];
@@ -457,9 +461,9 @@ static const struct
    char s_49f54c1b[23];
    char s_ccf131c5[26];
    char s_8fe1a777[30];
+   char s_f128ee26[41];
    char s_35dc82a3[18];
    char s_900848a8[31];
-   char s_f128ee26[41];
    char s_8b826990[19];
    char s_cb2c6b22[26];
    char s_3fa8bb7e[35];
@@ -1327,10 +1331,12 @@ static const struct
    "Quitar",
    "Mecedor",
    "Reproduz fluxos d'audiu simult\303\241neos, tami\303\251n nel men\303\272.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Activar el son\303\255u \302\253OK\302\273",
    "Activar el son\303\255u \302\253Cancel\302\273",
    "Activar el son\303\255u \302\253Notice\302\273",
    "Activar el son\303\255u \302\253BGM\302\273",
+#endif
    "Usuarios m\303\241ximos",
    "Remapiar los controles esti nucleu",
    "Configuraci\303\263n autom\303\241tica",
@@ -1440,13 +1446,15 @@ static const struct
    "Amosar la opci\303\263n \302\253Cargar conten\303\255u\302\273",
    "Amosar la opci\303\263n \302\253Cargar un discu\302\273",
    "Amosar la opci\303\263n \302\253Volquiar el discu\302\273",
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    "Amosar la opci\303\263n \302\253Espulsar el discu\302\273",
 #endif
-   "Amosar la opci\303\263n \302\253Anovador\302\273",
+#endif
    "Amosar la opci\303\263n \302\253Informaci\303\263n\302\273",
    "Amosar la opci\303\263n \302\253Ficheru de configuraci\303\263n\302\273",
    "Amosar la opci\303\263n \302\253Ayuda\302\273",
+   "Amosar la opci\303\263n \302\253Anovador\302\273",
    "Amosar la opci\303\263n \302\253Colar de RetroArch\302\273",
    "Amosar la opci\303\263n \302\253Reaniciar RetroArch\302\273",
    "Amosar \302\253Configuraci\303\263n\302\273",
@@ -1459,9 +1467,9 @@ static const struct
    "Amosar la data ya hora",
    "Estilu de la data ya hora",
    "Amosar el nome de los nucleos",
+   "Amosar el somen\303\272 \302\253Puntos de guard\303\241u\302\273",
    "Amosar \302\253Siguir\302\273",
    "Amosar \302\253Zarrar el conten\303\255u\302\273",
-   "Amosar el somen\303\272 \302\253Puntos de guard\303\241u\302\273",
    "Amosar \302\253Trampes\302\273",
    "Amosar \302\253Asolombradores\302\273",
    "Amosar la opci\303\263n \302\253Informaci\303\263n\302\273",
@@ -2018,7 +2026,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24332u
+      (sizeof(msg_hash_ast_blob) == (24223u
 #ifdef HAVE_LAKKA
        + 40u
 #endif
@@ -2048,6 +2056,12 @@ typedef char msg_hash_ast_blob_check[
        + 11u
        + 8u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 25u
+       + 29u
+       + 29u
+       + 26u
+#endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 77u
 #endif
@@ -2058,8 +2072,10 @@ typedef char msg_hash_ast_blob_check[
 #ifdef _3DS
        + 60u
 #endif
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 40u
+#endif
 #endif
 #ifdef HAVE_MIST
        + 10u
@@ -2410,10 +2426,12 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -2517,13 +2535,15 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
@@ -2536,9 +2556,9 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,

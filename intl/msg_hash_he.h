@@ -266,8 +266,10 @@ static const struct
    char s_40084357[7];
    char s_4a1166e1[18];
    char s_f7e668f4[31];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[25];
    char s_ada81f6a[29];
+#endif
    char s_f9ee4a82[9];
    char s_7beff2c4[9];
    char s_ea5757a0[7];
@@ -663,8 +665,10 @@ static const struct
    "\327\242\327\225\327\246\327\236\327\252 \327\251\327\236\327\242",
    "\327\236\327\242\327\250\327\221\327\234 \327\251\327\236\327\242 (\327\236\327\231\327\247\327"
    "\241\327\250)",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "\327\220\327\244\327\251\327\250 \327\241\327\220\327\225\327\240\327\223 'OK'",
    "\327\220\327\244\327\251\327\250 \327\241\327\220\327\225\327\240\327\223 'Cancel'",
+#endif
    "\327\233\327\221\327\225\327\231",
    "\327\244\327\225\327\242\327\234",
    "\327\226\327\224\327\224",
@@ -739,7 +743,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_he_blob_check[
-      (sizeof(msg_hash_he_blob) == (6108u
+      (sizeof(msg_hash_he_blob) == (6054u
 #ifdef HAVE_LAKKA
        + 20u
 #endif
@@ -761,6 +765,10 @@ typedef char msg_hash_he_blob_check[
        + 17u
        + 17u
        + 9u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 25u
+       + 29u
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
@@ -1023,8 +1031,10 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,

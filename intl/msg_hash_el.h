@@ -510,8 +510,10 @@ static const struct
    char s_4a1166e1[13];
    char s_f7e668f4[45];
    char s_daf6d7e2[78];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[41];
    char s_ada81f6a[58];
+#endif
    char s_7c68a1ee[32];
    char s_e28bc72f[67];
    char s_f9ee4a82[17];
@@ -2929,11 +2931,13 @@ static const struct
    " \316\256 \316\261\317\200\316\265\316\275\316\265\317\201\316\263\316\277\317\200\316\277\316"
    "\257\316\267\317\203\316\267 \316\256\317\207\316\277\317\205 \316\274\316\265\316\275\316\277"
    "\317\215.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "\316\225\316\275\316\265\317\201\316\263\316\277\317\200\316\277\316\257\316\267\317\203\316\267"
    " \316\211\317\207\316\277\317\205 '\316\237\316\232'",
    "\316\225\316\275\316\265\317\201\316\263\316\277\317\200\316\277\316\257\316\267\317\203\316\267"
    " \316\211\317\207\316\277\317\205 \317\204\316\267\317\202 \316\221\316\272\317\215\317\201\317"
    "\211\317\203\316\267\317\202",
+#endif
    "\316\234\316\255\316\263\316\271\317\203\317\204\316\277\316\271 \316\247\317\201\316\256\317"
    "\203\317\204\316\265\317\202",
    "\316\225\316\275\316\265\317\201\316\263\316\277\317\200\316\277\316\257\316\267\317\203\316\267"
@@ -4679,7 +4683,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (68450u
+      (sizeof(msg_hash_el_blob) == (68351u
 #ifdef HAVE_LAKKA
        + 28u
        + 70u
@@ -4706,6 +4710,10 @@ typedef char msg_hash_el_blob_check[
        + 53u
        + 33u
        + 77u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 41u
+       + 58u
 #endif
 #ifdef HAVE_MIST
        + 36u
@@ -5245,8 +5253,10 @@ static const uint32_t msg_hash_el_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,

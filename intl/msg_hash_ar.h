@@ -566,10 +566,12 @@ static const struct
    char s_4a1166e1[22];
    char s_32f9494f[48];
    char s_daf6d7e2[78];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[37];
    char s_ada81f6a[35];
    char s_c85198e6[35];
    char s_1ef8917a[35];
+#endif
    char s_7c68a1ee[43];
    char s_9c702ee1[48];
    char s_e28bc72f[32];
@@ -3720,6 +3722,7 @@ static const struct
    "\265\331\210\330\252\331\212 \330\247\331\204\331\205\330\252\330\262\330\247\331\205\331\206 "
    "\330\255\330\252\331\211 \331\201\331\212 \330\247\331\204\331\202\330\247\330\246\331\205\330"
    "\251.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "\330\252\331\201\330\271\331\212\331\204 \330\265\331\210\330\252 '\330\247\331\204\331\205\331"
    "\210\330\247\331\201\331\202\330\251'",
    "\330\252\331\201\330\271\331\212\331\204 \330\265\331\210\330\252 '\330\247\331\204\330\245\331"
@@ -3728,6 +3731,7 @@ static const struct
    "\206\330\250\331\212\331\207'",
    "\330\252\331\201\330\271\331\212\331\204 \330\265\331\210\330\252 '\330\247\331\204\330\256\331"
    "\204\331\201\331\212\330\251'",
+#endif
    "\330\247\331\204\330\255\330\257 \330\247\331\204\330\243\331\202\330\265\331\211 \331\204\331"
    "\204\331\205\330\263\330\252\330\256\330\257\331\205\331\212\331\206",
    "\330\252\330\260\331\203\331\212\330\261 \330\247\331\204\330\261\331\210\330\247\330\250\330"
@@ -7788,7 +7792,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (107554u
+      (sizeof(msg_hash_ar_blob) == (107412u
 #ifdef HAVE_LAKKA
        + 22u
        + 89u
@@ -7835,6 +7839,12 @@ typedef char msg_hash_ar_blob_check[
        + 29u
        + 42u
        + 131u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 37u
+       + 35u
+       + 35u
+       + 35u
 #endif
 #ifndef HAVE_DYNAMIC
        + 79u
@@ -8490,10 +8500,12 @@ static const uint32_t msg_hash_ar_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,

@@ -740,11 +740,13 @@ static const struct
    char s_02027672[31];
    char s_f7e668f4[17];
    char s_daf6d7e2[49];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[26];
    char s_ada81f6a[27];
    char s_c85198e6[29];
    char s_1ef8917a[29];
    char s_d3213ff3[33];
+#endif
    char s_7c68a1ee[18];
    char s_38cf005e[47];
    char s_f88b978c[181];
@@ -1465,20 +1467,30 @@ static const struct
    char s_c5a7e06c[50];
    char s_7a2033d4[24];
    char s_63081642[52];
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    char s_5e519829[24];
    char s_6435c857[52];
 #endif
-   char s_7816d5d5[36];
-   char s_37d36d03[64];
-   char s_d02afc79[30];
-   char s_dfdbf027[98];
+#endif
    char s_11926382[20];
    char s_d3fc9970[47];
    char s_63af41a7[34];
    char s_236bd8d5[62];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_4a7bf997[43];
+   char s_0ce62f85[56];
+   char s_e39d2cb2[20];
+   char s_e9815ce0[34];
+   char s_b055912b[21];
+   char s_993d7399[35];
+#endif
    char s_f228c6c5[18];
    char s_01efec73[46];
+   char s_7816d5d5[36];
+   char s_37d36d03[64];
+   char s_d02afc79[30];
+   char s_dfdbf027[98];
    char s_2b1f17e8[30];
    char s_eadbaf16[58];
    char s_b4c3612a[36];
@@ -1529,9 +1541,8 @@ static const struct
    char s_dc1d6cc7[45];
    char s_2c04084b[37];
    char s_3bb4fbf9[126];
-   char s_35dc82a3[19];
-   char s_41654451[33];
-   char s_900848a8[29];
+   char s_5cfaa89a[38];
+   char s_d99ba008[49];
    char s_f128ee26[44];
    char s_19e57914[53];
    char s_bbfba1e6[30];
@@ -1539,44 +1550,39 @@ static const struct
    char s_ae4fb605[31];
    char s_be00a9b3[73];
    char s_a7cc047b[44];
+   char s_a85eb9f5[38];
+   char s_b91e9f23[52];
+   char s_e9c54ff4[33];
+   char s_66664762[49];
+   char s_4931fd42[36];
+   char s_c5d2f4b0[41];
+   char s_ffb12f4f[27];
+   char s_7c5226bd[41];
+   char s_5df4f448[49];
+   char s_e95fc076[89];
+   char s_a81b969f[54];
+   char s_b96a264d[92];
+   char s_35dc82a3[19];
+   char s_41654451[33];
+   char s_900848a8[29];
    char s_ab4776a4[35];
    char s_b116e012[49];
    char s_f8b4c7cd[37];
    char s_3902b07b[110];
    char s_a6efd66c[25];
    char s_66ac6d9a[37];
-   char s_5cfaa89a[38];
-   char s_d99ba008[49];
-   char s_4931fd42[36];
-   char s_c5d2f4b0[41];
-   char s_ffb12f4f[27];
-   char s_7c5226bd[41];
-   char s_4a7bf997[43];
-   char s_0ce62f85[56];
+   char s_8b826990[19];
+   char s_9b335d3e[34];
    char s_01c4f556[26];
    char s_b9147244[38];
-   char s_e39d2cb2[20];
-   char s_e9815ce0[34];
-   char s_b055912b[21];
-   char s_993d7399[35];
    char s_9a4eff21[48];
    char s_e459fd8f[96];
    char s_198913d1[47];
    char s_49d3ca7f[102];
    char s_3b5c8db2[41];
    char s_85678c20[89];
-   char s_8b826990[19];
-   char s_9b335d3e[34];
    char s_cb2c6b22[30];
    char s_d0fbd490[45];
-   char s_a85eb9f5[38];
-   char s_b91e9f23[52];
-   char s_e9c54ff4[33];
-   char s_66664762[49];
-   char s_5df4f448[49];
-   char s_e95fc076[89];
-   char s_a81b969f[54];
-   char s_b96a264d[92];
    char s_6d24f146[37];
    char s_b72fefb4[79];
    char s_3fa8bb7e[20];
@@ -4875,11 +4881,13 @@ static const struct
    "Durum: Oynan\304\261yor (Ard\304\261\305\237\304\261k)",
    "Kar\304\261\305\237t\304\261r\304\261c\304\261",
    "Men\303\274de bile e\305\237 zamanl\304\261 ses ak\304\261\305\237lar\304\261 oynat.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Tamam Sesini Etkinle\305\237tir",
    "\304\260ptal Sesini Etkinle\305\237tir",
    "Bildirim Sesini Etkinle\305\237tir",
    "Arkaplan Sesini Etkinle\305\237tir",
    "Kayd\304\261rma Seslerini Etkinle\305\237tir",
+#endif
    "Azami Kullan\304\261c\304\261",
    "Yoklama Davran\304\261\305\237\304\261 (Yeniden ba\305\237lat\304\261lmal\304\261)",
    "RetroArch'ta girdi yoklamas\304\261n\304\261n nas\304\261l yap\304\261ld\304\261\304\237\304\261"
@@ -6012,23 +6020,34 @@ static const struct
    "Ana Men\303\274de 'Disk Y\303\274kle' se\303\247ene\304\237ini g\303\266sterin.",
    "'Diskten Aktar' G\303\266ster",
    "Ana Men\303\274de 'Diskten Aktar' se\303\247ene\304\237ini g\303\266sterin.",
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    "'Diski \303\207\304\261kar' G\303\266ster",
    "Ana Men\303\274de 'Diski \303\207\304\261kar' se\303\247ene\304\237ini g\303\266sterin.",
 #endif
+#endif
+   "'Bilgileri' G\303\266ster",
+   "Ana Men\303\274de 'Bilgiler' se\303\247ene\304\237ini g\303\266sterin.",
+   "'Yap\304\261land\304\261rma Dosyas\304\261' G\303\266ster",
+   "Ana Men\303\274de 'Yap\304\261land\304\261rma Dosyas\304\261' se\303\247ene\304\237ini g\303\266"
+   "sterin.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "'Ekran \303\234st\303\274 Yer Payla\305\237\304\261m\304\261n\304\261' G\303\266ster",
+   "'Ekran \303\234st\303\274 Yer Payla\305\237\304\261m\304\261' se\303\247ene\304\237ini g\303\266"
+   "sterin.",
+   "'Gecikmeyi' G\303\266ster",
+   "'Gecikme' se\303\247ene\304\237ini g\303\266sterin.",
+   "'Geri Sar\304\261' G\303\266ster",
+   "'Geri Sar' se\303\247ene\304\237ini g\303\266sterin.",
+#endif
+   "'Yard\304\261m' G\303\266ster",
+   "Ana Men\303\274de 'Yard\304\261m' se\303\247ene\304\237ini g\303\266sterin.",
    "'\303\207evrimi\303\247i G\303\274ncelleyici' G\303\266ster",
    "Ana Men\303\274de '\303\207evrimi\303\247i G\303\274ncelleyici' se\303\247ene\304\237ini g\303"
    "\266sterin.",
    "'\303\207ekirdek \304\260ndirici' G\303\266ster",
    "\303\207ekirdekleri (ve temel bilgi dosyalar\304\261n\304\261) '\303\207evrimi\303\247i G\303"
    "\274ncelleyici' se\303\247ene\304\237inde g\303\266sterin.",
-   "'Bilgileri' G\303\266ster",
-   "Ana Men\303\274de 'Bilgiler' se\303\247ene\304\237ini g\303\266sterin.",
-   "'Yap\304\261land\304\261rma Dosyas\304\261' G\303\266ster",
-   "Ana Men\303\274de 'Yap\304\261land\304\261rma Dosyas\304\261' se\303\247ene\304\237ini g\303\266"
-   "sterin.",
-   "'Yard\304\261m' G\303\266ster",
-   "Ana Men\303\274de 'Yard\304\261m' se\303\247ene\304\237ini g\303\266sterin.",
    "'RetroArch \303\207\304\261k\304\261\305\237' G\303\266ster",
    "Ana Men\303\274de 'RetroArch \303\207\304\261k\304\261\305\237' se\303\247ene\304\237ini g\303"
    "\266sterin.",
@@ -6095,9 +6114,8 @@ static const struct
    "Men\303\274de ba\305\237lang\304\261\303\247 ekran\304\261n\304\261 g\303\266ster. Bu program il"
    "k kez ba\305\237lad\304\261ktan sonra otomatik olarak kapal\304\261 de\304\237erine ayarlan\304"
    "\261r.",
-   "'Devam Et' G\303\266ster",
-   "Devam et se\303\247ene\304\237ini g\303\266sterin.",
-   "'\304\260\303\247eri\304\237i Kapat\304\261' G\303\266ster",
+   "'Ekran G\303\266r\303\274nt\303\274s\303\274 Almay\304\261' G\303\266ster",
+   "'Ekran G\303\266r\303\274nt\303\274s\303\274 Al' se\303\247ene\304\237ini g\303\266sterin.",
    "'Durumlar\304\261 Kaydet' Alt Men\303\274s\303\274n\303\274 G\303\266ster",
    "Bir alt men\303\274de durum kayd\304\261 se\303\247eneklerini g\303\266ster.",
    "'Durum Kaydet/Y\303\274kle' G\303\266ster",
@@ -6105,6 +6123,23 @@ static const struct
    "'Tekrar Kontrollerini' G\303\266ster",
    "Yeniden oynatma dosyalar\304\261n\304\261 kaydetme/oynatma se\303\247eneklerini g\303\266sterin.",
    "'Durum Kaydetme/Y\303\274kleme Geri Al\304\261' G\303\266ster",
+   "'S\304\261k Kullan\304\261lanlara Ekleyi' G\303\266ster",
+   "'S\304\261k Kullan\304\261lanlara Ekle' se\303\247ene\304\237ini g\303\266sterin.",
+   "'Oynatma Listesine Ekle' G\303\266ster",
+   "'Oynatma Listesine Ekle' se\303\247ene\304\237ini g\303\266sterin.",
+   "'Ekran Kayd\304\261 Ba\305\237latmay\304\261' G\303\266ster",
+   "'Kayd\304\261 Ba\305\237lat' se\303\247ene\304\237ini g\303\266sterin.",
+   "'Yay\304\261n Ba\305\237lat\304\261' G\303\266ster",
+   "'Yay\304\261n Ba\305\237lat' se\303\247ene\304\237ini g\303\266sterin.",
+   "'\303\207ekirdek \304\260li\305\237kilendirmeyi Ayarlay\304\261' G\303\266ster",
+   "\304\260\303\247erik \303\247al\304\261\305\237m\304\261yorken '\303\207ekirdek \304\260li\305"
+   "\237kilendirmeyi Ayarla' se\303\247ene\304\237ini g\303\266sterin.",
+   "'\303\207ekirdek \304\260li\305\237kilendirmesini S\304\261f\304\261rlay\304\261' G\303\266ster",
+   "\304\260\303\247erik \303\247al\304\261\305\237m\304\261yorken '\303\207ekirdek \304\260li\305"
+   "\237kilendirmeyi S\304\261f\304\261rla' se\303\247ene\304\237ini g\303\266sterin.",
+   "'Devam Et' G\303\266ster",
+   "Devam et se\303\247ene\304\237ini g\303\266sterin.",
+   "'\304\260\303\247eri\304\237i Kapat\304\261' G\303\266ster",
    "'\303\207ekirdek Se\303\247eneklerini' G\303\266ster",
    "'\303\207ekirdek Se\303\247enekleri' se\303\247ene\304\237ini g\303\266sterin.",
    "'Diske Yazma Se\303\247eneklerini' G\303\266ster",
@@ -6112,21 +6147,10 @@ static const struct
    "\207ekirdek Se\303\247eneklerini Y\303\266net' men\303\274s\303\274 i\303\247inde.",
    "'Kontrolc\303\274leri' G\303\266ster",
    "'Kontroller' se\303\247ene\304\237ini g\303\266sterin.",
-   "'Ekran G\303\266r\303\274nt\303\274s\303\274 Almay\304\261' G\303\266ster",
-   "'Ekran G\303\266r\303\274nt\303\274s\303\274 Al' se\303\247ene\304\237ini g\303\266sterin.",
-   "'Ekran Kayd\304\261 Ba\305\237latmay\304\261' G\303\266ster",
-   "'Kayd\304\261 Ba\305\237lat' se\303\247ene\304\237ini g\303\266sterin.",
-   "'Yay\304\261n Ba\305\237lat\304\261' G\303\266ster",
-   "'Yay\304\261n Ba\305\237lat' se\303\247ene\304\237ini g\303\266sterin.",
-   "'Ekran \303\234st\303\274 Yer Payla\305\237\304\261m\304\261n\304\261' G\303\266ster",
-   "'Ekran \303\234st\303\274 Yer Payla\305\237\304\261m\304\261' se\303\247ene\304\237ini g\303\266"
-   "sterin.",
+   "'Hileleri' G\303\266ster",
+   "'Hileler' se\303\247ene\304\237ini g\303\266sterin.",
    "'Video D\303\274zenini' G\303\266ster",
    "'Video D\303\274zeni' se\303\247ene\304\237ini g\303\266ster.",
-   "'Gecikmeyi' G\303\266ster",
-   "'Gecikme' se\303\247ene\304\237ini g\303\266sterin.",
-   "'Geri Sar\304\261' G\303\266ster",
-   "'Geri Sar' se\303\247ene\304\237ini g\303\266sterin.",
    "'\303\207ekirdek \303\226zelle\305\237tirmelerini Kaydet' G\303\266ster",
    "'\303\226zelle\305\237tirmeler' men\303\274s\303\274nde '\303\207ekirdek \303\226zelle\305\237ti"
    "rmelerini Kaydet' se\303\247ene\304\237ini g\303\266sterin.",
@@ -6136,20 +6160,8 @@ static const struct
    "'Oyun Kayd\304\261 \303\226zelle\305\237tirmeleri' G\303\266ster",
    "'\303\226zelle\305\237tirmeler' men\303\274s\303\274nde 'Oyun Kayd\304\261 \303\226zelle\305\237"
    "tirmeleri' se\303\247ene\304\237ini g\303\266sterin.",
-   "'Hileleri' G\303\266ster",
-   "'Hileler' se\303\247ene\304\237ini g\303\266sterin.",
    "'G\303\266lgelendiricileri' G\303\266ster",
    "'G\303\266lgelendiriciler' se\303\247ene\304\237ini g\303\266sterin.",
-   "'S\304\261k Kullan\304\261lanlara Ekleyi' G\303\266ster",
-   "'S\304\261k Kullan\304\261lanlara Ekle' se\303\247ene\304\237ini g\303\266sterin.",
-   "'Oynatma Listesine Ekle' G\303\266ster",
-   "'Oynatma Listesine Ekle' se\303\247ene\304\237ini g\303\266sterin.",
-   "'\303\207ekirdek \304\260li\305\237kilendirmeyi Ayarlay\304\261' G\303\266ster",
-   "\304\260\303\247erik \303\247al\304\261\305\237m\304\261yorken '\303\207ekirdek \304\260li\305"
-   "\237kilendirmeyi Ayarla' se\303\247ene\304\237ini g\303\266sterin.",
-   "'\303\207ekirdek \304\260li\305\237kilendirmesini S\304\261f\304\261rlay\304\261' G\303\266ster",
-   "\304\260\303\247erik \303\247al\304\261\305\237m\304\261yorken '\303\207ekirdek \304\260li\305"
-   "\237kilendirmeyi S\304\261f\304\261rla' se\303\247ene\304\237ini g\303\266sterin.",
    "'K\303\274\303\247\303\274k Resimleri \304\260ndiri' G\303\266ster",
    "\304\260\303\247erik \303\247al\304\261\305\237m\304\261yorken 'K\303\274\303\247\303\274k Resim"
    "leri \304\260ndir' se\303\247ene\304\237ini g\303\266sterin.",
@@ -8899,7 +8911,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170849u
+      (sizeof(msg_hash_tr_blob) == (170496u
 #ifdef HAVE_LAKKA
        + 14u
        + 48u
@@ -8975,6 +8987,13 @@ typedef char msg_hash_tr_blob_check[
        + 40u
        + 97u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 26u
+       + 27u
+       + 29u
+       + 29u
+       + 33u
+#endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 63u
        + 58u
@@ -9009,9 +9028,19 @@ typedef char msg_hash_tr_blob_check[
        + 27u
        + 48u
 #endif
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 24u
        + 52u
+#endif
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 43u
+       + 56u
+       + 20u
+       + 34u
+       + 21u
+       + 35u
 #endif
 #ifdef HAVE_MIST
        + 31u
@@ -9871,11 +9900,13 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -10595,20 +10626,30 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
@@ -10659,9 +10700,8 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
@@ -10669,44 +10709,39 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,

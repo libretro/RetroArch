@@ -120,7 +120,9 @@ static const struct
    char s_cb67f2a4[36];
    char s_f9005edc[159];
    char s_a83d6467[175];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[20];
+#endif
    char s_38cf005e[37];
    char s_9c702ee1[33];
    char s_e28bc72f[18];
@@ -637,7 +639,9 @@ static const struct
    "sabled, proper synchronisation is nearly impossible to obtain.",
    "Will start playback of the audio stream. Once finished, it will jump to the next audio stream in"
    " sequential order and repeat this behaviour. Useful as an album playback mode.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Enable 'Okay' Sound",
+#endif
    "Polling Behaviour (Restart required)",
    "Remap the Controls for This Core",
    "Autoconfiguration",
@@ -1116,7 +1120,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26756u
+      (sizeof(msg_hash_en_blob) == (26736u
 #if defined(DINGUX)
        + 195u
        + 9u
@@ -1142,6 +1146,9 @@ typedef char msg_hash_en_blob_check[
        + 19u
        + 152u
        + 121u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 20u
 #endif
 #ifdef HAVE_LIBNX
        + 15u
@@ -1289,7 +1296,9 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,

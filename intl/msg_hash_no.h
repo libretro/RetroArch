@@ -478,9 +478,11 @@ static const struct
    char s_df62d56f[6];
    char s_40084357[6];
    char s_4a1166e1[6];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[17];
    char s_ada81f6a[21];
    char s_c85198e6[27];
+#endif
    char s_7c68a1ee[20];
    char s_f9ee4a82[3];
    char s_7beff2c4[4];
@@ -644,13 +646,13 @@ static const struct
    char s_dc1d6cc7[45];
    char s_2c04084b[16];
    char s_3bb4fbf9[110];
-   char s_35dc82a3[15];
-   char s_900848a8[19];
-   char s_ab4776a4[27];
    char s_4931fd42[19];
    char s_c5d2f4b0[33];
    char s_ffb12f4f[23];
    char s_7c5226bd[37];
+   char s_35dc82a3[15];
+   char s_900848a8[19];
+   char s_ab4776a4[27];
    char s_8b826990[17];
    char s_3fa8bb7e[18];
    char s_af1fcb4f[12];
@@ -1723,9 +1725,11 @@ static const struct
    "Stopp",
    "Fjern",
    "Volum",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Aktiver 'OK' lyd",
    "Aktiver 'Avbryt' lyd",
    "Aktiver 'Notifikasjon' lyd",
+#endif
    "Maks antall brukere",
    "AV",
    "P\303\205",
@@ -1898,13 +1902,13 @@ static const struct
    "Vis Startskjerm",
    "Vis startskjerm i meny. Dette blir automatisk satt til ikke vis etter at programmet starter for "
    "f\303\270rste gang.",
-   "Vis 'Fortsett'",
-   "Vis \"Lukk innhold\"",
-   "Vis \"Kjerne Innstillinger\"",
    "Vis 'Start Opptak'",
    "Vis alternativet 'Start Opptak'.",
    "Vis 'Start Str\303\270mming'",
    "Vis 'Start str\303\270mming' alternativet.",
+   "Vis 'Fortsett'",
+   "Vis \"Lukk innhold\"",
+   "Vis \"Kjerne Innstillinger\"",
    "Vis 'Juksekoder'",
    "Vis 'informasjon'",
    "Vis 'Video'",
@@ -2477,7 +2481,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (28867u
+      (sizeof(msg_hash_no_blob) == (28802u
 #ifdef HAVE_LAKKA
        + 15u
        + 49u
@@ -2526,6 +2530,11 @@ typedef char msg_hash_no_blob_check[
        + 6u
        + 23u
        + 158u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 17u
+       + 21u
+       + 27u
 #endif
 #ifndef HAVE_DYNAMIC
        + 46u
@@ -3040,9 +3049,11 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
@@ -3206,13 +3217,13 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,

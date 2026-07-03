@@ -792,11 +792,13 @@ static const struct
    char s_02027672[25];
    char s_f7e668f4[11];
    char s_daf6d7e2[41];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[23];
    char s_ada81f6a[26];
    char s_c85198e6[24];
    char s_1ef8917a[27];
    char s_d3213ff3[28];
+#endif
    char s_7c68a1ee[1];
    char s_85147d5c[74];
    char s_38cf005e[38];
@@ -1583,20 +1585,30 @@ static const struct
    char s_c5a7e06c[52];
    char s_7a2033d4[22];
    char s_63081642[51];
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    char s_5e519829[24];
    char s_6435c857[53];
 #endif
-   char s_7816d5d5[29];
-   char s_37d36d03[58];
-   char s_d02afc79[25];
-   char s_dfdbf027[108];
+#endif
    char s_11926382[18];
    char s_d3fc9970[47];
    char s_63af41a7[25];
    char s_236bd8d5[54];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_4a7bf997[30];
+   char s_0ce62f85[41];
+   char s_e39d2cb2[23];
+   char s_e9815ce0[34];
+   char s_b055912b[17];
+   char s_993d7399[27];
+#endif
    char s_f228c6c5[15];
    char s_01efec73[44];
+   char s_7816d5d5[29];
+   char s_37d36d03[58];
+   char s_d02afc79[25];
+   char s_dfdbf027[108];
    char s_2b1f17e8[27];
    char s_eadbaf16[56];
    char s_b4c3612a[30];
@@ -1650,12 +1662,8 @@ static const struct
    char s_87c7d8b8[108];
    char s_2c04084b[20];
    char s_3bb4fbf9[97];
-   char s_35dc82a3[18];
-   char s_41654451[35];
-   char s_f0ba9657[20];
-   char s_6d5b8dc5[37];
-   char s_900848a8[23];
-   char s_2b888c96[32];
+   char s_5cfaa89a[26];
+   char s_d99ba008[37];
    char s_f128ee26[37];
    char s_19e57914[44];
    char s_bbfba1e6[32];
@@ -1664,44 +1672,42 @@ static const struct
    char s_be00a9b3[62];
    char s_a7cc047b[44];
    char s_3336d0a9[130];
+   char s_a85eb9f5[30];
+   char s_b91e9f23[38];
+   char s_e9c54ff4[28];
+   char s_66664762[39];
+   char s_4931fd42[28];
+   char s_c5d2f4b0[39];
+   char s_ffb12f4f[25];
+   char s_7c5226bd[36];
+   char s_5df4f448[31];
+   char s_e95fc076[66];
+   char s_a81b969f[36];
+   char s_b96a264d[71];
+   char s_35dc82a3[18];
+   char s_41654451[35];
+   char s_f0ba9657[20];
+   char s_6d5b8dc5[37];
+   char s_900848a8[23];
+   char s_2b888c96[32];
    char s_ab4776a4[23];
    char s_b116e012[34];
    char s_f8b4c7cd[36];
    char s_3902b07b[95];
    char s_a6efd66c[18];
    char s_66ac6d9a[27];
-   char s_5cfaa89a[26];
-   char s_d99ba008[37];
-   char s_4931fd42[28];
-   char s_c5d2f4b0[39];
-   char s_ffb12f4f[25];
-   char s_7c5226bd[36];
-   char s_4a7bf997[30];
-   char s_0ce62f85[41];
+   char s_8b826990[17];
+   char s_9b335d3e[27];
    char s_01c4f556[23];
    char s_b9147244[34];
-   char s_e39d2cb2[23];
-   char s_e9815ce0[34];
-   char s_b055912b[17];
-   char s_993d7399[27];
    char s_9a4eff21[38];
    char s_e459fd8f[73];
    char s_198913d1[48];
    char s_49d3ca7f[84];
    char s_3b5c8db2[37];
    char s_85678c20[73];
-   char s_8b826990[17];
-   char s_9b335d3e[27];
    char s_cb2c6b22[20];
    char s_d0fbd490[31];
-   char s_a85eb9f5[30];
-   char s_b91e9f23[38];
-   char s_e9c54ff4[28];
-   char s_66664762[39];
-   char s_5df4f448[31];
-   char s_e95fc076[66];
-   char s_a81b969f[36];
-   char s_b96a264d[71];
    char s_6d24f146[27];
    char s_b72fefb4[62];
    char s_3fa8bb7e[18];
@@ -5011,11 +5017,13 @@ static const struct
    "Stato: Ludate (sinsekve)",
    "Sonmiksilo",
    "Ludi samtempe sonfluojn e\304\211 en la menuo.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Ebligi sonon de \"Bone\"",
    "Ebligi sonon de \"Rezigni\"",
    "Ebligi sonon de \"Avizo\"",
    "Ebligi sonon \"Fona muziko\"",
    "Ebligi sonojn de \"Rulumado\"",
+#endif
    "",
    "Maksimuma kvanto da uzantoj subtenataj de RetroArch. Bezonas restartigon.",
    "Sondada konduto (bezonas restartigon)",
@@ -6039,21 +6047,31 @@ static const struct
    "Montri la opcion \"\305\234argi diskon\" en la \304\210efa menuo.",
    "Montri \"\305\234uti diskon\"",
    "Montri la opcion \"\305\234uti diskon\" en la \304\210efa menuo.",
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    "Montri \"El\304\265eti diskon\"",
    "Montri la opcion \"El\304\265eti diskon\" en la \304\210efa menuo.",
 #endif
+#endif
+   "Montri \"Informoj\"",
+   "Montri la opcion \"Informoj\" en la \304\210efa menuo.",
+   "Montri \"Konfigurdosiero\"",
+   "Montri la opcion \"Konfigurdosiero\" en la \304\210efa menuo.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Montri \"Surekrana surmeta\304\265o\"",
+   "Montri la opcion \"Surekrana surmeta\304\265o\".",
+   "Montri \"Respondotempo\"",
+   "Montri la opcion \"Respondotempo\".",
+   "Montri \"Revolvi\"",
+   "Montri la opcion \"Revolvi\"",
+#endif
+   "Montri \"Helpo\"",
+   "Montri la opcion \"Helpo\" en la \304\210efa menuo.",
    "Montri \"Enreta \304\235isdatigilo\"",
    "Montri la opcion \"Enreta \304\235isdatigilo\" en la \304\210efa menuo.",
    "Montri \"Kerna el\305\235utilo\"",
    "Montri la kapablon \304\235isdatigi kernojn (kaj dosierojn de kernaj informoj) en la opcio \"Enr"
    "eta \304\235isdatigilo\".",
-   "Montri \"Informoj\"",
-   "Montri la opcion \"Informoj\" en la \304\210efa menuo.",
-   "Montri \"Konfigurdosiero\"",
-   "Montri la opcion \"Konfigurdosiero\" en la \304\210efa menuo.",
-   "Montri \"Helpo\"",
-   "Montri la opcion \"Helpo\" en la \304\210efa menuo.",
    "Montri \"Forlasi RetroArch\"",
    "Montri la opcion \"Forlasi RetroArch\" en la \304\210efa menuo.",
    "Montri \"Restartigi RetroArch\"",
@@ -6115,12 +6133,8 @@ static const struct
    "Montri startekranon",
    "Montri startekranon en menuo. \304\210i tio a\305\255tomate estas agordita je malvera post kiam "
    "la programo ",
-   "Montri \"Da\305\255rigi\"",
-   "Montri la opcion da\305\255rigi enhavon.",
-   "Montri \"Restartigi\"",
-   "Montri la opcion restartigi enhavon.",
-   "Montri \"Fermi enhavon\"",
-   "Montri la opcion fermi enhavon.",
+   "Montri \"Krei ekrankopion\"",
+   "Montri la opcion \"Krei ekrankopion\".",
    "Montri la submenuon \"Konservostatoj\"",
    "Montri konservostatajn opciojn en submenuo.",
    "Montri \"Konservi/\305\235argi staton\"",
@@ -6130,6 +6144,24 @@ static const struct
    "Montri \"Malfari konservon/\305\235argon de stato\"",
    "Montri la opciojn malfari konservon/\305\235argon de stato. RetroPad Start malfaras konservon/"
    "\305\235argon kiam \304\211i tiu opcio estas ka\305\235ita.",
+   "Montri \"Aldoni al preferataj\"",
+   "Montri opcion \"Aldoni al preferataj\".",
+   "Montri \"Aldoni al ludlisto\"",
+   "Montri la opcion \"Aldoni al ludlisto\".",
+   "Montri \"Komenci surbendigi\"",
+   "Montri la opcion \"Komenci surbendigi\".",
+   "Montri \"Komenci elsendi\"",
+   "Montri la opcion \"Komenci elsendi\".",
+   "Montri \"Agordi kernan asocion\"",
+   "Montri la opcion \"Agordi kernan asocion\" kiam enhavo ne ruli\304\235as.",
+   "Montri \"Rekomencigi kernan asocion\"",
+   "Montri la opcion \"Rekomencigi kernan asocion\" kiam enhavo ne ruli\304\235as.",
+   "Montri \"Da\305\255rigi\"",
+   "Montri la opcion da\305\255rigi enhavon.",
+   "Montri \"Restartigi\"",
+   "Montri la opcion restartigi enhavon.",
+   "Montri \"Fermi enhavon\"",
+   "Montri la opcion fermi enhavon.",
    "Montri \"Kernaj opcioj\"",
    "Montri la opcion \"Kernaj opcioj\".",
    "Montri \"Elbufrigi opciojn al disko\"",
@@ -6137,38 +6169,18 @@ static const struct
    "\".",
    "Montri \"Regilojn\"",
    "Montri la opcion \"Regiloj\"",
-   "Montri \"Krei ekrankopion\"",
-   "Montri la opcion \"Krei ekrankopion\".",
-   "Montri \"Komenci surbendigi\"",
-   "Montri la opcion \"Komenci surbendigi\".",
-   "Montri \"Komenci elsendi\"",
-   "Montri la opcion \"Komenci elsendi\".",
-   "Montri \"Surekrana surmeta\304\265o\"",
-   "Montri la opcion \"Surekrana surmeta\304\265o\".",
+   "Montri \"Trompoj\"",
+   "Montri la opcion \"Trompoj\"",
    "Montri \"Videa aran\304\235o\"",
    "Montri la opcion \"Videa aran\304\235o\".",
-   "Montri \"Respondotempo\"",
-   "Montri la opcion \"Respondotempo\".",
-   "Montri \"Revolvi\"",
-   "Montri la opcion \"Revolvi\"",
    "Montri \"Konservi kernajn transpasojn\"",
    "Montri la opcion \"Konservi kernajn transpasojn\" en la menuo \"Transpasoj\"",
    "Montri \"Konservi enhav-dosierujajn transpasojn\"",
    "Montri la opcion \"Konservi enhav-dosierujajn transpasojn\" en la menuo \"Transpasoj\".",
    "Montri \"Konservi ludajn transpasojn\"",
    "Montri la opcion \"Konservi ludajn transpasojn\" en la menuo \"Transpasoj\".",
-   "Montri \"Trompoj\"",
-   "Montri la opcion \"Trompoj\"",
    "Montri \"Ombrigiloj\"",
    "Montri la opcion \"Ombrigiloj\".",
-   "Montri \"Aldoni al preferataj\"",
-   "Montri opcion \"Aldoni al preferataj\".",
-   "Montri \"Aldoni al ludlisto\"",
-   "Montri la opcion \"Aldoni al ludlisto\".",
-   "Montri \"Agordi kernan asocion\"",
-   "Montri la opcion \"Agordi kernan asocion\" kiam enhavo ne ruli\304\235as.",
-   "Montri \"Rekomencigi kernan asocion\"",
-   "Montri la opcion \"Rekomencigi kernan asocion\" kiam enhavo ne ruli\304\235as.",
    "Montri \"El\305\235uti bildetojn\"",
    "Montri la opcion \"El\305\235uti bildetojn\" kiam enhavo ne ruli\304\235as.",
    "Montri \"Informoj\"",
@@ -8758,7 +8770,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172106u
+      (sizeof(msg_hash_eo_blob) == (171806u
 #ifdef HAVE_LAKKA
        + 15u
        + 46u
@@ -8836,6 +8848,13 @@ typedef char msg_hash_eo_blob_check[
        + 41u
        + 95u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 23u
+       + 26u
+       + 24u
+       + 27u
+       + 28u
+#endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 56u
        + 70u
@@ -8870,9 +8889,19 @@ typedef char msg_hash_eo_blob_check[
        + 37u
        + 53u
 #endif
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 24u
        + 53u
+#endif
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 30u
+       + 41u
+       + 23u
+       + 34u
+       + 17u
+       + 27u
 #endif
 #ifdef HAVE_MIST
        + 20u
@@ -9815,11 +9844,13 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -10605,20 +10636,30 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
@@ -10672,12 +10713,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
@@ -10686,44 +10723,42 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,

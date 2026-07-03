@@ -776,11 +776,13 @@ static const struct
    char s_02027672[29];
    char s_f7e668f4[7];
    char s_daf6d7e2[53];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[22];
    char s_ada81f6a[26];
    char s_c85198e6[25];
    char s_1ef8917a[23];
    char s_d3213ff3[32];
+#endif
    char s_7c68a1ee[33];
    char s_85147d5c[84];
    char s_38cf005e[39];
@@ -1563,20 +1565,30 @@ static const struct
    char s_c5a7e06c[51];
    char s_7a2033d4[23];
    char s_63081642[46];
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    char s_5e519829[24];
    char s_6435c857[47];
 #endif
-   char s_7816d5d5[29];
-   char s_37d36d03[54];
-   char s_d02afc79[28];
-   char s_dfdbf027[102];
+#endif
    char s_11926382[20];
    char s_d3fc9970[45];
    char s_63af41a7[29];
    char s_236bd8d5[54];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_4a7bf997[28];
+   char s_0ce62f85[36];
+   char s_e39d2cb2[22];
+   char s_e9815ce0[30];
+   char s_b055912b[16];
+   char s_993d7399[25];
+#endif
    char s_f228c6c5[15];
    char s_01efec73[40];
+   char s_7816d5d5[29];
+   char s_37d36d03[54];
+   char s_d02afc79[28];
+   char s_dfdbf027[102];
    char s_2b1f17e8[27];
    char s_eadbaf16[53];
    char s_b4c3612a[36];
@@ -1630,12 +1642,8 @@ static const struct
    char s_87c7d8b8[137];
    char s_2c04084b[25];
    char s_3bb4fbf9[104];
-   char s_35dc82a3[16];
-   char s_41654451[34];
-   char s_f0ba9657[16];
-   char s_6d5b8dc5[37];
-   char s_900848a8[25];
-   char s_2b888c96[35];
+   char s_5cfaa89a[22];
+   char s_d99ba008[30];
    char s_f128ee26[32];
    char s_19e57914[39];
    char s_bbfba1e6[30];
@@ -1644,44 +1652,42 @@ static const struct
    char s_be00a9b3[55];
    char s_a7cc047b[42];
    char s_3336d0a9[125];
+   char s_a85eb9f5[29];
+   char s_b91e9f23[37];
+   char s_e9c54ff4[28];
+   char s_66664762[36];
+   char s_4931fd42[31];
+   char s_c5d2f4b0[39];
+   char s_ffb12f4f[28];
+   char s_7c5226bd[36];
+   char s_5df4f448[35];
+   char s_e95fc076[76];
+   char s_a81b969f[37];
+   char s_b96a264d[76];
+   char s_35dc82a3[16];
+   char s_41654451[34];
+   char s_f0ba9657[16];
+   char s_6d5b8dc5[37];
+   char s_900848a8[25];
+   char s_2b888c96[35];
    char s_ab4776a4[22];
    char s_b116e012[31];
    char s_f8b4c7cd[30];
    char s_3902b07b[80];
    char s_a6efd66c[20];
    char s_66ac6d9a[37];
-   char s_5cfaa89a[22];
-   char s_d99ba008[30];
-   char s_4931fd42[31];
-   char s_c5d2f4b0[39];
-   char s_ffb12f4f[28];
-   char s_7c5226bd[36];
-   char s_4a7bf997[28];
-   char s_0ce62f85[36];
+   char s_8b826990[17];
+   char s_9b335d3e[25];
    char s_01c4f556[22];
    char s_b9147244[30];
-   char s_e39d2cb2[22];
-   char s_e9815ce0[30];
-   char s_b055912b[16];
-   char s_993d7399[25];
    char s_9a4eff21[35];
    char s_e459fd8f[65];
    char s_198913d1[44];
    char s_49d3ca7f[72];
    char s_3b5c8db2[31];
    char s_85678c20[61];
-   char s_8b826990[17];
-   char s_9b335d3e[25];
    char s_cb2c6b22[16];
    char s_d0fbd490[27];
-   char s_a85eb9f5[29];
-   char s_b91e9f23[37];
-   char s_e9c54ff4[28];
-   char s_66664762[36];
-   char s_5df4f448[35];
-   char s_e95fc076[76];
-   char s_a81b969f[37];
-   char s_b96a264d[76];
    char s_6d24f146[27];
    char s_b72fefb4[69];
    char s_3fa8bb7e[20];
@@ -5058,11 +5064,13 @@ static const struct
    "Stan: odtwarzanie (po kolei)",
    "Mikser",
    "Odtwarzaj jednoczesne strumienie audio nawet w menu.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "W\305\202\304\205cz d\305\272wi\304\231k 'OK'",
    "W\305\202\304\205cz d\305\272wi\304\231k 'Anuluj'",
    "W\305\202\304\205cz d\305\272wi\304\231k 'Uwaga'",
    "W\305\202\304\205cz d\305\272wi\304\231k 'BGM'",
    "W\305\202\304\205cz d\305\272wi\304\231ki 'Przewijania'",
+#endif
    "Maksymalna liczba u\305\274ytkownik\303\263w",
    "Maksymalna liczba u\305\274ytkownik\303\263w obs\305\202ugiwanych przez RetroArch. (Wymagany res"
    "tart)",
@@ -6190,21 +6198,31 @@ static const struct
    "Poka\305\274 opcj\304\231 \"Za\305\202aduj p\305\202yt\304\231\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 'Zgraj p\305\202yt\304\231'",
    "Poka\305\274 opcj\304\231 \"Zrzut Dysku\" w menu g\305\202\303\263wnym.",
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    "Poka\305\274 'Wysu\305\204 p\305\202yt\304\231'",
    "Poka\305\274 opcj\304\231 'Wyrzu\304\207 dysk' w menu g\305\202\303\263wnym.",
 #endif
+#endif
+   "Poka\305\274 'Informacje'",
+   "Poka\305\274 opcj\304\231 'Informacje' w menu g\305\202\303\263wnym.",
+   "Poka\305\274 'Plik konfiguracyjny'",
+   "Poka\305\274 opcj\304\231 'Plik konfiguracyjny' w menu g\305\202\303\263wnym.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Poka\305\274 'Nak\305\202adka ekranowa'",
+   "Poka\305\274 opcj\304\231 'Nak\305\202adka ekranowa'.",
+   "Poka\305\274 'Op\303\263\305\272nienie'",
+   "Poka\305\274 opcj\304\231 \"Op\303\263\305\272nienie\".",
+   "Show 'Przewi\305\204'",
+   "Poka\305\274 opcje 'Przewi\305\204'.",
+#endif
+   "Poka\305\274 'Pomoc'",
+   "Poka\305\274 opcj\304\231 \"Pomoc\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 'Aktualizator Online'",
    "Poka\305\274 opcj\304\231 \"Aktualizator Online\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 'Pobieranie rdzenia'",
    "Poka\305\274 mo\305\274liwo\305\233\304\207 aktualizacji rdzeni (i plik\303\263w informacji rdze"
    "nia) w opcji \"Aktualizacje online\".",
-   "Poka\305\274 'Informacje'",
-   "Poka\305\274 opcj\304\231 'Informacje' w menu g\305\202\303\263wnym.",
-   "Poka\305\274 'Plik konfiguracyjny'",
-   "Poka\305\274 opcj\304\231 'Plik konfiguracyjny' w menu g\305\202\303\263wnym.",
-   "Poka\305\274 'Pomoc'",
-   "Poka\305\274 opcj\304\231 \"Pomoc\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 'Zamknij RetroArch'",
    "Poka\305\274 opcj\304\231 \"Wyjd\305\272 z RetroArch\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 'Uruchom ponownie RetroArch'",
@@ -6270,12 +6288,8 @@ static const struct
    "Wy\305\233wietl ekran startowy",
    "Poka\305\274 ekran startowy w menu. Po pierwszym uruchomieniu programu jest automatycznie ustawi"
    "ane na false.",
-   "Poka\305\274 'Wzn\303\263w'",
-   "Poka\305\274 opcj\304\231 wznowienia tre\305\233ci.",
-   "Pokazuj 'Reset'",
-   "Pokazuj opcj\304\231 zresetowania tre\305\233ci.",
-   "Poka\305\274 'Zamknij tre\305\233\304\207'",
-   "Poka\305\274 opcj\304\231 zamkni\304\231cia tre\305\233ci.",
+   "Poka\305\274 'Zrzut ekranu'",
+   "Poka\305\274 opcj\304\231 \"Zrzut ekranu\".",
    "Poka\305\274 podmenu 'Zapisy stan\303\263w'",
    "Poka\305\274 opcje zapisu stan\303\263w w podmenu.",
    "Poka\305\274 'Zapisz/Za\305\202aduj stan'",
@@ -6285,46 +6299,44 @@ static const struct
    "Poka\305\274 'Cofnij Zapisanie/Wczytanie stanu'",
    "Poka\305\274 opcje anulowania zapisania/za\305\202adowania stanu. RetroPad Start wywo\305\202uje"
    " anulowanie zapisania/za\305\202adowania gdy ukryte.",
-   "Poka\305\274 'Opcje Rdzeni'",
-   "Poka\305\274 opcj\304\231 \"Opcje rdzenia'.",
-   "Poka\305\274 'Zapisz opcje na dysk'",
-   "Poka\305\274 wpis 'Zapisz opcje na dysk' w menu 'Opcje > Zarz\304\205dzaj opcjami rdzenia'.",
-   "Poka\305\274 'Sterowanie'",
-   "Poka\305\274 opcj\304\231 'Elementy steruj\304\205ce'.",
-   "Poka\305\274 'Zrzut ekranu'",
-   "Poka\305\274 opcj\304\231 \"Zrzut ekranu\".",
-   "Poka\305\274 'Rozpocznij nagrywanie'",
-   "Poka\305\274 opcj\304\231 \"Rozpocznij nagrywanie\".",
-   "Poka\305\274 'Rozpocznij streama'",
-   "Poka\305\274 opcj\304\231 \"Rozpocznij streama\".",
-   "Poka\305\274 'Nak\305\202adka ekranowa'",
-   "Poka\305\274 opcj\304\231 'Nak\305\202adka ekranowa'.",
-   "Poka\305\274 \"Uk\305\202ad wideo\"",
-   "Poka\305\274 opcj\304\231 'Uk\305\202ad wideo'.",
-   "Poka\305\274 'Op\303\263\305\272nienie'",
-   "Poka\305\274 opcj\304\231 \"Op\303\263\305\272nienie\".",
-   "Show 'Przewi\305\204'",
-   "Poka\305\274 opcje 'Przewi\305\204'.",
-   "Poka\305\274 'Zapisz nadpisania rdzenia'",
-   "Poka\305\274 opcj\304\231 'Zapisz nadpisywania rdzenia' w menu 'Nadpisania'.",
-   "Poka\305\274 'Zapisz nadpisanie katalogu tre\305\233ci'",
-   "Poka\305\274 opcj\304\231 'Zapisz nadpisania katalogu tre\305\233ci' w menu 'Nadpisania'.",
-   "Poka\305\274 'Zapisz nadpisania gry'",
-   "Poka\305\274 opcj\304\231 'Zapisz nadpisania gry' w menu 'Nadpisywanie'.",
-   "Poka\305\274 'Cheat-y'",
-   "Poka\305\274 opcj\304\231 \"Cheat'y\".",
-   "Poka\305\274 'Cienie'",
-   "Poka\305\274 opcj\304\231 'Shader\303\263w'.",
    "Poka\305\274 'Dodaj do ulubionych'",
    "Poka\305\274 opcj\304\231 'Dodaj do ulubionych'.",
    "Poka\305\274 'Dodaj do playlisty'",
    "Poka\305\274 opcj\304\231 'Dodaj do playlisty'.",
+   "Poka\305\274 'Rozpocznij nagrywanie'",
+   "Poka\305\274 opcj\304\231 \"Rozpocznij nagrywanie\".",
+   "Poka\305\274 'Rozpocznij streama'",
+   "Poka\305\274 opcj\304\231 \"Rozpocznij streama\".",
    "Poka\305\274 'Ustaw powi\304\205zanie rdzenia'",
    "Poka\305\274 opcj\304\231 'Ustaw powi\304\205zania rdzenia' gdy tre\305\233\304\207 nie jest uru"
    "chomiona.",
    "Poka\305\274 'Resetuj skojarzenie rdzenia'",
    "Poka\305\274 opcj\304\231 'Usu\305\204 powi\304\205zania rdzenia' gdy tre\305\233\304\207 nie je"
    "st uruchomiona.",
+   "Poka\305\274 'Wzn\303\263w'",
+   "Poka\305\274 opcj\304\231 wznowienia tre\305\233ci.",
+   "Pokazuj 'Reset'",
+   "Pokazuj opcj\304\231 zresetowania tre\305\233ci.",
+   "Poka\305\274 'Zamknij tre\305\233\304\207'",
+   "Poka\305\274 opcj\304\231 zamkni\304\231cia tre\305\233ci.",
+   "Poka\305\274 'Opcje Rdzeni'",
+   "Poka\305\274 opcj\304\231 \"Opcje rdzenia'.",
+   "Poka\305\274 'Zapisz opcje na dysk'",
+   "Poka\305\274 wpis 'Zapisz opcje na dysk' w menu 'Opcje > Zarz\304\205dzaj opcjami rdzenia'.",
+   "Poka\305\274 'Sterowanie'",
+   "Poka\305\274 opcj\304\231 'Elementy steruj\304\205ce'.",
+   "Poka\305\274 'Cheat-y'",
+   "Poka\305\274 opcj\304\231 \"Cheat'y\".",
+   "Poka\305\274 \"Uk\305\202ad wideo\"",
+   "Poka\305\274 opcj\304\231 'Uk\305\202ad wideo'.",
+   "Poka\305\274 'Zapisz nadpisania rdzenia'",
+   "Poka\305\274 opcj\304\231 'Zapisz nadpisywania rdzenia' w menu 'Nadpisania'.",
+   "Poka\305\274 'Zapisz nadpisanie katalogu tre\305\233ci'",
+   "Poka\305\274 opcj\304\231 'Zapisz nadpisania katalogu tre\305\233ci' w menu 'Nadpisania'.",
+   "Poka\305\274 'Zapisz nadpisania gry'",
+   "Poka\305\274 opcj\304\231 'Zapisz nadpisania gry' w menu 'Nadpisywanie'.",
+   "Poka\305\274 'Cienie'",
+   "Poka\305\274 opcj\304\231 'Shader\303\263w'.",
    "Poka\305\274 'Pobierz miniatury'",
    "Poka\305\274 opcj\304\231 'Pobierz miniaturki' gdy tre\305\233\304\207 nie jest uruchomiona.",
    "Poka\305\274 'Informacje'",
@@ -9070,7 +9082,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (184670u
+      (sizeof(msg_hash_pl_blob) == (184385u
 #ifdef HAVE_LAKKA
        + 15u
        + 44u
@@ -9147,6 +9159,13 @@ typedef char msg_hash_pl_blob_check[
        + 29u
        + 105u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 22u
+       + 26u
+       + 25u
+       + 23u
+       + 32u
+#endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 55u
        + 51u
@@ -9181,9 +9200,19 @@ typedef char msg_hash_pl_blob_check[
        + 27u
        + 43u
 #endif
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 24u
        + 47u
+#endif
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 28u
+       + 36u
+       + 22u
+       + 30u
+       + 16u
+       + 25u
 #endif
 #ifdef HAVE_MIST
        + 22u
@@ -10111,11 +10140,13 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -10897,20 +10928,30 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
@@ -10964,12 +11005,8 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
@@ -10978,44 +11015,42 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,

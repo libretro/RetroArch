@@ -727,11 +727,13 @@ static const struct
    char s_30375dfa[28];
    char s_02027672[34];
    char s_daf6d7e2[45];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[19];
    char s_ada81f6a[23];
    char s_c85198e6[27];
    char s_1ef8917a[20];
    char s_d3213ff3[23];
+#endif
    char s_7c68a1ee[15];
    char s_38cf005e[35];
    char s_f88b978c[180];
@@ -1479,20 +1481,30 @@ static const struct
    char s_c5a7e06c[48];
    char s_7a2033d4[19];
    char s_63081642[46];
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    char s_5e519829[21];
    char s_6435c857[48];
 #endif
-   char s_7816d5d5[26];
-   char s_37d36d03[53];
-   char s_d02afc79[25];
-   char s_dfdbf027[85];
+#endif
    char s_11926382[19];
    char s_d3fc9970[46];
    char s_63af41a7[25];
    char s_236bd8d5[52];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_4a7bf997[24];
+   char s_0ce62f85[38];
+   char s_e39d2cb2[14];
+   char s_e9815ce0[28];
+   char s_b055912b[24];
+   char s_993d7399[38];
+#endif
    char s_f228c6c5[14];
    char s_01efec73[41];
+   char s_7816d5d5[26];
+   char s_37d36d03[53];
+   char s_d02afc79[25];
+   char s_dfdbf027[85];
    char s_2b1f17e8[25];
    char s_eadbaf16[52];
    char s_b4c3612a[27];
@@ -1543,9 +1555,8 @@ static const struct
    char s_dc1d6cc7[46];
    char s_2c04084b[17];
    char s_3bb4fbf9[110];
-   char s_35dc82a3[18];
-   char s_41654451[45];
-   char s_900848a8[24];
+   char s_5cfaa89a[21];
+   char s_d99ba008[35];
    char s_f128ee26[34];
    char s_19e57914[56];
    char s_bbfba1e6[32];
@@ -1553,44 +1564,39 @@ static const struct
    char s_ae4fb605[25];
    char s_be00a9b3[62];
    char s_a7cc047b[39];
+   char s_a85eb9f5[30];
+   char s_b91e9f23[44];
+   char s_e9c54ff4[30];
+   char s_66664762[44];
+   char s_4931fd42[25];
+   char s_c5d2f4b0[39];
+   char s_ffb12f4f[24];
+   char s_7c5226bd[37];
+   char s_5df4f448[34];
+   char s_e95fc076[74];
+   char s_a81b969f[36];
+   char s_b96a264d[76];
+   char s_35dc82a3[18];
+   char s_41654451[45];
+   char s_900848a8[24];
    char s_ab4776a4[23];
    char s_b116e012[37];
    char s_f8b4c7cd[34];
    char s_3902b07b[97];
    char s_a6efd66c[22];
    char s_66ac6d9a[36];
-   char s_5cfaa89a[21];
-   char s_d99ba008[35];
-   char s_4931fd42[25];
-   char s_c5d2f4b0[39];
-   char s_ffb12f4f[24];
-   char s_7c5226bd[37];
-   char s_4a7bf997[24];
-   char s_0ce62f85[38];
+   char s_8b826990[12];
+   char s_9b335d3e[26];
    char s_01c4f556[20];
    char s_b9147244[34];
-   char s_e39d2cb2[14];
-   char s_e9815ce0[28];
-   char s_b055912b[24];
-   char s_993d7399[38];
    char s_9a4eff21[36];
    char s_e459fd8f[78];
    char s_198913d1[54];
    char s_49d3ca7f[96];
    char s_3b5c8db2[42];
    char s_85678c20[84];
-   char s_8b826990[12];
-   char s_9b335d3e[26];
    char s_cb2c6b22[15];
    char s_d0fbd490[29];
-   char s_a85eb9f5[30];
-   char s_b91e9f23[44];
-   char s_e9c54ff4[30];
-   char s_66664762[44];
-   char s_5df4f448[34];
-   char s_e95fc076[74];
-   char s_a81b969f[36];
-   char s_b96a264d[76];
    char s_6d24f146[29];
    char s_b72fefb4[69];
    char s_3fa8bb7e[19];
@@ -4697,11 +4703,13 @@ static const struct
    "Tillst\303\245nd: Spelar (slinga)",
    "Tillst\303\245nd: Spelar (sekventiellt)",
    "Spela samtidiga ljudstr\303\266mmar \303\244ven i menyn.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Aktivera f\303\266r 'OK'",
    "Aktivera f\303\266r 'Avbryt'",
    "Aktivera f\303\266r 'Meddelande'",
    "Aktivera f\303\266r 'BGM'",
    "Aktivera f\303\266r 'Scroll'",
+#endif
    "Max anv\303\244ndare",
    "Pollningsbeteende (omstart kr\303\244vs)",
    "P\303\245verkar hur inmatningspollning g\303\266rs i RetroArch. Om du st\303\244ller in den p"
@@ -5733,21 +5741,31 @@ static const struct
    "Visa alternativet 'L\303\244s in skiva' i huvudmenyn.",
    "Visa 'Dumpa skiva'",
    "Visa alternativet 'Dumpa skiva' i huvudmenyn.",
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    "Visa 'Mata ut skiva'",
    "Visa alternativet 'Mata ut skiva' i huvudmenyn.",
 #endif
+#endif
+   "Visa 'Information'",
+   "Visa alternativet 'Information' i huvudmenyn.",
+   "Visa 'Konfigurationsfil'",
+   "Visa alternativet 'Konfigurationsfil' i huvudmenyn.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Visa 'Sk\303\244rm\303\266verl\303\244gg'",
+   "Visa alternativet 'Sk\303\244rm\303\266verl\303\244gg'.",
+   "Visa 'Latens'",
+   "Visa alternativet 'Latens'.",
+   "Visa 'Tillbakaspolning'",
+   "Visa alternativet 'Tillbakaspolning'.",
+#endif
+   "Visa 'Hj\303\244lp'",
+   "Visa alternativet 'Hj\303\244lp' i huvudmenyn.",
    "Visa 'Online-uppdaterare'",
    "Visa alternativet 'Online-uppdaterare' i huvudmenyn.",
    "Visa 'H\303\244mta ner k\303\244rna'",
    "Visa m\303\266jligheten att uppdatera k\303\244rnor (och k\303\244rninfofiler) i 'Online-uppdate"
    "rare'.",
-   "Visa 'Information'",
-   "Visa alternativet 'Information' i huvudmenyn.",
-   "Visa 'Konfigurationsfil'",
-   "Visa alternativet 'Konfigurationsfil' i huvudmenyn.",
-   "Visa 'Hj\303\244lp'",
-   "Visa alternativet 'Hj\303\244lp' i huvudmenyn.",
    "Visa 'Avsluta RetroArch'",
    "Visa alternativet 'Avsluta RetroArch' i huvudmenyn.",
    "Visa 'Starta om RetroArch'",
@@ -5808,9 +5826,8 @@ static const struct
    "Visa Startsk\303\244rm",
    "Visa startsk\303\244rmen i menyn. Detta s\303\244tts automatiskt till false n\303\244r programme"
    "t startas f\303\266r f\303\266rsta g\303\245ngen.",
-   "Visa '\303\205teruppta'",
-   "Visar alternativet att \303\245teruppta inneh\303\245ll.",
-   "Visa 'St\303\244ng Inneh\303\245ll'",
+   "Visa 'Ta sk\303\244rmdump'",
+   "Visa alternativet 'Ta sk\303\244rmdump'.",
    "Visa 'Spara tillst\303\245nd'-undermeny",
    "Visa alternativ f\303\266r sparade tillst\303\245nd i en undermeny.",
    "Visa 'Spara/L\303\244s in tillst\303\245nd'",
@@ -5818,6 +5835,23 @@ static const struct
    "Visa 'Repris-kontroller'",
    "Visa alternativen f\303\266r inspelning/uppspelning av reprisfiler.",
    "Visa '\303\205ngra Spara/L\303\244s in tillst\303\245nd'",
+   "Visa 'L\303\244gg till i Favoriter'",
+   "Visa alternativet 'L\303\244gg till i favoriter'.",
+   "Visa 'L\303\244gg till i spellista'",
+   "Visa alternativet 'L\303\244gg till i spellista'.",
+   "Visa 'Starta inspelning'",
+   "Visa alternativet 'Starta inspelning'.",
+   "Visa 'Starta streaming'",
+   "Visa alternativet 'B\303\266rja str\303\266mma'.",
+   "Visa 'St\303\244ll in k\303\244rnassociation'",
+   "Visa alternativet 'St\303\244ll in k\303\244rnassociation' n\303\244r inneh\303\245ll inte k\303"
+   "\266rs.",
+   "Visa '\303\205terst\303\244ll k\303\244rnassociation'",
+   "Visa alternativet '\303\205terst\303\244ll k\303\244rnassociation' n\303\244r inneh\303\245ll in"
+   "te k\303\266rs.",
+   "Visa '\303\205teruppta'",
+   "Visar alternativet att \303\245teruppta inneh\303\245ll.",
+   "Visa 'St\303\244ng Inneh\303\245ll'",
    "Visa 'K\303\244rnalternativ'",
    "Visa alternativet 'K\303\244rnalternativ'.",
    "Visa 'Skriv alternativ till disk'",
@@ -5825,20 +5859,10 @@ static const struct
    "Hantera k\303\244rnalternativ\342\200\235.",
    "Visa 'Spelkontroller'",
    "Visa alternativet 'Spelkontroller'.",
-   "Visa 'Ta sk\303\244rmdump'",
-   "Visa alternativet 'Ta sk\303\244rmdump'.",
-   "Visa 'Starta inspelning'",
-   "Visa alternativet 'Starta inspelning'.",
-   "Visa 'Starta streaming'",
-   "Visa alternativet 'B\303\266rja str\303\266mma'.",
-   "Visa 'Sk\303\244rm\303\266verl\303\244gg'",
-   "Visa alternativet 'Sk\303\244rm\303\266verl\303\244gg'.",
+   "Visa 'Fusk'",
+   "Visa alternativet 'Fusk'.",
    "Visa 'Video Layout'",
    "Visa alternativet 'Video Layout'.",
-   "Visa 'Latens'",
-   "Visa alternativet 'Latens'.",
-   "Visa 'Tillbakaspolning'",
-   "Visa alternativet 'Tillbakaspolning'.",
    "Visa 'Spara k\303\244rn\303\245sidos\303\244ttningar'",
    "Visa alternativet 'Spara k\303\244rn\303\245sidos\303\244ttningar' i menyn '\303\205sidos\303"
    "\244ttningar'.",
@@ -5848,20 +5872,8 @@ static const struct
    "Visa '\303\205sidos\303\244ttningar f\303\266r sparat spel'",
    "Visa alternativet '\303\205sidos\303\244ttningar f\303\266r sparat spel' i menyn '\303\205sidos"
    "\303\244ttningar'.",
-   "Visa 'Fusk'",
-   "Visa alternativet 'Fusk'.",
    "Visa 'Shaders'",
    "Visa alternativet 'Shaders'.",
-   "Visa 'L\303\244gg till i Favoriter'",
-   "Visa alternativet 'L\303\244gg till i favoriter'.",
-   "Visa 'L\303\244gg till i spellista'",
-   "Visa alternativet 'L\303\244gg till i spellista'.",
-   "Visa 'St\303\244ll in k\303\244rnassociation'",
-   "Visa alternativet 'St\303\244ll in k\303\244rnassociation' n\303\244r inneh\303\245ll inte k\303"
-   "\266rs.",
-   "Visa '\303\205terst\303\244ll k\303\244rnassociation'",
-   "Visa alternativet '\303\205terst\303\244ll k\303\244rnassociation' n\303\244r inneh\303\245ll in"
-   "te k\303\266rs.",
    "Visa 'H\303\244mta ner miniatyrer'",
    "Visa alternativet 'H\303\244mta ner miniatyrer' n\303\244r inneh\303\245ll inte k\303\266rs.",
    "Visa 'Information'",
@@ -8364,7 +8376,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (165424u
+      (sizeof(msg_hash_sv_blob) == (165146u
 #ifdef HAVE_LAKKA
        + 14u
        + 43u
@@ -8436,6 +8448,13 @@ typedef char msg_hash_sv_blob_check[
        + 27u
        + 85u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 19u
+       + 23u
+       + 27u
+       + 20u
+       + 23u
+#endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 51u
        + 58u
@@ -8470,9 +8489,19 @@ typedef char msg_hash_sv_blob_check[
        + 26u
        + 57u
 #endif
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 21u
        + 48u
+#endif
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 24u
+       + 38u
+       + 14u
+       + 28u
+       + 24u
+       + 38u
 #endif
 #ifdef HAVE_MIST
        + 23u
@@ -9342,11 +9371,13 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -10093,20 +10124,30 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
@@ -10157,9 +10198,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
@@ -10167,44 +10207,39 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
