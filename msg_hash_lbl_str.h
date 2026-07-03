@@ -88,7 +88,6 @@
 #define MENU_ENUM_LABEL_AUDIO_SETTINGS_STR "audio_settings"
 #define MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS_STR "audio_synchronization_settings"
 #define MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS_STR "audio_output_settings"
-#define MENU_ENUM_LABEL_AUDIO_SYNC_STR "audio_sync"
 #define MENU_ENUM_LABEL_AUDIO_VOLUME_STR "audio_volume"
 #define MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE_STR "audio_wasapi_exclusive_mode"
 #define MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT_STR "audio_wasapi_float_format"
