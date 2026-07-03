@@ -1968,6 +1968,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
 #ifdef WIIU
 #include "settings/settings_def_video_wiiu_drc.h"
@@ -2049,7 +2050,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_use_metal_arg_buffers",   &settings->bools.video_use_metal_arg_buffers, true, config_metal_arg_buffers_default(), false);
 #endif
    SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, DEFAULT_MESSAGE_BGCOLOR_ENABLE, false);
-   SETTING_BOOL("video_window_show_decorations", &settings->bools.video_window_show_decorations, true, DEFAULT_WINDOW_DECORATIONS, false);
    SETTING_BOOL("video_window_save_positions",   &settings->bools.video_window_save_positions, true, DEFAULT_WINDOW_SAVE_POSITIONS, false);
    SETTING_BOOL("video_window_custom_size_enable", &settings->bools.video_window_custom_size_enable, true, DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE, false);
 
@@ -2345,6 +2345,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
 #ifdef WIIU
 #include "settings/settings_def_video_wiiu_drc.h"
@@ -2660,6 +2661,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
 #ifdef WIIU
 #include "settings/settings_def_video_wiiu_drc.h"
@@ -2950,6 +2952,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
 #ifdef WIIU
 #include "settings/settings_def_video_wiiu_drc.h"

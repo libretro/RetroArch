@@ -1277,7 +1277,6 @@
 #define MENU_ENUM_LABEL_JOYPAD_DRIVER_XDK_STR "xdk"
 #define MENU_ENUM_LABEL_JOYPAD_DRIVER_XINPUT_STR "xinput"
 #define MENU_ENUM_LABEL_JOYPAD_DRIVER_NULL_STR "null"
-#define MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS_STR "video_window_show_decorations"
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION_STR "video_window_save_position"
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE_STR "video_window_custom_size_enable"
 #define MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL_STR "rgui_internal_upscale_level"
