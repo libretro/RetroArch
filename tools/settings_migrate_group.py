@@ -95,14 +95,18 @@ assert len(rows) == len(all_invocations), (
 assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW\(', tm.group(1))), (len(rows), tm.group(1)[:200])
 
 us = open('intl/msg_hash_us.h').read()
-usval, ussub, usspan = {}, {}, []
+usval, ussub, usspan, uscmt = {}, {}, [], {}
 for k, f, T, a in rows:
-    m = re.search(r'MSG_HASH\(\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
+    m = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
     assert m, ('VALUE', T)
-    usval[T] = re.sub(r'\s*\n\s*', ' ', m.group(1)); usspan.append((m.start(), m.end()))
-    m = re.search(r'MSG_HASH\(\s*\n?\s*MENU_ENUM_SUBLABEL_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
+    usval[T] = re.sub(r'\s*\n\s*', ' ', m.group(2)); usspan.append((m.start(), m.end()))
+    if m.group(1):
+        uscmt[T] = m.group(1)
+    m = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_SUBLABEL_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
     if m:
-        ussub[T] = re.sub(r'\s*\n\s*', ' ', m.group(1)); usspan.append((m.start(), m.end()))
+        ussub[T] = re.sub(r'\s*\n\s*', ' ', m.group(2)); usspan.append((m.start(), m.end()))
+        if m.group(1):
+            uscmt[T] = (uscmt.get(T, '') + ' ' + m.group(1)).strip()
 lblstr = open('msg_hash_lbl_str.h').read()
 names, lblstr_span = {}, []
 for k, f, T, a in rows:
@@ -173,6 +177,8 @@ for k, f, T, a in rows:
         row = 'S_%s_NS%s(%s, %s,\n      %s,\n      %s,\n      %s)' % (
             k, _hs, f, T, names[T], a, usval[T])
         if _hs: _h_used.add('S_%s_NS_H' % k)
+    if T in uscmt:
+        row = '/* %s */\n' % uscmt[T].strip('/* ').rstrip(' */') + row
     if T in KEEP:
         ck = dict(cfg_keeps)[T]
         row = ('/* config key %s differs from the label string; the\n'
