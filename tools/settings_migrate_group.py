@@ -289,18 +289,44 @@ print("gate: lanes clean (%d base + %d guard-isolation + %d headless)" % (
 # ---- TOKEN-STREAM GATE: preprocessor-level emission identity ----
 CPP = "gcc -E -P -I. -Imenu -Ilibretro-common/include -Ideps/7zip -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DHAVE_CHEATS -DHAVE_OVERLAY -DHAVE_MICROPHONE"
 def table_tokens(src_path, extra=""):
+    """Preprocessed initializer token stream, or None when the table's
+    enclosing guards eliminate it in this polarity."""
     r = run("%s %s %s 2>/dev/null" % (CPP, extra, src_path))
     m2 = re.search(r'static const setting_desc_t %s\[\] = \{(.*?)\};' % TABLE, r.stdout, re.S)
-    assert m2, "table not found in preprocessed output"
+    if not m2:
+        return None
     return re.sub(r'\s+', ' ', m2.group(1)).strip()
 run("git show HEAD:menu/menu_setting.c > /tmp/ms_head.c")
-for pol in ("", "-DRARCH_MOBILE"):
+# Polarities are derived from the guards in and around the table: the
+# enclosing stack (a whole table can live under a platform guard) plus
+# every per-row guard. Each flag gets a lane; the table may legitimately
+# not exist in some polarity, but pre and post must agree about that,
+# and at least one polarity must see it.
+_head = open('/tmp/ms_head.c').read()
+_tm = re.search(r'static const setting_desc_t %s\[\] = \{' % TABLE, _head)
+_gtoks = set()
+for _g in guard_at(_head, _tm.start()):
+    _gtoks |= set(re.findall(r'\b([A-Z_][A-Z0-9_]{2,})\b', _g)) - {'defined'}
+for _gs in guards.values():
+    for _g in (_gs if isinstance(_gs, (list, tuple)) else [_gs]):
+        _gtoks |= set(re.findall(r'\b([A-Z_][A-Z0-9_]{2,})\b', str(_g))) - {'defined'}
+pols = [""] + sorted("-D%s" % g for g in _gtoks)
+if len(_gtoks) > 1:
+    pols.append(' '.join(sorted("-D%s" % g for g in _gtoks)))
+seen_present = False
+for pol in pols:
     pre_t = table_tokens('/tmp/ms_head.c', pol)
     post_t = table_tokens('menu/menu_setting.c', pol)
+    assert (pre_t is None) == (post_t is None), \
+        "TABLE EXISTENCE DRIFT (%s): pre=%s post=%s" % (pol, pre_t is not None, post_t is not None)
+    if pre_t is None:
+        continue
+    seen_present = True
     if post_t.endswith(',') and not pre_t.endswith(','):
         post_t = post_t[:-1].rstrip()
     assert pre_t == post_t, "TOKEN DRIFT (%s):\npre:  %s\npost: %s" % (pol, pre_t[:300], post_t[:300])
-print("gate: preprocessed table token-identical in both guard polarities")
+assert seen_present, "table not visible in any derived polarity"
+print("gate: preprocessed table token-identical across %d derived polarities" % len(pols))
 
 msn = open('menu/menu_setting.c').read()
 for m in re.finditer(r'static const setting_desc_t \w+\[\] = \{\n(.*?)\n *\};', msn, re.S):
