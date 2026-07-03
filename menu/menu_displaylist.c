@@ -7575,7 +7575,7 @@ unsigned menu_displaylist_build_list(
             {
                if (menu_entries_append(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES),
-                        MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES_STR,
+                        msg_hash_to_str(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES),
                         MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES,
                         0, 0, 0, NULL))
                   count++;
@@ -7583,7 +7583,7 @@ unsigned menu_displaylist_build_list(
 
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR),
                      MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
                      0, 0, 0, NULL))
                count++;
