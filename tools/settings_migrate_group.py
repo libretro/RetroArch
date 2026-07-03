@@ -158,13 +158,20 @@ out = ['''/* Single-source definitions: %s.
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 ''' % TITLE]
+_mh_text = open('msg_hash.h').read()
+_h_used = set()
 for k, f, T, a in rows:
+    _hs = '_H' if ('MENU_LBL_H(%s),' % T) in _mh_text else ''
+    if _hs:
+        assert ('MENU_LABEL(%s),' % T) not in _mh_text, (T, 'both enum forms present')
     if T in ussub:
-        row = 'S_%s(%s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (
-            k, f, T, names[T], a, usval[T], ussub[T])
+        row = 'S_%s%s(%s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (
+            k, _hs, f, T, names[T], a, usval[T], ussub[T])
+        if _hs: _h_used.add('S_%s_H' % k)
     else:
-        row = 'S_%s_NS(%s, %s,\n      %s,\n      %s,\n      %s)' % (
-            k, f, T, names[T], a, usval[T])
+        row = 'S_%s_NS%s(%s, %s,\n      %s,\n      %s,\n      %s)' % (
+            k, _hs, f, T, names[T], a, usval[T])
+        if _hs: _h_used.add('S_%s_NS_H' % k)
     if T in KEEP:
         ck = dict(cfg_keeps)[T]
         row = ('/* config key %s differs from the label string; the\n'
@@ -196,6 +203,14 @@ for k, f, T, a in rows:
             row = gopen + '\n' + row + '\n' + gclose
     out.append(row)
 DEF = os.path.basename(DEF)  # includes are emitted relative to settings/
+if _h_used:
+    _pre = ['/* Rows marked _H reserve a MENU_ENUM_LABEL_HELP_ enum member;',
+            ' * outside the enum pass they behave exactly like the base row. */',
+            '#ifndef SETTINGS_DEF_ENUM_PASS']
+    for _al in sorted(_h_used):
+        _pre += ['#ifndef %s' % _al, '#define %s %s' % (_al, _al[:-2]), '#endif']
+    _pre.append('#endif')
+    out.insert(1, '\n'.join(_pre))
 open(os.path.join('settings', DEF), 'w').write('\n'.join(out) + '\n')
 
 first = min(s for s, e in usspan)
