@@ -14,317 +14,321 @@
 
 static const struct
 {
-   char s0[20];
-   char s1[13];
-   char s2[15];
-   char s3[17];
-   char s4[13];
-   char s5[13];
-   char s6[15];
-   char s7[13];
-   char s8[9];
-   char s9[27];
-   char s10[20];
-   char s11[20];
-   char s12[45];
-   char s13[20];
-   char s14[43];
-   char s15[20];
-   char s16[36];
-   char s17[391];
-   char s18[20];
-   char s19[41];
-   char s20_0[500];
-   char s20_1[3];
-   char s21[16];
-   char s22[20];
+   char s_d9685b01[20];
+   char s_9932960f[13];
+   char s_2cb9dc71[15];
+   char s_ae50c550[17];
+   char s_b30d3e14[13];
+   char s_42b8ffbf[13];
+   char s_bcddf275[15];
+   char s_733174db[13];
+   char s_99eb425d[9];
+   char s_ec59110b[27];
+   char s_7632d987[20];
+   char s_36265c93[20];
+   char s_544da5c1[45];
+   char s_d7f2cfac[20];
+   char s_35f2309a[43];
+   char s_87e07c0e[20];
+   char s_a607c53c[36];
+   char s_70c7c198[391];
+   char s_e3d18a3d[20];
+   char s_c6e1f92b[41];
+   char s_99bfa829_0[499];
+   char s_99bfa829_1[21];
+   char s_d15b342a[16];
+   char s_6ebb6a00[20];
 #ifdef HAVE_LAKKA
-   char s23[20];
+   char s_e65393d5[20];
 #endif
-   char s24[13];
-   char s25[20];
-   char s26[40];
-   char s27[22];
-   char s28[13];
-   char s29[13];
-   char s30[36];
-   char s31[18];
-   char s32[21];
-   char s33[22];
-   char s34[9];
-   char s35[9];
-   char s36[53];
-   char s37[11];
-   char s38[18];
-   char s39[43];
-   char s40[27];
-   char s41[29];
-   char s42[26];
-   char s43[13];
-   char s44[29];
-   char s45[25];
-   char s46[15];
-   char s47[13];
-   char s48[13];
-   char s49[15];
-   char s50[9];
-   char s51[27];
-   char s52[24];
-   char s53[35];
-   char s54[20];
-   char s55[36];
-   char s56[20];
-   char s57[31];
-   char s58[21];
-   char s59[33];
-   char s60[27];
-   char s61[25];
-   char s62[28];
-   char s63[18];
-   char s64[18];
-   char s65[16];
-   char s66[20];
-   char s67[31];
-   char s68[30];
-   char s69[20];
-   char s70[36];
-   char s71[14];
-   char s72[18];
-   char s73[22];
-   char s74[18];
-   char s75[22];
-   char s76[17];
-   char s77[9];
-   char s78[13];
-   char s79[13];
-   char s80[26];
-   char s81[35];
-   char s82[7];
-   char s83[29];
-   char s84[52];
-   char s85[11];
-   char s86[18];
-   char s87[30];
-   char s88[20];
-   char s89[32];
-   char s90[29];
-   char s91[16];
-   char s92[16];
-   char s93[20];
-   char s94[18];
-   char s95[17];
-   char s96[22];
-   char s97[23];
-   char s98[20];
-   char s99[29];
-   char s100[16];
-   char s101[24];
-   char s102[30];
-   char s103[20];
-   char s104[13];
-   char s105[18];
-   char s106[31];
-   char s107[18];
-   char s108[38];
-   char s109[28];
-   char s110[28];
-   char s111[11];
-   char s112[5];
-   char s113[11];
-   char s114[10];
-   char s115[13];
-   char s116[15];
-   char s117[7];
-   char s118[11];
-   char s119[11];
-   char s120[9];
-   char s121[11];
-   char s122[11];
-   char s123[11];
-   char s124[9];
-   char s125[9];
-   char s126[9];
-   char s127[9];
-   char s128[16];
-   char s129[16];
-   char s130[17];
-   char s131[16];
-   char s132[16];
-   char s133[13];
-   char s134[22];
-   char s135[16];
-   char s136[31];
-   char s137[22];
-   char s138[31];
-   char s139[20];
-   char s140[18];
-   char s141[11];
-   char s142[9];
-   char s143[9];
-   char s144[31];
-   char s145[11];
-   char s146[31];
-   char s147[24];
-   char s148[11];
-   char s149[7];
-   char s150[7];
-   char s151[9];
-   char s152[34];
-   char s153[13];
-   char s154[13];
-   char s155[20];
-   char s156[11];
-   char s157[11];
-   char s158[20];
-   char s159[21];
-   char s160[11];
-   char s161[36];
-   char s162[20];
-   char s163[22];
-   char s164[13];
-   char s165[33];
-   char s166[13];
-   char s167[7];
-   char s168[13];
-   char s169[11];
-   char s170[13];
-   char s171[13];
-   char s172[15];
-   char s173[9];
-   char s174[15];
-   char s175[7];
-   char s176[9];
-   char s177[11];
-   char s178[11];
-   char s179[11];
+   char s_b3cc8a43[13];
+   char s_061657e6[20];
+   char s_ed013a05[40];
+   char s_e2c6c781[22];
+   char s_62564465[13];
+   char s_4aaeeb99[13];
+   char s_e8aee6c7[36];
+   char s_d81bf7a9[18];
+   char s_9eb26572[21];
+   char s_6155456e[22];
+   char s_2f9a064c[9];
+   char s_59980356[9];
+   char s_3ca87244[53];
+   char s_95cf0994[11];
+   char s_d31f6d88[18];
+   char s_01a73130[43];
+   char s_d21c686b[27];
+   char s_d7fc4c9c[29];
+   char s_941e50fb[26];
+   char s_10342503[13];
+   char s_164566fb[29];
+   char s_6107eb09[25];
+   char s_550b1e93[15];
+   char s_c0d9bee1[13];
+   char s_d2224db6[13];
+   char s_c175c697[15];
+   char s_fd3e287f[9];
+   char s_c4842e2d[27];
+   char s_145f5880[24];
+   char s_5eee10e5[35];
+   char s_f03e9c42[20];
+   char s_51cbf8f0[36];
+   char s_95cbebbd[20];
+   char s_6b80a1bc[31];
+   char s_99a77122[21];
+   char s_4a5b7672[33];
+   char s_8fa79de5[27];
+   char s_eb0d7f1d[25];
+   char s_6ae93e68[28];
+   char s_881efe76[18];
+   char s_5d29b870[18];
+   char s_89920317[16];
+   char s_bab74532[20];
+   char s_f0ce97f7[31];
+   char s_0ef5e125[30];
+   char s_06f25fc0[20];
+   char s_16b9856e[36];
+   char s_78071664[14];
+   char s_78c58363[18];
+   char s_cc781d49[22];
+   char s_8f133960[18];
+   char s_38b82e6c[22];
+   char s_babee9c1[17];
+   char s_1e4264a1[9];
+   char s_04ecbe77[13];
+   char s_49c9bf91[13];
+   char s_8d30abf0[26];
+   char s_33ed5ede[35];
+   char s_66ed0f42[7];
+   char s_18cc5aec[29];
+   char s_ba582576[52];
+   char s_e3d18c38[11];
+   char s_51844cc2[18];
+   char s_e1a8f707[30];
+   char s_66df5c89[20];
+   char s_f70406ce[32];
+   char s_d7f2e719[29];
+   char s_8cefb843[16];
+   char s_97242f99[16];
+   char s_b95e3404[20];
+   char s_177845b3[18];
+   char s_e68b50a2[17];
+   char s_7d2035c4[22];
+   char s_da093426[23];
+   char s_43ac80a0[20];
+   char s_f7e279a6[29];
+   char s_f8fa3e2f[16];
+   char s_b3565d3d[24];
+   char s_9af4bf52[30];
+   char s_e5d096ab[20];
+   char s_bd07998f[13];
+   char s_8fe41f79[18];
+   char s_519cd5f8[31];
+   char s_ebe994b4[18];
+   char s_d9b00fbd[38];
+   char s_cd916c68[28];
+   char s_5c7bbce1[28];
+   char s_8356c98c[11];
+   char s_0472da71[5];
+   char s_bdc1c274[11];
+   char s_9251b4c1[10];
+   char s_36109f2c[13];
+   char s_47f4eb8e[15];
+   char s_887214f4[7];
+   char s_f62d1074[11];
+   char s_9329c64c[11];
+   char s_92be1c10[9];
+   char s_70bac144[11];
+   char s_09ba892e[11];
+   char s_ffd0dac4[11];
+   char s_0a2aa953[9];
+   char s_4ceac87e[9];
+   char s_06650b16[9];
+   char s_f019e498[9];
+   char s_b93afb41[16];
+   char s_17983560[16];
+   char s_2742a469[17];
+   char s_0e740679[16];
+   char s_d3a2aa7d[16];
+   char s_f8883f70[13];
+   char s_cf24fcc2[22];
+   char s_f751c497[16];
+   char s_046d0e21[31];
+   char s_ce5f3353[22];
+   char s_1938dce6[31];
+   char s_7fc52043[20];
+   char s_8584f1d6[18];
+   char s_14ec7b7e[11];
+   char s_005cc6dc[9];
+   char s_0cadcd1e[9];
+   char s_c7a999e6[31];
+   char s_00614813[11];
+   char s_9509d1c2[31];
+   char s_3674ba44[24];
+   char s_580e244f[11];
+   char s_49b0b12a[7];
+   char s_980ef0e8[7];
+   char s_734d2a61[9];
+   char s_92cf524f[34];
+   char s_e4e54370[13];
+   char s_e7a63560[13];
+   char s_780eb7cb[20];
+   char s_7d00b7ed[11];
+   char s_8cb3b95f[11];
+   char s_3a0a3fef[20];
+   char s_40f0ecd9[21];
+   char s_1b8a5cb5[11];
+   char s_60a8a963[36];
+   char s_7277e127[20];
+   char s_2e5078b2[22];
+   char s_4ad41e20[13];
+   char s_56e21ee1[33];
+   char s_62144cdf[13];
+   char s_87d88aa2[7];
+   char s_8d94cfea[13];
+   char s_3a9d7557[11];
+   char s_b92166cd[13];
+   char s_9ef5d822[13];
+   char s_8a9a3ae4[15];
+   char s_e22edcd8[9];
+   char s_0f1d488a[15];
+   char s_467f06c1[7];
+   char s_084af156[9];
+   char s_206b1acd[11];
+   char s_0a008a9d[11];
+   char s_9a981aa0[11];
 #ifdef HAVE_MIST
-   char s180[9];
+   char s_22ce4612[9];
 #endif
-   char s181[7];
-   char s182[16];
-   char s183[11];
-   char s184[7];
-   char s185[11];
-   char s186[14];
-   char s187[22];
-   char s188[24];
-   char s189[22];
-   char s190[9];
-   char s191[7];
-   char s192[21];
-   char s193[16];
-   char s194[27];
-   char s195[15];
+   char s_009a10e3[7];
+   char s_9e66791a[16];
+   char s_cc973e8a[11];
+   char s_daead8a5[7];
+   char s_502f623c[11];
+   char s_0b7bdc29[14];
+   char s_1c0a61e2[22];
+   char s_31b177ec[24];
+   char s_8d3a8b68[22];
+   char s_721e7bb2[9];
+   char s_57665cff[7];
+   char s_020e2bc5[21];
+   char s_ebf10493[16];
+   char s_69b801ef[27];
+   char s_730df420[15];
+   char s_25e7af42_c5[78];
+   char s_25e7af42_c5[78];
+   char s_25e7af42_c5[78];
 #if defined(DINGUX) && defined(DINGUX_BETA)
-   char s196[10];
-   char s197[10];
+   char s_7c8a700d[10];
+   char s_7c89e3ac[10];
 #endif
-   char s198[23];
-   char s199[23];
-   char s200[27];
-   char s201[18];
-   char s202[18];
-   char s203[25];
-   char s204[9];
-   char s205[20];
-   char s206[22];
-   char s207[7];
+   char s_25e7af42_c5[78];
+   char s_25e7af42_c5[78];
+   char s_25e7af42_c5[78];
+   char s_48da4695[27];
+   char s_30140cb5[18];
+   char s_0f5266ce[18];
+   char s_c79d5013[25];
+   char s_ad5ff591[9];
+   char s_a79acb40[20];
+   char s_adcf82d6[22];
+   char s_e7033e0e[7];
 #if defined(DINGUX)
-   char s208[41];
+   char s_d374d67d[41];
 #endif
-   char s209[15];
-   char s210[11];
-   char s211[7];
+   char s_aa9bc75d[15];
+   char s_57047267[11];
+   char s_fb84857a[7];
 #ifdef HAVE_MICROPHONE
-   char s212[17];
+   char s_d04ab10c[17];
 #endif
-   char s213[15];
-   char s214[39];
-   char s215[31];
-   char s216[51];
-   char s217[22];
-   char s218[9];
-   char s219[17];
-   char s220[40];
-   char s221[41];
-   char s222[13];
-   char s223[7];
-   char s224[9];
+   char s_30acd6fb[15];
+   char s_3c3598a9[39];
+   char s_c82d0aee[31];
+   char s_ce113b1c[51];
+   char s_b00815b8[22];
+   char s_ad791974[9];
+   char s_cb649822[17];
+   char s_76e73138[40];
+   char s_950e7a66[41];
+   char s_48c208ee[13];
+   char s_dcf2e800[7];
+   char s_da068369[9];
 #ifdef HAVE_MICROPHONE
-   char s225[17];
-   char s226[9];
+   char s_d3e78762[17];
+   char s_d0fb22cb[9];
 #endif
-   char s227[15];
-   char s228[7];
-   char s229[7];
-   char s230[18];
-   char s231[7];
-   char s232[18];
-   char s233[9];
-   char s234[7];
-   char s235[18];
-   char s236[31];
-   char s237[25];
-   char s238[29];
-   char s239[9];
-   char s240[9];
-   char s241[7];
-   char s242[29];
-   char s243[9];
-   char s244[18];
-   char s245[22];
-   char s246[11];
-   char s247[18];
-   char s248[20];
-   char s249[11];
-   char s250[18];
-   char s251[16];
-   char s252[27];
-   char s253[27];
-   char s254[14];
-   char s255[16];
-   char s256[27];
-   char s257[22];
-   char s258[16];
-   char s259[18];
-   char s260[9];
-   char s261[20];
-   char s262[13];
-   char s263[20];
-   char s264[13];
-   char s265[17];
-   char s266[13];
-   char s267[26];
-   char s268[13];
-   char s269[7];
-   char s270[18];
-   char s271[5];
-   char s272[9];
-   char s273[27];
-   char s274[13];
-   char s275[11];
-   char s276[25];
-   char s277[9];
-   char s278[13];
-   char s279[10];
-   char s280[20];
-   char s281[5];
-   char s282[13];
-   char s283[20];
-   char s284[9];
-   char s285[18];
-   char s286[9];
-   char s287[7];
-   char s288[17];
-   char s289[11];
-   char s290[9];
-   char s291[9];
-   char s292[22];
-   char s293[21];
+   char s_ad7c73f6[15];
+   char s_8be7813a[7];
+   char s_1757647b[7];
+   char s_273a9f02[18];
+   char s_df610c7f[7];
+   char s_3acb0241[18];
+   char s_df62d56f[9];
+   char s_40084357[7];
+   char s_4a1166e1[18];
+   char s_f7e668f4[31];
+   char s_d264a13e[25];
+   char s_ada81f6a[29];
+   char s_f9ee4a82[9];
+   char s_7beff2c4[9];
+   char s_ea5757a0[7];
+   char s_543fcabd[29];
+   char s_46f6a65d[9];
+   char s_e59fc3c9[18];
+   char s_feaf16c5[22];
+   char s_0ca3b319[11];
+   char s_7dcf9e78[18];
+   char s_cde2111a[20];
+   char s_87071f08[11];
+   char s_f8b9e275[18];
+   char s_3c55b220[16];
+   char s_0cc981b9[27];
+   char s_652788cc[27];
+   char s_50e34bc5[14];
+   char s_21c5b854[16];
+   char s_cbdeb67b[27];
+   char s_735c53f7[22];
+   char s_d9f6c8e8[16];
+   char s_75851363[18];
+   char s_58de51be[9];
+   char s_260261d6[20];
+   char s_302fdd56[13];
+   char s_9da5609f[20];
+   char s_565cbabb[13];
+   char s_96ee0cfb[17];
+   char s_1e1c0557[13];
+   char s_5f612db6[26];
+   char s_6090802e[13];
+   char s_704e200c[7];
+   char s_99d3d4ae[18];
+   char s_0fd30a6d[5];
+   char s_225da616[9];
+   char s_9c6ed9ca[27];
+   char s_314e7dec[13];
+   char s_5b51050b[11];
+   char s_72898bf0[25];
+   char s_6d059c18[9];
+   char s_5f15f7a7[13];
+   char s_7534cfc9[10];
+   char s_2aeb5474[20];
+   char s_6d08238d[5];
+   char s_b71e6907[13];
+   char s_08785e85[20];
+   char s_6d025795[9];
+   char s_99d648f2[18];
+   char s_6d0b3292[9];
+   char s_d93c753a[7];
+   char s_b6172513[17];
+   char s_e2f9cd07[11];
+   char s_25babaa7[9];
+   char s_e2f27171[9];
+   char s_50d77da7[22];
+   char s_ec502f2a[21];
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
-   char s294[77];
-   char s295[125];
+   char s_addc7f89[77];
+   char s_96c461f7[125];
 #endif
 #endif
 } msg_hash_he_blob =
@@ -387,8 +391,8 @@ static const struct
    "\220\327\227\327\250\327\225\327\240\327\224 \327\251\327\224\327\225\327\222\327\223\327\250"
    "\327\224 \327\221'\327\230\327\242\327\237 \327\234\327\231\327\221\327\224', \327\225\327\231"
    "\327\251\327\252\327\236\327\251 \327\221\327\234\327\231\327\221\327\224 \327\226\327\225 \327"
-   "\233[..",
-   ".]",
+   "\233\327\251",
+   "\327\224\327\252\327\225\327\233\327\237 \327\240\327\230\327\242\327\237.",
    "\327\230\327\242\327\237 \327\223\327\231\327\241\327\247",
    "\327\251\327\236\327\231\327\250\327\252 \327\223\327\231\327\241\327\247",
 #ifdef HAVE_LAKKA
@@ -602,12 +606,16 @@ static const struct
    "\327\251\327\231\327\240\327\225\327\231 \327\247\327\240\327\224 \327\236\327\231\327\223\327"
    "\224",
    "\327\241\327\231\327\240\327\233\327\250\327\225\327\237",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
 #if defined(DINGUX) && defined(DINGUX_BETA)
    "60 \327\224\327\250\327\245",
    "50 \327\224\327\250\327\245",
 #endif
-   "\327\250\327\225\327\227\327\221 \327\236\327\241\327\232 \327\236\327\234\327\220",
-   "\327\222\327\225\327\221\327\224 \327\236\327\241\327\232 \327\236\327\234\327\220",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "\327\224\327\246\327\222 \327\251\327\225\327\250\327\252 \327\252\327\244\327\250\327\231\327"
    "\230",
    "\327\250\327\225\327\227\327\221 \327\227\327\234\327\225\327\237",
@@ -735,7 +743,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_he_blob_check[
-      (sizeof(msg_hash_he_blob) == (6127u
+      (sizeof(msg_hash_he_blob) == (6566u
 #ifdef HAVE_LAKKA
        + 20u
 #endif
@@ -964,12 +972,16 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
 #if defined(DINGUX) && defined(DINGUX_BETA)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,

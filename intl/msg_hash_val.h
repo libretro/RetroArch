@@ -14,657 +14,649 @@
 
 static const struct
 {
-   char s0[16];
-   char s1[8];
-   char s2[10];
-   char s3[10];
-   char s4[8];
-   char s5[8];
-   char s6[8];
-   char s7[14];
-   char s8[9];
-   char s9[24];
-   char s10[18];
-   char s11[13];
-   char s12[75];
-   char s13[15];
-   char s14[34];
-   char s15[18];
-   char s16[26];
-   char s17[395];
-   char s18[19];
-   char s19[42];
-   char s20[385];
-   char s21[14];
-   char s22[112];
-   char s23[12];
-   char s24[133];
+   char s_d9685b01[16];
+   char s_9932960f[8];
+   char s_2cb9dc71[10];
+   char s_ae50c550[10];
+   char s_b30d3e14[8];
+   char s_42b8ffbf[8];
+   char s_bcddf275[8];
+   char s_733174db[14];
+   char s_99eb425d[9];
+   char s_ec59110b[24];
+   char s_7632d987[18];
+   char s_36265c93[13];
+   char s_544da5c1[75];
+   char s_d7f2cfac[15];
+   char s_35f2309a[34];
+   char s_87e07c0e[18];
+   char s_a607c53c[26];
+   char s_70c7c198[395];
+   char s_e3d18a3d[19];
+   char s_c6e1f92b[42];
+   char s_99bfa829[385];
+   char s_d15b342a[14];
+   char s_2f5a9518[112];
+   char s_6ebb6a00[12];
+   char s_ccbacaee[133];
 #ifdef HAVE_LAKKA
-   char s25[14];
-   char s26[52];
+   char s_e65393d5[14];
+   char s_043f1283[52];
 #endif
-   char s27[24];
-   char s28[86];
-   char s29[18];
-   char s30[53];
-   char s31[24];
-   char s32[82];
-   char s33[22];
-   char s34[60];
-   char s35[24];
-   char s36[80];
-   char s37[14];
-   char s38[68];
-   char s39[8];
-   char s40[23];
-   char s41[12];
-   char s42[46];
-   char s43[23];
-   char s44[41];
-   char s45[5];
-   char s46[33];
-   char s47[10];
-   char s48[21];
-   char s49[17];
-   char s50[67];
-   char s51[70];
-   char s52[179];
-   char s53[17];
-   char s54[51];
-   char s55[45];
-   char s56[16];
-   char s57[62];
-   char s58[31];
-   char s59[64];
-   char s60[35];
-   char s61[23];
-   char s62[18];
-   char s63[9];
-   char s64[15];
-   char s65[15];
-   char s66[10];
-   char s67[49];
-   char s68[8];
-   char s69[62];
-   char s70[8];
-   char s71[63];
-   char s72[8];
-   char s73[63];
-   char s74[9];
-   char s75[117];
-   char s76[24];
-   char s77[100];
-   char s78[24];
-   char s79[31];
-   char s80[77];
-   char s81[54];
-   char s82[135];
-   char s83[57];
-   char s84[77];
-   char s85[22];
-   char s86[51];
-   char s87[47];
-   char s88[100];
-   char s89[48];
-   char s90[17];
-   char s91[37];
-   char s92[17];
-   char s93[30];
-   char s94[30];
-   char s95[28];
-   char s96[26];
-   char s97[29];
-   char s98[22];
-   char s99[55];
-   char s100[21];
-   char s101[47];
-   char s102[21];
-   char s103[57];
-   char s104[24];
-   char s105[49];
-   char s106[34];
-   char s107[25];
-   char s108[25];
-   char s109[27];
-   char s110[14];
-   char s111[19];
-   char s112[18];
-   char s113[16];
-   char s114[22];
-   char s115[8];
-   char s116[9];
-   char s117[11];
-   char s118[22];
-   char s119[72];
-   char s120[29];
-   char s121[4];
-   char s122[26];
-   char s123[42];
-   char s124[94];
-   char s125[27];
-   char s126[17];
-   char s127[18];
-   char s128[17];
-   char s129[18];
-   char s130[31];
-   char s131[43];
-   char s132[154];
-   char s133[15];
-   char s134[29];
-   char s135[30];
-   char s136[61];
-   char s137[43];
-   char s138[99];
-   char s139[29];
-   char s140[65];
-   char s141[13];
-   char s142[20];
-   char s143[21];
-   char s144[15];
-   char s145[11];
-   char s146[21];
-   char s147[34];
-   char s148[29];
-   char s149[23];
-   char s150[39];
-   char s151[42];
-   char s152[15];
-   char s153[34];
-   char s154[24];
-   char s155[22];
-   char s156[36];
-   char s157[4];
-   char s158[12];
-   char s159[8];
-   char s160[12];
-   char s161[10];
-   char s162[8];
-   char s163[7];
-   char s164[28];
-   char s165[23];
-   char s166[11];
-   char s167[7];
-   char s168[16];
-   char s169[13];
-   char s170[10];
-   char s171[13];
-   char s172[12];
-   char s173[13];
-   char s174[13];
-   char s175[18];
-   char s176[7];
-   char s177[16];
-   char s178[7];
-   char s179[12];
-   char s180[24];
-   char s181[31];
-   char s182[25];
-   char s183[27];
-   char s184[35];
-   char s185[58];
-   char s186[57];
-   char s187[80];
-   char s188[51];
-   char s189[51];
-   char s190[64];
-   char s191[23];
-   char s192[25];
-   char s193[17];
-   char s194[18];
-   char s195[23];
-   char s196[29];
-   char s197[27];
-   char s198[26];
-   char s199[22];
-   char s200[17];
-   char s201[16];
-   char s202[10];
-   char s203[12];
-   char s204[10];
-   char s205[11];
-   char s206[17];
-   char s207[12];
-   char s208[13];
-   char s209[43];
-   char s210[7];
-   char s211[39];
-   char s212[7];
-   char s213[8];
-   char s214[54];
-   char s215[10];
-   char s216[82];
-   char s217[6];
-   char s218[30];
-   char s219[14];
-   char s220[61];
-   char s221[8];
-   char s222[31];
-   char s223[11];
-   char s224[17];
-   char s225[10];
-   char s226[33];
-   char s227[19];
-   char s228[24];
-   char s229[74];
-   char s230[15];
-   char s231[40];
-   char s232[30];
-   char s233[136];
-   char s234[21];
-   char s235[50];
-   char s236[12];
-   char s237[65];
-   char s238[15];
-   char s239[50];
-   char s240[18];
-   char s241[56];
-   char s242[12];
-   char s243[37];
-   char s244[6];
-   char s245[47];
-   char s246[24];
-   char s247[51];
-   char s248[7];
-   char s249[11];
-   char s250[76];
-   char s251[7];
-   char s252[8];
+   char s_b3cc8a43[24];
+   char s_d34eb231[86];
+   char s_061657e6[18];
+   char s_243da114[53];
+   char s_ed013a05[24];
+   char s_4b009af3[82];
+   char s_136eaaf4[22];
+   char s_193e1462[60];
+   char s_e2c6c781[24];
+   char s_f28ded2f[80];
+   char s_62564465[14];
+   char s_198c91d3[68];
+   char s_4aaeeb99[8];
+   char s_e8aee6c7[23];
+   char s_d81bf7a9[12];
+   char s_9eb26572[46];
+   char s_6155456e[23];
+   char s_4a3d27dc[41];
+   char s_2f9a064c[5];
+   char s_8d99673a[33];
+   char s_59980356[10];
+   char s_3ca87244[21];
+   char s_95cf0994[17];
+   char s_a5962f42[67];
+   char s_0c7750cd[70];
+   char s_24e40f00[179];
+   char s_6c74f3ea[17];
+   char s_555cd658[51];
+   char s_7bd7aa88[45];
+   char s_d31f6d88[16];
+   char s_f2a19576[62];
+   char s_01a73130[31];
+   char s_46c57dde[64];
+   char s_d21c686b[35];
+   char s_d7fc4c9c[23];
+   char s_941e50fb[18];
+   char s_10342503[9];
+   char s_164566fb[15];
+   char s_6107eb09[15];
+   char s_550b1e93[10];
+   char s_64d24441[49];
+   char s_c0d9bee1[8];
+   char s_dec53d8f[62];
+   char s_d2224db6[8];
+   char s_ad7da224[63];
+   char s_c175c697[8];
+   char s_df614545[63];
+   char s_fd3e287f[9];
+   char s_44040aad[117];
+   char s_c4842e2d[24];
+   char s_d43521db[100];
+   char s_145f5880[24];
+   char s_5eee10e5[31];
+   char s_6e9f0493[77];
+   char s_ea80654d[54];
+   char s_8bbf7ffb[135];
+   char s_64dd7209[57];
+   char s_061c8cb7[77];
+   char s_f03e9c42[22];
+   char s_b2a8d230[51];
+   char s_7088df5e[47];
+   char s_11c7fa0c[100];
+   char s_51cbf8f0[48];
+   char s_95cbebbd[17];
+   char s_6b80a1bc[37];
+   char s_99a77122[17];
+   char s_4a5b7672[30];
+   char s_eb3c8b7f[30];
+   char s_8fa79de5[28];
+   char s_eb0d7f1d[26];
+   char s_6ae93e68[29];
+   char s_881efe76[22];
+   char s_a64647a4[55];
+   char s_5d29b870[21];
+   char s_7b51019e[47];
+   char s_89920317[21];
+   char s_7279e585[57];
+   char s_bab74532[24];
+   char s_ffd591e0[49];
+   char s_f0ce97f7[34];
+   char s_0ef5e125[25];
+   char s_06f25fc0[25];
+   char s_16b9856e[27];
+   char s_78071664[14];
+   char s_78c58363[19];
+   char s_cc781d49[18];
+   char s_8f133960[16];
+   char s_38b82e6c[22];
+   char s_1e4264a1[8];
+   char s_04ecbe77[9];
+   char s_49c9bf91[11];
+   char s_8d30abf0[22];
+   char s_525068d3[72];
+   char s_33ed5ede[29];
+   char s_66ed0f42[4];
+   char s_18cc5aec[26];
+   char s_ba582576[42];
+   char s_b0b9ca3e[94];
+   char s_e3d18c38[27];
+   char s_51844cc2[17];
+   char s_e1a8f707[18];
+   char s_66df5c89[17];
+   char s_f70406ce[18];
+   char s_d7f2e719[31];
+   char s_a7a97316[43];
+   char s_48e88dc4[154];
+   char s_8cefb843[15];
+   char s_684b0cb1[29];
+   char s_97242f99[30];
+   char s_dc427c47[61];
+   char s_b95e3404[43];
+   char s_791acb32[99];
+   char s_177845b3[29];
+   char s_1d47af21[65];
+   char s_e68b50a2[13];
+   char s_7d2035c4[20];
+   char s_da093426[21];
+   char s_43ac80a0[15];
+   char s_f7e279a6[11];
+   char s_f8fa3e2f[21];
+   char s_b3565d3d[34];
+   char s_9af4bf52[29];
+   char s_e5d096ab[23];
+   char s_8fe41f79[39];
+   char s_519cd5f8[42];
+   char s_ebe994b4[15];
+   char s_d9b00fbd[34];
+   char s_cd916c68[24];
+   char s_5c7bbce1[22];
+   char s_8356c98c[36];
+   char s_0472da71[4];
+   char s_bdc1c274[12];
+   char s_9251b4c1[8];
+   char s_36109f2c[12];
+   char s_47f4eb8e[10];
+   char s_887214f4[8];
+   char s_f62d1074[7];
+   char s_3413595a[28];
+   char s_69f2e90c[23];
+   char s_9329c64c[11];
+   char s_92be1c10[7];
+   char s_8d13ec48[16];
+   char s_e8ad0320[13];
+   char s_cbdfd37c[10];
+   char s_f1382b82[13];
+   char s_a986c4da[12];
+   char s_09ba892e[13];
+   char s_ffd0dac4[13];
+   char s_0a2aa953[18];
+   char s_4ceac87e[7];
+   char s_06650b16[16];
+   char s_f019e498[7];
+   char s_b2865f23[12];
+   char s_58b9d895[24];
+   char s_3af38d58[31];
+   char s_00dfe961[25];
+   char s_00966fb4[27];
+   char s_6c06b558[35];
+   char s_b93afb41[58];
+   char s_17983560[57];
+   char s_2742a469[80];
+   char s_0e740679[51];
+   char s_a708b2f4[51];
+   char s_d3a2aa7d[64];
+   char s_f8883f70[23];
+   char s_cf24fcc2[25];
+   char s_f751c497[17];
+   char s_046d0e21[18];
+   char s_ce5f3353[23];
+   char s_87ee250e[29];
+   char s_a11934f5[27];
+   char s_dff02a9f[26];
+   char s_1938dce6[22];
+   char s_7fc52043[17];
+   char s_8584f1d6[16];
+   char s_14ec7b7e[10];
+   char s_005cc6dc[12];
+   char s_0cadcd1e[10];
+   char s_c7a999e6[11];
+   char s_00614813[17];
+   char s_9509d1c2[12];
+   char s_3674ba44[13];
+   char s_3f2095b2[43];
+   char s_580e244f[7];
+   char s_67d549fd[39];
+   char s_49b0b12a[7];
+   char s_980ef0e8[8];
+   char s_a7d61696[54];
+   char s_84d3d068[10];
+   char s_a2fb1996[82];
+   char s_734d2a61[6];
+   char s_92cf524f[30];
+   char s_e4e54370[14];
+   char s_f496371e[61];
+   char s_e7a63560[8];
+   char s_f05210ce[31];
+   char s_96114701[11];
+   char s_05dabad8[17];
+   char s_8cb3b95f[10];
+   char s_aadb028d[33];
+   char s_3a0a3fef[19];
+   char s_a46a4178[24];
+   char s_aa39aae6[74];
+   char s_1b8a5cb5[15];
+   char s_60a8a963[40];
+   char s_a670da0a[30];
+   char s_5dc056f8[136];
+   char s_7277e127[21];
+   char s_78474a95[50];
+   char s_2e5078b2[12];
+   char s_17385b20[65];
+   char s_4ad41e20[15];
+   char s_5a8511ce[50];
+   char s_56e21ee1[18];
+   char s_0e319bcf[56];
+   char s_62144cdf[12];
+   char s_2b36bd4d[37];
+   char s_87d88aa2[6];
+   char s_a5ffd3d0[47];
+   char s_8d94cfea[24];
+   char s_70a53ed8[51];
+   char s_3a9d7557[7];
+   char s_b92166cd[11];
+   char s_fe3fb37b[76];
+   char s_e22edcd8[7];
+   char s_0a008a9d[8];
 #ifdef HAVE_MIST
-   char s253[42];
+   char s_32956bc0[42];
 #endif
-   char s254[8];
-   char s255[12];
-   char s256[7];
-   char s257[7];
-   char s258[20];
-   char s259[59];
-   char s260[8];
-   char s261[5];
-   char s262[10];
-   char s263[6];
-   char s264[15];
-   char s265[22];
-   char s266[92];
-   char s267[7];
-   char s268[42];
-   char s269[22];
-   char s270[49];
-   char s271[14];
-   char s272[50];
-   char s273[17];
-   char s274[50];
-   char s275[39];
-   char s276[16];
-   char s277[49];
-   char s278[28];
-   char s279[57];
-   char s280[16];
-   char s281[168];
-   char s282[26];
-   char s283[17];
+   char s_009a10e3[8];
+   char s_9e66791a[12];
+   char s_cc973e8a[7];
+   char s_daead8a5[7];
+   char s_5b2d8d2f[20];
+   char s_6ade80dd[59];
+   char s_502f623c[8];
+   char s_1c0a61e2[5];
+   char s_31b177ec[10];
+   char s_8d3a8b68[6];
+   char s_721e7bb2[15];
+   char s_6a07da9c[22];
+   char s_79b8ce4a[92];
+   char s_57665cff[7];
+   char s_19d092ed[42];
+   char s_020e2bc5[22];
+   char s_0d96ed73[49];
+   char s_ebf10493[14];
+   char s_d96182c1[50];
+   char s_69b801ef[17];
+   char s_7968f59d[50];
+   char s_82fab47a[39];
+   char s_730df420[16];
+   char s_7e96b5ce[49];
+   char s_7943e750[28];
+   char s_1a8301fe[57];
+   char s_258060bf[16];
+   char s_3547866d[168];
+   char s_4bceefff[26];
+   char s_25e7af42_c5[78];
+   char s_25e7af42_c5[78];
+   char s_25e7af42_c5[78];
+   char s_ef3d53d8[17];
 #if defined(DINGUX)
-   char s284[23];
-   char s285[235];
-   char s286[10];
-   char s287[9];
-   char s288[17];
+   char s_805730a0[23];
+   char s_6dc7aece[235];
+   char s_bfd4c6ef[10];
+   char s_ce997004[9];
+   char s_52153570[17];
 #endif
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
-   char s289[23];
-   char s290[170];
-   char s291[17];
-   char s292[11];
+   char s_c1e9447c[23];
+   char s_eaa5cf6a[170];
+   char s_fec3d9e4[17];
+   char s_5a03a511[11];
 #endif
 #endif
-   char s293[40];
-   char s294[165];
-   char s295[17];
-   char s296[192];
-   char s297[26];
-   char s298[63];
-   char s299[22];
-   char s300[131];
-   char s301[21];
-   char s302[50];
-   char s303[71];
-   char s304[71];
-   char s305[104];
-   char s306[48];
-   char s307[115];
-   char s308[19];
-   char s309[34];
+   char s_f5911f43[40];
+   char s_3aaf6bf1[165];
+   char s_d0a04fe4[17];
+   char s_17663212[192];
+   char s_ed22c5f1[26];
+   char s_d60aa85f[63];
+   char s_12b8e195[22];
+   char s_d5231783[131];
+   char s_dd6afca3[21];
+   char s_a68d6d11[50];
+   char s_a39ca959[71];
+   char s_8abad013[71];
+   char s_a1a8257e[104];
+   char s_4bcbcc14[48];
+   char s_74022c02[115];
+   char s_61213f1d[19];
+   char s_4a09218b[34];
 #if defined (WIIU)
-   char s310[177];
+   char s_7222b7e5[177];
 #endif
-   char s311[19];
-   char s312[99];
-   char s313[24];
-   char s314[86];
-   char s315[17];
-   char s316[41];
-   char s317[41];
-   char s318[89];
-   char s319[38];
-   char s320[86];
-   char s321[46];
-   char s322[33];
-   char s323[102];
-   char s324[59];
-   char s325[103];
+   char s_6c40d14e[19];
+   char s_7c07f6fc[99];
+   char s_fd9cfe13[24];
+   char s_42bb4ac1[86];
+   char s_71747541[17];
+   char s_7a2050af[41];
+   char s_ea2674d3[41];
+   char s_ac90aac1[89];
+   char s_ea2674d4[38];
+   char s_ac90aac2[86];
+   char s_c0cdc638[46];
+   char s_afd69a70[33];
+   char s_b5a603de[102];
+   char s_22735e37[59];
+   char s_d9c2db25[103];
 #if defined(DINGUX) && defined(DINGUX_BETA)
-   char s326[46];
-   char s327[155];
+   char s_f98e1e26[46];
+   char s_b0dd9b14[155];
 #endif
-   char s328[36];
-   char s329[190];
-   char s330[35];
-   char s331[153];
-   char s332[27];
-   char s333[149];
-   char s334[32];
-   char s335[148];
-   char s336[25];
-   char s337[104];
-   char s338[23];
-   char s339[108];
-   char s340[24];
-   char s341[43];
-   char s342[34];
-   char s343[56];
-   char s344[21];
-   char s345[41];
-   char s346[40];
-   char s347[351];
-   char s348[41];
-   char s349[280];
-   char s350[21];
-   char s351[53];
-   char s352[23];
-   char s353[53];
-   char s354[28];
-   char s355[121];
-   char s356[31];
-   char s357[119];
-   char s358[30];
-   char s359[19];
-   char s360[43];
-   char s361[32];
-   char s362[78];
+   char s_3c70d08d[36];
+   char s_fc2d67bb[190];
+   char s_25e7af42_c5[78];
+   char s_25e7af42_c5[78];
+   char s_25e7af42_c5[78];
+   char s_f5ab35c0[25];
+   char s_055c296e[104];
+   char s_6c1369c6[23];
+   char s_74e69f4b[108];
+   char s_2d8cb7ce[24];
+   char s_3370e7fc[43];
+   char s_b9e24170[34];
+   char s_5562855e[56];
+   char s_48da4695[21];
+   char s_2beab583[41];
+   char s_68190518[40];
+   char s_09581fc6[351];
+   char s_7cf985f0[41];
+   char s_f99a7d5e[280];
+   char s_30140cb5[21];
+   char s_75325963[53];
+   char s_0f5266ce[23];
+   char s_f83a493c[53];
+   char s_83e8dc72[28];
+   char s_4d0b4ce0[121];
+   char s_a64b3a0b[31];
+   char s_93bbb839[119];
+   char s_4d7e9b13[30];
+   char s_c79d5013[19];
+   char s_8759e741[43];
+   char s_b2f7627c[32];
+   char s_f815af2a[78];
 #if defined(DINGUX)
-   char s363[29];
-   char s364[202];
+   char s_d374d67d[29];
+   char s_c0e554ab[202];
 #endif
-   char s365[46];
-   char s366[46];
-   char s367[45];
-   char s368[157];
-   char s369[45];
-   char s370[157];
-   char s371[182];
-   char s372[33];
-   char s373[151];
-   char s374[31];
-   char s375[22];
-   char s376[36];
-   char s377[37];
-   char s378[22];
-   char s379[8];
-   char s380[35];
-   char s381[96];
-   char s382[62];
-   char s383[116];
-   char s384[65];
-   char s385[168];
-   char s386[7];
-   char s387[38];
-   char s388[16];
-   char s389[54];
-   char s390[28];
-   char s391[10];
-   char s392[43];
-   char s393[15];
-   char s394[36];
-   char s395[10];
-   char s396[19];
-   char s397[29];
-   char s398[32];
-   char s399[67];
-   char s400[111];
-   char s401[20];
-   char s402[83];
-   char s403[43];
-   char s404[103];
-   char s405[14];
-   char s406[78];
-   char s407[23];
-   char s408[60];
-   char s409[21];
-   char s410[139];
-   char s411[30];
-   char s412[105];
-   char s413[36];
-   char s414[102];
-   char s415[7];
-   char s416[28];
-   char s417[11];
-   char s418[86];
-   char s419[86];
-   char s420[27];
+   char s_8f37930f[46];
+   char s_8f379310[46];
+   char s_b7ef9e17[45];
+   char s_81120e85[157];
+   char s_92a02470[45];
+   char s_8010a29e[157];
+   char s_5e14cb20[182];
+   char s_c017f975[22];
+   char s_d6fb8efe[36];
+   char s_44e1c38f[37];
+   char s_aa9bc75d[22];
+   char s_57047267[8];
+   char s_25a21976[65];
+   char s_6ac06624[168];
+   char s_fb84857a[7];
+   char s_bdeebb68[38];
+   char s_30acd6fb[16];
+   char s_3c3598a9[54];
+   char s_4be9dc09[28];
+   char s_c82d0aee[10];
+   char s_ce113b1c[43];
+   char s_b00815b8[15];
+   char s_8b636a26[36];
+   char s_ad791974[10];
+   char s_cb649822[19];
+   char s_76e73138[29];
+   char s_950e7a66[32];
+   char s_042502c4[67];
+   char s_90ae9a9f[111];
+   char s_04b30c51[20];
+   char s_4b78ee7f[83];
+   char s_e2062515[43];
+   char s_272471c3[103];
+   char s_48c208ee[14];
+   char s_66e9521c[78];
+   char s_a38cafbb[23];
+   char s_a95c1929[60];
+   char s_e5aeacf9[21];
+   char s_aed11d67[139];
+   char s_24976a5b[30];
+   char s_dbe6e749[105];
+   char s_5209cc72[36];
+   char s_ed8a1060[102];
+   char s_dcf2e800[7];
+   char s_23b8ca2e[28];
+   char s_da068369[11];
+   char s_20cc6597[86];
+   char s_37033dd5[86];
+   char s_792e0069[27];
 #ifdef HAVE_MICROPHONE
-   char s421[11];
-   char s422[24];
-   char s423[180];
-   char s424[21];
-   char s425[30];
-   char s426[36];
-   char s427[102];
+   char s_d0fb22cb[11];
+   char s_ca9a92ae[24];
+   char s_b80b10dc[180];
+   char s_e501ec1b[21];
+   char s_5a6c78fd[30];
+   char s_73295c14[36];
+   char s_b37744c2[102];
 #endif
-   char s428[24];
-   char s429[180];
-   char s430[27];
-   char s431[47];
-   char s432[16];
-   char s433[33];
-   char s434[40];
-   char s435[198];
-   char s436[42];
-   char s437[182];
-   char s438[8];
-   char s439[33];
-   char s440[7];
-   char s441[10];
-   char s442[219];
-   char s443[48];
-   char s444[201];
-   char s445[10];
-   char s446[7];
-   char s447[8];
-   char s448[71];
-   char s449[22];
-   char s450[53];
-   char s451[41];
-   char s452[60];
-   char s453[34];
-   char s454[17];
-   char s455[12];
-   char s456[14];
-   char s457[16];
-   char s458[15];
-   char s459[18];
-   char s460[18];
-   char s461[18];
-   char s462[18];
-   char s463[18];
-   char s464[18];
-   char s465[30];
-   char s466[33];
-   char s467[29];
-   char s468[29];
-   char s469[26];
-   char s470[29];
-   char s471[25];
-   char s472[25];
-   char s473[21];
-   char s474[25];
-   char s475[25];
-   char s476[25];
-   char s477[25];
-   char s478[28];
-   char s479[29];
-   char s480[33];
-   char s481[33];
-   char s482[37];
-   char s483[34];
-   char s484[50];
-   char s485[130];
-   char s486[47];
-   char s487[167];
-   char s488[41];
-   char s489[152];
-   char s490[40];
-   char s491[136];
-   char s492[53];
-   char s493[95];
-   char s494[45];
-   char s495[126];
-   char s496[30];
-   char s497[38];
-   char s498[144];
-   char s499[46];
-   char s500[20];
+   char s_affd948c[24];
+   char s_b5ccfdfa[180];
+   char s_b271ae95[27];
+   char s_95821d83[47];
+   char s_ad7c73f6[16];
+   char s_cb67f2a4[33];
+   char s_a9d2227f[40];
+   char s_6c3c586d[198];
+   char s_3943c7ae[42];
+   char s_f9005edc[182];
+   char s_8be7813a[8];
+   char s_a9d2ffe8[33];
+   char s_1757647b[7];
+   char s_f7e668f4[10];
+   char s_e0bb7a18[219];
+   char s_0b2a8528[48];
+   char s_cd94bb16[201];
+   char s_f9ee4a82[10];
+   char s_7beff2c4[7];
+   char s_ea5757a0[8];
+   char s_fb9a3cb9[71];
+   char s_fcc3aec5[22];
+   char s_2e4a5d12[53];
+   char s_c312b1ca[41];
+   char s_40a4eb2b[60];
+   char s_63fbe677[34];
+   char s_87071f08[17];
+   char s_735c53f7[12];
+   char s_b8b18b90[14];
+   char s_56e1b31e[16];
+   char s_56e1b335[15];
+   char s_56e1b329[18];
+   char s_56e1b32f[18];
+   char s_3318187b[18];
+   char s_33181941[18];
+   char s_3318187c[18];
+   char s_33181942[18];
+   char s_b61d0a2d[30];
+   char s_798643f5[33];
+   char s_b87232ce[29];
+   char s_c68080b6[29];
+   char s_27db7cc0[26];
+   char s_231308e8[29];
+   char s_2a30a561[25];
+   char s_700d45a9[25];
+   char s_97eb860c[21];
+   char s_e7c0ed0f[25];
+   char s_72765a06[25];
+   char s_72765a07[25];
+   char s_72765a08[25];
+   char s_73bb2346[28];
+   char s_ea15eb78[29];
+   char s_c30b67b5[33];
+   char s_b37addc8[33];
+   char s_b37f141b[37];
+   char s_23d05f0e[34];
+   char s_1127e777[50];
+   char s_d3921d65[130];
+   char s_3b95fccc[47];
+   char s_59bd45fa[167];
+   char s_00119310[41];
+   char s_05e0fc7e[152];
+   char s_552163d9[40];
+   char s_5b059407[136];
+   char s_6b38a08b[53];
+   char s_711cd0b9[95];
+   char s_3e073ed3[45];
+   char s_4db83281[126];
+   char s_8b421107[30];
+   char s_16eade0c[38];
+   char s_e00d4e7a[144];
+   char s_58072ab5[46];
+   char s_e567aa86[20];
 #ifdef HAVE_MIST
-   char s501[20];
-   char s502[27];
-   char s503[56];
+   char s_c3f0e1ff[20];
+   char s_53788998[27];
+   char s_40e907c6[56];
 #endif
-   char s504[96];
-   char s505[42];
-   char s506[98];
-   char s507[50];
-   char s508[149];
-   char s509[242];
-   char s510[242];
-   char s511[235];
-   char s512[43];
-   char s513[54];
-   char s514[39];
-   char s515[23];
-   char s516[52];
-   char s517[138];
-   char s518[13];
-   char s519[8];
-   char s520[56];
-   char s521[30];
-   char s522[60];
-   char s523[15];
-   char s524[54];
-   char s525[179];
-   char s526[16];
-   char s527[31];
-   char s528[5];
-   char s529[11];
-   char s530[14];
-   char s531[36];
-   char s532[30];
-   char s533[23];
-   char s534[34];
-   char s535[31];
-   char s536[47];
-   char s537[25];
-   char s538[41];
-   char s539[45];
-   char s540[12];
-   char s541[10];
-   char s542[7];
-   char s543[37];
-   char s544[8];
-   char s545[9];
-   char s546[18];
-   char s547[24];
-   char s548[7];
-   char s549[12];
-   char s550[4];
-   char s551[6];
-   char s552[12];
-   char s553[36];
-   char s554[8];
-   char s555[12];
-   char s556[14];
-   char s557[4];
-   char s558[3];
-   char s559[4];
-   char s560[4];
-   char s561[3];
-   char s562[8];
-   char s563[4];
-   char s564[69];
-   char s565[19];
-   char s566[234];
-   char s567[175];
-   char s568[9];
-   char s569[4];
-   char s570[22];
-   char s571[15];
-   char s572[16];
-   char s573[14];
-   char s574[14];
-   char s575[22];
-   char s576[3];
-   char s577[23];
-   char s578[30];
-   char s579[29];
-   char s580[3];
-   char s581[4];
-   char s582[4];
-   char s583[4];
-   char s584[22];
-   char s585[3];
-   char s586[3];
-   char s587[3];
-   char s588[3];
-   char s589[12];
-   char s590[8];
-   char s591[6];
-   char s592[15];
-   char s593[4];
-   char s594[24];
-   char s595[19];
-   char s596[6];
-   char s597[12];
-   char s598[5];
-   char s599[7];
-   char s600[10];
-   char s601[7];
-   char s602[96];
-   char s603[20];
-   char s604[20];
-   char s605[10];
-   char s606[5];
-   char s607[22];
-   char s608[25];
-   char s609[28];
-   char s610[34];
-   char s611[61];
-   char s612[69];
-   char s613[66];
-   char s614[5];
-   char s615[38];
-   char s616[180];
-   char s617[38];
-   char s618[180];
-   char s619[17];
-   char s620[22];
-   char s621[23];
-   char s622[19];
+   char s_ef13be35[96];
+   char s_f02f73fc[42];
+   char s_dd9ff22a[98];
+   char s_46d040e3[50];
+   char s_ba59df8d[149];
+   char s_4b824ac6[242];
+   char s_638533eb[242];
+   char s_cd6693b5[235];
+   char s_ee3a489b[43];
+   char s_f89e1cbc[54];
+   char s_ba248c4b[39];
+   char s_c561b96e[23];
+   char s_d512ad1c[52];
+   char s_ab839b13[138];
+   char s_260261d6[13];
+   char s_302fdd56[8];
+   char s_35ff46c4[56];
+   char s_63af41a7[30];
+   char s_236bd8d5[60];
+   char s_02056693[15];
+   char s_017e8c85[54];
+   char s_0d074e33[179];
+   char s_9da5609f[16];
+   char s_5ac8bccf[31];
+   char s_6262776d[5];
+   char s_93bae0e3[11];
+   char s_25f1508f[14];
+   char s_6473e665[36];
+   char s_9807adbd[30];
+   char s_97ede950[23];
+   char s_611059be[34];
+   char s_73818858[31];
+   char s_60f20686[47];
+   char s_b160f7a1[25];
+   char s_bce9b94f[41];
+   char s_35c29e50[45];
+   char s_565cbabb[12];
+   char s_96ee0cfb[10];
+   char s_5bbcf84b[7];
+   char s_7ea8ec8f[37];
+   char s_8203db0a[8];
+   char s_1e1c0557[9];
+   char s_5f612db6[18];
+   char s_6090802e[24];
+   char s_1ad1dee7[7];
+   char s_99d3d4ae[12];
+   char s_0fd30a6d[4];
+   char s_225da616[6];
+   char s_314e7dec[12];
+   char s_a6b615f1[36];
+   char s_c689058d[8];
+   char s_5b51050b[12];
+   char s_4927597c[14];
+   char s_51f16286[4];
+   char s_1aebff8d[3];
+   char s_e2f5e678[4];
+   char s_f632c879[4];
+   char s_25e86ee3[3];
+   char s_c12910d3[8];
+   char s_d61d87cd[4];
+   char s_a67ad98a[69];
+   char s_72898bf0[19];
+   char s_823a7f9e[234];
+   char s_ad131006[175];
+   char s_404e69aa[9];
+   char s_bd8bf83a[4];
+   char s_bd84f1a3[22];
+   char s_d90b137a[15];
+   char s_5c821ce2[16];
+   char s_b8199d1f[14];
+   char s_ac709442[14];
+   char s_f8d42b14[22];
+   char s_728ca1d3[3];
+   char s_443e29a5[23];
+   char s_ccfe26d1[30];
+   char s_5f421d29[29];
+   char s_b30b56ad[3];
+   char s_65e6ea7c[4];
+   char s_7f10fcd2[4];
+   char s_7206ddda[4];
+   char s_f4c2f40f[22];
+   char s_f4c9faa6[3];
+   char s_006dbffd[3];
+   char s_906aff13[3];
+   char s_3a0abeb9[3];
+   char s_6d059c18[12];
+   char s_5f15f7a7[8];
+   char s_7534cfc9[6];
+   char s_2aeb5474[15];
+   char s_6d08238d[4];
+   char s_b71e6907[24];
+   char s_08785e85[19];
+   char s_6d025795[6];
+   char s_99d648f2[12];
+   char s_e8ae394f[5];
+   char s_e8a86d57[7];
+   char s_b6172513[10];
+   char s_e2f9cd07[7];
+   char s_49757b91[20];
+   char s_aa0659db[20];
+   char s_25babaa7[10];
+   char s_e2f27171[5];
+   char s_a7ae1b42[22];
+   char s_05437279[25];
+   char s_c0cae103[28];
+   char s_c6615fcf[34];
+   char s_71d52dde[61];
+   char s_824867fd[69];
+   char s_0638fe80[66];
+   char s_50d77da7[5];
+   char s_93ac5ec8[38];
+   char s_2f2ca2b6[180];
+   char s_0e2c0fca[38];
+   char s_1eebf4f8[180];
+   char s_0bf629fd[17];
+   char s_cdfc64f8[22];
+   char s_47501076[23];
+   char s_ec502f2a[19];
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
-   char s623[77];
-   char s624[125];
+   char s_addc7f89[77];
+   char s_96c461f7[125];
 #endif
 #endif
 #ifdef HAVE_SMBCLIENT
-   char s625[21];
+   char s_d21d875b[21];
 #endif
 } msg_hash_val_blob =
 {
@@ -978,6 +970,9 @@ static const struct
    "Millora el rendiment del joc a costa d'un augment de la lat\303\250ncia i sacseig en la imatge. "
    "Usar nom\303\251s si la m\303\240xima velocitat no pot ser obtinguda de cap altra manera.",
    "Inserir fotogrames negres",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Filtrat bilineal",
 #if defined(DINGUX)
    "Interpolaci\303\263 d'imatge",
@@ -1056,15 +1051,9 @@ static const struct
    "For\303\247a la desactivaci\303\263 del suport de l'FBO (Frame Buffer Object) sRGB. Esta opci"
    "\303\263 pot minvar problemes de v\303\255deo amb el suport d'FBO sRGB en alguns controladors Op"
    "enGL d'Intel en Windows.",
-   "Mode pantalla completa en finestra",
-   "Si s'est\303\240 usant el mode de pantalla completa, for\303\247a l'\303\272s d'una finestra a m"
-   "ida completa de la pantalla per no haver de canviar entre modes de v\303\255deo.",
-   "Ample de pantalla completa",
-   "Ajusta la mida d'amplaria personalitzada de la imatge per al mode pantalla completa. No modifica"
-   "nt el valor, s'usar\303\240 la resoluci\303\263 de l'escriptori.",
-   "Al\303\247ada de la pantalla completa",
-   "Ajusta la mida d'al\303\247ada personalitzada de la imatge per al mode pantalla completa. No mod"
-   "ificant el valor, s'usar\303\240 la resoluci\303\263 de l'escriptori.",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
+   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "For\303\247ar resoluci\303\263 a UWP",
    "For\303\247a la resoluci\303\263 a la mida de la pantalla. Si es fica valor 0, s'usar\303\240 un"
    " de fixe de 3840 \303\227 2160.",
@@ -1122,21 +1111,11 @@ static const struct
    "Retalla uns quants p\303\255xels a les vores de la imatge que de vegades els desenvolupadors sol"
    "en deixar en blanc, o que tamb\303\251 la imatge puga contenir p\303\255xels de residu. (cal rei"
    "niciar)",
-   "Sincronitzaci\303\263 vertical (VSync)",
-   "Sincronitza l'eixida de v\303\255deo de la targeta gr\303\240fica amb la freq\303\274\303\250nci"
-   "a de refresc d'imatge d'actualitzaci\303\263 de la pantalla. Es recomana activar-lo.",
-   "Interval d'intercanvi de VSync",
    "Selecci\303\263 autom\303\240tica",
    "Sincronitzaci\303\263 vertical adaptativa",
    "Retardament autom\303\240tic de fotogrames",
    "Selecci\303\263 autom\303\240tica",
    "real(s)",
-   "Sincronitzaci\303\263 rigorosa de la GPU",
-   "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
-   "\303\250rdua de rendiment.",
-   "Nombre de fotogrames per a sincronitzaci\303\263 rigorosa de la GPU",
-   "Establix quants fotogrames pot moure la CPU anticipant-se a la GPU quan s'usa \"Sincronitzaci"
-   "\303\263 rigorosa de la GPU\".",
    "Sincronitzar a fotograma exacte del contingut (G-Sync, FreeSync)",
    "Impedix capgirar-se de l'interval sol\302\267licitat pel nucli. Recomanat per a pantalles amb un"
    "a freq\303\274\303\250ncia de refresc d'imatge variable (G-Sync, FreeSync, HDMI 2.1 VRR).",
@@ -1403,8 +1382,6 @@ static const struct
    "Nucli:",
    "Historial",
    "Usuari",
-   "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
-   "\303\250rdua de rendiment.",
    "Preajust de shaders",
    "Preajust de shaders",
    "Comen\303\247ar",
@@ -1443,7 +1420,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25732u
+      (sizeof(msg_hash_val_blob) == (25036u
 #ifdef HAVE_LAKKA
        + 14u
        + 52u
@@ -1791,6 +1768,9 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -1848,12 +1828,9 @@ static const uint32_t msg_hash_val_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -1892,18 +1869,11 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
@@ -2126,7 +2096,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
