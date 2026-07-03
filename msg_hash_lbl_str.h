@@ -1039,7 +1039,6 @@
 #define MENU_ENUM_LABEL_VIDEO_FONT_ENABLE_STR "video_font_enable"
 #define MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR "video_font_path"
 #define MENU_ENUM_LABEL_VIDEO_FONT_SIZE_STR "video_font_size"
-#define MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE_STR "video_force_srgb_disable"
 #define MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_STR "video_frame_delay"
 #define MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO_STR "video_frame_delay_auto"
 #define MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED_STR "video_frame_time_sample_gated"
