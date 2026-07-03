@@ -193,7 +193,8 @@ for k, f, T, a in rows:
         else:
             row = gopen + '\n' + row + '\n' + gclose
     out.append(row)
-open(DEF, 'w').write('\n'.join(out) + '\n')
+DEF = os.path.basename(DEF)  # includes are emitted relative to settings/
+open(os.path.join('settings', DEF), 'w').write('\n'.join(out) + '\n')
 
 first = min(s for s, e in usspan)
 for s, e in sorted(usspan, reverse=True): us = us[:s] + us[e:]
