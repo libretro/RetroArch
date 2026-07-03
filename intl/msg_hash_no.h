@@ -341,6 +341,7 @@ static const struct
    char s_258060bf[14];
    char s_3547866d[132];
    char s_4bceefff[24];
+   char s_6c52dfb1[32];
    char s_ef3d53d8[21];
 #if defined(DINGUX)
    char s_805730a0[20];
@@ -401,12 +402,28 @@ static const struct
 #endif
    char s_3c70d08d[25];
    char s_fc2d67bb[170];
+   char s_84c46931[25];
+   char s_3c13e61f[96];
+   char s_59f183c8[18];
+   char s_9f0fd076[106];
+   char s_59f183c9[18];
+   char s_9f0fd077[106];
    char s_f5ab35c0[26];
    char s_055c296e[103];
    char s_6c1369c6[12];
-   char s_74e69f4b[101];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[13];
+   char s_75325963[49];
+   char s_0f5266ce[13];
+   char s_f83a493c[49];
+#endif
+   char s_83e8dc72[21];
+   char s_4d0b4ce0[112];
+   char s_a64b3a0b[21];
+   char s_93bbb839[112];
    char s_2d8cb7ce[32];
    char s_3370e7fc[37];
+   char s_74e69f4b[101];
    char s_b9e24170[22];
    char s_5562855e[36];
    char s_48da4695[15];
@@ -415,14 +432,6 @@ static const struct
    char s_09581fc6[248];
    char s_7cf985f0[35];
    char s_f99a7d5e[181];
-   char s_30140cb5[13];
-   char s_75325963[49];
-   char s_0f5266ce[13];
-   char s_f83a493c[49];
-   char s_83e8dc72[21];
-   char s_4d0b4ce0[112];
-   char s_a64b3a0b[21];
-   char s_93bbb839[112];
    char s_4d7e9b13[18];
    char s_c79d5013[19];
    char s_8759e741[28];
@@ -1202,13 +1211,6 @@ static const struct
    char s_f441f728[37];
 #endif
    char s_dd290e03[9];
-   char r371[25];
-   char r372[96];
-   char r373[18];
-   char r374[106];
-   char r375[18];
-   char r376[106];
-   char r414[32];
 } msg_hash_no_blob =
 {
    "Hovedmeny",
@@ -1553,6 +1555,7 @@ static const struct
    "Forbedrer ytelsen p\303\245 bekostning av latens og mer hakk i videoen. Bruk bare hvis full hast"
    "ighet ikke kan oppn\303\245s p\303\245 noe annet vis.",
    "Sett inn en svart ramme",
+   "Vertikal synkronisering (VSync)",
    "Biline\303\246r filtrering",
 #if defined(DINGUX)
    "Bilde Interpolering",
@@ -1627,14 +1630,35 @@ static const struct
    "Tvangsdeaktiverer sRGB FBO st\303\270tte. Noen Intel OpenGL drivere p\303\245 windows har videop"
    "roblemer med sRGB FBO. Sl\303\245 p\303\245 denne innstillingen for \303\245 mulligens jobbe run"
    "dt det.",
+   "Fullskjermsmodus i vindu",
+   "Hvis fullskjerm er p\303\245, foretrekk fullskjerm i vindumodus for \303\245 forhindre visningsm"
+   "odus bytte.",
+   "Fullskjerm bredde",
+   "Angi en egendefinert bredde for fullskjermmodus. Hvis denne er blank vil skrivebordsoppl\303\270"
+   "sningen brukes.",
+   "Fullskjerm h\303\270yde",
+   "Angi en egendefinert h\303\270yde for fullskjermmodus. Hvis denne er blank vil skrivebordsoppl"
+   "\303\270sningen brukes.",
    "Tving oppl\303\270sning p\303\245 UWP",
    "Tving oppl\303\270sningen til fullskjerm st\303\270rrelsen. Hvis satt til 0, brukes en fast verd"
    "i p\303\245 3840 x 2160.",
    "Vindu skala",
-   "Sett vindust\303\270rrelsen til den spesifiserte multiplikatet av st\303\270rrelsen til kjernens"
-   " visningsregion.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Vindu bredde",
+   "Angi en egendefinert bredde for visningsvinduet.",
+   "Vindu h\303\270yde",
+   "Angi en egendefinert h\303\270yde for visningsvinduet.",
+#endif
+   "Maksimal vindubredde",
+   "Sett maksimalbredden av visningsvinduet n\303\245r automatisk st\303\270rrelse endring basert p"
+   "\303\245 \"vindu skalering\" er p\303\245.",
+   "Maksimal vinduh\303\270yde",
+   "Sett maksimalh\303\270yden av visningsvinduet n\303\245r automatisk st\303\270rrelse endring bas"
+   "ert p\303\245 \"vindu skalering\" er p\303\245.",
    "Gjennomsiktighet for vindumodus",
    "Angi gjennomsiktigheten p\303\245 vinduer.",
+   "Sett vindust\303\270rrelsen til den spesifiserte multiplikatet av st\303\270rrelsen til kjernens"
+   " visningsregion.",
    "Vis vindudekorasjoner",
    "Vis vinduets tittellinje og kanter.",
    "Vis menylinjen",
@@ -1648,16 +1672,6 @@ static const struct
    "Vis alt innhold i et fast vindu av dimensjoner angitt med 'Vinduets bredde' og 'Vinduets h\303"
    "\270yde'. N\303\245r deaktivert, blir vindusst\303\270rrelsen satt dynamisk basert p\303\245 'Wi"
    "ndowed Scale'.",
-   "Vindu bredde",
-   "Angi en egendefinert bredde for visningsvinduet.",
-   "Vindu h\303\270yde",
-   "Angi en egendefinert h\303\270yde for visningsvinduet.",
-   "Maksimal vindubredde",
-   "Sett maksimalbredden av visningsvinduet n\303\245r automatisk st\303\270rrelse endring basert p"
-   "\303\245 \"vindu skalering\" er p\303\245.",
-   "Maksimal vinduh\303\270yde",
-   "Sett maksimalh\303\270yden av visningsvinduet n\303\245r automatisk st\303\270rrelse endring bas"
-   "ert p\303\245 \"vindu skalering\" er p\303\245.",
    "Heltall skalering",
    "St\303\270rrelsesforhold",
    "Angi visningsaspektforhold.",
@@ -2457,23 +2471,13 @@ static const struct
    "Juster skriftskalaen for bunnskjerm.",
 #endif
    "stoppet.",
-   "Fullskjermsmodus i vindu",
-   "Hvis fullskjerm er p\303\245, foretrekk fullskjerm i vindumodus for \303\245 forhindre visningsm"
-   "odus bytte.",
-   "Fullskjerm bredde",
-   "Angi en egendefinert bredde for fullskjermmodus. Hvis denne er blank vil skrivebordsoppl\303\270"
-   "sningen brukes.",
-   "Fullskjerm h\303\270yde",
-   "Angi en egendefinert h\303\270yde for fullskjermmodus. Hvis denne er blank vil skrivebordsoppl"
-   "\303\270sningen brukes.",
-   "Vertikal synkronisering (VSync)",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (28991u
+      (sizeof(msg_hash_no_blob) == (28867u
 #ifdef HAVE_LAKKA
        + 15u
        + 49u
@@ -2505,6 +2509,12 @@ typedef char msg_hash_no_blob_check[
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 26u
        + 108u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 13u
+       + 49u
+       + 13u
+       + 49u
 #endif
 #if defined(DINGUX)
        + 26u
@@ -2893,6 +2903,7 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -2953,12 +2964,28 @@ static const uint32_t msg_hash_no_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -2967,14 +2994,6 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
@@ -3754,11 +3773,4 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
 #endif
    (uint32_t)MSG_AI_SERVICE_STOPPED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
 };

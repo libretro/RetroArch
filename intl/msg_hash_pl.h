@@ -452,6 +452,24 @@ static const struct
    char s_4577a14d[40];
    char s_07e1d73b[366];
    char s_5fdad539[286];
+   char s_6c52dfb1[31];
+   char s_47ae341f[87];
+   char s_45816e1d[24];
+   char s_2e69508b[321];
+   char s_2cb6ab5c[19];
+   char s_3c679f0a[317];
+   char s_52e3d6ea[26];
+   char s_58c80718[317];
+   char s_e6ca3876[38];
+   char s_88095324[77];
+   char s_9119ef97[22];
+   char s_48696c85[77];
+   char s_a1a7717d[31];
+   char s_a776daeb[79];
+   char s_e9bca139[26];
+   char s_f2687ca7[77];
+   char s_59dc5d76[34];
+   char s_698d5124[102];
    char s_93805cc8_0[500];
    char s_93805cc8_1[122];
    char s_7a7a3d56[187];
@@ -535,12 +553,30 @@ static const struct
 #endif
    char s_3c70d08d[29];
    char s_fc2d67bb[182];
+   char s_f417f6f1[33];
+   char s_123f401f[128];
+   char s_84c46931[28];
+   char s_3c13e61f[114];
+   char s_59f183c8[28];
+   char s_9f0fd076[144];
+   char s_59f183c9[27];
+   char s_9f0fd077[143];
    char s_f5ab35c0[30];
    char s_055c296e[133];
    char s_6c1369c6[26];
-   char s_74e69f4b[78];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[17];
+   char s_75325963[143];
+   char s_0f5266ce[16];
+   char s_f83a493c[142];
+#endif
+   char s_83e8dc72[28];
+   char s_4d0b4ce0[114];
+   char s_a64b3a0b[27];
+   char s_93bbb839[113];
    char s_2d8cb7ce[23];
    char s_3370e7fc[31];
+   char s_74e69f4b[78];
    char s_b9e24170[22];
    char s_5562855e[41];
    char s_48da4695[18];
@@ -549,14 +585,6 @@ static const struct
    char s_09581fc6[280];
    char s_7cf985f0[37];
    char s_f99a7d5e[217];
-   char s_30140cb5[17];
-   char s_75325963[143];
-   char s_0f5266ce[16];
-   char s_f83a493c[142];
-   char s_83e8dc72[28];
-   char s_4d0b4ce0[114];
-   char s_a64b3a0b[27];
-   char s_93bbb839[113];
    char s_4d7e9b13[17];
    char s_36667d81[110];
    char s_2f05bb87[22];
@@ -584,17 +612,19 @@ static const struct
    char s_9506fc7e[88];
    char s_9ca4bbd7[25];
    char s_b0fb58d3[34];
-   char s_9ca4bbd8[34];
-   char s_b0fb58d4[34];
    char s_73658ec1[143];
+   char s_b0fb58d4[34];
    char s_73658ec2[121];
 #if defined(RARCH_MOBILE)
-   char s_b754294b[55];
    char s_774121c7[55];
-   char s_b754294c[55];
-   char s_774121c8[55];
    char s_82c9e375[164];
+   char s_774121c8[55];
    char s_82c9e376[142];
+#endif
+   char s_9ca4bbd8[34];
+#if defined(RARCH_MOBILE)
+   char s_b754294b[55];
+   char s_b754294c[55];
 #endif
    char s_b7ef9e17[54];
    char s_81120e85[149];
@@ -3941,32 +3971,6 @@ static const struct
    char s_a1fdf4a6[33];
    char s_d21d875b[11];
 #endif
-   char r431[19];
-   char r432[317];
-   char r434[26];
-   char r435[317];
-   char r506[33];
-   char r507[128];
-   char r508[28];
-   char r509[114];
-   char r510[28];
-   char r511[144];
-   char r512[27];
-   char r513[143];
-   char r592[31];
-   char r593[87];
-   char r594[24];
-   char r595[321];
-   char r610[26];
-   char r611[77];
-   char r612[34];
-   char r613[102];
-   char r3128[38];
-   char r3129[77];
-   char r3131[22];
-   char r3132[77];
-   char r3133[31];
-   char r3134[79];
 } msg_hash_pl_blob =
 {
    "Menu g\305\202\303\263wne",
@@ -4516,6 +4520,38 @@ static const struct
    "nych ramek zwi\304\231ksza przezroczysto\305\233\304\207 ruchu, ale zmniejsza jasno\305\233\304"
    "\207. Nie dotyczy 120hz, poniewa\305\274 jest tylko jedna dodatkowa 60hz, wi\304\231c musi by"
    "\304\207 czarny w przeciwnym razie BFI nie by\305\202by w og\303\263le aktywny.",
+   "Synchronizacja pionowa (VSync)",
+   "Synchronizuj wyj\305\233cie karty graficznej z pr\304\231dko\305\233ci\304\205 od\305\233wie\305"
+   "\274ania ekranu. Zalecane.",
+   "Interwa\305\202 wymiany VSync",
+   "U\305\274yj niestandardowego interwa\305\202u wymiany dla VSync. Efektywnie zmniejsza cz\304\231"
+   "stotliwo\305\233\304\207 od\305\233wie\305\274ania monitora o okre\305\233lony czynnik. 'Auto' u"
+   "stawia wsp\303\263\305\202czynnik oparty na raportowanej szybko\305\233ci ramki, zapewniaj\304"
+   "\205c lepsze tempo ramki podczas pracy.. 30 fps na wy\305\233wietlaczu 60 Hz lub 60 fps na wy"
+   "\305\233wietlaczu 120 Hz.",
+   "Pod-klatki shadera",
+   "OSTRZE\305\273ENIE: Szybkie migotanie mo\305\274e spowodowa\304\207 utrzymywanie si\304\231 obra"
+   "zu na niekt\303\263rych wy\305\233wietlaczach. U\305\274wa\304\207 na w\305\202asne ryzyko // Sy"
+   "muluje prost\304\205 krocz\304\205c\304\205 lini\304\231 skanuj\304\205c\304\205 nad wieloma pod"
+   "klatkami poprzez podzielenie ekranu pionowo i renderowanie ka\305\274dej cz\304\231\305\233ci ek"
+   "ranu w zale\305\274no\305\233ci od liczby podklatek.",
+   "Symulacja prze\305\233wietlania",
+   "OSTRZE\305\273ENIE: Szybkie migotanie mo\305\274e spowodowa\304\207 utrzymywanie si\304\231 obra"
+   "zu na niekt\303\263rych wy\305\233wietlaczach. U\305\274wa\304\207 na w\305\202asne ryzyko // Sy"
+   "muluje prost\304\205 krocz\304\205c\304\205 lini\304\231 skanuj\304\205c\304\205 nad wieloma pod"
+   "klatkami poprzez podzielenie ekranu pionowo i renderowanie ka\305\274dej cz\304\231\305\233ci ek"
+   "ranu w zale\305\274no\305\233ci od liczby podklatek.",
+   "Maksymalna ilo\305\233\304\207 obraz\303\263w swapchain",
+   "Informuje sterownik wideo, aby jawnie u\305\274y\305\202 okre\305\233lonego trybu buforowania.",
+   "Oczekuj\304\205ce swapchain",
+   "Twarda synchronizacja CPU i GPU. Zmniejsza op\303\263\305\272nienie kosztem wydajno\305\233ci.",
+   "Maksymalne op\303\263\305\272nienie klatki",
+   "Pozwala sterownikowi wideo na wyra\305\272ne u\305\274ycie okre\305\233lonego trybu buforowania.",
+   "Trudna synchronizacja GPU",
+   "Twarda synchronizacja CPU i GPU. Zmniejsza op\303\263\305\272nienie kosztem wydajno\305\233ci.",
+   "Klatki twardej synchronizacji GPU",
+   "Ustaw ile klatek procesor mo\305\274e uruchamia\304\207 przed GPU podczas u\305\274ywania 'Tward"
+   "ej synchronizacji GPU'.",
    "Wstawia dodatkowe klatki shader\303\263w pomi\304\231dzy klatkami dla wszelkich mo\305\274liwych"
    " efekt\303\263w shader\303\263w, kt\303\263re s\304\205 zaprojektowane do dzia\305\202ania szybc"
    "iej ni\305\274 cz\304\231stotliwo\305\233\304\207 zawarto\305\233ci. U\305\274ywaj tylko opcji w"
@@ -4659,14 +4695,40 @@ static const struct
    "Wymuszone wy\305\202\304\205czenie obs\305\202ugi FBO sRGB. Niekt\303\263re sterowniki Intel Ope"
    "nGL na Windows maj\304\205 problemy z nagrywaniem wideo sRGB FBO. W\305\202\304\205czenie tej op"
    "cji mo\305\274e omin\304\205\304\207 ten problem.",
+   "Wy\305\233wietlanie na pe\305\202nym ekranie",
+   "Wy\305\233wietlanie na pe\305\202nym ekranie. Mo\305\274e zosta\304\207 zmienione w czasie pracy"
+   ". Mo\305\274e by\304\207 nadpisane przez argument wiersza polece\305\204.",
+   "Tryb pe\305\202noekranowy w oknie",
+   "W trybie pe\305\202noekranowym preferuj u\305\274ycie okna pe\305\202noekranowego, aby zapobiec "
+   "prze\305\202\304\205czaniu trybu wy\305\233wietlania.",
+   "Szeroko\305\233\304\207 pe\305\202nego ekranu",
+   "Ustaw niestandardowy rozmiar szeroko\305\233ci dla trybu pe\305\202noekranowego bez okien. Pozos"
+   "tawienie go na 0 spowoduje u\305\274ycie rozdzielczo\305\233ci pulpitu.",
+   "Wysoko\305\233\304\207 pe\305\202nego ekranu",
+   "Ustaw niestandardowy rozmiar wysoko\305\233ci dla trybu pe\305\202noekranowego bez okien. Pozost"
+   "awienie go na 0 spowoduje u\305\274ycie rozdzielczo\305\233ci pulpitu.",
    "Wymu\305\233 rozdzielczo\305\233\304\207 do UWP",
    "Wymu\305\233 rozdzielczo\305\233\304\207 do rozmiaru pe\305\202noekranowego, je\305\233li jest u"
    "stawione na 0, zostanie u\305\274yta sta\305\202a rozdzielczo\305\233\304\207 3840 x 2160.",
    "Skala w trybie okienkowym",
-   "Ustaw rozmiar okna na okre\305\233lon\304\205 wielokrotno\305\233\304\207 rozmiaru g\305\202\303"
-   "\263wnego widoku.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Szeroko\305\233\304\207 okna",
+   "Ustaw niestandardowy rozmiar szeroko\305\233ci okna wy\305\233wietlacza. Pozostawienie go na 0 s"
+   "powoduje przeskalowanie okna tak du\305\274ego, jak to mo\305\274liwe.",
+   "Wysoko\305\233\304\207 okna",
+   "Ustaw niestandardowy rozmiar wysoko\305\233ci okna wy\305\233wietlacza. Pozostawienie go na 0 sp"
+   "owoduje przeskalowanie okna tak du\305\274ego, jak to mo\305\274liwe.",
+#endif
+   "Maksymalna szeroko\305\233\304\207 okna",
+   "Ustawia maksymaln\304\205 szeroko\305\233\304\207 okna wy\305\233wietlania przy automatycznej zm"
+   "ianie rozmiaru na podstawie \"Skala okna\".",
+   "Maksymalna wysoko\305\233\304\207 okna",
+   "Ustawia maksymaln\304\205 wysoko\305\233\304\207 okna wy\305\233wietlania przy automatycznej zmi"
+   "anie rozmiaru na podstawie \"Skala okna\".",
    "Przezroczysto\305\233\304\207 okna",
    "Ustaw prze\305\272roczysto\305\233\304\207 okna.",
+   "Ustaw rozmiar okna na okre\305\233lon\304\205 wielokrotno\305\233\304\207 rozmiaru g\305\202\303"
+   "\263wnego widoku.",
    "Poka\305\274 dekoracje okna",
    "Poka\305\274 pasek tytu\305\202u okna i obramowanie.",
    "Poka\305\274 pasek menu",
@@ -4681,18 +4743,6 @@ static const struct
    "re\305\233lonym przez \"Szeroko\305\233\304\207 okna\" i \"Wysoko\305\233\304\207 okna\". Gdy op"
    "cja ta jest wy\305\202\304\205czona, rozmiar okna b\304\231dzie ustawiany dynamicznie na podstaw"
    "ie \"Skala okna\".",
-   "Szeroko\305\233\304\207 okna",
-   "Ustaw niestandardowy rozmiar szeroko\305\233ci okna wy\305\233wietlacza. Pozostawienie go na 0 s"
-   "powoduje przeskalowanie okna tak du\305\274ego, jak to mo\305\274liwe.",
-   "Wysoko\305\233\304\207 okna",
-   "Ustaw niestandardowy rozmiar wysoko\305\233ci okna wy\305\233wietlacza. Pozostawienie go na 0 sp"
-   "owoduje przeskalowanie okna tak du\305\274ego, jak to mo\305\274liwe.",
-   "Maksymalna szeroko\305\233\304\207 okna",
-   "Ustawia maksymaln\304\205 szeroko\305\233\304\207 okna wy\305\233wietlania przy automatycznej zm"
-   "ianie rozmiaru na podstawie \"Skala okna\".",
-   "Maksymalna wysoko\305\233\304\207 okna",
-   "Ustawia maksymaln\304\205 wysoko\305\233\304\207 okna wy\305\233wietlania przy automatycznej zmi"
-   "anie rozmiaru na podstawie \"Skala okna\".",
    "Skala ca\305\202kowita",
    "Skaluj wideo tylko w krokach ca\305\202kowitych. Rozmiar bazowy zale\305\274y od geometrii i pro"
    "porcji podanej w rdzeniu.",
@@ -4731,24 +4781,26 @@ static const struct
    "a osi Y widoku.",
    "Podgl\304\205d zakotwiczenia X",
    "Odchylenie zakotwiczenia widoku X",
-   "Odchylenie zakotwiczenia widoku Y",
-   "Odchylenie zakotwiczenia widoku Y",
    "Poziome po\305\202o\305\274enie tre\305\233ci, gdy widok jest szerszy ni\305\274 szeroko\305\233"
    "\304\207 tre\305\233ci. 0.0 jest daleko na lewo, 0.5 to \305\233rodek, 1.0 to daleko na prawo.",
+   "Odchylenie zakotwiczenia widoku Y",
    "Pionowe po\305\202o\305\274enie tre\305\233ci, gdy widok jest wy\305\274szy ni\305\274 wysoko"
    "\305\233\304\207 tre\305\233ci. 0.0 to g\303\263ra, 0.5 to \305\233rodek, 1.0 to d\303\263\305"
    "\202.",
 #if defined(RARCH_MOBILE)
    "Odchylenie zakotwiczenia widoku X (orientacja pionowa)",
-   "Odchylenie zakotwiczenia widoku X (orientacja pionowa)",
-   "Odchylenie zakotwiczenia widoku Y (orientacja pionowa)",
-   "Odchylenie zakotwiczenia widoku Y (orientacja pionowa)",
    "Poziome po\305\202o\305\274enie tre\305\233ci, gdy widok jest szerszy ni\305\274 szeroko\305\233"
    "\304\207 tre\305\233ci. 0.0 jest daleko na lewo, 0.5 to \305\233rodek, 1.0 to daleko na prawo. ("
    "orientacja pionowa)",
+   "Odchylenie zakotwiczenia widoku Y (orientacja pionowa)",
    "Pionowe po\305\202o\305\274enie tre\305\233ci, gdy widok jest wy\305\274szy ni\305\274 wysoko"
    "\305\233\304\207 tre\305\233ci. 0.0 to g\303\263ra, 0.5 to \305\233rodek, 1.0 to d\303\263\305"
    "\202. (orientacja pionowa)",
+#endif
+   "Odchylenie zakotwiczenia widoku Y",
+#if defined(RARCH_MOBILE)
+   "Odchylenie zakotwiczenia widoku X (orientacja pionowa)",
+   "Odchylenie zakotwiczenia widoku Y (orientacja pionowa)",
 #endif
    "Niestandardowy wsp\303\263\305\202czynnik proporcji (szeroko\305\233\304\207)",
    "Niestandardowa szeroko\305\233\304\207 obszaru widoku u\305\274ywana, je\305\233li wsp\303\263"
@@ -9012,57 +9064,13 @@ static const struct
    "Poka\305\274 ustawienia \"Klienta SMB\".",
    "Zas\303\263b SMB",
 #endif
-   "Pod-klatki shadera",
-   "OSTRZE\305\273ENIE: Szybkie migotanie mo\305\274e spowodowa\304\207 utrzymywanie si\304\231 obra"
-   "zu na niekt\303\263rych wy\305\233wietlaczach. U\305\274wa\304\207 na w\305\202asne ryzyko // Sy"
-   "muluje prost\304\205 krocz\304\205c\304\205 lini\304\231 skanuj\304\205c\304\205 nad wieloma pod"
-   "klatkami poprzez podzielenie ekranu pionowo i renderowanie ka\305\274dej cz\304\231\305\233ci ek"
-   "ranu w zale\305\274no\305\233ci od liczby podklatek.",
-   "Symulacja prze\305\233wietlania",
-   "OSTRZE\305\273ENIE: Szybkie migotanie mo\305\274e spowodowa\304\207 utrzymywanie si\304\231 obra"
-   "zu na niekt\303\263rych wy\305\233wietlaczach. U\305\274wa\304\207 na w\305\202asne ryzyko // Sy"
-   "muluje prost\304\205 krocz\304\205c\304\205 lini\304\231 skanuj\304\205c\304\205 nad wieloma pod"
-   "klatkami poprzez podzielenie ekranu pionowo i renderowanie ka\305\274dej cz\304\231\305\233ci ek"
-   "ranu w zale\305\274no\305\233ci od liczby podklatek.",
-   "Wy\305\233wietlanie na pe\305\202nym ekranie",
-   "Wy\305\233wietlanie na pe\305\202nym ekranie. Mo\305\274e zosta\304\207 zmienione w czasie pracy"
-   ". Mo\305\274e by\304\207 nadpisane przez argument wiersza polece\305\204.",
-   "Tryb pe\305\202noekranowy w oknie",
-   "W trybie pe\305\202noekranowym preferuj u\305\274ycie okna pe\305\202noekranowego, aby zapobiec "
-   "prze\305\202\304\205czaniu trybu wy\305\233wietlania.",
-   "Szeroko\305\233\304\207 pe\305\202nego ekranu",
-   "Ustaw niestandardowy rozmiar szeroko\305\233ci dla trybu pe\305\202noekranowego bez okien. Pozos"
-   "tawienie go na 0 spowoduje u\305\274ycie rozdzielczo\305\233ci pulpitu.",
-   "Wysoko\305\233\304\207 pe\305\202nego ekranu",
-   "Ustaw niestandardowy rozmiar wysoko\305\233ci dla trybu pe\305\202noekranowego bez okien. Pozost"
-   "awienie go na 0 spowoduje u\305\274ycie rozdzielczo\305\233ci pulpitu.",
-   "Synchronizacja pionowa (VSync)",
-   "Synchronizuj wyj\305\233cie karty graficznej z pr\304\231dko\305\233ci\304\205 od\305\233wie\305"
-   "\274ania ekranu. Zalecane.",
-   "Interwa\305\202 wymiany VSync",
-   "U\305\274yj niestandardowego interwa\305\202u wymiany dla VSync. Efektywnie zmniejsza cz\304\231"
-   "stotliwo\305\233\304\207 od\305\233wie\305\274ania monitora o okre\305\233lony czynnik. 'Auto' u"
-   "stawia wsp\303\263\305\202czynnik oparty na raportowanej szybko\305\233ci ramki, zapewniaj\304"
-   "\205c lepsze tempo ramki podczas pracy.. 30 fps na wy\305\233wietlaczu 60 Hz lub 60 fps na wy"
-   "\305\233wietlaczu 120 Hz.",
-   "Trudna synchronizacja GPU",
-   "Twarda synchronizacja CPU i GPU. Zmniejsza op\303\263\305\272nienie kosztem wydajno\305\233ci.",
-   "Klatki twardej synchronizacji GPU",
-   "Ustaw ile klatek procesor mo\305\274e uruchamia\304\207 przed GPU podczas u\305\274ywania 'Tward"
-   "ej synchronizacji GPU'.",
-   "Maksymalna ilo\305\233\304\207 obraz\303\263w swapchain",
-   "Informuje sterownik wideo, aby jawnie u\305\274y\305\202 okre\305\233lonego trybu buforowania.",
-   "Oczekuj\304\205ce swapchain",
-   "Twarda synchronizacja CPU i GPU. Zmniejsza op\303\263\305\272nienie kosztem wydajno\305\233ci.",
-   "Maksymalne op\303\263\305\272nienie klatki",
-   "Pozwala sterownikowi wideo na wyra\305\272ne u\305\274ycie okre\305\233lonego trybu buforowania.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (184988u
+      (sizeof(msg_hash_pl_blob) == (184670u
 #ifdef HAVE_LAKKA
        + 15u
        + 44u
@@ -9100,17 +9108,23 @@ typedef char msg_hash_pl_blob_check[
        + 40u
        + 121u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 17u
+       + 143u
+       + 16u
+       + 142u
+#endif
 #if defined(DINGUX)
        + 34u
        + 183u
 #endif
 #if defined(RARCH_MOBILE)
        + 55u
-       + 55u
-       + 55u
-       + 55u
        + 164u
+       + 55u
        + 142u
+       + 55u
+       + 55u
 #endif
 #ifdef HAVE_MICROPHONE
        + 9u
@@ -9775,6 +9789,24 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9856,12 +9888,30 @@ static const uint32_t msg_hash_pl_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -9870,14 +9920,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
@@ -9905,17 +9947,19 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
 #if defined(RARCH_MOBILE)
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -13258,30 +13302,4 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

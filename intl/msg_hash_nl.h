@@ -417,6 +417,22 @@ static const struct
    char s_4577a14d[39];
    char s_07e1d73b[363];
    char s_5fdad539[299];
+   char s_6c52dfb1[33];
+   char s_47ae341f[109];
+   char s_45816e1d[21];
+   char s_2e69508b[363];
+   char s_3c679f0a[287];
+   char s_52e3d6ea[28];
+   char s_58c80718[296];
+   char s_e6ca3876[27];
+   char s_88095324[80];
+   char s_48696c85[85];
+   char s_a1a7717d[23];
+   char s_a776daeb[80];
+   char s_e9bca139[25];
+   char s_f2687ca7[85];
+   char s_59dc5d76[22];
+   char s_698d5124[88];
    char s_93805cc8[471];
    char s_7a7a3d56[228];
    char s_ef3d53d8[21];
@@ -495,12 +511,30 @@ static const struct
 #endif
    char s_3c70d08d[33];
    char s_fc2d67bb[186];
+   char s_f417f6f1[16];
+   char s_123f401f[125];
+   char s_84c46931[27];
+   char s_3c13e61f[115];
+   char s_59f183c8[27];
+   char s_9f0fd076[150];
+   char s_59f183c9[26];
+   char s_9f0fd077[149];
    char s_f5ab35c0[25];
    char s_055c296e[131];
    char s_6c1369c6[19];
-   char s_74e69f4b[81];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[15];
+   char s_75325963[56];
+   char s_0f5266ce[14];
+   char s_f83a493c[55];
+#endif
+   char s_83e8dc72[24];
+   char s_4d0b4ce0[134];
+   char s_a64b3a0b[23];
+   char s_93bbb839[133];
    char s_2d8cb7ce[22];
    char s_3370e7fc[37];
+   char s_74e69f4b[81];
    char s_b9e24170[24];
    char s_5562855e[35];
    char s_48da4695[14];
@@ -509,14 +543,6 @@ static const struct
    char s_09581fc6[305];
    char s_7cf985f0[36];
    char s_f99a7d5e[227];
-   char s_30140cb5[15];
-   char s_75325963[56];
-   char s_0f5266ce[14];
-   char s_f83a493c[55];
-   char s_83e8dc72[24];
-   char s_4d0b4ce0[134];
-   char s_a64b3a0b[23];
-   char s_93bbb839[133];
    char s_4d7e9b13[27];
    char s_36667d81[133];
    char s_2f05bb87[39];
@@ -544,17 +570,19 @@ static const struct
    char s_9506fc7e[94];
    char s_9ca4bbd7[26];
    char s_b0fb58d3[26];
-   char s_9ca4bbd8[26];
-   char s_b0fb58d4[26];
    char s_73658ec1[153];
+   char s_b0fb58d4[26];
    char s_73658ec2[138];
 #if defined(RARCH_MOBILE)
-   char s_b754294b[47];
    char s_774121c7[47];
-   char s_b754294c[47];
-   char s_774121c8[47];
    char s_82c9e375[175];
+   char s_774121c8[47];
    char s_82c9e376[159];
+#endif
+   char s_9ca4bbd8[26];
+#if defined(RARCH_MOBILE)
+   char s_b754294b[47];
+   char s_b754294c[47];
 #endif
    char s_b7ef9e17[37];
    char s_81120e85[116];
@@ -3793,30 +3821,6 @@ static const struct
    char s_a1fdf4a6[32];
    char s_d21d875b[10];
 #endif
-   char r396[287];
-   char r398[28];
-   char r399[296];
-   char r466[16];
-   char r467[125];
-   char r468[27];
-   char r469[115];
-   char r470[27];
-   char r471[150];
-   char r472[26];
-   char r473[149];
-   char r552[33];
-   char r553[109];
-   char r554[21];
-   char r555[363];
-   char r569[25];
-   char r570[85];
-   char r571[22];
-   char r572[88];
-   char r2999[27];
-   char r3000[80];
-   char r3002[85];
-   char r3003[23];
-   char r3004[80];
 } msg_hash_nl_blob =
 {
    "Hoofdmenu",
@@ -4289,6 +4293,31 @@ static const struct
    "rhoogt bewegingshelderheid maar vermindert de helderheid. Niet van toepassing bij 120hz omdat er"
    " maar \303\251\303\251n totaal 60Hz extra frame is, Het moet dus zwart zijn, anders zou BFI hele"
    "maal niet actief zijn.",
+   "Verticale synchronisatie (Vsync)",
+   "Synchroniseer de video-uitvoer van de grafische kaart met de verversingssnelheid van het scherm."
+   " Aanbevolen.",
+   "VSync-wisselinterval",
+   "Gebruik een aangepast wisselinterval voor VSync. Vermindert de vernieuwingsfrequentie van de mon"
+   "itor effectief met de opgegeven factor. 'Auto' stelt de factor in op basis van de door de core g"
+   "erapporteerde framesnelheid, wat zorgt voor een verbeterde framepacing bij het hardlopen van b.v"
+   ". 30 fps-inhoud op een 60 Hz-scherm of 60 fps-inhoud op een 120 Hz-scherm.",
+   "WAARSCHUWING: Snelle knipperen kan afbeeldingen in sommige schermen inbranden. Gebruik op eigen "
+   "risico // Simuleert een standaard scanlijn over meerdere sub-frames door het scherm verticaal te"
+   " verdelen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames er zijn.",
+   "Rollende scanlijn simulatie",
+   "WAARSCHUWING: Een snelle knippering kan afbeeldingen in sommige schermen inbranden. Gebruik op e"
+   "igen risico // Simuleert een standaard scanlijn over meerdere sub-frames door het scherm vertica"
+   "al omhoog te delen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames e"
+   "r zijn.",
+   "Max Swapchain-afbeeldingen",
+   "Vertelt de video driver om expliciet een opgegeven bufferingmodus te gebruiken.",
+   "Hard-synchronisatie van de CPU en GPU. Vermindert latentie ten koste van prestaties.",
+   "Maximale framelatentie",
+   "Vertelt de video driver om expliciet een opgegeven bufferingmodus te gebruiken.",
+   "Harde GPU Synchronisatie",
+   "Hard-synchronisatie van de CPU en GPU. Vermindert latentie ten koste van prestaties.",
+   "Harde GPU Sync Frames",
+   "Stel in hoeveel frames de CPU voor kan lopen op de GPU bij gebruik van 'Hard GPU Sync'.",
    "Voegt extra shader frame(s) binnen voor mogelijke shader effecten die zijn ontworpen om sneller "
    "te draaien dan de snelheid van de inhoud. Gebruik alleen de optie voor uw huidige ververskoers v"
    "oor weergave. Niet voor gebruik bij frequenties die geen veelvoud zijn van 60Hz zoals 144Hz, 165"
@@ -4399,13 +4428,37 @@ static const struct
    "sRGB FBO Geforceerd Uitschakelen",
    "Gewelddadig de sRGB FBO-ondersteuning uit te schakelen. Sommige Intel OpenGL stuurprogramma's op"
    " Windows hebben videoproblemen met sRGB FBO's. Als u dit inschakelt, kunt u dit omzeilen.",
+   "Volledig Scherm",
+   "Weergeef op volledig scherm. Kan worden gewijzigd tijdens runtime. Kan worden overschreven door "
+   "een opdrachtregelschakelaar.",
+   "Schermvullend venstermodus",
+   "Schermvullend venstermodus gebruiken tijdens modus volledig scherm om veranderingen in weergavem"
+   "odus te voorkomen.",
+   "Breedte op Volledig Scherm",
+   "Stel de aangepaste breedtegrootte in voor de modus voor volledig scherm zonder venster. Als het "
+   "is uitgeschakeld, wordt de desktopresolutie gebruikt.",
+   "Hoogte op Volledig Scherm",
+   "Stel de aangepaste hoogtegrootte in voor de modus voor volledig scherm zonder venster. Als het i"
+   "s uitgeschakeld, wordt de desktopresolutie gebruikt.",
    "Forceer resolutie op UWP",
    "Forceer de resolutie naar de grote van het volledig scherm, een waarde van 3840 x 2160 zal gebru"
    "ikt worden wanneer 0 is ingesteld.",
    "Venster Schalering",
-   "Stel de venstergrootte in op de opgegeven veelvoud van de core weergave-grootte.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Window Breedte",
+   "Stel de aangepaste breedte in voor het weergavevenster.",
+   "Window Hoogte",
+   "Stel de aangepaste hoogte in voor het weergavevenster.",
+#endif
+   "Maximale Vensterbreedte",
+   "Stel de maximale breedte van het weergavevenster in bij het aanpassen van de grootte van het for"
+   "maat op basis van de 'Vensterschaal'.",
+   "Maximale Vensterhoogte",
+   "Stel de maximale hoogte in van het weergavevenster bij het aanpassen van de grootte van het form"
+   "aat op basis van de 'Vensterschaal'.",
    "Venster Zichtbaarheid",
    "Het venster transparantie instellen.",
+   "Stel de venstergrootte in op de opgegeven veelvoud van de core weergave-grootte.",
    "Toon Venster Decoraties",
    "Toon venster titelbalk en grenzen.",
    "Toon Menubalk",
@@ -4419,16 +4472,6 @@ static const struct
    "Toon alle inhoud in een venster met vaste grootte van de afmetingen gespecificeerd door 'Venster"
    "breedte' en 'Vensterhoogte'. Wanneer uitgeschakeld, zal venstergrootte dynamisch worden ingestel"
    "d op basis van de 'Vensterschaal'.",
-   "Window Breedte",
-   "Stel de aangepaste breedte in voor het weergavevenster.",
-   "Window Hoogte",
-   "Stel de aangepaste hoogte in voor het weergavevenster.",
-   "Maximale Vensterbreedte",
-   "Stel de maximale breedte van het weergavevenster in bij het aanpassen van de grootte van het for"
-   "maat op basis van de 'Vensterschaal'.",
-   "Maximale Vensterhoogte",
-   "Stel de maximale hoogte in van het weergavevenster bij het aanpassen van de grootte van het form"
-   "aat op basis van de 'Vensterschaal'.",
    "Schalen in gehele getallen",
    "Alleen schaal video in gehele stappen. De basisgrootte is afhankelijk van core-gerapporteerde ge"
    "ometrie en hoogte-breedteverhouding.",
@@ -4463,21 +4506,23 @@ static const struct
    "rt.",
    "Viewport Anker Voorkeur X",
    "Viewport Anker Voorkeur X",
-   "Viewport Anker Voorkeur Y",
-   "Viewport Anker Voorkeur Y",
    "Horizontale positie van inhoud wanneer de viewport breder is dan de breedte van de inhoud. 0.0 i"
    "s helemaal links, 0.5 is center, 1.0 is helemaal rechts.",
+   "Viewport Anker Voorkeur Y",
    "Verticale positie van content wanneer de viewport groter is dan de hoogte van de inhoud. 0.0 is "
    "vanboven, 0.5 is center, 1.0 is vanonder.",
 #if defined(RARCH_MOBILE)
    "Viewport Anker Voorkeur X (portretori\303\253ntatie)",
-   "Viewport Anker Voorkeur X (portretori\303\253ntatie)",
-   "Viewport Anker Voorkeur Y (portretori\303\253ntatie)",
-   "Viewport Anker Voorkeur Y (portretori\303\253ntatie)",
    "Horizontale positie van inhoud wanneer de viewport breder is dan de breedte van de inhoud. 0.0 i"
    "s helemaal links, 0.5 is center, 1.0 is helemaal rechts.  (portretori\303\253ntatie)",
+   "Viewport Anker Voorkeur Y (portretori\303\253ntatie)",
    "Verticale positie van content wanneer de viewport groter is dan de hoogte van de inhoud. 0.0 is "
    "vanboven, 0.5 is center, 1.0 is vanonder. (portretori\303\253ntatie)",
+#endif
+   "Viewport Anker Voorkeur Y",
+#if defined(RARCH_MOBILE)
+   "Viewport Anker Voorkeur X (portretori\303\253ntatie)",
+   "Viewport Anker Voorkeur Y (portretori\303\253ntatie)",
 #endif
    "Aangepaste Beeldverhouding (Breedte)",
    "Aangepaste weergave-breedte die wordt gebruikt als de Beeldverhouding is ingesteld op 'Aangepast"
@@ -8234,50 +8279,13 @@ static const struct
    "Toon de \"SMB client\" instelling",
    "SMB share",
 #endif
-   "WAARSCHUWING: Snelle knipperen kan afbeeldingen in sommige schermen inbranden. Gebruik op eigen "
-   "risico // Simuleert een standaard scanlijn over meerdere sub-frames door het scherm verticaal te"
-   " verdelen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames er zijn.",
-   "Rollende scanlijn simulatie",
-   "WAARSCHUWING: Een snelle knippering kan afbeeldingen in sommige schermen inbranden. Gebruik op e"
-   "igen risico // Simuleert een standaard scanlijn over meerdere sub-frames door het scherm vertica"
-   "al omhoog te delen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames e"
-   "r zijn.",
-   "Volledig Scherm",
-   "Weergeef op volledig scherm. Kan worden gewijzigd tijdens runtime. Kan worden overschreven door "
-   "een opdrachtregelschakelaar.",
-   "Schermvullend venstermodus",
-   "Schermvullend venstermodus gebruiken tijdens modus volledig scherm om veranderingen in weergavem"
-   "odus te voorkomen.",
-   "Breedte op Volledig Scherm",
-   "Stel de aangepaste breedtegrootte in voor de modus voor volledig scherm zonder venster. Als het "
-   "is uitgeschakeld, wordt de desktopresolutie gebruikt.",
-   "Hoogte op Volledig Scherm",
-   "Stel de aangepaste hoogtegrootte in voor de modus voor volledig scherm zonder venster. Als het i"
-   "s uitgeschakeld, wordt de desktopresolutie gebruikt.",
-   "Verticale synchronisatie (Vsync)",
-   "Synchroniseer de video-uitvoer van de grafische kaart met de verversingssnelheid van het scherm."
-   " Aanbevolen.",
-   "VSync-wisselinterval",
-   "Gebruik een aangepast wisselinterval voor VSync. Vermindert de vernieuwingsfrequentie van de mon"
-   "itor effectief met de opgegeven factor. 'Auto' stelt de factor in op basis van de door de core g"
-   "erapporteerde framesnelheid, wat zorgt voor een verbeterde framepacing bij het hardlopen van b.v"
-   ". 30 fps-inhoud op een 60 Hz-scherm of 60 fps-inhoud op een 120 Hz-scherm.",
-   "Harde GPU Synchronisatie",
-   "Hard-synchronisatie van de CPU en GPU. Vermindert latentie ten koste van prestaties.",
-   "Harde GPU Sync Frames",
-   "Stel in hoeveel frames de CPU voor kan lopen op de GPU bij gebruik van 'Hard GPU Sync'.",
-   "Max Swapchain-afbeeldingen",
-   "Vertelt de video driver om expliciet een opgegeven bufferingmodus te gebruiken.",
-   "Hard-synchronisatie van de CPU en GPU. Vermindert latentie ten koste van prestaties.",
-   "Maximale framelatentie",
-   "Vertelt de video driver om expliciet een opgegeven bufferingmodus te gebruiken.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (174445u
+      (sizeof(msg_hash_nl_blob) == (174305u
 #ifdef HAVE_LAKKA
        + 17u
        + 44u
@@ -8314,17 +8322,23 @@ typedef char msg_hash_nl_blob_check[
        + 23u
        + 130u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 15u
+       + 56u
+       + 14u
+       + 55u
+#endif
 #if defined(DINGUX)
        + 25u
        + 182u
 #endif
 #if defined(RARCH_MOBILE)
        + 47u
-       + 47u
-       + 47u
-       + 47u
        + 175u
+       + 47u
        + 159u
+       + 47u
+       + 47u
 #endif
 #ifdef HAVE_MICROPHONE
        + 10u
@@ -8949,6 +8963,22 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9026,12 +9056,30 @@ static const uint32_t msg_hash_nl_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -9040,14 +9088,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
@@ -9075,17 +9115,19 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
 #if defined(RARCH_MOBILE)
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -12322,28 +12364,4 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

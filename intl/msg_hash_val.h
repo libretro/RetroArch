@@ -301,6 +301,14 @@ static const struct
    char s_258060bf[16];
    char s_3547866d[168];
    char s_4bceefff[26];
+   char s_6c52dfb1[33];
+   char s_47ae341f[151];
+   char s_45816e1d[31];
+   char s_48696c85[96];
+   char s_e9bca139[35];
+   char s_f2687ca7[96];
+   char s_59dc5d76[62];
+   char s_698d5124[116];
    char s_ef3d53d8[17];
 #if defined(DINGUX)
    char s_805730a0[23];
@@ -358,12 +366,28 @@ static const struct
 #endif
    char s_3c70d08d[36];
    char s_fc2d67bb[190];
+   char s_84c46931[35];
+   char s_3c13e61f[153];
+   char s_59f183c8[27];
+   char s_9f0fd076[149];
+   char s_59f183c9[32];
+   char s_9f0fd077[148];
    char s_f5ab35c0[25];
    char s_055c296e[104];
    char s_6c1369c6[23];
-   char s_74e69f4b[108];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[21];
+   char s_75325963[53];
+   char s_0f5266ce[23];
+   char s_f83a493c[53];
+#endif
+   char s_83e8dc72[28];
+   char s_4d0b4ce0[121];
+   char s_a64b3a0b[31];
+   char s_93bbb839[119];
    char s_2d8cb7ce[24];
    char s_3370e7fc[43];
+   char s_74e69f4b[108];
    char s_b9e24170[34];
    char s_5562855e[56];
    char s_48da4695[21];
@@ -372,14 +396,6 @@ static const struct
    char s_09581fc6[351];
    char s_7cf985f0[41];
    char s_f99a7d5e[280];
-   char s_30140cb5[21];
-   char s_75325963[53];
-   char s_0f5266ce[23];
-   char s_f83a493c[53];
-   char s_83e8dc72[28];
-   char s_4d0b4ce0[121];
-   char s_a64b3a0b[31];
-   char s_93bbb839[119];
    char s_4d7e9b13[30];
    char s_c79d5013[19];
    char s_8759e741[43];
@@ -652,20 +668,6 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_d21d875b[21];
 #endif
-   char r330[35];
-   char r331[153];
-   char r332[27];
-   char r333[149];
-   char r334[32];
-   char r335[148];
-   char r372[33];
-   char r373[151];
-   char r374[31];
-   char r380[35];
-   char r381[96];
-   char r382[62];
-   char r383[116];
-   char r602[96];
 } msg_hash_val_blob =
 {
    "Men\303\272 principal",
@@ -978,6 +980,18 @@ static const struct
    "Millora el rendiment del joc a costa d'un augment de la lat\303\250ncia i sacseig en la imatge. "
    "Usar nom\303\251s si la m\303\240xima velocitat no pot ser obtinguda de cap altra manera.",
    "Inserir fotogrames negres",
+   "Sincronitzaci\303\263 vertical (VSync)",
+   "Sincronitza l'eixida de v\303\255deo de la targeta gr\303\240fica amb la freq\303\274\303\250nci"
+   "a de refresc d'imatge d'actualitzaci\303\263 de la pantalla. Es recomana activar-lo.",
+   "Interval d'intercanvi de VSync",
+   "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
+   "\303\250rdua de rendiment.",
+   "Sincronitzaci\303\263 rigorosa de la GPU",
+   "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
+   "\303\250rdua de rendiment.",
+   "Nombre de fotogrames per a sincronitzaci\303\263 rigorosa de la GPU",
+   "Establix quants fotogrames pot moure la CPU anticipant-se a la GPU quan s'usa \"Sincronitzaci"
+   "\303\263 rigorosa de la GPU\".",
    "Filtrat bilineal",
 #if defined(DINGUX)
    "Interpolaci\303\263 d'imatge",
@@ -1056,14 +1070,35 @@ static const struct
    "For\303\247a la desactivaci\303\263 del suport de l'FBO (Frame Buffer Object) sRGB. Esta opci"
    "\303\263 pot minvar problemes de v\303\255deo amb el suport d'FBO sRGB en alguns controladors Op"
    "enGL d'Intel en Windows.",
+   "Mode pantalla completa en finestra",
+   "Si s'est\303\240 usant el mode de pantalla completa, for\303\247a l'\303\272s d'una finestra a m"
+   "ida completa de la pantalla per no haver de canviar entre modes de v\303\255deo.",
+   "Ample de pantalla completa",
+   "Ajusta la mida d'amplaria personalitzada de la imatge per al mode pantalla completa. No modifica"
+   "nt el valor, s'usar\303\240 la resoluci\303\263 de l'escriptori.",
+   "Al\303\247ada de la pantalla completa",
+   "Ajusta la mida d'al\303\247ada personalitzada de la imatge per al mode pantalla completa. No mod"
+   "ificant el valor, s'usar\303\240 la resoluci\303\263 de l'escriptori.",
    "For\303\247ar resoluci\303\263 a UWP",
    "For\303\247a la resoluci\303\263 a la mida de la pantalla. Si es fica valor 0, s'usar\303\240 un"
    " de fixe de 3840 \303\227 2160.",
    "Escalat en la finestra",
-   "Ajusta la mida de la finestra al m\303\272ltiple especificat de la mida de l''\303\240rea de vis"
-   "ualitzaci\303\263 del n\303\272cli.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Ample de la finestra",
+   "Ajusta una amplada personalitzada per a la finestra.",
+   "Al\303\247ada de la finestra",
+   "Ajusta l'al\303\247\303\240ria personalitzada per a la finestra.",
+#endif
+   "Ample m\303\240xim de la finestra",
+   "Ajusta l'ampl\303\240ria m\303\240xima de la finestra al reescalar-la autom\303\240ticament d'ac"
+   "ord al valor d'\302\253Escalat en la finestra\302\273.",
+   "Al\303\247ada m\303\240xima en la finestra",
+   "Ajusta l'al\303\247ada m\303\240xima de la finestra al reescalar-la autom\303\240ticament d'acor"
+   "d al valor d'\302\253Al\303\247ada en la finestra\302\273.",
    "Opacitat de la finestra",
    "Establix la transpar\303\250ncia de la finestra.",
+   "Ajusta la mida de la finestra al m\303\272ltiple especificat de la mida de l''\303\240rea de vis"
+   "ualitzaci\303\263 del n\303\272cli.",
    "Vore adornaments de les finestres",
    "Mostra la barra de t\303\255tol i les voreres de la finestra.",
    "Vore barra del men\303\272",
@@ -1079,16 +1114,6 @@ static const struct
    "rs d'\302\253Ample de la finestra\302\273 i \302\253Al\303\247ada de la finestra\302\273. Si es "
    "desactiva esta opci\303\263, la mida de la finestra canviar\303\240 de manera din\303\240mica se"
    "gons l'ajust \302\253Escala en la finestra\302\273.",
-   "Ample de la finestra",
-   "Ajusta una amplada personalitzada per a la finestra.",
-   "Al\303\247ada de la finestra",
-   "Ajusta l'al\303\247\303\240ria personalitzada per a la finestra.",
-   "Ample m\303\240xim de la finestra",
-   "Ajusta l'ampl\303\240ria m\303\240xima de la finestra al reescalar-la autom\303\240ticament d'ac"
-   "ord al valor d'\302\253Escalat en la finestra\302\273.",
-   "Al\303\247ada m\303\240xima en la finestra",
-   "Ajusta l'al\303\247ada m\303\240xima de la finestra al reescalar-la autom\303\240ticament d'acor"
-   "d al valor d'\302\253Al\303\247ada en la finestra\302\273.",
    "Escalar usant nombres sencers",
    "Relaci\303\263 d'aspecte",
    "Ajusta la relaci\303\263 d'aspecte de la imatge.",
@@ -1416,34 +1441,13 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Xarxa compartida SMB",
 #endif
-   "Mode pantalla completa en finestra",
-   "Si s'est\303\240 usant el mode de pantalla completa, for\303\247a l'\303\272s d'una finestra a m"
-   "ida completa de la pantalla per no haver de canviar entre modes de v\303\255deo.",
-   "Ample de pantalla completa",
-   "Ajusta la mida d'amplaria personalitzada de la imatge per al mode pantalla completa. No modifica"
-   "nt el valor, s'usar\303\240 la resoluci\303\263 de l'escriptori.",
-   "Al\303\247ada de la pantalla completa",
-   "Ajusta la mida d'al\303\247ada personalitzada de la imatge per al mode pantalla completa. No mod"
-   "ificant el valor, s'usar\303\240 la resoluci\303\263 de l'escriptori.",
-   "Sincronitzaci\303\263 vertical (VSync)",
-   "Sincronitza l'eixida de v\303\255deo de la targeta gr\303\240fica amb la freq\303\274\303\250nci"
-   "a de refresc d'imatge d'actualitzaci\303\263 de la pantalla. Es recomana activar-lo.",
-   "Interval d'intercanvi de VSync",
-   "Sincronitzaci\303\263 rigorosa de la GPU",
-   "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
-   "\303\250rdua de rendiment.",
-   "Nombre de fotogrames per a sincronitzaci\303\263 rigorosa de la GPU",
-   "Establix quants fotogrames pot moure la CPU anticipant-se a la GPU quan s'usa \"Sincronitzaci"
-   "\303\263 rigorosa de la GPU\".",
-   "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
-   "\303\250rdua de rendiment.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25732u
+      (sizeof(msg_hash_val_blob) == (25582u
 #ifdef HAVE_LAKKA
        + 14u
        + 52u
@@ -1472,6 +1476,12 @@ typedef char msg_hash_val_blob_check[
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 46u
        + 155u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 21u
+       + 53u
+       + 23u
+       + 53u
 #endif
 #if defined(DINGUX)
        + 29u
@@ -1791,6 +1801,14 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -1848,12 +1866,28 @@ static const uint32_t msg_hash_val_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -1862,14 +1896,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
@@ -2142,18 +2168,4 @@ static const uint32_t msg_hash_val_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 };

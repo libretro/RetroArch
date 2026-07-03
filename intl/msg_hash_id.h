@@ -330,6 +330,11 @@ static const struct
    char s_3547866d[120];
    char s_4bceefff[25];
    char s_4577a14d[38];
+   char s_47ae341f[83];
+   char s_48696c85[87];
+   char s_f2687ca7[87];
+   char s_59dc5d76[26];
+   char s_698d5124[92];
    char s_ef3d53d8[21];
 #if defined(DINGUX)
    char s_805730a0[19];
@@ -383,25 +388,33 @@ static const struct
 #endif
    char s_3c70d08d[23];
    char s_fc2d67bb[146];
+   char s_84c46931[28];
+   char s_3c13e61f[101];
+   char s_59f183c8[18];
+   char s_9f0fd076[124];
+   char s_59f183c9[19];
+   char s_9f0fd077[126];
    char s_f5ab35c0[22];
    char s_055c296e[97];
    char s_6c1369c6[17];
-   char s_74e69f4b[58];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[14];
+   char s_75325963[42];
+   char s_0f5266ce[15];
+   char s_f83a493c[47];
+#endif
+   char s_83e8dc72[29];
+   char s_4d0b4ce0[89];
+   char s_a64b3a0b[28];
+   char s_93bbb839[90];
    char s_2d8cb7ce[17];
    char s_3370e7fc[33];
+   char s_74e69f4b[58];
    char s_b9e24170[27];
    char s_68190518[32];
    char s_09581fc6[256];
    char s_7cf985f0[54];
    char s_f99a7d5e[183];
-   char s_30140cb5[14];
-   char s_75325963[42];
-   char s_0f5266ce[15];
-   char s_f83a493c[47];
-   char s_83e8dc72[29];
-   char s_4d0b4ce0[89];
-   char s_a64b3a0b[28];
-   char s_93bbb839[90];
    char s_4d7e9b13[21];
    char s_c79d5013[12];
 #if defined(DINGUX)
@@ -935,17 +948,6 @@ static const struct
    char s_33e06527[21];
 #endif
    char s_fb888c0b[41];
-   char r355[28];
-   char r356[101];
-   char r357[18];
-   char r358[124];
-   char r359[19];
-   char r360[126];
-   char r392[83];
-   char r399[87];
-   char r400[26];
-   char r401[92];
-   char r822[87];
 } msg_hash_id_blob =
 {
    "Menu Utama",
@@ -1272,6 +1274,11 @@ static const struct
    "pat berkecepatan penuh.",
    "Penyisipan Bingkai Hitam",
    "Sisipan Bingkai Hitam - Bingkai Gelap",
+   "Sinkronkan video keluaran kartu grafis ke laju penyegaran layar. Direkomendasikan.",
+   "Sinkronisasi CPU dan GPU dengan keras. Mengurangi latensi dengan mengorbankan kinerja.",
+   "Sinkronisasi CPU dan GPU dengan keras. Mengurangi latensi dengan mengorbankan kinerja.",
+   "Bingkai Sinkron GPU Keras",
+   "Atur berapa laju bingkai yang dijalankan CPU lebih dari GPU saat 'Sinkron GPU Keras' aktif.",
    "Penyaringan Bilinear",
 #if defined(DINGUX)
    "Interpolasi Gambar",
@@ -1333,12 +1340,31 @@ static const struct
    "Paksa matikan sRGB FBO",
    "Menonaktifkan paksa dukungan FBO sRGB. Beberapa kandar OpenGL Intel di Windows bermasalah video "
    "dengan FBO sRGB. Aktifkan ini untuk mengatasinya.",
+   "Mode Layar Penuh Berjendela",
+   "Jika layar penuh, lebih suka menggunakan jendela layar penuh untuk mencegah peralihan mode tampi"
+   "lan.",
+   "Lebar Layar Penuh",
+   "Atur ukuran lebar khusus untuk mode layar penuh non-jendela. Membiarkannya tidak disetel akan me"
+   "nggunakan resolusi desktop.",
+   "Tinggi Layar Penuh",
+   "Setel ukuran tinggi khusus untuk mode layar penuh non-jendela. Membiarkannya tidak disetel akan "
+   "menggunakan resolusi desktop.",
    "Paksa resolusi di UWP",
    "Paksa resolusi ke ukuran layar penuh, jika disetel ke 0, nilai tetap 3840 x 2160 akan digunakan.",
    "Skala Berjendela",
-   "Atur ukuran jendela layar sesuai pengali yang diinginkan.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Lebar Jendela",
+   "Atur lebar kustom untuk jendela tampilan.",
+   "Tinggi Jendela",
+   "Atur ketinggian khusus untuk jendela tampilan.",
+#endif
+   "Lebar Maksimal Jendela Layar",
+   "Atur tampilan lebar maksimal jendela layar berdasarkan skala yang ditentukan sebelumnya.",
+   "Lebar Minimal Jendela Layar",
+   "Atur tampilan tinggi maksimal jendela layar berdasarkan skala yang ditentukan sebelumnya.",
    "Opasitas Jendela",
    "Menetapkan transparansi jendela.",
+   "Atur ukuran jendela layar sesuai pengali yang diinginkan.",
    "Tampilkan Dekorasi Jendela",
    "Ingat Posisi dan Ukuran Jendela",
    "Menampilkan semua konten di ukuran jendela tetap yang ditentukan 'Lebar Jendela' dan 'Tinggi Jen"
@@ -1347,14 +1373,6 @@ static const struct
    "Gunakan Ukuran Jendela Layar Sesuai Keinginan Sendiri",
    "Menampilkan semua konten di ukuran jendela tetap yang ditentukan 'Lebar Jendela' dan 'Tinggi Jen"
    "dela'. Jika dinonaktifkan, ukuran jendela akan berubah berdasarkan 'Skala Berjendela'.",
-   "Lebar Jendela",
-   "Atur lebar kustom untuk jendela tampilan.",
-   "Tinggi Jendela",
-   "Atur ketinggian khusus untuk jendela tampilan.",
-   "Lebar Maksimal Jendela Layar",
-   "Atur tampilan lebar maksimal jendela layar berdasarkan skala yang ditentukan sebelumnya.",
-   "Lebar Minimal Jendela Layar",
-   "Atur tampilan tinggi maksimal jendela layar berdasarkan skala yang ditentukan sebelumnya.",
    "Skala Bilangan Bulat",
    "Rasio Aspek",
 #if defined(DINGUX)
@@ -1913,27 +1931,13 @@ static const struct
    "Aset tidak ditemukan",
 #endif
    "Mikrofon sdl2 perlu pengandar audio sdl2",
-   "Mode Layar Penuh Berjendela",
-   "Jika layar penuh, lebih suka menggunakan jendela layar penuh untuk mencegah peralihan mode tampi"
-   "lan.",
-   "Lebar Layar Penuh",
-   "Atur ukuran lebar khusus untuk mode layar penuh non-jendela. Membiarkannya tidak disetel akan me"
-   "nggunakan resolusi desktop.",
-   "Tinggi Layar Penuh",
-   "Setel ukuran tinggi khusus untuk mode layar penuh non-jendela. Membiarkannya tidak disetel akan "
-   "menggunakan resolusi desktop.",
-   "Sinkronkan video keluaran kartu grafis ke laju penyegaran layar. Direkomendasikan.",
-   "Sinkronisasi CPU dan GPU dengan keras. Mengurangi latensi dengan mengorbankan kinerja.",
-   "Bingkai Sinkron GPU Keras",
-   "Atur berapa laju bingkai yang dijalankan CPU lebih dari GPU saat 'Sinkron GPU Keras' aktif.",
-   "Sinkronisasi CPU dan GPU dengan keras. Mengurangi latensi dengan mengorbankan kinerja.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26908u
+      (sizeof(msg_hash_id_blob) == (26790u
 #ifdef HAVE_LAKKA
        + 17u
        + 43u
@@ -1958,6 +1962,12 @@ typedef char msg_hash_id_blob_check[
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 22u
        + 106u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 14u
+       + 42u
+       + 15u
+       + 47u
 #endif
 #if defined(DINGUX)
        + 21u
@@ -2324,6 +2334,11 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -2377,25 +2392,33 @@ static const uint32_t msg_hash_id_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
 #if defined(DINGUX)
@@ -2929,15 +2952,4 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
 #endif
    (uint32_t)MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 };

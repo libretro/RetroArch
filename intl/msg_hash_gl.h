@@ -456,6 +456,24 @@ static const struct
    char s_4577a14d[45];
    char s_07e1d73b[333];
    char s_5fdad539[289];
+   char s_6c52dfb1[33];
+   char s_47ae341f[103];
+   char s_45816e1d[31];
+   char s_2e69508b[409];
+   char s_2cb6ab5c[30];
+   char s_3c679f0a[321];
+   char s_52e3d6ea[40];
+   char s_58c80718[321];
+   char s_e6ca3876[21];
+   char s_88095324[108];
+   char s_9119ef97[33];
+   char s_48696c85[68];
+   char s_a1a7717d[31];
+   char s_a776daeb[108];
+   char s_e9bca139[25];
+   char s_f2687ca7[68];
+   char s_59dc5d76[39];
+   char s_698d5124[102];
    char s_93805cc8_0[500];
    char s_93805cc8_1[82];
    char s_7a7a3d56[245];
@@ -536,12 +554,30 @@ static const struct
 #endif
    char s_3c70d08d[27];
    char s_fc2d67bb[170];
+   char s_f417f6f1[14];
+   char s_123f401f[122];
+   char s_84c46931[37];
+   char s_3c13e61f[118];
+   char s_59f183c8[27];
+   char s_9f0fd076[150];
+   char s_59f183c9[28];
+   char s_9f0fd077[151];
    char s_f5ab35c0[26];
    char s_055c296e[118];
    char s_6c1369c6[17];
-   char s_74e69f4b[89];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[16];
+   char s_75325963[65];
+   char s_0f5266ce[17];
+   char s_f83a493c[66];
+#endif
+   char s_83e8dc72[24];
+   char s_4d0b4ce0[110];
+   char s_a64b3a0b[25];
+   char s_93bbb839[111];
    char s_2d8cb7ce[20];
    char s_3370e7fc[37];
+   char s_74e69f4b[89];
    char s_b9e24170[30];
    char s_5562855e[50];
    char s_48da4695[26];
@@ -550,14 +586,6 @@ static const struct
    char s_09581fc6[307];
    char s_7cf985f0[38];
    char s_f99a7d5e[235];
-   char s_30140cb5[16];
-   char s_75325963[65];
-   char s_0f5266ce[17];
-   char s_f83a493c[66];
-   char s_83e8dc72[24];
-   char s_4d0b4ce0[110];
-   char s_a64b3a0b[25];
-   char s_93bbb839[111];
    char s_4d7e9b13[15];
    char s_36667d81[128];
    char s_2f05bb87[23];
@@ -585,17 +613,19 @@ static const struct
    char s_9506fc7e[120];
    char s_9ca4bbd7[43];
    char s_b0fb58d3[43];
-   char s_9ca4bbd8[43];
-   char s_b0fb58d4[43];
    char s_73658ec1[154];
+   char s_b0fb58d4[43];
    char s_73658ec2[136];
 #if defined(RARCH_MOBILE)
-   char s_b754294b[74];
    char s_774121c7[74];
-   char s_b754294c[74];
-   char s_774121c8[74];
    char s_82c9e375[177];
+   char s_774121c8[74];
    char s_82c9e376[159];
+#endif
+   char s_9ca4bbd8[43];
+#if defined(RARCH_MOBILE)
+   char s_b754294b[74];
+   char s_b754294c[74];
 #endif
    char s_b7ef9e17[43];
    char s_81120e85[124];
@@ -3895,32 +3925,6 @@ static const struct
    char s_a1fdf4a6[44];
    char s_d21d875b[23];
 #endif
-   char r435[30];
-   char r436[321];
-   char r438[40];
-   char r439[321];
-   char r507[14];
-   char r508[122];
-   char r509[37];
-   char r510[118];
-   char r511[27];
-   char r512[150];
-   char r513[28];
-   char r514[151];
-   char r593[33];
-   char r594[103];
-   char r595[31];
-   char r596[409];
-   char r610[25];
-   char r611[68];
-   char r612[39];
-   char r613[102];
-   char r3095[21];
-   char r3096[108];
-   char r3098[33];
-   char r3099[68];
-   char r3100[31];
-   char r3101[108];
 } msg_hash_gl_blob =
 {
    "Men\303\272 Principal",
@@ -4461,6 +4465,38 @@ static const struct
    " cadros negros aumentan a claridade do movemento pero reducen o brillo. Non se aplica a 120 Hz x"
    "a que s\303\263 hai un cadro extra de 60 Hz, polo que debe ser negro, se non, BFI non estar\303"
    "\255a activo en absoluto.",
+   "Sincronizaci\303\263n vertical (VSync)",
+   "Sincroniza o v\303\255deo de sa\303\255da da tarxeta gr\303\241fica coa taxa de actualizaci\303"
+   "\263n da pantalla. Recomendado.",
+   "Intervalo de intercambio VSync",
+   "Use un intervalo de intercambio personalizado para VSync. Reduce efectivamente a frecuencia de a"
+   "ctualizaci\303\263n do monitor polo factor especificado. \"Autom\303\241tico\" define o factor e"
+   "n funci\303\263n da frecuencia de fotogramas informada polo n\303\272cleo, proporcionando un rit"
+   "mo de fotogramas mellorado cando se executa, por exemplo. Contido de 30 fps nunha pantalla de 60"
+   " Hz ou contido de 60 fps nunha pantalla de 120 Hz.",
+   "Subfotogramas de sombreadores",
+   "ADVERTENCIA: O destello r\303\241pido pode causar retenci\303\263n de imaxe en algunhas pantalla"
+   "s. Usa esta opci\303\263n baixo a t\303\272a responsabilidade // Simula unha li\303\261a de expl"
+   "oraci\303\263n b\303\241sica \303\263 longo de varios subfotogramas dividindo a pantalla vertica"
+   "lmente e renderizando cada parte da pantalla segundo o n\303\272mero de subfotogramas.",
+   "Simulaci\303\263n de li\303\261a de escaneo rodante",
+   "ADVERTENCIA: O destello r\303\241pido pode causar retenci\303\263n de imaxe en algunhas pantalla"
+   "s. Usa esta opci\303\263n baixo a t\303\272a responsabilidade // Simula unha li\303\261a de expl"
+   "oraci\303\263n b\303\241sica \303\263 longo de varios subfotogramas dividindo a pantalla vertica"
+   "lmente e renderizando cada parte da pantalla segundo o n\303\272mero de subfotogramas.",
+   "Max Swapchain Imaxes",
+   "Dille ao controlador de v\303\255deo que use de forma expl\303\255cita un modo de almacenamento "
+   "en b\303\272fer especificado.",
+   "Cadeas de intercambio esperables",
+   "Sincroniza a CPU e a GPU. Reduce a latencia ao custo do rendemento.",
+   "Latencia m\303\241xima de fotogramas",
+   "Dille ao controlador de v\303\255deo que use de forma expl\303\255cita un modo de almacenamento "
+   "en b\303\272fer especificado.",
+   "Hard GPU Sincronizaci\303\263n",
+   "Sincroniza a CPU e a GPU. Reduce a latencia ao custo do rendemento.",
+   "Hard GPU sincronizaci\303\263n de Fotogramas",
+   "Establece cantos fotogramas pode executar a CPU por diante da GPU ao usar \"Hard GPU Sincronizac"
+   "i\303\263n\".",
    "Insire fotograma(s) de sombreado extra entre os fotogramas para os posibles efectos de sombreado"
    " que estean dese\303\261ados para executarse m\303\241is r\303\241pido que a taxa de contido. Us"
    "e s\303\263 a opci\303\263n designada para a s\303\272a frecuencia de actualizaci\303\263n da pa"
@@ -4583,14 +4619,38 @@ static const struct
    "Forzar desactivar sRGB FBO",
    "Desactivar pola forza a compatibilidade con sRGB FBO. Alg\303\272ns controladores Intel OpenGL e"
    "n Windows te\303\261en problemas de v\303\255deo cos FBO sRGB. Activar isto pode funcionar.",
+   "Pantalla chea",
+   "Amosar en pantalla chea. P\303\263dese trocar durante a execuci\303\263n. P\303\263dese anular m"
+   "ediante un par\303\241metro da li\303\261a de comandos.",
+   "Modo de pantalla completa con xanela",
+   "Se a pantalla completa, prefire usar unha xanela de pantalla completa para evitar o cambio de mo"
+   "do de visualizaci\303\263n.",
+   "Ancho da pantalla completa",
+   "Establece o tama\303\261o de ancho personalizado para o modo de pantalla completa sen xanela. Se"
+   " non o configuras, utilizarase a resoluci\303\263n do escritorio.",
+   "Altura de pantalla completa",
+   "Establece o tama\303\261o de altura personalizado para o modo de pantalla completa sen xanela. S"
+   "e non o configuras, utilizarase a resoluci\303\263n do escritorio.",
    "Forzar resoluci\303\263n en UWP",
    "Forzar a resoluci\303\263n ao tama\303\261o de pantalla completa, se se establece en 0, empregar"
    "ase un valor fixo de 3840 x 2160.",
    "Escala de vent\303\241",
-   "Establece o tama\303\261o da xanela co m\303\272ltiplo especificado do tama\303\261o da ventana "
-   "principal.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Ancho da xanela",
+   "Establece o ancho personalizado para a xanela de visualizaci\303\263n.",
+   "Altura da xanela",
+   "Establece a altura personalizada para a xanela de visualizaci\303\263n.",
+#endif
+   "Ancho m\303\241ximo da xanela",
+   "Establece o ancho m\303\241ximo da xanela cando cambie o tama\303\261o automaticamente en funci"
+   "\303\263n da \"Escala da xanela\".",
+   "Altura m\303\241xima da xanela",
+   "Establece a altura m\303\241xima da xanela cando cambie o tama\303\261o automaticamente en funci"
+   "\303\263n da \"Escala da xanela\".",
    "Opacidade da xanela",
    "Establece a transparencia da xanela.",
+   "Establece o tama\303\261o da xanela co m\303\272ltiplo especificado do tama\303\261o da ventana "
+   "principal.",
    "Mostrar decoraci\303\263n da xanela",
    "Mostrar a barra de t\303\255tulo e os bordos da xanela.",
    "Mostrar a barra de men\303\272s",
@@ -4604,16 +4664,6 @@ static const struct
    "Mostra todo o contido nunha xanela de tama\303\261o fixo de dimensi\303\263ns especificadas por "
    "\"Ancho da xanela\" e \"Alto da xanela\". Cando estea desactivado, o tama\303\261o da xanela est"
    "ablecerase de forma din\303\241mica en funci\303\263n da \"Escala da xanela\".",
-   "Ancho da xanela",
-   "Establece o ancho personalizado para a xanela de visualizaci\303\263n.",
-   "Altura da xanela",
-   "Establece a altura personalizada para a xanela de visualizaci\303\263n.",
-   "Ancho m\303\241ximo da xanela",
-   "Establece o ancho m\303\241ximo da xanela cando cambie o tama\303\261o automaticamente en funci"
-   "\303\263n da \"Escala da xanela\".",
-   "Altura m\303\241xima da xanela",
-   "Establece a altura m\303\241xima da xanela cando cambie o tama\303\261o automaticamente en funci"
-   "\303\263n da \"Escala da xanela\".",
    "Escala enteira",
    "Escalar o v\303\255deo s\303\263 en pasos enteiros. O tama\303\261o base depende da xeometr\303"
    "\255a e da relaci\303\263n de aspecto informadas polo n\303\272cleo.",
@@ -4649,24 +4699,26 @@ static const struct
    "eixe Y da xanela de visualizaci\303\263n.",
    "Axuste de Ancoraxe da Xanela gr\303\241fica en X",
    "Axuste de Ancoraxe da Xanela gr\303\241fica en X",
-   "Axuste de Ancoraxe da Xanela gr\303\241fica en Y",
-   "Axuste de Ancoraxe da Xanela gr\303\241fica en Y",
    "Posici\303\263n horizontal do contido cando a xanela \303\251 m\303\241is ancha ca o contido. 0."
    "0 \303\251 totalmente \303\241 esquerda, 0.5 \303\251 o centro, 1.0 \303\251 totalmente \303\241"
    " dereita.",
+   "Axuste de Ancoraxe da Xanela gr\303\241fica en Y",
    "Posici\303\263n vertical do contido cando a xanela \303\251 m\303\241is alta ca o contido. 0.0 "
    "\303\251 arriba de todo, 0.5 \303\251 o centro, 1.0 \303\251 abaixo de todo.",
 #if defined(RARCH_MOBILE)
    "Desprazamento da ancoraxe da Xanela Gr\303\241fica en X (orientaci\303\263n vertical)",
-   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en X (orientaci\303\263n vertical)",
-   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en Y (orientaci\303\263n vertical)",
-   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en Y (orientaci\303\263n vertical)",
    "Posici\303\263n horizontal do contido cando a xanela \303\251 m\303\241is ancha ca o contido (or"
    "ientaci\303\263n vertical). 0.0 \303\251 totalmente \303\241 esquerda, 0.5 \303\251 o centro, 1."
    "0 \303\251 totalmente \303\241 dereita",
+   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en Y (orientaci\303\263n vertical)",
    "Posici\303\263n vertical do contido cando a xanela \303\251 m\303\241is alta ca o contido (orien"
    "taci\303\263n vertical). 0.0 \303\251 arriba de todo, 0.5 \303\251 o centro, 1.0 \303\251 abaixo"
    " de todo",
+#endif
+   "Axuste de Ancoraxe da Xanela gr\303\241fica en Y",
+#if defined(RARCH_MOBILE)
+   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en X (orientaci\303\263n vertical)",
+   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en Y (orientaci\303\263n vertical)",
 #endif
    "Relaci\303\263n de aspecto personalizada (ancho)",
    "Ancho da vista personalizada que se usa se a Relaci\303\263n de aspecto est\303\241 definida com"
@@ -8696,57 +8748,13 @@ static const struct
    "Amosar a configuraci\303\263n do \302\253Cliente SMB\302\273.",
    "Recurso compartido SMB",
 #endif
-   "Subfotogramas de sombreadores",
-   "ADVERTENCIA: O destello r\303\241pido pode causar retenci\303\263n de imaxe en algunhas pantalla"
-   "s. Usa esta opci\303\263n baixo a t\303\272a responsabilidade // Simula unha li\303\261a de expl"
-   "oraci\303\263n b\303\241sica \303\263 longo de varios subfotogramas dividindo a pantalla vertica"
-   "lmente e renderizando cada parte da pantalla segundo o n\303\272mero de subfotogramas.",
-   "Simulaci\303\263n de li\303\261a de escaneo rodante",
-   "ADVERTENCIA: O destello r\303\241pido pode causar retenci\303\263n de imaxe en algunhas pantalla"
-   "s. Usa esta opci\303\263n baixo a t\303\272a responsabilidade // Simula unha li\303\261a de expl"
-   "oraci\303\263n b\303\241sica \303\263 longo de varios subfotogramas dividindo a pantalla vertica"
-   "lmente e renderizando cada parte da pantalla segundo o n\303\272mero de subfotogramas.",
-   "Pantalla chea",
-   "Amosar en pantalla chea. P\303\263dese trocar durante a execuci\303\263n. P\303\263dese anular m"
-   "ediante un par\303\241metro da li\303\261a de comandos.",
-   "Modo de pantalla completa con xanela",
-   "Se a pantalla completa, prefire usar unha xanela de pantalla completa para evitar o cambio de mo"
-   "do de visualizaci\303\263n.",
-   "Ancho da pantalla completa",
-   "Establece o tama\303\261o de ancho personalizado para o modo de pantalla completa sen xanela. Se"
-   " non o configuras, utilizarase a resoluci\303\263n do escritorio.",
-   "Altura de pantalla completa",
-   "Establece o tama\303\261o de altura personalizado para o modo de pantalla completa sen xanela. S"
-   "e non o configuras, utilizarase a resoluci\303\263n do escritorio.",
-   "Sincronizaci\303\263n vertical (VSync)",
-   "Sincroniza o v\303\255deo de sa\303\255da da tarxeta gr\303\241fica coa taxa de actualizaci\303"
-   "\263n da pantalla. Recomendado.",
-   "Intervalo de intercambio VSync",
-   "Use un intervalo de intercambio personalizado para VSync. Reduce efectivamente a frecuencia de a"
-   "ctualizaci\303\263n do monitor polo factor especificado. \"Autom\303\241tico\" define o factor e"
-   "n funci\303\263n da frecuencia de fotogramas informada polo n\303\272cleo, proporcionando un rit"
-   "mo de fotogramas mellorado cando se executa, por exemplo. Contido de 30 fps nunha pantalla de 60"
-   " Hz ou contido de 60 fps nunha pantalla de 120 Hz.",
-   "Hard GPU Sincronizaci\303\263n",
-   "Sincroniza a CPU e a GPU. Reduce a latencia ao custo do rendemento.",
-   "Hard GPU sincronizaci\303\263n de Fotogramas",
-   "Establece cantos fotogramas pode executar a CPU por diante da GPU ao usar \"Hard GPU Sincronizac"
-   "i\303\263n\".",
-   "Max Swapchain Imaxes",
-   "Dille ao controlador de v\303\255deo que use de forma expl\303\255cita un modo de almacenamento "
-   "en b\303\272fer especificado.",
-   "Cadeas de intercambio esperables",
-   "Sincroniza a CPU e a GPU. Reduce a latencia ao custo do rendemento.",
-   "Latencia m\303\241xima de fotogramas",
-   "Dille ao controlador de v\303\255deo que use de forma expl\303\255cita un modo de almacenamento "
-   "en b\303\272fer especificado.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (191997u
+      (sizeof(msg_hash_gl_blob) == (191833u
 #ifdef HAVE_LAKKA
        + 15u
        + 34u
@@ -8782,17 +8790,23 @@ typedef char msg_hash_gl_blob_check[
        + 26u
        + 123u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 16u
+       + 65u
+       + 17u
+       + 66u
+#endif
 #if defined(DINGUX)
        + 31u
        + 170u
 #endif
 #if defined(RARCH_MOBILE)
        + 74u
-       + 74u
-       + 74u
-       + 74u
        + 177u
+       + 74u
        + 159u
+       + 74u
+       + 74u
 #endif
 #ifdef HAVE_MICROPHONE
        + 11u
@@ -9453,6 +9467,24 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9531,12 +9563,30 @@ static const uint32_t msg_hash_gl_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -9545,14 +9595,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
@@ -9580,17 +9622,19 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
 #if defined(RARCH_MOBILE)
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -12887,30 +12931,4 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

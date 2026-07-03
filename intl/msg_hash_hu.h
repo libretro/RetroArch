@@ -454,6 +454,24 @@ static const struct
    char s_4577a14d[51];
    char s_07e1d73b[344];
    char s_5fdad539[290];
+   char s_6c52dfb1[46];
+   char s_47ae341f[101];
+   char s_45816e1d[23];
+   char s_2e69508b[328];
+   char s_2cb6ab5c[28];
+   char s_3c679f0a[304];
+   char s_52e3d6ea[40];
+   char s_58c80718[304];
+   char s_e6ca3876[35];
+   char s_88095324[75];
+   char s_9119ef97[25];
+   char s_48696c85[100];
+   char s_a1a7717d[35];
+   char s_a776daeb[75];
+   char s_e9bca139[30];
+   char s_f2687ca7[100];
+   char s_59dc5d76[42];
+   char s_698d5124[103];
    char s_93805cc8[474];
    char s_7a7a3d56[208];
    char s_ef3d53d8[17];
@@ -535,12 +553,30 @@ static const struct
 #endif
    char s_3c70d08d[36];
    char s_fc2d67bb[188];
+   char s_f417f6f1[34];
+   char s_123f401f[107];
+   char s_84c46931[20];
+   char s_3c13e61f[128];
+   char s_59f183c8[31];
+   char s_9f0fd076[143];
+   char s_59f183c9[28];
+   char s_9f0fd077[141];
    char s_f5ab35c0[32];
    char s_055c296e[132];
    char s_6c1369c6[22];
-   char s_74e69f4b[95];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[19];
+   char s_75325963[53];
+   char s_0f5266ce[17];
+   char s_f83a493c[51];
+#endif
+   char s_83e8dc72[30];
+   char s_4d0b4ce0[99];
+   char s_a64b3a0b[28];
+   char s_93bbb839[97];
    char s_2d8cb7ce[26];
    char s_3370e7fc[48];
+   char s_74e69f4b[95];
    char s_b9e24170[32];
    char s_5562855e[54];
    char s_48da4695[25];
@@ -549,14 +585,6 @@ static const struct
    char s_09581fc6[298];
    char s_7cf985f0[19];
    char s_f99a7d5e[233];
-   char s_30140cb5[19];
-   char s_75325963[53];
-   char s_0f5266ce[17];
-   char s_f83a493c[51];
-   char s_83e8dc72[30];
-   char s_4d0b4ce0[99];
-   char s_a64b3a0b[28];
-   char s_93bbb839[97];
    char s_4d7e9b13[39];
    char s_36667d81[121];
    char s_2f05bb87[37];
@@ -585,17 +613,19 @@ static const struct
    char s_9506fc7e[44];
    char s_9ca4bbd7[34];
    char s_b0fb58d3[34];
-   char s_9ca4bbd8[35];
-   char s_b0fb58d4[35];
    char s_73658ec1[149];
+   char s_b0fb58d4[35];
    char s_73658ec2[149];
 #if defined(RARCH_MOBILE)
-   char s_b754294b[53];
    char s_774121c7[53];
-   char s_b754294c[54];
-   char s_774121c8[54];
    char s_82c9e375[168];
+   char s_774121c8[54];
    char s_82c9e376[168];
+#endif
+   char s_9ca4bbd8[35];
+#if defined(RARCH_MOBILE)
+   char s_b754294b[53];
+   char s_b754294c[54];
 #endif
    char s_b7ef9e17[32];
    char s_81120e85[86];
@@ -3835,32 +3865,6 @@ static const struct
    char s_a1fdf4a6[45];
    char s_d21d875b[15];
 #endif
-   char r433[28];
-   char r434[304];
-   char r436[40];
-   char r437[304];
-   char r508[34];
-   char r509[107];
-   char r510[20];
-   char r511[128];
-   char r512[31];
-   char r513[143];
-   char r514[28];
-   char r515[141];
-   char r596[46];
-   char r597[101];
-   char r598[23];
-   char r599[328];
-   char r615[30];
-   char r616[100];
-   char r617[42];
-   char r618[103];
-   char r3034[35];
-   char r3035[75];
-   char r3037[25];
-   char r3038[100];
-   char r3039[35];
-   char r3040[75];
 } msg_hash_hu_blob =
 {
    "F\305\221men\303\274",
@@ -4477,6 +4481,45 @@ static const struct
    "\241s, kisebb \303\251rt\303\251kn\303\251l nagyobb a f\303\251nyer\305\221. 120 Hz-n\303\251l c"
    "sak 1 k\303\251pkocka besz\303\272r\303\241sa lehets\303\251ges, \303\255gy annak mindenk\303"
    "\251pp feket\303\251nek kell lennie, ha a BFI aktiv\303\241lva van.",
+   "F\303\274gg\305\221leges szinkronjelhez igazod\303\241s (VSync)",
+   "A grafikus k\303\241rtya kimenet\303\251nek id\305\221z\303\255t\303\251se a k\303\251perny\305"
+   "\221 friss\303\255t\303\251si frekvenci\303\241j\303\241hoz. Aj\303\241nlott.",
+   "VSync v\303\241lt\303\263peri\303\263dus",
+   "Egyedi VSync v\303\241lt\303\263peri\303\263dus. A megadott szorz\303\263val cs\303\266kkenti a "
+   "monitor friss\303\255t\303\251si frekvenci\303\241j\303\241t. Az \"Automatikus\" be\303\241ll"
+   "\303\255t\303\241s a mag \303\241ltal megadott k\303\251pfriss\303\255t\303\251s alapj\303\241n "
+   "\303\241ll\303\255tja ezt, \303\255gy jobb a k\303\251pk\303\266vet\303\251s, ha p\303\251ld\303"
+   "\241ul 30 fps-es tartalom fut 60 Hz-es k\303\251perny\305\221n, vagy 60 fps-es tartalom 120 Hz-e"
+   "s k\303\251perny\305\221n.",
+   "Alk\303\251pkock\303\241k a shaderekhez",
+   "FIGYELEM: a gyors vill\303\263dz\303\241s bizonyos kijelz\305\221k\303\266n k\303\251pvisszatart"
+   "\303\241st okozhat. Csak saj\303\241t felel\305\221ss\303\251gre. // Egyszer\305\261 g\303\266rd"
+   "\303\274l\305\221 elektronsug\303\241r szimul\303\241ci\303\263 t\303\266bb alk\303\251pkock\303"
+   "\241n kereszt\303\274l, a k\303\251perny\305\221t az alk\303\251pkock\303\241k sz\303\241m\303"
+   "\241nak megfelel\305\221en f\303\274gg\305\221legesen felosztva \303\251s r\303\251szlegesen meg"
+   "jelen\303\255tve.",
+   "G\303\266rd\303\274l\305\221 elektronsug\303\241r szimul\303\241l\303\241sa",
+   "FIGYELEM: a gyors vill\303\263dz\303\241s bizonyos kijelz\305\221k\303\266n k\303\251pvisszatart"
+   "\303\241st okozhat. Csak saj\303\241t felel\305\221ss\303\251gre. // Egyszer\305\261 g\303\266rd"
+   "\303\274l\305\221 elektronsug\303\241r szimul\303\241ci\303\263 t\303\266bb alk\303\251pkock\303"
+   "\241n kereszt\303\274l, a k\303\251perny\305\221t az alk\303\251pkock\303\241k sz\303\241m\303"
+   "\241nak megfelel\305\221en f\303\274gg\305\221legesen felosztva \303\251s r\303\251szlegesen meg"
+   "jelen\303\255tve.",
+   "Swapchain k\303\251pek maxim\303\241lis sz\303\241ma",
+   "A vide\303\263illeszt\305\221 utas\303\255t\303\241sa a megadott pufferel\303\251si m\303\263d h"
+   "aszn\303\241lat\303\241ra.",
+   "V\303\241rakoztatott swapchain",
+   "A CPU \303\251s a GPU szigor\303\272 \303\266sszehangol\303\241sa. Cs\303\266kkenti a k\303\251s"
+   "leltet\303\251st a teljes\303\255tm\303\251ny rov\303\241s\303\241ra.",
+   "Legnagyobb k\303\251pkocka k\303\251sleltet\303\251s",
+   "A vide\303\263illeszt\305\221 utas\303\255t\303\241sa a megadott pufferel\303\251si m\303\263d h"
+   "aszn\303\241lat\303\241ra.",
+   "Szigor\303\272 GPU szinkroniz\303\241ci\303\263",
+   "A CPU \303\251s a GPU szigor\303\272 \303\266sszehangol\303\241sa. Cs\303\266kkenti a k\303\251s"
+   "leltet\303\251st a teljes\303\255tm\303\251ny rov\303\241s\303\241ra.",
+   "Szigor\303\272 GPU szinkroniz\303\241ci\303\263 k\303\251pkock\303\241i",
+   "A CPU ennyi k\303\251pkock\303\241val j\303\241rhat a GPU el\305\221tt, ha a \"Szigor\303\272 GP"
+   "U szinkroniz\303\241ci\303\263\" be van kapcsolva.",
    "Egy vagy t\303\266bb plusz k\303\251pkocka besz\303\272r\303\241sa olyan shader effektekhez, ame"
    "lyek a tartalom friss\303\255t\303\251s\303\251n\303\251l gyorsabban kell fussanak. Csak a k\303"
    "\251perny\305\221 aktu\303\241lis friss\303\255t\303\251si gyakoris\303\241g\303\241nak megfelel"
@@ -4625,15 +4668,42 @@ static const struct
    "Az sRGB FBO t\303\241mogat\303\241s letilt\303\241sa minden esetben. Windows alatt n\303\251h"
    "\303\241ny Intel OpenGL illeszt\305\221programnak gondot okoz az sRGB FBO-k haszn\303\241lata, e"
    "zzel a lehet\305\221s\303\251ggel ez megker\303\274lhet\305\221.",
+   "Teljes k\303\251perny\305\221s megjelen\303\255t\303\251s",
+   "Megjelen\303\255t\303\251s teljes k\303\251perny\305\221n. Fut\303\241s k\303\266zben m\303\263d"
+   "os\303\255that\303\263, parancssori kapcsol\303\263val fel\303\274l\303\255rhat\303\263.",
+   "Teljes ablakos m\303\263d",
+   "Teljes k\303\251perny\305\221 eset\303\251n ink\303\241bb haszn\303\241ljon teljes k\303\251pern"
+   "y\305\221s ablakot, hogy megakad\303\241lyozza a megjelen\303\255t\303\251si m\303\263dv\303\241"
+   "lt\303\241st.",
+   "Teljes k\303\251perny\305\221 sz\303\251less\303\251ge",
+   "Egyedi sz\303\251less\303\251g be\303\241ll\303\255t\303\241sa a nem ablakos teljes k\303\251per"
+   "ny\305\221s m\303\263dhoz. Be\303\241ll\303\255tatlanul (0-s \303\251rt\303\251ken) az asztali f"
+   "elbont\303\241st haszn\303\241lja.",
+   "Teljes k\303\251perny\305\221 magass\303\241g",
+   "Egyedi magass\303\241g be\303\241ll\303\255t\303\241sa a nem ablakos teljes k\303\251perny\305"
+   "\221s m\303\263dhoz. Be\303\241ll\303\255tatlanul (0-s \303\251rt\303\251ken) az asztali felbont"
+   "\303\241st haszn\303\241lja.",
    "Er\305\221ltetett felbont\303\241s az UWP-n",
    "K\303\251nyszer\303\255tse a felbont\303\241st teljes k\303\251perny\305\221s m\303\251retre, ha"
    " 0-ra van \303\241ll\303\255tva, a rendszer egy 3840 x 2160 fix \303\251rt\303\251ket haszn\303"
    "\241l.",
    "Ablakm\303\251ret szorz\303\263ja",
-   "\303\201ll\303\255tsa be az ablakm\303\251retet az alapvet\305\221 n\303\251zetablak m\303\251re"
-   "t\303\251nek megadott t\303\266bbsz\303\266r\303\266s\303\251re.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Ablak sz\303\251less\303\251ge",
+   "\303\201ll\303\255tsa be a kijelz\305\221ablak egy\303\251ni sz\303\251less\303\251g\303\251t.",
+   "Ablak magass\303\241ga",
+   "\303\201ll\303\255tsa be a kijelz\305\221ablak egy\303\251ni magass\303\241g\303\241t.",
+#endif
+   "Ablak maxim\303\241lis sz\303\251less\303\251ge",
+   "Az ablak maxim\303\241lis sz\303\251less\303\251ge, az ablakm\303\251ret szorz\303\263ja szerint"
+   "i automatikus \303\241tm\303\251retez\303\251skor.",
+   "Ablak maxim\303\241lis magass\303\241ga",
+   "Az ablak maxim\303\241lis magass\303\241ga, az ablakm\303\251ret szorz\303\263ja szerinti automa"
+   "tikus \303\241tm\303\251retez\303\251skor.",
    "Ablak \303\241tl\303\241tszatlans\303\241ga",
    "Az ablak \303\241tl\303\241tszatlans\303\241g\303\241nak be\303\241ll\303\255t\303\241sa.",
+   "\303\201ll\303\255tsa be az ablakm\303\251retet az alapvet\305\221 n\303\251zetablak m\303\251re"
+   "t\303\251nek megadott t\303\266bbsz\303\266r\303\266s\303\251re.",
    "Az ablakd\303\255szek megjelen\303\255t\303\251se",
    "Az ablak c\303\255msor\303\241nak \303\251s keret\303\251nek megjelen\303\255t\303\251se.",
    "Men\303\274sor megjelen\303\255t\303\251se",
@@ -4649,16 +4719,6 @@ static const struct
    "\303\241ltal meghat\303\241rozott, r\303\266gz\303\255tett m\303\251ret\305\261 ablakban jelenik"
    " meg. Kikapcsolt \303\241llapotban az ablakm\303\251ret az \342\200\236Ablakm\303\251ret szorz"
    "\303\263ja\342\200\235 alapj\303\241n dinamikusan v\303\241ltozik.",
-   "Ablak sz\303\251less\303\251ge",
-   "\303\201ll\303\255tsa be a kijelz\305\221ablak egy\303\251ni sz\303\251less\303\251g\303\251t.",
-   "Ablak magass\303\241ga",
-   "\303\201ll\303\255tsa be a kijelz\305\221ablak egy\303\251ni magass\303\241g\303\241t.",
-   "Ablak maxim\303\241lis sz\303\251less\303\251ge",
-   "Az ablak maxim\303\241lis sz\303\251less\303\251ge, az ablakm\303\251ret szorz\303\263ja szerint"
-   "i automatikus \303\241tm\303\251retez\303\251skor.",
-   "Ablak maxim\303\241lis magass\303\241ga",
-   "Az ablak maxim\303\241lis magass\303\241ga, az ablakm\303\251ret szorz\303\263ja szerinti automa"
-   "tikus \303\241tm\303\251retez\303\251skor.",
    "Eg\303\251sz-szorz\303\263s felbont\303\241s sk\303\241l\303\241z\303\241s",
    "A k\303\251p m\303\251retez\303\251se csak eg\303\251sz l\303\251p\303\251sekben. Az alapm\303"
    "\251ret a mag \303\241ltal k\303\266z\303\266lt m\303\251retekt\305\221l \303\251s k\303\251par"
@@ -4698,27 +4758,29 @@ static const struct
    "Az egyedi n\303\251z\305\221ablak Y ir\303\241ny\303\272 eltol\303\241sa.",
    "N\303\251z\305\221ablak v\303\255zszintes eltol\303\241sa",
    "N\303\251z\305\221ablak v\303\255zszintes eltol\303\241sa",
-   "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa",
-   "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa",
    "A tartalom v\303\255zszintes helyzete, amikor a n\303\251z\305\221ablak sz\303\251lesebb ann\303"
    "\241l. 0.0 a balra igaz\303\255t\303\241s, 0.5 a k\303\266z\303\251pre helyez\303\251s, 1.0 a jo"
    "bbra igaz\303\255t\303\241s.",
+   "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa",
    "A tartalom f\303\274gg\305\221leges helyzete, amikor a n\303\251z\305\221ablak magasabb ann\303"
    "\241l. 0.0 a fentre igaz\303\255t\303\241s, 0.5 a k\303\266z\303\251pre helyez\303\251s, 1.0 a l"
    "entre igaz\303\255t\303\241s.",
 #if defined(RARCH_MOBILE)
    "N\303\251z\305\221ablak v\303\255zszintes eltol\303\241sa (\303\241ll\303\263 n\303\251zetben)",
-   "N\303\251z\305\221ablak v\303\255zszintes eltol\303\241sa (\303\241ll\303\263 n\303\251zetben)",
-   "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa (\303\241ll\303\263 n\303\251ze"
-   "tben)",
-   "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa (\303\241ll\303\263 n\303\251ze"
-   "tben)",
    "A tartalom v\303\255zszintes helyzete, amikor a n\303\251z\305\221ablak sz\303\251lesebb ann\303"
    "\241l. 0.0 a balra igaz\303\255t\303\241s, 0.5 a k\303\266z\303\251pre helyez\303\251s, 1.0 a jo"
    "bbra igaz\303\255t\303\241s. (\303\201ll\303\263 n\303\251zetben)",
+   "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa (\303\241ll\303\263 n\303\251ze"
+   "tben)",
    "A tartalom f\303\274gg\305\221leges helyzete, amikor a n\303\251z\305\221ablak magasabb ann\303"
    "\241l. 0.0 a fentre igaz\303\255t\303\241s, 0.5 a k\303\266z\303\251pre helyez\303\251s, 1.0 a l"
    "entre igaz\303\255t\303\241s. (\303\201ll\303\263 n\303\251zetben)",
+#endif
+   "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa",
+#if defined(RARCH_MOBILE)
+   "N\303\251z\305\221ablak v\303\255zszintes eltol\303\241sa (\303\241ll\303\263 n\303\251zetben)",
+   "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa (\303\241ll\303\263 n\303\251ze"
+   "tben)",
 #endif
    "Egyedi k\303\251par\303\241ny (sz\303\251less\303\251g)",
    "Az egyedi n\303\251z\305\221ablak sz\303\251less\303\251ge, ha a k\303\251par\303\241ny \"Egyedi"
@@ -9163,67 +9225,13 @@ static const struct
    "Az SMB kliens be\303\241ll\303\255t\303\241sok jelenjenek meg.",
    "SMB megoszt\303\241s",
 #endif
-   "Alk\303\251pkock\303\241k a shaderekhez",
-   "FIGYELEM: a gyors vill\303\263dz\303\241s bizonyos kijelz\305\221k\303\266n k\303\251pvisszatart"
-   "\303\241st okozhat. Csak saj\303\241t felel\305\221ss\303\251gre. // Egyszer\305\261 g\303\266rd"
-   "\303\274l\305\221 elektronsug\303\241r szimul\303\241ci\303\263 t\303\266bb alk\303\251pkock\303"
-   "\241n kereszt\303\274l, a k\303\251perny\305\221t az alk\303\251pkock\303\241k sz\303\241m\303"
-   "\241nak megfelel\305\221en f\303\274gg\305\221legesen felosztva \303\251s r\303\251szlegesen meg"
-   "jelen\303\255tve.",
-   "G\303\266rd\303\274l\305\221 elektronsug\303\241r szimul\303\241l\303\241sa",
-   "FIGYELEM: a gyors vill\303\263dz\303\241s bizonyos kijelz\305\221k\303\266n k\303\251pvisszatart"
-   "\303\241st okozhat. Csak saj\303\241t felel\305\221ss\303\251gre. // Egyszer\305\261 g\303\266rd"
-   "\303\274l\305\221 elektronsug\303\241r szimul\303\241ci\303\263 t\303\266bb alk\303\251pkock\303"
-   "\241n kereszt\303\274l, a k\303\251perny\305\221t az alk\303\251pkock\303\241k sz\303\241m\303"
-   "\241nak megfelel\305\221en f\303\274gg\305\221legesen felosztva \303\251s r\303\251szlegesen meg"
-   "jelen\303\255tve.",
-   "Teljes k\303\251perny\305\221s megjelen\303\255t\303\251s",
-   "Megjelen\303\255t\303\251s teljes k\303\251perny\305\221n. Fut\303\241s k\303\266zben m\303\263d"
-   "os\303\255that\303\263, parancssori kapcsol\303\263val fel\303\274l\303\255rhat\303\263.",
-   "Teljes ablakos m\303\263d",
-   "Teljes k\303\251perny\305\221 eset\303\251n ink\303\241bb haszn\303\241ljon teljes k\303\251pern"
-   "y\305\221s ablakot, hogy megakad\303\241lyozza a megjelen\303\255t\303\251si m\303\263dv\303\241"
-   "lt\303\241st.",
-   "Teljes k\303\251perny\305\221 sz\303\251less\303\251ge",
-   "Egyedi sz\303\251less\303\251g be\303\241ll\303\255t\303\241sa a nem ablakos teljes k\303\251per"
-   "ny\305\221s m\303\263dhoz. Be\303\241ll\303\255tatlanul (0-s \303\251rt\303\251ken) az asztali f"
-   "elbont\303\241st haszn\303\241lja.",
-   "Teljes k\303\251perny\305\221 magass\303\241g",
-   "Egyedi magass\303\241g be\303\241ll\303\255t\303\241sa a nem ablakos teljes k\303\251perny\305"
-   "\221s m\303\263dhoz. Be\303\241ll\303\255tatlanul (0-s \303\251rt\303\251ken) az asztali felbont"
-   "\303\241st haszn\303\241lja.",
-   "F\303\274gg\305\221leges szinkronjelhez igazod\303\241s (VSync)",
-   "A grafikus k\303\241rtya kimenet\303\251nek id\305\221z\303\255t\303\251se a k\303\251perny\305"
-   "\221 friss\303\255t\303\251si frekvenci\303\241j\303\241hoz. Aj\303\241nlott.",
-   "VSync v\303\241lt\303\263peri\303\263dus",
-   "Egyedi VSync v\303\241lt\303\263peri\303\263dus. A megadott szorz\303\263val cs\303\266kkenti a "
-   "monitor friss\303\255t\303\251si frekvenci\303\241j\303\241t. Az \"Automatikus\" be\303\241ll"
-   "\303\255t\303\241s a mag \303\241ltal megadott k\303\251pfriss\303\255t\303\251s alapj\303\241n "
-   "\303\241ll\303\255tja ezt, \303\255gy jobb a k\303\251pk\303\266vet\303\251s, ha p\303\251ld\303"
-   "\241ul 30 fps-es tartalom fut 60 Hz-es k\303\251perny\305\221n, vagy 60 fps-es tartalom 120 Hz-e"
-   "s k\303\251perny\305\221n.",
-   "Szigor\303\272 GPU szinkroniz\303\241ci\303\263",
-   "A CPU \303\251s a GPU szigor\303\272 \303\266sszehangol\303\241sa. Cs\303\266kkenti a k\303\251s"
-   "leltet\303\251st a teljes\303\255tm\303\251ny rov\303\241s\303\241ra.",
-   "Szigor\303\272 GPU szinkroniz\303\241ci\303\263 k\303\251pkock\303\241i",
-   "A CPU ennyi k\303\251pkock\303\241val j\303\241rhat a GPU el\305\221tt, ha a \"Szigor\303\272 GP"
-   "U szinkroniz\303\241ci\303\263\" be van kapcsolva.",
-   "Swapchain k\303\251pek maxim\303\241lis sz\303\241ma",
-   "A vide\303\263illeszt\305\221 utas\303\255t\303\241sa a megadott pufferel\303\251si m\303\263d h"
-   "aszn\303\241lat\303\241ra.",
-   "V\303\241rakoztatott swapchain",
-   "A CPU \303\251s a GPU szigor\303\272 \303\266sszehangol\303\241sa. Cs\303\266kkenti a k\303\251s"
-   "leltet\303\251st a teljes\303\255tm\303\251ny rov\303\241s\303\241ra.",
-   "Legnagyobb k\303\251pkocka k\303\251sleltet\303\251s",
-   "A vide\303\263illeszt\305\221 utas\303\255t\303\241sa a megadott pufferel\303\251si m\303\263d h"
-   "aszn\303\241lat\303\241ra.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (183117u
+      (sizeof(msg_hash_hu_blob) == (182977u
 #ifdef HAVE_LAKKA
        + 15u
        + 47u
@@ -9261,17 +9269,23 @@ typedef char msg_hash_hu_blob_check[
        + 38u
        + 144u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 19u
+       + 53u
+       + 17u
+       + 51u
+#endif
 #if defined(DINGUX)
        + 23u
        + 139u
 #endif
 #if defined(RARCH_MOBILE)
        + 53u
+       + 168u
+       + 54u
+       + 168u
        + 53u
        + 54u
-       + 54u
-       + 168u
-       + 168u
 #endif
 #ifdef HAVE_MICROPHONE
        + 9u
@@ -9932,6 +9946,24 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -10013,12 +10045,30 @@ static const uint32_t msg_hash_hu_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -10027,14 +10077,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
@@ -10063,17 +10105,19 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
 #if defined(RARCH_MOBILE)
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -13311,30 +13355,4 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

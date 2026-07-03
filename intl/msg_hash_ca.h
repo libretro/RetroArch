@@ -455,6 +455,24 @@ static const struct
    char s_4577a14d[59];
    char s_07e1d73b[380];
    char s_5fdad539[356];
+   char s_6c52dfb1[33];
+   char s_47ae341f[118];
+   char s_45816e1d[31];
+   char s_2e69508b[424];
+   char s_2cb6ab5c[24];
+   char s_3c679f0a[313];
+   char s_52e3d6ea[47];
+   char s_58c80718[313];
+   char s_e6ca3876[50];
+   char s_88095324[74];
+   char s_9119ef97[31];
+   char s_48696c85[83];
+   char s_a1a7717d[31];
+   char s_a776daeb[74];
+   char s_e9bca139[28];
+   char s_f2687ca7[83];
+   char s_59dc5d76[42];
+   char s_698d5124[109];
    char s_93805cc8_0[500];
    char s_93805cc8_1[157];
    char s_7a7a3d56[206];
@@ -538,12 +556,30 @@ static const struct
 #endif
    char s_3c70d08d[35];
    char s_fc2d67bb[173];
+   char s_f417f6f1[36];
+   char s_123f401f[138];
+   char s_84c46931[37];
+   char s_3c13e61f[113];
+   char s_59f183c8[32];
+   char s_9f0fd076[156];
+   char s_59f183c9[32];
+   char s_9f0fd077[156];
    char s_f5ab35c0[29];
    char s_055c296e[111];
    char s_6c1369c6[23];
-   char s_74e69f4b[113];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[23];
+   char s_75325963[66];
+   char s_0f5266ce[23];
+   char s_f83a493c[66];
+#endif
+   char s_83e8dc72[31];
+   char s_4d0b4ce0[134];
+   char s_a64b3a0b[31];
+   char s_93bbb839[134];
    char s_2d8cb7ce[24];
    char s_3370e7fc[44];
+   char s_74e69f4b[113];
    char s_b9e24170[35];
    char s_5562855e[39];
    char s_48da4695[25];
@@ -552,14 +588,6 @@ static const struct
    char s_09581fc6[324];
    char s_7cf985f0[45];
    char s_f99a7d5e[255];
-   char s_30140cb5[23];
-   char s_75325963[66];
-   char s_0f5266ce[23];
-   char s_f83a493c[66];
-   char s_83e8dc72[31];
-   char s_4d0b4ce0[134];
-   char s_a64b3a0b[31];
-   char s_93bbb839[134];
    char s_4d7e9b13[16];
    char s_36667d81[128];
    char s_2f05bb87[20];
@@ -587,17 +615,19 @@ static const struct
    char s_9506fc7e[93];
    char s_9ca4bbd7[37];
    char s_b0fb58d3[37];
-   char s_9ca4bbd8[37];
-   char s_b0fb58d4[37];
    char s_73658ec1[167];
+   char s_b0fb58d4[37];
    char s_73658ec2[179];
 #if defined(RARCH_MOBILE)
-   char s_b754294b[97];
    char s_774121c7[97];
-   char s_b754294c[97];
-   char s_774121c8[97];
    char s_82c9e375[167];
+   char s_774121c8[97];
    char s_82c9e376[202];
+#endif
+   char s_9ca4bbd8[37];
+#if defined(RARCH_MOBILE)
+   char s_b754294b[97];
+   char s_b754294c[97];
 #endif
    char s_b7ef9e17[43];
    char s_81120e85[142];
@@ -3936,32 +3966,6 @@ static const struct
    char s_a1fdf4a6[42];
    char s_d21d875b[21];
 #endif
-   char r434[24];
-   char r435[313];
-   char r437[47];
-   char r438[313];
-   char r509[36];
-   char r510[138];
-   char r511[37];
-   char r512[113];
-   char r513[32];
-   char r514[156];
-   char r515[32];
-   char r516[156];
-   char r596[33];
-   char r597[118];
-   char r598[31];
-   char r599[424];
-   char r615[28];
-   char r616[83];
-   char r617[42];
-   char r618[109];
-   char r3122[50];
-   char r3123[74];
-   char r3125[31];
-   char r3126[83];
-   char r3127[31];
-   char r3128[74];
 } msg_hash_ca_blob =
 {
    "Men\303\272 principal",
@@ -4501,6 +4505,39 @@ static const struct
    "lantor. No es pot aplicar a 120 Hz at\303\250s que nom\303\251s hi ha un fotograma extra als 60 "
    "Hz, i per aix\303\262 cal que sigui en negre, ja que altrament la inserci\303\263 de fotogrames "
    "en negre no seria activa.",
+   "Sincronitzaci\303\263 vertical (VSync)",
+   "Sincronitza la sortida de v\303\255deo de la targeta gr\303\240fica a la freq\303\274\303\250nci"
+   "a d'actualitzaci\303\263 de la pantalla. Recomanat.",
+   "Interval d'intercanvi de VSync",
+   "Usa un interval d\342\200\231intercanvi personalitzat per la sincronitzaci\303\263 vertical. Red"
+   "ueix la freq\303\274\303\250ncia d\342\200\231actualitzaci\303\263 del monitor pel factor especi"
+   "ficat. \302\253Autom\303\240tic\302\273 estableix el factor depenent dels fotogrames per segon q"
+   "ue indica el nucli, proporcionant una millora en la taxa de fotogrames quan per exemple s\342"
+   "\200\231executa un contingut a 30 fps en una pantalla a 60 Hz o un contingut a 60 fps en una pan"
+   "talla a 120 Hz.",
+   "Subfotogrames d'ombreig",
+   "AV\303\215S: El parpelleig r\303\240pid pot causar errors gr\303\240fics en algunes pantalles. F"
+   "es servir aquesta opci\303\263 sota la teva responsabilitat // Simula una l\303\255nia d'escanei"
+   "g en moviment b\303\240sica sobre m\303\272ltiples subfotogrames dividint la pantalla en vertica"
+   "l i renderitzant cada part d'acord amb quants subfotogrames hi ha.",
+   "Simulaci\303\263 de la l\303\255nia d'escaneig en moviment",
+   "AV\303\215S: El parpelleig r\303\240pid pot causar errors gr\303\240fics en algunes pantalles. F"
+   "es servir aquesta opci\303\263 sota la teva responsabilitat // Simula una l\303\255nia d'escanei"
+   "g en moviment b\303\240sica sobre m\303\272ltiples subfotogrames dividint la pantalla en vertica"
+   "l i renderitzant cada part d'acord amb quants subfotogrames hi ha.",
+   "Nombre m\303\240xim d'imatges en la cadena d'intercanvi",
+   "Avisa al controlador de v\303\255deo que faci servir un mode de b\303\272fer concret.",
+   "Cadenes d'intercanvi en espera",
+   "Sincronitzaci\303\263 r\303\255gida de la CPU i GPU. Redueix la lat\303\250ncia a cost de rendim"
+   "ent.",
+   "Lat\303\250ncia de fotograma m\303\240xima",
+   "Avisa al controlador de v\303\255deo que faci servir un mode de b\303\272fer concret.",
+   "Sincronitzaci\303\263 dura de GPU",
+   "Sincronitzaci\303\263 r\303\255gida de la CPU i GPU. Redueix la lat\303\250ncia a cost de rendim"
+   "ent.",
+   "Fotogrames de sincronitzaci\303\263 dura de GPU",
+   "Estableix quants fotogrames de CPU poden anar per davant de la GPU quan s'usa 'Sincronitzaci\303"
+   "\263 dura de GPU'.",
    "Insereix fotogrames d'ombreig extra entre fotogrames per a qualsevol efecte d'ombreig que estigu"
    "i designat per a executar-se m\303\251s r\303\240pid que la freq\303\274\303\250ncia del conting"
    "ut. Useu nom\303\251s l'opci\303\263 designada per a la freq\303\274\303\250ncia d'actualitzaci"
@@ -4630,14 +4667,38 @@ static const struct
    "For\303\247a la desactivaci\303\263 del suport sRGB del FBO. Amb Windows alguns controladors Ope"
    "nGL d'Intel tenen problemes de v\303\255deo amb l'FBO sRGB. Activant aix\303\262 es podria resol"
    "dre.",
+   "Visualitzaci\303\263 en pantalla completa",
+   "Visualitzaci\303\263 en pantalla completa. Es pot canviar durant l'execuci\303\263. Es pot sobre"
+   "escriure amb un par\303\240metre de la consola de comandes.",
+   "Mode de finestra a pantalla completa",
+   "Amb pantalla completa, prefereix usar una finestra a pantalla completa per evitar el canvi del m"
+   "ode de pantalla.",
+   "Amplada de la pantalla completa",
+   "Estableix una mida personalitzada de l'amplada per mode de pantalla completa sense finestra. S'u"
+   "tilitzar\303\240 la resoluci\303\263 de l'escriptori si no s'estableix.",
+   "Al\303\247ada de la pantalla completa",
+   "Estableix una mida personalitzada de l'al\303\247ada per mode de pantalla completa sense finestr"
+   "a. S'utilitzar\303\240 la resoluci\303\263 de l'escriptori si no s'estableix.",
    "For\303\247a la resoluci\303\263 amb UWP",
    "For\303\247a la resoluci\303\263 de la mida de pantalla completa. S'usar\303\240 un valor fix de"
    " 3840 x 2160 si s'estableix a 0.",
    "Escalat de la finestra",
-   "Estableix la mida de la finestra al m\303\272ltiple especificat de la mida de la sub\303\240rea "
-   "de visualitzaci\303\263 del nucli.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Amplada de la finestra",
+   "Estableix l'amplada personalitzada de la finestra de la pantalla.",
+   "Al\303\247ada de la finestra",
+   "Estableix l'al\303\247ada personalitzada de la finestra de la pantalla.",
+#endif
+   "Amplada m\303\240xima de la finestra",
+   "Estableix l'amplada m\303\240xima de la finestra de la pantalla quan redimensiona autom\303\240t"
+   "icament en funci\303\263 de l'\"Escalat de la finestra\".",
+   "Al\303\247ada m\303\240xima de la finestra",
+   "Estableix l'al\303\247ada m\303\240xima de la finestra de la pantalla quan redimensiona autom"
+   "\303\240ticament en funci\303\263 de l'\"Escalat de la finestra\".",
    "Opacitat de la finestra",
    "Estableix la transpar\303\250ncia de la finestra.",
+   "Estableix la mida de la finestra al m\303\272ltiple especificat de la mida de la sub\303\240rea "
+   "de visualitzaci\303\263 del nucli.",
    "Mostra les decoracions de finestra",
    "Mostra la barra de t\303\255tol i les vores.",
    "Mostra la barra de men\303\272",
@@ -4651,16 +4712,6 @@ static const struct
    "Mostra tot el contingut dins una finestra de mida fixa amb les dimensions especificades per 'Amp"
    "lada de la finestra' i 'Al\303\247ada de la finestra'. Si es deshabilita la mida de la finestra "
    "s'establir\303\240 din\303\240micament en funci\303\263 de l'\"Escalat de la finestra\".",
-   "Amplada de la finestra",
-   "Estableix l'amplada personalitzada de la finestra de la pantalla.",
-   "Al\303\247ada de la finestra",
-   "Estableix l'al\303\247ada personalitzada de la finestra de la pantalla.",
-   "Amplada m\303\240xima de la finestra",
-   "Estableix l'amplada m\303\240xima de la finestra de la pantalla quan redimensiona autom\303\240t"
-   "icament en funci\303\263 de l'\"Escalat de la finestra\".",
-   "Al\303\247ada m\303\240xima de la finestra",
-   "Estableix l'al\303\247ada m\303\240xima de la finestra de la pantalla quan redimensiona autom"
-   "\303\240ticament en funci\303\263 de l'\"Escalat de la finestra\".",
    "Escalat d'enter",
    "Limita l'escalat del v\303\255deo a m\303\272ltiples enters. La mida base dependr\303\240 de la "
    "geometria del sistema i de la relaci\303\263 d'aspecte.",
@@ -4695,29 +4746,31 @@ static const struct
    "isualitzaci\303\263.",
    "Compensa l'eix X del punt d'anclatge",
    "Compensa l'eix X del punt d'anclatge",
-   "Compensa l'eix Y del punt d'anclatge",
-   "Compensa l'eix Y del punt d'anclatge",
    "Posici\303\263 horitzontal de contingut si l'\303\240rea de visualitzaci\303\263 \303\251s m\303"
    "\251s ampla que el contingut. 0.0 per l'extrem esquerre, 0.5 per centrat, 1.0 per per l'extrem d"
    "ret.",
+   "Compensa l'eix Y del punt d'anclatge",
    "Estableix la posici\303\263 vertical del contingut si l'\303\240rea de visualitzaci\303\263 \303"
    "\251s m\303\251s alta que el contingut. 0,0 per l'extrem superior, 0,5 per a centrar, 1,0 per l'"
    "extrem inferior.",
 #if defined(RARCH_MOBILE)
    "Compensaci\303\263 de l'eix X del punt d'ancoratge de l'\303\240rea de visualitzaci\303\263 (ori"
    "entaci\303\263 vertical)",
+   "Posici\303\263 horitzontal de contingut si l'\303\240rea de visualitzaci\303\263 \303\251s m\303"
+   "\251s ampla que el contingut. 0.0 per l'extrem esquerre, 0.5 per centrat, 1.0 per per l'extrem d"
+   "ret.",
+   "Compensaci\303\263 de l'eix Y del punt d'ancoratge de l'\303\240rea de visualitzaci\303\263 (ori"
+   "entaci\303\263 vertical)",
+   "Estableix la posici\303\263 vertical del contingut si l'\303\240rea de visualitzaci\303\263 \303"
+   "\251s m\303\251s alta que el contingut. 0,0 per l'extrem superior, 0,5 per a centrar, 1,0 per l'"
+   "extrem inferior. (Orientaci\303\263 vertical)",
+#endif
+   "Compensa l'eix Y del punt d'anclatge",
+#if defined(RARCH_MOBILE)
    "Compensaci\303\263 de l'eix X del punt d'ancoratge de l'\303\240rea de visualitzaci\303\263 (ori"
    "entaci\303\263 vertical)",
    "Compensaci\303\263 de l'eix Y del punt d'ancoratge de l'\303\240rea de visualitzaci\303\263 (ori"
    "entaci\303\263 vertical)",
-   "Compensaci\303\263 de l'eix Y del punt d'ancoratge de l'\303\240rea de visualitzaci\303\263 (ori"
-   "entaci\303\263 vertical)",
-   "Posici\303\263 horitzontal de contingut si l'\303\240rea de visualitzaci\303\263 \303\251s m\303"
-   "\251s ampla que el contingut. 0.0 per l'extrem esquerre, 0.5 per centrat, 1.0 per per l'extrem d"
-   "ret.",
-   "Estableix la posici\303\263 vertical del contingut si l'\303\240rea de visualitzaci\303\263 \303"
-   "\251s m\303\251s alta que el contingut. 0,0 per l'extrem superior, 0,5 per a centrar, 1,0 per l'"
-   "extrem inferior. (Orientaci\303\263 vertical)",
 #endif
    "Relaci\303\263 d'aspecte personalitzat (amplada)",
    "Amplada personalitzada de la sub\303\240rea de visualitzaci\303\263 que s'usa si la relaci\303"
@@ -8842,58 +8895,13 @@ static const struct
    "Mostra la configuraci\303\263 de client de SMB.",
    "Xarxa compartida SMB",
 #endif
-   "Subfotogrames d'ombreig",
-   "AV\303\215S: El parpelleig r\303\240pid pot causar errors gr\303\240fics en algunes pantalles. F"
-   "es servir aquesta opci\303\263 sota la teva responsabilitat // Simula una l\303\255nia d'escanei"
-   "g en moviment b\303\240sica sobre m\303\272ltiples subfotogrames dividint la pantalla en vertica"
-   "l i renderitzant cada part d'acord amb quants subfotogrames hi ha.",
-   "Simulaci\303\263 de la l\303\255nia d'escaneig en moviment",
-   "AV\303\215S: El parpelleig r\303\240pid pot causar errors gr\303\240fics en algunes pantalles. F"
-   "es servir aquesta opci\303\263 sota la teva responsabilitat // Simula una l\303\255nia d'escanei"
-   "g en moviment b\303\240sica sobre m\303\272ltiples subfotogrames dividint la pantalla en vertica"
-   "l i renderitzant cada part d'acord amb quants subfotogrames hi ha.",
-   "Visualitzaci\303\263 en pantalla completa",
-   "Visualitzaci\303\263 en pantalla completa. Es pot canviar durant l'execuci\303\263. Es pot sobre"
-   "escriure amb un par\303\240metre de la consola de comandes.",
-   "Mode de finestra a pantalla completa",
-   "Amb pantalla completa, prefereix usar una finestra a pantalla completa per evitar el canvi del m"
-   "ode de pantalla.",
-   "Amplada de la pantalla completa",
-   "Estableix una mida personalitzada de l'amplada per mode de pantalla completa sense finestra. S'u"
-   "tilitzar\303\240 la resoluci\303\263 de l'escriptori si no s'estableix.",
-   "Al\303\247ada de la pantalla completa",
-   "Estableix una mida personalitzada de l'al\303\247ada per mode de pantalla completa sense finestr"
-   "a. S'utilitzar\303\240 la resoluci\303\263 de l'escriptori si no s'estableix.",
-   "Sincronitzaci\303\263 vertical (VSync)",
-   "Sincronitza la sortida de v\303\255deo de la targeta gr\303\240fica a la freq\303\274\303\250nci"
-   "a d'actualitzaci\303\263 de la pantalla. Recomanat.",
-   "Interval d'intercanvi de VSync",
-   "Usa un interval d\342\200\231intercanvi personalitzat per la sincronitzaci\303\263 vertical. Red"
-   "ueix la freq\303\274\303\250ncia d\342\200\231actualitzaci\303\263 del monitor pel factor especi"
-   "ficat. \302\253Autom\303\240tic\302\273 estableix el factor depenent dels fotogrames per segon q"
-   "ue indica el nucli, proporcionant una millora en la taxa de fotogrames quan per exemple s\342"
-   "\200\231executa un contingut a 30 fps en una pantalla a 60 Hz o un contingut a 60 fps en una pan"
-   "talla a 120 Hz.",
-   "Sincronitzaci\303\263 dura de GPU",
-   "Sincronitzaci\303\263 r\303\255gida de la CPU i GPU. Redueix la lat\303\250ncia a cost de rendim"
-   "ent.",
-   "Fotogrames de sincronitzaci\303\263 dura de GPU",
-   "Estableix quants fotogrames de CPU poden anar per davant de la GPU quan s'usa 'Sincronitzaci\303"
-   "\263 dura de GPU'.",
-   "Nombre m\303\240xim d'imatges en la cadena d'intercanvi",
-   "Avisa al controlador de v\303\255deo que faci servir un mode de b\303\272fer concret.",
-   "Cadenes d'intercanvi en espera",
-   "Sincronitzaci\303\263 r\303\255gida de la CPU i GPU. Redueix la lat\303\250ncia a cost de rendim"
-   "ent.",
-   "Lat\303\250ncia de fotograma m\303\240xima",
-   "Avisa al controlador de v\303\255deo que faci servir un mode de b\303\272fer concret.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (198212u
+      (sizeof(msg_hash_ca_blob) == (198034u
 #ifdef HAVE_LAKKA
        + 16u
        + 48u
@@ -8931,17 +8939,23 @@ typedef char msg_hash_ca_blob_check[
        + 39u
        + 134u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 23u
+       + 66u
+       + 23u
+       + 66u
+#endif
 #if defined(DINGUX)
        + 29u
        + 160u
 #endif
 #if defined(RARCH_MOBILE)
        + 97u
-       + 97u
-       + 97u
-       + 97u
        + 167u
+       + 97u
        + 202u
+       + 97u
+       + 97u
 #endif
 #ifdef HAVE_MICROPHONE
        + 10u
@@ -9606,6 +9620,24 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9687,12 +9719,30 @@ static const uint32_t msg_hash_ca_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -9701,14 +9751,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
@@ -9736,17 +9778,19 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
 #if defined(RARCH_MOBILE)
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -13082,30 +13126,4 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

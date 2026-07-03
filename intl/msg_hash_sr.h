@@ -338,24 +338,32 @@ static const struct
 #endif
    char s_3c70d08d[29];
    char s_fc2d67bb[160];
+   char s_84c46931[21];
+   char s_3c13e61f[103];
+   char s_59f183c8[21];
+   char s_9f0fd076[127];
+   char s_59f183c9[20];
+   char s_9f0fd077[126];
    char s_f5ab35c0[27];
    char s_055c296e[104];
    char s_6c1369c6[16];
-   char s_74e69f4b[80];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[16];
+   char s_75325963[24];
+   char s_0f5266ce[15];
+   char s_f83a493c[23];
+#endif
+   char s_83e8dc72[27];
+   char s_4d0b4ce0[105];
+   char s_a64b3a0b[26];
+   char s_93bbb839[104];
    char s_2d8cb7ce[21];
+   char s_74e69f4b[80];
    char s_b9e24170[28];
    char s_68190518[36];
    char s_09581fc6[296];
    char s_7cf985f0[38];
    char s_f99a7d5e[221];
-   char s_30140cb5[16];
-   char s_75325963[24];
-   char s_0f5266ce[15];
-   char s_f83a493c[23];
-   char s_83e8dc72[27];
-   char s_4d0b4ce0[105];
-   char s_a64b3a0b[26];
-   char s_93bbb839[104];
    char s_4d7e9b13[22];
    char s_c79d5013[13];
 #if defined(DINGUX)
@@ -430,12 +438,6 @@ static const struct
    char s_96c461f7[125];
 #endif
 #endif
-   char r314[21];
-   char r315[103];
-   char r316[21];
-   char r317[127];
-   char r318[20];
-   char r319[126];
 } msg_hash_sr_blob =
 {
    "Glavni meni",
@@ -784,13 +786,34 @@ static const struct
    "Forsirano isklju\304\215i sRGB FBO",
    "Forsirano iskllju\304\215i podr\305\241ku za sRGB FBO. Neki Intel OpenGL drajveri na Windows-u i"
    "maju video probleme sa sRGB FBO. Ova opcija mo\305\276e biti zaobilazno re\305\241enje.",
+   "Re\305\276im punog prozora",
+   "Ako je ukjlu\304\215en re\305\276im punog ekrana, koristi pun prozor da bi se spre\304\215ilo me"
+   "njanje re\305\276ima displeja.",
+   "\305\240irina punog ekrana",
+   "Ru\304\215no postavi \305\241irinu ekrana u re\305\276imu punog ekrana (bez punog prozora). Ako "
+   "nije pode\305\241eno koristi\304\207e se desktop rezolucija.",
+   "Visina punog ekrana",
+   "Ru\304\215no postavi visinu ekrana u re\305\276imu punog ekrana (bez punog prozora). Ako nije po"
+   "de\305\241eno koristi\304\207e se desktop rezolucija.",
    "Forsiraj rezoluciju na UWP",
    "Forsiraj rezoluciju na veli\304\215inu punog ekrana, ako je 0, bi\304\207e kori\305\241\304\207e"
    "na fiksna vrednost 3840 x 2160.",
    "Razmera prozora",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "\305\240irina prozora",
+   "Podesi \305\241irinu prozora.",
+   "Visina prozora",
+   "Podesi visinu prozora.",
+#endif
+   "Maksimalna \305\241irina prozora",
+   "Podesi maksimalnu \305\241irinu prozora kada se automatski menja veli\304\215ina na osnovu opcij"
+   "e 'Razmera prozora'.",
+   "Maksimalna visina prozora",
+   "Podesi maksimalnu visinu prozora kada se automatski menja veli\304\215ina na osnovu opcije 'Razm"
+   "era prozora'.",
+   "Neprozirnost prozora",
    "Postavi razmeru prozora na odre\304\221eni umno\305\276ak veli\304\215ine prozora prikaza jezgra"
    ".",
-   "Neprozirnost prozora",
    "Prikazuj dekoracije prozora",
    "Upamti poziciju i veli\304\215inu prozora",
    "Prikazuj sav sadr\305\276aj u prozoru fiksne veli\304\215ine dimenzija pode\305\241enim opcijama"
@@ -801,16 +824,6 @@ static const struct
    "Prikazuj sav sadr\305\276aj u prozoru fiksne veli\304\215ine dimenzija pode\305\241enim opcijama"
    " '\305\240irina prozora' i 'Visina prozora'. Ako je isklju\304\215eno, veli\304\215ina prozora "
    "\304\207e biti dinami\304\215ki odre\304\221ena na osnovu opcije 'Razmera prozora'.",
-   "\305\240irina prozora",
-   "Podesi \305\241irinu prozora.",
-   "Visina prozora",
-   "Podesi visinu prozora.",
-   "Maksimalna \305\241irina prozora",
-   "Podesi maksimalnu \305\241irinu prozora kada se automatski menja veli\304\215ina na osnovu opcij"
-   "e 'Razmera prozora'.",
-   "Maksimalna visina prozora",
-   "Podesi maksimalnu visinu prozora kada se automatski menja veli\304\215ina na osnovu opcije 'Razm"
-   "era prozora'.",
    "Celobrojno skaliranje",
    "Odnos ekrana",
 #if defined(DINGUX)
@@ -895,19 +908,13 @@ static const struct
    "eboot is required when changing.",
 #endif
 #endif
-   "Režim punog prozora",
-   "Ako je ukjlučen režim punog ekrana, koristi pun prozor da bi se sprečilo menjanje režima displeja.",
-   "Širina punog ekrana",
-   "Ručno postavi širinu ekrana u režimu punog ekrana (bez punog prozora). Ako nije podešeno koristiće se desktop rezolucija.",
-   "Visina punog ekrana",
-   "Ručno postavi visinu ekrana u režimu punog ekrana (bez punog prozora). Ako nije podešeno koristiće se desktop rezolucija.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12324u
+      (sizeof(msg_hash_sr_blob) == (12246u
 #ifdef HAVE_LAKKA
        + 12u
        + 40u
@@ -930,6 +937,12 @@ typedef char msg_hash_sr_blob_check[
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 31u
        + 109u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 16u
+       + 24u
+       + 15u
+       + 23u
 #endif
 #if defined(DINGUX)
        + 21u
@@ -1274,24 +1287,32 @@ static const uint32_t msg_hash_sr_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
 #if defined(DINGUX)
@@ -1366,10 +1387,4 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
 };

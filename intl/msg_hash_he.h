@@ -219,9 +219,13 @@ static const struct
    char s_7c8a700d[10];
    char s_7c89e3ac[10];
 #endif
-   char s_48da4695[27];
+   char s_59f183c8[23];
+   char s_59f183c9[23];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[18];
    char s_0f5266ce[18];
+#endif
+   char s_48da4695[27];
    char s_c79d5013[25];
    char s_ad5ff591[9];
    char s_a79acb40[20];
@@ -325,8 +329,6 @@ static const struct
    char s_96c461f7[125];
 #endif
 #endif
-   char r198[23];
-   char r199[23];
 } msg_hash_he_blob =
 {
    "\327\252\327\244\327\250\327\231\327\230 \327\250\327\220\327\251\327\231",
@@ -606,10 +608,14 @@ static const struct
    "60 \327\224\327\250\327\245",
    "50 \327\224\327\250\327\245",
 #endif
-   "\327\224\327\246\327\222 \327\251\327\225\327\250\327\252 \327\252\327\244\327\250\327\231\327"
-   "\230",
+   "\327\250\327\225\327\227\327\221 \327\236\327\241\327\232 \327\236\327\234\327\220",
+   "\327\222\327\225\327\221\327\224 \327\236\327\241\327\232 \327\236\327\234\327\220",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "\327\250\327\225\327\227\327\221 \327\227\327\234\327\225\327\237",
    "\327\222\327\225\327\221\327\224 \327\227\327\234\327\225\327\237",
+#endif
+   "\327\224\327\246\327\222 \327\251\327\225\327\250\327\252 \327\252\327\244\327\250\327\231\327"
+   "\230",
    "\327\231\327\227\327\241 \327\222\327\225\327\221\327\224-\327\250\327\225\327\227\327\221",
    "\327\224\327\222\327\223\327\250",
    "\327\234\327\231\327\221\327\224 \327\241\327\225\327\244\327\247\327\224",
@@ -727,15 +733,13 @@ static const struct
    "eboot is required when changing.",
 #endif
 #endif
-   "\327\250\327\225\327\227\327\221 \327\236\327\241\327\232 \327\236\327\234\327\220",
-   "\327\222\327\225\327\221\327\224 \327\236\327\241\327\232 \327\236\327\234\327\220",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_he_blob_check[
-      (sizeof(msg_hash_he_blob) == (6144u
+      (sizeof(msg_hash_he_blob) == (6108u
 #ifdef HAVE_LAKKA
        + 20u
 #endif
@@ -745,6 +749,10 @@ typedef char msg_hash_he_blob_check[
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 10u
        + 10u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 18u
+       + 18u
 #endif
 #if defined(DINGUX)
        + 41u
@@ -968,9 +976,13 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
@@ -1074,6 +1086,4 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
 };

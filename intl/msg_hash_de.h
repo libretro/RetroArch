@@ -442,6 +442,23 @@ static const struct
    char s_4577a14d[38];
    char s_07e1d73b[379];
    char s_5fdad539[310];
+   char s_6c52dfb1[34];
+   char s_47ae341f[104];
+   char s_45816e1d[21];
+   char s_2e69508b[389];
+   char s_2cb6ab5c[19];
+   char s_3c679f0a[336];
+   char s_52e3d6ea[29];
+   char s_58c80718[336];
+   char s_e6ca3876[36];
+   char s_88095324[73];
+   char s_48696c85[76];
+   char s_a1a7717d[26];
+   char s_a776daeb[73];
+   char s_e9bca139[28];
+   char s_f2687ca7[76];
+   char s_59dc5d76[36];
+   char s_698d5124[108];
    char s_93805cc8_0[500];
    char s_93805cc8_1[40];
    char s_7a7a3d56[239];
@@ -522,12 +539,30 @@ static const struct
 #endif
    char s_3c70d08d[37];
    char s_fc2d67bb[179];
+   char s_f417f6f1[16];
+   char s_123f401f[125];
+   char s_84c46931[26];
+   char s_3c13e61f[99];
+   char s_59f183c8[15];
+   char s_9f0fd076[125];
+   char s_59f183c9[14];
+   char s_9f0fd077[124];
    char s_f5ab35c0[29];
    char s_055c296e[110];
    char s_6c1369c6[19];
-   char s_74e69f4b[85];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[14];
+   char s_75325963[34];
+   char s_0f5266ce[13];
+   char s_f83a493c[33];
+#endif
+   char s_83e8dc72[23];
+   char s_4d0b4ce0[126];
+   char s_a64b3a0b[22];
+   char s_93bbb839[125];
    char s_2d8cb7ce[18];
    char s_3370e7fc[30];
+   char s_74e69f4b[85];
    char s_b9e24170[29];
    char s_5562855e[47];
    char s_48da4695[21];
@@ -536,14 +571,6 @@ static const struct
    char s_09581fc6[329];
    char s_7cf985f0[44];
    char s_f99a7d5e[242];
-   char s_30140cb5[14];
-   char s_75325963[34];
-   char s_0f5266ce[13];
-   char s_f83a493c[33];
-   char s_83e8dc72[23];
-   char s_4d0b4ce0[126];
-   char s_a64b3a0b[22];
-   char s_93bbb839[125];
    char s_4d7e9b13[23];
    char s_36667d81[134];
    char s_2f05bb87[24];
@@ -571,17 +598,19 @@ static const struct
    char s_9506fc7e[79];
    char s_9ca4bbd7[41];
    char s_b0fb58d3[41];
-   char s_9ca4bbd8[41];
-   char s_b0fb58d4[41];
    char s_73658ec1[150];
+   char s_b0fb58d4[41];
    char s_73658ec2[134];
 #if defined(RARCH_MOBILE)
-   char s_b754294b[54];
    char s_774121c7[54];
-   char s_b754294c[54];
-   char s_774121c8[54];
    char s_82c9e375[163];
+   char s_774121c8[54];
    char s_82c9e376[147];
+#endif
+   char s_9ca4bbd8[41];
+#if defined(RARCH_MOBILE)
+   char s_b754294b[54];
+   char s_b754294c[54];
 #endif
    char s_b7ef9e17[11];
    char s_81120e85[154];
@@ -3875,31 +3904,6 @@ static const struct
    char s_a1fdf4a6[41];
    char s_d21d875b[13];
 #endif
-   char r421[19];
-   char r422[336];
-   char r424[29];
-   char r425[336];
-   char r494[16];
-   char r495[125];
-   char r496[26];
-   char r497[99];
-   char r498[15];
-   char r499[125];
-   char r500[14];
-   char r501[124];
-   char r579[34];
-   char r580[104];
-   char r581[21];
-   char r582[389];
-   char r597[28];
-   char r598[76];
-   char r599[36];
-   char r600[108];
-   char r3059[36];
-   char r3060[73];
-   char r3062[76];
-   char r3063[26];
-   char r3064[73];
 } msg_hash_de_blob =
 {
    "Hauptmen\303\274",
@@ -4414,6 +4418,35 @@ static const struct
    "erh\303\266hen die Bewegungssch\303\244rfe, verringern aber die Helligkeit. Nicht anwendbar bei "
    "120 Hz, da es insgesamt nur einen Gesamtframe bei 60 Hz gibt, somit mu\303\237 es schwarz sein, "
    "sonst w\303\244re BFI \303\274berhaupt nicht aktiv.",
+   "Vertikale Synchronisation (VSync)",
+   "Die Video-Ausgabe der Grafikkarte mit der Bildwiederholrate des Bildschirms synchronisieren. Emp"
+   "fohlen.",
+   "VSync Swap-Intervall",
+   "Benutzerdefinierte Swap-Intervalle f\303\274r VSync verwenden. Reduziert effektiv die Bildwieder"
+   "holfrequenz des Monitors um den angegebenen Faktor. \"Automatisch\" legt den Faktor auf Basis de"
+   "r vom Kern gemeldeten Bildwiederholfrequenz fest und sorgt f\303\274r besseres Frame Pacing, wen"
+   "n z.\302\240B. Inhalte mit 30 FPS auf einem 60-Hz-Bildschirm oder 60 FPS auf einem 120-Hz-Bildsc"
+   "hirm ausgef\303\274hrt werden.",
+   "Shader-Unterbilder",
+   "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
+   "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
+   "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
+   "s entsprechend der Anzahl der Unterbilder dargestellt wird.",
+   "Rollende Scanline-Simulation",
+   "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
+   "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
+   "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
+   "s entsprechend der Anzahl der Unterbilder dargestellt wird.",
+   "Maximale Anzahl von Zwischenbildern",
+   "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.",
+   "CPU und GPU fest synchronisieren. Reduziert Latenz auf Kosten der Leistung.",
+   "Maximale Frame-Latenzzeit",
+   "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.",
+   "GPU und CPU synchronisieren",
+   "CPU und GPU fest synchronisieren. Reduziert Latenz auf Kosten der Leistung.",
+   "Anzahl der Frames f\303\274r GPU-CPU-Sync",
+   "Anzahl der Bilder, um die die CPU der GPU voraus sein darf, wenn die GPU-CPU-Synchronisation akt"
+   "iviert ist.",
    "F\303\274gt zus\303\244tzlich Shader-Bild(er) zwischen Frames f\303\274r alle m\303\266glichen S"
    "hader-Effekte ein, die darauf ausgelegt sind, schneller als die Inhaltsrate zu laufen. Nur die O"
    "ption benutzen, die f\303\274r die aktuelle Aktualisierungsrate bestimmt ist. Nicht f\303\274r d"
@@ -4534,14 +4567,38 @@ static const struct
    "Deaktivierung des sRGB FBO erzwingen",
    "Deaktivieren der sRGB-FBO-Unterst\303\274tzung erzwingen. Einige Intel OpenGL-Treiber haben unte"
    "r Windows Videoprobleme mit sRGB FBOs. Mit dieser Einstellung kann dies umgangen werden.",
+   "Vollbildanzeige",
+   "Anzeige im Vollbild. L\303\244sst sich w\303\244hrend der Laufzeit \303\244ndern. Kann \303\274b"
+   "er einen Kommandozeilenschalter \303\274bersteuert werden.",
+   "Randloses Vollbildfenster",
+   "Im Vollbildmodus ein Vollbildfenster bevorzugen, um ein Umschalten des Anzeigemodus zu verhinder"
+   "n.",
+   "Vollbildbreite",
+   "Benutzerdefinierte Bildbreite f\303\274r den Vollbildmodus. Wird dieser Wert nicht gesetzt, wird"
+   " die Desktop-Aufl\303\266sung verwendet.",
+   "Vollbildh\303\266he",
+   "Benutzerdefinierte Bildh\303\266he f\303\274r den Vollbildmodus. Wird dieser Wert nicht gesetzt,"
+   " wird die Desktop-Aufl\303\266sung verwendet.",
    "Aufl\303\266sung auf UWP erzwingen",
    "Aufl\303\266sung auf Vollbildgr\303\266\303\237e erzwingen. Wenn auf 0 gesetzt, wird ein fester "
    "Wert von 3840 x 2160 verwendet.",
    "Fenster-Skalierung",
-   "Die Fenstergr\303\266\303\237e auf das angegebene Vielfache der Gr\303\266\303\237e der Core-Anz"
-   "eige setzen.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Fensterbreite",
+   "Benutzerdefinierte Fensterbreite.",
+   "Fensterh\303\266he",
+   "Benutzerdefinierte Fensterh\303\266he.",
+#endif
+   "Maximale Fensterbreite",
+   "Die maximale Breite des Anzeigefensters bei der automatischen Gr\303\266\303\237enanpassung auf "
+   "Basis der 'Fenster-Skalierung' festlegen.",
+   "Maximale Fensterh\303\266he",
+   "Die maximale H\303\266he des Anzeigefensters bei der automatischen Gr\303\266\303\237enanpassung"
+   " auf Basis der 'Fenster-Skalierung' festlegen.",
    "Fenster-Deckkraft",
    "Fenstertransparenz festlegen.",
+   "Die Fenstergr\303\266\303\237e auf das angegebene Vielfache der Gr\303\266\303\237e der Core-Anz"
+   "eige setzen.",
    "Fensterdekorationen anzeigen",
    "Titelleiste und R\303\244nder des Fensters anzeigen.",
    "Men\303\274leiste anzeigen",
@@ -4555,16 +4612,6 @@ static const struct
    "Den gesamten Inhalt in einem Fenster fester Gr\303\266\303\237e anzeigen, dessen Abmessungen dur"
    "ch \"Fensterbreite\" und \"Fensterh\303\266he\" festgelegt sind. Wenn deaktiviert, wird die Fens"
    "tergr\303\266\303\237e dynamisch basierend auf der \"Fenster-Skalierung\" festgelegt.",
-   "Fensterbreite",
-   "Benutzerdefinierte Fensterbreite.",
-   "Fensterh\303\266he",
-   "Benutzerdefinierte Fensterh\303\266he.",
-   "Maximale Fensterbreite",
-   "Die maximale Breite des Anzeigefensters bei der automatischen Gr\303\266\303\237enanpassung auf "
-   "Basis der 'Fenster-Skalierung' festlegen.",
-   "Maximale Fensterh\303\266he",
-   "Die maximale H\303\266he des Anzeigefensters bei der automatischen Gr\303\266\303\237enanpassung"
-   " auf Basis der 'Fenster-Skalierung' festlegen.",
    "Ganzzahlige Skalierung",
    "Video nur in Ganzzahlschritten skalieren. Die Grundgr\303\266\303\237e h\303\244ngt von der vom "
    "Kern gemeldeten Geometrie und dem Seitenverh\303\244ltnis ab.",
@@ -4598,21 +4645,23 @@ static const struct
    "Angepasster Viewport-Offset zur Definition der Y-Achsenposition des Viewports.",
    "Ansichtsfenster-Ankerpunkt-Ausrichtung X",
    "Ansichtsfenster-Ankerpunkt-Ausrichtung X",
-   "Ansichtsfenster-Ankerpunkt-Ausrichtung Y",
-   "Ansichtsfenster-Ankerpunkt-Ausrichtung Y",
    "Horizontale Position des Inhalts, wenn das Ansichtsfenster breiter als die Inhaltsbreite ist. 0."
    "0 ist ganz links, 0.5 ist Mitte, 1.0 ist ganz rechts.",
+   "Ansichtsfenster-Ankerpunkt-Ausrichtung Y",
    "Vertikale Position des Inhalts, wenn das Ansichtsfenster h\303\266her als die Inhaltsh\303\266he"
    " ist. 0.0 ist oben, 0.5 ist Mitte, 1.0 ist unten.",
 #if defined(RARCH_MOBILE)
    "Ansichtsfenster-Ankerpunkt-Ausrichtung X (Hochformat)",
-   "Ansichtsfenster-Ankerpunkt-Ausrichtung X (Hochformat)",
-   "Ansichtsfenster-Ankerpunkt-Ausrichtung Y (Hochformat)",
-   "Ansichtsfenster-Ankerpunkt-Ausrichtung Y (Hochformat)",
    "Horizontale Position des Inhalts, wenn das Ansichtsfenster breiter als die Inhaltsbreite ist. 0."
    "0 ist ganz links, 0.5 ist Mitte, 1.0 ist ganz rechts. (Hochformat)",
+   "Ansichtsfenster-Ankerpunkt-Ausrichtung Y (Hochformat)",
    "Vertikale Position des Inhalts, wenn das Ansichtsfenster h\303\266her als die Inhaltsh\303\266he"
    " ist. 0.0 ist oben, 0.5 ist Mitte, 1.0 ist unten. (Hochformat)",
+#endif
+   "Ansichtsfenster-Ankerpunkt-Ausrichtung Y",
+#if defined(RARCH_MOBILE)
+   "Ansichtsfenster-Ankerpunkt-Ausrichtung X (Hochformat)",
+   "Ansichtsfenster-Ankerpunkt-Ausrichtung Y (Hochformat)",
 #endif
    "Bildbreite",
    "Benutzerdefinierte Ansichtsfensterbreite, die verwendet wird, wenn das Bildseitenverh\303\244ltn"
@@ -8603,54 +8652,13 @@ static const struct
    "\342\200\236SMB-Client\342\200\234-Einstellungen anzeigen.",
    "SMB-Freigabe",
 #endif
-   "Shader-Unterbilder",
-   "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
-   "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
-   "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
-   "s entsprechend der Anzahl der Unterbilder dargestellt wird.",
-   "Rollende Scanline-Simulation",
-   "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
-   "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
-   "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
-   "s entsprechend der Anzahl der Unterbilder dargestellt wird.",
-   "Vollbildanzeige",
-   "Anzeige im Vollbild. L\303\244sst sich w\303\244hrend der Laufzeit \303\244ndern. Kann \303\274b"
-   "er einen Kommandozeilenschalter \303\274bersteuert werden.",
-   "Randloses Vollbildfenster",
-   "Im Vollbildmodus ein Vollbildfenster bevorzugen, um ein Umschalten des Anzeigemodus zu verhinder"
-   "n.",
-   "Vollbildbreite",
-   "Benutzerdefinierte Bildbreite f\303\274r den Vollbildmodus. Wird dieser Wert nicht gesetzt, wird"
-   " die Desktop-Aufl\303\266sung verwendet.",
-   "Vollbildh\303\266he",
-   "Benutzerdefinierte Bildh\303\266he f\303\274r den Vollbildmodus. Wird dieser Wert nicht gesetzt,"
-   " wird die Desktop-Aufl\303\266sung verwendet.",
-   "Vertikale Synchronisation (VSync)",
-   "Die Video-Ausgabe der Grafikkarte mit der Bildwiederholrate des Bildschirms synchronisieren. Emp"
-   "fohlen.",
-   "VSync Swap-Intervall",
-   "Benutzerdefinierte Swap-Intervalle f\303\274r VSync verwenden. Reduziert effektiv die Bildwieder"
-   "holfrequenz des Monitors um den angegebenen Faktor. \"Automatisch\" legt den Faktor auf Basis de"
-   "r vom Kern gemeldeten Bildwiederholfrequenz fest und sorgt f\303\274r besseres Frame Pacing, wen"
-   "n z.\302\240B. Inhalte mit 30 FPS auf einem 60-Hz-Bildschirm oder 60 FPS auf einem 120-Hz-Bildsc"
-   "hirm ausgef\303\274hrt werden.",
-   "GPU und CPU synchronisieren",
-   "CPU und GPU fest synchronisieren. Reduziert Latenz auf Kosten der Leistung.",
-   "Anzahl der Frames f\303\274r GPU-CPU-Sync",
-   "Anzahl der Bilder, um die die CPU der GPU voraus sein darf, wenn die GPU-CPU-Synchronisation akt"
-   "iviert ist.",
-   "Maximale Anzahl von Zwischenbildern",
-   "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.",
-   "CPU und GPU fest synchronisieren. Reduziert Latenz auf Kosten der Leistung.",
-   "Maximale Frame-Latenzzeit",
-   "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (189459u
+      (sizeof(msg_hash_de_blob) == (189365u
 #ifdef HAVE_LAKKA
        + 15u
        + 55u
@@ -8687,17 +8695,23 @@ typedef char msg_hash_de_blob_check[
        + 25u
        + 116u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 14u
+       + 34u
+       + 13u
+       + 33u
+#endif
 #if defined(DINGUX)
        + 30u
        + 160u
 #endif
 #if defined(RARCH_MOBILE)
        + 54u
-       + 54u
-       + 54u
-       + 54u
        + 163u
+       + 54u
        + 147u
+       + 54u
+       + 54u
 #endif
 #ifdef HAVE_MICROPHONE
        + 9u
@@ -9351,6 +9365,23 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9430,12 +9461,30 @@ static const uint32_t msg_hash_de_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -9444,14 +9493,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
@@ -9479,17 +9520,19 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
 #if defined(RARCH_MOBILE)
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -12779,29 +12822,4 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

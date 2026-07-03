@@ -415,6 +415,17 @@ static const struct
    char s_258060bf[20];
    char s_3547866d[130];
    char s_4bceefff[22];
+   char s_6c52dfb1[35];
+   char s_47ae341f[86];
+   char s_45816e1d[18];
+   char s_88095324[89];
+   char s_48696c85[79];
+   char s_a1a7717d[22];
+   char s_a776daeb[89];
+   char s_e9bca139[22];
+   char s_f2687ca7[79];
+   char s_59dc5d76[40];
+   char s_698d5124[129];
    char s_ef3d53d8[23];
 #if defined(DINGUX)
    char s_805730a0[20];
@@ -483,12 +494,29 @@ static const struct
 #endif
    char s_3c70d08d[42];
    char s_fc2d67bb[180];
+   char s_f417f6f1[23];
+   char s_84c46931[29];
+   char s_3c13e61f[109];
+   char s_59f183c8[21];
+   char s_9f0fd076[128];
+   char s_59f183c9[22];
+   char s_9f0fd077[129];
    char s_f5ab35c0[39];
    char s_055c296e[98];
    char s_6c1369c6[19];
-   char s_74e69f4b[49];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[15];
+   char s_75325963[35];
+   char s_0f5266ce[16];
+   char s_f83a493c[36];
+#endif
+   char s_83e8dc72[24];
+   char s_4d0b4ce0[107];
+   char s_a64b3a0b[25];
+   char s_93bbb839[108];
    char s_2d8cb7ce[18];
    char s_3370e7fc[30];
+   char s_74e69f4b[49];
    char s_b9e24170[26];
    char s_5562855e[41];
    char s_48da4695[20];
@@ -497,14 +525,6 @@ static const struct
    char s_09581fc6[288];
    char s_7cf985f0[34];
    char s_f99a7d5e[210];
-   char s_30140cb5[15];
-   char s_75325963[35];
-   char s_0f5266ce[16];
-   char s_f83a493c[36];
-   char s_83e8dc72[24];
-   char s_4d0b4ce0[107];
-   char s_a64b3a0b[25];
-   char s_93bbb839[108];
    char s_4d7e9b13[23];
    char s_78585119[9];
    char s_c79d5013[10];
@@ -3285,24 +3305,6 @@ static const struct
    char s_b12ae22e[17];
    char s_f6492edc[49];
 #endif
-   char r453[23];
-   char r454[29];
-   char r455[109];
-   char r456[21];
-   char r457[128];
-   char r458[22];
-   char r459[129];
-   char r509[35];
-   char r510[86];
-   char r511[18];
-   char r518[22];
-   char r519[79];
-   char r520[40];
-   char r521[129];
-   char r2606[89];
-   char r2607[79];
-   char r2608[22];
-   char r2609[89];
 } msg_hash_fi_blob =
 {
    "P\303\244\303\244valikko",
@@ -3764,6 +3766,24 @@ static const struct
    "Parantaa suorituskyky\303\244 viiveen kustannuksella ja lis\303\244\303\244 videon nykimist\303"
    "\244. K\303\244yt\303\244 vain, jos t\303\244ytt\303\244 nopeutta ei saada muuten.",
    "Mustan ruudun lis\303\244ys",
+   "Vertikaalinen synkronointi (VSync)",
+   "Synkronoi n\303\244yt\303\266nohjaimen ulostulovideo n\303\244yt\303\266n virkistystaajuuteen. S"
+   "uositeltavaa.",
+   "VSync-vaihtov\303\244li",
+   "M\303\244\303\244r\303\244\303\244 videoajurin k\303\244ytt\303\244m\303\244\303\244n yksiselitt"
+   "eisesti m\303\244\303\244ritetty\303\244 puskurointitilaa.",
+   "Kova-synkronoi CPU ja GPU. V\303\244hent\303\244\303\244 viivett\303\244 suorituskyvyn kustannuk"
+   "sella.",
+   "Kehyksen suurin viive",
+   "M\303\244\303\244r\303\244\303\244 videoajurin k\303\244ytt\303\244m\303\244\303\244n yksiselitt"
+   "eisesti m\303\244\303\244ritetty\303\244 puskurointitilaa.",
+   "Kova GPU-synkronointi",
+   "Kova-synkronoi CPU ja GPU. V\303\244hent\303\244\303\244 viivett\303\244 suorituskyvyn kustannuk"
+   "sella.",
+   "N\303\244ytonohjaimen kova-synkronoidut kuvat",
+   "M\303\244\303\244rit\303\244 kuinka monta kuvaa suoritin voi ajaa n\303\244yt\303\266nohjaimen e"
+   "dell\303\244, kun k\303\244ytet\303\244\303\244n 'n\303\244yt\303\266nohjaimen kova synkronointi"
+   "'.",
    "Bilineaarinen suodatus",
 #if defined(DINGUX)
    "Kuvan interpolointi",
@@ -3861,13 +3881,37 @@ static const struct
    "Poista sRGB FBO -tuki k\303\244yt\303\266st\303\244 pakottaen. Joillakin Intel OpenGL -ajureilla"
    " Windowsissa on video-ongelmia sRGB FBO:n kanssa. T\303\244m\303\244n k\303\244ytt\303\266\303"
    "\266notto saattaa kiert\303\244\303\244 ongelman.",
+   "Koko n\303\244yt\303\266n n\303\244kym\303\244",
+   "Ikkunoitu koko n\303\244yt\303\266n tila",
+   "Jos koko n\303\244yt\303\266n tilassa, k\303\244yt\303\244 mieluummin koko n\303\244yt\303\266n "
+   "ikkunaa est\303\244\303\244ksesi n\303\244yt\303\266n tilan vaihtaminen.",
+   "Koko n\303\244yt\303\266n leveys",
+   "Aseta mukautettu leveyskoko ei-ikkunoidulle koko n\303\244yt\303\266n tilalle. Tyhj\303\244ksi j"
+   "\303\244tt\303\244minen k\303\244ytt\303\244\303\244 ty\303\266p\303\266yd\303\244n resoluutiota"
+   ".",
+   "Koko n\303\244yt\303\266n korkeus",
+   "Aseta mukautettu korkeuskoko ei-ikkunoidulle koko n\303\244yt\303\266n tilalle. Tyhj\303\244ksi "
+   "j\303\244tt\303\244minen k\303\244ytt\303\244\303\244 ty\303\266p\303\266yd\303\244n resoluutiot"
+   "a.",
    "Pakota resoluutio k\303\244ytt\303\244ess\303\244 UWP:ta",
    "Pakota resoluutio koko n\303\244yt\303\266n kokoon, jos arvo on 0, k\303\244ytet\303\244\303\244"
    "n kiinte\303\244\303\244 arvoa 3840 x 2160.",
    "Ikkunoitu skaalaus",
-   "Aseta ikkunan kooksi ytimen kuvasuhteen kerroin.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Ikkunan leveys",
+   "Aseta mukautettu leveys ikkunalle.",
+   "Ikkunan korkeus",
+   "Aseta mukautettu korkeus ikkunalle.",
+#endif
+   "Ikkunan enimm\303\244isleveys",
+   "Aseta suurin mahdollinen n\303\244yt\303\266n leveys, kun kokoa muutetaan automaattisesti 'Ikkun"
+   "oitu skaalaus' mukaan.",
+   "Ikkunan enimm\303\244iskorkeus",
+   "Aseta suurin mahdollinen n\303\244yt\303\266n korkeus, kun kokoa muutetaan automaattisesti 'Ikku"
+   "noitu skaalaus' mukaan.",
    "Ikkunan n\303\244kyvyys",
    "Aseta ikkunan l\303\244pin\303\244kyvyys.",
+   "Aseta ikkunan kooksi ytimen kuvasuhteen kerroin.",
    "N\303\244yt\303\244 ikkunan koristeet",
    "N\303\244yt\303\244 ikkunan otsikkopalkki ja reunat.",
    "N\303\244yt\303\244 valikkorivi",
@@ -3881,16 +3925,6 @@ static const struct
    "N\303\244yt\303\244 kaikki sis\303\244lt\303\266 kiinte\303\244ss\303\244 ikkunan koossa, jonka "
    "mitat on m\303\244\303\244ritelty 'Ikkunan leveys' ja 'Ikkunan korkeus'. Kun t\303\244m\303\244 "
    "ei ole k\303\244yt\303\266ss\303\244, ikkunan koko asetetaan dynaamisesti 'Ikkunoitu skaalaus'.",
-   "Ikkunan leveys",
-   "Aseta mukautettu leveys ikkunalle.",
-   "Ikkunan korkeus",
-   "Aseta mukautettu korkeus ikkunalle.",
-   "Ikkunan enimm\303\244isleveys",
-   "Aseta suurin mahdollinen n\303\244yt\303\266n leveys, kun kokoa muutetaan automaattisesti 'Ikkun"
-   "oitu skaalaus' mukaan.",
-   "Ikkunan enimm\303\244iskorkeus",
-   "Aseta suurin mahdollinen n\303\244yt\303\266n korkeus, kun kokoa muutetaan automaattisesti 'Ikku"
-   "noitu skaalaus' mukaan.",
    "Skaalaa kokonaisluvuin",
    "\303\204lyk\303\244s",
    "Kuvasuhde",
@@ -7146,43 +7180,13 @@ static const struct
    "SMB-aikakatkaisu",
    "Valitse oletusarvoinen aikakatkaisu sekunneissa.",
 #endif
-   "Koko n\303\244yt\303\266n n\303\244kym\303\244",
-   "Ikkunoitu koko n\303\244yt\303\266n tila",
-   "Jos koko n\303\244yt\303\266n tilassa, k\303\244yt\303\244 mieluummin koko n\303\244yt\303\266n "
-   "ikkunaa est\303\244\303\244ksesi n\303\244yt\303\266n tilan vaihtaminen.",
-   "Koko n\303\244yt\303\266n leveys",
-   "Aseta mukautettu leveyskoko ei-ikkunoidulle koko n\303\244yt\303\266n tilalle. Tyhj\303\244ksi j"
-   "\303\244tt\303\244minen k\303\244ytt\303\244\303\244 ty\303\266p\303\266yd\303\244n resoluutiota"
-   ".",
-   "Koko n\303\244yt\303\266n korkeus",
-   "Aseta mukautettu korkeuskoko ei-ikkunoidulle koko n\303\244yt\303\266n tilalle. Tyhj\303\244ksi "
-   "j\303\244tt\303\244minen k\303\244ytt\303\244\303\244 ty\303\266p\303\266yd\303\244n resoluutiot"
-   "a.",
-   "Vertikaalinen synkronointi (VSync)",
-   "Synkronoi n\303\244yt\303\266nohjaimen ulostulovideo n\303\244yt\303\266n virkistystaajuuteen. S"
-   "uositeltavaa.",
-   "VSync-vaihtov\303\244li",
-   "Kova GPU-synkronointi",
-   "Kova-synkronoi CPU ja GPU. V\303\244hent\303\244\303\244 viivett\303\244 suorituskyvyn kustannuk"
-   "sella.",
-   "N\303\244ytonohjaimen kova-synkronoidut kuvat",
-   "M\303\244\303\244rit\303\244 kuinka monta kuvaa suoritin voi ajaa n\303\244yt\303\266nohjaimen e"
-   "dell\303\244, kun k\303\244ytet\303\244\303\244n 'n\303\244yt\303\266nohjaimen kova synkronointi"
-   "'.",
-   "M\303\244\303\244r\303\244\303\244 videoajurin k\303\244ytt\303\244m\303\244\303\244n yksiselitt"
-   "eisesti m\303\244\303\244ritetty\303\244 puskurointitilaa.",
-   "Kova-synkronoi CPU ja GPU. V\303\244hent\303\244\303\244 viivett\303\244 suorituskyvyn kustannuk"
-   "sella.",
-   "Kehyksen suurin viive",
-   "M\303\244\303\244r\303\244\303\244 videoajurin k\303\244ytt\303\244m\303\244\303\244n yksiselitt"
-   "eisesti m\303\244\303\244ritetty\303\244 puskurointitilaa.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123693u
+      (sizeof(msg_hash_fi_blob) == (123591u
 #ifdef HAVE_LAKKA
        + 21u
        + 43u
@@ -7217,6 +7221,12 @@ typedef char msg_hash_fi_blob_check[
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 33u
        + 108u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 15u
+       + 35u
+       + 16u
+       + 36u
 #endif
 #if defined(DINGUX)
        + 20u
@@ -7775,6 +7785,17 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -7843,12 +7864,29 @@ static const uint32_t msg_hash_fi_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -7857,14 +7895,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -10644,22 +10674,4 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

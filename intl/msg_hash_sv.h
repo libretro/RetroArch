@@ -431,6 +431,21 @@ static const struct
    char s_4577a14d[41];
    char s_07e1d73b[364];
    char s_5fdad539[282];
+   char s_6c52dfb1[32];
+   char s_47ae341f[105];
+   char s_45816e1d[21];
+   char s_2e69508b[331];
+   char s_3c679f0a[291];
+   char s_52e3d6ea[34];
+   char s_58c80718[291];
+   char s_88095324[88];
+   char s_48696c85[74];
+   char s_a1a7717d[19];
+   char s_a776daeb[88];
+   char s_e9bca139[15];
+   char s_f2687ca7[74];
+   char s_59dc5d76[25];
+   char s_698d5124[89];
    char s_93805cc8_0[499];
    char s_93805cc8_1[12];
    char s_7a7a3d56[221];
@@ -512,12 +527,30 @@ static const struct
 #endif
    char s_3c70d08d[27];
    char s_fc2d67bb[149];
+   char s_f417f6f1[18];
+   char s_123f401f[91];
+   char s_84c46931[27];
+   char s_3c13e61f[103];
+   char s_59f183c8[21];
+   char s_9f0fd076[136];
+   char s_59f183c9[21];
+   char s_9f0fd077[135];
    char s_f5ab35c0[31];
    char s_055c296e[133];
    char s_6c1369c6[14];
-   char s_74e69f4b[88];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[14];
+   char s_75325963[51];
+   char s_0f5266ce[14];
+   char s_f83a493c[51];
+#endif
+   char s_83e8dc72[22];
+   char s_4d0b4ce0[112];
+   char s_a64b3a0b[22];
+   char s_93bbb839[112];
    char s_2d8cb7ce[17];
    char s_3370e7fc[34];
+   char s_74e69f4b[88];
    char s_b9e24170[26];
    char s_5562855e[36];
    char s_48da4695[15];
@@ -526,14 +559,6 @@ static const struct
    char s_09581fc6[285];
    char s_7cf985f0[33];
    char s_f99a7d5e[209];
-   char s_30140cb5[14];
-   char s_75325963[51];
-   char s_0f5266ce[14];
-   char s_f83a493c[51];
-   char s_83e8dc72[22];
-   char s_4d0b4ce0[112];
-   char s_a64b3a0b[22];
-   char s_93bbb839[112];
    char s_4d7e9b13[13];
    char s_36667d81[106];
    char s_2f05bb87[26];
@@ -3697,29 +3722,6 @@ static const struct
    char s_a1fdf4a6[39];
    char s_d21d875b[14];
 #endif
-   char r410[291];
-   char r412[34];
-   char r413[291];
-   char r482[18];
-   char r483[91];
-   char r484[27];
-   char r485[103];
-   char r486[21];
-   char r487[136];
-   char r488[21];
-   char r489[135];
-   char r556[32];
-   char r557[105];
-   char r558[21];
-   char r559[331];
-   char r569[15];
-   char r570[74];
-   char r571[25];
-   char r572[89];
-   char r2910[88];
-   char r2912[74];
-   char r2913[19];
-   char r2914[88];
 } msg_hash_sv_blob =
 {
    "Huvudmeny",
@@ -4237,6 +4239,35 @@ static const struct
    "\303\266relseklarheten men minskar ljusstyrkan. Inte till\303\244mpligt vid 120 Hz eftersom det "
    "bara finns en enda extra 60 Hz-bildruta, s\303\245 den m\303\245ste vara svart, annars skulle BF"
    "I inte vara aktiv alls.",
+   "Vertikal synkronisering (Vsync)",
+   "Synkronisera videoutmatningen fr\303\245n grafikkortet till bildsk\303\244rmens uppdateringsfrek"
+   "vens. Rekommenderas.",
+   "VSynk bytesintervall",
+   "Anv\303\244nd ett anpassat bytesintervall f\303\266r VSynk. Minskar effektivt bildsk\303\244rmen"
+   "s uppdateringsfrekvens med den angivna faktorn. 'Auto' st\303\244ller in faktorn baserat p\303"
+   "\245 k\303\244rnrapporterad bildhastighet, vilket ger f\303\266rb\303\244ttrad bildtakt n\303"
+   "\244r du k\303\266r t.ex. 30 fps inneh\303\245ll p\303\245 en 60 Hz sk\303\244rm eller 60 fps in"
+   "neh\303\245ll p\303\245 en 120 Hz sk\303\244rm.",
+   "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
+   "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
+   "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
+   "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
+   "Rullande skanningslinjesimulering",
+   "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
+   "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
+   "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
+   "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
+   "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
+   "\303\244ge.",
+   "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
+   "Max bildrutelatens",
+   "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
+   "\303\244ge.",
+   "H\303\245rd GPU-synk",
+   "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
+   "H\303\245rd GPU-synk Bildrutor",
+   "St\303\244ll in hur m\303\245nga bildrutor CPUn kan k\303\266ra f\303\266re GPUn n\303\244r 'H"
+   "\303\245rd GPU-synk' anv\303\244nds.",
    "Infogar extra shader-ram(ar) mellan bildrutorna f\303\266r eventuella shader-effekter som \303"
    "\244r utformade f\303\266r att k\303\266ras snabbare \303\244n inneh\303\245llshastigheten. Anv"
    "\303\244nd endast det alternativ som \303\244r avsett f\303\266r din aktuella bildsk\303\244rmsu"
@@ -4361,14 +4392,39 @@ static const struct
    "Tv\303\245ngsinaktivera sRGB FBO",
    "Tv\303\245ngsinaktivera st\303\266d f\303\266r sRGB FBO. Vissa Intel OpenGL-drivrutiner p\303"
    "\245 Windows har videoproblem med sRGB FBOer. Att aktivera detta kan l\303\266sa det.",
+   "Helsk\303\244rmsvisning",
+   "Visning i helsk\303\244rm. Kan \303\244ndras vid k\303\266rtid. Kan \303\245sidos\303\244ttas me"
+   "d en kommandoradsv\303\244xel.",
+   "F\303\266nster i helsk\303\244rmsl\303\244ge",
+   "Om helsk\303\244rm, f\303\266redrar att anv\303\244nda ett helsk\303\244rmsf\303\266nster som f"
+   "\303\266rhindrar att visningsl\303\244ge \303\244ndras.",
+   "Bredd f\303\266r helsk\303\244rm",
+   "St\303\244ll in anpassad breddstorlek f\303\266r helsk\303\244rmsl\303\244get utan f\303\266nste"
+   "r. Om du l\303\245ter den vara oinst\303\244lld anv\303\244nds skrivbordsuppl\303\266sningen.",
+   "H\303\266jd f\303\266r helsk\303\244rm",
+   "St\303\244ll in anpassad h\303\266jdstorlek f\303\266r helsk\303\244rmsl\303\244ge utan f\303"
+   "\266nster. Om du l\303\245ter den vara oinst\303\244lld anv\303\244nds skrivbordsuppl\303\266sni"
+   "ngen.",
    "Framtvinga uppl\303\266sning p\303\245 UWP",
    "Tvinga upp uppl\303\266sningen till helsk\303\244rmsstorleken, om den \303\244r inst\303\244lld "
    "p\303\245 0, kommer ett fast v\303\244rde p\303\245 3840 x 2160 att anv\303\244ndas.",
    "F\303\266nsterskala",
-   "St\303\244ll in f\303\266nsterstorleken till den angivna multipeln av k\303\244rnans visningspor"
-   "tstorlek.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "F\303\266nsterbredd",
+   "Ange den anpassade bredden f\303\266r visningsf\303\266nstret.",
+   "F\303\266nsterh\303\266jd",
+   "Ange den anpassade h\303\266jden f\303\266r visningsf\303\266nstret.",
+#endif
+   "Maximal f\303\266nsterbredd",
+   "Ange den maximala bredden p\303\245 visningsf\303\266nstret n\303\244r storleken \303\244ndras a"
+   "utomatiskt baserat p\303\245 'F\303\266nsterskala'.",
+   "Maximal f\303\266nsterh\303\266jd",
+   "Ange den maximala h\303\266jden p\303\245 visningsf\303\266nstret n\303\244r storleken \303\244n"
+   "dras automatiskt baserat p\303\245 'F\303\266nsterskala'.",
    "F\303\266nsteropacitet",
    "St\303\244ll in f\303\266nstrets transparens.",
+   "St\303\244ll in f\303\266nsterstorleken till den angivna multipeln av k\303\244rnans visningspor"
+   "tstorlek.",
    "Visa f\303\266nsterdekorationer",
    "Visa f\303\266nstrets titelrad och ramar.",
    "Visa menyf\303\244lt",
@@ -4382,16 +4438,6 @@ static const struct
    "Visa allt inneh\303\245ll i ett f\303\266nster i fast storlek av dimensioner som anges av 'F\303"
    "\266nster Bredd' och 'F\303\266nster H\303\266jd'. Inaktiverad kommer f\303\266nsterstorleken at"
    "t st\303\244llas in dynamiskt baserat p\303\245 'F\303\266nsterskala'.",
-   "F\303\266nsterbredd",
-   "Ange den anpassade bredden f\303\266r visningsf\303\266nstret.",
-   "F\303\266nsterh\303\266jd",
-   "Ange den anpassade h\303\266jden f\303\266r visningsf\303\266nstret.",
-   "Maximal f\303\266nsterbredd",
-   "Ange den maximala bredden p\303\245 visningsf\303\266nstret n\303\244r storleken \303\244ndras a"
-   "utomatiskt baserat p\303\245 'F\303\266nsterskala'.",
-   "Maximal f\303\266nsterh\303\266jd",
-   "Ange den maximala h\303\266jden p\303\245 visningsf\303\266nstret n\303\244r storleken \303\244n"
-   "dras automatiskt baserat p\303\245 'F\303\266nsterskala'.",
    "Heltalsskala",
    "Skala video endast i heltalssteg. Basstorleken beror p\303\245 core-rapporterad geometri och bil"
    "df\303\266rh\303\245llande.",
@@ -8312,55 +8358,13 @@ static const struct
    "Visa inst\303\244llningar f\303\266r \"SMB-klient\".",
    "SMB-utdelning",
 #endif
-   "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
-   "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
-   "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
-   "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
-   "Rullande skanningslinjesimulering",
-   "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
-   "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
-   "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
-   "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
-   "Helsk\303\244rmsvisning",
-   "Visning i helsk\303\244rm. Kan \303\244ndras vid k\303\266rtid. Kan \303\245sidos\303\244ttas me"
-   "d en kommandoradsv\303\244xel.",
-   "F\303\266nster i helsk\303\244rmsl\303\244ge",
-   "Om helsk\303\244rm, f\303\266redrar att anv\303\244nda ett helsk\303\244rmsf\303\266nster som f"
-   "\303\266rhindrar att visningsl\303\244ge \303\244ndras.",
-   "Bredd f\303\266r helsk\303\244rm",
-   "St\303\244ll in anpassad breddstorlek f\303\266r helsk\303\244rmsl\303\244get utan f\303\266nste"
-   "r. Om du l\303\245ter den vara oinst\303\244lld anv\303\244nds skrivbordsuppl\303\266sningen.",
-   "H\303\266jd f\303\266r helsk\303\244rm",
-   "St\303\244ll in anpassad h\303\266jdstorlek f\303\266r helsk\303\244rmsl\303\244ge utan f\303"
-   "\266nster. Om du l\303\245ter den vara oinst\303\244lld anv\303\244nds skrivbordsuppl\303\266sni"
-   "ngen.",
-   "Vertikal synkronisering (Vsync)",
-   "Synkronisera videoutmatningen fr\303\245n grafikkortet till bildsk\303\244rmens uppdateringsfrek"
-   "vens. Rekommenderas.",
-   "VSynk bytesintervall",
-   "Anv\303\244nd ett anpassat bytesintervall f\303\266r VSynk. Minskar effektivt bildsk\303\244rmen"
-   "s uppdateringsfrekvens med den angivna faktorn. 'Auto' st\303\244ller in faktorn baserat p\303"
-   "\245 k\303\244rnrapporterad bildhastighet, vilket ger f\303\266rb\303\244ttrad bildtakt n\303"
-   "\244r du k\303\266r t.ex. 30 fps inneh\303\245ll p\303\245 en 60 Hz sk\303\244rm eller 60 fps in"
-   "neh\303\245ll p\303\245 en 120 Hz sk\303\244rm.",
-   "H\303\245rd GPU-synk",
-   "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
-   "H\303\245rd GPU-synk Bildrutor",
-   "St\303\244ll in hur m\303\245nga bildrutor CPUn kan k\303\266ra f\303\266re GPUn n\303\244r 'H"
-   "\303\245rd GPU-synk' anv\303\244nds.",
-   "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
-   "\303\244ge.",
-   "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
-   "Max bildrutelatens",
-   "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
-   "\303\244ge.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (165554u
+      (sizeof(msg_hash_sv_blob) == (165424u
 #ifdef HAVE_LAKKA
        + 14u
        + 43u
@@ -8396,6 +8400,12 @@ typedef char msg_hash_sv_blob_check[
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 30u
        + 124u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 14u
+       + 51u
+       + 14u
+       + 51u
 #endif
 #if defined(DINGUX)
        + 19u
@@ -9038,6 +9048,21 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9117,12 +9142,30 @@ static const uint32_t msg_hash_sv_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -9131,14 +9174,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
@@ -12299,27 +12334,4 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

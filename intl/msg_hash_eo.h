@@ -460,6 +460,24 @@ static const struct
    char s_4577a14d[46];
    char s_07e1d73b[332];
    char s_5fdad539[332];
+   char s_6c52dfb1[21];
+   char s_47ae341f[104];
+   char s_45816e1d[50];
+   char s_2e69508b[366];
+   char s_2cb6ab5c[23];
+   char s_3c679f0a[288];
+   char s_52e3d6ea[27];
+   char s_58c80718[291];
+   char s_e6ca3876[32];
+   char s_88095324[67];
+   char s_9119ef97[22];
+   char s_48696c85[87];
+   char s_a1a7717d[32];
+   char s_a776daeb[67];
+   char s_e9bca139[25];
+   char s_f2687ca7[87];
+   char s_59dc5d76[37];
+   char s_698d5124[103];
    char s_93805cc8_0[500];
    char s_93805cc8_1[10];
    char s_7a7a3d56[207];
@@ -543,12 +561,30 @@ static const struct
 #endif
    char s_3c70d08d[30];
    char s_fc2d67bb[159];
+   char s_f417f6f1[18];
+   char s_123f401f[103];
+   char s_84c46931[30];
+   char s_3c13e61f[94];
+   char s_59f183c8[22];
+   char s_9f0fd076[126];
+   char s_59f183c9[16];
+   char s_9f0fd077[123];
    char s_f5ab35c0[27];
    char s_055c296e[109];
    char s_6c1369c6[19];
-   char s_74e69f4b[86];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_30140cb5[16];
+   char s_75325963[43];
+   char s_0f5266ce[14];
+   char s_f83a493c[41];
+#endif
+   char s_83e8dc72[26];
+   char s_4d0b4ce0[113];
+   char s_a64b3a0b[23];
+   char s_93bbb839[111];
    char s_2d8cb7ce[25];
    char s_3370e7fc[40];
+   char s_74e69f4b[86];
    char s_b9e24170[27];
    char s_5562855e[52];
    char s_48da4695[18];
@@ -557,14 +593,6 @@ static const struct
    char s_09581fc6[325];
    char s_7cf985f0[30];
    char s_f99a7d5e[240];
-   char s_30140cb5[16];
-   char s_75325963[43];
-   char s_0f5266ce[14];
-   char s_f83a493c[41];
-   char s_83e8dc72[26];
-   char s_4d0b4ce0[113];
-   char s_a64b3a0b[23];
-   char s_93bbb839[111];
    char s_4d7e9b13[16];
    char s_36667d81[123];
    char s_2f05bb87[24];
@@ -592,17 +620,19 @@ static const struct
    char s_9506fc7e[75];
    char s_9ca4bbd7[34];
    char s_b0fb58d3[34];
-   char s_9ca4bbd8[34];
-   char s_b0fb58d4[34];
    char s_73658ec1[161];
+   char s_b0fb58d4[34];
    char s_73658ec2[151];
 #if defined(RARCH_MOBILE)
-   char s_b754294b[57];
    char s_774121c7[57];
-   char s_b754294c[57];
-   char s_774121c8[57];
    char s_82c9e375[183];
+   char s_774121c8[57];
    char s_82c9e376[173];
+#endif
+   char s_9ca4bbd8[34];
+#if defined(RARCH_MOBILE)
+   char s_b754294b[57];
+   char s_b754294c[57];
 #endif
    char s_b7ef9e17[32];
    char s_81120e85[93];
@@ -3985,32 +4015,6 @@ static const struct
    char s_a1fdf4a6[35];
    char s_d21d875b[20];
 #endif
-   char r439[23];
-   char r440[288];
-   char r442[27];
-   char r443[291];
-   char r514[18];
-   char r515[103];
-   char r516[30];
-   char r517[94];
-   char r518[22];
-   char r519[126];
-   char r520[16];
-   char r521[123];
-   char r601[21];
-   char r602[104];
-   char r603[50];
-   char r604[366];
-   char r620[25];
-   char r621[87];
-   char r622[37];
-   char r623[103];
-   char r3165[32];
-   char r3166[67];
-   char r3168[22];
-   char r3169[87];
-   char r3170[32];
-   char r3171[67];
 } msg_hash_eo_blob =
 {
    "\304\210efa menuo",
@@ -4528,6 +4532,36 @@ static const struct
    "j filmeroj. Ju pli da nigraj filmeroj, des pli da movklareco sed malpli da brileco. NE aplikebla"
    " je 120Hz \304\211ar nur ekzistas unu totala aldona filmero de 60Hz, do \304\235i devos esti nig"
    "ra, alikaze enmeto de nigraj fotogramoj estus tute ne aktiva.",
+   "Vertikala sinkronigo",
+   "Sinkronigi la eligitan videon de la grafika karto kun la ofteco de aktualigo de la ekrano. Rekom"
+   "endata.",
+   "Intervalo de inter\305\235an\304\235o de vertikala sinkronigo",
+   "Uzi propran intervalon de inter\305\235an\304\235o por vertikala sinkronigo. Efektive malpliigas"
+   " la oftecon de aktualigo de la ekrano je la specifita faktoro. \"A\305\255tomate\" agordas la fa"
+   "ktoron la\305\255 la ofteco de filmeroj raportitaj de la kerno, plibonigante ritmon de filmero k"
+   "iam rulante, ekzemple, enhavon de 30 fps en ekrano de 60 Hz, a\305\255 enhavon de 60 fps en ekra"
+   "no de 120 Hz.",
+   "Ombrigilaj subfilmeroj",
+   "AVERTO: Rapida flagro povus ka\305\255zi bildan da\305\255ron (\"image presistence\") en kelkaj "
+   "ekranoj. Uzu \304\235in je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subf"
+   "ilmeroj dividante la ekrano supren vertikale kaj bildigante \304\211iu parto de la ekrano la\305"
+   "\255 kiom da subfilmeroj estas.",
+   "Imito de rulanta skanlinio",
+   "AVERTO: Rapida flagro povus ka\305\255zi bildan da\305\255ron (\"image presistence\") en kelkaj "
+   "ekranoj. Uzu \304\235in je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subf"
+   "ilmeroj dividante la ekranon supren vertikale kaj bildigante \304\211iun parton de la ekrano la"
+   "\305\255 kiom da subfilmeroj estas.",
+   "Maksimumaj bildoj por swapchain",
+   "Diras al videa pelilo eksplicite uzi specifigitan bufran re\304\235imon.",
+   "Atendeblaj swapchains",
+   "Rigide sinkronigi la CPU kun la GPU. Malpliigas la respondotempon kontra\305\255 rendimento.",
+   "Maksimuma filmera respondotempo",
+   "Diras al videa pelilo eksplicite uzi specifigitan bufran re\304\235imon.",
+   "Rigida sinkronigo de GPU",
+   "Rigide sinkronigi la CPU kun la GPU. Malpliigas la respondotempon kontra\305\255 rendimento.",
+   "Filmeroj de rigida sinkronigo de GPU",
+   "Agordu kiom da filmeroj la CPU povas uzi anta\305\255tempe de la GPU kiam uzante \"Rigida sinkro"
+   "nigo de GPU\".",
    "Enmetas kromajn ombrigilajn filmerojn inter filmeroj por \304\211iuj eblaj ombrigilaj efikoj des"
    "ignitaj por ruli pli rapide ol la enhava ofteco. Uzu nur opcion designitan por la ofteco de aktu"
    "aligo de via ekrano. Ne uzota je oftecoj de aktualigo, kiuj ne estas obloj de 60Hz, kiel 144Hz, "
@@ -4648,13 +4682,37 @@ static const struct
    "Devigi malebligon de sRGB FBO",
    "Devige malebligi subtenon de sRGB FBO. Kelkaj peliloj de Intel OpenGL en Windows havas videajn p"
    "roblemojn kun sRGB FBO-oj. Ebligi \304\211i tion povas mildigi ilin.",
+   "Penekrana re\304\235imo",
+   "Montri en plenekrana re\304\235imo. Povas esti \305\235an\304\235ita plenumtempe. Povas esti nul"
+   "igita per komanda linio.",
+   "Enfenestra plenekrana re\304\235imo",
+   "Se plenekrane, preferi uzi plenekranan fenestron por preventi \305\235an\304\235ojn en la ekrana"
+   " re\304\235imo.",
+   "Lar\304\235o dum plenekrane",
+   "Agordi la propran lar\304\235on por la neenfenestra plenekrana re\304\235imo. Lasi \304\235in ne"
+   "agordita uzos la distingivon de la labortablon.",
+   "Plenekrana alto",
+   "Agordi la propran alton por la neenfenestra plenekrana re\304\235imo. Lasi \304\235in neagordita"
+   " uzos la distingivon de la labortablo.",
    "Devigi distingivon \304\211e UWP",
    "Devigi la distingivon al la plenekrana grando. Se agordita je 0, fiksita valoro de 3840 \303\227"
    " 2160 estos uzata.",
    "Enfenestra skalado",
-   "Agordi la fenestra grando al la specifita oblo de la grando de la videjo de la kerno.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Fenestra lar\304\235o",
+   "Agordi la propran lar\304\235on por la fenestro.",
+   "Fenestra alto",
+   "Agordi la propran alton por la fenestro.",
+#endif
+   "Maksimuma fenestra lar\304\235o",
+   "Agordi la maksimuman lar\304\235on de la fenestro kiam a\305\255tomate regrandigante la\305\255 "
+   "la valoro de \"Enfenestra skalado\".",
+   "Maximuma fenestra alto",
+   "Agordi la maksimuman alton de la fenestro kiam a\305\255tomate regrandigante la\305\255 la valor"
+   "o de \"Enfenestra skalado\".",
    "Maldiafaneco de fenestro",
    "Agordi la maldiafanecon de la fenestro.",
+   "Agordi la fenestra grando al la specifita oblo de la grando de la videjo de la kerno.",
    "Montri fenestrajn ornamojn",
    "Montri la titolan breton kaj e\304\235ojn de la fenestro.",
    "Montri menubreton",
@@ -4668,16 +4726,6 @@ static const struct
    "Montri \304\211iun enhavon en fenestro de fiksita grando, kies dimensioj estas specifita de la v"
    "aloroj de \"Fenestra lar\304\235o\" kaj \"Fenestra alto\". Kiam malebligite, la fenestra grando "
    "estos dinamike agordita la\305\255 la valoro de \"Enfenestra skalado\".",
-   "Fenestra lar\304\235o",
-   "Agordi la propran lar\304\235on por la fenestro.",
-   "Fenestra alto",
-   "Agordi la propran alton por la fenestro.",
-   "Maksimuma fenestra lar\304\235o",
-   "Agordi la maksimuman lar\304\235on de la fenestro kiam a\305\255tomate regrandigante la\305\255 "
-   "la valoro de \"Enfenestra skalado\".",
-   "Maximuma fenestra alto",
-   "Agordi la maksimuman alton de la fenestro kiam a\305\255tomate regrandigante la\305\255 la valor"
-   "o de \"Enfenestra skalado\".",
    "Entjera skalado",
    "Skali videon nur je entjeraj pa\305\235oj. La baza grando dependas de geometrio raportita de la "
    "kerno kaj de la bilda proporcio.",
@@ -4710,22 +4758,24 @@ static const struct
    "Propra videja de\305\235ovo uzata por difini la pozicion de akso-Y de la videjo.",
    "Videja biaso X por la ankropunkto",
    "Videja biaso X por la ankropunkto",
-   "Videja biaso Y por la ankropunkto",
-   "Videja biaso Y por la ankropunkto",
    "Horizontala pozicio de la enhavo kiam la videjo estas pli lar\304\235a ol la lar\304\235o de la "
    "enhavo. 0.0 estas plej maldekstre, 0.5 estas centro, 1.0 estas plej dekstre.",
+   "Videja biaso Y por la ankropunkto",
    "Vertikala pozicio de la enhavo kiam la videjo estas pli alta ol la alto de la enhavo. 0.0 estas "
    "plej supre, 0.5 estas centro, 1.0 estas plej malsupre.",
 #if defined(RARCH_MOBILE)
    "Videja biaso X por la ankropunkto (vertikala orienti\304\235o)",
-   "Videja biaso X por la ankropunkto (vertikala orienti\304\235o)",
-   "Videja biaso Y por la ankropunkto (vertikala orienti\304\235o)",
-   "Videja biaso Y por la ankropunkto (vertikala orienti\304\235o)",
    "Horizontala pozicio de la enhavo kiam la videjo estas pli lar\304\235a ol la lar\304\235o de la "
    "enhavo. 0.0 estas plej maldekstre, 0.5 estas centro, 1.0 estas plej dekstre. Vertikala orienti"
    "\304\235o.",
+   "Videja biaso Y por la ankropunkto (vertikala orienti\304\235o)",
    "Vertikala pozicio de la enhavo kiam la videjo estas pli alta ol la alto de la enhavo. 0.0 estas "
    "plej supre, 0.5 estas centro, 1.0 estas plej malsupre. Vertikala orienti\304\235o.",
+#endif
+   "Videja biaso Y por la ankropunkto",
+#if defined(RARCH_MOBILE)
+   "Videja biaso X por la ankropunkto (vertikala orienti\304\235o)",
+   "Videja biaso Y por la ankropunkto (vertikala orienti\304\235o)",
 #endif
    "Propra bilda proporcio (lar\304\235o)",
    "Propra videja lar\304\235o uzata se la Bilda proporcio estas agordita al \"Propra bilda proporci"
@@ -8702,55 +8752,13 @@ static const struct
    "Montri agordojn pri \"Kliento SMB\".",
    "Kunhaviga\304\265o de SMB",
 #endif
-   "Ombrigilaj subfilmeroj",
-   "AVERTO: Rapida flagro povus ka\305\255zi bildan da\305\255ron (\"image presistence\") en kelkaj "
-   "ekranoj. Uzu \304\235in je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subf"
-   "ilmeroj dividante la ekrano supren vertikale kaj bildigante \304\211iu parto de la ekrano la\305"
-   "\255 kiom da subfilmeroj estas.",
-   "Imito de rulanta skanlinio",
-   "AVERTO: Rapida flagro povus ka\305\255zi bildan da\305\255ron (\"image presistence\") en kelkaj "
-   "ekranoj. Uzu \304\235in je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subf"
-   "ilmeroj dividante la ekranon supren vertikale kaj bildigante \304\211iun parton de la ekrano la"
-   "\305\255 kiom da subfilmeroj estas.",
-   "Penekrana re\304\235imo",
-   "Montri en plenekrana re\304\235imo. Povas esti \305\235an\304\235ita plenumtempe. Povas esti nul"
-   "igita per komanda linio.",
-   "Enfenestra plenekrana re\304\235imo",
-   "Se plenekrane, preferi uzi plenekranan fenestron por preventi \305\235an\304\235ojn en la ekrana"
-   " re\304\235imo.",
-   "Lar\304\235o dum plenekrane",
-   "Agordi la propran lar\304\235on por la neenfenestra plenekrana re\304\235imo. Lasi \304\235in ne"
-   "agordita uzos la distingivon de la labortablon.",
-   "Plenekrana alto",
-   "Agordi la propran alton por la neenfenestra plenekrana re\304\235imo. Lasi \304\235in neagordita"
-   " uzos la distingivon de la labortablo.",
-   "Vertikala sinkronigo",
-   "Sinkronigi la eligitan videon de la grafika karto kun la ofteco de aktualigo de la ekrano. Rekom"
-   "endata.",
-   "Intervalo de inter\305\235an\304\235o de vertikala sinkronigo",
-   "Uzi propran intervalon de inter\305\235an\304\235o por vertikala sinkronigo. Efektive malpliigas"
-   " la oftecon de aktualigo de la ekrano je la specifita faktoro. \"A\305\255tomate\" agordas la fa"
-   "ktoron la\305\255 la ofteco de filmeroj raportitaj de la kerno, plibonigante ritmon de filmero k"
-   "iam rulante, ekzemple, enhavon de 30 fps en ekrano de 60 Hz, a\305\255 enhavon de 60 fps en ekra"
-   "no de 120 Hz.",
-   "Rigida sinkronigo de GPU",
-   "Rigide sinkronigi la CPU kun la GPU. Malpliigas la respondotempon kontra\305\255 rendimento.",
-   "Filmeroj de rigida sinkronigo de GPU",
-   "Agordu kiom da filmeroj la CPU povas uzi anta\305\255tempe de la GPU kiam uzante \"Rigida sinkro"
-   "nigo de GPU\".",
-   "Maksimumaj bildoj por swapchain",
-   "Diras al videa pelilo eksplicite uzi specifigitan bufran re\304\235imon.",
-   "Atendeblaj swapchains",
-   "Rigide sinkronigi la CPU kun la GPU. Malpliigas la respondotempon kontra\305\255 rendimento.",
-   "Maksimuma filmera respondotempo",
-   "Diras al videa pelilo eksplicite uzi specifigitan bufran re\304\235imon.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172220u
+      (sizeof(msg_hash_eo_blob) == (172106u
 #ifdef HAVE_LAKKA
        + 15u
        + 46u
@@ -8789,17 +8797,23 @@ typedef char msg_hash_eo_blob_check[
        + 30u
        + 111u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 16u
+       + 43u
+       + 14u
+       + 41u
+#endif
 #if defined(DINGUX)
        + 27u
        + 149u
 #endif
 #if defined(RARCH_MOBILE)
        + 57u
-       + 57u
-       + 57u
-       + 57u
        + 183u
+       + 57u
        + 173u
+       + 57u
+       + 57u
 #endif
 #ifdef HAVE_MICROPHONE
        + 10u
@@ -9471,6 +9485,24 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9552,12 +9584,30 @@ static const uint32_t msg_hash_eo_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -9566,14 +9616,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
@@ -9601,17 +9643,19 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
 #if defined(RARCH_MOBILE)
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -12991,30 +13035,4 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };
