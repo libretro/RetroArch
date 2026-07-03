@@ -1860,32 +1860,6 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
    return success*rmp3_hdr_frame_samples(dec->header);
 }
 
-/*
- *
- * Main Public API
- *
- */
-
-/* Options. */
-#ifndef RMP3_DEFAULT_CHANNELS
-#define RMP3_DEFAULT_CHANNELS      2
-#endif
-#ifndef RMP3_DEFAULT_SAMPLE_RATE
-#define RMP3_DEFAULT_SAMPLE_RATE   44100
-#endif
-
-/* Standard library stuff. */
-#define rmp3_countof(x)  (sizeof(x) / sizeof(x[0]))
-#define rmp3_max(x, y)   (((x) > (y)) ? (x) : (y))
-#define rmp3_min(x, y)   (((x) < (y)) ? (x) : (y))
-
-#define RMP3_DATA_CHUNK_SIZE  16384    /* The size in bytes of each chunk of data to read from the MP3 stream. minimp3 recommends 16K. */
-
-static INLINE float rmp3_mix_f32(float x, float y, float a)
-{
-    return x*(1-a) + y*a;
-}
-
 /* -----------------------------------------------------------------------
  * Public API
  *
