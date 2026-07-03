@@ -160,6 +160,7 @@ out = ['''/* Single-source definitions: %s.
 ''' % TITLE]
 _mh_text = open('msg_hash.h').read()
 _h_used = set()
+enum_rows = []
 for k, f, T, a in rows:
     _hs = '_H' if ('MENU_LBL_H(%s),' % T) in _mh_text else ''
     if _hs:
@@ -199,8 +200,12 @@ for k, f, T, a in rows:
                    ' * tables always carry this row via the strings pass. */\n'
                    '#if %s || defined(SETTINGS_DEF_STRINGS_PASS)\n' % (
                        gopen.replace('\n', ' '), cond)) + row + '\n#endif'
+            enum_rows.append((T, 'S_%s%s_H' % (k, m2 or '') in _h_used if False else ('S_%s_H' % k in _h_used or 'S_%s_NS_H' % k in _h_used), []))
         else:
             row = gopen + '\n' + row + '\n' + gclose
+            enum_rows.append((T, 'S_%s_H' % k in _h_used or 'S_%s_NS_H' % k in _h_used, list(gs)))
+    else:
+        enum_rows.append((T, 'S_%s_H' % k in _h_used or 'S_%s_NS_H' % k in _h_used, []))
     out.append(row)
 DEF = os.path.basename(DEF)  # includes are emitted relative to settings/
 if _h_used:
@@ -400,4 +405,86 @@ finally:
 assert os.path.exists(os.path.join('settings', DEF)), "def file lost"
 assert run('cmp -s /tmp/dump_gpre.txt /tmp/dump_g.txt').returncode == 0, run('diff /tmp/dump_gpre.txt /tmp/dump_g.txt | head -4').stdout
 print("gate: settings dump byte-identical")
+
+# ---- ENUM STAGE: consolidate this group's enum rows in msg_hash.h ----
+# Marker-based insertion: the first removed row is replaced by a unique
+# marker BEFORE the husk cleanup, so no offset can go stale - the class
+# of defect that spliced the ANDROID overlay member.
+r = run("python3 tools/msg_hash_name_harness.py /tmp/enum_pre.txt")
+assert r.returncode == 0, r.stderr[-300:]
+mh = open('msg_hash.h').read()
+
+def _plains(text):
+    b = re.search(r'enum msg_hash_enums\n\{\n(.*?)\n\};', text, re.S).group(1)
+    return set(mm.group(1) for ln in b.split('\n')
+               for mm in [re.match(r'([A-Za-z_]\w*)\s*(?:=[^,]*)?,', ln.strip())] if mm)
+_census_pre = _plains(mh)
+
+_enum_ok = True
+for _T, _h, _eg in enum_rows:
+    _form = 'MENU_LBL_H' if _h else 'MENU_LABEL'
+    _line = '   %s(%s),\n' % (_form, _T)
+    if mh.count(_line) != 1:
+        print("  enum stage skipped: %s row count %d" % (_T, mh.count(_line)))
+        _enum_ok = False; break
+    _stack = []
+    for _gl in re.finditer(r'^[ \t]*#(if\w*[^\n]*|else|endif)', mh[:mh.index(_line)], re.M):
+        _s = _gl.group(1)
+        if _s.startswith('if'): _stack.append('#' + _s.strip())
+        elif _s.startswith('endif') and _stack: _stack.pop()
+    _et = set(x for g in _stack if '__MSG_HASH_H' not in g
+              for x in re.findall(r'\b([A-Z_][A-Z0-9_]{2,})\b', g) if x != 'defined')
+    _dt = set(x for g in _eg for x in re.findall(r'\b([A-Z_][A-Z0-9_]{2,})\b', g) if x != 'defined')
+    if _et != _dt:
+        print("  enum stage skipped: %s guard mismatch enum=%s def=%s" % (_T, sorted(_et), sorted(_dt)))
+        _enum_ok = False; break
+
+if _enum_ok:
+    MARK = '/*__SETTINGS_DEF_ENUM_MARK__*/'
+    _first = True
+    for _T, _h, _eg in enum_rows:
+        _line = '   %s(%s),\n' % ('MENU_LBL_H' if _h else 'MENU_LABEL', _T)
+        mh = mh.replace(_line, MARK + '\n' if _first else '', 1)
+        _first = False
+    mh = re.sub(r'#if[^\n]*\n(?:%s\n)?#endif\n' % re.escape(MARK),
+                lambda m: MARK + '\n' if MARK in m.group(0) else '', mh)
+    _ar = dict(re.findall(r'#define (S_\w+)\(([^)]*)\)', open('intl/msg_hash_us.c').read()))
+    _d = ['   /* GENERATED REGION: %s enum rows (see settings/%s). */' % (TITLE, DEF),
+          '#define SETTINGS_DEF_ENUM_PASS',
+          '#define SETTINGS_DEF_STRINGS_PASS']
+    for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS'):
+        _d.append('#define %s(%s) MENU_LABEL(T),' % (_n, _ar[_n]))
+    for _hn, _b in (('S_BOOL_H','S_BOOL'), ('S_UINT_H','S_UINT'), ('S_BOOL_NS_H','S_BOOL_NS'),
+                    ('S_INT_H','S_INT'), ('S_FLOAT_H','S_FLOAT'),
+                    ('S_UINT_NS_H','S_UINT_NS'), ('S_INT_NS_H','S_INT_NS'), ('S_FLOAT_NS_H','S_FLOAT_NS')):
+        _d.append('#define %s(%s) MENU_LBL_H(T),' % (_hn, _ar[_b]))
+    _d.append('#include "settings/%s"' % DEF)
+    for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS',
+               'S_BOOL_H','S_UINT_H','S_BOOL_NS_H','S_INT_H','S_FLOAT_H','S_UINT_NS_H','S_INT_NS_H','S_FLOAT_NS_H',
+               'SETTINGS_DEF_STRINGS_PASS','SETTINGS_DEF_ENUM_PASS'):
+        _d.append('#undef %s' % _n)
+    assert mh.count(MARK) == 1
+    mh = mh.replace(MARK + '\n', '\n'.join(_d) + '\n')
+    open('msg_hash.h','w').write(mh)
+    assert _plains(open('msg_hash.h').read()) == _census_pre, "enum census drift"
+    r = run("python3 tools/msg_hash_name_harness.py /tmp/enum_post.txt")
+    assert r.returncode == 0, r.stderr[-300:]
+    assert run('cmp -s /tmp/enum_pre.txt /tmp/enum_post.txt').returncode == 0, \
+        run('diff /tmp/enum_pre.txt /tmp/enum_post.txt | head -4').stdout
+    _body = re.search(r'enum msg_hash_enums\n\{\n(.*?)\n\};', mh, re.S).group(1)
+    _toks = set(x for g in re.findall(r'^#if\w*([^\n]*)', _body, re.M)
+                for x in re.findall(r'\b([A-Z_][A-Z0-9_]{2,})\b', g) if x != 'defined')
+    import glob as _glob
+    for _df in _glob.glob('settings/settings_def_*.h'):
+        for g in re.findall(r'^#if\w*([^\n]*)', open(_df).read(), re.M):
+            _toks |= set(x for x in re.findall(r'\b([A-Z_][A-Z0-9_]{2,})\b', g)
+                         if x != 'defined' and 'SETTINGS_DEF' not in x)
+    open('/tmp/mh_tu.c','w').write('#include <stdint.h>\n#include "msg_hash.h"\nint main(void){return (int)MSG_LAST;}\n')
+    _b = "gcc -std=gnu89 -fsyntax-only -I. -Ilibretro-common/include -DRARCH_INTERNAL"
+    _lanes = [''] + ['-D%s' % x for x in sorted(_toks)] + [' '.join('-D%s' % x for x in sorted(_toks))]
+    for _lane in _lanes:
+        r = run("%s %s /tmp/mh_tu.c 2>&1 | grep -c error:" % (_b, _lane))
+        assert r.stdout.strip() == '0', (_lane[:60],)
+    print("gate: enum stage - name dump byte-identical, census exact, %d polarity lanes clean" % len(_lanes))
+
 print("PIPELINE_OK")
