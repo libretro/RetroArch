@@ -1983,6 +1983,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef UDEV_TOUCH_SUPPORT
+#include "settings/settings_def_input_vmouse.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_desktop.h"
 #endif
@@ -2191,13 +2194,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_overlay_mouse_hold_to_drag", &settings->bools.input_overlay_mouse_hold_to_drag, true, DEFAULT_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG, false);
    SETTING_BOOL("input_overlay_mouse_dtap_to_drag", &settings->bools.input_overlay_mouse_dtap_to_drag, true, DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG, false);
 #endif
-#ifdef UDEV_TOUCH_SUPPORT
-   SETTING_BOOL("input_touch_vmouse_pointer",    &settings->bools.input_touch_vmouse_pointer, true, DEFAULT_INPUT_TOUCH_VMOUSE_POINTER, false);
-   SETTING_BOOL("input_touch_vmouse_mouse",      &settings->bools.input_touch_vmouse_mouse, true, DEFAULT_INPUT_TOUCH_VMOUSE_MOUSE, false);
-   SETTING_BOOL("input_touch_vmouse_touchpad",   &settings->bools.input_touch_vmouse_touchpad, true, DEFAULT_INPUT_TOUCH_VMOUSE_TOUCHPAD, false);
-   SETTING_BOOL("input_touch_vmouse_trackball",  &settings->bools.input_touch_vmouse_trackball, true, DEFAULT_INPUT_TOUCH_VMOUSE_TRACKBALL, false);
-   SETTING_BOOL("input_touch_vmouse_gesture",    &settings->bools.input_touch_vmouse_gesture, true, DEFAULT_INPUT_TOUCH_VMOUSE_GESTURE, false);
-#endif
 #if defined(VITA)
    SETTING_BOOL("input_backtouch_enable",        &settings->bools.input_backtouch_enable, false, DEFAULT_INPUT_BACKTOUCH_ENABLE, false);
    SETTING_BOOL("input_backtouch_toggle",        &settings->bools.input_backtouch_toggle, false, DEFAULT_INPUT_BACKTOUCH_TOGGLE, false);
@@ -2343,6 +2339,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef UDEV_TOUCH_SUPPORT
+#include "settings/settings_def_input_vmouse.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_desktop.h"
 #endif
@@ -2606,6 +2605,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef UDEV_TOUCH_SUPPORT
+#include "settings/settings_def_input_vmouse.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_desktop.h"
 #endif
@@ -2844,6 +2846,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef UDEV_TOUCH_SUPPORT
+#include "settings/settings_def_input_vmouse.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_desktop.h"
 #endif

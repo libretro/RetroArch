@@ -16164,46 +16164,38 @@ MSG_HASH(
    "Adjust x/y scale of touchscreen coordinates to accommodate OS-level display scaling."
    )
 #ifdef UDEV_TOUCH_SUPPORT
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
-   "Touch VMouse as Pointer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
-   "Enable to pass touch events from the input touchscreen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
-   "Touch VMouse as Mouse"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
-   "Enable virtual mouse emulation using input touch events."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
-   "Touch VMouse Touchpad Mode"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
-   "Enable along with Mouse to utilize use the touch screen as a touchpad."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
-   "Touch VMouse Trackball Mode"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
-   "Enable along with Mouse to utilize use the touch screen as a trackball, adding inertia to the pointer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
-   "Touch VMouse Gestures"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
-   "Enable touchscreen gestures, including tapping, tap-dragging, and finger swiping."
-   )
+/* GENERATED REGION: touch virtual mouse group (see settings_def_input_vmouse.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_input_vmouse.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
