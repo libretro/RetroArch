@@ -1987,9 +1987,11 @@ static struct config_bool_setting *populate_settings_bool(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
 #include "settings_def_menu_sounds.h"
+#ifdef HAVE_MENU
 #include "settings_def_menu_main_views.h"
 #include "settings_def_menu_quick_views.h"
 #include "settings_def_menu_settings_views.h"
+#endif
 #include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
@@ -2346,9 +2348,11 @@ static struct config_float_setting *populate_settings_float(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
 #include "settings_def_menu_sounds.h"
+#ifdef HAVE_MENU
 #include "settings_def_menu_main_views.h"
 #include "settings_def_menu_quick_views.h"
 #include "settings_def_menu_settings_views.h"
+#endif
 #include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
@@ -2603,9 +2607,11 @@ static struct config_uint_setting *populate_settings_uint(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
 #include "settings_def_menu_sounds.h"
+#ifdef HAVE_MENU
 #include "settings_def_menu_main_views.h"
 #include "settings_def_menu_quick_views.h"
 #include "settings_def_menu_settings_views.h"
+#endif
 #include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
@@ -2833,9 +2839,11 @@ static struct config_int_setting *populate_settings_int(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
 #include "settings_def_menu_sounds.h"
+#ifdef HAVE_MENU
 #include "settings_def_menu_main_views.h"
 #include "settings_def_menu_quick_views.h"
 #include "settings_def_menu_settings_views.h"
+#endif
 #include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
