@@ -378,7 +378,7 @@ try:
     build_dump('/tmp/dump_gpre.txt')
 finally:
     assert run('git stash pop').returncode == 0
-assert os.path.exists(DEF), "def file lost"
+assert os.path.exists(os.path.join('settings', DEF)), "def file lost"
 assert run('cmp -s /tmp/dump_gpre.txt /tmp/dump_g.txt').returncode == 0, run('diff /tmp/dump_gpre.txt /tmp/dump_g.txt | head -4').stdout
 print("gate: settings dump byte-identical")
 print("PIPELINE_OK")
