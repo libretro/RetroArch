@@ -291,7 +291,7 @@ print("gate: lanes clean (%d base + %d guard-isolation + %d headless)" % (
     len(_LANES), len(_iso), len(_headless)))
 
 # ---- TOKEN-STREAM GATE: preprocessor-level emission identity ----
-CPP = "gcc -E -P -I. -Imenu -Ilibretro-common/include -Ideps/7zip -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DHAVE_CHEATS -DHAVE_OVERLAY -DHAVE_MICROPHONE"
+CPP = "gcc -E -P -I. -Imenu -Ilibretro-common/include -Ideps/7zip -Ideps/rcheevos/include -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DHAVE_CHEATS -DHAVE_OVERLAY -DHAVE_MICROPHONE"
 def table_tokens(src_path, extra=""):
     """Preprocessed initializer token stream, or None when the table's
     enclosing guards eliminate it in this polarity."""
