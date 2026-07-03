@@ -330,9 +330,6 @@ static const struct
    char s_3547866d[120];
    char s_4bceefff[25];
    char s_4577a14d[38];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_ef3d53d8[21];
 #if defined(DINGUX)
    char s_805730a0[19];
@@ -386,9 +383,6 @@ static const struct
 #endif
    char s_3c70d08d[23];
    char s_fc2d67bb[146];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[22];
    char s_055c296e[97];
    char s_6c1369c6[17];
@@ -941,6 +935,17 @@ static const struct
    char s_33e06527[21];
 #endif
    char s_fb888c0b[41];
+   char r355[28];
+   char r356[101];
+   char r357[18];
+   char r358[124];
+   char r359[19];
+   char r360[126];
+   char r392[83];
+   char r399[87];
+   char r400[26];
+   char r401[92];
+   char r822[87];
 } msg_hash_id_blob =
 {
    "Menu Utama",
@@ -1267,9 +1272,6 @@ static const struct
    "pat berkecepatan penuh.",
    "Penyisipan Bingkai Hitam",
    "Sisipan Bingkai Hitam - Bingkai Gelap",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Penyaringan Bilinear",
 #if defined(DINGUX)
    "Interpolasi Gambar",
@@ -1331,9 +1333,6 @@ static const struct
    "Paksa matikan sRGB FBO",
    "Menonaktifkan paksa dukungan FBO sRGB. Beberapa kandar OpenGL Intel di Windows bermasalah video "
    "dengan FBO sRGB. Aktifkan ini untuk mengatasinya.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Paksa resolusi di UWP",
    "Paksa resolusi ke ukuran layar penuh, jika disetel ke 0, nilai tetap 3840 x 2160 akan digunakan.",
    "Skala Berjendela",
@@ -1914,13 +1913,27 @@ static const struct
    "Aset tidak ditemukan",
 #endif
    "Mikrofon sdl2 perlu pengandar audio sdl2",
+   "Mode Layar Penuh Berjendela",
+   "Jika layar penuh, lebih suka menggunakan jendela layar penuh untuk mencegah peralihan mode tampi"
+   "lan.",
+   "Lebar Layar Penuh",
+   "Atur ukuran lebar khusus untuk mode layar penuh non-jendela. Membiarkannya tidak disetel akan me"
+   "nggunakan resolusi desktop.",
+   "Tinggi Layar Penuh",
+   "Setel ukuran tinggi khusus untuk mode layar penuh non-jendela. Membiarkannya tidak disetel akan "
+   "menggunakan resolusi desktop.",
+   "Sinkronkan video keluaran kartu grafis ke laju penyegaran layar. Direkomendasikan.",
+   "Sinkronisasi CPU dan GPU dengan keras. Mengurangi latensi dengan mengorbankan kinerja.",
+   "Bingkai Sinkron GPU Keras",
+   "Atur berapa laju bingkai yang dijalankan CPU lebih dari GPU saat 'Sinkron GPU Keras' aktif.",
+   "Sinkronisasi CPU dan GPU dengan keras. Mengurangi latensi dengan mengorbankan kinerja.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26585u
+      (sizeof(msg_hash_id_blob) == (26908u
 #ifdef HAVE_LAKKA
        + 17u
        + 43u
@@ -2311,9 +2324,6 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -2367,9 +2377,6 @@ static const uint32_t msg_hash_id_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -2922,4 +2929,15 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
 #endif
    (uint32_t)MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 };

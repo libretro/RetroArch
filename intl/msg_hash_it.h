@@ -431,9 +431,6 @@ static const struct
    char s_4577a14d[47];
    char s_07e1d73b[383];
    char s_5fdad539[315];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_93805cc8_0[500];
    char s_93805cc8_1[134];
    char s_7a7a3d56[208];
@@ -516,9 +513,6 @@ static const struct
 #endif
    char s_3c70d08d[33];
    char s_fc2d67bb[196];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[25];
    char s_055c296e[127];
    char s_6c1369c6[15];
@@ -3790,6 +3784,32 @@ static const struct
    char s_a1fdf4a6[37];
    char s_d21d875b[17];
 #endif
+   char r410[22];
+   char r411[320];
+   char r413[41];
+   char r414[320];
+   char r484[27];
+   char r485[154];
+   char r486[36];
+   char r487[133];
+   char r488[27];
+   char r489[159];
+   char r490[25];
+   char r491[164];
+   char r570[35];
+   char r571[115];
+   char r572[25];
+   char r573[361];
+   char r583[29];
+   char r584[90];
+   char r585[50];
+   char r586[94];
+   char r2982[33];
+   char r2983[90];
+   char r2985[18];
+   char r2986[90];
+   char r2987[30];
+   char r2988[90];
 } msg_hash_it_blob =
 {
    "Menu principale",
@@ -4289,9 +4309,6 @@ static const struct
    "mmi neri aumentano la nitidezza del movimento ma riducono la luminosit\303\240. Non applicabile "
    "a 120Hz, poich\303\251 c\342\200\231\303\250 un solo fotogramma extra da 60Hz: deve necessariame"
    "nte essere nero, altrimenti la BFI non risulterebbe attiva.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Inserisce fotogrammi shader extra tra i fotogrammi per supportare eventuali effetti shader proge"
    "ttati per funzionare a una frequenza superiore rispetto al contenuto. Utilizzare solo l\342\200"
    "\231opzione corrispondente alla frequenza di aggiornamento attuale del display. Non utilizzare c"
@@ -4414,9 +4431,6 @@ static const struct
    "Forza la disattivazione del supporto per sRGB FBO. Alcuni driver Intel OpenGL su Windows present"
    "ano problemi video con gli sRGB FBO. Attivare questa opzione pu\303\262 servire da soluzione alt"
    "ernativa.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Forza risoluzione su UWP",
    "Forza la risoluzione alla dimensione dello schermo intero, se impostata a 0, verr\303\240 utiliz"
    "zato un valore fisso di 3840 x 2160.",
@@ -8282,13 +8296,54 @@ static const struct
    "Mostra le impostazioni 'SMB Client'.",
    "Condivisione SMB",
 #endif
+   "Sub-fotogrammi shader",
+   "ATTENZIONE: Il lampeggiamento rapido pu\303\262 causare persistenza dell'immagine su alcuni sche"
+   "rmi. Utilizzare a proprio rischio. // Simula una semplice linea di scansione a scorrimento su pi"
+   "\303\271 sub-fotogrammi, suddividendo verticalmente lo schermo e renderizzando ciascuna parte in"
+   " base al numero di sub-fotogrammi presenti.",
+   "Simulazione di righe di scansione mobili",
+   "ATTENZIONE: Il lampeggiamento rapido pu\303\262 causare persistenza dell'immagine su alcuni sche"
+   "rmi. Utilizzare a proprio rischio. // Simula una semplice linea di scansione a scorrimento su pi"
+   "\303\271 sub-fotogrammi, suddividendo verticalmente lo schermo e renderizzando ciascuna parte in"
+   " base al numero di sub-fotogrammi presenti.",
+   "Modalit\303\240 a schermo intero",
+   "Attiva la modalit\303\240 a schermo intero. Questa impostazione pu\303\262 essere modificata dur"
+   "ante l'esecuzione e sovrascritta con un parametro da riga di comando.",
+   "Modalit\303\240 Finestra a Schermo Intero",
+   "Se a schermo intero, preferisci usare una finestra a schermo intero per impedire la commutazione"
+   " della modalit\303\240 di visualizzazione.",
+   "Larghezza a schermo intero",
+   "Imposta la dimensione personalizzata della larghezza per la modalit\303\240 a schermo intero sen"
+   "za finestra. Lasciandolo a 0 utilizzer\303\240 la risoluzione del desktop.",
+   "Altezza a schermo intero",
+   "Imposta la dimensione personalizzata dell'altezza per la modalit\303\240 a schermo intero senza "
+   "finestra. Se non impostata, verr\303\240 utilizzata la risoluzione del desktop.",
+   "Sincronizzazione Verticale (VSync)",
+   "Sincronizza il video di uscita della scheda grafica per la frequenza di aggiornamento dello sche"
+   "rmo. Raccomandato.",
+   "Intervallo Scambio VSync",
+   "Usa un intervallo di swap personalizzato per VSync. Riduce efficacemente la frequenza di aggiorn"
+   "amento del monitor dal fattore specificato. 'Auto' imposta il fattore in base al frame rate core"
+   "-reported, fornendo un miglioramento del ritmo dei frame quando si esegue e.. contenuto di 30 fp"
+   "s su un display a 60 Hz o un contenuto di 60 fps su un display a 120 Hz.",
+   "Sincronizzazione GPU forzata",
+   "Sincronizza forzatamente la CPU con la GPU. Riduce la latenza al costo delle prestazioni.",
+   "Sincronizzazione dei fotogrammi della GPU forzata",
+   "Imposta quanti fotogrammi la CPU pu\303\262 eseguire prima della GPU quando si usa 'Hard GPU Syn"
+   "c'.",
+   "Massimo di immagini in swapchain",
+   "Indica al driver video di utilizzare esplicitamente una modalit\303\240 di buffering specifica.",
+   "Swapchains Attivi",
+   "Sincronizza forzatamente la CPU con la GPU. Riduce la latenza al costo delle prestazioni.",
+   "Latenza massima di fotogrammi",
+   "Indica al driver video di utilizzare esplicitamente una modalit\303\240 di buffering specifica.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (179693u
+      (sizeof(msg_hash_it_blob) == (181803u
 #ifdef HAVE_LAKKA
        + 14u
        + 44u
@@ -8974,9 +9029,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9057,9 +9109,6 @@ static const uint32_t msg_hash_it_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -12328,4 +12377,30 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

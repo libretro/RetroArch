@@ -417,9 +417,6 @@ static const struct
    char s_4577a14d[39];
    char s_07e1d73b[363];
    char s_5fdad539[299];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_93805cc8[471];
    char s_7a7a3d56[228];
    char s_ef3d53d8[21];
@@ -498,9 +495,6 @@ static const struct
 #endif
    char s_3c70d08d[33];
    char s_fc2d67bb[186];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[25];
    char s_055c296e[131];
    char s_6c1369c6[19];
@@ -3799,6 +3793,30 @@ static const struct
    char s_a1fdf4a6[32];
    char s_d21d875b[10];
 #endif
+   char r396[287];
+   char r398[28];
+   char r399[296];
+   char r466[16];
+   char r467[125];
+   char r468[27];
+   char r469[115];
+   char r470[27];
+   char r471[150];
+   char r472[26];
+   char r473[149];
+   char r552[33];
+   char r553[109];
+   char r554[21];
+   char r555[363];
+   char r569[25];
+   char r570[85];
+   char r571[22];
+   char r572[88];
+   char r2999[27];
+   char r3000[80];
+   char r3002[85];
+   char r3003[23];
+   char r3004[80];
 } msg_hash_nl_blob =
 {
    "Hoofdmenu",
@@ -4271,9 +4289,6 @@ static const struct
    "rhoogt bewegingshelderheid maar vermindert de helderheid. Niet van toepassing bij 120hz omdat er"
    " maar \303\251\303\251n totaal 60Hz extra frame is, Het moet dus zwart zijn, anders zou BFI hele"
    "maal niet actief zijn.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Voegt extra shader frame(s) binnen voor mogelijke shader effecten die zijn ontworpen om sneller "
    "te draaien dan de snelheid van de inhoud. Gebruik alleen de optie voor uw huidige ververskoers v"
    "oor weergave. Niet voor gebruik bij frequenties die geen veelvoud zijn van 60Hz zoals 144Hz, 165"
@@ -4384,9 +4399,6 @@ static const struct
    "sRGB FBO Geforceerd Uitschakelen",
    "Gewelddadig de sRGB FBO-ondersteuning uit te schakelen. Sommige Intel OpenGL stuurprogramma's op"
    " Windows hebben videoproblemen met sRGB FBO's. Als u dit inschakelt, kunt u dit omzeilen.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Forceer resolutie op UWP",
    "Forceer de resolutie naar de grote van het volledig scherm, een waarde van 3840 x 2160 zal gebru"
    "ikt worden wanneer 0 is ingesteld.",
@@ -8222,13 +8234,50 @@ static const struct
    "Toon de \"SMB client\" instelling",
    "SMB share",
 #endif
+   "WAARSCHUWING: Snelle knipperen kan afbeeldingen in sommige schermen inbranden. Gebruik op eigen "
+   "risico // Simuleert een standaard scanlijn over meerdere sub-frames door het scherm verticaal te"
+   " verdelen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames er zijn.",
+   "Rollende scanlijn simulatie",
+   "WAARSCHUWING: Een snelle knippering kan afbeeldingen in sommige schermen inbranden. Gebruik op e"
+   "igen risico // Simuleert een standaard scanlijn over meerdere sub-frames door het scherm vertica"
+   "al omhoog te delen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames e"
+   "r zijn.",
+   "Volledig Scherm",
+   "Weergeef op volledig scherm. Kan worden gewijzigd tijdens runtime. Kan worden overschreven door "
+   "een opdrachtregelschakelaar.",
+   "Schermvullend venstermodus",
+   "Schermvullend venstermodus gebruiken tijdens modus volledig scherm om veranderingen in weergavem"
+   "odus te voorkomen.",
+   "Breedte op Volledig Scherm",
+   "Stel de aangepaste breedtegrootte in voor de modus voor volledig scherm zonder venster. Als het "
+   "is uitgeschakeld, wordt de desktopresolutie gebruikt.",
+   "Hoogte op Volledig Scherm",
+   "Stel de aangepaste hoogtegrootte in voor de modus voor volledig scherm zonder venster. Als het i"
+   "s uitgeschakeld, wordt de desktopresolutie gebruikt.",
+   "Verticale synchronisatie (Vsync)",
+   "Synchroniseer de video-uitvoer van de grafische kaart met de verversingssnelheid van het scherm."
+   " Aanbevolen.",
+   "VSync-wisselinterval",
+   "Gebruik een aangepast wisselinterval voor VSync. Vermindert de vernieuwingsfrequentie van de mon"
+   "itor effectief met de opgegeven factor. 'Auto' stelt de factor in op basis van de door de core g"
+   "erapporteerde framesnelheid, wat zorgt voor een verbeterde framepacing bij het hardlopen van b.v"
+   ". 30 fps-inhoud op een 60 Hz-scherm of 60 fps-inhoud op een 120 Hz-scherm.",
+   "Harde GPU Synchronisatie",
+   "Hard-synchronisatie van de CPU en GPU. Vermindert latentie ten koste van prestaties.",
+   "Harde GPU Sync Frames",
+   "Stel in hoeveel frames de CPU voor kan lopen op de GPU bij gebruik van 'Hard GPU Sync'.",
+   "Max Swapchain-afbeeldingen",
+   "Vertelt de video driver om expliciet een opgegeven bufferingmodus te gebruiken.",
+   "Hard-synchronisatie van de CPU en GPU. Vermindert latentie ten koste van prestaties.",
+   "Maximale framelatentie",
+   "Vertelt de video driver om expliciet een opgegeven bufferingmodus te gebruiken.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (172626u
+      (sizeof(msg_hash_nl_blob) == (174445u
 #ifdef HAVE_LAKKA
        + 17u
        + 44u
@@ -8900,9 +8949,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -8980,9 +9026,6 @@ static const uint32_t msg_hash_nl_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -12279,4 +12322,28 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

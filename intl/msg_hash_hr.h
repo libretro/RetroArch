@@ -181,16 +181,10 @@ static const struct
    char s_721e7bb2[9];
    char s_57665cff[6];
    char s_730df420[15];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
 #if defined(DINGUX)
    char s_bfd4c6ef[11];
    char s_ce997004[11];
 #endif
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_30140cb5[16];
    char s_0f5266ce[15];
    char s_78585119[8];
@@ -458,16 +452,10 @@ static const struct
    "Snimanje",
    "Izlaz",
    "Sinkronizacija",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
 #if defined(DINGUX)
    "Bikubi\304\215no",
    "Bilinearno",
 #endif
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "\305\240irina prozora",
    "Visina prozora",
    "Pametno",
@@ -571,7 +559,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
-      (sizeof(msg_hash_hr_blob) == (4645u
+      (sizeof(msg_hash_hr_blob) == (4177u
 #ifdef HAVE_LAKKA
        + 12u
        + 40u
@@ -770,16 +758,10 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,

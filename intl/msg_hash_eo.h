@@ -460,9 +460,6 @@ static const struct
    char s_4577a14d[46];
    char s_07e1d73b[332];
    char s_5fdad539[332];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_93805cc8_0[500];
    char s_93805cc8_1[10];
    char s_7a7a3d56[207];
@@ -546,9 +543,6 @@ static const struct
 #endif
    char s_3c70d08d[30];
    char s_fc2d67bb[159];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[27];
    char s_055c296e[109];
    char s_6c1369c6[19];
@@ -3991,6 +3985,32 @@ static const struct
    char s_a1fdf4a6[35];
    char s_d21d875b[20];
 #endif
+   char r439[23];
+   char r440[288];
+   char r442[27];
+   char r443[291];
+   char r514[18];
+   char r515[103];
+   char r516[30];
+   char r517[94];
+   char r518[22];
+   char r519[126];
+   char r520[16];
+   char r521[123];
+   char r601[21];
+   char r602[104];
+   char r603[50];
+   char r604[366];
+   char r620[25];
+   char r621[87];
+   char r622[37];
+   char r623[103];
+   char r3165[32];
+   char r3166[67];
+   char r3168[22];
+   char r3169[87];
+   char r3170[32];
+   char r3171[67];
 } msg_hash_eo_blob =
 {
    "\304\210efa menuo",
@@ -4508,9 +4528,6 @@ static const struct
    "j filmeroj. Ju pli da nigraj filmeroj, des pli da movklareco sed malpli da brileco. NE aplikebla"
    " je 120Hz \304\211ar nur ekzistas unu totala aldona filmero de 60Hz, do \304\235i devos esti nig"
    "ra, alikaze enmeto de nigraj fotogramoj estus tute ne aktiva.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Enmetas kromajn ombrigilajn filmerojn inter filmeroj por \304\211iuj eblaj ombrigilaj efikoj des"
    "ignitaj por ruli pli rapide ol la enhava ofteco. Uzu nur opcion designitan por la ofteco de aktu"
    "aligo de via ekrano. Ne uzota je oftecoj de aktualigo, kiuj ne estas obloj de 60Hz, kiel 144Hz, "
@@ -4631,9 +4648,6 @@ static const struct
    "Devigi malebligon de sRGB FBO",
    "Devige malebligi subtenon de sRGB FBO. Kelkaj peliloj de Intel OpenGL en Windows havas videajn p"
    "roblemojn kun sRGB FBO-oj. Ebligi \304\211i tion povas mildigi ilin.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Devigi distingivon \304\211e UWP",
    "Devigi la distingivon al la plenekrana grando. Se agordita je 0, fiksita valoro de 3840 \303\227"
    " 2160 estos uzata.",
@@ -8688,13 +8702,55 @@ static const struct
    "Montri agordojn pri \"Kliento SMB\".",
    "Kunhaviga\304\265o de SMB",
 #endif
+   "Ombrigilaj subfilmeroj",
+   "AVERTO: Rapida flagro povus ka\305\255zi bildan da\305\255ron (\"image presistence\") en kelkaj "
+   "ekranoj. Uzu \304\235in je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subf"
+   "ilmeroj dividante la ekrano supren vertikale kaj bildigante \304\211iu parto de la ekrano la\305"
+   "\255 kiom da subfilmeroj estas.",
+   "Imito de rulanta skanlinio",
+   "AVERTO: Rapida flagro povus ka\305\255zi bildan da\305\255ron (\"image presistence\") en kelkaj "
+   "ekranoj. Uzu \304\235in je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subf"
+   "ilmeroj dividante la ekranon supren vertikale kaj bildigante \304\211iun parton de la ekrano la"
+   "\305\255 kiom da subfilmeroj estas.",
+   "Penekrana re\304\235imo",
+   "Montri en plenekrana re\304\235imo. Povas esti \305\235an\304\235ita plenumtempe. Povas esti nul"
+   "igita per komanda linio.",
+   "Enfenestra plenekrana re\304\235imo",
+   "Se plenekrane, preferi uzi plenekranan fenestron por preventi \305\235an\304\235ojn en la ekrana"
+   " re\304\235imo.",
+   "Lar\304\235o dum plenekrane",
+   "Agordi la propran lar\304\235on por la neenfenestra plenekrana re\304\235imo. Lasi \304\235in ne"
+   "agordita uzos la distingivon de la labortablon.",
+   "Plenekrana alto",
+   "Agordi la propran alton por la neenfenestra plenekrana re\304\235imo. Lasi \304\235in neagordita"
+   " uzos la distingivon de la labortablo.",
+   "Vertikala sinkronigo",
+   "Sinkronigi la eligitan videon de la grafika karto kun la ofteco de aktualigo de la ekrano. Rekom"
+   "endata.",
+   "Intervalo de inter\305\235an\304\235o de vertikala sinkronigo",
+   "Uzi propran intervalon de inter\305\235an\304\235o por vertikala sinkronigo. Efektive malpliigas"
+   " la oftecon de aktualigo de la ekrano je la specifita faktoro. \"A\305\255tomate\" agordas la fa"
+   "ktoron la\305\255 la ofteco de filmeroj raportitaj de la kerno, plibonigante ritmon de filmero k"
+   "iam rulante, ekzemple, enhavon de 30 fps en ekrano de 60 Hz, a\305\255 enhavon de 60 fps en ekra"
+   "no de 120 Hz.",
+   "Rigida sinkronigo de GPU",
+   "Rigide sinkronigi la CPU kun la GPU. Malpliigas la respondotempon kontra\305\255 rendimento.",
+   "Filmeroj de rigida sinkronigo de GPU",
+   "Agordu kiom da filmeroj la CPU povas uzi anta\305\255tempe de la GPU kiam uzante \"Rigida sinkro"
+   "nigo de GPU\".",
+   "Maksimumaj bildoj por swapchain",
+   "Diras al videa pelilo eksplicite uzi specifigitan bufran re\304\235imon.",
+   "Atendeblaj swapchains",
+   "Rigide sinkronigi la CPU kun la GPU. Malpliigas la respondotempon kontra\305\255 rendimento.",
+   "Maksimuma filmera respondotempo",
+   "Diras al videa pelilo eksplicite uzi specifigitan bufran re\304\235imon.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (170427u
+      (sizeof(msg_hash_eo_blob) == (172220u
 #ifdef HAVE_LAKKA
        + 15u
        + 46u
@@ -9415,9 +9471,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9499,9 +9552,6 @@ static const uint32_t msg_hash_eo_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -12941,4 +12991,30 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

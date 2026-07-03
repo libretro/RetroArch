@@ -431,9 +431,6 @@ static const struct
    char s_4577a14d[41];
    char s_07e1d73b[364];
    char s_5fdad539[282];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_93805cc8_0[499];
    char s_93805cc8_1[12];
    char s_7a7a3d56[221];
@@ -515,9 +512,6 @@ static const struct
 #endif
    char s_3c70d08d[27];
    char s_fc2d67bb[149];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[31];
    char s_055c296e[133];
    char s_6c1369c6[14];
@@ -3703,6 +3697,29 @@ static const struct
    char s_a1fdf4a6[39];
    char s_d21d875b[14];
 #endif
+   char r410[291];
+   char r412[34];
+   char r413[291];
+   char r482[18];
+   char r483[91];
+   char r484[27];
+   char r485[103];
+   char r486[21];
+   char r487[136];
+   char r488[21];
+   char r489[135];
+   char r556[32];
+   char r557[105];
+   char r558[21];
+   char r559[331];
+   char r569[15];
+   char r570[74];
+   char r571[25];
+   char r572[89];
+   char r2910[88];
+   char r2912[74];
+   char r2913[19];
+   char r2914[88];
 } msg_hash_sv_blob =
 {
    "Huvudmeny",
@@ -4220,9 +4237,6 @@ static const struct
    "\303\266relseklarheten men minskar ljusstyrkan. Inte till\303\244mpligt vid 120 Hz eftersom det "
    "bara finns en enda extra 60 Hz-bildruta, s\303\245 den m\303\245ste vara svart, annars skulle BF"
    "I inte vara aktiv alls.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Infogar extra shader-ram(ar) mellan bildrutorna f\303\266r eventuella shader-effekter som \303"
    "\244r utformade f\303\266r att k\303\266ras snabbare \303\244n inneh\303\245llshastigheten. Anv"
    "\303\244nd endast det alternativ som \303\244r avsett f\303\266r din aktuella bildsk\303\244rmsu"
@@ -4347,9 +4361,6 @@ static const struct
    "Tv\303\245ngsinaktivera sRGB FBO",
    "Tv\303\245ngsinaktivera st\303\266d f\303\266r sRGB FBO. Vissa Intel OpenGL-drivrutiner p\303"
    "\245 Windows har videoproblem med sRGB FBOer. Att aktivera detta kan l\303\266sa det.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Framtvinga uppl\303\266sning p\303\245 UWP",
    "Tvinga upp uppl\303\266sningen till helsk\303\244rmsstorleken, om den \303\244r inst\303\244lld "
    "p\303\245 0, kommer ett fast v\303\244rde p\303\245 3840 x 2160 att anv\303\244ndas.",
@@ -8301,13 +8312,55 @@ static const struct
    "Visa inst\303\244llningar f\303\266r \"SMB-klient\".",
    "SMB-utdelning",
 #endif
+   "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
+   "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
+   "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
+   "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
+   "Rullande skanningslinjesimulering",
+   "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
+   "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
+   "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
+   "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
+   "Helsk\303\244rmsvisning",
+   "Visning i helsk\303\244rm. Kan \303\244ndras vid k\303\266rtid. Kan \303\245sidos\303\244ttas me"
+   "d en kommandoradsv\303\244xel.",
+   "F\303\266nster i helsk\303\244rmsl\303\244ge",
+   "Om helsk\303\244rm, f\303\266redrar att anv\303\244nda ett helsk\303\244rmsf\303\266nster som f"
+   "\303\266rhindrar att visningsl\303\244ge \303\244ndras.",
+   "Bredd f\303\266r helsk\303\244rm",
+   "St\303\244ll in anpassad breddstorlek f\303\266r helsk\303\244rmsl\303\244get utan f\303\266nste"
+   "r. Om du l\303\245ter den vara oinst\303\244lld anv\303\244nds skrivbordsuppl\303\266sningen.",
+   "H\303\266jd f\303\266r helsk\303\244rm",
+   "St\303\244ll in anpassad h\303\266jdstorlek f\303\266r helsk\303\244rmsl\303\244ge utan f\303"
+   "\266nster. Om du l\303\245ter den vara oinst\303\244lld anv\303\244nds skrivbordsuppl\303\266sni"
+   "ngen.",
+   "Vertikal synkronisering (Vsync)",
+   "Synkronisera videoutmatningen fr\303\245n grafikkortet till bildsk\303\244rmens uppdateringsfrek"
+   "vens. Rekommenderas.",
+   "VSynk bytesintervall",
+   "Anv\303\244nd ett anpassat bytesintervall f\303\266r VSynk. Minskar effektivt bildsk\303\244rmen"
+   "s uppdateringsfrekvens med den angivna faktorn. 'Auto' st\303\244ller in faktorn baserat p\303"
+   "\245 k\303\244rnrapporterad bildhastighet, vilket ger f\303\266rb\303\244ttrad bildtakt n\303"
+   "\244r du k\303\266r t.ex. 30 fps inneh\303\245ll p\303\245 en 60 Hz sk\303\244rm eller 60 fps in"
+   "neh\303\245ll p\303\245 en 120 Hz sk\303\244rm.",
+   "H\303\245rd GPU-synk",
+   "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
+   "H\303\245rd GPU-synk Bildrutor",
+   "St\303\244ll in hur m\303\245nga bildrutor CPUn kan k\303\266ra f\303\266re GPUn n\303\244r 'H"
+   "\303\245rd GPU-synk' anv\303\244nds.",
+   "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
+   "\303\244ge.",
+   "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
+   "Max bildrutelatens",
+   "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
+   "\303\244ge.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (163893u
+      (sizeof(msg_hash_sv_blob) == (165554u
 #ifdef HAVE_LAKKA
        + 14u
        + 43u
@@ -8985,9 +9038,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9067,9 +9117,6 @@ static const uint32_t msg_hash_sv_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -12252,4 +12299,27 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

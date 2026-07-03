@@ -42,9 +42,6 @@ static const struct
    char s_353c64eb_0[500];
    char s_353c64eb_1[6];
    char s_5fdad539[273];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
 #if defined(DINGUX)
    char s_6dc7aece[195];
    char s_bfd4c6ef[9];
@@ -72,9 +69,6 @@ static const struct
    char s_0ef856cb[35];
    char s_22ee45f4[34];
    char s_9a90acec[22];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_055c296e[102];
    char s_b2f7627c[27];
    char s_ad5ff591[11];
@@ -479,6 +473,23 @@ static const struct
    char s_974d8c3a_0[500];
    char s_974d8c3a_1[91];
 #endif
+   char r46[20];
+   char r47[95];
+   char r48[26];
+   char r49[85];
+   char r50[18];
+   char r51[115];
+   char r52[19];
+   char r53[116];
+   char r63[23];
+   char r64[98];
+   char r65[21];
+   char r66[282];
+   char r68[78];
+   char r344[26];
+   char r345[21];
+   char r346[78];
+   char r347[22];
 } msg_hash_en_blob =
 {
    "Favourites",
@@ -519,9 +530,6 @@ static const struct
    "Adjusts the number of frames displayed in the BFI sequence that are black. More black frames inc"
    "reases motion clarity but reduces brightness. Not applicable at 120hz as there is only one total"
    " extra 60hz frame, so it must be black otherwise BFI would not be active at all.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
 #if defined(DINGUX)
    "Specify image interpolation method when scaling content with the internal IPU. 'Bicubic' or 'Bil"
    "inear' is recommended when using CPU powered video filters. This option has no performance impac"
@@ -559,9 +567,6 @@ static const struct
    "Only in Exclusive Full-Screen Mode",
    "Only in Windowed Full-Screen Mode",
    "All Full-Screen Modes",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Force the resolution to the full-screen size. If set to 0, a fixed value of 3840 x 2160 will be "
    "used.",
    "Configuration Aspect Ratio",
@@ -1083,13 +1088,35 @@ static const struct
    " it is still not working, consid",
    "er <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>.",
 #endif
+   "Full-Screen Display",
+   "Display in full-screen. Can be changed at runtime. Can be overridden by a command line switch.",
+   "Windowed Full-Screen Mode",
+   "If full-screen, prefer using a full-screen window to prevent display mode switching.",
+   "Full-Screen Width",
+   "Set the custom width size for the non-windowed full-screen mode. Leaving it unset will use the d"
+   "esktop resolution.",
+   "Full-Screen Height",
+   "Set the custom height size for the non-windowed full-screen mode. Leaving it unset will use the "
+   "desktop resolution.",
+   "Vertical Sync (V-Sync)",
+   "Synchronise the output video of the graphics card to the refresh rate of the screen. Recommended"
+   ".",
+   "V-Sync Swap Interval",
+   "Use a custom swap interval for V-Sync. Effectively reduces monitor refresh rate by the specified"
+   " factor. 'Auto' sets factor based on core-reported frame rate, providing improved frame pacing w"
+   "hen running e.g. 30 fps content on a 60 Hz display or 60 fps content on a 120 Hz display.",
+   "Hard synchronise the CPU and GPU. Reduces latency at the cost of performance.",
+   "Maximum Swap Chain Images",
+   "Waitable Swap Chains",
+   "Hard synchronise the CPU and GPU. Reduces latency at the cost of performance.",
+   "Maximum Frame Latency",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26081u
+      (sizeof(msg_hash_en_blob) == (26756u
 #if defined(DINGUX)
        + 195u
        + 9u
@@ -1184,9 +1211,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
@@ -1214,9 +1238,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
@@ -1620,4 +1641,21 @@ static const uint32_t msg_hash_en_ids[] =
 #ifdef HAVE_QT
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
 };

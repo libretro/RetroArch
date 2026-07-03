@@ -434,9 +434,6 @@ static const struct
    char s_4577a14d[33];
    char s_07e1d73b[376];
    char s_5fdad539[306];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_93805cc8[484];
    char s_7a7a3d56[226];
    char s_ef3d53d8[25];
@@ -517,9 +514,6 @@ static const struct
 #endif
    char s_3c70d08d[36];
    char s_fc2d67bb[217];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[32];
    char s_055c296e[107];
    char s_6c1369c6[18];
@@ -3736,6 +3730,32 @@ static const struct
    char s_1ff7947b[18];
    char s_25c6fde9[34];
 #endif
+   char r413[29];
+   char r414[305];
+   char r416[31];
+   char r417[305];
+   char r486[23];
+   char r487[129];
+   char r488[25];
+   char r489[95];
+   char r490[22];
+   char r491[139];
+   char r492[23];
+   char r493[140];
+   char r561[24];
+   char r562[92];
+   char r563[23];
+   char r564[329];
+   char r576[26];
+   char r577[87];
+   char r578[33];
+   char r579[100];
+   char r2961[35];
+   char r2962[92];
+   char r2964[27];
+   char r2965[88];
+   char r2966[21];
+   char r2967[92];
 } msg_hash_tr_blob =
 {
    "Ana Men\303\274",
@@ -4323,9 +4343,6 @@ static const struct
    "\237\304\261 azalt\304\261r. Toplamda yaln\304\261zca bir adet ekstra 60hz \303\247er\303\247eve"
    " oldu\304\237undan 120hz i\303\247in ge\303\247erli de\304\237ildir, bu nedenle siyah olmal\304"
    "\261d\304\261r, aksi takdirde BFI hi\303\247 aktif olmazd\304\261.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "\304\260\303\247erik h\304\261z\304\261ndan daha h\304\261zl\304\261 \303\247al\304\261\305\237a"
    "cak \305\237ekilde tasarlanm\304\261\305\237 olas\304\261 g\303\266lgelendirici efektleri i\303"
    "\247in kareler aras\304\261na fazladan g\303\266lgelendirici kareleri ekler. Yaln\304\261zca mev"
@@ -4470,9 +4487,6 @@ static const struct
    "aki baz\304\261 Intel OpenGL s\303\274r\303\274c\303\274leri, e\304\237er etkinse, sRGB FBO dest"
    "e\304\237iyle ilgili video sorunlar\304\261 ya\305\237ayabilir. Bunu etkinle\305\237tirmek, bu d"
    "urumu \303\247\303\266zebilir.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "UWP'de \303\247\303\266z\303\274n\303\274rl\303\274\304\237\303\274 zorla",
    "\303\207\303\266z\303\274n\303\274rl\303\274\304\237\303\274 tam ekran boyutuna zorlar, 0 olarak"
    " ayarlan\304\261rsa sabit 3840 x 2160 de\304\237er kullan\304\261l\304\261r.",
@@ -8819,13 +8833,65 @@ static const struct
    "'Oyun YZ' g\303\266ster",
    "'Oyun YZ' se\303\247ene\304\237ini g\303\266sterin.",
 #endif
+   "G\303\266lgelendirici Alt-kareleri",
+   "UYARI: H\304\261zl\304\261 titreme baz\304\261 ekranlarda g\303\266r\303\274nt\303\274n\303\274n"
+   " kal\304\261c\304\261 olmas\304\261na neden olabilir. Kullan\304\261m riski size aittir // Ekran"
+   "\304\261 dikey olarak b\303\266lerek ve ekran\304\261n her bir b\303\266l\303\274m\303\274n\303"
+   "\274 ka\303\247 alt kare oldu\304\237una g\303\266re i\305\237leyerek birden fazla alt kare \303"
+   "\274zerinde temel bir d\303\266nen tarama \303\247izgisini taklit eder.",
+   "D\303\266nen tarama \303\247izgisi taklidi",
+   "UYARI: H\304\261zl\304\261 titreme baz\304\261 ekranlarda g\303\266r\303\274nt\303\274n\303\274n"
+   " kal\304\261c\304\261 olmas\304\261na neden olabilir. Kullan\304\261m riski size aittir // Ekran"
+   "\304\261 dikey olarak b\303\266lerek ve ekran\304\261n her bir b\303\266l\303\274m\303\274n\303"
+   "\274 ka\303\247 alt kare oldu\304\237una g\303\266re i\305\237leyerek birden fazla alt kare \303"
+   "\274zerinde temel bir d\303\266nen tarama \303\247izgisini taklit eder.",
+   "Tam Ekran G\303\266r\303\274nt\303\274le",
+   "Tam ekran olarak g\303\266r\303\274nt\303\274leyin. \303\207al\304\261\305\237ma zaman\304\261nd"
+   "a de\304\237i\305\237tirilebilir. Komut sat\304\261r\304\261 anahtar\304\261yla ge\303\247ersiz "
+   "k\304\261l\304\261nabilir.",
+   "Pencereli Tam Ekran Kipi",
+   "Tam ekran ise, ekran kipi ge\303\247i\305\237ini \303\266nlemek i\303\247in tam ekran pencere ku"
+   "llanmay\304\261 tercih edin.",
+   "Tam Ekran Geni\305\237li\304\237i",
+   "Penceresiz tam ekran kipi i\303\247in \303\266zel geni\305\237lik boyutunu ayarla. Bunu ayars"
+   "\304\261z b\304\261rak\304\261rsan\304\261z masa\303\274st\303\274 \303\247\303\266z\303\274n"
+   "\303\274rl\303\274\304\237\303\274n\303\274 kullan\304\261r.",
+   "Tam Ekran Y\303\274ksekli\304\237i",
+   "Penceresiz tam ekran kipi i\303\247in \303\266zel y\303\274kseklik boyutunu ayarla. Bunu ayars"
+   "\304\261z b\304\261rak\304\261rsan\304\261z masa\303\274st\303\274 \303\247\303\266z\303\274n"
+   "\303\274rl\303\274\304\237\303\274n\303\274 kullan\304\261r.",
+   "Dikey E\305\237itleme (Vsync)",
+   "Grafik kart\304\261n\304\261n \303\247\304\261k\304\261\305\237 videosunu ekran\304\261n yenilem"
+   "e h\304\261z\304\261yla e\305\237itler. Tavsiye edilir.",
+   "VSync Takas Aral\304\261\304\237\304\261",
+   "VSync i\303\247in \303\266zel bir takas aral\304\261\304\237\304\261 kullan\304\261n. Monit\303"
+   "\266r yenileme h\304\261z\304\261n\304\261 belirtilen etken kadar etkili bir \305\237ekilde azal"
+   "t\304\261r. 'Otomatik', temel raporlanan kare h\304\261z\304\261na dayal\304\261 olarak etkeni a"
+   "yarlar ve \303\266rne\304\237in \303\247al\304\261\305\237\304\261rken geli\305\237mi\305\237 ka"
+   "re h\304\261z\304\261 sa\304\237lar. 60 Hz ekranda 30 fps i\303\247erik veya 120 Hz ekranda 60 f"
+   "ps i\303\247erik.",
+   "Kat\304\261 GPU Dikey E\305\237itleme",
+   "CPU ve GPU\342\200\231yu sabit olarak e\305\237itle. Performanstan \303\266d\303\274n vererek ge"
+   "cikmeyi azalt\304\261r.",
+   "Kat\304\261 GPU Dikey Kare E\305\237itlemesi",
+   "'Sabit GPU E\305\237itleyici' kullan\304\261l\304\261rken CPU'nun GPU'dan ka\303\247 kare \303"
+   "\247al\304\261\305\237t\304\261rabilece\304\237ini ayarlar.",
+   "Azami Takas Zinciri G\303\266r\303\274nt\303\274leri",
+   "Video s\303\274r\303\274c\303\274s\303\274ne belirli bir arabelle\304\237e al\304\261m kipini a"
+   "\303\247\304\261k\303\247a kullanmas\304\261n\304\261 s\303\266yler.",
+   "Beklenebilir Takas Zinciri",
+   "CPU ve GPU zorla sabit olarak e\305\237itle. Performanstan \303\266d\303\274n vererek gecikmeyi "
+   "azalt\304\261r.",
+   "Azami Kare Gecikmesi",
+   "Video s\303\274r\303\274c\303\274s\303\274ne belirli bir arabelle\304\237e al\304\261m kipini a"
+   "\303\247\304\261k\303\247a kullanmas\304\261n\304\261 s\303\266yler.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169128u
+      (sizeof(msg_hash_tr_blob) == (170995u
 #ifdef HAVE_LAKKA
        + 14u
        + 48u
@@ -9486,9 +9552,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9568,9 +9631,6 @@ static const uint32_t msg_hash_tr_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -12783,4 +12843,30 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

@@ -301,9 +301,6 @@ static const struct
    char s_258060bf[16];
    char s_3547866d[168];
    char s_4bceefff[26];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_ef3d53d8[17];
 #if defined(DINGUX)
    char s_805730a0[23];
@@ -361,9 +358,6 @@ static const struct
 #endif
    char s_3c70d08d[36];
    char s_fc2d67bb[190];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[25];
    char s_055c296e[104];
    char s_6c1369c6[23];
@@ -658,6 +652,20 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_d21d875b[21];
 #endif
+   char r330[35];
+   char r331[153];
+   char r332[27];
+   char r333[149];
+   char r334[32];
+   char r335[148];
+   char r372[33];
+   char r373[151];
+   char r374[31];
+   char r380[35];
+   char r381[96];
+   char r382[62];
+   char r383[116];
+   char r602[96];
 } msg_hash_val_blob =
 {
    "Men\303\272 principal",
@@ -970,9 +978,6 @@ static const struct
    "Millora el rendiment del joc a costa d'un augment de la lat\303\250ncia i sacseig en la imatge. "
    "Usar nom\303\251s si la m\303\240xima velocitat no pot ser obtinguda de cap altra manera.",
    "Inserir fotogrames negres",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Filtrat bilineal",
 #if defined(DINGUX)
    "Interpolaci\303\263 d'imatge",
@@ -1051,9 +1056,6 @@ static const struct
    "For\303\247a la desactivaci\303\263 del suport de l'FBO (Frame Buffer Object) sRGB. Esta opci"
    "\303\263 pot minvar problemes de v\303\255deo amb el suport d'FBO sRGB en alguns controladors Op"
    "enGL d'Intel en Windows.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "For\303\247ar resoluci\303\263 a UWP",
    "For\303\247a la resoluci\303\263 a la mida de la pantalla. Si es fica valor 0, s'usar\303\240 un"
    " de fixe de 3840 \303\227 2160.",
@@ -1414,13 +1416,34 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Xarxa compartida SMB",
 #endif
+   "Mode pantalla completa en finestra",
+   "Si s'est\303\240 usant el mode de pantalla completa, for\303\247a l'\303\272s d'una finestra a m"
+   "ida completa de la pantalla per no haver de canviar entre modes de v\303\255deo.",
+   "Ample de pantalla completa",
+   "Ajusta la mida d'amplaria personalitzada de la imatge per al mode pantalla completa. No modifica"
+   "nt el valor, s'usar\303\240 la resoluci\303\263 de l'escriptori.",
+   "Al\303\247ada de la pantalla completa",
+   "Ajusta la mida d'al\303\247ada personalitzada de la imatge per al mode pantalla completa. No mod"
+   "ificant el valor, s'usar\303\240 la resoluci\303\263 de l'escriptori.",
+   "Sincronitzaci\303\263 vertical (VSync)",
+   "Sincronitza l'eixida de v\303\255deo de la targeta gr\303\240fica amb la freq\303\274\303\250nci"
+   "a de refresc d'imatge d'actualitzaci\303\263 de la pantalla. Es recomana activar-lo.",
+   "Interval d'intercanvi de VSync",
+   "Sincronitzaci\303\263 rigorosa de la GPU",
+   "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
+   "\303\250rdua de rendiment.",
+   "Nombre de fotogrames per a sincronitzaci\303\263 rigorosa de la GPU",
+   "Establix quants fotogrames pot moure la CPU anticipant-se a la GPU quan s'usa \"Sincronitzaci"
+   "\303\263 rigorosa de la GPU\".",
+   "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
+   "\303\250rdua de rendiment.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25036u
+      (sizeof(msg_hash_val_blob) == (25732u
 #ifdef HAVE_LAKKA
        + 14u
        + 52u
@@ -1768,9 +1791,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -1828,9 +1848,6 @@ static const uint32_t msg_hash_val_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -2125,4 +2142,18 @@ static const uint32_t msg_hash_val_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 };

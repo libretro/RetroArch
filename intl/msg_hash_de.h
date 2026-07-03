@@ -442,9 +442,6 @@ static const struct
    char s_4577a14d[38];
    char s_07e1d73b[379];
    char s_5fdad539[310];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_93805cc8_0[500];
    char s_93805cc8_1[40];
    char s_7a7a3d56[239];
@@ -525,9 +522,6 @@ static const struct
 #endif
    char s_3c70d08d[37];
    char s_fc2d67bb[179];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[29];
    char s_055c296e[110];
    char s_6c1369c6[19];
@@ -3881,6 +3875,31 @@ static const struct
    char s_a1fdf4a6[41];
    char s_d21d875b[13];
 #endif
+   char r421[19];
+   char r422[336];
+   char r424[29];
+   char r425[336];
+   char r494[16];
+   char r495[125];
+   char r496[26];
+   char r497[99];
+   char r498[15];
+   char r499[125];
+   char r500[14];
+   char r501[124];
+   char r579[34];
+   char r580[104];
+   char r581[21];
+   char r582[389];
+   char r597[28];
+   char r598[76];
+   char r599[36];
+   char r600[108];
+   char r3059[36];
+   char r3060[73];
+   char r3062[76];
+   char r3063[26];
+   char r3064[73];
 } msg_hash_de_blob =
 {
    "Hauptmen\303\274",
@@ -4395,9 +4414,6 @@ static const struct
    "erh\303\266hen die Bewegungssch\303\244rfe, verringern aber die Helligkeit. Nicht anwendbar bei "
    "120 Hz, da es insgesamt nur einen Gesamtframe bei 60 Hz gibt, somit mu\303\237 es schwarz sein, "
    "sonst w\303\244re BFI \303\274berhaupt nicht aktiv.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "F\303\274gt zus\303\244tzlich Shader-Bild(er) zwischen Frames f\303\274r alle m\303\266glichen S"
    "hader-Effekte ein, die darauf ausgelegt sind, schneller als die Inhaltsrate zu laufen. Nur die O"
    "ption benutzen, die f\303\274r die aktuelle Aktualisierungsrate bestimmt ist. Nicht f\303\274r d"
@@ -4518,9 +4534,6 @@ static const struct
    "Deaktivierung des sRGB FBO erzwingen",
    "Deaktivieren der sRGB-FBO-Unterst\303\274tzung erzwingen. Einige Intel OpenGL-Treiber haben unte"
    "r Windows Videoprobleme mit sRGB FBOs. Mit dieser Einstellung kann dies umgangen werden.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Aufl\303\266sung auf UWP erzwingen",
    "Aufl\303\266sung auf Vollbildgr\303\266\303\237e erzwingen. Wenn auf 0 gesetzt, wird ein fester "
    "Wert von 3840 x 2160 verwendet.",
@@ -8590,13 +8603,54 @@ static const struct
    "\342\200\236SMB-Client\342\200\234-Einstellungen anzeigen.",
    "SMB-Freigabe",
 #endif
+   "Shader-Unterbilder",
+   "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
+   "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
+   "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
+   "s entsprechend der Anzahl der Unterbilder dargestellt wird.",
+   "Rollende Scanline-Simulation",
+   "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
+   "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
+   "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
+   "s entsprechend der Anzahl der Unterbilder dargestellt wird.",
+   "Vollbildanzeige",
+   "Anzeige im Vollbild. L\303\244sst sich w\303\244hrend der Laufzeit \303\244ndern. Kann \303\274b"
+   "er einen Kommandozeilenschalter \303\274bersteuert werden.",
+   "Randloses Vollbildfenster",
+   "Im Vollbildmodus ein Vollbildfenster bevorzugen, um ein Umschalten des Anzeigemodus zu verhinder"
+   "n.",
+   "Vollbildbreite",
+   "Benutzerdefinierte Bildbreite f\303\274r den Vollbildmodus. Wird dieser Wert nicht gesetzt, wird"
+   " die Desktop-Aufl\303\266sung verwendet.",
+   "Vollbildh\303\266he",
+   "Benutzerdefinierte Bildh\303\266he f\303\274r den Vollbildmodus. Wird dieser Wert nicht gesetzt,"
+   " wird die Desktop-Aufl\303\266sung verwendet.",
+   "Vertikale Synchronisation (VSync)",
+   "Die Video-Ausgabe der Grafikkarte mit der Bildwiederholrate des Bildschirms synchronisieren. Emp"
+   "fohlen.",
+   "VSync Swap-Intervall",
+   "Benutzerdefinierte Swap-Intervalle f\303\274r VSync verwenden. Reduziert effektiv die Bildwieder"
+   "holfrequenz des Monitors um den angegebenen Faktor. \"Automatisch\" legt den Faktor auf Basis de"
+   "r vom Kern gemeldeten Bildwiederholfrequenz fest und sorgt f\303\274r besseres Frame Pacing, wen"
+   "n z.\302\240B. Inhalte mit 30 FPS auf einem 60-Hz-Bildschirm oder 60 FPS auf einem 120-Hz-Bildsc"
+   "hirm ausgef\303\274hrt werden.",
+   "GPU und CPU synchronisieren",
+   "CPU und GPU fest synchronisieren. Reduziert Latenz auf Kosten der Leistung.",
+   "Anzahl der Frames f\303\274r GPU-CPU-Sync",
+   "Anzahl der Bilder, um die die CPU der GPU voraus sein darf, wenn die GPU-CPU-Synchronisation akt"
+   "iviert ist.",
+   "Maximale Anzahl von Zwischenbildern",
+   "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.",
+   "CPU und GPU fest synchronisieren. Reduziert Latenz auf Kosten der Leistung.",
+   "Maximale Frame-Latenzzeit",
+   "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (187583u
+      (sizeof(msg_hash_de_blob) == (189459u
 #ifdef HAVE_LAKKA
        + 15u
        + 55u
@@ -9297,9 +9351,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9379,9 +9430,6 @@ static const uint32_t msg_hash_de_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -12731,4 +12779,29 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

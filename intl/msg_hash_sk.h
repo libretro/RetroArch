@@ -451,9 +451,6 @@ static const struct
    char s_4577a14d[45];
    char s_07e1d73b[325];
    char s_5fdad539[295];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_93805cc8[488];
    char s_7a7a3d56[188];
    char s_ef3d53d8[24];
@@ -531,9 +528,6 @@ static const struct
 #endif
    char s_3c70d08d[27];
    char s_fc2d67bb[150];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[30];
    char s_055c296e[103];
    char s_6c1369c6[18];
@@ -3851,6 +3845,32 @@ static const struct
    char s_a1fdf4a6[39];
    char s_d21d875b[15];
 #endif
+   char r430[21];
+   char r431[304];
+   char r433[43];
+   char r434[304];
+   char r500[23];
+   char r501[105];
+   char r502[21];
+   char r503[121];
+   char r504[27];
+   char r505[114];
+   char r506[27];
+   char r507[114];
+   char r584[36];
+   char r585[98];
+   char r586[23];
+   char r587[316];
+   char r601[27];
+   char r602[71];
+   char r603[39];
+   char r604[97];
+   char r3042[32];
+   char r3043[75];
+   char r3045[23];
+   char r3046[71];
+   char r3047[25];
+   char r3048[75];
 } msg_hash_sk_blob =
 {
    "Hlavn\303\251 menu",
@@ -4430,9 +4450,6 @@ static const struct
    " zni\305\276uje jas. Neuplat\305\210uje sa pri 120 Hz, ke\304\217\305\276e k dispoz\303\255cii j"
    "e celkovo iba jedna extra 60 Hz sn\303\255mka, tak\305\276e mus\303\255 by\305\245 \304\215ierna"
    ", inak by BFI nebolo v\303\264bec akt\303\255vne.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Vklad\303\241 extra shader sn\303\255mku (sn\303\255mky) medzi sn\303\255mky pre pr\303\255padn"
    "\303\251 shader efekty navrhnut\303\251 pre r\303\275chlej\305\241\303\255 beh ne\305\276 frekve"
    "ncia obsahu. Pou\305\276ite iba mo\305\276nos\305\245 ur\304\215en\303\272 pre va\305\241u aktu"
@@ -4571,9 +4588,6 @@ static const struct
    "Vyn\303\272ti vypnutie podpory sRGB FBO. Niektor\303\251 ovl\303\241da\304\215e Intel OpenGL na "
    "Windows maj\303\272 video probl\303\251my so sRGB FBO. Povolenie m\303\264\305\276e probl\303"
    "\251m ob\303\255s\305\245.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Vyn\303\272ti\305\245 rozl\303\255\305\241enie na UWP",
    "Vyn\303\272ti\305\245 rozl\303\255\305\241enie na cel\303\272 obrazovku, ak nastaven\303\251 na "
    "0, pou\305\276ije sa pevn\303\241 hodnota 3840 x 2160.",
@@ -8911,13 +8925,59 @@ static const struct
    "Zobrazi\305\245 nastavenia \342\200\236SMB klient\342\200\234.",
    "SMB zdie\304\276anie",
 #endif
+   "Pod-sn\303\255mky shaderov",
+   "VAROVANIE: R\303\275chle blikanie m\303\264\305\276e na niektor\303\275ch displejoch sp\303\264s"
+   "obi\305\245 pretrv\303\241vanie obrazu. Pou\305\276\303\255vate na vlastn\303\251 riziko // Simu"
+   "luje z\303\241kladn\303\275 roluj\303\272ci skenovac\303\255 riadok cez viacero pod-sn\303\255mo"
+   "k rozdelen\303\255m obrazovky vertik\303\241lne a vykres\304\276ovan\303\255m ka\305\276dej \304"
+   "\215asti obrazovky pod\304\276a po\304\215tu pod-sn\303\255mok.",
+   "Simul\303\241cia roluj\303\272ceho skenovacieho riadku",
+   "VAROVANIE: R\303\275chle blikanie m\303\264\305\276e na niektor\303\275ch displejoch sp\303\264s"
+   "obi\305\245 pretrv\303\241vanie obrazu. Pou\305\276\303\255vate na vlastn\303\251 riziko // Simu"
+   "luje z\303\241kladn\303\275 roluj\303\272ci skenovac\303\255 riadok cez viacero pod-sn\303\255mo"
+   "k rozdelen\303\255m obrazovky vertik\303\241lne a vykres\304\276ovan\303\255m ka\305\276dej \304"
+   "\215asti obrazovky pod\304\276a po\304\215tu pod-sn\303\255mok.",
+   "Re\305\276im celej obrazovky",
+   "Zobrazi\305\245 na cel\303\272 obrazovku. Mo\305\276no zmeni\305\245 za behu. Mo\305\276no prep"
+   "\303\255sa\305\245 parametrom pr\303\255kazov\303\251ho riadku.",
+   "Maximalizovan\303\251 okno",
+   "Ak v re\305\276ime na cel\303\272 obrazovku, uprednostni\305\245 okno na cel\303\272 obrazovku a"
+   " zabr\303\241ni\305\245 prep\303\255naniu zobrazovac\303\255ch re\305\276imov.",
+   "\305\240\303\255rka na cel\303\272 obrazovku",
+   "Nastavi\305\245 vlastn\303\272 \305\241\303\255rku pre celoobrazovkov\303\275 re\305\276im bez o"
+   "kna. Pr\303\241zdne pou\305\276ije rozl\303\255\305\241enie pracovnej plochy.",
+   "V\303\275\305\241ka na cel\303\272 obrazovku",
+   "Nastavi\305\245 vlastn\303\272 v\303\275\305\241ku pre celoobrazovkov\303\275 re\305\276im bez o"
+   "kna. Pr\303\241zdne pou\305\276ije rozl\303\255\305\241enie pracovnej plochy.",
+   "Vertik\303\241lna synchroniz\303\241cia (VSync)",
+   "Synchronizova\305\245 video v\303\275stup grafickej karty s obnovovacou frekvenciou obrazovky. O"
+   "dpor\303\272\304\215an\303\251.",
+   "Interval v\303\275meny VSync",
+   "Pou\305\276i\305\245 vlastn\303\275 interval v\303\275meny pre VSync. Efekt\303\255vne zn\303"
+   "\255\305\276i obnovovaciu frekvenciu monitora o zadan\303\275 faktor. 'Auto' nastav\303\255 fakt"
+   "or na z\303\241klade sn\303\255mkovej frekvencie hl\303\241senej core, \304\215o poskytuje lep"
+   "\305\241ie tempo sn\303\255mok pri spusten\303\255 napr. 30 fps obsahu na 60 Hz displeji alebo 6"
+   "0 fps obsahu na 120 Hz displeji.",
+   "Pevn\303\241 synchroniz\303\241cia GPU",
+   "Napevno synchronizova\305\245 CPU a GPU. Zni\305\276uje latenciu na \303\272kor v\303\275konu.",
+   "Sn\303\255mky pre pevn\303\272 synchroniz\303\241ciu GPU",
+   "Nastav\303\255, ko\304\276ko sn\303\255mok m\303\264\305\276e CPU be\305\276a\305\245 pred GPU p"
+   "ri pou\305\276it\303\255 'Tvrd\303\241 synchroniz\303\241cia GPU'.",
+   "Max. po\304\215et obr\303\241zkov swapchain",
+   "Povie video ovl\303\241da\304\215u, aby explicitne pou\305\276il zadan\303\275 re\305\276im buff"
+   "rovania.",
+   "\304\214akate\304\276n\303\251 swapchain",
+   "Napevno synchronizova\305\245 CPU a GPU. Zni\305\276uje latenciu na \303\272kor v\303\275konu.",
+   "Max. oneskorenie sn\303\255mky",
+   "Povie video ovl\303\241da\304\215u, aby explicitne pou\305\276il zadan\303\275 re\305\276im buff"
+   "rovania.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (173764u
+      (sizeof(msg_hash_sk_blob) == (175528u
 #ifdef HAVE_LAKKA
        + 15u
        + 39u
@@ -9623,9 +9683,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9702,9 +9759,6 @@ static const uint32_t msg_hash_sk_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -13020,4 +13074,30 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

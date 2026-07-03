@@ -420,9 +420,6 @@ static const struct
    char s_4577a14d[49];
    char s_07e1d73b[339];
    char s_5fdad539[289];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_93805cc8_0[500];
    char s_93805cc8_1[58];
    char s_7a7a3d56[248];
@@ -498,9 +495,6 @@ static const struct
 #endif
    char s_3c70d08d[26];
    char s_fc2d67bb[149];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[24];
    char s_055c296e[114];
    char s_6c1369c6[19];
@@ -3569,6 +3563,30 @@ static const struct
    char s_1ff7947b[21];
    char s_25c6fde9[35];
 #endif
+   char r399[25];
+   char r400[349];
+   char r402[34];
+   char r403[349];
+   char r466[31];
+   char r467[134];
+   char r468[25];
+   char r469[132];
+   char r470[24];
+   char r471[131];
+   char r533[35];
+   char r534[100];
+   char r535[24];
+   char r536[350];
+   char r545[27];
+   char r546[69];
+   char r547[36];
+   char r548[110];
+   char r2822[25];
+   char r2823[87];
+   char r2825[34];
+   char r2826[69];
+   char r2827[25];
+   char r2828[87];
 } msg_hash_cs_blob =
 {
    "Hlavn\303\255 menu",
@@ -4127,9 +4145,6 @@ static const struct
    "\231etelnost pohybu, ale sni\305\276uje jas. Nelze pou\305\276\303\255t p\305\231i 120hz, proto"
    "\305\276e je zde pouze jeden celkov\303\275 sn\303\255mek 60hz nav\303\255c, tak\305\276e mus"
    "\303\255 b\303\275t \304\215ern\303\275, jinak by BFI nebylo aktivn\303\255.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Vkl\303\241d\303\241 mezi sn\303\255mky dal\305\241\303\255 sn\303\255mky shaderu pro p\305\231"
    "\303\255padn\303\251 efekty shaderu, kter\303\251 jsou navr\305\276eny tak, aby b\304\233\305"
    "\276ely rychleji ne\305\276 rychlost obsahu. Pou\305\276ijte pouze mo\305\276nost ur\304\215enou"
@@ -4264,9 +4279,6 @@ static const struct
    "N\303\241siln\303\251 vypnut\303\255 podpory sRGB FBO. N\304\233kter\303\251 ovlada\304\215e Int"
    "el OpenGL ve Windows maj\303\255 s sRGB FBO probl\303\251my. Povolen\303\255m t\303\251to funkce"
    " je lze obej\303\255t.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Vynutit rozli\305\241en\303\255 UWP",
    "Vynut\303\255 rozli\305\241en\303\255 na velikost cel\303\251 obrazovky, pokud je nastaveno na 0"
    ", pou\305\276ije se pevn\303\241 hodnota 3840 x 2160.",
@@ -8461,13 +8473,65 @@ static const struct
    "Zobrazit 'Hern\303\255 AI'",
    "Zobrazit mo\305\276nost \342\200\236Hern\303\255 AI\342\200\234.",
 #endif
+   "D\303\255l\304\215\303\255 sn\303\255mky shaderu",
+   "UPOZORN\304\232N\303\215: Rychl\303\251 blik\303\241n\303\255 m\305\257\305\276e na n\304\233kte"
+   "r\303\275ch displej\303\255ch zp\305\257sobit p\305\231etrv\303\241v\303\241n\303\255 obrazu. Po"
+   "u\305\276\303\255vejte na vlastn\303\255 nebezpe\304\215\303\255 // Simuluje z\303\241kladn\303"
+   "\255 klouzav\303\275 skenovac\303\255 \305\231\303\241dek v n\304\233kolika d\303\255l\304\215"
+   "\303\255ch sn\303\255mc\303\255ch vertik\303\241ln\303\255m rozd\304\233len\303\255m obrazovky a"
+   " vykreslen\303\255m ka\305\276d\303\251 \304\215\303\241sti obrazovky podle toho, kolik d\303"
+   "\255l\304\215\303\255ch sn\303\255mk\305\257 existuje.",
+   "Simulace valiv\303\251 skenovac\303\255 linie",
+   "UPOZORN\304\232N\303\215: Rychl\303\251 blik\303\241n\303\255 m\305\257\305\276e na n\304\233kte"
+   "r\303\275ch displej\303\255ch zp\305\257sobit p\305\231etrv\303\241v\303\241n\303\255 obrazu. Po"
+   "u\305\276\303\255vejte na vlastn\303\255 nebezpe\304\215\303\255 // Simuluje z\303\241kladn\303"
+   "\255 klouzav\303\275 skenovac\303\255 \305\231\303\241dek v n\304\233kolika d\303\255l\304\215"
+   "\303\255ch sn\303\255mc\303\255ch vertik\303\241ln\303\255m rozd\304\233len\303\255m obrazovky a"
+   " vykreslen\303\255m ka\305\276d\303\251 \304\215\303\241sti obrazovky podle toho, kolik d\303"
+   "\255l\304\215\303\255ch sn\303\255mk\305\257 existuje.",
+   "Re\305\276im cel\303\251 obrazovky s oknem",
+   "Pokud se jedn\303\241 o celoobrazovkov\303\251 okno, rad\304\233ji pou\305\276ijte celoobrazovko"
+   "v\303\251 okno, abyste zabr\303\241nili p\305\231ep\303\255n\303\241n\303\255 re\305\276imu zobr"
+   "azen\303\255.",
+   "\305\240\303\255\305\231ka cel\303\251 obrazovky",
+   "Nastaven\303\255 vlastn\303\255 velikosti \305\241\303\255\305\231ky pro celoobrazovkov\303\275 "
+   "re\305\276im bez oken. Pokud ji nenastav\303\255te, pou\305\276ije se rozli\305\241en\303\255 pl"
+   "ochy.",
+   "V\303\275\305\241ka cel\303\251 obrazovky",
+   "Nastaven\303\255 vlastn\303\255 velikosti v\303\275\305\241ky pro celoobrazovkov\303\275 re\305"
+   "\276im bez oken. Pokud ji nenastav\303\255te, pou\305\276ije se rozli\305\241en\303\255 plochy.",
+   "Vertik\303\241ln\303\255 synchronizace (VSync)",
+   "Synchronizujte v\303\275stupn\303\255 video grafick\303\251 karty s obnovovac\303\255 frekvenc"
+   "\303\255 obrazovky. Doporu\304\215uje se.",
+   "Interval v\303\275m\304\233ny VSync",
+   "Pou\305\276ijte vlastn\303\255 interval v\303\275m\304\233ny pro VSync. \303\232\304\215inn\304"
+   "\233 sn\303\255\305\276\303\255 obnovovac\303\255 frekvenci monitoru o zadan\303\275 faktor. \"A"
+   "utomaticky\" nastav\303\255 faktor na z\303\241klad\304\233 sn\303\255mkov\303\251 frekvence hl"
+   "\303\241\305\241en\303\251 j\303\241drem, \304\215\303\255m\305\276 zajist\303\255 lep\305\241"
+   "\303\255 krokov\303\241n\303\255 sn\303\255mk\305\257 p\305\231i spu\305\241t\304\233n\303\255 n"
+   "ap\305\231. obsahu s 30 fps na displeji s 60 Hz nebo obsahu s 60 fps na displeji se 120 Hz.",
+   "T\304\233\305\276k\303\241 synchronizace GPU",
+   "T\304\233\305\276k\303\241 synchronizace CPU a GPU. Sni\305\276uje latenci na \303\272kor v\303"
+   "\275konu.",
+   "T\304\233\305\276k\303\241 synchronizace sn\303\255mk\305\257 GPU",
+   "Nastaven\303\255, o kolik sn\303\255mk\305\257 m\305\257\305\276e CPU p\305\231edb\304\233hnout "
+   "GPU p\305\231i pou\305\276it\303\255 funkce 'T\304\233\305\276k\303\241 Synchronizace GPU'.",
+   "Max. stabilizace sn\303\255mku",
+   "\305\230\303\255k\303\241 ovlada\304\215i videa, aby explicitn\304\233 pou\305\276il zadan\303"
+   "\275 re\305\276im vyrovn\303\241vac\303\255 pam\304\233ti.",
+   "Vy\304\215k\303\241v\303\241n\303\255 v\303\275m\304\233ny \305\231et\304\233zc\305\257",
+   "T\304\233\305\276k\303\241 synchronizace CPU a GPU. Sni\305\276uje latenci na \303\272kor v\303"
+   "\275konu.",
+   "Max. zpo\305\276d\304\233n\303\255 sn\303\255mku",
+   "\305\230\303\255k\303\241 ovlada\304\215i videa, aby explicitn\304\233 pou\305\276il zadan\303"
+   "\275 re\305\276im vyrovn\303\241vac\303\255 pam\304\233ti.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (161358u
+      (sizeof(msg_hash_cs_blob) == (163202u
 #ifdef HAVE_LAKKA
        + 14u
        + 31u
@@ -9110,9 +9174,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9186,9 +9247,6 @@ static const uint32_t msg_hash_cs_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -12253,4 +12311,28 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

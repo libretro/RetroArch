@@ -458,9 +458,6 @@ static const struct
    char s_4577a14d[53];
    char s_07e1d73b[411];
    char s_5fdad539[422];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_93805cc8_0[500];
    char s_93805cc8_1[152];
    char s_7a7a3d56[249];
@@ -543,9 +540,6 @@ static const struct
 #endif
    char s_3c70d08d[35];
    char s_fc2d67bb[177];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[26];
    char s_055c296e[107];
    char s_6c1369c6[18];
@@ -3965,6 +3959,32 @@ static const struct
    char s_a1fdf4a6[37];
    char s_d21d875b[19];
 #endif
+   char r437[27];
+   char r438[411];
+   char r440[52];
+   char r441[411];
+   char r512[28];
+   char r513[143];
+   char r514[29];
+   char r515[143];
+   char r516[27];
+   char r517[145];
+   char r518[26];
+   char r519[144];
+   char r599[28];
+   char r600[125];
+   char r601[34];
+   char r602[431];
+   char r618[27];
+   char r619[88];
+   char r620[51];
+   char r621[131];
+   char r3141[35];
+   char r3142[73];
+   char r3144[22];
+   char r3145[88];
+   char r3146[31];
+   char r3147[73];
 } msg_hash_es_blob =
 {
    "Men\303\272 principal",
@@ -4518,9 +4538,6 @@ static const struct
    " ya que ah\303\255 solo se a\303\261adir\303\241 un fotograma adicional a los 60\302\240Hz origi"
    "nales, as\303\255 que debe ser un fotograma negro o la introducci\303\263n de fotogramas negros "
    "no estar\303\255a activa.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Introduce uno o varios fotogramas adicionales para cualquier efecto de shaders pensado para una "
    "velocidad de actualizaci\303\263n superior a la del contenido. Utiliza \303\272nicamente la opci"
    "\303\263n designada para la frecuencia de actualizaci\303\263n actual de tu monitor. No se debe "
@@ -4651,9 +4668,6 @@ static const struct
    "Fuerza la desactivaci\303\263n del soporte de FBO sRGB. Esta opci\303\263n puede mitigar problem"
    "as de v\303\255deo con el soporte de FBO sRGB en ciertos controladores OpenGL de Intel en Window"
    "s.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Forzar resoluci\303\263n en UWP",
    "Fuerza la resoluci\303\263n al tama\303\261o de la pantalla. Si el valor es 0, se utilizar\303"
    "\241 uno fijo de 3840 \303\227 2160.",
@@ -8910,13 +8924,58 @@ static const struct
    "Muestra los ajustes del cliente SMB.",
    "Red compartida SMB",
 #endif
+   "Subfotogramas para shaders",
+   "ADVERTENCIA: los parpadeos r\303\241pidos pueden provocar persistencia de la imagen (\302\253im"
+   "\303\241genes fantasma\302\273) en algunas pantallas. Utiliza esta opci\303\263n bajo tu propia "
+   "responsabilidad. // Simula de forma b\303\241sica el escalonamiento de las l\303\255neas de barr"
+   "ido a lo largo de varios subfotogramas dividendo la pantalla en partes verticales y renderizando"
+   " cada una de las mismas en funci\303\263n de los subfotogramas que existan.",
+   "Simulaci\303\263n de escalonamiento de l\303\255neas de barrido",
+   "ADVERTENCIA: los parpadeos r\303\241pidos pueden provocar persistencia de la imagen (\302\253im"
+   "\303\241genes fantasma\302\273) en algunas pantallas. Utiliza esta opci\303\263n bajo tu propia "
+   "responsabilidad. // Simula de forma b\303\241sica el escalonamiento de las l\303\255neas de barr"
+   "ido a lo largo de varios subfotogramas dividendo la pantalla en partes verticales y renderizando"
+   " cada una de las mismas en funci\303\263n de los subfotogramas que existan.",
+   "Mostrar a pantalla completa",
+   "Muestra RetroArch en pantalla completa. Esta opci\303\263n puede ser cambiada en cualquier momen"
+   "to o anulada por un argumento de l\303\255nea de comandos.",
+   "Pantalla completa en ventana",
+   "En caso de usar el modo de pantalla completa, fuerza el uso de una ventana a tama\303\261o compl"
+   "eto para no tener que cambiar entre modos de v\303\255deo.",
+   "Ancho en pantalla completa",
+   "Establece una anchura personalizada para la imagen a pantalla completa. En caso de no asignar un"
+   " valor, se usar\303\241 la resoluci\303\263n del escritorio.",
+   "Alto en pantalla completa",
+   "Establece una altura personalizada para la imagen a pantalla completa. En caso de no asignar un "
+   "valor, se usar\303\241 la resoluci\303\263n del escritorio.",
+   "Sincron\303\255a vertical (VSync)",
+   "Sincroniza la se\303\261al de v\303\255deo de la tarjeta gr\303\241fica con la frecuencia de act"
+   "ualizaci\303\263n de pantalla. Se recomienda su uso.",
+   "Intervalo de intercambio de VSync",
+   "Utiliza un valor personalizado para el intervalo de intercambio de la sincron\303\255a vertical."
+   " Esto reducir\303\241 la frecuencia de actualizaci\303\263n del monitor seg\303\272n el factor e"
+   "specificado. \302\253Autom\303\241tico\302\273 cambiar\303\241 el factor seg\303\272n la velocid"
+   "ad de fotogramas que indique el n\303\272cleo, mejorando la cadencia de fotogramas al ejecutar, "
+   "por ejemplo, contenidos a 30 FPS en una pantalla a 60 Hz, o contenidos a 60 FPS en una pantalla "
+   "de 120 Hz.",
+   "Sincron\303\255a estricta de GPU",
+   "Fuerza la sincron\303\255a entre CPU y GPU. Reduce la latencia a costa de perder rendimiento.",
+   "N.\302\272 de fotogramas para sincron\303\255a estricta de GPU",
+   "Establece la cantidad de fotogramas que puede utilizar la CPU para anticiparse a la GPU al utili"
+   "zar la sincron\303\255a estricta de GPU.",
+   "M\303\241ximo de im\303\241genes en swap chain",
+   "Informa al controlador de v\303\255deo que utilice un modo de b\303\272fer concreto.",
+   "Swap chains en espera",
+   "Fuerza la sincron\303\255a entre CPU y GPU. Reduce la latencia a costa de perder rendimiento.",
+   "Latencia m\303\241xima de fotogramas",
+   "Informa al controlador de v\303\255deo que utilice un modo de b\303\272fer concreto.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (203111u
+      (sizeof(msg_hash_es_blob) == (205466u
 #ifdef HAVE_LAKKA
        + 15u
        + 49u
@@ -9633,9 +9692,6 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9717,9 +9773,6 @@ static const uint32_t msg_hash_es_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -13133,4 +13186,30 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

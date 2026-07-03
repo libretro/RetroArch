@@ -215,16 +215,10 @@ static const struct
    char s_ebf10493[16];
    char s_69b801ef[27];
    char s_730df420[15];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
 #if defined(DINGUX) && defined(DINGUX_BETA)
    char s_7c8a700d[10];
    char s_7c89e3ac[10];
 #endif
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_48da4695[27];
    char s_30140cb5[18];
    char s_0f5266ce[18];
@@ -331,6 +325,8 @@ static const struct
    char s_96c461f7[125];
 #endif
 #endif
+   char r198[23];
+   char r199[23];
 } msg_hash_he_blob =
 {
    "\327\252\327\244\327\250\327\231\327\230 \327\250\327\220\327\251\327\231",
@@ -606,16 +602,10 @@ static const struct
    "\327\251\327\231\327\240\327\225\327\231 \327\247\327\240\327\224 \327\236\327\231\327\223\327"
    "\224",
    "\327\241\327\231\327\240\327\233\327\250\327\225\327\237",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
 #if defined(DINGUX) && defined(DINGUX_BETA)
    "60 \327\224\327\250\327\245",
    "50 \327\224\327\250\327\245",
 #endif
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "\327\224\327\246\327\222 \327\251\327\225\327\250\327\252 \327\252\327\244\327\250\327\231\327"
    "\230",
    "\327\250\327\225\327\227\327\221 \327\227\327\234\327\225\327\237",
@@ -737,13 +727,15 @@ static const struct
    "eboot is required when changing.",
 #endif
 #endif
+   "\327\250\327\225\327\227\327\221 \327\236\327\241\327\232 \327\236\327\234\327\220",
+   "\327\222\327\225\327\221\327\224 \327\236\327\241\327\232 \327\236\327\234\327\220",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_he_blob_check[
-      (sizeof(msg_hash_he_blob) == (6566u
+      (sizeof(msg_hash_he_blob) == (6144u
 #ifdef HAVE_LAKKA
        + 20u
 #endif
@@ -972,16 +964,10 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
 #if defined(DINGUX) && defined(DINGUX_BETA)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
@@ -1088,4 +1074,6 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
 };

@@ -341,9 +341,6 @@ static const struct
    char s_258060bf[14];
    char s_3547866d[132];
    char s_4bceefff[24];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_ef3d53d8[21];
 #if defined(DINGUX)
    char s_805730a0[20];
@@ -404,9 +401,6 @@ static const struct
 #endif
    char s_3c70d08d[25];
    char s_fc2d67bb[170];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[26];
    char s_055c296e[103];
    char s_6c1369c6[12];
@@ -1208,6 +1202,13 @@ static const struct
    char s_f441f728[37];
 #endif
    char s_dd290e03[9];
+   char r371[25];
+   char r372[96];
+   char r373[18];
+   char r374[106];
+   char r375[18];
+   char r376[106];
+   char r414[32];
 } msg_hash_no_blob =
 {
    "Hovedmeny",
@@ -1552,9 +1553,6 @@ static const struct
    "Forbedrer ytelsen p\303\245 bekostning av latens og mer hakk i videoen. Bruk bare hvis full hast"
    "ighet ikke kan oppn\303\245s p\303\245 noe annet vis.",
    "Sett inn en svart ramme",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Biline\303\246r filtrering",
 #if defined(DINGUX)
    "Bilde Interpolering",
@@ -1629,9 +1627,6 @@ static const struct
    "Tvangsdeaktiverer sRGB FBO st\303\270tte. Noen Intel OpenGL drivere p\303\245 windows har videop"
    "roblemer med sRGB FBO. Sl\303\245 p\303\245 denne innstillingen for \303\245 mulligens jobbe run"
    "dt det.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Tving oppl\303\270sning p\303\245 UWP",
    "Tving oppl\303\270sningen til fullskjerm st\303\270rrelsen. Hvis satt til 0, brukes en fast verd"
    "i p\303\245 3840 x 2160.",
@@ -2462,13 +2457,23 @@ static const struct
    "Juster skriftskalaen for bunnskjerm.",
 #endif
    "stoppet.",
+   "Fullskjermsmodus i vindu",
+   "Hvis fullskjerm er p\303\245, foretrekk fullskjerm i vindumodus for \303\245 forhindre visningsm"
+   "odus bytte.",
+   "Fullskjerm bredde",
+   "Angi en egendefinert bredde for fullskjermmodus. Hvis denne er blank vil skrivebordsoppl\303\270"
+   "sningen brukes.",
+   "Fullskjerm h\303\270yde",
+   "Angi en egendefinert h\303\270yde for fullskjermmodus. Hvis denne er blank vil skrivebordsoppl"
+   "\303\270sningen brukes.",
+   "Vertikal synkronisering (VSync)",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29058u
+      (sizeof(msg_hash_no_blob) == (28991u
 #ifdef HAVE_LAKKA
        + 15u
        + 49u
@@ -2888,9 +2893,6 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -2951,9 +2953,6 @@ static const uint32_t msg_hash_no_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -3755,4 +3754,11 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
 #endif
    (uint32_t)MSG_AI_SERVICE_STOPPED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
 };

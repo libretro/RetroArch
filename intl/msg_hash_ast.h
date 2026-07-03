@@ -260,9 +260,6 @@ static const struct
    char s_7e96b5ce[57];
    char s_7943e750[28];
    char s_1a8301fe[50];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_ef3d53d8[17];
 #if defined(DINGUX)
    char s_bfd4c6ef[10];
@@ -278,9 +275,6 @@ static const struct
    char s_ed22c5f1[26];
    char s_12b8e195[27];
    char s_fd9cfe13[28];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_2d8cb7ce[23];
    char s_b9e24170[35];
    char s_68190518[49];
@@ -988,6 +982,11 @@ static const struct
 #endif
    char s_ffed014a[27];
    char s_ba4d8b17[30];
+   char r251[35];
+   char r252[32];
+   char r253[30];
+   char r269[25];
+   char r270[56];
 } msg_hash_ast_blob =
 {
    "Men\303\272 principal",
@@ -1248,9 +1247,6 @@ static const struct
    "Camuda la configuraci\303\263n de la sincronizaci\303\263n de videu.",
    "Suspender el curiapantalles",
    "Impide que s'active'l curiapantalles del sistema.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Filtru billinial",
 #if defined(DINGUX)
    "Bic\303\272bicu",
@@ -1266,9 +1262,6 @@ static const struct
    "Quitar el filtru de videu",
    "SwitchRes pa pantalles CTR",
    "Orientaci\303\263n de la pantalla",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Opacid\303\241 de la ventana",
    "Amosar les decoraciones de ventana",
    "Recordar la posici\303\263n ya'l tama\303\261u de la ventana",
@@ -2010,13 +2003,18 @@ static const struct
 #endif
    "El mur t\303\241ctil ta activ\303\241u",
    "El mur t\303\241ctil ta desactiv\303\241u",
+   "Mou de ventana a pantalla completa",
+   "Llargor de la pantalla completa",
+   "Altor de la pantalla completa",
+   "Sincronizaci\303\263n vertical",
+   "Intervalu d'intercamb\303\251u de la sincronizaci\303\263n vertical",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24774u
+      (sizeof(msg_hash_ast_blob) == (24484u
 #ifdef HAVE_LAKKA
        + 40u
 #endif
@@ -2331,9 +2329,6 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
@@ -2349,9 +2344,6 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
@@ -3059,4 +3051,9 @@ static const uint32_t msg_hash_ast_ids[] =
 #endif
    (uint32_t)MSG_IOS_TOUCH_MOUSE_ENABLED,
    (uint32_t)MSG_IOS_TOUCH_MOUSE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
 };

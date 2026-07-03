@@ -32,16 +32,10 @@ static const struct
    char s_daead8a5[11];
    char s_502f623c[13];
    char s_8d3a8b68[9];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
 #if defined(DINGUX) && defined(DINGUX_BETA)
    char s_7c8a700d[8];
    char s_7c89e3ac[8];
 #endif
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_78585119[13];
    char s_c017f975[19];
    char s_aa9bc75d[19];
@@ -118,16 +112,10 @@ static const struct
    "\320\220\321\203\320\264\320\270\320\276",
    "\320\232\320\260\320\274\320\265\321\200\320\260",
    "\320\234\320\265\320\275\321\216",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
 #if defined(DINGUX) && defined(DINGUX_BETA)
    "60 \320\223\321\206",
    "50 \320\223\321\206",
 #endif
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "\320\220\320\272\321\213\320\273\320\273\321\213",
    "\320\220\320\262\321\202\320\276\320\274\320\260\321\202\320\270\320\272",
    "\320\220\320\262\321\202\320\276\320\274\320\260\321\202\320\270\320\272",
@@ -191,7 +179,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tt_blob_check[
-      (sizeof(msg_hash_tt_blob) == (1303u
+      (sizeof(msg_hash_tt_blob) == (835u
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 8u
        + 8u
@@ -230,16 +218,10 @@ static const uint32_t msg_hash_tt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
 #if defined(DINGUX) && defined(DINGUX_BETA)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,

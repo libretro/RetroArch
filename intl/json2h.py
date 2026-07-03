@@ -276,6 +276,14 @@ def emit_guard_transition(out, prev, cur):
         if in_else:
             out.append('#else')
 
+def key_is_sane(k):
+    # Downloaded translation jsons must only ever contain enum-name keys.
+    # Anything else (macro fragments, ##, punctuation) is upstream garbage
+    # and must never reach a generated header.
+    import re as _re
+    return bool(_re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', k))
+
+
 def djb2(s):
     h = 5381
     for ch in s:
@@ -295,6 +303,9 @@ def member_base_names(rows):
         by_hash.setdefault(djb2(key), []).append(key)
     names = {}
     for h, keys in by_hash.items():
+        if not key_is_sane(h):
+            print("skipping insane key: " + repr(h))
+            continue
         if len(keys) == 1:
             names[keys[0]] = 's_%08x' % h
         else:

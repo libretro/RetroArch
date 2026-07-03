@@ -453,9 +453,6 @@ static const struct
    char s_4577a14d[41];
    char s_07e1d73b[379];
    char s_5fdad539[311];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_93805cc8_0[500];
    char s_93805cc8_1[140];
    char s_7a7a3d56[232];
@@ -539,9 +536,6 @@ static const struct
 #endif
    char s_3c70d08d[42];
    char s_fc2d67bb[218];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[31];
    char s_055c296e[118];
    char s_6c1369c6[27];
@@ -3960,6 +3954,32 @@ static const struct
    char s_a1fdf4a6[42];
    char s_d21d875b[12];
 #endif
+   char r432[22];
+   char r433[347];
+   char r435[41];
+   char r436[347];
+   char r507[23];
+   char r508[129];
+   char r509[28];
+   char r510[120];
+   char r511[24];
+   char r512[131];
+   char r513[24];
+   char r514[131];
+   char r598[35];
+   char r599[118];
+   char r600[29];
+   char r601[436];
+   char r615[52];
+   char r616[120];
+   char r617[62];
+   char r618[174];
+   char r3137[40];
+   char r3138[97];
+   char r3140[32];
+   char r3141[120];
+   char r3142[28];
+   char r3143[97];
 } msg_hash_fr_blob =
 {
    "Menu principal",
@@ -4515,9 +4535,6 @@ static const struct
    "mages noires augmente la clart\303\251 de mouvement mais r\303\251duit la luminosit\303\251. Non"
    " applicable \303\240 120 Hz car il n'y a qu'une seule image de 60 Hz suppl\303\251mentaire, elle"
    " doit donc \303\252tre noire sinon le BFI ne serait pas actif du tout.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Ins\303\251rer une ou plusieurs images noires entre les images pour chaque effet de shader possi"
    "ble qui est con\303\247u pour tourner plus rapidement que la vitesse du contenu. Utilisez unique"
    "ment l'option d\303\251sign\303\251e pour votre fr\303\251quence de rafra\303\256chissement actu"
@@ -4654,9 +4671,6 @@ static const struct
    "Forcer la d\303\251sactivation de la prise en charge du mode sRGB FBO. Certains pilotes OpenGL d"
    "'Intel sous Windows rencontrent des probl\303\250mes vid\303\251o avec le sRGB FBO. Activer cett"
    "e option permet de contourner ce probl\303\250me.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Forcer la r\303\251solution sous UWP",
    "Force la r\303\251solution aux dimensions en plein \303\251cran, si r\303\251gl\303\251e \303"
    "\240 0, une valeur fixe de 3840 x 2160 sera utilis\303\251e.",
@@ -9035,13 +9049,60 @@ static const struct
    "Afficher les r\303\251glages pour 'Client SMB'.",
    "Partage SMB",
 #endif
+   "Sous-trames du Shader",
+   "AVERTISSEMENT : Un scintillement rapide peut causer une persistance de l'image sur certains \303"
+   "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
+   "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
+   "t en rendant chaque partie de l'\303\251cran en fonction du nombre de sous-images disponibles.",
+   "Simulation de ligne de balayage roulante",
+   "AVERTISSEMENT : Un scintillement rapide peut causer une persistance de l'image sur certains \303"
+   "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
+   "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
+   "t en rendant chaque partie de l'\303\251cran en fonction du nombre de sous-images disponibles.",
+   "Affichage plein \303\251cran",
+   "Affichage en plein \303\251cran. Peut \303\252tre chang\303\251 lors de l'ex\303\251cution, et p"
+   "eut \303\252tre remplac\303\251 par une option en ligne de commande.",
+   "Mode plein \303\251cran fen\303\252tr\303\251",
+   "En mode plein \303\251cran, utiliser plut\303\264t une fen\303\252tre en plein \303\251cran pour"
+   " emp\303\252cher les changements de mode d'affichage.",
+   "Largeur en plein \303\251cran",
+   "D\303\251finir la largeur personnalis\303\251e pour le plein \303\251cran non fen\303\252tr\303"
+   "\251. La laisser non d\303\251finie utilisera la r\303\251solution du bureau.",
+   "Hauteur en plein \303\251cran",
+   "D\303\251finir la hauteur personnalis\303\251e pour le plein \303\251cran non fen\303\252tr\303"
+   "\251. La laisser non d\303\251finie utilisera la r\303\251solution du bureau.",
+   "Synchronisation verticale (V-Sync)",
+   "Synchroniser la sortie vid\303\251o de la carte graphique avec la fr\303\251quence de rafra\303"
+   "\256chissement de l'\303\251cran. Recommand\303\251.",
+   "Intervalle d'\303\251change V-Sync",
+   "Utiliser un intervalle d'\303\251change personnalis\303\251 pour V-Sync. R\303\251duit efficacem"
+   "ent la fr\303\251quence de rafra\303\256chissement du moniteur par le facteur sp\303\251cifi\303"
+   "\251. 'Auto' d\303\251finit le facteur en fonction de la fr\303\251quence d'images rapport\303"
+   "\251e par le c\305\223ur, ce qui permet une meilleure cadence d'images lors de l'ex\303\251cutio"
+   "n de contenu \303\240 30 images par seconde sur un \303\251cran \303\240 60 Hz ou \303\240 60 im"
+   "ages par seconde sur un \303\251cran \303\240 120 Hz par exemple.",
+   "Synchronisation mat\303\251rielle du processeur graphique",
+   "Synchronisation mat\303\251rielle du processeur et du processeur graphique. R\303\251duit la lat"
+   "ence mais affecte les performances.",
+   "Images de synchronisation mat\303\251rielle du processeur graphique",
+   "D\303\251finir le nombre d'images que le processeur peut ex\303\251cuter avant le processeur gra"
+   "phique lors de l'utilisation de la 'Synchronisation mat\303\251rielle du processeur graphique'.",
+   "Nombre d'images max en m\303\251moire tampon ",
+   "Indique au pilote vid\303\251o d'utiliser explicitement le mode de mise en m\303\251moire tampon"
+   " sp\303\251cifi\303\251.",
+   "Cha\303\256nes d'\303\251changes en attente",
+   "Synchronisation mat\303\251rielle du processeur et du processeur graphique. R\303\251duit la lat"
+   "ence mais affecte les performances.",
+   "Latence maximale des images",
+   "Indique au pilote vid\303\251o d'utiliser explicitement le mode de mise en m\303\251moire tampon"
+   " sp\303\251cifi\303\251.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (210479u
+      (sizeof(msg_hash_fr_blob) == (212818u
 #ifdef HAVE_LAKKA
        + 19u
        + 49u
@@ -9748,9 +9809,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -9832,9 +9890,6 @@ static const uint32_t msg_hash_fr_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -13245,4 +13300,30 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

@@ -199,12 +199,6 @@ static const struct
    char s_721e7bb2[11];
    char s_57665cff[11];
    char s_3ddc67cc[49];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_78585119[25];
    char s_ad5ff591[27];
    char s_e7033e0e[11];
@@ -741,12 +735,6 @@ static const struct
    "\320\230\320\267\321\205\320\276\320\264",
    "\320\222\320\270\321\201\320\276\320\272 \320\264\320\270\320\275\320\260\320\274\320\270\321"
    "\207\320\265\320\275 \320\276\320\261\321\205\320\262\320\260\321\202 (HDR)",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "\320\230\320\275\321\202\320\265\320\273\320\270\320\263\320\265\320\275\321\202\320\265\320\275",
    "\320\232\320\276\320\275\321\204\320\270\320\263\321\203\321\200\320\270\321\200\320\260\320\275"
    "\320\265",
@@ -857,7 +845,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_bg_blob_check[
-      (sizeof(msg_hash_bg_blob) == (11156u
+      (sizeof(msg_hash_bg_blob) == (10688u
 #ifdef HAVE_LAKKA
        + 63u
        + 117u
@@ -1064,12 +1052,6 @@ static const uint32_t msg_hash_bg_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,

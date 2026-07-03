@@ -284,9 +284,6 @@ static const struct
    char s_258060bf[20];
    char s_3547866d[119];
    char s_4bceefff[24];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_ef3d53d8[18];
 #if defined(DINGUX)
    char s_805730a0[20];
@@ -341,9 +338,6 @@ static const struct
 #endif
    char s_3c70d08d[29];
    char s_fc2d67bb[160];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[27];
    char s_055c296e[104];
    char s_6c1369c6[16];
@@ -436,6 +430,12 @@ static const struct
    char s_96c461f7[125];
 #endif
 #endif
+   char r314[21];
+   char r315[103];
+   char r316[21];
+   char r317[127];
+   char r318[20];
+   char r319[126];
 } msg_hash_sr_blob =
 {
    "Glavni meni",
@@ -720,9 +720,6 @@ static const struct
    "Pove\304\207ava performanse po cenu odziva i glatko\304\207e videa. Koristi samo ako nije mogu"
    "\304\207e druga\304\215ije dosti\304\207i punu brzinu.",
    "Ubacivanje crnog frejma",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Bilinearni filter",
 #if defined(DINGUX)
    "Interpolacija slike",
@@ -787,9 +784,6 @@ static const struct
    "Forsirano isklju\304\215i sRGB FBO",
    "Forsirano iskllju\304\215i podr\305\241ku za sRGB FBO. Neki Intel OpenGL drajveri na Windows-u i"
    "maju video probleme sa sRGB FBO. Ova opcija mo\305\276e biti zaobilazno re\305\241enje.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Forsiraj rezoluciju na UWP",
    "Forsiraj rezoluciju na veli\304\215inu punog ekrana, ako je 0, bi\304\207e kori\305\241\304\207e"
    "na fiksna vrednost 3840 x 2160.",
@@ -901,13 +895,19 @@ static const struct
    "eboot is required when changing.",
 #endif
 #endif
+   "Režim punog prozora",
+   "Ako je ukjlučen režim punog ekrana, koristi pun prozor da bi se sprečilo menjanje režima displeja.",
+   "Širina punog ekrana",
+   "Ručno postavi širinu ekrana u režimu punog ekrana (bez punog prozora). Ako nije podešeno koristiće se desktop rezolucija.",
+   "Visina punog ekrana",
+   "Ručno postavi visinu ekrana u režimu punog ekrana (bez punog prozora). Ako nije podešeno koristiće se desktop rezolucija.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12374u
+      (sizeof(msg_hash_sr_blob) == (12324u
 #ifdef HAVE_LAKKA
        + 12u
        + 40u
@@ -1220,9 +1220,6 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -1277,9 +1274,6 @@ static const uint32_t msg_hash_sr_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -1372,4 +1366,10 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
 };

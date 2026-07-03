@@ -415,9 +415,6 @@ static const struct
    char s_258060bf[20];
    char s_3547866d[130];
    char s_4bceefff[22];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_ef3d53d8[23];
 #if defined(DINGUX)
    char s_805730a0[20];
@@ -486,9 +483,6 @@ static const struct
 #endif
    char s_3c70d08d[42];
    char s_fc2d67bb[180];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_f5ab35c0[39];
    char s_055c296e[98];
    char s_6c1369c6[19];
@@ -3291,6 +3285,24 @@ static const struct
    char s_b12ae22e[17];
    char s_f6492edc[49];
 #endif
+   char r453[23];
+   char r454[29];
+   char r455[109];
+   char r456[21];
+   char r457[128];
+   char r458[22];
+   char r459[129];
+   char r509[35];
+   char r510[86];
+   char r511[18];
+   char r518[22];
+   char r519[79];
+   char r520[40];
+   char r521[129];
+   char r2606[89];
+   char r2607[79];
+   char r2608[22];
+   char r2609[89];
 } msg_hash_fi_blob =
 {
    "P\303\244\303\244valikko",
@@ -3752,9 +3764,6 @@ static const struct
    "Parantaa suorituskyky\303\244 viiveen kustannuksella ja lis\303\244\303\244 videon nykimist\303"
    "\244. K\303\244yt\303\244 vain, jos t\303\244ytt\303\244 nopeutta ei saada muuten.",
    "Mustan ruudun lis\303\244ys",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Bilineaarinen suodatus",
 #if defined(DINGUX)
    "Kuvan interpolointi",
@@ -3852,9 +3861,6 @@ static const struct
    "Poista sRGB FBO -tuki k\303\244yt\303\266st\303\244 pakottaen. Joillakin Intel OpenGL -ajureilla"
    " Windowsissa on video-ongelmia sRGB FBO:n kanssa. T\303\244m\303\244n k\303\244ytt\303\266\303"
    "\266notto saattaa kiert\303\244\303\244 ongelman.",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "Pakota resoluutio k\303\244ytt\303\244ess\303\244 UWP:ta",
    "Pakota resoluutio koko n\303\244yt\303\266n kokoon, jos arvo on 0, k\303\244ytet\303\244\303\244"
    "n kiinte\303\244\303\244 arvoa 3840 x 2160.",
@@ -7140,13 +7146,43 @@ static const struct
    "SMB-aikakatkaisu",
    "Valitse oletusarvoinen aikakatkaisu sekunneissa.",
 #endif
+   "Koko n\303\244yt\303\266n n\303\244kym\303\244",
+   "Ikkunoitu koko n\303\244yt\303\266n tila",
+   "Jos koko n\303\244yt\303\266n tilassa, k\303\244yt\303\244 mieluummin koko n\303\244yt\303\266n "
+   "ikkunaa est\303\244\303\244ksesi n\303\244yt\303\266n tilan vaihtaminen.",
+   "Koko n\303\244yt\303\266n leveys",
+   "Aseta mukautettu leveyskoko ei-ikkunoidulle koko n\303\244yt\303\266n tilalle. Tyhj\303\244ksi j"
+   "\303\244tt\303\244minen k\303\244ytt\303\244\303\244 ty\303\266p\303\266yd\303\244n resoluutiota"
+   ".",
+   "Koko n\303\244yt\303\266n korkeus",
+   "Aseta mukautettu korkeuskoko ei-ikkunoidulle koko n\303\244yt\303\266n tilalle. Tyhj\303\244ksi "
+   "j\303\244tt\303\244minen k\303\244ytt\303\244\303\244 ty\303\266p\303\266yd\303\244n resoluutiot"
+   "a.",
+   "Vertikaalinen synkronointi (VSync)",
+   "Synkronoi n\303\244yt\303\266nohjaimen ulostulovideo n\303\244yt\303\266n virkistystaajuuteen. S"
+   "uositeltavaa.",
+   "VSync-vaihtov\303\244li",
+   "Kova GPU-synkronointi",
+   "Kova-synkronoi CPU ja GPU. V\303\244hent\303\244\303\244 viivett\303\244 suorituskyvyn kustannuk"
+   "sella.",
+   "N\303\244ytonohjaimen kova-synkronoidut kuvat",
+   "M\303\244\303\244rit\303\244 kuinka monta kuvaa suoritin voi ajaa n\303\244yt\303\266nohjaimen e"
+   "dell\303\244, kun k\303\244ytet\303\244\303\244n 'n\303\244yt\303\266nohjaimen kova synkronointi"
+   "'.",
+   "M\303\244\303\244r\303\244\303\244 videoajurin k\303\244ytt\303\244m\303\244\303\244n yksiselitt"
+   "eisesti m\303\244\303\244ritetty\303\244 puskurointitilaa.",
+   "Kova-synkronoi CPU ja GPU. V\303\244hent\303\244\303\244 viivett\303\244 suorituskyvyn kustannuk"
+   "sella.",
+   "Kehyksen suurin viive",
+   "M\303\244\303\244r\303\244\303\244 videoajurin k\303\244ytt\303\244m\303\244\303\244n yksiselitt"
+   "eisesti m\303\244\303\244ritetty\303\244 puskurointitilaa.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123012u
+      (sizeof(msg_hash_fi_blob) == (123693u
 #ifdef HAVE_LAKKA
        + 21u
        + 43u
@@ -7739,9 +7775,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -7810,9 +7843,6 @@ static const uint32_t msg_hash_fi_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -10614,4 +10644,22 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
 };

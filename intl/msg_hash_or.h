@@ -41,12 +41,6 @@ static const struct
    char s_e22edcd8[16];
    char s_cc973e8a[16];
    char s_daead8a5[13];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
-   char s_25e7af42_c5[78];
    char s_dcf2e800[13];
    char s_302fdd56[16];
    char s_96ee0cfb[28];
@@ -119,12 +113,6 @@ static const struct
    "\340\254\256\340\254\277\340\255\234\340\254\277\340\254\206",
    "\340\254\265\340\254\277\340\255\234\340\254\277\340\254\223",
    "\340\254\205\340\255\234\340\254\277\340\254\223",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
-   "MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub",
    "\340\254\205\340\255\234\340\254\277\340\254\223",
    "\340\254\270\340\255\207\340\254\237\340\254\277\340\254\202",
    "\340\254\207\340\254\244\340\254\277\340\254\265\340\255\203\340\254\244\340\255\215\340\254\244"
@@ -192,7 +180,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_or_blob_check[
-      (sizeof(msg_hash_or_blob) == (2104u
+      (sizeof(msg_hash_or_blob) == (1636u
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
@@ -230,12 +218,6 @@ static const uint32_t msg_hash_or_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_##T,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
