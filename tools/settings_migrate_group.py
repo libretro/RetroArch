@@ -58,6 +58,12 @@ for gm in re.finditer(r'#if(\w* [^\n]+)\n(.*?)#endif(?:\n|$)', body, re.S):
         guards[rm.group(1)] = ('#if' + gm.group(1)).strip()
 rows = [(m.group(1), m.group(2), m.group(3), re.sub(r'\s+',' ',m.group(4)).strip())
         for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT)_ROW\((\w+), (\w+),((?:[^()]|\([^()]*\))*)\)', body)]
+all_invocations = re.findall(r'SDESC_\w+?_ROW(?:_\w+)?\(', body)
+assert len(rows) == len(all_invocations), (
+    'table contains %d rows but only %d are plain-grammar '
+    'SDESC_{BOOL,UINT,INT,FLOAT}_ROW; variant rows (_EX/_AT/_LV/...) are '
+    'outside the def grammar - migrate this table manually or extend the '
+    'grammar deliberately' % (len(all_invocations), len(rows)))
 assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW\(', tm.group(1))), (len(rows), tm.group(1)[:200])
 
 us = open('intl/msg_hash_us.h').read()
