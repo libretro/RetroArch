@@ -1974,6 +1974,11 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_MIST
+#include "settings/settings_def_menu_steam.h"
+#endif
+#endif
 #ifdef ANDROID
 #include "settings/settings_def_input_android_workaround.h"
 #endif
@@ -2126,9 +2131,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_show_restart_retroarch",   &settings->bools.menu_show_restart_retroarch, true, DEFAULT_MENU_SHOW_RESTART, false);
    SETTING_BOOL("menu_show_online_updater",      &settings->bools.menu_show_online_updater, true, DEFAULT_MENU_SHOW_ONLINE_UPDATER, false);
    SETTING_BOOL("menu_show_core_updater",        &settings->bools.menu_show_core_updater, true, DEFAULT_MENU_SHOW_CORE_UPDATER, false);
-#ifdef HAVE_MIST
-   SETTING_BOOL("menu_show_core_manager_steam",  &settings->bools.menu_show_core_manager_steam, true, DEFAULT_MENU_SHOW_CORE_MANAGER_STEAM, false);
-#endif
    SETTING_BOOL("filter_by_current_core",        &settings->bools.filter_by_current_core, true, DEFAULT_FILTER_BY_CURRENT_CORE, false);
    SETTING_BOOL("menu_use_preferred_system_color_theme", &settings->bools.menu_use_preferred_system_color_theme, true, DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME, false);
    SETTING_BOOL("menu_navigation_wraparound_enable", &settings->bools.menu_navigation_wraparound_enable, true, true, false);
@@ -2343,6 +2345,11 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_MIST
+#include "settings/settings_def_menu_steam.h"
+#endif
+#endif
 #ifdef ANDROID
 #include "settings/settings_def_input_android_workaround.h"
 #endif
@@ -2644,6 +2651,11 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_MIST
+#include "settings/settings_def_menu_steam.h"
+#endif
+#endif
 #ifdef ANDROID
 #include "settings/settings_def_input_android_workaround.h"
 #endif
@@ -2920,6 +2932,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_MIST
+#include "settings/settings_def_menu_steam.h"
+#endif
+#endif
 #ifdef ANDROID
 #include "settings/settings_def_input_android_workaround.h"
 #endif
