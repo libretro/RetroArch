@@ -239,10 +239,22 @@ _LANES = [('menu/menu_setting.c', CFB, ('0',)), ('menu/menu_setting.c', CF, ('0'
         ('menu/menu_setting.c', CF + ' -DHAVE_D3DKMT', ('0',)),
         ('menu/menu_setting.c', CF + ' -DRARCH_MOBILE -DHAVE_LIBRETRODB -DHAVE_GLSL -DHAVE_NETWORKING -DHAVE_LAKKA -DHAVE_AUDIOMIXER -DHAVE_QT -DHAVE_THREADS', ('0','4')),
         ('configuration.c', CF, ('0',)), ('intl/msg_hash_us.c', CF + ' -DHAVE_LANGEXTRA', ('0',))]
-for tu, cfgf, okset in _LANES + _iso:
+# Headless lanes: configuration.c and the string tables are compiled in
+# HAVE_MENU-less builds too (menu_setting.c is not - it is gated on
+# HAVE_MENU_COMMON in Makefile.common).  Menu-visibility rows and their
+# DEFAULT_* live under #ifdef HAVE_MENU, so a migration that lands a menu
+# group's config-pass include OUTSIDE that guard breaks the headless
+# build.  CFB/CF always define HAVE_MENU, so without this no lane sees it
+# - which is exactly how the menu_show_* groups broke the ASan headless
+# CI lane.
+CF_HL = CF.replace(' -DHAVE_MENU', '')
+_headless = [('configuration.c', CF_HL, ('0',)),
+             ('intl/msg_hash_us.c', CF_HL + ' -DHAVE_LANGEXTRA', ('0',))]
+for tu, cfgf, okset in _LANES + _iso + _headless:
     r = run("gcc %s %s 2>&1 | grep -c 'error:'" % (cfgf, tu))
     assert r.stdout.strip() in okset, (tu, cfgf, run("gcc %s %s 2>&1 | grep -B1 error: | head -5" % (cfgf, tu)).stdout)
-print("gate: lanes clean (%d base + %d guard-isolation)" % (len(_LANES), len(_iso)))
+print("gate: lanes clean (%d base + %d guard-isolation + %d headless)" % (
+    len(_LANES), len(_iso), len(_headless)))
 
 # ---- TOKEN-STREAM GATE: preprocessor-level emission identity ----
 CPP = "gcc -E -P -I. -Imenu -Ilibretro-common/include -Ideps/7zip -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DHAVE_CHEATS -DHAVE_OVERLAY -DHAVE_MICROPHONE"
