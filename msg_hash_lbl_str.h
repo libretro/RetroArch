@@ -1048,7 +1048,6 @@
 #define MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X_STR "video_message_pos_x"
 #define MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y_STR "video_message_pos_y"
 #define MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX_STR "video_monitor_index"
-#define MENU_ENUM_LABEL_VIDEO_WIIU_PREFER_DRC_STR "video_wiiu_prefer_drc"
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X_STR "video_window_offset_x"
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y_STR "video_window_offset_y"
 #define MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_STR "video_refresh_rate"

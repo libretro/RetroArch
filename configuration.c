@@ -1969,6 +1969,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef WIIU
+#include "settings/settings_def_video_wiiu_drc.h"
+#endif
 #include "settings/settings_def_shader_watch.h"
 #if defined(DINGUX)
 #include "settings/settings_def_video_dingux_ipu.h"
@@ -2304,9 +2307,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("bottom_font_enable",            &settings->bools.bottom_font_enable,    true, DEFAULT_BOTTOM_FONT_ENABLE, false);
 #endif
 
-#ifdef WIIU
-   SETTING_BOOL("video_wiiu_prefer_drc",         &settings->bools.video_wiiu_prefer_drc, true, DEFAULT_WIIU_PREFER_DRC, false);
-#endif
 
 #if defined(HAVE_COCOATOUCH) && defined(TARGET_OS_TV)
    SETTING_BOOL("gcdwebserver_alert",            &settings->bools.gcdwebserver_alert, true, true, false);
@@ -2345,6 +2345,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef WIIU
+#include "settings/settings_def_video_wiiu_drc.h"
+#endif
 #include "settings/settings_def_shader_watch.h"
 #if defined(DINGUX)
 #include "settings/settings_def_video_dingux_ipu.h"
@@ -2656,6 +2659,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef WIIU
+#include "settings/settings_def_video_wiiu_drc.h"
+#endif
 #include "settings/settings_def_shader_watch.h"
 #if defined(DINGUX)
 #include "settings/settings_def_video_dingux_ipu.h"
@@ -2942,6 +2948,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef WIIU
+#include "settings/settings_def_video_wiiu_drc.h"
+#endif
 #include "settings/settings_def_shader_watch.h"
 #if defined(DINGUX)
 #include "settings/settings_def_video_dingux_ipu.h"
