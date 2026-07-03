@@ -1912,7 +1912,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("audio_enable",                  &settings->bools.audio_enable, true, DEFAULT_AUDIO_ENABLE, false);
    SETTING_BOOL("audio_sync",                    &settings->bools.audio_sync, true, DEFAULT_AUDIO_SYNC, false);
    SETTING_BOOL("audio_rate_control",            &settings->bools.audio_rate_control, true, DEFAULT_RATE_CONTROL, false);
-   SETTING_BOOL("audio_enable_menu",             &settings->bools.audio_enable_menu, true, DEFAULT_AUDIO_ENABLE_MENU, false);
    SETTING_BOOL("audio_enable_menu_ok",          &settings->bools.audio_enable_menu_ok, true, DEFAULT_AUDIO_ENABLE_MENU_OK, false);
    SETTING_BOOL("audio_enable_menu_cancel",      &settings->bools.audio_enable_menu_cancel, true, DEFAULT_AUDIO_ENABLE_MENU_CANCEL, false);
    SETTING_BOOL("audio_enable_menu_notice",      &settings->bools.audio_enable_menu_notice, true, DEFAULT_AUDIO_ENABLE_MENU_NOTICE, false);
@@ -1987,6 +1986,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_menu_sounds.h"
 #include "settings_def_menu_main_views.h"
 #include "settings_def_menu_quick_views.h"
 #include "settings_def_menu_settings_views.h"
@@ -2345,6 +2345,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_menu_sounds.h"
 #include "settings_def_menu_main_views.h"
 #include "settings_def_menu_quick_views.h"
 #include "settings_def_menu_settings_views.h"
@@ -2601,6 +2602,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_menu_sounds.h"
 #include "settings_def_menu_main_views.h"
 #include "settings_def_menu_quick_views.h"
 #include "settings_def_menu_settings_views.h"
@@ -2830,6 +2832,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_menu_sounds.h"
 #include "settings_def_menu_main_views.h"
 #include "settings_def_menu_quick_views.h"
 #include "settings_def_menu_settings_views.h"

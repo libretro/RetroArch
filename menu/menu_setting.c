@@ -14008,18 +14008,32 @@ static bool setting_append_list(
 
          {
             static const setting_desc_t menu_sounds_desc_0[] = {
-               SDESC_BOOL_ROW(audio_enable_menu, AUDIO_ENABLE_MENU,
-                     DEFAULT_AUDIO_ENABLE_MENU, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(audio_enable_menu_ok, MENU_SOUND_OK,
-                     DEFAULT_AUDIO_ENABLE_MENU_OK, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(audio_enable_menu_cancel, MENU_SOUND_CANCEL,
-                     DEFAULT_AUDIO_ENABLE_MENU_CANCEL, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(audio_enable_menu_notice, MENU_SOUND_NOTICE,
-                     DEFAULT_AUDIO_ENABLE_MENU_NOTICE, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(audio_enable_menu_bgm, MENU_SOUND_BGM,
-                     DEFAULT_AUDIO_ENABLE_MENU_BGM, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(audio_enable_menu_scroll, MENU_SOUND_SCROLL,
-                     DEFAULT_AUDIO_ENABLE_MENU_SCROLL, SD_FLAG_NONE, 0, 0),
+/* GENERATED: rows come from settings_def_menu_sounds.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#include "../settings_def_menu_sounds.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_sounds_desc_0, ARRAY_SIZE(menu_sounds_desc_0),
