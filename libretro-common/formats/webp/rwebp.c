@@ -954,12 +954,80 @@ static INLINE int32_t vp8b_sig(vp8b *b, int n)
 
 static INLINE uint8_t vp8_cl(int v) { return (uint8_t)(v<0?0:v>255?255:v); }
 
+/* libwebp fixed-point YUV -> RGB (yuv.h, YUV_FIX2 = 6): matches dwebp
+ * output exactly. */
+static INLINE int vp8_mulhi(int v, int coeff) { return (v * coeff) >> 8; }
+
+static INLINE uint8_t vp8_clip8(int v)
+{
+   return ((v & ~16383) == 0) ? (uint8_t)(v >> 6) : (v < 0) ? 0 : 255;
+}
+
 static void vp8_yuv2rgb(int y, int u, int v, uint8_t *r, uint8_t *g, uint8_t *bo)
 {
-   int c = y - 16, d = u - 128, e = v - 128;
-   *r  = vp8_cl((298*c + 409*e + 128) >> 8);
-   *g  = vp8_cl((298*c - 100*d - 208*e + 128) >> 8);
-   *bo = vp8_cl((298*c + 516*d + 128) >> 8);
+   int yg = vp8_mulhi(y, 19077);
+   *r  = vp8_clip8(yg + vp8_mulhi(v, 26149) - 14234);
+   *g  = vp8_clip8(yg - vp8_mulhi(u, 6419) - vp8_mulhi(v, 13320) + 8708);
+   *bo = vp8_clip8(yg + vp8_mulhi(u, 33050) - 17685);
+}
+
+/* Fancy chroma upsampling (libwebp upsampling.c): interpolate the chroma
+ * plane bilinearly with the 9-3-3-1 diagonal scheme while converting a
+ * pair of luma rows. top/cur are chroma rows; either may alias for the
+ * mirrored first and last rows. bot_y may be NULL (single-row case). */
+static void vp8_fancy_pair(const uint8_t *top_y, const uint8_t *bot_y,
+      const uint8_t *top_u, const uint8_t *top_v,
+      const uint8_t *cur_u, const uint8_t *cur_v,
+      uint32_t *top_dst, uint32_t *bot_dst, int len)
+{
+   int x, last_pair = (len - 1) >> 1;
+   int tl_u = top_u[0], tl_v = top_v[0];
+   int l_u = cur_u[0], l_v = cur_v[0];
+   uint8_t r, g, b2;
+
+   vp8_yuv2rgb(top_y[0], (3*tl_u + l_u + 2) >> 2, (3*tl_v + l_v + 2) >> 2,
+         &r, &g, &b2);
+   top_dst[0] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+   if (bot_y)
+   {
+      vp8_yuv2rgb(bot_y[0], (3*l_u + tl_u + 2) >> 2, (3*l_v + tl_v + 2) >> 2,
+            &r, &g, &b2);
+      bot_dst[0] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+   }
+   for (x = 1; x <= last_pair; x++)
+   {
+      int t_u = top_u[x], t_v = top_v[x];
+      int c_u = cur_u[x], c_v = cur_v[x];
+      int avg_u = tl_u + t_u + l_u + c_u + 8;
+      int avg_v = tl_v + t_v + l_v + c_v + 8;
+      int d12_u = (avg_u + 2*(t_u + l_u)) >> 3, d12_v = (avg_v + 2*(t_v + l_v)) >> 3;
+      int d03_u = (avg_u + 2*(tl_u + c_u)) >> 3, d03_v = (avg_v + 2*(tl_v + c_v)) >> 3;
+
+      vp8_yuv2rgb(top_y[2*x-1], (d12_u + tl_u) >> 1, (d12_v + tl_v) >> 1, &r, &g, &b2);
+      top_dst[2*x-1] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+      vp8_yuv2rgb(top_y[2*x], (d03_u + t_u) >> 1, (d03_v + t_v) >> 1, &r, &g, &b2);
+      top_dst[2*x] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+      if (bot_y)
+      {
+         vp8_yuv2rgb(bot_y[2*x-1], (d03_u + l_u) >> 1, (d03_v + l_v) >> 1, &r, &g, &b2);
+         bot_dst[2*x-1] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+         vp8_yuv2rgb(bot_y[2*x], (d12_u + c_u) >> 1, (d12_v + c_v) >> 1, &r, &g, &b2);
+         bot_dst[2*x] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+      }
+      tl_u = t_u; tl_v = t_v; l_u = c_u; l_v = c_v;
+   }
+   if (!(len & 1))
+   {
+      vp8_yuv2rgb(top_y[len-1], (3*tl_u + l_u + 2) >> 2, (3*tl_v + l_v + 2) >> 2,
+            &r, &g, &b2);
+      top_dst[len-1] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+      if (bot_y)
+      {
+         vp8_yuv2rgb(bot_y[len-1], (3*l_u + tl_u + 2) >> 2, (3*l_v + tl_v + 2) >> 2,
+               &r, &g, &b2);
+         bot_dst[len-1] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+      }
+   }
 }
 
 /* Coefficient tables */
@@ -2127,16 +2195,25 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                seg_map_buf, skip_lf_buf, bpred_buf);
    }
 
-   /* YUV -> ARGB */
+   /* YUV -> ARGB with fancy chroma upsampling (matches libwebp/dwebp).
+    * Row 0 and the final even row mirror the chroma plane at the border;
+    * interior luma row pairs (2r+1, 2r+2) interpolate chroma rows (r, r+1). */
    pix = (uint32_t*)malloc((size_t)w * h * sizeof(uint32_t));
    if (!pix) goto lfail;
-   for (j = 0; j < h; j++)
-      for (i = 0; i < w; i++)
-      {
-         uint8_t r, g, b2;
-         vp8_yuv2rgb(yb[j*ys+i], ub[(j>>1)*uvs+(i>>1)], vb[(j>>1)*uvs+(i>>1)], &r, &g, &b2);
-         pix[j*w+i] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | (uint32_t)b2;
-      }
+   vp8_fancy_pair(yb, NULL, ub, vb, ub, vb, pix, NULL, w);
+   for (j = 0; j + 2 < h; j += 2)
+   {
+      const uint8_t *tu = ub + (j >> 1) * uvs, *tv = vb + (j >> 1) * uvs;
+      vp8_fancy_pair(yb + (j+1)*ys, yb + (j+2)*ys,
+            tu, tv, tu + uvs, tv + uvs,
+            pix + (size_t)(j+1)*w, pix + (size_t)(j+2)*w, w);
+   }
+   if (!(h & 1) && h >= 2)
+   {
+      const uint8_t *lu = ub + ((h-1) >> 1) * uvs, *lv = vb + ((h-1) >> 1) * uvs;
+      vp8_fancy_pair(yb + (size_t)(h-1)*ys, NULL, lu, lv, lu, lv,
+            pix + (size_t)(h-1)*w, NULL, w);
+   }
    free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf); free(bpred_buf);
    *ow = (unsigned)w; *oh = (unsigned)h;
    return pix;
