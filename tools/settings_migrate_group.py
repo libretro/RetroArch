@@ -389,8 +389,6 @@ MH = "msg_hash.c intl/msg_hash_us.c libretro-common/string/stdstring.c libretro-
 B = "-O2 -I. -Ilibretro-common/include -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_LANGEXTRA"
 r = run("gcc %s %s /tmp/stubs.c /tmp/test_msg_hash.c -o /tmp/tmh_g && /tmp/tmh_g > /tmp/out_g1.txt" % (B, MH))
 assert os.path.getsize('/tmp/out_g1.txt') > 10**6, r.stderr[-200:]
-assert run('cmp -s /tmp/out_pre.txt /tmp/out_g1.txt').returncode == 0
-print("gate: 244K lookup byte-identical")
 def clean_objs():
     for f in ('intl/msg_hash_us','menu/menu_setting','configuration'):
         for ext in ('.o','.d'):
@@ -406,8 +404,16 @@ assert run('git diff --quiet').returncode != 0, "VACUOUS"
 r = run('git stash -u'); assert 'Saved' in r.stdout
 try:
     build_dump('/tmp/dump_gpre.txt')
+    # Per-run 244K baseline from the parent revision, inside the stash
+    # window: the integrated enum stage renumbers on every migration,
+    # so a session baseline goes stale after each commit.
+    r = run("gcc %s %s /tmp/stubs.c /tmp/test_msg_hash.c -o /tmp/tmh_p && /tmp/tmh_p > /tmp/out_gpre.txt" % (B, MH))
+    assert os.path.getsize('/tmp/out_gpre.txt') > 10**6, r.stderr[-200:]
 finally:
     assert run('git stash pop').returncode == 0
+assert run('cmp -s /tmp/out_gpre.txt /tmp/out_g1.txt').returncode == 0, \
+    run('diff /tmp/out_gpre.txt /tmp/out_g1.txt | head -4').stdout
+print("gate: 244K lookup byte-identical (per-run parent baseline)")
 assert os.path.exists(os.path.join('settings', DEF)), "def file lost"
 assert run('cmp -s /tmp/dump_gpre.txt /tmp/dump_g.txt').returncode == 0, run('diff /tmp/dump_gpre.txt /tmp/dump_g.txt | head -4').stdout
 print("gate: settings dump byte-identical")
