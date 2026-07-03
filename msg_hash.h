@@ -1496,25 +1496,44 @@ enum msg_hash_enums
    MENU_LABEL(VIDEO_MESSAGE_BGCOLOR_OPACITY),
    MENU_LABEL(VIDEO_FILTER_FLICKER),
    MENU_LABEL(VIDEO_SOFT_FILTER),
-   MENU_LBL_H(VIDEO_MAX_SWAPCHAIN_IMAGES),
-   MENU_LABEL(VIDEO_WAITABLE_SWAPCHAINS),
-   MENU_LABEL(VIDEO_MAX_FRAME_LATENCY),
+   /* GENERATED REGION: video synchronization group enum rows
+    * (see settings/settings_def_video_sync.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_video_sync.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_GPU_SCREENSHOT),
    MENU_LBL_H(VIDEO_BLACK_FRAME_INSERTION),
    MENU_LBL_H(VIDEO_BFI_DARK_FRAMES),
-   MENU_LBL_H(VIDEO_SHADER_SUBFRAMES),
-   MENU_LBL_H(VIDEO_SCAN_SUBFRAMES),
    MENU_LBL_H(VIDEO_FRAME_DELAY),
    MENU_LBL_H(VIDEO_FRAME_DELAY_AUTO),
    MENU_LABEL(VIDEO_FRAME_TIME_SAMPLE_GATED),
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    MENU_LABEL(VIDEO_SHADER_DELAY),
-   MENU_LABEL(VIDEO_VSYNC),
    MENU_LABEL(VIDEO_ADAPTIVE_VSYNC),
    MENU_LABEL(VIDEO_SCANLINE_SYNC),
-   MENU_LABEL(VIDEO_HARD_SYNC),
-   MENU_LBL_H(VIDEO_HARD_SYNC_FRAMES),
    MENU_LABEL(VIDEO_WINDOWED_FULLSCREEN),
    MENU_LABEL(VIDEO_AUTOSWITCH_REFRESH_RATE),
    MENU_LABEL(VIDEO_AUTOSWITCH_PAL_THRESHOLD),
@@ -1572,7 +1591,6 @@ enum msg_hash_enums
    MENU_LABEL(DRIVER_SWITCH_ENABLE),
    MENU_LBL_H(VIDEO_THREADED),
 
-   MENU_LABEL(VIDEO_SWAP_INTERVAL),
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
 
    MENU_LABEL(VIDEO_FULLSCREEN),
