@@ -49,18 +49,18 @@ def defs(mk):
 ms = open('menu/menu_setting.c').read()
 tm = re.search(r'static const setting_desc_t %s\[\] = \{\n(.*?)\n( *)\};' % TABLE, ms, re.S)
 assert tm, TABLE
-def guard_of(text, pat):
-    m = re.search(pat, text)
-    if not m:
-        return None
+def guard_at(text, pos):
     stack = []
-    for gl in re.finditer(r'^[ \t]*#(if\w*[^\n]*|else|endif)', text[:m.start()], re.M):
+    for gl in re.finditer(r'^[ \t]*#(if\w*[^\n]*|else|endif)', text[:pos], re.M):
         s = gl.group(1)
         if s.startswith('if'):
             stack.append('#' + s.strip())
         elif s.startswith('endif') and stack:
             stack.pop()
     return tuple(stack)
+def guard_of(text, pat):
+    m = re.search(pat, text)
+    return guard_at(text, m.start()) if m else None
 
 guards = {}
 body = tm.group(1)
@@ -130,6 +130,25 @@ for k, f, T, a in rows:
     cfg_keeps.append((T, m.group(1)))
     print("  note: %s config key %s differs from label %s - config row stays literal" % (T, m.group(1), names[T]))
 KEEP = set(T for T, _ in cfg_keeps)
+# Common enclosing guard of the removed config rows.  These rows may sit
+# inside a group-level guard in configuration.c (e.g. #ifdef HAVE_MENU
+# around the whole menu-visibility block) that is NOT a per-row guard in
+# the descriptor table, so it is never carried into the def file.  Capture
+# it now (before the rows are deleted) and replicate it on the config-pass
+# include, or a HAVE_MENU-less build expands the rows against undeclared
+# DEFAULT_* macros.  Flags already carried per-row in the def file are
+# dropped so the include is not double-guarded.
+_row_stacks = [guard_at(cfg, s) for s, e in cfg_spans]
+_common = _row_stacks[0] if _row_stacks else ()
+for _st in _row_stacks[1:]:
+    _i = 0
+    while _i < len(_common) and _i < len(_st) and _common[_i] == _st[_i]:
+        _i += 1
+    _common = _common[:_i]
+_defrow_flags = {g.split()[-1] for gs in guards.values() for g in gs}
+CFG_GROUP_GUARD = tuple(g for g in _common if g.split()[-1] not in _defrow_flags)
+if CFG_GROUP_GUARD:
+    print("  config-pass include will be guarded by: %s" % ' '.join(CFG_GROUP_GUARD))
 for s, e in sorted(cfg_spans, reverse=True): cfg = cfg[:s] + cfg[e:]
 cfg = re.sub(r'#if[^\n]*\n#endif\n', '', cfg)
 out = ['''/* Single-source definitions: %s.
@@ -201,8 +220,13 @@ if '#define SETTINGS_DEF_CONFIG_PASS' not in cfg:
     cfg = cfg.replace('#include "settings_def_video_sync.h"',
         '#define SETTINGS_DEF_CONFIG_PASS\n#include "settings_def_video_sync.h"')
     cfg = cfg.replace('#undef S_BOOL\n', '#undef SETTINGS_DEF_CONFIG_PASS\n#undef S_BOOL\n')
+if CFG_GROUP_GUARD:
+    _cfg_inc = ('\n'.join(CFG_GROUP_GUARD) + '\n#include "%s"\n' % DEF
+                + '\n'.join('#endif' for _ in CFG_GROUP_GUARD))
+else:
+    _cfg_inc = '#include "%s"' % DEF
 cfg = cfg.replace('#include "settings_def_video_sync.h"',
-                  '#include "settings_def_video_sync.h"\n#include "%s"' % DEF)
+                  '#include "settings_def_video_sync.h"\n' + _cfg_inc)
 open('configuration.c','w').write(cfg)
 ms = open('menu/menu_setting.c').read()
 tm = re.search(r'static const setting_desc_t %s\[\] = \{\n(.*?)\n( *)\};' % TABLE, ms, re.S)
@@ -232,7 +256,12 @@ _gflags = sorted({g.split()[-1] for gs in guards.values() for g in gs})
 _iso = []
 for _fl in _gflags:
     _d = ' -D' + _fl
-    _iso += [('menu/menu_setting.c', CF + _d, ('0',)),
+    # menu_setting.c carries pre-existing -pedantic noise under HAVE_LAKKA
+    # (systemd_service_toggle static initializer); the base LAKKA lane
+    # already tolerates it with ('0','4'), so match that here rather than
+    # abort a legitimate migration that happens to gate a row on LAKKA.
+    _mok = ('0', '4') if _fl == 'HAVE_LAKKA' else ('0',)
+    _iso += [('menu/menu_setting.c', CF + _d, _mok),
              ('intl/msg_hash_us.c', CF + ' -DHAVE_LANGEXTRA' + _d, ('0',)),
              ('configuration.c', CF + _lakka(_d), ('0',))]
 _LANES = [('menu/menu_setting.c', CFB, ('0',)), ('menu/menu_setting.c', CF, ('0',)),
