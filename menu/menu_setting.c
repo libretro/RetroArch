@@ -17661,42 +17661,32 @@ static bool setting_append_list(
 
                   {
             static const setting_desc_t ui_desc_10[] = {
-               SDESC_BOOL_ROW(quick_menu_show_take_screenshot, QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-                     DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_savestate_submenu, QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-                     DEFAULT_QUICK_MENU_SHOW_SAVESTATE_SUBMENU, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_save_load_state, QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-                     DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_replay, QUICK_MENU_SHOW_REPLAY,
-                     DEFAULT_QUICK_MENU_SHOW_REPLAY, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_undo_save_load_state, QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-                     DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_add_to_favorites, QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-                     DEFAULT_QUICK_MENU_SHOW_ADD_TO_FAVORITES, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_add_to_playlist, QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-                     DEFAULT_QUICK_MENU_SHOW_ADD_TO_PLAYLIST, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_start_recording, QUICK_MENU_SHOW_START_RECORDING,
-                     DEFAULT_QUICK_MENU_SHOW_START_RECORDING, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_start_streaming, QUICK_MENU_SHOW_START_STREAMING,
-                     DEFAULT_QUICK_MENU_SHOW_START_STREAMING, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_set_core_association, QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-                     DEFAULT_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_reset_core_association, QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-                     DEFAULT_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_resume_content, QUICK_MENU_SHOW_RESUME_CONTENT,
-                     DEFAULT_QUICK_MENU_SHOW_RESUME_CONTENT, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_restart_content, QUICK_MENU_SHOW_RESTART_CONTENT,
-                     DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_close_content, QUICK_MENU_SHOW_CLOSE_CONTENT,
-                     DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_options, QUICK_MENU_SHOW_OPTIONS,
-                     DEFAULT_QUICK_MENU_SHOW_CORE_OPTIONS, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_core_options_flush, QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
-                     DEFAULT_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_controls, QUICK_MENU_SHOW_CONTROLS,
-                     DEFAULT_QUICK_MENU_SHOW_CONTROLS, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(quick_menu_show_cheats, QUICK_MENU_SHOW_CHEATS,
-                     DEFAULT_QUICK_MENU_SHOW_CHEATS, SD_FLAG_NONE, 0, 0),
+/* GENERATED: rows come from settings_def_menu_quick_views.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#include "../settings_def_menu_quick_views.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
             };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_10, ARRAY_SIZE(ui_desc_10),
