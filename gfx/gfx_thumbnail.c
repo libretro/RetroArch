@@ -221,9 +221,15 @@ static void gfx_thumbnail_init_fade(
 #define GFX_THUMB_ANIM_BUDGET_US    8000
 /* Refuse to animate anything larger than this many canvas pixels
  * (frame decode cost scales with it) or a file larger than this
- * (the file buffer is held for the lifetime of the animation). */
-#define GFX_THUMB_ANIM_MAX_PIXELS   (1024 * 1024)
-#define GFX_THUMB_ANIM_MAX_FILE     (32 * 1024 * 1024)
+ * (the file buffer is held for the lifetime of the animation).
+ * The pixel cap admits common thumbnail sources up to ~1440p
+ * (e.g. 1618x1080, 1920x1080, 2560x1440) while still excluding 4K,
+ * where per-frame decode becomes too heavy to sustain; the shared
+ * per-vsync budget above additionally throttles decode so that
+ * accepted-but-large animations lower their frame rate rather than
+ * stalling the menu. */
+#define GFX_THUMB_ANIM_MAX_PIXELS   (4 * 1024 * 1024)
+#define GFX_THUMB_ANIM_MAX_FILE     (48 * 1024 * 1024)
 /* Frame-duration handling: <= 0 is undefined by the container spec
  * (browsers substitute 100 ms); very small durations are floored so
  * a hostile file cannot request thousands of decodes per second. */
