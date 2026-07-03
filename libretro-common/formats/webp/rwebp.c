@@ -105,104 +105,168 @@ static INLINE uint32_t vbr_read(vbr *b, int n)
 /* ===== VP8L Huffman Tables ===== */
 
 #define VH_MAXCL 15
-#define VH_ROOT  8
+#define VH_ROOT  8   /* HUFFMAN_TABLE_BITS */
 
+/* Two-level canonical Huffman table, ported from libwebp BuildHuffmanTable.
+ * Each entry packs (bits << 16) | value. In the root table (1 << VH_ROOT
+ * entries) an entry with bits > VH_ROOT is a pointer: value is the offset
+ * (relative to the entry) to its second-level table, and bits is the total
+ * code length. Otherwise value is the symbol and bits its code length. */
 typedef struct { uint32_t *t; int sz, rb; } vh;
 
 static void vh_free(vh *h) { free(h->t); h->t = NULL; }
 
+/* GetNextKey: reversed-prefix increment (libwebp). */
+static uint32_t vh_next_key(uint32_t key, int len)
+{
+   uint32_t step = 1u << (len - 1);
+   while (key & step) step >>= 1;
+   return step ? (key & (step - 1)) + step : key;
+}
+
+/* ReplicateValue: fill table[0], table[step], ... table[end-step]. */
+static void vh_replicate(uint32_t *table, int step, int end, uint32_t code)
+{
+   int cur = end;
+   do { cur -= step; table[cur] = code; } while (cur > 0);
+}
+
+/* NextTableBitSize: size (in bits) of the 2nd-level table for prefix at len. */
+static int vh_next_tbl_bits(const int *count, int len, int root_bits)
+{
+   int left = 1 << (len - root_bits);
+   while (len < VH_MAXCL)
+   {
+      left -= count[len];
+      if (left <= 0) break;
+      ++len; left <<= 1;
+   }
+   return len - root_bits;
+}
+
 static int vh_build(vh *h, const uint8_t *lens, int ns, int root)
 {
-   int cnt[VH_MAXCL+1], off[VH_MAXCL+1], sorted[4096];
-   int i, len, key, sym, total, step, tc;
-   uint32_t *t;
+   int count[VH_MAXCL + 1], offset[VH_MAXCL + 1];
+   int sorted[4096];
+   int total_size = 1 << root;
+   int len, symbol, i, pass;
+   uint32_t *t = NULL;
+
    if (ns > 4096) return -1;
-   memset(cnt, 0, sizeof(cnt));
-   for (i = 0; i < ns; i++)
+   memset(count, 0, sizeof(count));
+   for (symbol = 0; symbol < ns; symbol++)
    {
-      if (lens[i] > VH_MAXCL) return -1;
-      cnt[lens[i]]++;
+      if (lens[symbol] > VH_MAXCL) return -1;
+      count[lens[symbol]]++;
    }
-   off[0] = 0; off[1] = 0;
-   for (i = 1; i < VH_MAXCL; i++) off[i+1] = off[i] + cnt[i];
-   for (i = 0; i < ns; i++) if (lens[i]) sorted[off[lens[i]]++] = i;
+   if (count[0] == ns) return -1;
 
-   total = 1 << root;
-   for (len = root+1; len <= VH_MAXCL; len++)
-      total += cnt[len] << (len - root);
-   if (total < (1 << root)) total = 1 << root;
-
-   h->t = (uint32_t*)calloc(total + 64, sizeof(uint32_t));
-   if (!h->t) return -1;
-   h->sz = total; h->rb = root;
-   t = h->t; step = 1 << root;
-
-   /* Trivial tree: 0 or 1 symbols -> every entry returns that symbol, 0 bits consumed */
-   tc = 0;
-   for (i = 1; i <= VH_MAXCL; i++) tc += cnt[i];
-   if (tc <= 1)
+   offset[1] = 0;
+   for (len = 1; len < VH_MAXCL; len++)
    {
-      int s = (tc == 1) ? sorted[0] : 0;
-      uint32_t e = (uint32_t)(s << 16); /* code_length = 0 */
-      for (i = 0; i < (1 << root); i++) t[i] = e;
+      if (count[len] > (1 << len)) return -1;
+      offset[len + 1] = offset[len] + count[len];
+   }
+   for (symbol = 0; symbol < ns; symbol++)
+   {
+      int cl = lens[symbol];
+      if (cl > 0) sorted[offset[cl]++] = symbol;
+   }
+
+   /* Single-symbol special case: 0-bit code returns that symbol. */
+   if (offset[VH_MAXCL] == 1)
+   {
+      total_size = 1 << root;
+      h->t = (uint32_t*)calloc(total_size, sizeof(uint32_t));
+      if (!h->t) return -1;
+      h->sz = total_size; h->rb = root;
+      for (i = 0; i < total_size; i++)
+         h->t[i] = (uint32_t)(sorted[0] & 0xFFFF);
       return 0;
    }
 
-   key = 0; sym = 0;
-   for (len = 1; len <= VH_MAXCL; len++)
+   /* Two passes over the identical libwebp walk: pass 0 measures total_size,
+    * pass 1 fills. Structure mirrors libwebp BuildHuffmanTable exactly. */
+   for (pass = 0; pass < 2; pass++)
    {
-      for (i = 0; i < cnt[len]; i++, sym++)
-      {
-         int s = sorted[sym], j;
-         if (len <= root)
+      int c2[VH_MAXCL + 1];
+      int step;
+      uint32_t low = 0xffffffffu;
+      uint32_t mask = (1 << root) - 1;
+      uint32_t key = 0;
+      int table_bits = root, table_size = 1 << table_bits;
+      int table_off = 0;   /* offset (from base) of current 2nd-level table */
+
+      memcpy(c2, count, sizeof(c2));
+      total_size = 1 << root;
+      symbol = 0;
+
+      /* Root table. */
+      for (len = 1, step = 2; len <= root; len++, step <<= 1)
+         for (; c2[len] > 0; c2[len]--)
          {
-            int rk = 0;
-            uint32_t e = (uint32_t)((s << 16) | len);
-            for (j = 0; j < len; j++) rk |= ((key >> j) & 1) << (len-1-j);
-            for (j = rk; j < (1 << root); j += (1 << len)) t[j] = e;
-         }
-         else
-         {
-            int rk2 = 0, sb = len - root, sk = 0, j2;
-            uint32_t e = (uint32_t)((s << 16) | sb);
-            for (j = 0; j < root; j++) rk2 |= ((key >> j) & 1) << (root-1-j);
-            if (!(t[rk2] & 0x80000000u))
+            if (pass == 1)
             {
-               t[rk2] = (uint32_t)((step << 16) | sb | 0x80000000u);
-               step += (1 << sb);
+               uint32_t code = (uint32_t)((len << 16) | (sorted[symbol] & 0xFFFF));
+               vh_replicate(&t[key], step, table_size, code);
             }
-            for (j = 0; j < sb; j++) sk |= ((key >> (root+j)) & 1) << (sb-1-j);
-            { int so = (t[rk2] >> 16) & 0x7FFF, stb = t[rk2] & 0x1F;
-              for (j2 = sk; j2 < (1 << stb); j2 += (1 << sb))
-                 if (so + j2 < total + 64) t[so + j2] = e; }
+            symbol++;
+            key = vh_next_key(key, len);
          }
-         key++;
+
+      /* Second-level tables. */
+      for (len = root + 1, step = 2; len <= VH_MAXCL; len++, step <<= 1)
+         for (; c2[len] > 0; c2[len]--)
+         {
+            if ((key & mask) != low)
+            {
+               table_off += table_size;        /* advance past previous table */
+               table_bits = vh_next_tbl_bits(c2, len, root);  /* live count */
+               table_size = 1 << table_bits;
+               total_size += table_size;
+               low = key & mask;
+               if (pass == 1)
+                  t[low] = 0x80000000u
+                         | (uint32_t)((table_bits + root) << 16)
+                         | (uint32_t)(table_off & 0xFFFF);
+            }
+            if (pass == 1)
+            {
+               uint32_t code = (uint32_t)(((len - root) << 16) | (sorted[symbol] & 0xFFFF));
+               vh_replicate(&t[table_off + (key >> root)], step, table_size, code);
+            }
+            symbol++;
+            key = vh_next_key(key, len);
+         }
+
+      if (pass == 0)
+      {
+         t = (uint32_t*)calloc(total_size + 1, sizeof(uint32_t));
+         if (!t) return -1;
       }
-      key <<= 1;
    }
+
+   h->t = t; h->sz = total_size; h->rb = root;
    return 0;
 }
 
 static INLINE int vh_read(const vh *h, vbr *b)
 {
    uint32_t e;
-   int idx;
+   int idx, nbits;
    vbr_fill(b);
    idx = (int)(b->val & ((1u << h->rb) - 1));
    e = h->t[idx];
    if (e & 0x80000000u)
    {
-      int sb = e & 0x1F, so = (e >> 16) & 0x7FFF;
+      /* pointer entry: extra nbits in [30:16], subtable offset in [15:0] */
+      int so = (int)(e & 0xFFFF);
+      nbits = (int)((e >> 16) & 0x7FFF) - h->rb;
       b->val >>= h->rb; b->nb -= h->rb;
-      e = h->t[so + ((int)(b->val & ((1u << sb) - 1)))];
-      { int cl = e & 0xFFFF; b->val >>= cl; b->nb -= cl; }
+      e = h->t[so + (int)(b->val & ((1u << nbits) - 1))];
    }
-   else
-   {
-      int cl = e & 0xFFFF;
-      if (cl > 0) { b->val >>= cl; b->nb -= cl; }
-   }
-   return (int)(e >> 16);
+   { int cl = (int)((e >> 16) & 0x7FFF); if (cl > 0) { b->val >>= cl; b->nb -= cl; } }
+   return (int)(e & 0xFFFF);
 }
 
 /* Code-length alphabet order */
@@ -242,17 +306,25 @@ static int vh_read_codes(vbr *br, int ns, uint8_t *lens)
       {
          int nb = 2 + 2 * vbr_read(br, 3);
          ms = 2 + vbr_read(br, nb);
-         if (ms > ns) ms = ns;
+         if (ms > ns) return -1;   /* invalid per libwebp */
       }
       si = 0;
-      while (si < ms)
+      while (si < ns)
       {
-         int c = vh_read(&clt, br);
-         if      (c < 16) { lens[si++] = (uint8_t)c; if (c) prev = c; }
-         else if (c == 16) { int r = vbr_read(br,2)+3; while (r-- > 0 && si < ms) lens[si++] = (uint8_t)prev; }
-         else if (c == 17) { int r = vbr_read(br,3)+3; while (r-- > 0 && si < ms) lens[si++] = 0; }
-         else if (c == 18) { int r = vbr_read(br,7)+11;while (r-- > 0 && si < ms) lens[si++] = 0; }
-         else break;
+         int c;
+         if (ms-- == 0) break;     /* code-count budget, per libwebp */
+         c = vh_read(&clt, br);
+         if (c < 16) { lens[si++] = (uint8_t)c; if (c) prev = c; }
+         else
+         {
+            int slot = c - 16;
+            int extra = (slot == 0) ? 2 : (slot == 1) ? 3 : 7;
+            int roff  = (slot == 0) ? 3 : (slot == 1) ? 3 : 11;
+            int r = (int)vbr_read(br, extra) + roff;
+            int val = (c == 16) ? prev : 0;
+            if (si + r > ns) break;
+            while (r-- > 0) lens[si++] = (uint8_t)val;
+         }
       }
       vh_free(&clt);
    }
@@ -273,10 +345,12 @@ static INLINE int px_clb(int v) { return v<0?0:v>255?255:v; }
 
 static uint32_t px_select(uint32_t TL, uint32_t T, uint32_t L)
 {
-   int d = px_abs((int)((T>>24)&0xFF)-(int)((TL>>24)&0xFF)) - px_abs((int)((L>>24)&0xFF)-(int)((TL>>24)&0xFF))
-         + px_abs((int)((T>>16)&0xFF)-(int)((TL>>16)&0xFF)) - px_abs((int)((L>>16)&0xFF)-(int)((TL>>16)&0xFF))
-         + px_abs((int)((T>> 8)&0xFF)-(int)((TL>> 8)&0xFF)) - px_abs((int)((L>> 8)&0xFF)-(int)((TL>> 8)&0xFF))
-         + px_abs((int)( T     &0xFF)-(int)( TL     &0xFF)) - px_abs((int)( L     &0xFF)-(int)( TL     &0xFF));
+   /* libwebp Select(top, left, top_left):
+    * (sum |L-TL|) - (sum |T-TL|) <= 0 ? T : L */
+   int d = px_abs((int)((L>>24)&0xFF)-(int)((TL>>24)&0xFF)) - px_abs((int)((T>>24)&0xFF)-(int)((TL>>24)&0xFF))
+         + px_abs((int)((L>>16)&0xFF)-(int)((TL>>16)&0xFF)) - px_abs((int)((T>>16)&0xFF)-(int)((TL>>16)&0xFF))
+         + px_abs((int)((L>> 8)&0xFF)-(int)((TL>> 8)&0xFF)) - px_abs((int)((T>> 8)&0xFF)-(int)((TL>> 8)&0xFF))
+         + px_abs((int)( L     &0xFF)-(int)( TL     &0xFF)) - px_abs((int)( T     &0xFF)-(int)( TL     &0xFF));
    return d <= 0 ? T : L;
 }
 static uint32_t px_casf(uint32_t a, uint32_t b, uint32_t c)
@@ -316,15 +390,32 @@ static uint32_t px_predict(int m, uint32_t L, uint32_t T, uint32_t TL, uint32_t 
    }
 }
 
-/* Distance mapping */
-static const int8_t vl_dx[] = {0,1,1,1,0,-1,-1,-1,0,2,2,2,1,1,-1,-1,-2,-2,-2,0,3,3,3,3,2,2,1,-1,-2,-2,-3,-3,-3,-3,0,4};
-static const int8_t vl_dy[] = {1,0,1,-1,2,1,0,-1,2,0,1,-1,2,-2,2,-2,1,0,-1,2,0,1,-1,-2,2,-2,3,3,2,1,2,1,0,-1,3,0};
+/* Distance mapping, per libwebp PlaneCodeToDistance: the decoded distance
+ * prefix value ("plane code") 1..120 maps through kCodeToPlane to a 2D
+ * (x,y) offset; values above 120 are linear distances (code - 120). */
+static const uint8_t vl_code_to_plane[120] = {
+   0x18, 0x07, 0x17, 0x19, 0x28, 0x06, 0x27, 0x29, 0x16, 0x1a, 0x26, 0x2a,
+   0x38, 0x05, 0x37, 0x39, 0x15, 0x1b, 0x36, 0x3a, 0x25, 0x2b, 0x48, 0x04,
+   0x47, 0x49, 0x14, 0x1c, 0x35, 0x3b, 0x46, 0x4a, 0x24, 0x2c, 0x58, 0x45,
+   0x4b, 0x34, 0x3c, 0x03, 0x57, 0x59, 0x13, 0x1d, 0x56, 0x5a, 0x23, 0x2d,
+   0x44, 0x4c, 0x55, 0x5b, 0x33, 0x3d, 0x68, 0x02, 0x67, 0x69, 0x12, 0x1e,
+   0x66, 0x6a, 0x22, 0x2e, 0x54, 0x5c, 0x43, 0x4d, 0x65, 0x6b, 0x32, 0x3e,
+   0x78, 0x01, 0x77, 0x79, 0x53, 0x5d, 0x11, 0x1f, 0x64, 0x6c, 0x42, 0x4e,
+   0x76, 0x7a, 0x21, 0x2f, 0x75, 0x7b, 0x31, 0x3f, 0x63, 0x6d, 0x52, 0x5e,
+   0x00, 0x74, 0x7c, 0x41, 0x4f, 0x10, 0x20, 0x62, 0x6e, 0x30, 0x73, 0x7d,
+   0x51, 0x5f, 0x40, 0x72, 0x7e, 0x61, 0x6f, 0x50, 0x71, 0x7f, 0x60, 0x70
+};
 
-static int vl_dist(int c, int xs)
+static int vl_plane_to_dist(int xsize, int plane_code)
 {
-   if (c < 4) return c + 1;
-   if (c < 40) { int d = vl_dy[c-4]*xs + vl_dx[c-4]; return d < 1 ? 1 : d; }
-   return c - 2 + 1;
+   int dist_code, yoffset, xoffset, dist;
+   if (plane_code > 120)
+      return plane_code - 120;
+   dist_code = vl_code_to_plane[plane_code - 1];
+   yoffset = dist_code >> 4;
+   xoffset = 8 - (dist_code & 0xF);
+   dist = yoffset * xsize + xoffset;
+   return (dist >= 1) ? dist : 1;
 }
 
 static int vl_prefix(int c, vbr *br)
@@ -340,15 +431,49 @@ static int vl_prefix(int c, vbr *br)
 
 /* ===== VP8L Pixel Decode ===== */
 
-static uint32_t *vl_decode_pixels(vbr *br, int w, int h)
-{
-   uint32_t *pix;
-   int ccb = 0, ccs = 0, ns[5], i, pi;
-   uint32_t *cc = NULL;
-   vh ht[5];
-   uint8_t *cl;
+/* One Huffman group = 5 trees (green+len / red / blue / alpha / dist). */
+typedef struct { vh t[5]; } vh_group;
 
-   memset(ht, 0, sizeof(ht));
+/* Read a single Huffman group's 5 trees. The green tree's alphabet is
+ * enlarged by the color-cache size (shared across all groups). */
+static int vl_read_group(vbr *br, vh_group *g, int ccs, uint8_t *cl)
+{
+   int ns[5], i;
+   ns[0] = 256 + 24 + ccs; ns[1] = 256; ns[2] = 256; ns[3] = 256; ns[4] = 40;
+   for (i = 0; i < 5; i++)
+   {
+      if (vh_read_codes(br, ns[i], cl) < 0) return -1;
+      if (vh_build(&g->t[i], cl, ns[i], VH_ROOT) < 0) return -1;
+   }
+   return 0;
+}
+
+static void vl_free_group(vh_group *g)
+{
+   int i;
+   for (i = 0; i < 5; i++) vh_free(&g->t[i]);
+}
+
+/* Forward decl: entropy image is itself a VP8L image stream (no transforms,
+ * no meta-Huffman recursion, but may carry its own color cache). */
+static uint32_t *vl_decode_stream(vbr *br, int w, int h, int allow_meta);
+
+/* Decode a spatially-coded ARGB image of size w x h.
+ * allow_meta: if nonzero, a meta-Huffman (entropy) image may select a
+ * different Huffman group per (x >> hbits, y >> hbits) block. Sub-images
+ * (transform data, entropy image) pass allow_meta = 0. */
+static uint32_t *vl_decode_stream(vbr *br, int w, int h, int allow_meta)
+{
+   uint32_t *pix = NULL;
+   uint32_t *huff_img = NULL;
+   vh_group *groups = NULL;
+   uint32_t *cc = NULL;
+   uint8_t *cl = NULL;
+   int ccb = 0, ccs = 0;
+   int hbits = 0, hxs = 0;
+   int num_groups = 1, gi, pi;
+
+   /* --- Color cache (before Huffman codes, per DecodeImageStream) --- */
    if (vbr_read(br, 1))
    {
       ccb = vbr_read(br, 4);
@@ -357,38 +482,71 @@ static uint32_t *vl_decode_pixels(vbr *br, int w, int h)
       cc = (uint32_t*)calloc(ccs, sizeof(uint32_t));
       if (!cc) return NULL;
    }
-   ns[0] = 256 + 24 + ccs; ns[1] = 256; ns[2] = 256; ns[3] = 256; ns[4] = 40;
-   cl = (uint8_t*)malloc(4096);
-   if (!cl) { free(cc); return NULL; }
-   for (i = 0; i < 5; i++)
-   {
-      if (vh_read_codes(br, ns[i], cl) < 0) goto pfail;
-      if (vh_build(&ht[i], cl, ns[i], VH_ROOT) < 0) goto pfail;
-   }
-   pix = (uint32_t*)malloc((size_t)w * h * sizeof(uint32_t));
-   if (!pix) goto pfail;
 
+   /* --- Meta-Huffman (entropy image) --- */
+   if (allow_meta && vbr_read(br, 1))
+   {
+      int hp = 2 + (int)vbr_read(br, 3);   /* MIN_HUFFMAN_BITS + bits(3) */
+      int hys, hpix, i, maxg = 1;
+      hxs = (w + (1 << hp) - 1) >> hp;
+      hys = (h + (1 << hp) - 1) >> hp;
+      hpix = hxs * hys;
+      huff_img = vl_decode_stream(br, hxs, hys, 0);
+      if (!huff_img) { free(cc); return NULL; }
+      hbits = hp;
+      for (i = 0; i < hpix; i++)
+      {
+         int group = (int)((huff_img[i] >> 8) & 0xFFFF);  /* red<<8 | green */
+         huff_img[i] = (uint32_t)group;
+         if (group >= maxg) maxg = group + 1;
+      }
+      num_groups = maxg;
+   }
+
+   /* --- Read the Huffman groups --- */
+   cl = (uint8_t*)malloc(4096);
+   if (!cl) goto sfail;
+   groups = (vh_group*)calloc(num_groups, sizeof(vh_group));
+   if (!groups) goto sfail;
+   for (gi = 0; gi < num_groups; gi++)
+      if (vl_read_group(br, &groups[gi], ccs, cl) < 0) goto sfail;
+
+   pix = (uint32_t*)malloc((size_t)w * h * sizeof(uint32_t));
+   if (!pix) goto sfail;
+
+   /* --- Decode pixels; select group per block from the entropy image --- */
    pi = 0;
    while (pi < w * h)
    {
-      int g = vh_read(&ht[0], br);
-      if (g < 256)
+      int x = pi % w, y = pi / w;
+      vh_group *g;
+      int sym;
+      if (huff_img)
       {
-         int r = vh_read(&ht[1], br);
-         int b = vh_read(&ht[2], br);
-         int a = vh_read(&ht[3], br);
-         uint32_t argb = ((uint32_t)a<<24)|((uint32_t)r<<16)|((uint32_t)g<<8)|(uint32_t)b;
+         int mi = huff_img[hxs * (y >> hbits) + (x >> hbits)];
+         if (mi < 0 || mi >= num_groups) mi = 0;
+         g = &groups[mi];
+      }
+      else
+         g = &groups[0];
+
+      sym = vh_read(&g->t[0], br);
+      if (sym < 256)
+      {
+         int r = vh_read(&g->t[1], br);
+         int b = vh_read(&g->t[2], br);
+         int a = vh_read(&g->t[3], br);
+         uint32_t argb = ((uint32_t)a<<24)|((uint32_t)r<<16)|((uint32_t)sym<<8)|(uint32_t)b;
          pix[pi++] = argb;
          if (cc) cc[(0x1E35A7BDu * argb) >> (32 - ccb)] = argb;
       }
-      else if (g < 256 + 24)
+      else if (sym < 256 + 24)
       {
-         int lc = g - 256;
+         int lc = sym - 256;
          int length = vl_prefix(lc, br);
-         int dc = vh_read(&ht[4], br);
-         int dist = (dc < 40) ? vl_dist(dc, w) : vl_prefix(dc - 2, br) + 38;
+         int dc = vh_read(&g->t[4], br);
+         int dist = vl_plane_to_dist(w, vl_prefix(dc, br));
          int k;
-         if (dist < 1) dist = 1;
          for (k = 0; k < length && pi < w * h; k++)
          {
             int src = pi - dist;
@@ -399,19 +557,32 @@ static uint32_t *vl_decode_pixels(vbr *br, int w, int h)
       }
       else
       {
-         int ci = g - 256 - 24;
+         int ci = sym - 256 - 24;
          pix[pi++] = (cc && ci < ccs) ? cc[ci] : 0xFF000000u;
       }
    }
-   free(cl); free(cc);
-   for (i = 0; i < 5; i++) vh_free(&ht[i]);
+
+   free(cl);
+   free(cc);
+   free(huff_img);
+   for (gi = 0; gi < num_groups; gi++) vl_free_group(&groups[gi]);
+   free(groups);
    return pix;
-pfail:
-   free(cl); free(cc);
-   for (i = 0; i < 5; i++) vh_free(&ht[i]);
+
+sfail:
+   free(cl);
+   free(cc);
+   free(huff_img);
+   if (groups) { for (gi = 0; gi < num_groups; gi++) vl_free_group(&groups[gi]); free(groups); }
+   free(pix);
    return NULL;
 }
 
+/* Back-compat wrapper: sub-images never use meta-Huffman. */
+static uint32_t *vl_decode_pixels(vbr *br, int w, int h)
+{
+   return vl_decode_stream(br, w, h, 0);
+}
 /* ===== VP8L Full Decode with Transforms ===== */
 
 #define XF_PRED 0
@@ -487,7 +658,7 @@ static uint32_t *vl_decode_full(const uint8_t *data, size_t len,
    }
 
    /* Decode main image */
-   pix = vl_decode_pixels(&br, cw, ch);
+   pix = vl_decode_stream(&br, cw, ch, 1);
    if (!pix) goto xfail;
 
    /* Inverse transforms in reverse order */
@@ -552,7 +723,10 @@ static uint32_t *vl_decode_full(const uint8_t *data, size_t len,
                   uint32_t L  = (px2 > 0)            ? pix[py2*cw+px2-1]     : 0xFF000000u;
                   uint32_t T  = (py2 > 0)             ? pix[(py2-1)*cw+px2]   : 0xFF000000u;
                   uint32_t TL = (px2>0 && py2>0)      ? pix[(py2-1)*cw+px2-1] : 0xFF000000u;
-                  uint32_t TR = (px2<cw-1 && py2>0)   ? pix[(py2-1)*cw+px2+1] : 0xFF000000u;
+                  /* TR at the last column wraps to the current row's
+                   * first pixel (libwebp reads upper[x+1] in the flat
+                   * buffer, which is contiguous with the next row). */
+                  uint32_t TR = (py2 > 0)             ? pix[(py2-1)*cw+px2+1] : 0xFF000000u;
                   int bx = px2 >> x->bits, by = py2 >> x->bits;
                   int mode;
                   if (bx >= bw) bx = bw - 1;
@@ -580,15 +754,20 @@ static uint32_t *vl_decode_full(const uint8_t *data, size_t len,
                   int r, g, b2;
                   if (bx >= bw) bx = bw - 1;
                   td2 = td[by * bw + bx];
-                  g2r = (int8_t)((td2 >> 16) & 0xFF);
+                  /* libwebp ColorCodeToMultipliers: green_to_red in the
+                   * BLUE byte, green_to_blue in GREEN, red_to_blue in RED. */
+                  g2r = (int8_t)(td2 & 0xFF);
                   g2b = (int8_t)((td2 >>  8) & 0xFF);
-                  r2b = (int8_t)(td2 & 0xFF);
+                  r2b = (int8_t)((td2 >> 16) & 0xFF);
                   c2 = pix[py2 * cw + px2];
-                  g = (int)((c2 >> 8) & 0xFF);
+                  /* Channel values are SIGNED in the color transform
+                   * (libwebp ColorTransformDelta takes int8_t). */
+                  g = (int)(int8_t)((c2 >> 8) & 0xFF);
                   r = (int)((c2 >> 16) & 0xFF);
                   b2 = (int)(c2 & 0xFF);
                   r = (r + ((g2r * g) >> 5)) & 0xFF;
-                  b2 = (b2 + ((g2b * g) >> 5) + ((r2b * r) >> 5)) & 0xFF;
+                  b2 = b2 + ((g2b * g) >> 5);
+                  b2 = (b2 + ((r2b * (int)(int8_t)r) >> 5)) & 0xFF;
                   pix[py2*cw+px2] = (c2 & 0xFF00FF00u) | ((uint32_t)r << 16) | (uint32_t)b2;
                }
             }
