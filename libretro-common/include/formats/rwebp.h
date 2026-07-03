@@ -44,6 +44,29 @@ void rwebp_free(rwebp_t *rwebp);
 
 rwebp_t *rwebp_alloc(void);
 
+/* ===== Animation (animated WebP / ANMF) =====
+ * Opaque handle to a fully decoded animation. rwebp_anim_decode returns
+ * NULL for non-animated or malformed input, so callers can attempt it
+ * unconditionally and fall back to the still-image path. Frames are
+ * complete, composited RGBA canvases (memory order R,G,B,A). */
+
+typedef struct rwebp_anim rwebp_anim_t;
+
+rwebp_anim_t *rwebp_anim_decode(const uint8_t *buf, size_t len);
+
+void rwebp_anim_free(rwebp_anim_t *anim);
+
+int rwebp_anim_num_frames(const rwebp_anim_t *anim);
+
+void rwebp_anim_get_info(const rwebp_anim_t *anim,
+      unsigned *width, unsigned *height, int *loop_count);
+
+/* Returns the RGBA pixels of frame 'index' (0-based) and, if non-NULL,
+ * writes its display duration in milliseconds. Returns NULL out of range.
+ * The returned pointer is owned by the animation and valid until freed. */
+const uint32_t *rwebp_anim_get_frame(const rwebp_anim_t *anim, int index,
+      int *duration_ms);
+
 RETRO_END_DECLS
 
 #endif

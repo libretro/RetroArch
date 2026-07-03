@@ -2311,6 +2311,293 @@ static uint32_t *rwebp_do(const uint8_t *buf, size_t len,
    return pix;
 }
 
+/* Decode a single ANMF frame payload (the bytes after the 16-byte ANMF
+ * header) into RGBA. Mirrors rwebp_do's lossy/lossless + ALPH handling
+ * but operates on the frame's local chunk list. */
+static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
+      unsigned *ow, unsigned *oh)
+{
+   const uint8_t *fv = NULL, *fl = NULL, *fa = NULL;
+   size_t fvs = 0, fls = 0, fas = 0;
+   size_t sp;
+   uint32_t *pix = NULL;
+   unsigned w = 0, h = 0;
+
+   for (sp = 0; sp + 8 <= sz; )
+   {
+      uint32_t st = rw32(d+sp), ss = rw32(d+sp+4);
+      if (sp + 8 + ss > sz) break;
+      if      (st == RW_CC('V','P','8',' ') && !fv) { fv = d+sp+8; fvs = ss; }
+      else if (st == RW_CC('V','P','8','L') && !fl) { fl = d+sp+8; fls = ss; }
+      else if (st == RW_CC('A','L','P','H') && !fa) { fa = d+sp+8; fas = ss; }
+      sp += 8 + ((ss+1) & ~(size_t)1);
+   }
+
+   if (fl && fls > 0)
+      pix = vl_decode_full(fl, fls, &w, &h);
+   else if (fv && fvs > 0)
+   {
+      pix = vp8_decode(fv, fvs, &w, &h);
+      if (pix && fa && fas > 0)
+      {
+         uint8_t *ap = alph_decode(fa, fas, w, h);
+         if (ap)
+         {
+            size_t k, n = (size_t)w * h;
+            for (k = 0; k < n; k++)
+               pix[k] = (pix[k] & 0x00FFFFFFu) | ((uint32_t)ap[k] << 24);
+            free(ap);
+         }
+      }
+   }
+   if (!pix) return NULL;
+   /* Convert to R,B-swapped (memory R,G,B,A) to match the anim canvas. */
+   {
+      unsigned i, n = w * h;
+      for (i = 0; i < n; i++)
+      {
+         uint32_t px = pix[i];
+         pix[i] = (px & 0xFF00FF00u) | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
+      }
+   }
+   *ow = w; *oh = h;
+   return pix;
+}
+
+/* ===== Animation (ANMF) decoder =====
+ * Decodes an animated WebP into a sequence of fully-composited RGBA
+ * canvas frames plus per-frame durations, following the canvas/blend/
+ * dispose model from the WebP container spec (mirrors libwebp's
+ * anim_decode.c). Each returned frame is a complete canvas ready to be
+ * uploaded as a texture; the caller advances frames on its own clock.
+ *
+ * This lives alongside the still-image path and does not affect it. */
+
+typedef struct
+{
+   uint32_t *pixels;   /* canvas_w * canvas_h, memory order R,G,B,A */
+   int       duration; /* milliseconds; 0 is treated as a single tick */
+} rwebp_frame;
+
+struct rwebp_anim
+{
+   rwebp_frame *frames;
+   int          num_frames;
+   int          canvas_w, canvas_h;
+   int          loop_count;   /* 0 = infinite */
+};
+
+/* Non-premultiplied "src over dst", per libwebp BlendPixelNonPremult.
+ * All pixels are R,G,B,A in memory (little-endian word A,B,G,R). */
+static uint32_t rwebp_blend_px(uint32_t src, uint32_t dst)
+{
+   int src_a = (int)((src >> 24) & 0xFF);
+   int dst_a, dst_fa, blend_a, i;
+   uint32_t scale, out;
+   /* libwebp BlendPixelRowNonPremult leaves fully-opaque source pixels
+    * untouched; running the blend on them would round each channel down
+    * by one. */
+   if (src_a == 0xFF) return src;
+   if (src_a == 0)    return dst;
+   dst_a  = (int)((dst >> 24) & 0xFF);
+   dst_fa = (dst_a * (256 - src_a)) >> 8;
+   blend_a = src_a + dst_fa;
+   if (blend_a == 0) return 0;
+   scale = (1UL << 24) / (uint32_t)blend_a;
+   out = (uint32_t)blend_a << 24;
+   for (i = 0; i < 3; i++)
+   {
+      int sc = (int)((src >> (i*8)) & 0xFF);
+      int dc = (int)((dst >> (i*8)) & 0xFF);
+      uint32_t bu = (uint32_t)(sc * src_a + dc * dst_fa);
+      uint32_t v  = (bu * scale) >> 24;
+      out |= (v & 0xFF) << (i*8);
+   }
+   return out;
+}
+
+static int rwebp_full_frame(int w, int h, int cw, int ch)
+{
+   return (w == cw && h == ch);
+}
+
+void rwebp_anim_free(rwebp_anim_t *a)
+{
+   int i;
+   if (!a) return;
+   if (a->frames)
+   {
+      for (i = 0; i < a->num_frames; i++)
+         free(a->frames[i].pixels);
+      free(a->frames);
+   }
+   free(a);
+}
+
+int rwebp_anim_num_frames(const rwebp_anim_t *a)
+{ return a ? a->num_frames : 0; }
+
+void rwebp_anim_get_info(const rwebp_anim_t *a,
+      unsigned *width, unsigned *height, int *loop_count)
+{
+   if (!a) return;
+   if (width)      *width      = (unsigned)a->canvas_w;
+   if (height)     *height     = (unsigned)a->canvas_h;
+   if (loop_count) *loop_count = a->loop_count;
+}
+
+const uint32_t *rwebp_anim_get_frame(const rwebp_anim_t *a, int index,
+      int *duration_ms)
+{
+   if (!a || index < 0 || index >= a->num_frames) return NULL;
+   if (duration_ms) *duration_ms = a->frames[index].duration;
+   return a->frames[index].pixels;
+}
+
+/* Parse container-level animation metadata and the list of ANMF frames.
+ * Returns 0 on failure (not animated, malformed, or allocation error). */
+rwebp_anim_t *rwebp_anim_decode(const uint8_t *buf, size_t len)
+{
+   rwebp_anim_t *a;
+   uint32_t *canvas = NULL, *disposed = NULL;
+   int cw = 0, ch = 0, loop = 0;
+   size_t p;
+   int cap = 0, prev_disp_bg = 0, prev_full = 0, prev_key = 0;
+   int prev_x = 0, prev_y = 0, prev_w = 0, prev_h = 0;
+
+   if (len < 12 || rw32(buf) != RW_CC('R','I','F','F')
+       || rw32(buf+8) != RW_CC('W','E','B','P'))
+      return NULL;
+
+   /* Canvas size + loop count come from VP8X / ANIM. */
+   for (p = 12; p + 8 <= len; )
+   {
+      uint32_t tag = rw32(buf+p), sz = rw32(buf+p+4);
+      const uint8_t *d = buf + p + 8;
+      if (p + 8 + sz > len) break;
+      if (tag == RW_CC('V','P','8','X') && sz >= 10)
+      {
+         cw = (int)(((uint32_t)d[4] | ((uint32_t)d[5]<<8) | ((uint32_t)d[6]<<16)) + 1);
+         ch = (int)(((uint32_t)d[7] | ((uint32_t)d[8]<<8) | ((uint32_t)d[9]<<16)) + 1);
+      }
+      else if (tag == RW_CC('A','N','I','M') && sz >= 6)
+         loop = (int)((uint32_t)d[4] | ((uint32_t)d[5]<<8));
+      p += 8 + ((sz+1) & ~(size_t)1);
+   }
+   if (cw <= 0 || ch <= 0 || cw > 16384 || ch > 16384)
+      return NULL;
+
+   a = (rwebp_anim_t*)calloc(1, sizeof(*a));
+   if (!a) return NULL;
+   a->canvas_w = cw; a->canvas_h = ch; a->loop_count = loop;
+
+   canvas   = (uint32_t*)calloc((size_t)cw * ch, sizeof(uint32_t));
+   disposed = (uint32_t*)calloc((size_t)cw * ch, sizeof(uint32_t));
+   if (!canvas || !disposed) goto afail;
+
+   for (p = 12; p + 8 <= len; )
+   {
+      uint32_t tag = rw32(buf+p), sz = rw32(buf+p+4);
+      const uint8_t *d = buf + p + 8;
+      if (p + 8 + sz > len) break;
+      if (tag == RW_CC('A','N','M','F') && sz >= 16)
+      {
+         int fx = (int)(((uint32_t)d[0] | ((uint32_t)d[1]<<8) | ((uint32_t)d[2]<<16)) * 2);
+         int fy = (int)(((uint32_t)d[3] | ((uint32_t)d[4]<<8) | ((uint32_t)d[5]<<16)) * 2);
+         int fw = (int)(((uint32_t)d[6] | ((uint32_t)d[7]<<8) | ((uint32_t)d[8]<<16)) + 1);
+         int fh = (int)(((uint32_t)d[9] | ((uint32_t)d[10]<<8) | ((uint32_t)d[11]<<16)) + 1);
+         int dur = (int)((uint32_t)d[12] | ((uint32_t)d[13]<<8) | ((uint32_t)d[14]<<16));
+         int disp_bg = (d[15] & 1) ? 1 : 0;   /* dispose to background */
+         int no_blend = (d[15] & 2) ? 1 : 0;  /* overwrite instead of blend */
+         unsigned sub_w = 0, sub_h = 0;
+         uint32_t *sub;
+         int is_key, frame_num = a->num_frames + 1;
+         int x, y;
+
+         /* Bounds: the frame rectangle must lie within the canvas. */
+         if (fx < 0 || fy < 0 || fw <= 0 || fh <= 0
+               || fx + fw > cw || fy + fh > ch)
+         { p += 8 + ((sz+1) & ~(size_t)1); continue; }
+
+         /* Decode this frame's sub-image (VP8/VP8L + optional ALPH). */
+         sub = rwebp_anim_frame_pixels(d + 16, sz - 16, &sub_w, &sub_h);
+         if (!sub)
+         { p += 8 + ((sz+1) & ~(size_t)1); continue; }
+         if ((int)sub_w != fw || (int)sub_h != fh)
+         { free(sub); p += 8 + ((sz+1) & ~(size_t)1); continue; }
+
+         /* Key-frame test (libwebp IsKeyFrame): clears vs. inherits. */
+         if (frame_num == 1)
+            is_key = 1;
+         else if (no_blend && rwebp_full_frame(fw, fh, cw, ch))
+            is_key = 1;
+         else
+            is_key = prev_disp_bg && (prev_full || prev_key);
+
+         if (is_key)
+            memset(canvas, 0, (size_t)cw * ch * sizeof(uint32_t));
+         else
+            memcpy(canvas, disposed, (size_t)cw * ch * sizeof(uint32_t));
+
+         /* Composite the sub-image onto the canvas. */
+         for (y = 0; y < fh; y++)
+         {
+            uint32_t *crow = canvas + (size_t)(fy + y) * cw + fx;
+            const uint32_t *srow = sub + (size_t)y * fw;
+            if (no_blend)
+               memcpy(crow, srow, (size_t)fw * sizeof(uint32_t));
+            else
+               for (x = 0; x < fw; x++)
+                  crow[x] = rwebp_blend_px(srow[x], crow[x]);
+         }
+         free(sub);
+
+         /* Emit the composited canvas as this frame. */
+         if (a->num_frames >= cap)
+         {
+            int ncap = cap ? cap * 2 : 8;
+            rwebp_frame *nf = (rwebp_frame*)realloc(a->frames,
+                  (size_t)ncap * sizeof(rwebp_frame));
+            if (!nf) goto afail;
+            a->frames = nf; cap = ncap;
+         }
+         a->frames[a->num_frames].pixels =
+               (uint32_t*)malloc((size_t)cw * ch * sizeof(uint32_t));
+         if (!a->frames[a->num_frames].pixels) goto afail;
+         memcpy(a->frames[a->num_frames].pixels, canvas,
+               (size_t)cw * ch * sizeof(uint32_t));
+         a->frames[a->num_frames].duration = dur;
+         a->num_frames++;
+
+         /* Prepare the disposed canvas for the next frame. */
+         memcpy(disposed, canvas, (size_t)cw * ch * sizeof(uint32_t));
+         if (disp_bg)
+         {
+            for (y = 0; y < fh; y++)
+               memset(disposed + (size_t)(fy + y) * cw + fx, 0,
+                     (size_t)fw * sizeof(uint32_t));
+         }
+         prev_disp_bg = disp_bg;
+         prev_full    = rwebp_full_frame(fw, fh, cw, ch);
+         prev_key     = is_key;
+         prev_x = fx; prev_y = fy; prev_w = fw; prev_h = fh;
+         (void)prev_x; (void)prev_y; (void)prev_w; (void)prev_h;
+      }
+      p += 8 + ((sz+1) & ~(size_t)1);
+   }
+
+   free(canvas);   canvas   = NULL;
+   free(disposed); disposed = NULL;
+   if (a->num_frames == 0) goto afail;
+   return a;
+
+afail:
+   free(canvas);
+   free(disposed);
+   rwebp_anim_free(a);
+   return NULL;
+}
+
 /* ===== Public API ===== */
 
 struct rwebp { uint8_t *buff_data; size_t buff_len; uint32_t *output_image; };
