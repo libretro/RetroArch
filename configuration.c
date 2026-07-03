@@ -1903,7 +1903,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("switch_cec",                    &settings->bools.switch_cec, true, DEFAULT_SWITCH_CEC, false);
    SETTING_BOOL("bluetooth_ertm_disable",        &settings->bools.bluetooth_ertm_disable, true, DEFAULT_BLUETOOTH_ERTM, false);
 #endif
-   SETTING_BOOL("audio_enable",                  &settings->bools.audio_enable, true, DEFAULT_AUDIO_ENABLE, false);
    SETTING_BOOL("audio_sync",                    &settings->bools.audio_sync, true, DEFAULT_AUDIO_SYNC, false);
    SETTING_BOOL("audio_rate_control",            &settings->bools.audio_rate_control, true, DEFAULT_RATE_CONTROL, false);
    SETTING_BOOL("audio_enable_menu_ok",          &settings->bools.audio_enable_menu_ok, true, DEFAULT_AUDIO_ENABLE_MENU_OK, false);
@@ -1967,6 +1966,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_audio_enable.h"
 #include "settings/settings_def_ui_menubar.h"
 #include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
@@ -2345,6 +2345,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_audio_enable.h"
 #include "settings/settings_def_ui_menubar.h"
 #include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
@@ -2662,6 +2663,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_audio_enable.h"
 #include "settings/settings_def_ui_menubar.h"
 #include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
@@ -2954,6 +2956,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_audio_enable.h"
 #include "settings/settings_def_ui_menubar.h"
 #include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"

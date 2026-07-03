@@ -75,7 +75,6 @@
 #define MENU_ENUM_LABEL_AUDIO_DRIVER_NULL_STR "null"
 #define MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_STR "audio_dsp_plugin"
 #define MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_REMOVE_STR "audio_dsp_plugin_remove"
-#define MENU_ENUM_LABEL_AUDIO_ENABLE_STR "audio_enable"
 #define MENU_ENUM_LABEL_AUDIO_FILTER_DIR_STR "audio_filter_dir"
 #define MENU_ENUM_LABEL_AUDIO_LATENCY_STR "audio_latency"
 #define MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW_STR "audio_max_timing_skew"
