@@ -33,11 +33,13 @@ S_BOOL(menu_show_dump_disc, MENU_SHOW_DUMP_DISC,
       "Show the 'Dump Disc' option in the Main Menu.")
 #endif
 #ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
 S_BOOL(menu_show_eject_disc, MENU_SHOW_EJECT_DISC,
       "menu_show_eject_disc",
       DEFAULT_MENU_SHOW_EJECT_DISC, SD_FLAG_NONE, 0, 0,
       "Show 'Eject Disc'",
       "Show the 'Eject Disc' option in the Main Menu.")
+#endif
 #endif
 S_BOOL(menu_show_information, MENU_SHOW_INFORMATION,
       "menu_show_information",
