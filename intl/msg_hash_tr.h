@@ -1163,8 +1163,10 @@ static const struct
    char s_84cf9517[187];
    char s_543b5a62[30];
    char s_3d233cd0[75];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_1d39f4b7[31];
    char s_a158a19e[37];
+#endif
    char s_749f0441[9];
    char s_1c0f54f0[19];
    char s_a779dce9[28];
@@ -1412,6 +1414,8 @@ static const struct
    char s_802613d6[37];
    char s_62af62ac[36];
    char s_6b5b3e1a[59];
+   char s_f4341e25[42];
+   char s_ab839b13[149];
    char s_3e2bdc96[29];
    char s_00961284[149];
    char s_f89e1cbc[61];
@@ -1441,8 +1445,6 @@ static const struct
    char s_5bb9bd63[7];
    char s_676ad14c[38];
    char s_782ab67a[63];
-   char s_f4341e25[42];
-   char s_ab839b13[149];
    char s_33a76811[119];
    char s_a4d3948f[22];
    char s_7f75b005[47];
@@ -1730,10 +1732,10 @@ static const struct
    char s_5b0fc8c2[67];
    char s_cc846b8d[26];
    char s_0cd2543b[78];
-   char s_3425a408[18];
-   char s_d564beb6[64];
    char s_2897f730[22];
    char s_3848eade[44];
+   char s_3425a408[18];
+   char s_d564beb6[64];
    char s_d48223f9[23];
    char s_da518d67[142];
    char s_8594979d[24];
@@ -2211,10 +2213,12 @@ static const struct
    char s_5183d530[24];
    char s_d190cd32[23];
    char s_f3302ed7[18];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_870cb022[43];
    char s_96bda3d0[55];
    char s_8fa5e6c4[24];
    char s_4f627df2[43];
+#endif
    char s_c64294aa[24];
    char s_af2a7718[49];
    char s_40e7aacd[5];
@@ -2285,6 +2289,10 @@ static const struct
    char s_08e9410c[17];
    char s_a9c8430e[22];
    char s_afac733c[53];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_ec9ccdc3[21];
+   char s_2ceab671[161];
+#endif
    char s_d3906073[58];
    char s_934cf7a1[93];
    char s_138c1cdf[195];
@@ -2316,8 +2324,6 @@ static const struct
    char s_378ad7dc[192];
    char s_42066550[8];
    char s_9834febe[444];
-   char s_ec9ccdc3[21];
-   char s_2ceab671[161];
    char s_b8e8ddb7[25];
    char s_c9a8c2e5[45];
    char s_1f27c9a8[26];
@@ -2570,12 +2576,14 @@ static const struct
    char s_4047c726[20];
    char s_6f56b5d3[17];
    char s_875b5c6b[6];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_dd8ce9f3[14];
+   char s_e915aba1[35];
    char s_95c85ee0[29];
    char s_039b790e[65];
-   char s_dd8ce9f3[14];
    char s_6ca737be[26];
    char s_0bd86aec[59];
-   char s_e915aba1[35];
+#endif
    char s_a5843c01[29];
    char s_6ea6ac6f[210];
    char s_615c8cdc[19];
@@ -2602,10 +2610,10 @@ static const struct
    char s_d938c460[87];
    char s_60864187[45];
    char s_29a8b1f5[272];
-   char s_b235ee15[20];
-   char s_78a4033f[19];
    char s_d05c8ee3[29];
    char s_87ac0bd1[80];
+   char s_b235ee15[20];
+   char s_78a4033f[19];
    char s_26e9cde7[40];
    char s_32728f95[98];
    char s_1b2ee6c4[30];
@@ -3621,9 +3629,11 @@ static const struct
    char s_ec502f2a[26];
    char s_fc0122d8[161];
    char s_af6007a1[17];
-   char s_ce89e465[20];
-   char s_0e85a0d1[46];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d042d680[11];
+   char s_ce89e465[20];
+#endif
+   char s_0e85a0d1[46];
    char s_d458f013[28];
    char s_e9f0dd82[33];
    char s_fcf05466[12];
@@ -5566,8 +5576,10 @@ static const struct
    "Her Zaman \303\207ekirdekleri \303\226ner",
    "Bir \303\247ekirdek el ile y\303\274klendi\304\237inde bile kullan\304\261labilir \303\247ekirde"
    "k \303\266ner.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Dahili Medya Oynat\304\261c\304\261 Kullan",
    "Dahili Resim G\303\266r\303\274nt\303\274leyici Kullan",
+#endif
    "Geri Sar",
    "Kare Zaman Sayac\304\261",
    "H\304\261zl\304\261 \304\260leri Sarma Oran\304\261",
@@ -5946,6 +5958,10 @@ static const struct
    "Men\303\274 etkinse i\303\247eri\304\237i duraklat\304\261r.",
    "Etkin De\304\237ilken \304\260\303\247eri\304\237i Duraklat",
    "RetroArch etkin pencere olmad\304\261\304\237\304\261nda i\303\247eri\304\237i duraklat.",
+   "Masa\303\274st\303\274 Bile\305\237imi Devre D\304\261\305\237\304\261 B\304\261rak",
+   "Pencere y\303\266neticileri, g\303\266rsel efektleri uygulamak, yan\304\261t vermeyen pencereler"
+   "i tespit etmek i\303\247in di\304\237er \305\237eylerin yan\304\261 s\304\261ra bile\305\237imi "
+   "kullan\304\261r.",
    "\304\260\303\247eri\304\237i Kapat\304\261rken \303\207\304\261k",
    "\304\260\303\247eri\304\237i kapat\304\261rken RetroArch'tan otomatik olarak \303\247\304\261k"
    "\304\261n. 'CLI' yaln\304\261zca i\303\247erik komut sat\304\261r\304\261 arac\304\261l\304\261"
@@ -5990,10 +6006,6 @@ static const struct
    "Girdap",
    "Men\303\274 Ekran Koruyucu Animasyon H\304\261z\304\261",
    "Men\303\274 ekran koruyucu animasyon efektinin h\304\261z\304\261n\304\261 ayarlay\304\261n.",
-   "Masa\303\274st\303\274 Bile\305\237imi Devre D\304\261\305\237\304\261 B\304\261rak",
-   "Pencere y\303\266neticileri, g\303\266rsel efektleri uygulamak, yan\304\261t vermeyen pencereler"
-   "i tespit etmek i\303\247in di\304\237er \305\237eylerin yan\304\261 s\304\261ra bile\305\237imi "
-   "kullan\304\261r.",
    "Kompozisyonu zorla devre d\304\261\305\237\304\261 b\304\261rak\304\261n. Devre d\304\261\305"
    "\237\304\261 b\304\261rakma \305\237imdilik yaln\304\261zca Windows Vista/7'de ge\303\247erlidir"
    ".",
@@ -6361,10 +6373,10 @@ static const struct
    "Skor Tablosu Takip\303\247ileri",
    "\304\260zleyicileri ekranda aktif skor tablolar\304\261n\304\261n mevcut de\304\237eri ile g\303"
    "\266sterir.",
-   "Giri\305\237 Mesajlar\304\261",
-   "RetroAchievements hesap giri\305\237iyle ilgili mesajlar\304\261 g\303\266sterir.",
    "Ayr\304\261nt\304\261l\304\261 Mesajlar",
    "Ek te\305\237his ve hata mesajlar\304\261n\304\261 g\303\266sterir.",
+   "Giri\305\237 Mesajlar\304\261",
+   "RetroAchievements hesap giri\305\237iyle ilgili mesajlar\304\261 g\303\266sterir.",
    "Netplay Herkese A\303\247\304\261k",
    "Netplay oturumunda oyunlar\304\261 kimler g\303\266rebilsin. Oynad\304\261\304\237\304\261n\304"
    "\261z oyun genel sunucu odalar\304\261 \303\274st\303\274ne g\303\266r\303\274n\303\274r ve oyun"
@@ -7010,10 +7022,12 @@ static const struct
    "En \303\234ste Yeni Hile Ekle",
    "En Alta Yeni Hile Ekle",
    "T\303\274m Hileleri Sil",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Oyun Y\303\274klenirken Hileleri Otomatik Uygula",
    "Oyun y\303\274klendi\304\237inde hileleri otomatik olarak uygular.",
    "Sonra Uygula De\304\237i\305\237tir",
    "De\304\237i\305\237iklik sonras\304\261 hemen hileyi uygula.",
+#endif
    "De\304\237i\305\237iklikleri Uygula",
    "Hile de\304\237i\305\237iklikleri derhal i\305\237leme girecektir.",
    "Hile",
@@ -7086,6 +7100,12 @@ static const struct
    "Yeni Disk Y\303\274kle",
    "Video G\303\266lgelendirici",
    "Video g\303\266lgelendirici i\305\237 \303\247izgisini etkinle\305\237tirin.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Basit Haz\304\261r Ayarlar",
+   "Y\303\274klenen orijinal \303\266n ayara bir ba\304\237lant\304\261 i\303\247eren ve yaln\304"
+   "\261zca yapt\304\261\304\237\304\261n\304\261z parametre de\304\237i\305\237ikliklerini i\303"
+   "\247eren bir g\303\266lgelendirici \303\266n ayar\304\261n\304\261 kaydeder.",
+#endif
    "De\304\237i\305\237iklikler i\303\247in G\303\266lgelendirici Dosyalar\304\261n\304\261 \304\260"
    "zle",
    "Diskteki g\303\266lgelendirici dosyalar\304\261nda yap\304\261lan de\304\237i\305\237iklikleri o"
@@ -7161,10 +7181,6 @@ static const struct
    "\261r Video ayarlar\304\261 alt\304\261nda.\n'Varsay\304\261lan' ayarlan\304\261rsa, son ge\303"
    "\247i\305\237 olup olmamas\304\261na ba\304\237l\304\261 olarak 1x \303\266l\303\247ekleme veya "
    "tam ekrana geni\305\237letme kullan\304\261l\304\261r.",
-   "Basit Haz\304\261r Ayarlar",
-   "Y\303\274klenen orijinal \303\266n ayara bir ba\304\237lant\304\261 i\303\247eren ve yaln\304"
-   "\261zca yapt\304\261\304\237\304\261n\304\261z parametre de\304\237i\305\237ikliklerini i\303"
-   "\247eren bir g\303\266lgelendirici \303\266n ayar\304\261n\304\261 kaydeder.",
    "Mevcut \303\226n Ayar\304\261 Kaydet",
    "Mevcut g\303\266lgelendirici \303\266n ayar\304\261n\304\261 kaydet.",
    "\303\226n Ayar\304\261 Farkl\304\261 Kaydet",
@@ -7452,14 +7468,16 @@ static const struct
    "SS:DD:SN (\303\226\303\226/\303\226S)",
    "SS:DD (\303\226\303\226/\303\226S)",
    "\303\226nce",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Kenar Dolgusu",
+   "Men\303\274de kenarl\304\261\304\237\304\261 g\303\266r\303\274nt\303\274le.",
    "Arkaplan Dolgu Kal\304\261nl\304\261\304\237\304\261",
    "Men\303\274 arka plan dama tahtas\304\261 deseninin kal\304\261nl\304\261\304\237\304\261n\304"
    "\261 art\304\261r.",
-   "Kenar Dolgusu",
    "Kenar Dolgu Kal\304\261nl\304\261\304\237\304\261",
    "Men\303\274 kenarl\304\261\304\237\304\261 dama tahtas\304\261 kal\304\261nl\304\261\304\237\304"
    "\261n\304\261 artt\304\261r.",
-   "Men\303\274de kenarl\304\261\304\237\304\261 g\303\266r\303\274nt\303\274le.",
+#endif
    "Tam Geni\305\237lik D\303\274zeni Kullan",
    "Kullan\304\261labilir ekran alan\304\261n\304\261 en iyi \305\237ekilde kullanmak i\303\247in me"
    "n\303\274 girdilerini yeniden boyutland\304\261r ve yerle\305\237tir. Klasik sabit geni\305\237l"
@@ -7513,11 +7531,11 @@ static const struct
    "\303\274lenmesini etkinle\305\237tirin. RetroPad Select ile de\304\237i\305\237tirilebilir. Devr"
    "e d\304\261\305\237\304\261 b\304\261rak\304\261ld\304\261\304\237\304\261nda, k\303\274\303\247"
    "\303\274k resimler RetroPad Start ile tam ekran olarak de\304\237i\305\237tirilebilir.",
-   "\303\234st K\303\274\303\247\303\274k Resim",
-   "Alt K\303\274\303\247\303\274k Resim",
    "Resimlerin Yerini De\304\237i\305\237tir",
    "'\303\234st K\303\274\303\247\303\274k Resim' ve 'Alt K\303\274\303\247\303\274k Resim' ekran ko"
    "numlar\304\261n\304\261 de\304\237i\305\237tirir.",
+   "\303\234st K\303\274\303\247\303\274k Resim",
+   "Alt K\303\274\303\247\303\274k Resim",
    "K\303\274\303\247\303\274k Resim \303\226l\303\247eklendirme Y\303\266ntemi",
    "B\303\274y\303\274k k\303\274\303\247\303\274k resimleri ekrana s\304\261\304\237d\304\261rmak i"
    "\303\247in k\303\274\303\247\303\274lt\303\274rken yeniden \303\266rnekleme y\303\266ntemi.",
@@ -8730,9 +8748,11 @@ static const struct
    "\274 ayarlar\304\261n\304\261n etkinle\305\237tirilmesi i\303\247in gereklidir (\303\266rne\304"
    "\237in, men\303\274 s\303\274r\303\274c\303\274s\303\274n\303\274 de\304\237i\305\237tirirken).",
    "Kareleri Engelle",
-   "\303\226n Dokunma Tercihi",
-   "Arka dokunu\305\237 yerine \303\266n dokunu\305\237u kullan\304\261n.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Dokunmatik",
+   "\303\226n Dokunma Tercihi",
+#endif
+   "Arka dokunu\305\237 yerine \303\266n dokunu\305\237u kullan\304\261n.",
    "Klavye Kontrolc\303\274 E\305\237lemesi",
    "Klavye Kontrolc\303\274 E\305\237leme T\303\274r\303\274",
    "Ufak Klavye",
@@ -8919,7 +8939,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170466u
+      (sizeof(msg_hash_tr_blob) == (169792u
 #ifdef HAVE_LAKKA
        + 14u
        + 48u
@@ -9029,6 +9049,10 @@ typedef char msg_hash_tr_blob_check[
        + 62u
        + 31u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 31u
+       + 37u
+#endif
 #if defined(ANDROID)
        + 190u
 #endif
@@ -9063,7 +9087,21 @@ typedef char msg_hash_tr_blob_check[
        + 40u
 #endif
 #ifndef SETTINGS_DEF_CONFIG_PASS
+       + 43u
+       + 55u
+       + 24u
+       + 43u
+       + 21u
+       + 161u
+       + 14u
+       + 35u
+       + 29u
+       + 65u
+       + 26u
+       + 59u
        + 30u
+       + 11u
+       + 20u
 #endif
 #ifdef HAVE_LIBNX
        + 19u
@@ -10335,8 +10373,10 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -10584,6 +10624,8 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -10613,8 +10655,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
@@ -10902,10 +10942,10 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -11382,10 +11422,12 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -11456,6 +11498,10 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
@@ -11486,8 +11532,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCALE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -11740,12 +11784,14 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -11772,10 +11818,10 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
@@ -12791,9 +12837,11 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,

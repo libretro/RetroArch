@@ -388,7 +388,9 @@ static const struct
    char s_5ae6337d[67];
    char s_a624fe50[19];
    char s_074440cb[22];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_a158a19e[36];
+#endif
    char s_749f0441[10];
    char s_74dcbca5[8];
    char s_3ea80887[6];
@@ -1392,7 +1394,9 @@ static const struct
    "Carga autom\303\241ticamente'l puntu de guard\303\241u autom\303\241ticu nel aniciu.",
    "Rexistru detall\303\241u",
    "Rexistrar nun ficheru",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Usar el visor d'im\303\241xenes integr\303\241u",
+#endif
    "Rebobinar",
    "Calid\303\241",
    "Filos",
@@ -2026,7 +2030,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24223u
+      (sizeof(msg_hash_ast_blob) == (24187u
 #ifdef HAVE_LAKKA
        + 40u
 #endif
@@ -2068,6 +2072,9 @@ typedef char msg_hash_ast_blob_check[
 #ifdef HAVE_MIST
        + 20u
        + 40u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 36u
 #endif
 #ifdef _3DS
        + 60u
@@ -2483,7 +2490,9 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,

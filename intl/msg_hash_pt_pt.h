@@ -664,7 +664,9 @@ static const struct
    char s_97379d00[25];
    char s_64702d9a[35];
    char s_2841f912[27];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_1d39f4b7[40];
+#endif
    char s_749f0441[36];
    char s_8a8a4bd7[292];
    char s_f02f73fc[36];
@@ -712,6 +714,7 @@ static const struct
    char s_4b582a0b[38];
    char s_4b582a0c[38];
    char s_ceb820ad[11];
+   char s_f4341e25[47];
    char s_e829b8da[33];
    char s_aa93eec8[101];
    char s_c561b96e[32];
@@ -724,7 +727,6 @@ static const struct
    char s_68664e16[20];
    char s_55d6cc44[43];
    char s_bd50c8e2[5];
-   char s_f4341e25[47];
    char s_a4d3948f[45];
    char s_260261d6[13];
    char s_302fdd56[13];
@@ -1312,8 +1314,10 @@ static const struct
    char s_2f169651[16];
    char s_ec502f2a[20];
    char s_af6007a1[20];
-   char s_ce89e465[23];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d042d680[23];
+   char s_ce89e465[23];
+#endif
    char s_fcf05466[23];
 #ifdef HAVE_LAKKA
    char s_0d83eb84[17];
@@ -2160,7 +2164,9 @@ static const struct
    "Contadores de desempenhp",
    "Extens\303\265es de filtro desconhecidas",
    "Filtrar pelo n\303\272cleo atual",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Usar o reprodutor multim\303\251dia integrado",
+#endif
    "Fun\303\247\303\243o de retrocedimento do tempo",
    "A taxa m\303\241xima na qual o conte\303\272do ser\303\241 executado quando for utilizada a fun"
    "\303\247\303\243o de avan\303\247o-r\303\241pido (ex: 5.0x para conte\303\272dos em 60fps, exist"
@@ -2215,6 +2221,7 @@ static const struct
    "Notifica\303\247\303\243o no ecr\303\243 da posi\303\247\303\243o X",
    "Notifica\303\247\303\243o no ecr\303\243 da posi\303\247\303\243o Y",
    "Apar\303\252ncia",
+   "Desativar composi\303\247\303\243o do ambiente de trabalho",
    "Envolver em torno da navega\303\247\303\243o",
    "Envolver o in\303\255cio e/ou o final, caso o limite da lista seja alcan\303\247ado horizontal o"
    "u verticalmente.",
@@ -2231,7 +2238,6 @@ static const struct
    "Tarefas segmentadas",
    "Executar tarefas numa thread independente.",
    "Neve",
-   "Desativar composi\303\247\303\243o do ambiente de trabalho",
    "Ativar assistente de interface do utilizador",
    "Menu r\303\241pido",
    "Defini\303\247\303\265es",
@@ -2885,8 +2891,10 @@ static const struct
    "Usar Modo PAL60",
    "Reiniciar RetroArch",
    "Bloquear fotogramas",
-   "Preferir toque frontal",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Ativar fun\303\247\303\243o t\303\241til",
+   "Preferir toque frontal",
+#endif
    "Ativar teclado pequeno",
 #ifdef HAVE_LAKKA
    "Ativar Bluetooth",
@@ -2930,7 +2938,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (54816u
+      (sizeof(msg_hash_pt_pt_blob) == (54730u
 #ifdef HAVE_LAKKA
        + 13u
        + 44u
@@ -2977,6 +2985,9 @@ typedef char msg_hash_pt_pt_blob_check[
        + 19u
        + 33u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 40u
+#endif
 #ifdef HAVE_MIST
        + 10u
        + 16u
@@ -2984,6 +2995,8 @@ typedef char msg_hash_pt_pt_blob_check[
 #endif
 #ifndef SETTINGS_DEF_CONFIG_PASS
        + 28u
+       + 23u
+       + 23u
 #endif
 #ifdef HAVE_LAKKA
        + 17u
@@ -3661,7 +3674,9 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -3709,6 +3724,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
@@ -3721,7 +3737,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
@@ -4309,8 +4324,10 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,

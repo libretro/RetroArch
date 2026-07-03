@@ -1266,10 +1266,12 @@ static const struct
    char s_84cf9517[208];
    char s_543b5a62[24];
    char s_3d233cd0[75];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_1d39f4b7[35];
    char s_62584165[59];
    char s_a158a19e[49];
    char s_611538cc[68];
+#endif
    char s_749f0441[9];
    char s_7d4adfaf[39];
    char s_1c0f54f0[38];
@@ -1526,6 +1528,8 @@ static const struct
    char s_802613d6[44];
    char s_62af62ac[49];
    char s_6b5b3e1a[74];
+   char s_f4341e25[40];
+   char s_ab839b13[131];
    char s_3e2bdc96[28];
    char s_00961284[123];
    char s_f89e1cbc[57];
@@ -1555,8 +1559,6 @@ static const struct
    char s_5bb9bd63[8];
    char s_676ad14c[61];
    char s_782ab67a[86];
-   char s_f4341e25[40];
-   char s_ab839b13[131];
    char s_33a76811[90];
    char s_7f75b005[43];
    char s_ad523771[89];
@@ -1857,10 +1859,10 @@ static const struct
    char s_5b0fc8c2[79];
    char s_cc846b8d[40];
    char s_0cd2543b[110];
-   char s_3425a408[29];
-   char s_d564beb6[84];
    char s_2897f730[20];
    char s_3848eade[51];
+   char s_3425a408[29];
+   char s_d564beb6[84];
    char s_d48223f9[38];
    char s_da518d67[158];
    char s_8594979d[36];
@@ -2373,10 +2375,12 @@ static const struct
    char s_d774fd60[29];
    char s_f3302ed7[23];
    char s_11577805[26];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_870cb022[59];
    char s_96bda3d0[57];
    char s_8fa5e6c4[18];
    char s_4f627df2[55];
+#endif
    char s_c64294aa[18];
    char s_af2a7718[49];
    char s_40e7aacd[6];
@@ -2452,6 +2456,10 @@ static const struct
    char s_bed75ef8[196];
    char s_a9c8430e[18];
    char s_afac733c[40];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_ec9ccdc3[23];
+   char s_2ceab671[136];
+#endif
    char s_d3906073[35];
    char s_934cf7a1[73];
    char s_138c1cdf[166];
@@ -2481,8 +2489,6 @@ static const struct
    char s_378ad7dc[179];
    char s_42066550[7];
    char s_9834febe[501];
-   char s_ec9ccdc3[23];
-   char s_2ceab671[136];
    char s_b8e8ddb7[34];
    char s_c9a8c2e5[46];
    char s_1f27c9a8[29];
@@ -2738,12 +2744,14 @@ static const struct
    char s_d293762b[28];
    char s_35b61838[25];
    char s_875b5c6b[6];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_dd8ce9f3[16];
+   char s_e915aba1[26];
    char s_95c85ee0[15];
    char s_039b790e[61];
-   char s_dd8ce9f3[16];
    char s_6ca737be[17];
    char s_0bd86aec[64];
-   char s_e915aba1[26];
+#endif
    char s_a5843c01[29];
    char s_6ea6ac6f[197];
    char s_615c8cdc[14];
@@ -2770,12 +2778,12 @@ static const struct
    char s_d938c460[109];
    char s_60864187[49];
    char s_29a8b1f5[260];
+   char s_d05c8ee3[23];
+   char s_87ac0bd1[63];
    char s_b235ee15[19];
    char s_bae1c983[132];
    char s_78a4033f[19];
    char s_7e88336d[132];
-   char s_d05c8ee3[23];
-   char s_87ac0bd1[63];
    char s_26e9cde7[32];
    char s_32728f95[84];
    char s_1b2ee6c4[30];
@@ -3799,9 +3807,11 @@ static const struct
    char s_ec502f2a[20];
    char s_fc0122d8[134];
    char s_af6007a1[22];
-   char s_ce89e465[41];
-   char s_0e85a0d1[56];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d042d680[8];
+   char s_ce89e465[41];
+#endif
+   char s_0e85a0d1[56];
    char s_d458f013[46];
    char s_e9f0dd82[55];
    char s_fcf05466[13];
@@ -5686,10 +5696,12 @@ static const struct
    "eterminat en reiniciar RetroArch.",
    "Suggereix nuclis sempre",
    "Suggereix tots els nuclis disponibles quen es carrega un nucli manualment.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Fes servir el reproductor integrat",
    "Mostra els fitxers que son compatibles amb el reproductor.",
    "Fes servir el visualitzador d\342\200\231imatges integrat",
    "Mostra les imatges que son compatibles amb l'explorador de fitxers.",
+#endif
    "Rebobina",
    "Canvia la configuraci\303\263 del rebobinat.",
    "Comptador de duraci\303\263 dels fotogrames",
@@ -6040,6 +6052,9 @@ static const struct
    "Pausa el contingut si el men\303\272 est\303\240 actiu.",
    "Posa en pausa el contingut quan no estigui actiu",
    "Posa en pausa el contingut quan el RetroArch no sigui la finestra activa.",
+   "Desactiva la composici\303\263 d\342\200\231escriptori",
+   "Els gestors de finestres usen la composici\303\263 per aplicar efectes visuals i detectar finest"
+   "res que no responen, entre altres coses.",
    "Surt en tancar el contingut",
    "Tanca RetroArch autom\303\240ticament en tancar contingut. 'CLI' tanca nom\303\251s si el contin"
    "gut es carrega per la l\303\255nia d'ordres.",
@@ -6077,9 +6092,6 @@ static const struct
    "Velocitat d\342\200\231animaci\303\263 de l\342\200\231estalvi de pantalla del men\303\272",
    "Ajusta la velocitat de l\342\200\231efecte d\342\200\231animaci\303\263 de l\342\200\231estalvi "
    "de pantalla del men\303\272.",
-   "Desactiva la composici\303\263 d\342\200\231escriptori",
-   "Els gestors de finestres usen la composici\303\263 per aplicar efectes visuals i detectar finest"
-   "res que no responen, entre altres coses.",
    "For\303\247a la desactivaci\303\263 de la composici\303\263. Nom\303\251s funciona per Windows V"
    "ista o Windows 7.",
    "Executa la interf\303\255cie d'usuari en iniciar",
@@ -6445,10 +6457,10 @@ static const struct
    "Seguiment de la taula de classificaci\303\263",
    "Mostra informaci\303\263 del seguiment en pantalla amb el valor actualitzat de les taules de cla"
    "ssifcaci\303\263 actives.",
-   "Missatges d'inici de sessi\303\263",
-   "Mostra missatges relacionats amb l'inici de sessi\303\263 al compte de RetroAchievements.",
    "Missatges detallats",
    "Mostra diagn\303\262stic addicional i missatges d'error.",
+   "Missatges d'inici de sessi\303\263",
+   "Mostra missatges relacionats amb l'inici de sessi\303\263 al compte de RetroAchievements.",
    "Anuncia el joc en l\303\255nia p\303\272blicament",
    "Anuncia les partides de joc en l\303\255nia p\303\272blicament. Si no est\303\240 activat els cl"
    "ients s\342\200\231han de connectar manualment en comptes d\342\200\231usar el vest\303\255bul p"
@@ -7093,10 +7105,12 @@ static const struct
    "Afegeix un truc a la llista.",
    "Elimina tots els trucs",
    "Buida la llista de trucs.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Aplica els trucs autom\303\240ticament durant en carregar un joc",
    "Aplica els trucs autom\303\240ticament quan es carrega el joc.",
    "Aplica en activar",
    "Aplica els trucs immediatament despr\303\251s d'activar-los.",
+#endif
    "Aplica els canvis",
    "Els canvis en els trucs tindran efecte immediat.",
    "Trucs",
@@ -7178,6 +7192,11 @@ static const struct
    " que fan servir varis discs.",
    "Shaders de V\303\255deo",
    "Activa el proc\303\251s de shaders de v\303\255deo.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Predefinicions simples",
+   "Desa una predefinici\303\263 de shader que t\303\251 un enlla\303\247 a la predefinici\303\263 c"
+   "arregada originalment i inclou nom\303\251s els par\303\240metres canviats.",
+#endif
    "Comprova els canvis en els shaders",
    "Aplica els canvis al fitxer de shaders en el disc de manera autom\303\240tica.",
    "Cerca canvis en els fitxers dels shaders. Un cop hagis desat els canvis d'un shader en el disc, "
@@ -7232,9 +7251,6 @@ static const struct
    "ci\303\263 de v\303\255deo).\nSi has escollit 'Irellevant', es far\303\240 servir l'escala 1x o "
    "b\303\251 s'estirar\303\240 a pantalla completa, en funci\303\263 de si \303\251s l'\303\272ltim"
    "a passada.",
-   "Predefinicions simples",
-   "Desa una predefinici\303\263 de shader que t\303\251 un enlla\303\247 a la predefinici\303\263 c"
-   "arregada originalment i inclou nom\303\251s els par\303\240metres canviats.",
    "Desa l'ajust predeterminat actual",
    "Desa l'ajust predeterminat de shaders actual.",
    "Desa ajust predeterminat com",
@@ -7507,12 +7523,14 @@ static const struct
    "DD-MM-AAAA HH:MM:SS (AM/PM)",
    "DD-MM-AAAA HH:MM (AM/PM)",
    "Abans",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Filtre de vores",
+   "Mostra la vora del men\303\272.",
    "Gruix del fons",
    "Augmenta les dimensions de la quadr\303\255cula de fons del men\303\272.",
-   "Filtre de vores",
    "Bruix de la vora",
    "Augmenta les dimensions de la quadr\303\257cula de la vora del men\303\272.",
-   "Mostra la vora del men\303\272.",
+#endif
    "Utilitzar l'amplada completa",
    "Canvia la longitud i la posici\303\263 dels elements del men\303\272 per aprofitar al m\303\240x"
    "im l'espai disponible en pantalla. Desactiva aquesta opci\303\263 per fer servir una disposici"
@@ -7556,14 +7574,14 @@ static const struct
    "oPad Select per activar o desactivar aquesta opci\303\263. En desactivar aquesta opci\303\263, e"
    "ncara es poden mostrar les miniatures a pantalla completa, clicant al bot\303\263 RetroPad Start"
    ".",
+   "Intercanvia miniatures",
+   "Intercanvia la posici\303\263 de les miniatures superior e inferior.",
    "Miniatura superior",
    "Tipus de miniatures que es mostraran a la part superior dreta de les llistes de reproducci\303"
    "\263. Pot ser canviat com el joystick dret.",
    "Miniatura inferior",
    "Tipus de miniatures que es mostraran a la part inferior dreta de les llistes de reproducci\303"
    "\263. Pot ser canviat com el joystick dret.",
-   "Intercanvia miniatures",
-   "Intercanvia la posici\303\263 de les miniatures superior e inferior.",
    "M\303\250tode d'escalat de miniatures",
    "Selecciona el m\303\250tode de redimensionat perqu\303\250 les miniatures entrin a la pantalla.",
    "Retard en les miniatures (ms)",
@@ -8709,9 +8727,11 @@ static const struct
    "Surt i reinicia RetroArch. \303\211s necessari per activar certes configuracions del men\303\272"
    " (per exemple, canviar el controlador del men\303\272).",
    "Bloquejant fotogrames",
-   "Prefer\303\250ncia a l'entrada t\303\240ctil frontal",
-   "Fes servir el toc frontal en comptes del toc posterior.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "T\303\240ctil",
+   "Prefer\303\250ncia a l'entrada t\303\240ctil frontal",
+#endif
+   "Fes servir el toc frontal en comptes del toc posterior.",
    "Configuraci\303\263 del mode teclat del controlador",
    "Tipus de configuraci\303\263 del mode teclat del controlador",
    "Teclat petit",
@@ -8921,7 +8941,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (197670u
+      (sizeof(msg_hash_ca_blob) == (196863u
 #ifdef HAVE_LAKKA
        + 16u
        + 48u
@@ -9032,6 +9052,12 @@ typedef char msg_hash_ca_blob_check[
        + 56u
        + 41u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 35u
+       + 59u
+       + 49u
+       + 68u
+#endif
 #if defined(ANDROID)
        + 160u
 #endif
@@ -9066,7 +9092,21 @@ typedef char msg_hash_ca_blob_check[
        + 44u
 #endif
 #ifndef SETTINGS_DEF_CONFIG_PASS
+       + 59u
+       + 57u
+       + 18u
+       + 55u
+       + 23u
+       + 136u
+       + 16u
+       + 26u
+       + 15u
+       + 61u
+       + 17u
+       + 64u
        + 46u
+       + 8u
+       + 41u
 #endif
 #ifdef HAVE_LIBNX
        + 14u
@@ -10470,10 +10510,12 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
@@ -10730,6 +10772,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -10759,8 +10803,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
    (uint32_t)MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
@@ -11061,10 +11103,10 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -11576,10 +11618,12 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -11655,6 +11699,10 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
@@ -11684,8 +11732,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCALE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -11941,12 +11987,14 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -11973,12 +12021,12 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
@@ -13002,9 +13050,11 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,

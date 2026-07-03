@@ -979,8 +979,10 @@ static const struct
    char s_c512fde9[40];
    char s_84cf9517[177];
    char s_543b5a62[20];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_1d39f4b7[42];
    char s_a158a19e[44];
+#endif
    char s_749f0441[15];
    char s_1c0f54f0[17];
    char s_a779dce9[31];
@@ -1172,6 +1174,8 @@ static const struct
    char s_705eee28[47];
    char s_62af62ac[50];
    char s_6b5b3e1a[61];
+   char s_f4341e25[46];
+   char s_ab839b13[156];
    char s_3e2bdc96[32];
    char s_00961284[128];
    char s_f89e1cbc[58];
@@ -1201,8 +1205,6 @@ static const struct
    char s_5bb9bd63[8];
    char s_676ad14c[48];
    char s_782ab67a[60];
-   char s_f4341e25[46];
-   char s_ab839b13[156];
    char s_a4d3948f[26];
    char s_7f75b005[56];
    char s_7ca0c97c[52];
@@ -1457,9 +1459,9 @@ static const struct
    char s_2c210d06[31];
    char s_572a869b[21];
    char s_a1358509[78];
-   char s_3425a408[19];
    char s_2897f730[24];
    char s_3848eade[51];
+   char s_3425a408[19];
    char s_d48223f9[34];
    char s_da518d67[156];
    char s_8594979d[27];
@@ -1902,10 +1904,12 @@ static const struct
    char s_5183d530[27];
    char s_d190cd32[26];
    char s_f3302ed7[25];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_870cb022[63];
    char s_96bda3d0[68];
    char s_8fa5e6c4[29];
    char s_4f627df2[45];
+#endif
    char s_c64294aa[18];
    char s_af2a7718[54];
    char s_40e7aacd[8];
@@ -1976,6 +1980,10 @@ static const struct
    char s_95de8c94[30];
    char s_08e9410c[16];
    char s_a9c8430e[17];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_ec9ccdc3[28];
+   char s_2ceab671[132];
+#endif
    char s_d3906073[48];
    char s_934cf7a1[81];
    char s_8bf6ccd4[42];
@@ -1991,8 +1999,6 @@ static const struct
    char s_832d681f[10];
    char s_64f2bcae[9];
    char s_42066550[7];
-   char s_ec9ccdc3[28];
-   char s_2ceab671[132];
    char s_e84a3a16[73];
    char s_a9711945[28];
    char s_261210b3[69];
@@ -2242,12 +2248,14 @@ static const struct
    char s_4047c726[17];
    char s_6f56b5d3[14];
    char s_875b5c6b[7];
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   char s_dd8ce9f3[18];
+   char s_e915aba1[23];
    char s_95c85ee0[26];
    char s_039b790e[47];
-   char s_dd8ce9f3[18];
    char s_6ca737be[28];
    char s_0bd86aec[40];
-   char s_e915aba1[23];
+#endif
    char s_a5843c01[33];
    char s_6ea6ac6f[236];
    char s_a67ad98a[80];
@@ -2269,10 +2277,10 @@ static const struct
    char s_e0747272[40];
    char s_d938c460[77];
    char s_60864187[37];
-   char s_b235ee15[27];
-   char s_78a4033f[26];
    char s_d05c8ee3[23];
    char s_87ac0bd1[78];
+   char s_b235ee15[27];
+   char s_78a4033f[26];
    char s_26e9cde7[35];
    char s_32728f95[100];
    char s_1b2ee6c4[27];
@@ -3196,8 +3204,10 @@ static const struct
    char s_ec502f2a[32];
    char s_fc0122d8[139];
    char s_af6007a1[14];
-   char s_ce89e465[17];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d042d680[9];
+   char s_ce89e465[17];
+#endif
    char s_d458f013[34];
    char s_e9f0dd82[41];
    char s_fcf05466[21];
@@ -4504,8 +4514,10 @@ static const struct
    "\266\303\244 aloitushakemistosta. Huom: sijainti palautetaan oletusarvoon RetroArchin uudelleenk"
    "\303\244ynnistyess\303\244.",
    "Ehdota aina ytimi\303\244",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "K\303\244yt\303\244 sis\303\244\303\244nrakennettua mediasoitinta",
    "K\303\244yt\303\244 sis\303\244\303\244nrakennettua kuvankatselinta",
+#endif
    "Takaisinkelaus",
    "Kuva-aikalaskuri",
    "Eteenp\303\244in pikakelauksen tahti",
@@ -4773,6 +4785,9 @@ static const struct
    "Keskeyt\303\244 sis\303\244lt\303\266 kun valikko on aktiivisena",
    "Keskeyt\303\244 sis\303\244lt\303\266, kun ikkuna ei ole aktiivinen",
    "Keskeyt\303\244 sis\303\244lt\303\266, kun RetroArch ei ole aktiivinen ikkuna.",
+   "Poista k\303\244yt\303\266st\303\244 ty\303\266p\303\266yd\303\244n kompositointi",
+   "Ikkunanhallintaohjelmat k\303\244ytt\303\244v\303\244t koostamista toteuttaukseen visuaalisia te"
+   "hosteita, havaitakseen reagoimattomia ikkunoita ja tehd\303\244kseen muita asioita.",
    "Lopeta suljettaessa sis\303\244lt\303\266\303\244",
    "Lopeta RetroArch automaattisesti suljettaessa sis\303\244lt\303\266\303\244. 'CLI' sulkeutuu vai"
    "n kun sis\303\244lt\303\266 k\303\244ynnistet\303\244\303\244n komentorivilt\303\244.",
@@ -4812,9 +4827,6 @@ static const struct
    "Valikon n\303\244yt\303\266ns\303\244\303\244st\303\244j\303\244n animaation nopeus",
    "S\303\244\303\244d\303\244 valikon n\303\244yt\303\266ns\303\244\303\244st\303\244j\303\244n ani"
    "maation nopeutta.",
-   "Poista k\303\244yt\303\266st\303\244 ty\303\266p\303\266yd\303\244n kompositointi",
-   "Ikkunanhallintaohjelmat k\303\244ytt\303\244v\303\244t koostamista toteuttaukseen visuaalisia te"
-   "hosteita, havaitakseen reagoimattomia ikkunoita ja tehd\303\244kseen muita asioita.",
    "K\303\244ytt\303\266liittym\303\244kumppani",
    "K\303\244ynnist\303\244 k\303\244ytt\303\266liittym\303\244kumppani k\303\244ynnistyksess\303"
    "\244",
@@ -5097,9 +5109,9 @@ static const struct
    "Edistymisen ilmaisin",
    "N\303\244ytt\303\244\303\244 ilmaisimen kun edistymist\303\244 tapahtuu tiettyj\303\244 saavutuk"
    "sia varten.",
-   "Kirjautumisviestit",
    "Moniselitteiset viestit",
    "N\303\244ytt\303\244\303\244 muita diagnostiikka- ja virheviestej\303\244.",
+   "Kirjautumisviestit",
    "Ilmoita verkkopelist\303\244 julkisesti",
    "Ilmoitetaanko verkkopelit julkisesti. Jos asetus ei ole k\303\244yt\303\266ss\303\244, asiakkaid"
    "en on yhdistett\303\244v\303\244 manuaalisesti julkisen aulan kautta liittymisen sijasta.",
@@ -5626,10 +5638,12 @@ static const struct
    "Lis\303\244\303\244 uusi huijaus yl\303\266s",
    "Lis\303\244\303\244 uusi huijaus alas",
    "Poista kaikki huijaukset",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Huijaukset k\303\244ytt\303\266\303\266n automaattisesti pelin lataamisen aikana",
    "Ota huijaukset k\303\244ytt\303\266\303\266n automaattisesti pelin lataamisen aikana.",
    "K\303\244yt\303\244 vaihtamisen j\303\244lkeen",
    "K\303\244yt\303\244 huijausta heti vaihtamisen j\303\244lkeen.",
+#endif
    "Toteuta muutokset",
    "Huijausten muutokset tulevat voimaan v\303\244litt\303\266m\303\244sti.",
    "Huijaus",
@@ -5703,6 +5717,11 @@ static const struct
    "Sulje virtuaalinen levyasema.",
    "Lataa uusi levy",
    "Videovarjostimet",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Yksinkertaiset esiasetukset",
+   "Tallenna varjostimen esiasetus, jolla on linkki alkuper\303\244iseen esiasetukseen ja joka sis"
+   "\303\244lt\303\244\303\244 vain tekem\303\244si parametrimuutokset.",
+#endif
    "Tarkastele varjostintiedostoja muutosten osalta",
    "Toteuta automaattisesti levyll\303\244 oleviin varjostintiedostoihin tehdyt muutokset.",
    "Muista viimeksi k\303\244ytetty varjostinkansio",
@@ -5722,9 +5741,6 @@ static const struct
    "Varjostin",
    "Suodatin",
    "Skaala",
-   "Yksinkertaiset esiasetukset",
-   "Tallenna varjostimen esiasetus, jolla on linkki alkuper\303\244iseen esiasetukseen ja joka sis"
-   "\303\244lt\303\244\303\244 vain tekem\303\244si parametrimuutokset.",
    "Tallenna nykyisen varjostimen asetukset uuden varjostimen esiasetuksena.",
    "Tallenna globaali esiasetus",
    "Tallenna nykyisen varjostimen asetukset globaalina oletusasetuksena.",
@@ -5989,12 +6005,14 @@ static const struct
    "TT:MM:SS (AM/PM)",
    "TT:MM (AM/PM)",
    "sitten",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Reunan t\303\244ydennys",
+   "N\303\244yt\303\244 valikon reuna.",
    "Taustan t\303\244ytteen paksuus",
    "Lis\303\244\303\244 valikon taustan ruutukuvion karkeutta.",
-   "Reunan t\303\244ydennys",
    "Reunuksen t\303\244ytteen paksuus",
    "Lis\303\244\303\244 valikkoruudun reunan karkeutta.",
-   "N\303\244yt\303\244 valikon reuna.",
+#endif
    "K\303\244yt\303\244 t\303\244ysileve\303\244\303\244 asettelua",
    "Muuta valikon kokoa ja sijaintia niin, ett\303\244 k\303\244ytett\303\244viss\303\244 olevaa n"
    "\303\244yt\303\266n tilaa voidaan hy\303\266dynt\303\244\303\244 parhaalla mahdollisella tavalla"
@@ -6032,10 +6050,10 @@ static const struct
    "N\303\244yt\303\244 partikkelianimaatio, kun valikon n\303\244yt\303\266ns\303\244\303\244st\303"
    "\244j\303\244 on aktiivinen.",
    "N\303\244yt\303\244 soittolistan esikatselukuvat",
-   "Ylimm\303\244inen esikatselukuva",
-   "Alimmainen esikatselukuva",
    "Vaihda esikatselukuvat",
    "Vaihtaa \"Ylimm\303\244inen esikatselukuva\" ja \"Alimmainen esikatselukuva\" paikkoja.",
+   "Ylimm\303\244inen esikatselukuva",
+   "Alimmainen esikatselukuva",
    "Esikatselukuvan kutistusmenetelm\303\244",
    "Muotoilumenetelm\303\244, jota k\303\244ytet\303\244\303\244n, kun kutistetaan suuria esikatselu"
    "kuvia sopimaan n\303\244ytt\303\266\303\266n.",
@@ -7055,8 +7073,10 @@ static const struct
    "Poistu ja k\303\244ynnist\303\244 sitten RetroArch uudelleen. Tarvitaan tiettyjen valikkoasetust"
    "en aktivoimiseksi (esim. valikkoohjaimen vaihtaminen).",
    "Est\303\244 kuvissa",
-   "Suosi kosketusta",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Kosketus",
+   "Suosi kosketusta",
+#endif
    "N\303\244pp\303\244imist\303\266 ohjaimen kartoitus",
    "N\303\244pp\303\244imist\303\266 ohjaimen kartoitus tyyppi",
    "Pieni n\303\244pp\303\244imist\303\266",
@@ -7202,7 +7222,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123252u
+      (sizeof(msg_hash_fi_blob) == (122593u
 #ifdef HAVE_LAKKA
        + 21u
        + 43u
@@ -7292,6 +7312,10 @@ typedef char msg_hash_fi_blob_check[
        + 39u
        + 29u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 42u
+       + 44u
+#endif
 #if defined(ANDROID)
        + 132u
 #endif
@@ -7322,7 +7346,21 @@ typedef char msg_hash_fi_blob_check[
        + 46u
 #endif
 #ifndef SETTINGS_DEF_CONFIG_PASS
+       + 63u
+       + 68u
+       + 29u
+       + 45u
+       + 28u
+       + 132u
+       + 18u
+       + 23u
+       + 26u
+       + 47u
+       + 28u
+       + 40u
        + 25u
+       + 9u
+       + 17u
 #endif
 #ifdef HAVE_LIBNX
        + 24u
@@ -8385,8 +8423,10 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -8578,6 +8618,8 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -8607,8 +8649,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
@@ -8863,9 +8903,9 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -9308,10 +9348,12 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -9382,6 +9424,10 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -9397,8 +9443,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCALE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
@@ -9648,12 +9692,14 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
@@ -9675,10 +9721,10 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
@@ -10602,8 +10648,10 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,

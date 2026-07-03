@@ -550,11 +550,11 @@ static const struct
    char s_638533eb[242];
    char s_cd6693b5[235];
    char s_ee3a489b[43];
+   char s_ab839b13[138];
    char s_f89e1cbc[54];
    char s_ba248c4b[39];
    char s_c561b96e[23];
    char s_d512ad1c[52];
-   char s_ab839b13[138];
    char s_260261d6[13];
    char s_302fdd56[8];
    char s_35ff46c4[56];
@@ -1312,12 +1312,12 @@ static const struct
    "'usa una orientaci\303\263 de pantalla vertical. Els valors positius incrementen (mentre que els"
    " valors negatius decreixen) l'altura efectiva de la superposici\303\263.",
    "Canvia els ajustos de l'aspecte del men\303\272.",
+   "Els gestors de finestres empraran la composici\303\263 per aplicar efectes visuals, detectar fin"
+   "estres que no responguen, entre d'altres coses.",
    "Reprendre contingut despr\303\251s d'usar un guardat r\303\240pid",
    "Reprendre contingut al canviar de disc",
    "Vore ajustos avan\303\247ats",
    "Mostra els ajustos avan\303\247ats per a usuaris experts.",
-   "Els gestors de finestres empraran la composici\303\263 per aplicar efectes visuals, detectar fin"
-   "estres que no responguen, entre d'altres coses.",
    "Men\303\272 r\303\240pid",
    "Ajustos",
    "Canvia la visibilitat dels elements al men\303\272 d'Ajustos.",
@@ -2050,11 +2050,11 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,

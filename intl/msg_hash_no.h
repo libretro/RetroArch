@@ -550,7 +550,9 @@ static const struct
    char s_074440cb[13];
    char s_2841f912[31];
    char s_c512fde9[28];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_1d39f4b7[27];
+#endif
    char s_749f0441[13];
    char s_74dcbca5[16];
    char s_b3d1e989[13];
@@ -1803,7 +1805,9 @@ static const struct
    "Logg til fil",
    "Filtrer etter gjeldende kjerne",
    "Husk sist brukte startmappe",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Bruk innebygd mediespiller",
+#endif
    "Spol tilbake",
    "Opptakskvalitet",
    "Egendefinert",
@@ -2481,7 +2485,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (28802u
+      (sizeof(msg_hash_no_blob) == (28775u
 #ifdef HAVE_LAKKA
        + 15u
        + 49u
@@ -2550,6 +2554,11 @@ typedef char msg_hash_no_blob_check[
        + 21u
        + 54u
        + 23u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 27u
+#endif
+#ifdef HAVE_MIST
        + 8u
        + 11u
        + 11u
@@ -3121,7 +3130,9 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,

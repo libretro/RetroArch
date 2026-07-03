@@ -271,7 +271,9 @@ static const struct
    char s_b3c7fa93[21];
    char s_7f2380a0[12];
    char s_ec502f2a[21];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d042d680[9];
+#endif
    char s_440540f4[10];
    char s_d16f3816[6];
 #ifdef HAVE_LAKKA
@@ -543,7 +545,9 @@ static const struct
    "Cysylltu i Rwydwaith",
    "Datgysylltu",
    "Ailgychwyn RetroArch",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Cyffwrdd",
+#endif
    "Rhyngrwyd",
    "Lleol",
 #ifdef HAVE_LAKKA
@@ -559,7 +563,10 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cy_blob_check[
-      (sizeof(msg_hash_cy_blob) == (5208u
+      (sizeof(msg_hash_cy_blob) == (5199u
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 9u
+#endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
@@ -827,7 +834,9 @@ static const uint32_t msg_hash_cy_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
+#endif
    (uint32_t)MSG_INTERNET,
    (uint32_t)MSG_LOCAL,
 #ifdef HAVE_LAKKA

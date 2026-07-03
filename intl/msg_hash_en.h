@@ -243,9 +243,9 @@ static const struct
    char s_6f85964e[41];
    char s_32550f71[11];
    char s_b7ed78f3[14];
+   char s_3848eade[47];
    char s_3425a408[16];
    char s_d564beb6[58];
-   char s_3848eade[47];
    char s_d48223f9[27];
    char s_da518d67[121];
    char s_8b64010b[131];
@@ -330,8 +330,10 @@ static const struct
    char s_88ff9936[23];
    char s_085b8f97[15];
    char s_0ea29469[24];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_039b790e[65];
    char s_0bd86aec[49];
+#endif
    char s_6ea6ac6f[148];
    char s_e6600c20[243];
    char s_a9145c83[13];
@@ -803,9 +805,9 @@ static const struct
    "Display badges in the Achievements List.",
    "Top Centre",
    "Bottom Centre",
+   "Show additional diagnostic and error messages.",
    "Log-in Messages",
    "Show messages related to RetroAchievements account login.",
-   "Show additional diagnostic and error messages.",
    "Publicly Announce Net-play",
    "Whether to announce net-play games publicly. If unset, clients must manually connect rather than"
    " using the public lobby.",
@@ -925,8 +927,10 @@ static const struct
    "Left Analogue (Forced)",
    "Right Analogue",
    "Right Analogue (Forced)",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Increase coarseness of the menu background chequerboard pattern.",
    "Increase coarseness of menu border chequerboard.",
+#endif
    "Resize and position menu entries to make the best use of the available screen space. Disable thi"
    "s to use the classic fixed-width two column layout.",
    "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, re"
@@ -1124,7 +1128,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26736u
+      (sizeof(msg_hash_en_blob) == (26622u
 #if defined(DINGUX)
        + 195u
        + 9u
@@ -1153,6 +1157,8 @@ typedef char msg_hash_en_blob_check[
 #endif
 #ifndef SETTINGS_DEF_CONFIG_PASS
        + 20u
+       + 65u
+       + 49u
 #endif
 #ifdef HAVE_LIBNX
        + 15u
@@ -1425,9 +1431,9 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
@@ -1512,8 +1518,10 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
