@@ -1037,6 +1037,8 @@
 #define MENU_ENUM_LABEL_VIDEO_DRIVER_RSX_STR "rsx"
 #define MENU_ENUM_LABEL_VIDEO_DRIVER_NULL_STR "null"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_STR "video_filter"
+#define MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE_STR "filter_enable"
+#define MENU_ENUM_LABEL_CORE_SUGGEST_ALWAYS_STR "core_suggest_always"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE_STR "video_filter_remove"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_DIR_STR "video_filter_dir"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER_STR "video_filter_flicker"
