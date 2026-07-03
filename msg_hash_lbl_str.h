@@ -1408,7 +1408,6 @@
 #define MENU_ENUM_LABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN_STR "xmb_menu_animation_move_up_down"
 #define MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU_STR "xmb_menu_animation_opening_main_menu"
 #define MENU_ENUM_LABEL_VIDEO_RECORD_THREADS_STR "video_record_threads"
-#define MENU_ENUM_LABEL_VIDEO_GPU_INDEX_STR "gpu_index"
 #define MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL_STR "fps_update_interval"
 #define MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL_STR "memory_update_interval"
 #define MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS_STR "accessibility_settings"
