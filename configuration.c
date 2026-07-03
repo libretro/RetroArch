@@ -1974,6 +1974,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_notch.h"
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
 #include "settings/settings_def_menu_steam.h"
@@ -2345,6 +2346,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_notch.h"
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
 #include "settings/settings_def_menu_steam.h"
@@ -2651,6 +2653,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_notch.h"
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
 #include "settings/settings_def_menu_steam.h"
@@ -2932,6 +2935,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_notch.h"
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
 #include "settings/settings_def_menu_steam.h"

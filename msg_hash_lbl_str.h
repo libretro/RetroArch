@@ -1068,7 +1068,6 @@
 #define MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS_STR "video_scaling_settings"
 #define MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS_STR "video_hdr_settings"
 #define MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS_STR "video_synchronization_settings"
-#define MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER_STR "video_notch_write_over"
 #define MENU_ENUM_LABEL_VIDEO_USE_METAL_ARG_BUFFERS_STR "video_use_metal_arg_buffers"
 #define MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS_STR "video_output_settings"
 #define MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS_STR "crt_switchres_settings"
