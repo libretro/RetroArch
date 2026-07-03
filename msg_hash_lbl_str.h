@@ -1071,8 +1071,6 @@
 #define MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS_STR "video_output_settings"
 #define MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS_STR "crt_switchres_settings"
 #define MENU_ENUM_LABEL_VIDEO_SHADER_DIR_STR "video_shader_dir"
-#define MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES_STR "video_shader_watch_files"
-#define MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR_STR "video_shader_remember_last_dir"
 #define MENU_ENUM_LABEL_SHADER_APPLY_CHANGES_STR "shader_apply_changes"
 #define MENU_ENUM_LABEL_SHADER_OPTIONS_STR "shader_options"
 #define MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY_STR "shader_parameters_entry"
