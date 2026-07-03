@@ -43,6 +43,7 @@ typedef struct
 {
    const uint8_t *vp8;  size_t vp8s;
    const uint8_t *vp8l; size_t vp8ls;
+   const uint8_t *alph; size_t alphs;
    int lossless;
 } rw_ctr;
 
@@ -63,6 +64,8 @@ static int rw_parse(const uint8_t *b, size_t l, rw_ctr *c)
       { c->vp8 = d; c->vp8s = sz; c->lossless = 0; }
       else if (tag == RW_CC('V','P','8','L') && !c->vp8l)
       { c->vp8l = d; c->vp8ls = sz; c->lossless = 1; }
+      else if (tag == RW_CC('A','L','P','H') && !c->alph)
+      { c->alph = d; c->alphs = sz; }
       else if (tag == RW_CC('A','N','M','F') && sz >= 16)
       {
          size_t sp;
@@ -74,6 +77,8 @@ static int rw_parse(const uint8_t *b, size_t l, rw_ctr *c)
             { c->vp8 = d+sp+8; c->vp8s = ss; c->lossless = 0; }
             else if (st == RW_CC('V','P','8','L') && !c->vp8l)
             { c->vp8l = d+sp+8; c->vp8ls = ss; c->lossless = 1; }
+            else if (st == RW_CC('A','L','P','H') && !c->alph)
+            { c->alph = d+sp+8; c->alphs = ss; }
             sp += 8 + ((ss+1) & ~(size_t)1);
          }
       }
@@ -593,30 +598,25 @@ static uint32_t *vl_decode_pixels(vbr *br, int w, int h)
 
 typedef struct { int type, bits, dw, dh; uint32_t *data; } xf_t;
 
-static uint32_t *vl_decode_full(const uint8_t *data, size_t len,
-      unsigned *ow, unsigned *oh)
+/* Decode a VP8L stream body (transforms + pixels + inverse transforms).
+ * The caller supplies dimensions and a positioned bit reader; used both by
+ * regular VP8L images (after the signature/size header) and by headerless
+ * ALPH-chunk lossless alpha streams. */
+static uint32_t *vl_decode_body(vbr *brp, uint32_t width, uint32_t height)
 {
-   vbr br;
-   uint32_t sig, width, height;
+   vbr *br2 = brp;
    uint32_t *pix = NULL;
    xf_t xf[XF_MAX];
    int nxf = 0, i, cw, ch;
 
-   vbr_init(&br, data, len);
-   sig = vbr_read(&br, 8);
-   if (sig != 0x2F) return NULL;
-   width = vbr_read(&br, 14) + 1;
-   height = vbr_read(&br, 14) + 1;
-   vbr_read(&br, 1); /* alpha_is_used */
-   if (vbr_read(&br, 3) != 0) return NULL; /* version */
    if (width > 16384 || height > 16384) return NULL;
    memset(xf, 0, sizeof(xf));
    cw = (int)width; ch = (int)height;
 
    /* Read transforms */
-   while (vbr_read(&br, 1))
+   while (vbr_read(br2, 1))
    {
-      int tt = vbr_read(&br, 2);
+      int tt = vbr_read(br2, 2);
       xf_t *x;
       if (nxf >= XF_MAX) goto xfail;
       x = &xf[nxf++];
@@ -627,11 +627,11 @@ static uint32_t *vl_decode_full(const uint8_t *data, size_t len,
          case XF_PRED:
          case XF_CCOL:
          {
-            int bb = vbr_read(&br, 3) + 2;
+            int bb = vbr_read(br2, 3) + 2;
             int bw = ((cw-1) >> bb) + 1;
             int bh = ((ch-1) >> bb) + 1;
             x->bits = bb; x->dw = bw; x->dh = bh;
-            x->data = vl_decode_pixels(&br, bw, bh);
+            x->data = vl_decode_pixels(br2, bw, bh);
             if (!x->data) goto xfail;
             break;
          }
@@ -639,9 +639,9 @@ static uint32_t *vl_decode_full(const uint8_t *data, size_t len,
             break;
          case XF_CIDX:
          {
-            int nc = vbr_read(&br, 8) + 1, bits, pi2;
+            int nc = vbr_read(br2, 8) + 1, bits, pi2;
             x->dw = nc; x->dh = 1;
-            x->data = vl_decode_pixels(&br, nc, 1);
+            x->data = vl_decode_pixels(br2, nc, 1);
             if (!x->data) goto xfail;
             /* Delta-decode palette */
             for (pi2 = 1; pi2 < nc; pi2++)
@@ -658,7 +658,7 @@ static uint32_t *vl_decode_full(const uint8_t *data, size_t len,
    }
 
    /* Decode main image */
-   pix = vl_decode_stream(&br, cw, ch, 1);
+   pix = vl_decode_stream(br2, cw, ch, 1);
    if (!pix) goto xfail;
 
    /* Inverse transforms in reverse order */
@@ -777,12 +777,129 @@ static uint32_t *vl_decode_full(const uint8_t *data, size_t len,
    }
 
    for (i = 0; i < nxf; i++) free(xf[i].data);
-   *ow = width; *oh = height;
    return pix;
 xfail:
    free(pix);
    for (i = 0; i < nxf; i++) free(xf[i].data);
    return NULL;
+}
+
+static uint32_t *vl_decode_full(const uint8_t *data, size_t len,
+      unsigned *ow, unsigned *oh)
+{
+   vbr br;
+   uint32_t sig, width, height;
+   uint32_t *pix;
+
+   vbr_init(&br, data, len);
+   sig = vbr_read(&br, 8);
+   if (sig != 0x2F) return NULL;
+   width = vbr_read(&br, 14) + 1;
+   height = vbr_read(&br, 14) + 1;
+   vbr_read(&br, 1); /* alpha_is_used */
+   if (vbr_read(&br, 3) != 0) return NULL; /* version */
+   pix = vl_decode_body(&br, width, height);
+   if (pix) { *ow = width; *oh = height; }
+   return pix;
+}
+
+/* ===== ALPH chunk (lossy alpha plane) =====
+ * Header byte: bits 0-1 compression (0 raw, 1 VP8L), bits 2-3 filter
+ * (0 none, 1 horizontal, 2 vertical, 3 gradient), bits 4-5 preprocessing,
+ * bits 6-7 reserved (must be 0). The VP8L stream is headerless (no
+ * signature or size); dimensions come from the VP8 frame. Alpha values
+ * live in the green channel of the decoded ARGB. */
+
+static INLINE int alph_grad(int a, int b, int c)
+{
+   int g = a + b - c;
+   return ((g & ~0xFF) == 0) ? g : (g < 0) ? 0 : 255;
+}
+
+/* In-place row unfilter, per libwebp WebPUnfilters. prev == NULL on row 0. */
+static void alph_unfilter_row(int filter, const uint8_t *prev,
+      uint8_t *row, int width)
+{
+   int i;
+   switch (filter)
+   {
+      case 1: /* horizontal */
+      {
+         int pred = prev ? prev[0] : 0;
+         for (i = 0; i < width; i++)
+         {
+            row[i] = (uint8_t)(pred + row[i]);
+            pred = row[i];
+         }
+         break;
+      }
+      case 2: /* vertical */
+         if (!prev) { alph_unfilter_row(1, NULL, row, width); break; }
+         for (i = 0; i < width; i++)
+            row[i] = (uint8_t)(prev[i] + row[i]);
+         break;
+      case 3: /* gradient */
+         if (!prev) { alph_unfilter_row(1, NULL, row, width); break; }
+         {
+            int top = prev[0], top_left = top, left = top;
+            for (i = 0; i < width; i++)
+            {
+               top = prev[i];
+               left = (uint8_t)(row[i] + alph_grad(left, top, top_left));
+               top_left = top;
+               row[i] = (uint8_t)left;
+            }
+         }
+         break;
+      default:
+         break;
+   }
+}
+
+/* Decode an ALPH chunk into a w*h byte plane. Returns NULL on failure
+ * (caller keeps opaque alpha). */
+static uint8_t *alph_decode(const uint8_t *data, size_t len,
+      unsigned w, unsigned h)
+{
+   int method, filter, rsrv;
+   uint8_t *plane;
+   unsigned y;
+
+   if (len < 1 || w == 0 || h == 0)
+      return NULL;
+   method = data[0] & 3;
+   filter = (data[0] >> 2) & 3;
+   rsrv   = (data[0] >> 6) & 3;
+   if (method > 1 || rsrv != 0)
+      return NULL;
+
+   plane = (uint8_t*)malloc((size_t)w * h);
+   if (!plane)
+      return NULL;
+
+   if (method == 0)
+   {
+      if (len - 1 < (size_t)w * h) { free(plane); return NULL; }
+      memcpy(plane, data + 1, (size_t)w * h);
+   }
+   else
+   {
+      vbr br;
+      uint32_t *pix;
+      size_t n = (size_t)w * h, k;
+      vbr_init(&br, data + 1, len - 1);
+      pix = vl_decode_body(&br, w, h);
+      if (!pix) { free(plane); return NULL; }
+      for (k = 0; k < n; k++)
+         plane[k] = (uint8_t)((pix[k] >> 8) & 0xFF); /* green */
+      free(pix);
+   }
+
+   for (y = 0; y < h; y++)
+      alph_unfilter_row(filter, y ? plane + (size_t)(y-1)*w : NULL,
+            plane + (size_t)y*w, (int)w);
+
+   return plane;
 }
 
 /* ===== VP8 Lossy — full decode with coefficients ===== */
@@ -2037,7 +2154,21 @@ static uint32_t *rwebp_do(const uint8_t *buf, size_t len,
    uint32_t *pix = NULL;
    if (!rw_parse(buf, len, &c)) return NULL;
    if (c.vp8l && c.vp8ls > 0) pix = vl_decode_full(c.vp8l, c.vp8ls, w, h);
-   if (!pix && c.vp8 && c.vp8s > 0) pix = vp8_decode(c.vp8, c.vp8s, w, h);
+   if (!pix && c.vp8 && c.vp8s > 0)
+   {
+      pix = vp8_decode(c.vp8, c.vp8s, w, h);
+      if (pix && c.alph && c.alphs > 0)
+      {
+         uint8_t *ap = alph_decode(c.alph, c.alphs, *w, *h);
+         if (ap)
+         {
+            size_t k, n = (size_t)*w * *h;
+            for (k = 0; k < n; k++)
+               pix[k] = (pix[k] & 0x00FFFFFFu) | ((uint32_t)ap[k] << 24);
+            free(ap);
+         }
+      }
+   }
    if (!pix) return NULL;
    if (rgba)
    {
