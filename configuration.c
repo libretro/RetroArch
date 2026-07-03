@@ -1943,7 +1943,6 @@ static struct config_bool_setting *populate_settings_bool(
 
    SETTING_BOOL("crt_switch_resolution_use_custom_refresh_rate", &settings->bools.crt_switch_custom_refresh_enable, true, false, false);
    SETTING_BOOL("crt_switch_hires_menu",         &settings->bools.crt_switch_hires_menu, true, false, true);
-   SETTING_BOOL("video_shader_enable",           &settings->bools.video_shader_enable, true, DEFAULT_SHADER_ENABLE, false);
    SETTING_BOOL("video_shader_deferred_loading", &settings->bools.video_shader_deferred_loading, true, DEFAULT_SHADER_DEFERRED_LOADING, false);
    SETTING_BOOL("video_shader_watch_files",      &settings->bools.video_shader_watch_files, true, DEFAULT_VIDEO_SHADER_WATCH_FILES, false);
    SETTING_BOOL("video_shader_remember_last_dir", &settings->bools.video_shader_remember_last_dir, true, DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR, false);
@@ -1983,6 +1982,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_shader_preset.h"
 #ifdef UDEV_TOUCH_SUPPORT
 #include "settings/settings_def_input_vmouse.h"
 #endif
@@ -2339,6 +2339,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_shader_preset.h"
 #ifdef UDEV_TOUCH_SUPPORT
 #include "settings/settings_def_input_vmouse.h"
 #endif
@@ -2605,6 +2606,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_shader_preset.h"
 #ifdef UDEV_TOUCH_SUPPORT
 #include "settings/settings_def_input_vmouse.h"
 #endif
@@ -2846,6 +2848,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_shader_preset.h"
 #ifdef UDEV_TOUCH_SUPPORT
 #include "settings/settings_def_input_vmouse.h"
 #endif
