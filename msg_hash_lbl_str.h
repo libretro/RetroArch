@@ -486,7 +486,6 @@
 #define MENU_ENUM_LABEL_INPUT_OVERLAY_STR "input_overlay"
 #define MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_STR "input_osk_overlay"
 #define MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE_STR "input_overlay_enable"
-#define MENU_ENUM_LABEL_INPUT_OVERLAY_BEHIND_MENU_STR "overlay_behind_menu"
 #define MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU_STR "overlay_hide_in_menu"
 #define MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_STR "overlay_hide_when_gamepad_connected"
 #define MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_STR "input_overlay_show_inputs"
