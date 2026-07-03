@@ -1982,6 +1982,11 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_layout.h"
+#endif
+#endif
 #include "settings/settings_def_cheats_apply.h"
 #include "settings/settings_def_shader_preset.h"
 #ifdef UDEV_TOUCH_SUPPORT
@@ -2132,7 +2137,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("rgui_border_filler_enable",               &settings->bools.menu_rgui_border_filler_enable, true, true, false);
    SETTING_BOOL("menu_rgui_transparency",                  &settings->bools.menu_rgui_transparency, true, DEFAULT_RGUI_TRANSPARENCY, false);
    SETTING_BOOL("menu_rgui_shadows",                       &settings->bools.menu_rgui_shadows, true, DEFAULT_RGUI_SHADOWS, false);
-   SETTING_BOOL("menu_rgui_full_width_layout",             &settings->bools.menu_rgui_full_width_layout, true, DEFAULT_RGUI_FULL_WIDTH_LAYOUT, false);
    SETTING_BOOL("rgui_inline_thumbnails",                  &settings->bools.menu_rgui_inline_thumbnails, true, DEFAULT_RGUI_INLINE_THUMBNAILS, false);
    SETTING_BOOL("rgui_swap_thumbnails",                    &settings->bools.menu_rgui_swap_thumbnails, true, DEFAULT_RGUI_SWAP_THUMBNAILS, false);
    SETTING_BOOL("rgui_extended_ascii",                     &settings->bools.menu_rgui_extended_ascii, true, DEFAULT_RGUI_EXTENDED_ASCII, false);
@@ -2340,6 +2344,11 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_layout.h"
+#endif
+#endif
 #include "settings/settings_def_cheats_apply.h"
 #include "settings/settings_def_shader_preset.h"
 #ifdef UDEV_TOUCH_SUPPORT
@@ -2608,6 +2617,11 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_layout.h"
+#endif
+#endif
 #include "settings/settings_def_cheats_apply.h"
 #include "settings/settings_def_shader_preset.h"
 #ifdef UDEV_TOUCH_SUPPORT
@@ -2851,6 +2865,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_layout.h"
+#endif
+#endif
 #include "settings/settings_def_cheats_apply.h"
 #include "settings/settings_def_shader_preset.h"
 #ifdef UDEV_TOUCH_SUPPORT
