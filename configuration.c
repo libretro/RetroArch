@@ -880,30 +880,6 @@ struct config_path_setting
 #define SETTING_BOOL(key, configval, default_enable, default_setting, handle_setting) \
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_bool_setting, handle_setting)
 
-   /* GENERATED: single-source setting rows (float kind emits here) */
-#define S_BOOL(f, T, n, d, sd, df, c, us, sub)
-#define S_BOOL_NS(f, T, n, d, sd, df, c, us)
-#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
-#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
-#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
-#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
-#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
-   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
-#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
-   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
-#include "settings_def_video_fullscreen.h"
-#define SETTINGS_DEF_CONFIG_PASS
-#include "settings_def_video_sync.h"
-#include "settings_def_video_window.h"
-#undef SETTINGS_DEF_CONFIG_PASS
-#undef S_BOOL
-#undef S_BOOL_NS
-#undef S_UINT
-#undef S_UINT_NS
-#undef S_INT
-#undef S_INT_NS
-#undef S_FLOAT
-#undef S_FLOAT_NS
 #define SETTING_FLOAT(key, configval, default_enable, default_setting, handle_setting) \
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_float_setting, handle_setting)
 
@@ -2011,6 +1987,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL
@@ -2401,6 +2378,31 @@ static struct config_float_setting *populate_settings_float(
       return NULL;
 
 #ifdef HAVE_MENU
+   /* GENERATED: single-source setting rows (float kind emits here) */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+#include "settings_def_video_fullscreen.h"
+#define SETTINGS_DEF_CONFIG_PASS
+#include "settings_def_video_sync.h"
+#include "settings_def_video_bias.h"
+#include "settings_def_video_window.h"
+#undef SETTINGS_DEF_CONFIG_PASS
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
    SETTING_FLOAT("menu_scale_factor",            &settings->floats.menu_scale_factor, true, DEFAULT_MENU_SCALE_FACTOR, false);
    SETTING_FLOAT("menu_widget_scale_factor",     &settings->floats.menu_widget_scale_factor, true, DEFAULT_MENU_WIDGET_SCALE_FACTOR, false);
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
@@ -2446,12 +2448,6 @@ static struct config_float_setting *populate_settings_float(
 #endif
 
    SETTING_FLOAT("video_aspect_ratio",           &settings->floats.video_aspect_ratio, true, DEFAULT_ASPECT_RATIO, false);
-   SETTING_FLOAT("video_viewport_bias_x",        &settings->floats.video_vp_bias_x, true, DEFAULT_VIEWPORT_BIAS_X, false);
-   SETTING_FLOAT("video_viewport_bias_y",        &settings->floats.video_vp_bias_y, true, DEFAULT_VIEWPORT_BIAS_Y, false);
-#if defined(RARCH_MOBILE)
-   SETTING_FLOAT("video_viewport_bias_portrait_x", &settings->floats.video_vp_bias_portrait_x, true, DEFAULT_VIEWPORT_BIAS_PORTRAIT_X, false);
-   SETTING_FLOAT("video_viewport_bias_portrait_y", &settings->floats.video_vp_bias_portrait_y, true, DEFAULT_VIEWPORT_BIAS_PORTRAIT_Y, false);
-#endif
    SETTING_FLOAT("video_refresh_rate",           &settings->floats.video_refresh_rate, true, DEFAULT_REFRESH_RATE, false);
    SETTING_FLOAT("video_autoswitch_pal_threshold", &settings->floats.video_autoswitch_pal_threshold, true, DEFAULT_AUTOSWITCH_PAL_THRESHOLD, false);
    SETTING_FLOAT("crt_video_refresh_rate",       &settings->floats.crt_video_refresh_rate, true, DEFAULT_CRT_REFRESH_RATE, false);
@@ -2649,6 +2645,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL
@@ -2874,6 +2871,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL

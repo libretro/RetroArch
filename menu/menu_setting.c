@@ -13227,32 +13227,32 @@ static bool setting_append_list(
 
             {
                static const setting_desc_t bias_desc[] = {
-                  SDESC_FLOAT_ROW(video_vp_bias_x, VIDEO_VIEWPORT_BIAS_X,
-                        DEFAULT_VIEWPORT_BIAS_X, "%.2f",
-                        SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
-                        SDESC_RANGE_MINMAX,
-                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
-                        0.0, 1.0, 0.05, NULL, NULL),
-                  SDESC_FLOAT_ROW(video_vp_bias_y, VIDEO_VIEWPORT_BIAS_Y,
-                        DEFAULT_VIEWPORT_BIAS_Y, "%.2f",
-                        SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
-                        SDESC_RANGE_MINMAX,
-                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
-                        0.0, 1.0, 0.05, NULL, NULL),
-#if defined(RARCH_MOBILE)
-                  SDESC_FLOAT_ROW(video_vp_bias_portrait_x, VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-                        DEFAULT_VIEWPORT_BIAS_PORTRAIT_X, "%.2f",
-                        SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
-                        SDESC_RANGE_MINMAX,
-                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
-                        0.0, 1.0, 0.05, NULL, NULL),
-                  SDESC_FLOAT_ROW(video_vp_bias_portrait_y, VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-                        DEFAULT_VIEWPORT_BIAS_PORTRAIT_Y, "%.2f",
-                        SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED,
-                        SDESC_RANGE_MINMAX,
-                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
-                        0.0, 1.0, 0.05, NULL, NULL)
-#endif
+/* GENERATED: rows come from settings_def_video_bias.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#include "../settings_def_video_bias.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
                };
                settings_list_add_desc(list, list_info, settings,
                      bias_desc, ARRAY_SIZE(bias_desc),

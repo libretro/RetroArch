@@ -2426,25 +2426,40 @@ MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    "Viewport Anchor Bias X"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   "Viewport Anchor Bias X"
-   )
+/* GENERATED REGION: viewport bias group (see settings_def_video_bias.h). */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings_def_video_bias.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
    "Viewport Anchor Bias Y"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
-   "Viewport Anchor Bias Y"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 is center, 1.0 is far right."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is center, 1.0 is bottom."
    )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
@@ -2452,24 +2467,8 @@ MSG_HASH(
    "Viewport Anchor Bias X (Portrait Orientation)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "Viewport Anchor Bias X (Portrait Orientation)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Viewport Anchor Bias Y (Portrait Orientation)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Viewport Anchor Bias Y (Portrait Orientation)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 is center, 1.0 is far right. (Portrait Orientation)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is center, 1.0 is bottom. (Portrait Orientation)"
    )
 #endif
 MSG_HASH(
@@ -16457,8 +16456,6 @@ MSG_HASH(
    MSG_LOCALAP_ERROR_CONFIG_PARSE,
    "Wrong configuration file - could not find APNAME or PASSWORD in %s"
    )
-#endif
-#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 MSG_HASH(
