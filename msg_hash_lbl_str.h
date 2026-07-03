@@ -817,8 +817,6 @@
 #define MENU_ENUM_LABEL_RESUME_CONTENT_STR "resume_content"
 #define MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS_STR "retro_achievements_settings"
 #define MENU_ENUM_LABEL_CHEAT_SETTINGS_STR "cheat_settings"
-#define MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE_STR "cheat_apply_after_toggle"
-#define MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD_STR "cheat_apply_after_load"
 #define MENU_ENUM_LABEL_REWIND_ENABLE_STR "rewind_enable"
 #define MENU_ENUM_LABEL_REWIND_SETTINGS_STR "rewind_settings"
 #define MENU_ENUM_LABEL_REWIND_GRANULARITY_STR "rewind_granularity"
