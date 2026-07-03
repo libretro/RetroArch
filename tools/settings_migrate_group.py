@@ -321,7 +321,21 @@ CPP = "gcc -E -P -I. -Imenu -Ilibretro-common/include -Ideps/7zip -Ideps/rcheevo
 def table_tokens(src_path, extra=""):
     """Preprocessed initializer token stream, or None when the table's
     enclosing guards eliminate it in this polarity."""
-    r = run("%s %s %s 2>/dev/null" % (CPP, extra, src_path))
+    # Self-healing lane environment: external dependencies (mist.h for
+    # Steam builds) are not in-tree, and -E only needs the header to
+    # exist. Missing headers are stubbed empty, bounded, with a notice;
+    # an empty preprocessor output must be a table fact, never a lane
+    # environment defect.
+    os.makedirs('/tmp/settings_mig_stubs', exist_ok=True)
+    for _ in range(6):
+        r = run("%s -I/tmp/settings_mig_stubs %s %s 2>&1" % (CPP, extra, src_path))
+        fe = re.search(r"fatal error: ([\w./-]+\.h): No such file", r.stdout + r.stderr)
+        if not fe:
+            break
+        stub = os.path.join('/tmp/settings_mig_stubs', os.path.basename(fe.group(1)))
+        assert not os.path.exists(stub), ("stub loop", fe.group(1))
+        open(stub, 'w').write('/* empty stub for the token gate */\n')
+        print("  note: stubbed external header %s for the token gate" % fe.group(1))
     m2 = re.search(r'static const setting_desc_t %s\[\] = \{(.*?)\};' % TABLE, r.stdout, re.S)
     if not m2:
         return None
