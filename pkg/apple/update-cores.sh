@@ -241,6 +241,7 @@ appstore_cores=(
     mrboom
     mu
     mupen64plus_next
+    native32emu
     neocd
     nestopia
     noods
