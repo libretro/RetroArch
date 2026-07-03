@@ -961,7 +961,6 @@
 #define MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT_STR "ui_companion_start_on_boot"
 #define MENU_ENUM_LABEL_UI_COMPANION_TOGGLE_STR "ui_companion_toggle"
 #define MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE_STR "desktop_menu_enable"
-#define MENU_ENUM_LABEL_UI_MENUBAR_ENABLE_STR "ui_menubar_enable"
 #define MENU_ENUM_LABEL_UNDO_LOAD_STATE_STR "undo_load_state"
 #define MENU_ENUM_LABEL_UNDO_SAVE_STATE_STR "undo_save_state"
 #define MENU_ENUM_LABEL_UPDATER_SETTINGS_STR "updater_settings"

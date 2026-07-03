@@ -1826,7 +1826,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("statistics_show",               &settings->bools.video_statistics_show, true, DEFAULT_STATISTICS_SHOW, false);
    SETTING_BOOL("framecount_show",               &settings->bools.video_framecount_show, true, DEFAULT_FRAMECOUNT_SHOW, false);
    SETTING_BOOL("memory_show",                   &settings->bools.video_memory_show, true, DEFAULT_MEMORY_SHOW, false);
-   SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, DEFAULT_UI_MENUBAR_ENABLE, false);
    SETTING_BOOL("pause_on_disconnect",           &settings->bools.pause_on_disconnect, true, DEFAULT_PAUSE_ON_DISCONNECT, false);
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, DEFAULT_AUTO_SCREENSHOT_FILENAME, false);
    SETTING_BOOL("video_filter_enable",           &settings->bools.video_filter_enable, true, true, false);
@@ -1968,6 +1967,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ui_menubar.h"
 #include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
 #ifdef WIIU
@@ -2345,6 +2345,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ui_menubar.h"
 #include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
 #ifdef WIIU
@@ -2661,6 +2662,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ui_menubar.h"
 #include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
 #ifdef WIIU
@@ -2952,6 +2954,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ui_menubar.h"
 #include "settings/settings_def_video_window_decorations.h"
 #include "settings/settings_def_video_srgb.h"
 #ifdef WIIU
