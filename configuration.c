@@ -1974,6 +1974,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef ANDROID
+#include "settings/settings_def_input_android_workaround.h"
+#endif
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
@@ -2292,9 +2295,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("replay_checkpoint_deserialize", &settings->bools.replay_checkpoint_deserialize,  true, DEFAULT_REPLAY_CHECKPOINT_DESERIALIZE, false);
 #endif
 
-#ifdef ANDROID
-   SETTING_BOOL("android_input_disconnect_workaround", &settings->bools.android_input_disconnect_workaround, true, false, false);
-#endif
 
 #ifdef _3DS
    SETTING_BOOL("new3ds_speedup_enable",         &settings->bools.new3ds_speedup_enable, true, DEFAULT_NEW_3DS_SPEEDUP_ENABLE,      false);
@@ -2343,6 +2343,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef ANDROID
+#include "settings/settings_def_input_android_workaround.h"
+#endif
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
@@ -2641,6 +2644,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef ANDROID
+#include "settings/settings_def_input_android_workaround.h"
+#endif
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
@@ -2914,6 +2920,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef ANDROID
+#include "settings/settings_def_input_android_workaround.h"
+#endif
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
