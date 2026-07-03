@@ -704,7 +704,6 @@ enum msg_hash_enums
    MENU_LABEL(KICK_STREAM_KEY),
    MENU_ENUM_LABEL_MENU_TOGGLE,
 
-   MENU_LABEL(FILTER_BY_CURRENT_CORE),
 
    MENU_LABEL(NO_HISTORY_AVAILABLE),
    MENU_LABEL(NO_MUSIC_AVAILABLE),
@@ -2205,7 +2204,44 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
 
    /* Menu file browser */
-   MENU_LABEL(NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
+   /* GENERATED REGION: file browser group enum rows (see settings/settings_def_menu_filebrowser.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#include "settings/settings_def_menu_filebrowser.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef S_INT_H
+#undef S_FLOAT_H
+#undef S_UINT_NS_H
+#undef S_INT_NS_H
+#undef S_FLOAT_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
 
    /* Playlists */
    MENU_LABEL(HISTORY_LIST_ENABLE),
@@ -3109,8 +3145,6 @@ enum msg_hash_enums
    MENU_LABEL(CONFIGURATION_LIST),
    MENU_LABEL(CONFIRM_ON_EXIT),
    MENU_LABEL(SHOW_HIDDEN_FILES),
-   MENU_LABEL(USE_LAST_START_DIRECTORY),
-   MENU_LABEL(CORE_SUGGEST_ALWAYS),
 
    /* Driver settings */
    MENU_LABEL(AUDIO_DRIVER),
