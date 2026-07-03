@@ -50,6 +50,8 @@ typedef struct
 static int rw_parse(const uint8_t *b, size_t l, rw_ctr *c)
 {
    size_t p;
+   const uint8_t *pend_alph = NULL;
+   size_t pend_alphs = 0;
    memset(c, 0, sizeof(*c));
    if (l < 12 || rw32(b) != RW_CC('R','I','F','F')
        || rw32(b+8) != RW_CC('W','E','B','P'))
@@ -61,29 +63,48 @@ static int rw_parse(const uint8_t *b, size_t l, rw_ctr *c)
       const uint8_t *d = b + p + 8;
       if (p + 8 + sz > l) break;
       if (tag == RW_CC('V','P','8',' ') && !c->vp8)
-      { c->vp8 = d; c->vp8s = sz; c->lossless = 0; }
+      {
+         c->vp8 = d; c->vp8s = sz; c->lossless = 0;
+         /* An ALPH chunk pairs only with the lossy image of the same
+          * (top-level) image; it always precedes its VP8 chunk. */
+         c->alph = pend_alph; c->alphs = pend_alphs;
+      }
       else if (tag == RW_CC('V','P','8','L') && !c->vp8l)
       { c->vp8l = d; c->vp8ls = sz; c->lossless = 1; }
-      else if (tag == RW_CC('A','L','P','H') && !c->alph)
-      { c->alph = d; c->alphs = sz; }
+      else if (tag == RW_CC('A','L','P','H'))
+      { pend_alph = d; pend_alphs = sz; }
       else if (tag == RW_CC('A','N','M','F') && sz >= 16)
       {
+         /* Scan this frame's local chunks; commit the frame's image
+          * together with the SAME frame's ALPH (if any). Alpha from a
+          * different frame must never be applied - animation deltas
+          * carry per-frame alpha covering only their changed region. */
+         const uint8_t *fa = NULL, *fv = NULL, *fl = NULL;
+         size_t fas = 0, fvs = 0, fls = 0;
          size_t sp;
          for (sp = 16; sp + 8 <= sz; )
          {
             uint32_t st = rw32(d+sp), ss = rw32(d+sp+4);
             if (sp+8+ss > sz) break;
-            if (st == RW_CC('V','P','8',' ') && !c->vp8)
-            { c->vp8 = d+sp+8; c->vp8s = ss; c->lossless = 0; }
-            else if (st == RW_CC('V','P','8','L') && !c->vp8l)
-            { c->vp8l = d+sp+8; c->vp8ls = ss; c->lossless = 1; }
-            else if (st == RW_CC('A','L','P','H') && !c->alph)
-            { c->alph = d+sp+8; c->alphs = ss; }
+            if (st == RW_CC('V','P','8',' ') && !fv)
+            { fv = d+sp+8; fvs = ss; }
+            else if (st == RW_CC('V','P','8','L') && !fl)
+            { fl = d+sp+8; fls = ss; }
+            else if (st == RW_CC('A','L','P','H') && !fa)
+            { fa = d+sp+8; fas = ss; }
             sp += 8 + ((ss+1) & ~(size_t)1);
+         }
+         if (fl && !c->vp8l && !c->vp8)
+         { c->vp8l = fl; c->vp8ls = fls; c->lossless = 1; }
+         else if (fv && !c->vp8 && !c->vp8l)
+         {
+            c->vp8 = fv; c->vp8s = fvs; c->lossless = 0;
+            c->alph = fa; c->alphs = fas;
          }
       }
       p += 8 + ((sz+1) & ~(size_t)1);
    }
+   if (!c->vp8) { c->alph = NULL; c->alphs = 0; }
    return (c->vp8 || c->vp8l);
 }
 
