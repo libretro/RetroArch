@@ -348,7 +348,11 @@ for df in run("git ls-tree HEAD --name-only | grep '^settings/settings_def_'").s
     run("git show HEAD:%s > /tmp/base/%s" % (df, df))
 run("cd /tmp/base/intl && python3 h2json.py msg_hash_us.h")
 basej = json.load(open('/tmp/base/intl/msg_hash_us.json'))
-assert set(basej) == set(new) and all(basej[x] == new[x] for x in basej), "us.json drift"
+_miss = sorted(set(basej) - set(new)); _extra = sorted(set(new) - set(basej))
+_diff = sorted(x for x in set(basej) & set(new) if basej[x] != new[x])
+assert not _miss and not _extra and not _diff, (
+    'us.json drift: missing=%s extra=%s changed=%s' % (_miss[:4], _extra[:4],
+    [(k, basej[k][:50], new[k][:50]) for k in _diff[:2]]))
 os.remove('intl/msg_hash_us.json')
 print("gate: us.json exactly equal (%d keys)" % len(new))
 MH = "msg_hash.c intl/msg_hash_us.c libretro-common/string/stdstring.c libretro-common/compat/compat_strl.c libretro-common/encodings/encoding_utf.c"
