@@ -58,14 +58,23 @@ def parse_enum_names(msg_hash_h):
             guard = tuple((g[0], g[1]) for g in stack)
             dt = re.sub(r'/\*.*?\*/', '', open(im.group(1)).read(), flags=re.S)
             dstack = list(stack)
+            dskip = []
             for dl in dt.split('\n'):
                 ds = dl.strip()
+                if 'SETTINGS_DEF_STRINGS_PASS' in ds and ds.startswith('#if'):
+                    # the enum region defines the strings pass, so an
+                    # alternated guard is always true there
+                    dskip.append(True); continue
+                if ds.startswith('#endif') and dskip and dskip[-1]:
+                    dskip.pop(); continue
                 if ds.startswith('#if'):
+                    dskip.append(False)
                     dstack.append([ds, False]); continue
                 if ds.startswith('#else'):
                     if len(dstack) > len(stack): dstack[-1][1] = True
                     continue
                 if ds.startswith('#endif'):
+                    if dskip: dskip.pop()
                     if len(dstack) > len(stack): dstack.pop()
                     continue
                 dm = re.match(r'S_(BOOL|UINT|INT|FLOAT)(_NS)?(_H)?\s*\(\s*\w+,\s*(\w+),', ds)

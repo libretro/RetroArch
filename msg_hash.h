@@ -1402,15 +1402,36 @@ enum msg_hash_enums
    MENU_LABEL(INPUT_OVERLAY_BEHIND_MENU),
    MENU_LABEL(INPUT_OVERLAY_HIDE_IN_MENU),
    MENU_LABEL(INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED),
-#ifdef UDEV_TOUCH_SUPPORT
-   MENU_LABEL(INPUT_TOUCH_VMOUSE_POINTER),
-   MENU_LABEL(INPUT_TOUCH_VMOUSE_MOUSE),
-   MENU_LABEL(INPUT_TOUCH_VMOUSE_TOUCHPAD),
-   MENU_LABEL(INPUT_TOUCH_VMOUSE_TRACKBALL),
-   MENU_LABEL(INPUT_TOUCH_VMOUSE_GESTURE),
-#endif
 #if defined(ANDROID)
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+   ME   /* GENERATED REGION: input vmouse group enum rows (see settings/settings_def_input_vmouse.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_input_vmouse.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
+NU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
 #endif
 
    MENU_LABEL(INPUT_OVERLAY_SHOW_INPUTS),
@@ -1443,8 +1464,34 @@ enum msg_hash_enums
    MENU_LABEL(INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT),
    MENU_LABEL(INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE),
    MENU_LABEL(INPUT_SMALL_KEYBOARD_ENABLE),
-   MENU_LABEL(INPUT_TOUCH_ENABLE),
-   MENU_LBL_H(INPUT_PREFER_FRONT_TOUCH),
+   /* GENERATED REGION: input backtouch group enum rows (see settings/settings_def_input_backtouch.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_input_backtouch.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(INPUT_ICADE_ENABLE),
    MENU_LABEL(INPUT_ALL_USERS_CONTROL_MENU),
    MENU_LABEL(MENU_SINGLECLICK_PLAYLISTS),
@@ -1534,7 +1581,34 @@ enum msg_hash_enums
    MENU_LABEL(VIDEO_SHADER_DELAY),
    MENU_LABEL(VIDEO_ADAPTIVE_VSYNC),
    MENU_LABEL(VIDEO_SCANLINE_SYNC),
-   MENU_LABEL(VIDEO_WINDOWED_FULLSCREEN),
+   /* GENERATED REGION: video fullscreen group enum rows (see settings/settings_def_video_fullscreen.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_video_fullscreen.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_AUTOSWITCH_REFRESH_RATE),
    MENU_LABEL(VIDEO_AUTOSWITCH_PAL_THRESHOLD),
 
@@ -1542,18 +1616,38 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
 
-   MENU_LABEL(VIDEO_WINDOW_WIDTH),
-   MENU_LABEL(VIDEO_WINDOW_HEIGHT),
-   MENU_LABEL(VIDEO_WINDOW_AUTO_WIDTH_MAX),
-   MENU_LABEL(VIDEO_WINDOW_AUTO_HEIGHT_MAX),
-   MENU_LABEL(VIDEO_WINDOW_OPACITY),
-   MENU_LABEL(VIDEO_FULLSCREEN_X),
-   MENU_LABEL(VIDEO_FULLSCREEN_Y),
+   /* GENERATED REGION: video window group enum rows (see settings/settings_def_video_window.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_video_window.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_FORCE_RESOLUTION),
    MENU_LABEL(VIDEO_FORCE_SRGB_DISABLE),
    MENU_LABEL(VIDEO_ROTATION),
    MENU_LABEL(SCREEN_ORIENTATION),
-   MENU_LABEL(VIDEO_SCALE),
    MENU_LABEL(VIDEO_RECORD_THREADS),
    MENU_LABEL(VIDEO_SMOOTH),
    MENU_LABEL(VIDEO_CTX_SCALING),
@@ -1593,7 +1687,6 @@ enum msg_hash_enums
 
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
 
-   MENU_LABEL(VIDEO_FULLSCREEN),
    MENU_LBL_H(VIDEO_MONITOR_INDEX),
    MENU_LABEL(VIDEO_WIIU_PREFER_DRC),
    MENU_LABEL(VIDEO_WINDOW_SCALE),
@@ -1639,8 +1732,34 @@ enum msg_hash_enums
    MENU_LABEL(MENU_SHOW_QUIT_RETROARCH),
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    MENU_LABEL(MENU_SHOW_RESTART_RETROARCH),
-   MENU_LABEL(MENU_SHOW_REBOOT),
-   MENU_LABEL(MENU_SHOW_SHUTDOWN),
+   /* GENERATED REGION: menu power views group enum rows (see settings/settings_def_menu_power_views.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_menu_power_views.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(MENU_SHOW_ONLINE_UPDATER),
    MENU_LABEL(MENU_SHOW_CORE_UPDATER),
    MENU_LABEL(MENU_SCROLL_FAST),
@@ -1652,7 +1771,34 @@ enum msg_hash_enums
    MENU_LABEL(RUN),
    MENU_LABEL(MENU_WALLPAPER),
    MENU_LABEL(DYNAMIC_WALLPAPER),
-   MENU_LABEL(PAUSE_NONACTIVE),
+   /* GENERATED REGION: ui focus group enum rows (see settings/settings_def_ui_focus.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_ui_focus.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(PAUSE_ON_DISCONNECT),
    MENU_LABEL(MENU_SCREENSAVER_TIMEOUT),
    MENU_LABEL(MENU_SCREENSAVER_ANIMATION),
@@ -1664,13 +1810,37 @@ enum msg_hash_enums
 
    MENU_LABEL(MOUSE_ENABLE),
    MENU_LABEL(POINTER_ENABLE),
-   MENU_LABEL(MENU_RGUI_BORDER_FILLER_ENABLE),
-   MENU_LABEL(MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE),
-   MENU_LABEL(MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE),
+   /* GENERATED REGION: menu rgui layout group enum rows (see settings/settings_def_menu_rgui_layout.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_menu_rgui_layout.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(MENU_RGUI_INTERNAL_UPSCALE_LEVEL),
    MENU_LABEL(MENU_RGUI_ASPECT_RATIO),
    MENU_LABEL(MENU_RGUI_ASPECT_RATIO_LOCK),
-   MENU_LABEL(MENU_RGUI_FULL_WIDTH_LAYOUT),
    MENU_LABEL(MENU_RGUI_TRANSPARENCY),
    MENU_LABEL(MENU_RGUI_SHADOWS),
    MENU_LABEL(MENU_RGUI_PARTICLE_EFFECT),
@@ -1737,8 +1907,34 @@ enum msg_hash_enums
    MENU_LABEL(MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET),
    MENU_LABEL(MENU_THUMBNAIL_UPSCALE_THRESHOLD),
    MENU_LABEL(MENU_THUMBNAIL_BACKGROUND_ENABLE),
-   MENU_LABEL(MENU_RGUI_INLINE_THUMBNAILS),
-   MENU_LABEL(MENU_RGUI_SWAP_THUMBNAILS),
+   /* GENERATED REGION: menu rgui thumbnails group enum rows (see settings/settings_def_menu_rgui_thumbnails.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_menu_rgui_thumbnails.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(MENU_RGUI_THUMBNAIL_DOWNSCALER),
    MENU_LABEL(MENU_RGUI_THUMBNAIL_DELAY),
    MENU_LABEL(TIMEDATE_ENABLE),
@@ -1771,58 +1967,97 @@ enum msg_hash_enums
    MENU_LABEL(OZONE_THUMBNAIL_SCALE_FACTOR),
    MENU_LABEL(MATERIALUI_MENU_COLOR_THEME),
    MENU_LABEL(QUICK_MENU_OVERRIDE_OPTIONS),
-   MENU_LABEL(SETTINGS_SHOW_DRIVERS),
-   MENU_LABEL(SETTINGS_SHOW_VIDEO),
-   MENU_LABEL(SETTINGS_SHOW_AUDIO),
-   MENU_LABEL(SETTINGS_SHOW_INPUT),
-   MENU_LABEL(SETTINGS_SHOW_LATENCY),
-   MENU_LABEL(SETTINGS_SHOW_CORE),
-   MENU_LABEL(SETTINGS_SHOW_CONFIGURATION),
-   MENU_LABEL(SETTINGS_SHOW_SAVING),
-   MENU_LABEL(SETTINGS_SHOW_LOGGING),
-   MENU_LABEL(SETTINGS_SHOW_FILE_BROWSER),
-   MENU_LABEL(SETTINGS_SHOW_FRAME_THROTTLE),
-   MENU_LABEL(SETTINGS_SHOW_RECORDING),
-   MENU_LABEL(SETTINGS_SHOW_ONSCREEN_DISPLAY),
-   MENU_LABEL(SETTINGS_SHOW_USER_INTERFACE),
-   MENU_LABEL(SETTINGS_SHOW_AI_SERVICE),
-   MENU_LABEL(SETTINGS_SHOW_ACCESSIBILITY),
-   MENU_LABEL(SETTINGS_SHOW_POWER_MANAGEMENT),
-   MENU_LABEL(SETTINGS_SHOW_ACHIEVEMENTS),
-   MENU_LABEL(SETTINGS_SHOW_NETWORK),
-   MENU_LABEL(SETTINGS_SHOW_PLAYLISTS),
-   MENU_LABEL(SETTINGS_SHOW_USER),
-   MENU_LABEL(SETTINGS_SHOW_DIRECTORY),
+   /* GENERATED REGION: menu settings views group enum rows (see settings/settings_def_menu_settings_views.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_menu_settings_views.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(SETTINGS_SHOW_STEAM),
    MENU_LABEL(SETTINGS_SHOW_SMB_CLIENT),
-   MENU_LABEL(QUICK_MENU_SHOW_RESUME_CONTENT),
-   MENU_LABEL(QUICK_MENU_SHOW_RESTART_CONTENT),
-   MENU_LABEL(QUICK_MENU_SHOW_CLOSE_CONTENT),
-   MENU_LABEL(QUICK_MENU_SHOW_TAKE_SCREENSHOT),
-   MENU_LABEL(QUICK_MENU_SHOW_SAVESTATE_SUBMENU),
-   MENU_LABEL(QUICK_MENU_SHOW_SAVE_LOAD_STATE),
-   MENU_LABEL(QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE),
-   MENU_LABEL(QUICK_MENU_SHOW_REPLAY),
-   MENU_LABEL(QUICK_MENU_SHOW_ADD_TO_FAVORITES),
-   MENU_LABEL(QUICK_MENU_SHOW_ADD_TO_PLAYLIST),
-   MENU_LABEL(QUICK_MENU_SHOW_START_RECORDING),
-   MENU_LABEL(QUICK_MENU_SHOW_START_STREAMING),
-   MENU_LABEL(QUICK_MENU_SHOW_SET_CORE_ASSOCIATION),
-   MENU_LABEL(QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION),
-   MENU_LABEL(QUICK_MENU_SHOW_OPTIONS),
-   MENU_LABEL(QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH),
-   MENU_LABEL(QUICK_MENU_SHOW_CONTROLS),
-   MENU_LABEL(QUICK_MENU_SHOW_CHEATS),
+   /* GENERATED REGION: menu quick views group enum rows (see settings/settings_def_menu_quick_views.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_menu_quick_views.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(QUICK_MENU_SHOW_SHADERS),
-   MENU_LABEL(QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES),
-   MENU_LABEL(QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES),
-   MENU_LABEL(QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES),
-   MENU_LABEL(QUICK_MENU_SHOW_INFORMATION),
+   /* GENERATED REGION: menu desktop group enum rows (see settings/settings_def_menu_desktop.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_menu_desktop.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(QUICK_MENU_START_RECORDING),
    MENU_LABEL(QUICK_MENU_STOP_RECORDING),
    MENU_LABEL(QUICK_MENU_START_STREAMING),
    MENU_LABEL(QUICK_MENU_STOP_STREAMING),
-   MENU_LABEL(QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS),
    MENU_LABEL(MENU_TICKER_TYPE),
    MENU_LABEL(MENU_TICKER_SPEED),
    MENU_LABEL(MENU_TICKER_SMOOTH),
@@ -1843,7 +2078,6 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
 
    /* UI settings */
-   MENU_LBL_H(VIDEO_DISABLE_COMPOSITION),
    MENU_LABEL(UI_COMPANION_ENABLE),
    MENU_LBL_H(UI_COMPANION_START_ON_BOOT),
    MENU_LABEL(UI_COMPANION_TOGGLE),
@@ -2008,7 +2242,34 @@ enum msg_hash_enums
    MENU_LABEL(CHEEVOS_RICHPRESENCE_ENABLE),
    MENU_LABEL(CHEEVOS_BADGES_ENABLE),
    MENU_LABEL(CHEEVOS_TEST_UNOFFICIAL),
-   MENU_LABEL(CHEEVOS_VERBOSE_ENABLE),
+   /* GENERATED REGION: cheevos visibility group enum rows (see settings/settings_def_cheevos_visibility.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_cheevos_visibility.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(CHEEVOS_UNLOCK_SOUND_ENABLE),
    MENU_LABEL(CHEEVOS_AUTO_SCREENSHOT),
    MENU_LABEL(CHEEVOS_START_ACTIVE),
@@ -2033,7 +2294,6 @@ enum msg_hash_enums
    MENU_LABEL(CHEEVOS_VISIBILITY_SUMMARY),
    MENU_LABEL(CHEEVOS_VISIBILITY_UNLOCK),
    MENU_LABEL(CHEEVOS_VISIBILITY_MASTERY),
-   MENU_LABEL(CHEEVOS_VISIBILITY_ACCOUNT),
    MENU_LABEL(CHEEVOS_VISIBILITY_LBOARD_START),
    MENU_LABEL(CHEEVOS_VISIBILITY_LBOARD_SUBMIT),
    MENU_LABEL(CHEEVOS_VISIBILITY_LBOARD_CANCEL),
@@ -2295,7 +2555,34 @@ enum msg_hash_enums
 
    MENU_LABEL(INFORMATION),
    MENU_LABEL(INFORMATION_LIST),
-   MENU_LABEL(USE_BUILTIN_PLAYER),
+   /* GENERATED REGION: multimedia group enum rows (see settings/settings_def_multimedia.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_multimedia.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(CONTENT_SETTINGS),
    MENU_LBL_H(LOAD_CONTENT_LIST),
    MENU_LABEL(LOAD_CONTENT_SPECIAL),
@@ -2351,7 +2638,34 @@ enum msg_hash_enums
 
    /* Audio */
    MENU_LABEL(AUDIO_ENABLE),
-   MENU_LABEL(AUDIO_ENABLE_MENU),
+   /* GENERATED REGION: menu sounds group enum rows (see settings/settings_def_menu_sounds.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_menu_sounds.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LBL_H(AUDIO_MAX_TIMING_SKEW),
    MENU_LABEL(AUDIO_OUTPUT_RATE),
    MENU_LBL_H(AUDIO_DEVICE),
@@ -2623,8 +2937,34 @@ enum msg_hash_enums
    MENU_LABEL(FASTFORWARD_FRAMESKIP),
    MENU_LBL_H(VRR_RUNLOOP_ENABLE),
    MENU_LABEL(REWIND_ENABLE),
-   MENU_LABEL(CHEAT_APPLY_AFTER_TOGGLE),
-   MENU_LABEL(CHEAT_APPLY_AFTER_LOAD),
+   /* GENERATED REGION: cheats apply group enum rows (see settings/settings_def_cheats_apply.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_cheats_apply.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
 
    MENU_ENUM_LABEL_ENABLE_HOTKEY,
    MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
@@ -3435,14 +3775,40 @@ enum msg_hash_enums
 
    MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
 
-   MENU_LABEL(VIDEO_SHADERS_ENABLE),
+   /* GENERATED REGION: shader preset group enum rows (see settings/settings_def_shader_preset.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_shader_preset.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_SHADER_PRESET_MANAGER),
    MENU_LABEL(VIDEO_SHADER_PRESET_FILE_INFO),
    MENU_LABEL(VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
    MENU_LABEL(VIDEO_SHADER_PRESET_REMOVE_CORE),
    MENU_LABEL(VIDEO_SHADER_PRESET_REMOVE_PARENT),
    MENU_LABEL(VIDEO_SHADER_PRESET_REMOVE_GAME),
-   MENU_LABEL(VIDEO_SHADER_PRESET_SAVE_REFERENCE),
    MENU_LABEL(VIDEO_SHADER_PRESET_SAVE_CURRENT),
    MENU_LABEL(VIDEO_SHADER_PRESET_SAVE_AS),
    MENU_LABEL(VIDEO_SHADER_PRESET_SAVE_GLOBAL),
@@ -3451,16 +3817,63 @@ enum msg_hash_enums
    MENU_LABEL(VIDEO_SHADER_PRESET_SAVE_GAME),
    MENU_LBL_H(USER_LANGUAGE),
    MENU_LABEL(NETPLAY_NICKNAME),
-   MENU_LABEL(VIDEO_VI_WIDTH),
-   MENU_LABEL(VIDEO_OVERSCAN_CORRECTION_TOP),
-   MENU_LABEL(VIDEO_OVERSCAN_CORRECTION_BOTTOM),
+   /* GENERATED REGION: video gamecube group enum rows (see settings/settings_def_video_gamecube.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_video_gamecube.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_ASPECT_RATIO),
-   MENU_LABEL(VIDEO_VIEWPORT_BIAS_X),
-   MENU_LABEL(VIDEO_VIEWPORT_BIAS_Y),
-#if defined(RARCH_MOBILE)
-   MENU_LABEL(VIDEO_VIEWPORT_BIAS_PORTRAIT_X),
-   MENU_LABEL(VIDEO_VIEWPORT_BIAS_PORTRAIT_Y),
-#endif
+   /* GENERATED REGION: video bias group enum rows (see settings/settings_def_video_bias.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_video_bias.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_ASPECT_RATIO_INDEX),
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_SQUARE_PIXEL,
@@ -3487,11 +3900,36 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
 #endif
 #endif
-   MENU_LABEL(VIDEO_VFILTER),
-   MENU_LABEL(VIDEO_GPU_RECORD),
+   /* GENERATED REGION: recording video group enum rows (see settings/settings_def_recording_video.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_recording_video.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(RECORD_CONFIG),
    MENU_LABEL(STREAM_CONFIG),
-   MENU_LABEL(VIDEO_POST_FILTER_RECORD),
 
    MENU_LABEL(SECONDS),
    MENU_LABEL(STATUS),
@@ -3634,7 +4072,6 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_NONE,
    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
 
-   MENU_LABEL(USE_BUILTIN_IMAGE_VIEWER),
    MENU_LABEL(OVERLAY_AUTOLOAD_PREFERRED),
    MENU_LABEL(LOAD_ARCHIVE),
    MENU_LABEL(OPEN_ARCHIVE),
@@ -4106,11 +4543,6 @@ enum msg_hash_enums
    MENU_LABEL(PLAYLIST_USE_OLD_FORMAT),
    MENU_LABEL(PLAYLIST_COMPRESSION),
    MENU_LABEL(MENU_SOUNDS),
-   MENU_LABEL(MENU_SOUND_OK),
-   MENU_LABEL(MENU_SOUND_CANCEL),
-   MENU_LABEL(MENU_SOUND_NOTICE),
-   MENU_LABEL(MENU_SOUND_BGM),
-   MENU_LABEL(MENU_SOUND_SCROLL),
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    MENU_LABEL(CONTENT_RUNTIME_LOG),
    MENU_LABEL(CONTENT_RUNTIME_LOG_AGGREGATE),
