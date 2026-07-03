@@ -17122,6 +17122,21 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_xmb_intro_animation,
+                  MENU_ENUM_LABEL_XMB_INTRO_ANIMATION,
+                  MENU_ENUM_LABEL_VALUE_XMB_INTRO_ANIMATION,
+                  DEFAULT_XMB_INTRO_ANIMATION,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #ifdef HAVE_SHADERPIPELINE
             {

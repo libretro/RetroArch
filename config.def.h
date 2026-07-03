@@ -893,6 +893,7 @@
 #define DEFAULT_XMB_SHOW_TITLE_HEADER              true
 #define DEFAULT_XMB_ENTRY_ICONS                    true
 #define DEFAULT_XMB_SWITCH_ICONS                   true
+#define DEFAULT_XMB_INTRO_ANIMATION                false
 #define DEFAULT_XMB_CURRENT_MENU_ICON              1
 #define DEFAULT_XMB_TITLE_MARGIN                   3
 #define DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET 0

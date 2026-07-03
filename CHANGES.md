@@ -87,6 +87,7 @@
 - MENU/XMB: Left thumbnail and handheld mode fixes
 - MENU/XMB: Tab change possible by gestures
 - MENU/XMB: Horizontal menu is now optional
+- MENU/XMB: Add Intro animation option
 - NETWORK: New network commands SAVE_STATE_SLOT N and GET_CONFIG_PARAM
 - OVERLAY: Allow overlays to position the viewport
 - OVERLAY: Hold button function
