@@ -342,7 +342,7 @@ print("gate: structural audits clean")
 r = run("cd intl && python3 h2json.py msg_hash_us.h")
 assert r.returncode == 0, r.stderr[-200:]
 new = json.load(open('intl/msg_hash_us.json'))
-run("rm -rf /tmp/base && mkdir -p /tmp/base/intl")
+run("rm -rf /tmp/base && mkdir -p /tmp/base/intl /tmp/base/settings")
 run("git show HEAD:intl/msg_hash_us.h > /tmp/base/intl/msg_hash_us.h; git show HEAD:intl/h2json.py > /tmp/base/intl/h2json.py")
 for df in run("git ls-tree HEAD --name-only | grep '^settings/settings_def_'").stdout.split():
     run("git show HEAD:%s > /tmp/base/%s" % (df, df))
