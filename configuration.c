@@ -1827,7 +1827,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("framecount_show",               &settings->bools.video_framecount_show, true, DEFAULT_FRAMECOUNT_SHOW, false);
    SETTING_BOOL("memory_show",                   &settings->bools.video_memory_show, true, DEFAULT_MEMORY_SHOW, false);
    SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, DEFAULT_UI_MENUBAR_ENABLE, false);
-   SETTING_BOOL("pause_nonactive",               &settings->bools.pause_nonactive, true, DEFAULT_PAUSE_NONACTIVE, false);
    SETTING_BOOL("pause_on_disconnect",           &settings->bools.pause_on_disconnect, true, DEFAULT_PAUSE_ON_DISCONNECT, false);
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, DEFAULT_AUTO_SCREENSHOT_FILENAME, false);
    SETTING_BOOL("suspend_screensaver_enable",    &settings->bools.ui_suspend_screensaver_enable, true, true, false);
@@ -1981,6 +1980,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ui_focus.h"
 #include "settings/settings_def_multimedia.h"
 #ifdef HAVE_MENU
 #ifdef HAVE_RGUI
@@ -2027,7 +2027,6 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_FLOAT_NS
    SETTING_BOOL("video_adaptive_vsync",          &settings->bools.video_adaptive_vsync, true, DEFAULT_ADAPTIVE_VSYNC, false);
    SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
-   SETTING_BOOL("video_disable_composition",     &settings->bools.video_disable_composition, true, DEFAULT_DISABLE_COMPOSITION, false);
    SETTING_BOOL("video_gpu_screenshot",          &settings->bools.video_gpu_screenshot, true, DEFAULT_GPU_SCREENSHOT, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
@@ -2349,6 +2348,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ui_focus.h"
 #include "settings/settings_def_multimedia.h"
 #ifdef HAVE_MENU
 #ifdef HAVE_RGUI
@@ -2633,6 +2633,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ui_focus.h"
 #include "settings/settings_def_multimedia.h"
 #ifdef HAVE_MENU
 #ifdef HAVE_RGUI
@@ -2892,6 +2893,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ui_focus.h"
 #include "settings/settings_def_multimedia.h"
 #ifdef HAVE_MENU
 #ifdef HAVE_RGUI
