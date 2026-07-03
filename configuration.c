@@ -1975,6 +1975,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -2031,7 +2032,6 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
-   SETTING_BOOL("video_adaptive_vsync",          &settings->bools.video_adaptive_vsync, true, DEFAULT_ADAPTIVE_VSYNC, false);
    SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
@@ -2343,6 +2343,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -2639,6 +2640,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -2910,6 +2912,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
