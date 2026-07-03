@@ -7161,10 +7161,10 @@ static void ozone_draw_osk(
    const char *text               = str;
    unsigned text_color            = 0xffffffff;
    float ozone_osk_backdrop[16] = {
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
+      0.15, 0.15, 0.15, 0.25,
+      0.15, 0.15, 0.15, 0.25,
+      0.15, 0.15, 0.15, 0.25,
+      0.15, 0.15, 0.15, 0.25,
    };
    unsigned i                     = 0;
    static retro_time_t last_time  = 0;
@@ -7265,7 +7265,7 @@ static void ozone_draw_osk(
          ozone_osk_backdrop,
          NULL);
 
-   /* Placeholder & text*/
+   /* Placeholder & text */
    if (draw_placeholder)
    {
       text        = label;
@@ -7281,6 +7281,7 @@ static void ozone_draw_osk(
          0);
 
    list_size = string_count_occurrences_single_character(message, '\n');
+   list_size = (list_size) ? list_size : 1;
 
    for (line = message; line; line = next ? next + 1 : NULL)
    {
@@ -7302,8 +7303,12 @@ static void ozone_draw_osk(
       gfx_display_draw_text(
             ozone->fonts.entries_label.font,
             line_buf,
-            margin + (padding * 2),
-            margin + padding + ozone->fonts.entries_label.line_height + y_offset,
+            margin
+                  + (padding * 2),
+            margin
+                  + padding
+                  + y_offset
+                  + ozone->fonts.entries_label.line_height,
             video_width,
             video_height,
             text_color,
@@ -7313,14 +7318,15 @@ static void ozone_draw_osk(
             1.0f,
             false);
 
-      /* Cursor */
+      /* Cursor/caret */
       if (i == list_size - 1)
       {
          if (ozone->flags & OZONE_FLAG_OSK_CURSOR)
          {
-            unsigned cursor_x = draw_placeholder
-                  ? 0
+            int cursor_x = draw_placeholder
+                  ? -2
                   : font_driver_get_message_width(ozone->fonts.entries_label.font, line_buf, _len, 1.0f);
+
             gfx_display_draw_quad(
                   p_disp,
                   userdata,
@@ -7344,7 +7350,7 @@ static void ozone_draw_osk(
          }
       }
       else
-         y_offset += 25 * scale_factor;
+         y_offset += (ozone->fonts.entries_label.line_height * 2) * scale_factor;
 
       i++;
    }
@@ -7450,7 +7456,7 @@ static void ozone_draw_messagebox(
    x                = width  / 2;
    y                = y_position - (line_count * line_height) / 2;
 
-   /* find the longest line width */
+   /* Find the longest line width */
    for (i = 0; i < line_count; i++)
    {
       const char *msg = lines[i];
@@ -7467,9 +7473,6 @@ static void ozone_draw_messagebox(
       longest_width = video_width / 4;
 
    gfx_display_set_alpha(ozone->theme_dynamic.message_background, ozone->animations.messagebox_alpha);
-
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
 
    /* Avoid drawing a black box if there's no assets */
    if (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS || ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)
@@ -7508,8 +7511,8 @@ static void ozone_draw_messagebox(
             slice_w,
             (unsigned)slice_new_w,
             (unsigned)slice_new_h,
-            width,
-            height,
+            video_width,
+            video_height,
             ozone->theme_dynamic.message_background,
             16,
             scale_factor,
@@ -7528,8 +7531,8 @@ static void ozone_draw_messagebox(
                msg,
                x - (longest_width / 2),
                y + (i * line_height) + font_data.line_ascender,
-               width,
-               height,
+               video_width,
+               video_height,
                COLOR_TEXT_ALPHA(ozone->theme->text_rgba, (uint32_t)(ozone->animations.messagebox_alpha*255.0f)),
                TEXT_ALIGN_LEFT,
                1.0f,
@@ -9506,7 +9509,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    *userdata = ozone;
 
-   for (i = 0; i < 15; i++)
+   for (i = 0; i < 16; i++)
       ozone->pure_white[i]                      = 1.00f;
 
    video_driver_get_output_size(&width, &height);
@@ -11556,7 +11559,8 @@ static void ozone_draw_footer(
    {
       if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
-      gfx_display_set_alpha(ozone->theme_dynamic.entries_icon, 1.0f);
+
+      gfx_display_set_alpha(col, 0.5f);
 
       if (dispctx->draw)
       {
@@ -12648,17 +12652,26 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          ozone->flags                      &= ~OZONE_FLAG_MSGBOX_STATE;
 
          gfx_animation_kill_by_tag(&messagebox_tag);
-         ozone->animations.messagebox_alpha = 1.0f;
 
-         entry.cb                           = ozone_messagebox_fadeout_cb;
-         entry.duration                     = ANIMATION_PUSH_ENTRY_DURATION;
-         entry.easing_enum                  = OZONE_EASING_ALPHA;
-         entry.subject                      = &ozone->animations.messagebox_alpha;
-         entry.tag                          = messagebox_tag;
-         entry.target_value                 = 0.0f;
-         entry.userdata                     = ozone;
+         if (animate)
+         {
+            ozone->animations.messagebox_alpha = 1.0f;
 
-         gfx_animation_push(&entry);
+            entry.cb                           = ozone_messagebox_fadeout_cb;
+            entry.duration                     = ANIMATION_PUSH_ENTRY_DURATION;
+            entry.easing_enum                  = OZONE_EASING_ALPHA;
+            entry.subject                      = &ozone->animations.messagebox_alpha;
+            entry.tag                          = messagebox_tag;
+            entry.target_value                 = 0.0f;
+            entry.userdata                     = ozone;
+
+            gfx_animation_push(&entry);
+         }
+         else
+         {
+            ozone->animations.messagebox_alpha = 0.0f;
+            ozone_messagebox_fadeout_cb(ozone);
+         }
       }
 
       ozone_draw_backdrop(userdata,
@@ -12681,7 +12694,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
                label,
                str);
       }
-      else
+      else if (*menu_st->driver_data->menu_state_msg)
          ozone_draw_messagebox(ozone,
                p_disp,
                userdata,
@@ -13558,9 +13571,10 @@ static int ozone_tap_footer(
 
    /* values below should all be kept in sync with ozone_draw_footer */
    float scale_factor                     = ozone->last_scale_factor;
-   float footer_margin                    = 42 * scale_factor;
+   float footer_margin                    = 40 * scale_factor;
+   float icon_size                        = 35 * scale_factor;
 
-   if (x > (float)video_width - footer_margin)
+   if (x > (float)video_width - footer_margin + icon_size)
       return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_CANCEL);
    else if (ozone->footer_labels.resume.show && x > ozone->footer_labels.resume.x)
       return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_RESUME);

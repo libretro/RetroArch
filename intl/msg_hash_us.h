@@ -217,7 +217,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PROFILE_CREATE,
-   "Create Profile..."
+   "Create Profile"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PROFILE_CREATE,
@@ -249,7 +249,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PROFILE_SAVE_NEW,
-   "Save Current Settings to New Profile..."
+   "Save Current Settings to New Profile"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PROFILE_SAVE_NEW,
