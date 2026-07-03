@@ -86,6 +86,7 @@ struct v4l2_resolution v4l2_resolutions[] =
    {480,320},
    {640,480},
    {720,480},
+   {720,576},
    {800,600},
    {960,720},
    {1024,768},
@@ -115,6 +116,12 @@ static struct  v4l2_format video_format;
 static struct  v4l2_standard video_standard;
 static struct  v4l2_buffer video_buf;
 
+/* Capture frame interval reported by VIDIOC_G_PARM (timeperframe). fps is
+ * video_cap_rate_d / video_cap_rate_n; both 0 when the device doesn't report
+ * a frame rate (then we fall back to the analog standard or 60). */
+static uint32_t video_cap_rate_n;
+static uint32_t video_cap_rate_d;
+
 static uint8_t v4l2_ncapbuf_target;
 static size_t  v4l2_ncapbuf;
 static struct  v4l2_capbuf v4l2_capbuf[VIDEO_BUFFERS_MAX];
@@ -133,6 +140,7 @@ static uint32_t video_cap_height;
 static uint32_t video_out_height;
 static char     video_capture_mode[ENVVAR_BUFLEN];
 static char     video_capture_resolution[ENVVAR_BUFLEN];
+static char     video_capture_rate[ENVVAR_BUFLEN];
 static char     video_output_mode[ENVVAR_BUFLEN];
 static char     video_frame_times[ENVVAR_BUFLEN];
 
@@ -338,25 +346,158 @@ static void enumerate_audio_devices(char *s, size_t len)
 #endif
 }
 
-static void list_resolutions(char *capture_resolutions, size_t len)
+/* Append (width, height) to out[] unless it is already present. Returns the
+ * updated entry count. */
+static size_t add_resolution(struct v4l2_resolution *out, size_t count,
+      size_t max, int width, int height)
 {
-   size_t i, written;
+   size_t i;
+   for (i = 0; i < count; i++)
+      if (out[i].width == width && out[i].height == height)
+         return count;
+   if (count < max)
+   {
+      out[count].width  = width;
+      out[count].height = height;
+      count++;
+   }
+   return count;
+}
+
+/* Probe a single V4L2 device for the capture resolutions it actually
+ * supports and merge them (deduplicated) into out[]. Returns the updated
+ * entry count. Drivers report framesizes either as a discrete list or as a
+ * stepwise/continuous range; for ranges, offer the entries of the built-in
+ * table that fall inside the range. */
+static size_t probe_resolutions(const char *device,
+      struct v4l2_resolution *out, size_t count, size_t max)
+{
+   int fd;
+   uint32_t fmt_index;
+
+   fd = v4l2_open(device, O_RDWR, 0);
+   if (fd == -1)
+      return count;
+
+   for (fmt_index = 0; ; fmt_index++)
+   {
+      struct v4l2_fmtdesc fmtdesc;
+      uint32_t size_index;
+
+      memset(&fmtdesc, 0, sizeof(fmtdesc));
+      fmtdesc.index = fmt_index;
+      fmtdesc.type  = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      if (v4l2_ioctl(fd, VIDIOC_ENUM_FMT, &fmtdesc) != 0)
+         break;
+
+      for (size_index = 0; ; size_index++)
+      {
+         struct v4l2_frmsizeenum frmsize;
+
+         memset(&frmsize, 0, sizeof(frmsize));
+         frmsize.index        = size_index;
+         frmsize.pixel_format = fmtdesc.pixelformat;
+         if (v4l2_ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsize) != 0)
+            break;
+
+         if (frmsize.type == V4L2_FRMSIZE_TYPE_DISCRETE)
+            count = add_resolution(out, count, max,
+                  (int)frmsize.discrete.width, (int)frmsize.discrete.height);
+         else
+         {
+            /* Stepwise/continuous: index 0 describes the whole range. */
+            size_t i;
+            for (i = 0; i < ARRAY_SIZE(v4l2_resolutions); i++)
+            {
+               if (   v4l2_resolutions[i].width  >= (int)frmsize.stepwise.min_width
+                   && v4l2_resolutions[i].width  <= (int)frmsize.stepwise.max_width
+                   && v4l2_resolutions[i].height >= (int)frmsize.stepwise.min_height
+                   && v4l2_resolutions[i].height <= (int)frmsize.stepwise.max_height)
+                  count = add_resolution(out, count, max,
+                        v4l2_resolutions[i].width, v4l2_resolutions[i].height);
+            }
+            break;
+         }
+      }
+   }
+
+   v4l2_close(fd);
+   return count;
+}
+
+/* Order ascending (width, then height) so the smallest supported mode is the
+ * default option and the menu reads naturally. */
+static int resolution_cmp(const void *a, const void *b)
+{
+   const struct v4l2_resolution *ra = (const struct v4l2_resolution *)a;
+   const struct v4l2_resolution *rb = (const struct v4l2_resolution *)b;
+   if (ra->width != rb->width)
+      return ra->width - rb->width;
+   return ra->height - rb->height;
+}
+
+/* Build the capture-resolution option list by probing capture device(s) for
+ * the sizes they really report. video_devices is either a single device path
+ * ("/dev/videoN") or the option string built by enumerate_video_devices
+ * ("Video capture device; /dev/videoN|..."). Falls back to the built-in
+ * v4l2_resolutions[] table when nothing could be probed (no device
+ * present). */
+static void list_resolutions(char *capture_resolutions, size_t len,
+      const char *video_devices)
+{
+   struct v4l2_resolution probed[128];
+   const struct v4l2_resolution *res;
+   size_t count = 0;
+   size_t i, n, written;
+   char devices[ENVVAR_BUFLEN];
+   char *token;
+   const char *list;
+
+   /* Skip the "Video capture device; " menu label before tokenizing. */
+   list = strchr(video_devices, ';');
+   strlcpy(devices, list ? list + 1 : video_devices, sizeof(devices));
+
+   for (token = strtok(devices, "|"); token != NULL; token = strtok(NULL, "|"))
+   {
+      if (!string_starts_with(token, "/dev/video"))
+         continue;
+      count = probe_resolutions(token, probed, count, ARRAY_SIZE(probed));
+   }
+
+   if (count > 0)
+      qsort(probed, count, sizeof(probed[0]), resolution_cmp);
+
+   /* Fall back to the built-in table when nothing could be probed. */
+   res = (count > 0) ? probed : v4l2_resolutions;
+   n   = (count > 0) ? count  : ARRAY_SIZE(v4l2_resolutions);
+
    written = snprintf(capture_resolutions, len, "Capture resolution; ");
-   for (i = 0; i < sizeof(v4l2_resolutions) / sizeof(v4l2_resolutions[0]); i++)
-      written += snprintf(capture_resolutions + written, len - written, "%s%dx%d", i > 0 ? "|" : "",
-         v4l2_resolutions[i].width,v4l2_resolutions[i].height);
+   for (i = 0; i < n; i++)
+   {
+      char entry[32];
+      size_t elen = (size_t)snprintf(entry, sizeof(entry), "%s%dx%d",
+            i > 0 ? "|" : "", res[i].width, res[i].height);
+      /* Stop before truncating an entry mid-token; the caller still
+       * appends "|auto" and it must always fit. */
+      if (written + elen + STRLEN_CONST("|auto") + 1 > len)
+         break;
+      strlcpy(capture_resolutions + written, entry, len - written);
+      written += elen;
+   }
 }
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    bool no_content = true;
    char video_devices[ENVVAR_BUFLEN];
    char audio_devices[ENVVAR_BUFLEN];
-   char capture_resolutions[ENVVAR_BUFLEN];
+   static char capture_resolutions[ENVVAR_BUFLEN];
+   struct retro_variable videodev = { "videoproc_videodev", NULL };
    struct retro_variable envvars[] = {
       { "videoproc_videodev", NULL },
       { "videoproc_audiodev", NULL },
       { "videoproc_capture_mode", "Capture mode; alternate|deinterlaced|interlaced|top|bottom|alternate_hack" },
       { "videoproc_capture_resolution", NULL },
+      { "videoproc_capture_rate", "Capture frame rate; auto|60|59.94|50|30|29.97|25|24|20|15|10" },
       { "videoproc_output_mode","Output mode; progressive|deinterlaced|interlaced" },
       { "videoproc_frame_times","Print frame times to terminal (v4l2 only); Off|On" },
       { NULL, NULL }
@@ -365,9 +506,6 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    VIDEOPROC_CORE_PREFIX(environment_cb) = cb;
 
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
-
-   /* Allows retroarch to seed the previous values */
-   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
 
    /* Enumerate all real devices */
    enumerate_video_devices(video_devices, sizeof(video_devices));
@@ -382,9 +520,28 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    envvars[1].key   = "videoproc_audiodev";
    envvars[1].value = audio_devices;
 
-   if(envvars[3].value == NULL)
-      list_resolutions(capture_resolutions, sizeof(capture_resolutions));
-   appendstr(capture_resolutions, "|auto", ENVVAR_BUFLEN);
+   /* Register the options once before the resolution list is known: this
+    * seeds the frontend with the saved values, and a variable can only be
+    * resolved after it has been registered with its value list — so the
+    * saved device selection only becomes queryable now. */
+   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
+   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
+
+   /* Probe the capture device for its real, supported resolutions rather
+    * than offering a fixed table the hardware may not honour. Probe only the
+    * selected device when it is known, so the option list reflects what that
+    * device actually supports; on a fresh configuration (no device selected
+    * yet) probe every enumerated device. Probing opens the device(s), so do
+    * it only once and reuse the list on subsequent calls; restart the core
+    * after switching devices to refresh it. */
+   if (capture_resolutions[0] == '\0')
+   {
+      const char *probe_target =
+            (videodev.value && string_starts_with(videodev.value, "/dev/video"))
+            ? videodev.value : video_devices;
+      list_resolutions(capture_resolutions, sizeof(capture_resolutions), probe_target);
+      appendstr(capture_resolutions, "|auto", ENVVAR_BUFLEN);
+   }
    envvars[3].key   = "videoproc_capture_resolution";
    envvars[3].value = capture_resolutions;
    printf("captures: %s\n", envvars[3].value);
@@ -713,6 +870,35 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_info)(struct retro_system_
    info->block_extract    = true;
 }
 
+/* Convert a "Capture frame rate" option value to a V4L2 timeperframe
+ * (seconds per frame = num/den). Handles the NTSC fractional rates and plain
+ * integer rates. Returns false for "auto"/unrecognised values, meaning "let
+ * the device keep its current rate". */
+static bool rate_to_timeperframe(const char *s, uint32_t *num, uint32_t *den)
+{
+   int r;
+   if (!s || strcmp(s, "auto") == 0)
+      return false;
+   if (strcmp(s, "59.94") == 0)
+   {
+      *num = 1001;
+      *den = 60000;
+      return true;
+   }
+   if (strcmp(s, "29.97") == 0)
+   {
+      *num = 1001;
+      *den = 30000;
+      return true;
+   }
+   r = atoi(s);
+   if (r <= 0)
+      return false;
+   *num = 1;
+   *den = (uint32_t)r;
+   return true;
+}
+
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 {
    struct v4l2_cropcap cc;
@@ -753,12 +939,25 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
       /* TODO Only double if frames ARE fields (progressive or deinterlaced, full framerate)
        * *2 for fields
        */
-      /* Defaulting to 60 if this this doesn't return a usable number */
-      if(video_standard.frameperiod.denominator == 0 || video_standard.frameperiod.numerator == 0)
-         info->timing.fps = 60;
-      else
+      if(video_standard.frameperiod.denominator != 0 && video_standard.frameperiod.numerator != 0)
+      {
+         /* Analog TV standard available (PAL/NTSC): frameperiod is the frame
+          * rate; *2 yields the field rate. Unchanged legacy behaviour. */
          info->timing.fps = ((double)(video_standard.frameperiod.denominator*2)) /
                              (double)video_standard.frameperiod.numerator;
+      }
+      else if (video_cap_rate_n != 0 && video_cap_rate_d != 0)
+      {
+         /* No analog standard (e.g. UVC/HDMI capture): use the actual frame
+          * rate from VIDIOC_G_PARM. It is the buffer delivery rate, so it maps
+          * directly to the frontend rate, except in "interlaced" mode where the
+          * deinterlacer emits two outputs (one per field) per captured frame. */
+         double cap_fps = (double)video_cap_rate_d / (double)video_cap_rate_n;
+         info->timing.fps = (strcmp(video_capture_mode, "interlaced") == 0)
+                            ? cap_fps * 2.0 : cap_fps;
+      }
+      else
+         info->timing.fps = 60; /* nothing usable reported */
       info->timing.sample_rate   = AUDIO_SAMPLE_RATE;
 
       /* TODO/FIXME Allow for fixed 4:3 and 16:9 modes */
@@ -1153,6 +1352,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
    struct retro_variable audiodev    = { "videoproc_audiodev", NULL };
    struct retro_variable capturemode = { "videoproc_capture_mode", NULL };
    struct retro_variable captureresolution = { "videoproc_capture_resolution", NULL };
+   struct retro_variable capturerate = { "videoproc_capture_rate", NULL };
    struct retro_variable outputmode  = { "videoproc_output_mode", NULL };
    struct retro_variable frametimes  = { "videoproc_frame_times", NULL };
    bool updated = false;
@@ -1165,6 +1365,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capturemode);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &captureresolution);
+      VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capturerate);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &outputmode);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &frametimes);
       /* Video or Audio device(s) has(ve) been changed
@@ -1173,6 +1374,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
       video_changed = (videodev.value    && (strcmp(video_device, videodev.value) != 0)) ||
           (capturemode.value && (strcmp(video_capture_mode, capturemode.value) != 0)) ||
           (captureresolution.value && (strcmp(video_capture_resolution, captureresolution.value) != 0)) ||
+          (capturerate.value && (strcmp(video_capture_rate, capturerate.value) != 0)) ||
           (outputmode.value  && (strcmp(video_output_mode,  outputmode.value)  != 0));
       audio_changed = (audiodev.value && (strcmp(audio_device, audiodev.value) != 0));
 
@@ -1354,16 +1556,19 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    struct retro_variable audiodev     = { "videoproc_audiodev", NULL };
    struct retro_variable capture_mode = { "videoproc_capture_mode", NULL };
    struct retro_variable capture_resolution = { "videoproc_capture_resolution", NULL };
+   struct retro_variable capture_rate = { "videoproc_capture_rate", NULL };
    struct retro_variable output_mode  = { "videoproc_output_mode", NULL };
    struct retro_variable frame_times  = { "videoproc_frame_times", NULL };
    enum retro_pixel_format pixel_format;
    struct v4l2_standard std;
+   struct v4l2_streamparm parm;
    struct v4l2_requestbuffers reqbufs;
    struct v4l2_buffer buf;
    struct v4l2_format fmt;
    enum v4l2_buf_type type;
    v4l2_std_id std_id;
    uint32_t index;
+   uint32_t rate_n, rate_d;
    bool std_found;
    int error;
 #ifdef HAVE_ALSA
@@ -1408,6 +1613,12 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    else
       strlcpy(video_capture_resolution, "auto", sizeof(video_capture_resolution));
 
+   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_rate);
+   if(capture_rate.value != NULL)
+      strlcpy(video_capture_rate, capture_rate.value, sizeof(video_capture_rate));
+   else
+      strlcpy(video_capture_rate, "auto", sizeof(video_capture_rate));
+
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_mode);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &output_mode);
    if (capture_mode.value == NULL || output_mode.value == NULL)
@@ -1422,6 +1633,8 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    /* Reset per-device timing state so nothing leaks from a previously
     * loaded device into av_info/retro_get_region. */
    memset(&video_standard, 0, sizeof(video_standard));
+   video_cap_rate_n = 0;
+   video_cap_rate_d = 0;
 
    if (strcmp(video_device, "dummy") == 0)
       setup_dummy_source();
@@ -1507,6 +1720,39 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
                video_cap_height = fmt.fmt.pix.height / 2;
             break;
       }
+
+      /* Frame rate is controlled/reported via VIDIOC_G/S_PARM (timeperframe),
+       * independent of analog TV standards. Apply the chosen rate (if any),
+       * then read back what the driver actually granted so the timing reported
+       * to the frontend matches the real capture rate. For modern UVC/HDMI
+       * devices (no analog standard) this is the only source of the rate. */
+      memset(&parm, 0, sizeof(parm));
+      parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      error = v4l2_ioctl(video_device_fd, VIDIOC_G_PARM, &parm);
+      if (   error == 0
+          && (parm.parm.capture.capability & V4L2_CAP_TIMEPERFRAME)
+          && rate_to_timeperframe(video_capture_rate, &rate_n, &rate_d))
+      {
+         parm.parm.capture.timeperframe.numerator   = rate_n;
+         parm.parm.capture.timeperframe.denominator = rate_d;
+         if (v4l2_ioctl(video_device_fd, VIDIOC_S_PARM, &parm) != 0)
+            printf("VIDIOC_S_PARM failed (non-fatal): %s\n", strerror(errno));
+
+         /* Re-read the granted interval (S_PARM clamps to a supported rate). */
+         memset(&parm, 0, sizeof(parm));
+         parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+         error = v4l2_ioctl(video_device_fd, VIDIOC_G_PARM, &parm);
+      }
+      if (error == 0)
+      {
+         video_cap_rate_n = parm.parm.capture.timeperframe.numerator;
+         video_cap_rate_d = parm.parm.capture.timeperframe.denominator;
+         if (video_cap_rate_n != 0 && video_cap_rate_d != 0)
+            printf("Capture frame rate %.3f fps\n",
+                  (double)video_cap_rate_d / (double)video_cap_rate_n);
+      }
+      else
+         printf("VIDIOC_G_PARM failed (non-fatal): %s\n", strerror(errno));
 
       /* Query the analog TV standard (PAL/NTSC) for the frame rate. Modern
        * HDMI/USB capture devices generally don't implement analog standards,
