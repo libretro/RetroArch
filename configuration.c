@@ -1889,9 +1889,7 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_THREADS
    SETTING_BOOL("threaded_data_runloop_enable",  &settings->bools.threaded_data_runloop_enable, true, DEFAULT_THREADED_DATA_RUNLOOP_ENABLE, false);
 #endif
-   SETTING_BOOL("log_to_file",                   &settings->bools.log_to_file, true, DEFAULT_LOG_TO_FILE, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
-   SETTING_BOOL("log_to_file_timestamp",         &settings->bools.log_to_file_timestamp, true, DEFAULT_LOG_TO_FILE_TIMESTAMP, false);
    SETTING_BOOL("ai_service_enable",             &settings->bools.ai_service_enable, true, DEFAULT_AI_SERVICE_ENABLE, false);
    SETTING_BOOL("ai_service_pause",              &settings->bools.ai_service_pause, true, DEFAULT_AI_SERVICE_PAUSE, false);
    SETTING_BOOL("wifi_enabled",                  &settings->bools.wifi_enabled, true, DEFAULT_WIFI_ENABLE, false);
@@ -1964,6 +1962,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_logging.h"
 #include "settings/settings_def_rewind_granularity.h"
 #include "settings/settings_def_overlay_enable.h"
 #ifdef HAVE_MICROPHONE
@@ -2349,6 +2348,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_logging.h"
 #include "settings/settings_def_rewind_granularity.h"
 #include "settings/settings_def_overlay_enable.h"
 #ifdef HAVE_MICROPHONE
@@ -2531,7 +2531,6 @@ static struct config_uint_setting *populate_settings_uint(
       return NULL;
 
    SETTING_UINT("frontend_log_level",            &settings->uints.frontend_log_level, true, DEFAULT_FRONTEND_LOG_LEVEL, false);
-   SETTING_UINT("libretro_log_level",            &settings->uints.libretro_log_level, true, DEFAULT_LIBRETRO_LOG_LEVEL, false);
    SETTING_UINT("fps_update_interval",           &settings->uints.fps_update_interval, true, DEFAULT_FPS_UPDATE_INTERVAL, false);
    SETTING_UINT("memory_update_interval",        &settings->uints.memory_update_interval, true, DEFAULT_MEMORY_UPDATE_INTERVAL, false);
    SETTING_UINT("time_show",                     &settings->uints.video_time_show, true, DEFAULT_TIME_SHOW, false);
@@ -2672,6 +2671,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_logging.h"
 #include "settings/settings_def_rewind_granularity.h"
 #include "settings/settings_def_overlay_enable.h"
 #ifdef HAVE_MICROPHONE
@@ -2971,6 +2971,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_logging.h"
 #include "settings/settings_def_rewind_granularity.h"
 #include "settings/settings_def_overlay_enable.h"
 #ifdef HAVE_MICROPHONE
