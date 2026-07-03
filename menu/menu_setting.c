@@ -13101,7 +13101,7 @@ static bool setting_append_list(
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#include "../settings_def_video_fullscreen.h"
+#include "../settings/settings_def_video_fullscreen.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -13244,7 +13244,7 @@ static bool setting_append_list(
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#include "../settings_def_video_bias.h"
+#include "../settings/settings_def_video_bias.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -13406,7 +13406,7 @@ static bool setting_append_list(
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#include "../settings_def_video_window.h"
+#include "../settings/settings_def_video_window.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -13768,7 +13768,7 @@ static bool setting_append_list(
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#include "../settings_def_video_sync.h"
+#include "../settings/settings_def_video_sync.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -14025,7 +14025,7 @@ static bool setting_append_list(
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#include "../settings_def_menu_sounds.h"
+#include "../settings/settings_def_menu_sounds.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -16655,7 +16655,7 @@ static bool setting_append_list(
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#include "../settings_def_menu_main_views.h"
+#include "../settings/settings_def_menu_main_views.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -17634,7 +17634,7 @@ static bool setting_append_list(
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#include "../settings_def_menu_settings_views.h"
+#include "../settings/settings_def_menu_settings_views.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -17692,7 +17692,7 @@ static bool setting_append_list(
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
                   SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#include "../settings_def_menu_quick_views.h"
+#include "../settings/settings_def_menu_quick_views.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT

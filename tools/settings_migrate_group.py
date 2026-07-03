@@ -201,7 +201,7 @@ mk_us = lambda b, has_sub: (' \\\nMSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \\\nMS
                             if has_sub else ' \\\nMSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)')
 region = ('/* GENERATED REGION: %s (see %s). */\n' % (TITLE, DEF)
           + '#define SETTINGS_DEF_STRINGS_PASS\n'
-          + defs(mk_us) + '\n#include "../%s"\n' % DEF + UNDEFS + '\n#undef SETTINGS_DEF_STRINGS_PASS\n')
+          + defs(mk_us) + '\n#include "../settings/%s"\n' % DEF + UNDEFS + '\n#undef SETTINGS_DEF_STRINGS_PASS\n')
 us = us[:first] + region + us[first:]
 us = re.sub(r'#if[^\n]*\n#endif\n', '', us)
 open('intl/msg_hash_us.h','w').write(us)
@@ -211,22 +211,22 @@ for s, e in sorted(lbl_span, reverse=True): lbl = lbl[:s] + lbl[e:]
 lbl = re.sub(r'#if[^\n]*\n#endif\n', '', lbl)
 open('intl/msg_hash_lbl.h','w').write(lbl)
 mc = open('intl/msg_hash_us.c').read()
-assert mc.count('#include "../settings_def_video_sync.h"') == 2
-mc = mc.replace('#include "../settings_def_video_sync.h"',
-                '#include "../settings_def_video_sync.h"\n#include "../%s"' % DEF)
+assert mc.count('#include "../settings/settings_def_video_sync.h"') == 2
+mc = mc.replace('#include "../settings/settings_def_video_sync.h"',
+                '#include "../settings/settings_def_video_sync.h"\n#include "../settings/%s"' % DEF)
 open('intl/msg_hash_us.c','w').write(mc)
-assert cfg.count('#include "settings_def_video_sync.h"') == 4
+assert cfg.count('#include "settings/settings_def_video_sync.h"') == 4
 if '#define SETTINGS_DEF_CONFIG_PASS' not in cfg:
-    cfg = cfg.replace('#include "settings_def_video_sync.h"',
-        '#define SETTINGS_DEF_CONFIG_PASS\n#include "settings_def_video_sync.h"')
+    cfg = cfg.replace('#include "settings/settings_def_video_sync.h"',
+        '#define SETTINGS_DEF_CONFIG_PASS\n#include "settings/settings_def_video_sync.h"')
     cfg = cfg.replace('#undef S_BOOL\n', '#undef SETTINGS_DEF_CONFIG_PASS\n#undef S_BOOL\n')
 if CFG_GROUP_GUARD:
-    _cfg_inc = ('\n'.join(CFG_GROUP_GUARD) + '\n#include "%s"\n' % DEF
+    _cfg_inc = ('\n'.join(CFG_GROUP_GUARD) + '\n#include "settings/%s"\n' % DEF
                 + '\n'.join('#endif' for _ in CFG_GROUP_GUARD))
 else:
-    _cfg_inc = '#include "%s"' % DEF
-cfg = cfg.replace('#include "settings_def_video_sync.h"',
-                  '#include "settings_def_video_sync.h"\n' + _cfg_inc)
+    _cfg_inc = '#include "settings/%s"' % DEF
+cfg = cfg.replace('#include "settings/settings_def_video_sync.h"',
+                  '#include "settings/settings_def_video_sync.h"\n' + _cfg_inc)
 open('configuration.c','w').write(cfg)
 ms = open('menu/menu_setting.c').read()
 tm = re.search(r'static const setting_desc_t %s\[\] = \{\n(.*?)\n( *)\};' % TABLE, ms, re.S)
@@ -236,7 +236,7 @@ MENU_EMIT = {'S_BOOL':'SDESC_BOOL_ROW(f, T, d, sd, df, c),',
              'S_FLOAT':'SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),'}
 mk_menu = lambda b, _s: ' \\\n                  ' + MENU_EMIT[b]
 new_body = ('/* GENERATED: rows come from %s in order. */\n' % DEF
-            + defs(mk_menu) + '\n#include "../%s"\n' % DEF + UNDEFS)
+            + defs(mk_menu) + '\n#include "../settings/%s"\n' % DEF + UNDEFS)
 ms = ms[:tm.start(1)] + new_body + ms[tm.end(1):]
 open('menu/menu_setting.c','w').write(ms)
 print("surgeries ok")
@@ -317,7 +317,7 @@ assert r.returncode == 0, r.stderr[-200:]
 new = json.load(open('intl/msg_hash_us.json'))
 run("rm -rf /tmp/base && mkdir -p /tmp/base/intl")
 run("git show HEAD:intl/msg_hash_us.h > /tmp/base/intl/msg_hash_us.h; git show HEAD:intl/h2json.py > /tmp/base/intl/h2json.py")
-for df in run("git ls-tree HEAD --name-only | grep '^settings_def_'").stdout.split():
+for df in run("git ls-tree HEAD --name-only | grep '^settings/settings_def_'").stdout.split():
     run("git show HEAD:%s > /tmp/base/%s" % (df, df))
 run("cd /tmp/base/intl && python3 h2json.py msg_hash_us.h")
 basej = json.load(open('/tmp/base/intl/msg_hash_us.json'))

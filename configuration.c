@@ -1983,17 +1983,17 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
-#include "settings_def_video_fullscreen.h"
+#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
-#include "settings_def_video_sync.h"
-#include "settings_def_menu_sounds.h"
+#include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_menu_sounds.h"
 #ifdef HAVE_MENU
-#include "settings_def_menu_main_views.h"
-#include "settings_def_menu_quick_views.h"
-#include "settings_def_menu_settings_views.h"
+#include "settings/settings_def_menu_main_views.h"
+#include "settings/settings_def_menu_quick_views.h"
+#include "settings/settings_def_menu_settings_views.h"
 #endif
-#include "settings_def_video_bias.h"
-#include "settings_def_video_window.h"
+#include "settings/settings_def_video_bias.h"
+#include "settings/settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2344,17 +2344,17 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT(n, &settings->floats.f, true, d, false);
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
    SETTING_FLOAT(n, &settings->floats.f, true, d, false);
-#include "settings_def_video_fullscreen.h"
+#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
-#include "settings_def_video_sync.h"
-#include "settings_def_menu_sounds.h"
+#include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_menu_sounds.h"
 #ifdef HAVE_MENU
-#include "settings_def_menu_main_views.h"
-#include "settings_def_menu_quick_views.h"
-#include "settings_def_menu_settings_views.h"
+#include "settings/settings_def_menu_main_views.h"
+#include "settings/settings_def_menu_quick_views.h"
+#include "settings/settings_def_menu_settings_views.h"
 #endif
-#include "settings_def_video_bias.h"
-#include "settings_def_video_window.h"
+#include "settings/settings_def_video_bias.h"
+#include "settings/settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2603,17 +2603,17 @@ static struct config_uint_setting *populate_settings_uint(
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
-#include "settings_def_video_fullscreen.h"
+#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
-#include "settings_def_video_sync.h"
-#include "settings_def_menu_sounds.h"
+#include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_menu_sounds.h"
 #ifdef HAVE_MENU
-#include "settings_def_menu_main_views.h"
-#include "settings_def_menu_quick_views.h"
-#include "settings_def_menu_settings_views.h"
+#include "settings/settings_def_menu_main_views.h"
+#include "settings/settings_def_menu_quick_views.h"
+#include "settings/settings_def_menu_settings_views.h"
 #endif
-#include "settings_def_video_bias.h"
-#include "settings_def_video_window.h"
+#include "settings/settings_def_video_bias.h"
+#include "settings/settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2835,17 +2835,17 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT(n, &settings->ints.f, true, d, false);
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
-#include "settings_def_video_fullscreen.h"
+#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
-#include "settings_def_video_sync.h"
-#include "settings_def_menu_sounds.h"
+#include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_menu_sounds.h"
 #ifdef HAVE_MENU
-#include "settings_def_menu_main_views.h"
-#include "settings_def_menu_quick_views.h"
-#include "settings_def_menu_settings_views.h"
+#include "settings/settings_def_menu_main_views.h"
+#include "settings/settings_def_menu_quick_views.h"
+#include "settings/settings_def_menu_settings_views.h"
 #endif
-#include "settings_def_video_bias.h"
-#include "settings_def_video_window.h"
+#include "settings/settings_def_video_bias.h"
+#include "settings/settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL
 #undef S_BOOL_NS

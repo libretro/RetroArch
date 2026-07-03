@@ -126,7 +126,7 @@ def expand_def_includes(text, base_dir):
 
     lines = []
     for line in text.split('\n'):
-        im = re.match(r'#include "((?:\.\./)?settings_def_\w+\.h)"', line.strip())
+        im = re.match(r'#include "((?:\.\./)?settings/settings_def_\w+\.h)"', line.strip())
         if im:
             p = _os.path.normpath(_os.path.join(base_dir, im.group(1)))
             if _os.path.exists(p):

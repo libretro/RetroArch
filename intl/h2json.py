@@ -72,7 +72,7 @@ def parse_def_rows(text, messages):
 def parse_included_defs(h_path, messages):
     base = os.path.dirname(os.path.abspath(h_path)) or '.'
     text = open(h_path, encoding='utf-8').read()
-    for inc in re.findall(r'^#include "(\.\./settings_def_\w+\.h)"', text, re.M):
+    for inc in re.findall(r'^#include "(\.\./settings/settings_def_\w+\.h)"', text, re.M):
         p = os.path.normpath(os.path.join(base, inc))
         if os.path.exists(p):
             parse_def_rows(open(p, encoding='utf-8').read(), messages)
