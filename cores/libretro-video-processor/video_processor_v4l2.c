@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 #include <linux/videodev2.h>
 #include <libv4l2.h>
@@ -120,6 +121,11 @@ static struct  v4l2_capbuf v4l2_capbuf[VIDEO_BUFFERS_MAX];
 struct v4l2_capability caps;
 
 static float   dummy_pos=0;
+
+/* True while retro_run() reloads the core after an option change: a failing
+ * device is survivable then (blank frames, options stay editable), so
+ * retro_load_game must not fall back to the dummy source. */
+static bool device_reloading;
 
 static int      video_half_feed_rate=0; /* for interlaced captures */
 static uint32_t video_cap_width;
@@ -261,7 +267,6 @@ static void enumerate_video_devices(char *s, size_t len)
 static void enumerate_audio_devices(char *s, size_t len)
 {
 #ifdef HAVE_ALSA
-   int ndevs;
    void **hints, **n;
    char *ioid, *name, *descr;
 #endif
@@ -269,11 +274,14 @@ static void enumerate_audio_devices(char *s, size_t len)
    memset(s, 0, len);
    appendstr(s, "Audio capture device; ", len);
 
+   /* Always offer "none" as the first (default) option so the core can be
+    * started without any audio capture device present. */
+   appendstr(s, "none", len);
+
 #ifdef HAVE_ALSA
    if (snd_device_name_hint(-1, "pcm", &hints) < 0)
       return;
 
-   ndevs = 0;
    for (n = hints; *n; n++)
    {
       ioid = snd_device_name_get_hint(*n, "IOID");
@@ -302,10 +310,10 @@ static void enumerate_audio_devices(char *s, size_t len)
          continue;
       }
 
-      if (ndevs > 0)
-         appendstr(s, "|", len);
+      /* "none" already occupies the first slot, so every enumerated
+       * device needs a leading separator. */
+      appendstr(s, "|", len);
       appendstr(s, name, len);
-      ++ndevs;
 
       /* Not sure if this is necessary
        * but ensuring things are free/NULL */
@@ -411,6 +419,102 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_input_state)(retro_input_state_t 
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_init)(void) { }
 
+#ifdef HAVE_ALSA
+static void close_audio_device(void);
+
+/* Open the ALSA capture device and configure it for 48kHz, 16-bit stereo.
+ * Returns 0 on success or the negative ALSA error code with the handle
+ * closed again, so a failure leaves no half-configured device behind. */
+static int open_audio_device(const char *device)
+{
+   snd_pcm_t *handle = NULL;
+   snd_pcm_hw_params_t *hw_params;
+   unsigned int rate;
+   int error;
+
+   /* Configure a local handle and publish it in audio_handle only when it is
+    * fully set up: RetroArch ignores SET_AUDIO_CALLBACK(NULL), so the async
+    * audio callback can still be registered and must never see the device
+    * mid-setup (its snd_pcm_recover() would start the stream and make
+    * snd_pcm_prepare() below fail with EBUSY). */
+   error = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0);
+   if (error < 0)
+   {
+      printf("Couldn't open %s: %s\n", device, snd_strerror(error));
+      return error;
+   }
+
+   error = snd_pcm_hw_params_malloc(&hw_params);
+   if (error)
+   {
+      printf("Couldn't allocate hw param structure: %s\n", snd_strerror(error));
+      snd_pcm_close(handle);
+      return error;
+   }
+   error = snd_pcm_hw_params_any(handle, hw_params);
+   if (error)
+   {
+      printf("Couldn't initialize hw param structure: %s\n", snd_strerror(error));
+      goto fail;
+   }
+   error = snd_pcm_hw_params_set_access(handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
+   if (error)
+   {
+      printf("Couldn't set hw param access type: %s\n", snd_strerror(error));
+      goto fail;
+   }
+   error = snd_pcm_hw_params_set_format(handle, hw_params, SND_PCM_FORMAT_S16_LE);
+   if (error)
+   {
+      printf("Couldn't set hw param format to SND_PCM_FORMAT_S16_LE: %s\n", snd_strerror(error));
+      goto fail;
+   }
+   rate = AUDIO_SAMPLE_RATE;
+   error = snd_pcm_hw_params_set_rate_near(handle, hw_params, &rate, 0);
+   if (error)
+   {
+      printf("Couldn't set hw param sample rate to %u: %s\n", rate, snd_strerror(error));
+      goto fail;
+   }
+   if (rate != AUDIO_SAMPLE_RATE)
+   {
+      printf("Hardware doesn't support sample rate %u (returned %u)\n", AUDIO_SAMPLE_RATE, rate);
+      error = -EINVAL;
+      goto fail;
+   }
+   error = snd_pcm_hw_params_set_channels(handle, hw_params, 2);
+   if (error)
+   {
+      printf("Couldn't set hw param channels to 2: %s\n", snd_strerror(error));
+      goto fail;
+   }
+   error = snd_pcm_hw_params(handle, hw_params);
+   if (error)
+   {
+      printf("Couldn't set hw params: %s\n", snd_strerror(error));
+      goto fail;
+   }
+   snd_pcm_hw_params_free(hw_params);
+
+   error = snd_pcm_prepare(handle);
+   if (error)
+   {
+      printf("Couldn't prepare audio interface for use: %s\n", snd_strerror(error));
+      snd_pcm_close(handle);
+      return error;
+   }
+
+   audio_handle = handle;
+   printf("Using ALSA device %s for audio input\n", device);
+   return 0;
+
+fail:
+   snd_pcm_hw_params_free(hw_params);
+   snd_pcm_close(handle);
+   return error;
+}
+#endif
+
 static bool open_devices(void)
 {
    struct retro_variable videodev = { "videoproc_videodev", NULL };
@@ -423,15 +527,15 @@ static bool open_devices(void)
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &captureresolution);
 
-   if (strcmp(videodev.value, "dummy") == 0)
-      return true;
-
    /* Video device is required */
    if (videodev.value == NULL)
    {
       printf("v4l2_videodev not defined\n");
       return false;
    }
+
+   if (strcmp(videodev.value, "dummy") == 0)
+      return true;
 
    /* Open the V4L2 device */
    video_device_fd = v4l2_open(videodev.value, O_RDWR, 0);
@@ -447,6 +551,7 @@ static bool open_devices(void)
    {
       printf("VIDIOC_QUERYCAP failed: %s\n", strerror(errno));
       v4l2_close(video_device_fd);
+      video_device_fd = -1;
       return false;
    }
 
@@ -458,100 +563,135 @@ static bool open_devices(void)
          (caps.version >> 8) & 0xff, caps.version & 0xff);
 
 #ifdef HAVE_ALSA
-   if (audiodev.value)
+   /* Skip all audio setup when no capture device is selected. Treat both a
+    * missing variable and the explicit "none" option as "no audio".
+    * Also skip when audio_handle is already open: a video-only reconfigure
+    * (e.g. a resolution change) keeps the existing audio device alive so we
+    * don't close and immediately reopen the same ALSA device while its async
+    * capture callback is still running (which races and returns EBUSY).
+    *
+    * Audio is optional: failing to bring it up must not prevent video capture
+    * from starting. Reopening the device that was closed a moment ago (an
+    * audio device change) can still fail transiently with EBUSY while the
+    * frontend's audio thread winds down, so retry briefly before giving up. */
+   if (audio_handle == NULL && audiodev.value && strcmp(audiodev.value, "none") != 0)
    {
-      snd_pcm_hw_params_t *hw_params;
-      unsigned int rate;
-
-      /*
-       * Open the audio capture device and configure it for 44kHz, 16-bit stereo
-       */
-      error = snd_pcm_open(&audio_handle, audiodev.value, SND_PCM_STREAM_CAPTURE, 0);
-      if (error < 0)
+      int attempt;
+      error = -EBUSY;
+      for (attempt = 0; attempt < 5 && error == -EBUSY; attempt++)
       {
-         printf("Couldn't open %s: %s\n", audiodev.value, snd_strerror(error));
-         return false;
+         if (attempt > 0)
+            usleep(20000);
+         error = open_audio_device(audiodev.value);
       }
-
-      error = snd_pcm_hw_params_malloc(&hw_params);
-      if (error)
+      if (error != 0)
       {
-         printf("Couldn't allocate hw param structure: %s\n", snd_strerror(error));
-         return false;
+         /* Surface the problem in the frontend, too: a silent core with no
+          * on-screen hint is hard to diagnose from the menu. */
+         struct retro_message msg =
+               { "Audio capture device is busy - continuing without audio", 240 };
+         printf("Audio device %s could not be started (non-fatal), continuing without audio\n",
+               audiodev.value);
+         VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
       }
-      error = snd_pcm_hw_params_any(audio_handle, hw_params);
-      if (error)
-      {
-         printf("Couldn't initialize hw param structure: %s\n", snd_strerror(error));
-         return false;
-      }
-      error = snd_pcm_hw_params_set_access(audio_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
-      if (error)
-      {
-         printf("Couldn't set hw param access type: %s\n", snd_strerror(error));
-         return false;
-      }
-      error = snd_pcm_hw_params_set_format(audio_handle, hw_params, SND_PCM_FORMAT_S16_LE);
-      if (error)
-      {
-         printf("Couldn't set hw param format to SND_PCM_FORMAT_S16_LE: %s\n", snd_strerror(error));
-         return false;
-      }
-      rate = AUDIO_SAMPLE_RATE;
-      error = snd_pcm_hw_params_set_rate_near(audio_handle, hw_params, &rate, 0);
-      if (error)
-      {
-         printf("Couldn't set hw param sample rate to %u: %s\n", rate, snd_strerror(error));
-         return false;
-      }
-      if (rate != AUDIO_SAMPLE_RATE)
-      {
-         printf("Hardware doesn't support sample rate %u (returned %u)\n", AUDIO_SAMPLE_RATE, rate);
-         return false;
-      }
-      error = snd_pcm_hw_params_set_channels(audio_handle, hw_params, 2);
-      if (error)
-      {
-         printf("Couldn't set hw param channels to 2: %s\n", snd_strerror(error));
-         return false;
-      }
-      error = snd_pcm_hw_params(audio_handle, hw_params);
-      if (error)
-      {
-         printf("Couldn't set hw params: %s\n", snd_strerror(error));
-         return false;
-      }
-      snd_pcm_hw_params_free(hw_params);
-
-      error = snd_pcm_prepare(audio_handle);
-      if (error)
-      {
-         printf("Couldn't prepare audio interface for use: %s\n", snd_strerror(error));
-         return false;
-      }
-
-      printf("Using ALSA device %s for audio input\n", audiodev.value);
    }
 #endif
 
    return true;
 }
 
-static void close_devices(void)
+static void unload_game_internal(bool keep_audio);
+
+/* Stop the frontend from invoking audio_callback before the ALSA handle is
+ * closed; otherwise the async callback races snd_pcm_close() and can read
+ * from a freed handle. */
+static void unregister_audio_callback(void)
 {
 #ifdef HAVE_ALSA
-   if (audio_handle)
+   if (audio_handle != NULL)
+      VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, NULL);
+#endif
+}
+
+static void close_audio_device(void)
+{
+#ifdef HAVE_ALSA
+   snd_pcm_t *handle = audio_handle;
+   if (handle)
    {
-      snd_pcm_close(audio_handle);
+      /* Unpublish the handle first: RetroArch ignores
+       * SET_AUDIO_CALLBACK(NULL), so the async audio callback may still be
+       * registered. New invocations then see NULL; give an in-flight
+       * snd_pcm_readi() (64 frames, ~1.3ms) a moment to drain before the
+       * handle is closed underneath it. */
       audio_handle = NULL;
+      usleep(5000);
+      snd_pcm_close(handle);
    }
 #endif
+}
 
+static void close_video_device(void)
+{
    if (video_device_fd != -1)
    {
       v4l2_close(video_device_fd);
       video_device_fd = -1;
    }
+}
+
+static void close_devices(void)
+{
+   close_audio_device();
+   close_video_device();
+}
+
+/* Unmap all capture buffers mapped so far and forget them. Leaked mappings
+ * keep the V4L2 device busy even after its fd is closed, which makes every
+ * later VIDIOC_S_FMT on it fail with EBUSY. */
+static void release_video_buffers(void)
+{
+   size_t i;
+   for (i = 0; i < v4l2_ncapbuf; i++)
+      if (v4l2_capbuf[i].start && v4l2_capbuf[i].start != MAP_FAILED)
+         v4l2_munmap(v4l2_capbuf[i].start, v4l2_capbuf[i].len);
+   memset(v4l2_capbuf, 0, sizeof(v4l2_capbuf));
+   v4l2_ncapbuf = 0;
+}
+
+/* Configure the built-in test pattern source. Also used as the fallback when
+ * the configured capture device cannot be started, so the core still runs
+ * and the device option remains editable from the menu. */
+static void setup_dummy_source(void)
+{
+   if (strcmp(video_capture_mode, "interlaced") == 0)
+   {
+       video_format.fmt.pix.height = 480;
+       video_cap_height            = 480;
+       video_buf.field             = V4L2_FIELD_INTERLACED;
+   }
+   else if (     strcmp(video_capture_mode, "alternate") == 0
+              || strcmp(video_capture_mode, "top") == 0
+              || strcmp(video_capture_mode, "bottom") == 0
+              || strcmp(video_capture_mode, "alternate_hack") == 0)
+   {
+       video_format.fmt.pix.height = 240;
+       video_cap_height            = 240;
+       video_buf.field             = V4L2_FIELD_TOP;
+   }
+   else
+   {
+       /* "deinterlaced": full frames. Without this branch the height stayed
+        * 0 (or stale from a previous device) and the zero-height geometry
+        * reported to the frontend crashed its video driver. */
+       video_format.fmt.pix.height = 480;
+       video_cap_height            = 480;
+       video_buf.field             = V4L2_FIELD_NONE;
+   }
+
+   dummy_pos                  = 0;
+   video_format.fmt.pix.width = 640;
+   video_cap_width            = 640;
 }
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_deinit)(void)
@@ -575,17 +715,12 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_info)(struct retro_system_
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 {
-   struct retro_variable videodev = { "videoproc_videodev", NULL };
-   struct retro_variable capture_resolution = { "videoproc_capture_resolution", NULL };
    struct v4l2_cropcap cc;
    int error;
-   char splitresolution[ENVVAR_BUFLEN];
-   char* token;
 
-   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
-   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_resolution);
-
-   if (strcmp(videodev.value, "dummy") == 0)
+   /* Judge by the device that is actually running, not the option value:
+    * retro_load_game may have fallen back to the dummy source. */
+   if (video_device[0] == '\0' || strcmp(video_device, "dummy") == 0)
    {
       info->geometry.aspect_ratio = 4.0/3.0;
       info->geometry.base_width   = info->geometry.max_width = video_cap_width;
@@ -604,24 +739,13 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
       cc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       error = v4l2_ioctl(video_device_fd, VIDIOC_CROPCAP, &cc);
 
+      /* video_format already holds the resolution the driver granted in
+       * retro_load_game (clamped to a supported mode). Report that directly;
+       * re-parsing the requested option string here would overwrite it with a
+       * size the hardware may have rejected and desync the buffers. */
       info->geometry.base_width  = info->geometry.max_width = video_format.fmt.pix.width;
       info->geometry.base_height = video_format.fmt.pix.height;
 
-      if(capture_resolution.value != NULL)
-         strlcpy(video_capture_resolution, capture_resolution.value, sizeof(video_capture_resolution));
-      else
-         strlcpy(video_capture_resolution, "auto", sizeof(video_capture_resolution));
-
-      if (strcmp(video_capture_resolution, "auto") != 0)
-      {
-         strlcpy(splitresolution, video_capture_resolution, sizeof(splitresolution));
-         token = strtok(splitresolution, "x");
-         info->geometry.base_width  = info->geometry.max_width = video_format.fmt.pix.width = atoi(token);
-         token = strtok(NULL, "x");
-         info->geometry.base_height = video_format.fmt.pix.height = atoi(token);
-         printf("Resolution postfix %ux%u\n", info->geometry.base_width,
-                info->geometry.base_height);
-      }
       /* no doubling for interlaced or deinterlaced capture */
       nodouble = strcmp(video_capture_mode, "deinterlaced") == 0 || strcmp(video_capture_mode, "interlaced") == 0;
       info->geometry.max_height = nodouble ? video_format.fmt.pix.height : video_format.fmt.pix.height * 2;
@@ -755,6 +879,15 @@ void source_dummy(int width, int height)
       video_buf.field = V4L2_FIELD_TOP;
 }
 
+/* frame_cap is allocated as video_cap_width * video_cap_height * 3 bytes.
+ * Copy no more than that, and never read past the captured buffer. */
+static void copy_frame_cap(const struct v4l2_capbuf *capbuf)
+{
+   size_t copy_size = MIN((size_t)video_cap_width * video_cap_height * 3,
+         capbuf->len);
+   memcpy(frame_cap, capbuf->start, copy_size);
+}
+
 void source_v4l2_normal(int width, int height)
 {
    struct v4l2_buffer bufcp;
@@ -774,7 +907,7 @@ void source_v4l2_normal(int width, int height)
    }
 
    bufcp = video_buf;
-   memcpy( (uint32_t*) frame_cap, (uint8_t*) v4l2_capbuf[video_buf.index].start, video_format.fmt.pix.width * video_format.fmt.pix.height * 3);
+   copy_frame_cap(&v4l2_capbuf[video_buf.index]);
 
    error = v4l2_ioctl(video_device_fd, VIDIOC_QBUF, &video_buf);
    if (error != 0)
@@ -819,9 +952,7 @@ void source_v4l2_alternate_hack(int width, int height)
 
    /* Let's get the data as fast as possible! */
    bufcp = video_buf;
-   memcpy( (uint32_t*) frame_cap,
-         (uint8_t*)v4l2_capbuf[video_buf.index].start,
-         video_format.fmt.pix.width * video_format.fmt.pix.height * 3);
+   copy_frame_cap(&v4l2_capbuf[video_buf.index]);
 
    v4l2_munmap(v4l2_capbuf[0].start, v4l2_capbuf[0].len);
 
@@ -1028,23 +1159,53 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
 
    if (VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
    {
+      bool video_changed, audio_changed;
+
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capturemode);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &captureresolution);
+      VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &outputmode);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &frametimes);
       /* Video or Audio device(s) has(ve) been changed
        * TODO We may get away without resetting devices when changing output mode...
        */
-      if ((videodev.value    && (strcmp(video_device, videodev.value) != 0)) ||\
-          (audiodev.value    && (strcmp(audio_device, audiodev.value) != 0)) ||\
-          (capturemode.value && (strcmp(video_capture_mode, capturemode.value) != 0)) ||\
-          (captureresolution.value && (strcmp(video_capture_resolution, captureresolution.value) != 0)) ||\
-          (outputmode.value  && (strcmp(video_output_mode,  outputmode.value)  != 0)))
+      video_changed = (videodev.value    && (strcmp(video_device, videodev.value) != 0)) ||
+          (capturemode.value && (strcmp(video_capture_mode, capturemode.value) != 0)) ||
+          (captureresolution.value && (strcmp(video_capture_resolution, captureresolution.value) != 0)) ||
+          (outputmode.value  && (strcmp(video_output_mode,  outputmode.value)  != 0));
+      audio_changed = (audiodev.value && (strcmp(audio_device, audiodev.value) != 0));
+
+      if (video_changed || audio_changed)
       {
-          VIDEOPROC_CORE_PREFIX(retro_unload_game)();
+          /* Keep the audio device alive across a video-only reconfigure so the
+           * running ALSA capture isn't torn down and reopened (which races its
+           * async callback and fails with EBUSY). Switching to the dummy device
+           * stops audio capture, so tear it down in that case. */
+          bool keep_audio = !audio_changed && (audio_device[0] != '\0')
+                && videodev.value && (strcmp(videodev.value, "dummy") != 0);
+          unload_game_internal(keep_audio);
           /* This core does not cares for the retro_game_info * argument? */
-          VIDEOPROC_CORE_PREFIX(retro_load_game)(NULL);
+          device_reloading = true;
+          if (!VIDEOPROC_CORE_PREFIX(retro_load_game)(NULL))
+          {
+             /* Reload failed: the buffers we just freed are gone. Output a
+              * blank frame and stay idle rather than dereferencing them; the
+              * user can pick a working configuration to retry. */
+             device_reloading = false;
+             VIDEOPROC_CORE_PREFIX(video_refresh_cb)(NULL, 0, 0, 0);
+             return;
+          }
+          device_reloading = false;
+          /* The device may have granted a different geometry or frame rate
+           * than the previous configuration; push the new av_info so the
+           * frontend adjusts its buffers and pacing (required whenever the
+           * max geometry can grow). */
+          {
+             struct retro_system_av_info av_info;
+             VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(&av_info);
+             VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &av_info);
+          }
       }
 
       if (frametimes.value != NULL)
@@ -1052,6 +1213,14 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
    }
 
    VIDEOPROC_CORE_PREFIX(input_poll_cb)();
+
+   /* No frame buffers means a previous (re)load left the core without a usable
+    * device. Stay idle instead of dereferencing NULL buffers. */
+   if (frame_cap == NULL || frame_out == NULL)
+   {
+      VIDEOPROC_CORE_PREFIX(video_refresh_cb)(NULL, 0, 0, 0);
+      return;
+   }
 
    /* printf("%d %d %d %s\n", video_cap_width, video_cap_height, video_buf.field, video_output_mode);
     * TODO pass frame_curr to source_* functions
@@ -1087,8 +1256,13 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
    /* Converts from bgr to xrgb, deinterlacing, final copy to the outpuit buffer (frame_out)
     * Every frame except frame_cap shall be encoded in xrgb
     * Every frame except frame_out shall have the same height
-    */
-   if (strcmp(video_output_mode, "deinterlaced") == 0)
+    *
+    * "deinterlaced" capture already delivers full frames, so there is nothing
+    * to deinterlace: route it through the plain conversion below. Running the
+    * deinterlacer on it would write twice the capture height into frame_out,
+    * which is only video_out_height (== video_cap_height) rows tall. */
+   if (   strcmp(video_output_mode, "deinterlaced") == 0
+       && strcmp(video_capture_mode, "deinterlaced") != 0)
    {
       processing_bgr_xrgb(frame_cap, frame_curr, video_cap_width, video_cap_height);
       /* When deinterlacing a interlaced input, we need to process both fields of a frame,
@@ -1192,18 +1366,24 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    uint32_t index;
    bool std_found;
    int error;
-   char splitresolution[ENVVAR_BUFLEN];
-   char* token;
+#ifdef HAVE_ALSA
+   bool had_audio = (audio_handle != NULL);
+#endif
 
    if (open_devices() == false)
    {
       printf("Couldn't open capture device\n");
+      unregister_audio_callback();
       close_devices();
-      return false;
+      goto device_fallback;
    }
 
 #ifdef HAVE_ALSA
-   if (audio_handle != NULL)
+   /* Only (re)register the async audio callback when the audio device was
+    * freshly opened. On a video-only reconfigure the device (and its already
+    * registered callback) is kept alive, so re-registering would needlessly
+    * restart it. */
+   if (!had_audio && audio_handle != NULL)
    {
        struct retro_audio_callback audio_cb;
        audio_cb.callback = audio_callback;
@@ -1214,10 +1394,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
    if (videodev.value == NULL)
-   {
-       close_devices();
-       return false;
-   }
+      goto error;
    strlcpy(video_device, videodev.value, sizeof(video_device));
 
    /* Audio device is optional... */
@@ -1234,10 +1411,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_mode);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &output_mode);
    if (capture_mode.value == NULL || output_mode.value == NULL)
-   {
-       close_devices();
-       return false;
-   }
+      goto error;
    strlcpy(video_capture_mode, capture_mode.value, sizeof(video_capture_mode));
    strlcpy(video_output_mode,  output_mode.value,  sizeof(video_output_mode));
 
@@ -1245,28 +1419,12 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    if (frame_times.value != NULL)
       strlcpy(video_frame_times, frame_times.value, sizeof(video_frame_times));
 
-   if (strcmp(video_device, "dummy") == 0)
-   {
-      if (strcmp(video_capture_mode, "interlaced") == 0)
-      {
-          video_format.fmt.pix.height = 480;
-          video_cap_height            = 480;
-          video_buf.field             = V4L2_FIELD_INTERLACED;
-      }
-      else if (     strcmp(video_capture_mode, "alternate") == 0
-                 || strcmp(video_capture_mode, "top") == 0
-                 || strcmp(video_capture_mode, "bottom") == 0
-                 || strcmp(video_capture_mode, "alternate_hack") == 0)
-      {
-          video_format.fmt.pix.height = 240;
-          video_cap_height            = 240;
-          video_buf.field             = V4L2_FIELD_TOP;
-      }
+   /* Reset per-device timing state so nothing leaks from a previously
+    * loaded device into av_info/retro_get_region. */
+   memset(&video_standard, 0, sizeof(video_standard));
 
-      dummy_pos                  = 0;
-      video_format.fmt.pix.width = 640;
-      video_cap_width            = 640;
-   }
+   if (strcmp(video_device, "dummy") == 0)
+      setup_dummy_source();
    else
    {
       memset(&fmt, 0, sizeof(fmt));
@@ -1277,75 +1435,94 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       if (error != 0)
       {
          printf("VIDIOC_G_FMT failed: %s\n", strerror(errno));
-         return false;
+         goto device_fallback;
       }
 
       fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_BGR24;
-      fmt.fmt.pix.colorspace = V4L2_COLORSPACE_REC709;
       fmt.fmt.pix.colorspace = V4L2_COLORSPACE_SRGB;
       fmt.fmt.pix.quantization = V4L2_QUANTIZATION_LIM_RANGE;
 
       /* Applied set resolution if not set to auto */
       if (strcmp(video_capture_resolution, "auto") != 0)
       {
-         strlcpy(splitresolution, video_capture_resolution, sizeof(splitresolution));
-         token = strtok(splitresolution, "x");
-         fmt.fmt.pix.width = atoi(token);
-         token = strtok(NULL, "x");
-         fmt.fmt.pix.height = atoi(token);
+         unsigned width, height;
+         if (   sscanf(video_capture_resolution, "%ux%u", &width, &height) == 2
+             && width != 0 && height != 0)
+         {
+            fmt.fmt.pix.width  = width;
+            fmt.fmt.pix.height = height;
+         }
+         else
+            printf("Invalid capture resolution \"%s\", using device default\n",
+                  video_capture_resolution);
       }
-      fmt.fmt.pix.field = V4L2_FIELD_TOP;
+      fmt.fmt.pix.field   = V4L2_FIELD_TOP;
+      v4l2_ncapbuf_target = 2;
       /* TODO Query the size and FPS */
       if (strcmp(video_capture_mode, "interlaced") == 0)
+         fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
+      else if (strcmp(video_capture_mode, "alternate") == 0)
+         fmt.fmt.pix.field = V4L2_FIELD_ALTERNATE;
+      else if (strcmp(video_capture_mode, "top") == 0)
+         fmt.fmt.pix.field = V4L2_FIELD_TOP;
+      else if (strcmp(video_capture_mode, "bottom") == 0)
+         fmt.fmt.pix.field = V4L2_FIELD_BOTTOM;
+      else if (strcmp(video_capture_mode, "alternate_hack") == 0)
       {
-         v4l2_ncapbuf_target         = 2;
-         fmt.fmt.pix.field           = V4L2_FIELD_INTERLACED;
-         video_format.fmt.pix.height = fmt.fmt.pix.height;
-         video_cap_height            = fmt.fmt.pix.height;
+         fmt.fmt.pix.field   = V4L2_FIELD_TOP;
+         v4l2_ncapbuf_target = 1;
       }
-      else
-      {
-         v4l2_ncapbuf_target         = 2;
-         video_format.fmt.pix.height = fmt.fmt.pix.height/2;
-         video_cap_height            = fmt.fmt.pix.height/2;
-         if (strcmp(video_capture_mode, "deinterlaced") == 0)
-         {
-            v4l2_ncapbuf_target         = 2;
-            video_format.fmt.pix.height = fmt.fmt.pix.height;
-            video_cap_height            = fmt.fmt.pix.height;
-         } else if (strcmp(video_capture_mode, "alternate") == 0)
-            fmt.fmt.pix.field = V4L2_FIELD_ALTERNATE;
-         else if (strcmp(video_capture_mode, "top") == 0)
-            fmt.fmt.pix.field = V4L2_FIELD_TOP;
-         else if (strcmp(video_capture_mode, "bottom") == 0)
-            fmt.fmt.pix.field = V4L2_FIELD_BOTTOM;
-         else if (strcmp(video_capture_mode, "alternate_hack") == 0)
-         {
-            fmt.fmt.pix.field   = V4L2_FIELD_TOP;
-            v4l2_ncapbuf_target = 1;
-         }
-      }
-
-      video_cap_width = fmt.fmt.pix.width;
 
       error = v4l2_ioctl(video_device_fd, VIDIOC_S_FMT, &fmt);
       if (error != 0)
       {
          printf("VIDIOC_S_FMT failed: %s\n", strerror(errno));
-         return false;
+         goto device_fallback;
       }
 
-      /* skipping this for (magewell usb) since the std ioctl gives errors
-       * unsure if this will impact other cards
-       */
-      if(strcmp((const char*)caps.driver, "uvcvideo")  != 0)
+      /* S_FMT does not fail on an unsupported resolution: the driver silently
+       * clamps width/height (and may even change the pixelformat) to the
+       * nearest mode it supports and returns success. Derive every buffer
+       * dimension from the *granted* fmt, never from what we requested, so the
+       * conversion buffer (video_cap_width * video_cap_height * 3) and the
+       * source_v4l2_* memcpy always match the V4L2 buffer the driver actually
+       * allocated (otherwise: heap overflow / crash, see issue #16457). */
+      video_cap_width = fmt.fmt.pix.width;
+      switch (fmt.fmt.pix.field)
       {
-         error = v4l2_ioctl(video_device_fd, VIDIOC_G_STD, &std_id);
-         if (error != 0)
-         {
-            printf("VIDIOC_G_STD failed: %s\n", strerror(errno));
-            return false;
-         }
+         case V4L2_FIELD_TOP:
+         case V4L2_FIELD_BOTTOM:
+         case V4L2_FIELD_ALTERNATE:
+            /* The driver granted a per-field format: pix.height is already
+             * the height of a single field. */
+            video_cap_height = fmt.fmt.pix.height;
+            break;
+         default:
+            /* The driver delivers whole frames; in the field-based capture
+             * modes only one half-height field of each frame is consumed. */
+            if (   strcmp(video_capture_mode, "interlaced")   == 0
+                || strcmp(video_capture_mode, "deinterlaced") == 0)
+               video_cap_height = fmt.fmt.pix.height;
+            else
+               video_cap_height = fmt.fmt.pix.height / 2;
+            break;
+      }
+
+      /* Query the analog TV standard (PAL/NTSC) for the frame rate. Modern
+       * HDMI/USB capture devices generally don't implement analog standards,
+       * so any failure here is non-fatal: fall back to the default timing in
+       * retro_get_system_av_info. */
+      error = v4l2_ioctl(video_device_fd, VIDIOC_G_STD, &std_id);
+      if (error != 0)
+      {
+         if (errno == ENOTTY)
+            printf("Analog TV standards not supported by this device"
+                  " (normal for HDMI/USB capture)\n");
+         else
+            printf("VIDIOC_G_STD failed (non-fatal): %s\n", strerror(errno));
+      }
+      else
+      {
          for (index = 0, std_found = false; ; index++)
          {
             memset(&std, 0, sizeof(std));
@@ -1361,12 +1538,17 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
             printf("VIDIOC_ENUMSTD[%u]: %s%s\n", index, std.name, std.id == std_id ? " [*]" : "");
          }
          if (!std_found)
-         {
-            printf("VIDIOC_ENUMSTD did not contain std ID %08x\n", (unsigned)std_id);
-            return false;
-         }
+            printf("VIDIOC_ENUMSTD did not contain std ID %08x (non-fatal)\n", (unsigned)std_id);
       }
       video_format = fmt;
+      /* fmt still holds the device's full frame height, but for the
+       * non-"interlaced"/non-"deinterlaced" capture modes we only copy a
+       * half-height field into frame_cap (video_cap_height). Keep
+       * video_format in sync with the buffer that is actually allocated
+       * (video_cap_width * video_cap_height * 3) to avoid a heap overflow
+       * in the source_v4l2_* memcpy (see issue #16457). */
+      video_format.fmt.pix.width  = video_cap_width;
+      video_format.fmt.pix.height = video_cap_height;
       /* TODO Check if what we got is indeed what we asked for */
 
       memset(&reqbufs, 0, sizeof(reqbufs));
@@ -1378,10 +1560,14 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       if (error != 0)
       {
          printf("VIDIOC_REQBUFS failed: %s\n", strerror(errno));
-         return false;
+         goto device_fallback;
       }
       v4l2_ncapbuf = reqbufs.count;
       printf("GOT v4l2_ncapbuf=%" PRI_SIZET "\n", v4l2_ncapbuf);
+
+      /* Forget any previous session's pointers before the mmap loop so a
+       * mid-loop failure never releases stale mappings. */
+      memset(v4l2_capbuf, 0, sizeof(v4l2_capbuf));
 
       for (index = 0; index < v4l2_ncapbuf; index++)
       {
@@ -1394,7 +1580,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
          if (error != 0)
          {
             printf("VIDIOC_QUERYBUF failed for %u: %s\n", index, strerror(errno));
-            return false;
+            goto device_fallback;
          }
 
          v4l2_capbuf[index].len   = buf.length;
@@ -1403,7 +1589,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
          if (v4l2_capbuf[index].start == MAP_FAILED)
          {
             printf("v4l2_mmap failed: %s\n", strerror(errno));
-            return false;
+            goto device_fallback;
          }
       }
 
@@ -1419,7 +1605,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
          {
             printf("VIDIOC_QBUF failed for %u: %s\n", index,
                   strerror(errno));
-            return false;
+            goto device_fallback;
          }
       }
 
@@ -1428,10 +1614,20 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       if (error != 0)
       {
          printf("VIDIOC_STREAMON failed: %s\n", strerror(errno));
-         return false;
+         goto device_fallback;
       }
 
       /* videoinput_set_control_v4l2(V4L2_CID_HUE, (double) 0.4f); */
+   }
+
+device_ready:
+   /* Never report or allocate zero-sized frames: a zero-height geometry
+    * passed on to the frontend crashes its video driver (GPU fault). */
+   if (video_cap_width == 0 || video_cap_height == 0)
+   {
+      printf("Invalid capture dimensions %ux%u\n",
+            video_cap_width, video_cap_height);
+      goto error;
    }
 
    /* TODO/FIXME Framerates?
@@ -1447,7 +1643,10 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
          printf("WARNING: Capture mode %s with output mode %s is not"
                " properly supported yet... (Is this even useful?)\n", \
                  video_capture_mode, video_output_mode);
-         video_out_height = video_cap_height*2;
+         /* Pass the frames through at capture height: the conversion reads
+          * from frame_cap, which only holds video_cap_height rows (doubling
+          * here made it read past the end of the conversion buffer). */
+         video_out_height = video_cap_height;
       }
       /* Each frame has one field, full frame-rate */
    }
@@ -1483,7 +1682,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
 
    /* TODO: Check frames[] allocation */
    if (!frame_out || !frame_cap)
-      return false;
+      goto error;
 
    printf("Allocated %" PRI_SIZET " byte conversion buffer\n",
          (size_t)(video_cap_width * video_cap_height) * sizeof(uint32_t));
@@ -1492,19 +1691,59 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    if (!VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixel_format))
    {
       printf("Cannot set pixel format\n");
-      return false;
+      goto error;
    }
 
    return true;
+
+device_fallback:
+   /* While the core is already running, a failed reconfigure is survivable
+    * (blank frames, options stay editable), so treat it as a plain error and
+    * let the user retry. Only on the *initial* load fall back to the built-in
+    * test pattern: the device choice is persisted, and a broken one would
+    * otherwise prevent the core from ever starting again. */
+   if (device_reloading)
+      goto error;
+   printf("Capture device could not be started, falling back to the dummy video source\n");
+   {
+      struct retro_message msg =
+            { "Capture device could not be started - showing the test pattern", 240 };
+      VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+   }
+   release_video_buffers();
+   close_video_device();
+   strlcpy(video_device, "dummy", sizeof(video_device));
+   setup_dummy_source();
+   {
+      /* Reflect the fallback in the core option so the menu shows what is
+       * actually running. */
+      struct retro_variable var;
+      var.key   = "videoproc_videodev";
+      var.value = "dummy";
+      VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLE, &var);
+   }
+   goto device_ready;
+
+error:
+   /* Leave no stale state behind: a later option change runs
+    * unload_game_internal() again, which must not munmap old buffer
+    * pointers or touch a dead ALSA handle. */
+   unregister_audio_callback();
+   release_video_buffers();
+   close_devices();
+   return false;
 }
 
-RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
+/* keep_audio leaves the audio device, its async callback and audio_device[]
+ * untouched. Used for a video-only reconfigure (resolution/capture mode/output
+ * mode change) so the running ALSA capture isn't bounced; see open_devices(). */
+static void unload_game_internal(bool keep_audio)
 {
    int i;
    struct v4l2_requestbuffers reqbufs;
 
 #ifdef HAVE_ALSA
-   if (audio_handle != NULL)
+   if (!keep_audio && audio_handle != NULL)
    {
        VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, NULL);
    }
@@ -1512,15 +1751,13 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
 
    if ((strcmp(video_device, "dummy") != 0) && (video_device_fd != -1))
    {
-      uint32_t index;
       enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       int               error = v4l2_ioctl(video_device_fd,
             VIDIOC_STREAMOFF, &type);
       if (error != 0)
          printf("VIDIOC_STREAMOFF failed: %s\n", strerror(errno));
 
-      for (index = 0; index < v4l2_ncapbuf; index++)
-         v4l2_munmap(v4l2_capbuf[index].start, v4l2_capbuf[index].len);
+      release_video_buffers();
 
       reqbufs.count = 0;
       reqbufs.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -1562,9 +1799,18 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
       ft_info2 = NULL;
    }
 
-   close_devices();
+   close_video_device();
    video_device[0] = '\0';
-   audio_device[0] = '\0';
+   if (!keep_audio)
+   {
+      close_audio_device();
+      audio_device[0] = '\0';
+   }
+}
+
+RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
+{
+   unload_game_internal(false);
 }
 
 RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game_special)(unsigned game_type,
