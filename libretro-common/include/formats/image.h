@@ -93,6 +93,27 @@ bool image_transfer_iterate(void *data, enum image_type_enum type);
 
 bool image_transfer_is_valid(void *data, enum image_type_enum type);
 
+/* Animation (animated images, currently WEBP only).
+ *
+ * image_transfer_anim_new returns an opaque animation handle, or NULL
+ * for still images / unsupported types, so a caller can try it first and
+ * fall back to the single-frame image_transfer_* path. Frames are fully
+ * composited RGBA canvases (memory order R,G,B,A); the caller advances
+ * frames on its own clock using each frame's duration in milliseconds. */
+
+void *image_transfer_anim_new(void *buf, size_t len,
+      enum image_type_enum type);
+
+void image_transfer_anim_free(void *anim, enum image_type_enum type);
+
+int image_transfer_anim_num_frames(void *anim, enum image_type_enum type);
+
+void image_transfer_anim_get_info(void *anim, enum image_type_enum type,
+      unsigned *width, unsigned *height, int *loop_count);
+
+const uint32_t *image_transfer_anim_get_frame(void *anim,
+      enum image_type_enum type, int index, int *duration_ms);
+
 RETRO_END_DECLS
 
 #endif

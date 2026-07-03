@@ -394,3 +394,89 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
 
    return true;
 }
+
+/* ===== Animation ===== *
+ * Currently only WEBP supports animation. These helpers return NULL /
+ * false for every other image type, so callers may attempt animation
+ * unconditionally and fall back to the still-image path. */
+
+void *image_transfer_anim_new(void *buf, size_t len,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         return rwebp_anim_decode((const uint8_t*)buf, len);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return NULL;
+}
+
+void image_transfer_anim_free(void *anim, enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         rwebp_anim_free((rwebp_anim_t*)anim);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
+int image_transfer_anim_num_frames(void *anim, enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         return rwebp_anim_num_frames((const rwebp_anim_t*)anim);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return 0;
+}
+
+void image_transfer_anim_get_info(void *anim, enum image_type_enum type,
+      unsigned *width, unsigned *height, int *loop_count)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         rwebp_anim_get_info((const rwebp_anim_t*)anim,
+               width, height, loop_count);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
+const uint32_t *image_transfer_anim_get_frame(void *anim,
+      enum image_type_enum type, int index, int *duration_ms)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         return rwebp_anim_get_frame((const rwebp_anim_t*)anim,
+               index, duration_ms);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return NULL;
+}
