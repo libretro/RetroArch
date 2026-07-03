@@ -332,7 +332,7 @@ static int vh_read_codes(vbr *br, int ns, uint8_t *lens)
       {
          int nb = 2 + 2 * vbr_read(br, 3);
          ms = 2 + vbr_read(br, nb);
-         if (ms > ns) return -1;   /* invalid per libwebp */
+         if (ms > ns) { vh_free(&clt); return -1; }   /* invalid per libwebp */
       }
       si = 0;
       while (si < ns)
@@ -1206,15 +1206,19 @@ static void vp8_idct4x4_add(const int16_t in[16], uint8_t *dst, int stride)
     * columns first, then rows with final rounding. The >>16
     * truncations do not commute, so the order matters for
     * bit-exactness. */
-   int i, tmp[16];
+   int i;
+   int16_t tmp[16];   /* libvpx stores the pass-1 result as short, which
+                       * truncates to 16 bits before pass 2 reads it; the
+                       * wider int here would both diverge and overflow the
+                       * DCT-constant multiply on corrupt coefficients. */
    for (i = 0; i < 4; i++)
    {
       int a = in[i] + in[8+i];
       int b = in[i] - in[8+i];
       int c = (in[4+i] * 35468 >> 16) - (in[12+i] + (in[12+i] * 20091 >> 16));
       int d = (in[4+i] + (in[4+i] * 20091 >> 16)) + (in[12+i] * 35468 >> 16);
-      tmp[i]    = a + d; tmp[4+i]  = b + c;
-      tmp[8+i]  = b - c; tmp[12+i] = a - d;
+      tmp[i]    = (int16_t)(a + d); tmp[4+i]  = (int16_t)(b + c);
+      tmp[8+i]  = (int16_t)(b - c); tmp[12+i] = (int16_t)(a - d);
    }
    for (i = 0; i < 4; i++)
    {
@@ -1812,38 +1816,65 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    skip_enabled = vp8b_bit(&br);
    prob_skip = skip_enabled ? (int)vp8b_lit(&br, 8) : 0;
 
-   /* Initialize token partitions */
+   /* Initialize token partitions. Everything below is bounds-checked
+    * against [data, data+len) so a truncated or hostile size table can
+    * never form an out-of-range pointer or a wrapped length. */
    {
+      const uint8_t *const end = data + len;
       const uint8_t *tp_base = p0 + p0s;
-      const uint8_t *tp_sizes = tp_base; /* partition size bytes */
       const uint8_t *tp_data;
       size_t part_sizes[8];
+      size_t avail, hdr_bytes;
       int np;
 
       if (num_parts > 8) num_parts = 8;
-      /* Read partition sizes: (num_parts - 1) * 3 bytes, little-endian 24-bit each */
-      tp_data = tp_base + 3 * (num_parts - 1);
+
+      /* The (num_parts - 1) 3-byte size entries must fit before the data. */
+      if (tp_base < data || tp_base > end) goto pfail_tp;
+      hdr_bytes = (size_t)(num_parts - 1) * 3;
+      if ((size_t)(end - tp_base) < hdr_bytes) goto pfail_tp;
+      tp_data = tp_base + hdr_bytes;
+
       for (np = 0; np < num_parts - 1; np++)
       {
-         part_sizes[np] = (size_t)tp_sizes[np*3]
-                        | ((size_t)tp_sizes[np*3+1] << 8)
-                        | ((size_t)tp_sizes[np*3+2] << 16);
+         const uint8_t *e = tp_base + np * 3;
+         part_sizes[np] = (size_t)e[0]
+                        | ((size_t)e[1] << 8)
+                        | ((size_t)e[2] << 16);
       }
-      /* Last partition gets the remainder */
+
+      /* Clamp each declared size to what actually remains, then give the
+       * final partition whatever is left. */
+      avail = (size_t)(end - tp_data);
       {
          size_t used = 0;
-         for (np = 0; np < num_parts - 1; np++) used += part_sizes[np];
-         part_sizes[num_parts - 1] = (data + len) - tp_data - used;
+         for (np = 0; np < num_parts - 1; np++)
+         {
+            if (part_sizes[np] > avail - used)
+               part_sizes[np] = avail - used;
+            used += part_sizes[np];
+         }
+         part_sizes[num_parts - 1] = avail - used;
       }
-      /* Initialize each partition's bool decoder */
+
       for (np = 0; np < num_parts; np++)
       {
-         if (tp_data + part_sizes[np] > data + len)
-            part_sizes[np] = (data + len) - tp_data;
          vp8b_init(&tbr[np], tp_data, part_sizes[np]);
          tp_data += part_sizes[np];
       }
    }
+   goto tp_ok;
+pfail_tp:
+   /* Truncated partition header: point every partition at an empty span
+    * so the bool decoders read the padding pattern rather than OOB. */
+   {
+      int np;
+      if (num_parts > 8) num_parts = 8;
+      for (np = 0; np < num_parts; np++)
+         vp8b_init(&tbr[np], data + len, 0);
+   }
+tp_ok:
+   ;
 
    ys = mbw * 16; uvs = mbw * 8;
    seg_map_buf = (uint8_t*)calloc(mbw * mbh, 1);
