@@ -373,6 +373,13 @@ void gfx_thumbnail_request_file(
  * specified thumbnail */
 void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail);
 
+/* Advances an animated thumbnail (animated WebP) by at most one frame,
+ * if its frame duration has elapsed. Call once per frame, on the main
+ * thread, for every on-screen thumbnail. Non-animated thumbnails and
+ * non-WebP image types return immediately (single flag test), so this
+ * is safe and near-free to call for every thumbnail unconditionally. */
+void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail);
+
 /* Stream processing */
 
 /* Requests loading of the specified thumbnail via

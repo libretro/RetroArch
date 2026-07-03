@@ -300,7 +300,15 @@ fail:
  * duration has elapsed and the per-vsync decode budget allows.
  * Runs on the main thread; called from the per-frame stream
  * request/process functions for on-screen entries. */
-static void gfx_thumbnail_anim_tick(gfx_thumbnail_t *thumbnail)
+/* Advances an animated thumbnail by at most one frame if its display
+ * duration has elapsed and the shared per-vsync decode budget allows.
+ *
+ * MUST be called on the main thread, once per frame, for every visible
+ * thumbnail (menu drivers do this from their main-thread iterate step).
+ * For a still image the ANIM_ACTIVE flag is clear, so this returns
+ * immediately after a single flag test - non-animated thumbnails, and
+ * every non-WebP image type, pay nothing beyond that. */
+void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
 {
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
    const uint32_t *frame              = NULL;
@@ -309,7 +317,8 @@ static void gfx_thumbnail_anim_tick(gfx_thumbnail_t *thumbnail)
    int duration_ms                    = 0;
    enum image_type_enum type;
 
-   if (   !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
+   if (   !thumbnail
+       || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
        || !thumbnail->anim
        || (GFX_THUMB_STATUS_LOAD(&thumbnail->status) !=
              GFX_THUMBNAIL_STATUS_AVAILABLE))
@@ -493,7 +502,7 @@ static void gfx_thumbnail_handle_upload(
          GFX_THUMBNAIL_STATUS_AVAILABLE);
 
    /* If the file is an animation, open a streaming decoder for it;
-    * frames are advanced by gfx_thumbnail_anim_tick() while the
+    * frames are advanced by gfx_thumbnail_animate() while the
     * entry is on-screen. On failure the static image just uploaded
     * remains as-is. */
    gfx_thumbnail_anim_open(thumbnail_tag->thumbnail,
@@ -811,9 +820,6 @@ void gfx_thumbnail_request_stream(
    if (!thumbnail)
       return;
 
-   /* Advance any animated thumbnail while it is on-screen */
-   gfx_thumbnail_anim_tick(thumbnail);
-
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
    if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) != GFX_THUMBNAIL_STATUS_UNKNOWN)
@@ -879,10 +885,6 @@ void gfx_thumbnail_request_streams(
 
    if (!right_thumbnail || !left_thumbnail)
       return;
-
-   /* Advance any animated thumbnails while they are on-screen */
-   gfx_thumbnail_anim_tick(right_thumbnail);
-   gfx_thumbnail_anim_tick(left_thumbnail);
 
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
@@ -980,9 +982,6 @@ void gfx_thumbnail_process_stream(
 
    if (on_screen)
    {
-      /* Advance any animated thumbnail while it is on-screen */
-      gfx_thumbnail_anim_tick(thumbnail);
-
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
@@ -1057,10 +1056,6 @@ void gfx_thumbnail_process_streams(
 
    if (on_screen)
    {
-      /* Advance any animated thumbnails while they are on-screen */
-      gfx_thumbnail_anim_tick(right_thumbnail);
-      gfx_thumbnail_anim_tick(left_thumbnail);
-
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
