@@ -29,7 +29,7 @@ def parse_def_rows(text, messages):
     # verbatim between their first and last quote like parse_message.
     i = 0
     while True:
-        m = re.search(r'\bS_(BOOL|UINT|INT)\s*\(', text[i:])
+        m = re.search(r'\bS_(BOOL|UINT|INT|FLOAT)(_NS)?\s*\(', text[i:])
         if not m:
             return
         j = i + m.end()
@@ -57,8 +57,12 @@ def parse_def_rows(text, messages):
                 args[-1] += ch
             j += 1
         token = args[1].strip()
-        for pfx, val in (('MENU_ENUM_LABEL_VALUE_', args[-2]),
-                         ('MENU_ENUM_SUBLABEL_', args[-1])):
+        if m.group(2):  # _NS row: last argument is the VALUE string
+            pairs = (('MENU_ENUM_LABEL_VALUE_', args[-1]),)
+        else:
+            pairs = (('MENU_ENUM_LABEL_VALUE_', args[-2]),
+                     ('MENU_ENUM_SUBLABEL_', args[-1]))
+        for pfx, val in pairs:
             c = val.find('"'); d = val.rfind('"')
             if c >= 0 and d > c:
                 messages[pfx + token] = val[c+1:d].replace('\\"', '"')

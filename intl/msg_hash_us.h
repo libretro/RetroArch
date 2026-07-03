@@ -2255,21 +2255,39 @@ MSG_HASH(
 
 /* Settings > Video > Windowed Mode */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   "Windowed Scale"
-   )
+/* GENERATED REGION: windowed-mode scale and geometry group (see settings_def_video_window.h). */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings_def_video_window.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    "Set the window size to the specified multiple of the core viewport size."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   "Window Opacity"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
-   "Set the window transparency."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
@@ -2302,38 +2320,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    "Show all content in a fixed size window of dimensions specified by 'Window Width' and 'Window Height'. When disabled, window size will be set dynamically based on 'Windowed Scale'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   "Window Width"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   "Set the custom width for the display window."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   "Window Height"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   "Set the custom height for the display window."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "Maximum Window Width"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "Set the maximum width of the display window when automatically resizing based on 'Windowed Scale'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "Maximum Window Height"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "Set the maximum height of the display window when automatically resizing based on 'Windowed Scale'."
    )
 
 /* Settings > Video > Scaling */

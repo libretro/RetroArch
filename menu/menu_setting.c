@@ -13389,36 +13389,32 @@ static bool setting_append_list(
             if (video_driver_has_windowed())
             {
                static const setting_desc_t winscale_desc[] = {
-                  SDESC_UINT_ROW(video_scale, VIDEO_SCALE,
-                        DEFAULT_SCALE,
-                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
-                        CMD_EVENT_NONE, 1, 10, 1, 1,
-                        setting_action_ok_uint, NULL),
-                  SDESC_UINT_ROW(window_position_width, VIDEO_WINDOW_WIDTH,
-                        DEFAULT_WINDOW_WIDTH,
-                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
-                        CMD_EVENT_NONE, 0, 7680, 8, 0,
-                        setting_action_ok_uint_special, NULL),
-                  SDESC_UINT_ROW(window_position_height, VIDEO_WINDOW_HEIGHT,
-                        DEFAULT_WINDOW_HEIGHT,
-                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
-                        CMD_EVENT_NONE, 0, 4320, 8, 0,
-                        setting_action_ok_uint_special, NULL),
-                  SDESC_UINT_ROW(window_auto_width_max, VIDEO_WINDOW_AUTO_WIDTH_MAX,
-                        DEFAULT_WINDOW_AUTO_WIDTH_MAX,
-                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
-                        CMD_EVENT_NONE, 0, 7680, 8, 0,
-                        setting_action_ok_uint_special, NULL),
-                  SDESC_UINT_ROW(window_auto_height_max, VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-                        DEFAULT_WINDOW_AUTO_HEIGHT_MAX,
-                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
-                        CMD_EVENT_NONE, 0, 4320, 8, 0,
-                        setting_action_ok_uint_special, NULL),
-                  SDESC_UINT_ROW(video_window_opacity, VIDEO_WINDOW_OPACITY,
-                        DEFAULT_WINDOW_OPACITY,
-                        SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX,
-                        CMD_EVENT_NONE, 1, 100, 1, 1,
-                        setting_action_ok_uint, NULL)
+/* GENERATED: rows come from settings_def_video_window.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#include "../settings_def_video_window.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
                };
                settings_list_add_desc(list, list_info, settings,
                      winscale_desc, ARRAY_SIZE(winscale_desc),

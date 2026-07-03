@@ -892,7 +892,10 @@ struct config_path_setting
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
    SETTING_FLOAT(n, &settings->floats.f, true, d, false);
 #include "settings_def_video_fullscreen.h"
+#define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_video_window.h"
+#undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -2006,7 +2009,10 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
 #include "settings_def_video_fullscreen.h"
+#define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_video_window.h"
+#undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -2613,17 +2619,13 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_windowed_position_y",     &settings->uints.window_position_y,    true, 0, false);
    SETTING_UINT("video_windowed_position_width", &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
    SETTING_UINT("video_windowed_position_height",&settings->uints.window_position_height,    true, DEFAULT_WINDOW_HEIGHT, false);
-   SETTING_UINT("video_window_auto_width_max",   &settings->uints.window_auto_width_max,    true, DEFAULT_WINDOW_AUTO_WIDTH_MAX, false);
-   SETTING_UINT("video_window_auto_height_max",  &settings->uints.window_auto_height_max,    true, DEFAULT_WINDOW_AUTO_HEIGHT_MAX, false);
 #ifdef __WINRT__
 #else
    SETTING_UINT("video_fullscreen_x",            &settings->uints.video_fullscreen_x, true, DEFAULT_FULLSCREEN_X, false);
    SETTING_UINT("video_fullscreen_y",            &settings->uints.video_fullscreen_y, true, DEFAULT_FULLSCREEN_Y, false);
 #endif
-   SETTING_UINT("video_scale",                   &settings->uints.video_scale, true, DEFAULT_SCALE, false);
    SETTING_UINT("video_scale_integer_axis",      &settings->uints.video_scale_integer_axis, true, DEFAULT_SCALE_INTEGER_AXIS, false);
    SETTING_UINT("video_scale_integer_scaling",   &settings->uints.video_scale_integer_scaling, true, DEFAULT_SCALE_INTEGER_SCALING, false);
-   SETTING_UINT("video_window_opacity",          &settings->uints.video_window_opacity, true, DEFAULT_WINDOW_OPACITY, false);
    SETTING_UINT("video_shader_delay",            &settings->uints.video_shader_delay, true, DEFAULT_SHADER_DELAY, false);
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
@@ -2645,7 +2647,10 @@ static struct config_uint_setting *populate_settings_uint(
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
 #include "settings_def_video_fullscreen.h"
+#define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_video_window.h"
+#undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -2867,7 +2872,10 @@ static struct config_int_setting *populate_settings_int(
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
 #include "settings_def_video_fullscreen.h"
+#define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_video_window.h"
+#undef SETTINGS_DEF_CONFIG_PASS
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
