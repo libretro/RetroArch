@@ -736,7 +736,7 @@ static void vp8_init_default_cprob(void)
 /* Decode one 4x4 block of DCT coefficients (matching libvpx GetCoeffs).
  * init_ctx: initial probability context from neighbor non-zero status
  * Returns the position of the last non-zero coeff + 1 (0 if all zero). */
-static int vp8_decode_block(vp8b *br, int16_t coeffs[16], int type,
+static int vp8_decode_block(vp8b *br, int16_t coeffs[16],
       uint8_t probs[8][3][11], int start_at, int init_ctx)
 {
    static const uint8_t kCat3[] = {173,148,140};
@@ -817,26 +817,30 @@ static int vp8_decode_block(vp8b *br, int16_t coeffs[16], int type,
 /* VP8 4x4 inverse DCT (from RFC 6386 §14.3) */
 static void vp8_idct4x4_add(const int16_t in[16], uint8_t *dst, int stride)
 {
+   /* Pass order matches libvpx vp8_short_idct4x4llm_c exactly:
+    * columns first, then rows with final rounding. The >>16
+    * truncations do not commute, so the order matters for
+    * bit-exactness. */
    int i, tmp[16];
    for (i = 0; i < 4; i++)
    {
-      int a = in[i*4+0] + in[i*4+2];
-      int b = in[i*4+0] - in[i*4+2];
-      int c = (in[i*4+1] * 35468 >> 16) - (in[i*4+3] + (in[i*4+3] * 20091 >> 16));
-      int d = (in[i*4+1] + (in[i*4+1] * 20091 >> 16)) + (in[i*4+3] * 35468 >> 16);
-      tmp[i*4+0] = a + d; tmp[i*4+1] = b + c;
-      tmp[i*4+2] = b - c; tmp[i*4+3] = a - d;
+      int a = in[i] + in[8+i];
+      int b = in[i] - in[8+i];
+      int c = (in[4+i] * 35468 >> 16) - (in[12+i] + (in[12+i] * 20091 >> 16));
+      int d = (in[4+i] + (in[4+i] * 20091 >> 16)) + (in[12+i] * 35468 >> 16);
+      tmp[i]    = a + d; tmp[4+i]  = b + c;
+      tmp[8+i]  = b - c; tmp[12+i] = a - d;
    }
    for (i = 0; i < 4; i++)
    {
-      int a = tmp[i] + tmp[8+i];
-      int b = tmp[i] - tmp[8+i];
-      int c = (tmp[4+i] * 35468 >> 16) - (tmp[12+i] + (tmp[12+i] * 20091 >> 16));
-      int d = (tmp[4+i] + (tmp[4+i] * 20091 >> 16)) + (tmp[12+i] * 35468 >> 16);
-      dst[0*stride+i] = vp8_cl(dst[0*stride+i] + ((a+d+4) >> 3));
-      dst[1*stride+i] = vp8_cl(dst[1*stride+i] + ((b+c+4) >> 3));
-      dst[2*stride+i] = vp8_cl(dst[2*stride+i] + ((b-c+4) >> 3));
-      dst[3*stride+i] = vp8_cl(dst[3*stride+i] + ((a-d+4) >> 3));
+      int a = tmp[i*4+0] + tmp[i*4+2];
+      int b = tmp[i*4+0] - tmp[i*4+2];
+      int c = (tmp[i*4+1] * 35468 >> 16) - (tmp[i*4+3] + (tmp[i*4+3] * 20091 >> 16));
+      int d = (tmp[i*4+1] + (tmp[i*4+1] * 20091 >> 16)) + (tmp[i*4+3] * 35468 >> 16);
+      dst[i*stride+0] = vp8_cl(dst[i*stride+0] + ((a+d+4) >> 3));
+      dst[i*stride+1] = vp8_cl(dst[i*stride+1] + ((b+c+4) >> 3));
+      dst[i*stride+2] = vp8_cl(dst[i*stride+2] + ((b-c+4) >> 3));
+      dst[i*stride+3] = vp8_cl(dst[i*stride+3] + ((a-d+4) >> 3));
    }
 }
 
@@ -856,8 +860,8 @@ static void vp8_iwht4x4(const int16_t in[16], int16_t out[16])
    {
       int a = tmp[i]+tmp[12+i], b = tmp[4+i]+tmp[8+i];
       int c = tmp[4+i]-tmp[8+i], d = tmp[i]-tmp[12+i];
-      out[i]=(int16_t)(a+b); out[4+i]=(int16_t)(c+d);
-      out[8+i]=(int16_t)(a-b); out[12+i]=(int16_t)(d-c);
+      out[i]=(int16_t)((a+b+3)>>3); out[4+i]=(int16_t)((c+d+3)>>3);
+      out[8+i]=(int16_t)((a-b+3)>>3); out[12+i]=(int16_t)((d-c+3)>>3);
    }
 }
 
@@ -888,10 +892,10 @@ static int vp8_read_bmode(vp8b *br, int above, int left)
    if (!vp8b_get(br, p[2])) return 2; /* B_VE_PRED */
    if (!vp8b_get(br, p[3])) {
       if (!vp8b_get(br, p[4])) return 3; /* B_HE_PRED */
-      if (!vp8b_get(br, p[5])) return 5; /* B_LD_PRED */
-      return 6; /* B_RD_PRED */
+      if (!vp8b_get(br, p[5])) return 5; /* B_RD_PRED */
+      return 6; /* B_VR_PRED */
    } else {
-      if (!vp8b_get(br, p[6])) return 4; /* B_VR_PRED */
+      if (!vp8b_get(br, p[6])) return 4; /* B_LD_PRED */
       if (!vp8b_get(br, p[7])) return 7; /* B_VL_PRED */
       if (!vp8b_get(br, p[8])) return 8; /* B_HD_PRED */
       return 9; /* B_HU_PRED */
@@ -931,7 +935,7 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
          memset(d+j*s,(uint8_t)v,4);
       }
       break;
-   case 4: /* B_VR_PRED */
+   case 6: /* B_VR_PRED */
       d[3*s+0]=(uint8_t)((l[2]+2*l[1]+l[0]+2)>>2);
       d[2*s+0]=(uint8_t)((l[1]+2*l[0]+tl+2)>>2);
       d[1*s+0]=d[3*s+1]=(uint8_t)((l[0]+2*tl+a[0]+2)>>2);
@@ -943,7 +947,7 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
       d[0*s+3]=(uint8_t)((a[2]+a[3]+1)>>1);
       d[1*s+3]=(uint8_t)((a[1]+2*a[2]+a[3]+2)>>2);
       break;
-   case 5: /* B_LD_PRED */
+   case 4: /* B_LD_PRED */
       d[0*s+0]=(uint8_t)((a[0]+2*a[1]+a[2]+2)>>2);
       d[0*s+1]=d[1*s+0]=(uint8_t)((a[1]+2*a[2]+a[3]+2)>>2);
       d[0*s+2]=d[1*s+1]=d[2*s+0]=(uint8_t)((a[2]+2*a[3]+a[4]+2)>>2);
@@ -952,7 +956,7 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
       d[2*s+3]=d[3*s+2]=(uint8_t)((a[5]+2*a[6]+a[7]+2)>>2);
       d[3*s+3]=(uint8_t)((a[6]+2*a[7]+a[7]+2)>>2);
       break;
-   case 6: /* B_RD_PRED */
+   case 5: /* B_RD_PRED */
       d[3*s+0]=(uint8_t)((l[3]+2*l[2]+l[1]+2)>>2);
       d[2*s+0]=d[3*s+1]=(uint8_t)((l[2]+2*l[1]+l[0]+2)>>2);
       d[1*s+0]=d[2*s+1]=d[3*s+2]=(uint8_t)((l[1]+2*l[0]+tl+2)>>2);
@@ -966,7 +970,7 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
       d[0*s+1]=d[2*s+0]=(uint8_t)((a[1]+a[2]+1)>>1); d[1*s+1]=d[3*s+0]=(uint8_t)((a[1]+2*a[2]+a[3]+2)>>2);
       d[0*s+2]=d[2*s+1]=(uint8_t)((a[2]+a[3]+1)>>1); d[1*s+2]=d[3*s+1]=(uint8_t)((a[2]+2*a[3]+a[4]+2)>>2);
       d[0*s+3]=d[2*s+2]=(uint8_t)((a[3]+a[4]+1)>>1); d[1*s+3]=d[3*s+2]=(uint8_t)((a[3]+2*a[4]+a[5]+2)>>2);
-      d[2*s+3]=(uint8_t)((a[4]+a[5]+1)>>1); d[3*s+3]=(uint8_t)((a[4]+2*a[5]+a[6]+2)>>2);
+      d[2*s+3]=(uint8_t)((a[4]+2*a[5]+a[6]+2)>>2); d[3*s+3]=(uint8_t)((a[5]+2*a[6]+a[7]+2)>>2);
       break;
    case 8: /* B_HD_PRED */
       d[3*s+0]=(uint8_t)((l[3]+l[2]+1)>>1); d[3*s+1]=(uint8_t)((l[3]+2*l[2]+l[1]+2)>>2);
@@ -991,80 +995,111 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
 /* VP8 Simple Loop Filter (RFC 6386 §15.2) */
 static INLINE int vp8_sc(int v) { return v < -128 ? -128 : v > 127 ? 127 : v; }
 
-static void vp8_simple_filter(uint8_t *p, int stride, int count, int flimit)
+static void vp8_simple_lf_edge(uint8_t *p1p, uint8_t *p0p, uint8_t *q0p, uint8_t *q1p, int lim)
 {
-   int i;
-   for (i = 0; i < count; i++)
+   int p1 = *p1p, p0 = *p0p, q0 = *q0p, q1 = *q1p;
+   int d0 = p0 - q0, d1 = p1 - q1;
+   int mask = ((d0 < 0 ? -d0 : d0) * 2 + (d1 < 0 ? -d1 : d1) / 2) <= lim;
+   if (mask)
    {
-      int p1 = p[-2*stride], p0 = p[-1*stride], q0 = p[0], q1 = p[stride];
-      int a = vp8_sc(vp8_sc(3 * (q0 - p0) + vp8_sc(p1 - q1)) + 4) >> 3;
-      p[-1*stride] = vp8_cl(p0 + a);
-      p[0]         = vp8_cl(q0 - a);
-      p++;
+      int fv = vp8_sc(vp8_sc(d1) + 3 * (q0 - p0));
+      int f1 = vp8_sc(fv + 4) >> 3;
+      int f2 = vp8_sc(fv + 3) >> 3;
+      *q0p = vp8_cl(q0 - f1);
+      *p0p = vp8_cl(p0 + f2);
    }
 }
 
-static void vp8_loop_filter_simple(uint8_t *y, int ys, uint8_t *u, int uvs, uint8_t *v_plane,
+static void vp8_loop_filter_simple(uint8_t *y, int ys,
    int mbw, int mbh, int lf_level, int sharpness,
-   int seg_enabled, int seg_abs, const int *seg_lf, const uint8_t *seg_map)
+   int seg_enabled, int seg_abs, const int *seg_lf,
+   const uint8_t *seg_map, const uint8_t *skip_lf_map)
 {
-   int mx, my, by, bx;
+   int mx, my, i, e;
    for (my = 0; my < mbh; my++)
    {
       for (mx = 0; mx < mbw; mx++)
       {
          int mb_lf = lf_level;
-         int seg_id = seg_map ? seg_map[my * mbw + mx] : 0;
-         int flimit;
+         int lim, blim, mblim, skip_lf;
+         uint8_t *my0 = y + my * 16 * ys + mx * 16;
          if (seg_enabled && seg_abs)
-            mb_lf = seg_lf[seg_id];
+            mb_lf = seg_lf[seg_map ? seg_map[my * mbw + mx] : 0];
          else if (seg_enabled)
-            mb_lf = lf_level + seg_lf[seg_id];
+            mb_lf = lf_level + seg_lf[seg_map ? seg_map[my * mbw + mx] : 0];
          if (mb_lf < 0) mb_lf = 0;
          if (mb_lf > 63) mb_lf = 63;
          if (mb_lf == 0) continue;
-         flimit = 2 * mb_lf + (sharpness > 0 ? (sharpness > 4 ? 2 : 1) : 0);
-         if (flimit > 63) flimit = 63;
-         /* Y: left MB edge only */
-         if (mx > 0) {
-            for (by = 0; by < 16; by++) {
-               uint8_t *row = y + (my*16+by)*ys + mx*16;
-               int p1=row[-2],p0=row[-1],q0=row[0],q1=row[1];
-               int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
-               if ((a<0?-a:a)<=flimit) { int f=vp8_sc(a+4)>>3; row[-1]=vp8_cl(p0+f); row[0]=vp8_cl(q0-f); }
+         /* Limits per libvpx vp8_loop_filter_update_sharpness */
+         lim = mb_lf >> ((sharpness > 0) + (sharpness > 4));
+         if (sharpness > 0 && lim > 9 - sharpness) lim = 9 - sharpness;
+         if (lim < 1) lim = 1;
+         mblim = 2 * (mb_lf + 2) + lim;
+         blim  = 2 * mb_lf + lim;
+         skip_lf = skip_lf_map ? skip_lf_map[my * mbw + mx] : 0;
+         /* Edge order per libvpx: mbv, bv, mbh, bh */
+         if (mx > 0)
+            for (i = 0; i < 16; i++) {
+               uint8_t *r = my0 + i * ys;
+               vp8_simple_lf_edge(r - 2, r - 1, r, r + 1, mblim);
             }
-         }
-         /* Y: top MB edge only */
-         if (my > 0) {
-            for (bx = 0; bx < 16; bx++) {
-               uint8_t *col = y + my*16*ys + mx*16 + bx;
-               int p1=col[-2*ys],p0=col[-ys],q0=col[0],q1=col[ys];
-               int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
-               if ((a<0?-a:a)<=flimit) { int f=vp8_sc(a+4)>>3; col[-ys]=vp8_cl(p0+f); col[0]=vp8_cl(q0-f); }
+         if (!skip_lf)
+            for (e = 4; e <= 12; e += 4)
+               for (i = 0; i < 16; i++) {
+                  uint8_t *r = my0 + i * ys + e;
+                  vp8_simple_lf_edge(r - 2, r - 1, r, r + 1, blim);
+               }
+         if (my > 0)
+            for (i = 0; i < 16; i++) {
+               uint8_t *c = my0 + i;
+               vp8_simple_lf_edge(c - 2 * ys, c - ys, c, c + ys, mblim);
             }
-         }
+         if (!skip_lf)
+            for (e = 4; e <= 12; e += 4)
+               for (i = 0; i < 16; i++) {
+                  uint8_t *c = my0 + e * ys + i;
+                  vp8_simple_lf_edge(c - 2 * ys, c - ys, c, c + ys, blim);
+               }
       }
    }
 }
 
-static void vp8_pred16(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl)
+static void vp8_pred16(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl,
+      int up_avail, int left_avail)
 {
    int i, j;
    switch (m) {
-   case 0: { int sum=0; for(i=0;i<16;i++) sum+=a[i]+l[i];
-             { uint8_t dc=(uint8_t)((sum+16)>>5); for(j=0;j<16;j++) memset(d+j*s,dc,16); } break; }
+   case 0: { /* DC with libvpx availability logic */
+             int dc = 128;
+             if (up_avail || left_avail) {
+                int sum = 0, shift = 3 + up_avail + left_avail;
+                if (up_avail)   for(i=0;i<16;i++) sum += a[i];
+                if (left_avail) for(i=0;i<16;i++) sum += l[i];
+                dc = (sum + (1 << (shift - 1))) >> shift;
+             }
+             for(j=0;j<16;j++) memset(d+j*s,(uint8_t)dc,16);
+             break; }
    case 1: for(j=0;j<16;j++) memcpy(d+j*s,a,16); break;
    case 2: for(j=0;j<16;j++) memset(d+j*s,l[j],16); break;
    case 3: for(j=0;j<16;j++) for(i=0;i<16;i++) d[j*s+i]=vp8_cl((int)a[i]+(int)l[j]-(int)tl); break;
    }
 }
 
-static void vp8_pred8(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl)
+static void vp8_pred8(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl,
+      int up_avail, int left_avail)
 {
    int i, j;
    switch (m) {
-   case 0: { int sum=0; for(i=0;i<8;i++) sum+=a[i]+l[i];
-             { uint8_t dc=(uint8_t)((sum+8)>>4); for(j=0;j<8;j++) memset(d+j*s,dc,8); } break; }
+   case 0: { /* DC with libvpx availability logic */
+             int dc = 128;
+             if (up_avail || left_avail) {
+                int sum = 0, shift = 2 + up_avail + left_avail;
+                if (up_avail)   for(i=0;i<8;i++) sum += a[i];
+                if (left_avail) for(i=0;i<8;i++) sum += l[i];
+                dc = (sum + (1 << (shift - 1))) >> shift;
+             }
+             for(j=0;j<8;j++) memset(d+j*s,(uint8_t)dc,8);
+             break; }
    case 1: for(j=0;j<8;j++) memcpy(d+j*s,a,8); break;
    case 2: for(j=0;j<8;j++) memset(d+j*s,l[j],8); break;
    case 3: for(j=0;j<8;j++) for(i=0;i<8;i++) d[j*s+i]=vp8_cl((int)a[i]+(int)l[j]-(int)tl); break;
@@ -1084,6 +1119,8 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
    vp8b br;
    vp8b tbr[8]; /* up to 8 token partitions */
+   uint8_t *seg_map_buf = NULL;
+   uint8_t *skip_lf_buf = NULL;
    const uint8_t *p0;
    uint8_t *yb = NULL, *ub = NULL, *vb = NULL;
    uint32_t *pix = NULL;
@@ -1144,8 +1181,9 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    qp = base_qp < 0 ? 0 : (base_qp > 127 ? 127 : base_qp);
    { int q2 = qp + y1dc_dq; y1_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; }
    y1_ac_q = vp8_ac_qlut[qp];
-   { int q2 = qp + y2dc_dq; y2_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; }
-   { int q2 = qp + y2ac_dq; y2_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2]; }
+   { int q2 = qp + y2dc_dq; y2_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2] * 2; }
+   { int q2 = qp + y2ac_dq; y2_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2] * 155 / 100;
+     if (y2_ac_q < 8) y2_ac_q = 8; }
    { int q2 = qp + uvdc_dq; uv_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; if(uv_dc_q>132)uv_dc_q=132; }
    { int q2 = qp + uvac_dq; uv_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2]; }
 
@@ -1236,9 +1274,9 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
       }
    }
 
-   uint8_t *seg_map_buf = NULL;
    ys = mbw * 16; uvs = mbw * 8;
    seg_map_buf = (uint8_t*)calloc(mbw * mbh, 1);
+   skip_lf_buf = (uint8_t*)calloc(mbw * mbh, 1);
    yb = (uint8_t*)calloc(ys * mbh * 16, 1);
    ub = (uint8_t*)calloc(uvs * mbh * 8, 1);
    vb = (uint8_t*)calloc(uvs * mbh * 8, 1);
@@ -1274,7 +1312,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
       left_nz_dc = 0;
       for (mx = 0; mx < mbw; mx++)
       {
-         int ym, uvm, is_skip = 0, seg_id = 0;
+         int ym, uvm, is_skip = 0, seg_id = 0, mb_has_coeffs = 0;
          uint8_t ay[16], ly[16], au[8], lu[8], av[8], lv[8];
          uint8_t tly=128, tlu=128, tlv=128;
          int16_t coeffs[16], y2_block[16], dc_vals[16];
@@ -1305,8 +1343,9 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          /* Recompute quantizer tables for this MB's QP */
          { int q2 = mb_qp + y1dc_dq; y1_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; }
          y1_ac_q = vp8_ac_qlut[mb_qp];
-         { int q2 = mb_qp + y2dc_dq; y2_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; }
-         { int q2 = mb_qp + y2ac_dq; y2_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2]; }
+         { int q2 = mb_qp + y2dc_dq; y2_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2] * 2; }
+         { int q2 = mb_qp + y2ac_dq; y2_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2] * 155 / 100;
+           if (y2_ac_q < 8) y2_ac_q = 8; }
          { int q2 = mb_qp + uvdc_dq; uv_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; if(uv_dc_q>132)uv_dc_q=132; }
          { int q2 = mb_qp + uvac_dq; uv_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2]; }
 
@@ -1358,8 +1397,14 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          else
          {
             /* Non B_PRED: clear bmode context (default DC=0 for neighbors) */
-            for (i = 0; i < 4; i++) above_bmodes[mx * 4 + i] = 0;
-            for (i = 0; i < 4; i++) left_bmodes[i] = 0;
+            /* Map 16x16 mode to equivalent bmode for context (libvpx
+             * above_block_mode/left_block_mode): DC->B_DC(0), V->B_VE(2),
+             * H->B_HE(3), TM->B_TM(1). */
+            {
+               uint8_t eq = (ym == 1) ? 2 : (ym == 2) ? 3 : (ym == 3) ? 1 : 0;
+               for (i = 0; i < 4; i++) above_bmodes[mx * 4 + i] = eq;
+               for (i = 0; i < 4; i++) left_bmodes[i] = eq;
+            }
          }
 
          /* UV mode */
@@ -1368,30 +1413,40 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          else if (!vp8b_get(&br, vp8_uvmp[2])) uvm = 2;
          else uvm = 3;
 
-         /* Gather prediction context */
+         /* Gather prediction context. Border semantics per libvpx
+          * vp8_setup_intra_recon: row above frame = 127 (including the
+          * top-left corner), column left of frame = 129. */
          if (my > 0) {
             memcpy(ay, yb+(my*16-1)*ys+mx*16, 16);
             memcpy(au, ub+(my*8-1)*uvs+mx*8, 8);
             memcpy(av, vb+(my*8-1)*uvs+mx*8, 8);
             if (mx > 0) { tly=yb[(my*16-1)*ys+mx*16-1]; tlu=ub[(my*8-1)*uvs+mx*8-1]; tlv=vb[(my*8-1)*uvs+mx*8-1]; }
-         } else { memset(ay,127,16); memset(au,127,8); memset(av,127,8); }
+            else        { tly=129; tlu=129; tlv=129; }
+         } else {
+            memset(ay,127,16); memset(au,127,8); memset(av,127,8);
+            tly=127; tlu=127; tlv=127;
+         }
          if (mx > 0) {
             for(j=0;j<16;j++) ly[j]=yb[(my*16+j)*ys+mx*16-1];
             for(j=0;j<8;j++) lu[j]=ub[(my*8+j)*uvs+mx*8-1];
             for(j=0;j<8;j++) lv[j]=vb[(my*8+j)*uvs+mx*8-1];
-         } else { memset(ly,127,16); memset(lu,127,8); memset(lv,127,8); }
+         } else { memset(ly,129,16); memset(lu,129,8); memset(lv,129,8); }
 
          /* Predict */
          if (ym != 4)
-            vp8_pred16(yb+my*16*ys+mx*16, ys, ym, ay, ly, tly);
+            vp8_pred16(yb+my*16*ys+mx*16, ys, ym, ay, ly, tly, my > 0, mx > 0);
          /* B_PRED Y prediction is done per sub-block below */
-         vp8_pred8(ub+my*8*uvs+mx*8, uvs, uvm, au, lu, tlu);
-         vp8_pred8(vb+my*8*uvs+mx*8, uvs, uvm, av, lv, tlv);
+         vp8_pred8(ub+my*8*uvs+mx*8, uvs, uvm, au, lu, tlu, my > 0, mx > 0);
+         vp8_pred8(vb+my*8*uvs+mx*8, uvs, uvm, av, lv, tlv, my > 0, mx > 0);
 
          /* Decode and add residual */
-         if (!is_skip)
+         mb_has_coeffs = 0;
+         if (!is_skip || ym == 4)
          {
-            /* Non-zero coefficient tracking for context. */
+            /* Non-zero coefficient tracking for context. Skipped B_PRED
+             * MBs still take this path: sub-block prediction must run
+             * even when all residuals are skipped (libvpx zeroes eobs
+             * but still predicts). */
             int nz_y2 = 0;
 
             /* Y2 block (DC for 16x16 prediction) */
@@ -1402,9 +1457,10 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                int y2_left  = (mx > 0) ? left_nz_dc : 0;
                int y2_ctx   = (y2_above + y2_left > 1) ? 2 : (y2_above + y2_left);
                memset(y2_block, 0, sizeof(y2_block));
-               nz_y2 = vp8_decode_block(tp, y2_block, 1, vp8_cprob[1], 0, y2_ctx);
+               nz_y2 = vp8_decode_block(tp, y2_block, vp8_cprob[1], 0, y2_ctx);
                above_nz_dc[mx] = (nz_y2 > 0) ? 1 : 0;
                left_nz_dc = (nz_y2 > 0) ? 1 : 0;
+               if (nz_y2 > 0) mb_has_coeffs = 1;
                /* Dequantize Y2 */
                y2_block[0] = (int16_t)(y2_block[0] * y2_dc_q);
                for (i = 1; i < 16; i++)
@@ -1432,19 +1488,28 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                      if (by > 0) { for(i=0;i<4;i++) sa[i]=sb_dst[-ys+i]; }
                      else if (my > 0) { for(i=0;i<4;i++) sa[i]=yb[(my*16-1)*ys+mx*16+bx*4+i]; }
                      else { memset(sa,127,4); }
-                     /* Above-right: next 4 pixels */
+                     /* Above-right: next 4 pixels. For bx==3 libvpx
+                      * (intra_prediction_down_copy) replicates the above
+                      * MB row's pixels at cols +16..19 down the right
+                      * edge, so ALL bx==3 sub-blocks see the above-right
+                      * MB's bottom-left 4 pixels (127 border if my==0 or
+                      * at the last MB column). */
                      if (bx < 3 && by > 0) { for(i=0;i<4;i++) sa[4+i]=sb_dst[-ys+4+i]; }
                      else if (bx < 3 && my > 0) { for(i=0;i<4;i++) sa[4+i]=yb[(my*16-1)*ys+mx*16+bx*4+4+i]; }
-                     else { for(i=0;i<4;i++) sa[4+i]=sa[3]; }
+                     else if (bx < 3) { for(i=0;i<4;i++) sa[4+i]=127; }
+                     else if (my > 0 && mx < mbw-1) { for(i=0;i<4;i++) sa[4+i]=yb[(my*16-1)*ys+mx*16+16+i]; }
+                     else { for(i=0;i<4;i++) sa[4+i]=127; }
                      if (bx > 0) { for(i=0;i<4;i++) sl[i]=sb_dst[i*ys-1]; }
                      else if (mx > 0) { for(i=0;i<4;i++) sl[i]=yb[(my*16+by*4+i)*ys+mx*16-1]; }
                      else { memset(sl,129,4); }
-                     if (bx > 0 && by > 0) stl = sb_dst[-ys-1];
-                     else if (by > 0 && mx > 0) stl = sb_dst[-ys-1];
-                     else if (bx > 0 && my > 0) stl = yb[(my*16-1)*ys+mx*16+bx*4-1];
-                     else if (by > 0) stl = 127; /* above border for first column */
-                     else if (bx > 0) stl = (my > 0) ? yb[(my*16-1)*ys+mx*16+bx*4-1] : 127;
-                     else stl = 127; /* top-left corner */
+                     if (by > 0) {
+                        if (bx > 0 || mx > 0) stl = sb_dst[-ys-1];
+                        else stl = 129; /* mx==0: left frame border */
+                     } else if (my > 0) {
+                        if (bx > 0 || mx > 0) stl = yb[(my*16-1)*ys+mx*16+bx*4-1];
+                        else stl = 129; /* mx==0: left frame border */
+                     } else
+                        stl = 127; /* my==0: above frame border (covers corner) */
                      vp8_pred4x4(sb_dst, ys, bmodes[sb_idx], sa, sl, stl);
                      start = 0; /* B_PRED: decode DC from tokens (type 1) */
                   }
@@ -1453,8 +1518,14 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                      start = 1; /* non-B_PRED: DC comes from Y2 */
                   }
 
-                  nz_cnt = vp8_decode_block(tp, coeffs, (ym == 4) ? 3 : 0,
-                        vp8_cprob[(ym == 4) ? 3 : 0], start, sb_ctx);
+                  if (is_skip)
+                  {
+                     memset(coeffs, 0, sizeof(coeffs[0]) * 16);
+                     nz_cnt = 0;
+                  }
+                  else
+                     nz_cnt = vp8_decode_block(tp, coeffs,
+                           vp8_cprob[(ym == 4) ? 3 : 0], start, sb_ctx);
                   /* Dequantize */
                   if (ym != 4)
                      coeffs[0] = dc_vals[by * 4 + bx]; /* DC from WHT */
@@ -1467,6 +1538,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                   /* Update context tracking */
                   above_nz_y[mx*4+bx] = (nz_cnt > 0) ? 1 : 0;
                   left_nz_y[by] = (nz_cnt > 0) ? 1 : 0;
+                  if (nz_cnt > 0) mb_has_coeffs = 1;
                }
             }
 
@@ -1478,7 +1550,14 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                   int sb_above = (my > 0 || by > 0) ? above_nz_u[mx*2+bx] : 0;
                   int sb_left  = (mx > 0 || bx > 0) ? left_nz_u[by] : 0;
                   int sb_ctx   = (sb_above + sb_left > 1) ? 2 : (sb_above + sb_left);
-                  int nz_cnt = vp8_decode_block(tp, coeffs, 2, vp8_cprob[2], 0, sb_ctx);
+                  int nz_cnt;
+                  if (is_skip)
+                  {
+                     memset(coeffs, 0, sizeof(coeffs[0]) * 16);
+                     nz_cnt = 0;
+                  }
+                  else
+                     nz_cnt = vp8_decode_block(tp, coeffs, vp8_cprob[2], 0, sb_ctx);
                   coeffs[0] = (int16_t)(coeffs[0] * uv_dc_q);
                   for (i = 1; i < 16; i++)
                      coeffs[i] = (int16_t)(coeffs[i] * uv_ac_q);
@@ -1486,6 +1565,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                         ub + (my*8 + by*4) * uvs + mx*8 + bx*4, uvs);
                   above_nz_u[mx*2+bx] = (nz_cnt > 0) ? 1 : 0;
                   left_nz_u[by] = (nz_cnt > 0) ? 1 : 0;
+                  if (nz_cnt > 0) mb_has_coeffs = 1;
                }
             }
 
@@ -1497,7 +1577,14 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                   int sb_above = (my > 0 || by > 0) ? above_nz_v[mx*2+bx] : 0;
                   int sb_left  = (mx > 0 || bx > 0) ? left_nz_v[by] : 0;
                   int sb_ctx   = (sb_above + sb_left > 1) ? 2 : (sb_above + sb_left);
-                  int nz_cnt = vp8_decode_block(tp, coeffs, 2, vp8_cprob[2], 0, sb_ctx);
+                  int nz_cnt;
+                  if (is_skip)
+                  {
+                     memset(coeffs, 0, sizeof(coeffs[0]) * 16);
+                     nz_cnt = 0;
+                  }
+                  else
+                     nz_cnt = vp8_decode_block(tp, coeffs, vp8_cprob[2], 0, sb_ctx);
                   coeffs[0] = (int16_t)(coeffs[0] * uv_dc_q);
                   for (i = 1; i < 16; i++)
                      coeffs[i] = (int16_t)(coeffs[i] * uv_ac_q);
@@ -1505,20 +1592,27 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                         vb + (my*8 + by*4) * uvs + mx*8 + bx*4, uvs);
                   above_nz_v[mx*2+bx] = (nz_cnt > 0) ? 1 : 0;
                   left_nz_v[by] = (nz_cnt > 0) ? 1 : 0;
+                  if (nz_cnt > 0) mb_has_coeffs = 1;
                }
             }
          }
          else
          {
-            /* Skipped MB: clear all non-zero context */
+            /* Skipped MB: clear non-zero context (libvpx
+             * vp8_reset_mb_tokens_context). The Y2 context is only
+             * reset when this MB actually has a Y2 block (non-B_PRED). */
             for (bx = 0; bx < 4; bx++) above_nz_y[mx*4+bx] = 0;
             for (bx = 0; bx < 2; bx++) { above_nz_u[mx*2+bx] = 0; above_nz_v[mx*2+bx] = 0; }
-            above_nz_dc[mx] = 0;
             memset(left_nz_y, 0, sizeof(left_nz_y));
             memset(left_nz_u, 0, sizeof(left_nz_u));
             memset(left_nz_v, 0, sizeof(left_nz_v));
-            left_nz_dc = 0;
+            if (ym != 4) { above_nz_dc[mx] = 0; left_nz_dc = 0; }
          }
+         /* libvpx: filter inner edges unless MB has no coefficients
+          * (parsed skip OR eobtotal==0) and is not B_PRED. */
+         if (skip_lf_buf)
+            skip_lf_buf[my * mbw + mx] =
+               (uint8_t)(((is_skip || !mb_has_coeffs) && ym != 4) ? 1 : 0);
 
       }
    }
@@ -1528,7 +1622,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
 
    /* Apply post-decode simple loop filter */
    if (filter_type == 1 && lf_level > 0)
-      vp8_loop_filter_simple(yb, ys, ub, uvs, vb, mbw, mbh, lf_level, sharpness, seg_enabled, seg_abs, seg_lf, seg_map_buf);
+      vp8_loop_filter_simple(yb, ys, mbw, mbh, lf_level, sharpness, seg_enabled, seg_abs, seg_lf, seg_map_buf, skip_lf_buf);
 
    /* YUV -> ARGB */
    pix = (uint32_t*)malloc((size_t)w * h * sizeof(uint32_t));
@@ -1540,11 +1634,11 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          vp8_yuv2rgb(yb[j*ys+i], ub[(j>>1)*uvs+(i>>1)], vb[(j>>1)*uvs+(i>>1)], &r, &g, &b2);
          pix[j*w+i] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | (uint32_t)b2;
       }
-   free(yb); free(ub); free(vb); free(seg_map_buf);
+   free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf);
    *ow = (unsigned)w; *oh = (unsigned)h;
    return pix;
 lfail:
-   free(yb); free(ub); free(vb); free(seg_map_buf); free(pix);
+   free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf); free(pix);
    return NULL;
 }
 
