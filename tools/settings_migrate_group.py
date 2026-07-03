@@ -64,11 +64,25 @@ def guard_of(text, pat):
 
 guards = {}
 body = tm.group(1)
-for gm in re.finditer(r'#if(\w* [^\n]+)\n(.*?)#endif(?:\n|$)', body, re.S):
-    gexpr = ('#if' + gm.group(1)).replace('#ifdef ', '#if defined(').strip()
-    if gm.group(1).startswith('def '): gexpr += ')'
-    for rm in re.finditer(r'SDESC_\w+_ROW\((\w+),', gm.group(2)):
-        guards[rm.group(1)] = ('#if' + gm.group(1)).strip()
+# Depth-aware: record the FULL stack of enclosing #if guards for each row.
+# A flat "#if ... #endif" regex (non-greedy) stops at the first #endif and
+# so drops inner guards for nested blocks - e.g. a row under
+#   #ifdef HAVE_CDROM
+#   #ifdef HAVE_LAKKA
+# would be emitted under HAVE_CDROM only, breaking any build where the
+# outer flag is set but the inner is not.  Carry every enclosing guard.
+gstack = []
+for ln in body.split('\n'):
+    s = ln.strip()
+    if s.startswith('#if'):
+        gstack.append(s)
+    elif s.startswith('#endif'):
+        if gstack:
+            gstack.pop()
+    else:
+        rm = re.match(r'\s*SDESC_\w+_ROW\((\w+),', ln)
+        if rm and gstack:
+            guards[rm.group(1)] = tuple(gstack)
 rows = [(m.group(1), m.group(2), m.group(3), re.sub(r'\s+',' ',m.group(4)).strip())
         for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT)_ROW\((\w+), (\w+),((?:[^()]|\([^()]*\))*)\)', body)]
 all_invocations = re.findall(r'SDESC_\w+?_ROW(?:_\w+)?\(', body)
@@ -137,13 +151,16 @@ for k, f, T, a in rows:
                ' * configuration.c row stays literal for this setting. */\n'
                '#ifndef SETTINGS_DEF_CONFIG_PASS\n' % ck) + row + '\n#endif'
     if f in guards:
-        g = guards[f]
-        if g.startswith('#ifdef '):
-            cond = 'defined(%s)' % g[len('#ifdef '):].strip()
-        elif g.startswith('#ifndef '):
-            cond = '!defined(%s)' % g[len('#ifndef '):].strip()
-        else:
-            cond = g[len('#if '):].strip()
+        gs = guards[f]
+        def _cond(g):
+            if g.startswith('#ifdef '):
+                return 'defined(%s)' % g[len('#ifdef '):].strip()
+            if g.startswith('#ifndef '):
+                return '!defined(%s)' % g[len('#ifndef '):].strip()
+            return g[len('#if '):].strip()
+        cond   = ' && '.join(_cond(g) for g in gs)
+        gopen  = '\n'.join(gs)
+        gclose = '\n'.join('#endif' for _ in gs)
         us_g  = guard_of(open('intl/msg_hash_us.h').read(), r'MENU_ENUM_LABEL_VALUE_%s,' % T)
         lbl_g = guard_of(open('intl/msg_hash_lbl.h').read(), r'MENU_ENUM_LABEL_%s,' % T)
         strings_guarded = bool(us_g) and bool(lbl_g)
@@ -152,9 +169,10 @@ for k, f, T, a in rows:
         if strings_free:
             row = ('/* Descriptor and configuration rows are %s; the string\n'
                    ' * tables always carry this row via the strings pass. */\n'
-                   '#if %s || defined(SETTINGS_DEF_STRINGS_PASS)\n' % (g, cond)) + row + '\n#endif'
+                   '#if %s || defined(SETTINGS_DEF_STRINGS_PASS)\n' % (
+                       gopen.replace('\n', ' '), cond)) + row + '\n#endif'
         else:
-            row = g + '\n' + row + '\n#endif'
+            row = gopen + '\n' + row + '\n' + gclose
     out.append(row)
 open(DEF, 'w').write('\n'.join(out) + '\n')
 
@@ -201,13 +219,30 @@ print("surgeries ok")
 
 CFB = "-std=gnu89 -pedantic-errors -Wno-long-long -O2 -fsyntax-only -I. -Imenu -Ilibretro-common/include -Ideps/7zip -DRARCH_INTERNAL -DHAVE_MENU"
 CF = CFB + " -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DHAVE_CHEATS -DHAVE_OVERLAY -DHAVE_MICROPHONE"
-for tu, cfgf, okset in (('menu/menu_setting.c', CFB, ('0',)), ('menu/menu_setting.c', CF, ('0',)),
+# Guard-isolation lanes: exercise every flag that gates a row *in
+# isolation*.  A dropped inner guard nested under an outer flag only
+# breaks when the outer flag is set and the inner is not, so each gating
+# flag must be compiled on its own - the eject-disc break (HAVE_CDROM
+# set, HAVE_LAKKA unset) slipped through only because no base lane
+# defined HAVE_CDROM by itself.
+def _lakka(flags):
+    return (flags + ' -DHAVE_LAKKA_SERVER=\\"x\\" -DHAVE_LAKKA_PROJECT=\\"x\\"'
+            if 'HAVE_LAKKA ' in flags + ' ' else flags)
+_gflags = sorted({g.split()[-1] for gs in guards.values() for g in gs})
+_iso = []
+for _fl in _gflags:
+    _d = ' -D' + _fl
+    _iso += [('menu/menu_setting.c', CF + _d, ('0',)),
+             ('intl/msg_hash_us.c', CF + ' -DHAVE_LANGEXTRA' + _d, ('0',)),
+             ('configuration.c', CF + _lakka(_d), ('0',))]
+_LANES = [('menu/menu_setting.c', CFB, ('0',)), ('menu/menu_setting.c', CF, ('0',)),
         ('menu/menu_setting.c', CF + ' -DHAVE_D3DKMT', ('0',)),
         ('menu/menu_setting.c', CF + ' -DRARCH_MOBILE -DHAVE_LIBRETRODB -DHAVE_GLSL -DHAVE_NETWORKING -DHAVE_LAKKA -DHAVE_AUDIOMIXER -DHAVE_QT -DHAVE_THREADS', ('0','4')),
-        ('configuration.c', CF, ('0',)), ('intl/msg_hash_us.c', CF + ' -DHAVE_LANGEXTRA', ('0',))):
+        ('configuration.c', CF, ('0',)), ('intl/msg_hash_us.c', CF + ' -DHAVE_LANGEXTRA', ('0',))]
+for tu, cfgf, okset in _LANES + _iso:
     r = run("gcc %s %s 2>&1 | grep -c 'error:'" % (cfgf, tu))
-    assert r.stdout.strip() in okset, (tu, run("gcc %s %s 2>&1 | grep -B1 error: | head -5" % (cfgf, tu)).stdout)
-print("gate: lanes clean")
+    assert r.stdout.strip() in okset, (tu, cfgf, run("gcc %s %s 2>&1 | grep -B1 error: | head -5" % (cfgf, tu)).stdout)
+print("gate: lanes clean (%d base + %d guard-isolation)" % (len(_LANES), len(_iso)))
 
 # ---- TOKEN-STREAM GATE: preprocessor-level emission identity ----
 CPP = "gcc -E -P -I. -Imenu -Ilibretro-common/include -Ideps/7zip -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DHAVE_CHEATS -DHAVE_OVERLAY -DHAVE_MICROPHONE"
