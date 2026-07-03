@@ -3301,45 +3301,9 @@ enum msg_hash_enums
    MENU_LABEL(RGUI_SHOW_START_SCREEN),
    MENU_LABEL(SCREENSHOT),
    MENU_LABEL(REWIND),
+   MENU_LABEL(REWIND_GRANULARITY),
    MENU_LABEL(REWIND_BUFFER_SIZE),
-   /* GENERATED REGION: rewind granularity setting enum rows (see settings/settings_def_rewind_granularity.h). */
-#define SETTINGS_DEF_ENUM_PASS
-#define SETTINGS_DEF_STRINGS_PASS
-#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
-#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
-#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
-#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
-#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
-#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
-#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
-#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
-#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
-#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
-#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
-#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
-#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
-#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
-#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
-#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
-#include "settings/settings_def_rewind_granularity.h"
-#undef S_BOOL
-#undef S_BOOL_NS
-#undef S_UINT
-#undef S_UINT_NS
-#undef S_INT
-#undef S_INT_NS
-#undef S_FLOAT
-#undef S_FLOAT_NS
-#undef S_BOOL_H
-#undef S_UINT_H
-#undef S_BOOL_NS_H
-#undef S_INT_H
-#undef S_FLOAT_H
-#undef S_UINT_NS_H
-#undef S_INT_NS_H
-#undef S_FLOAT_NS_H
-#undef SETTINGS_DEF_STRINGS_PASS
-#undef SETTINGS_DEF_ENUM_PASS
+   MENU_LABEL(REWIND_BUFFER_SIZE_STEP),
 
    MENU_LABEL(CHEAT_APPLY_CHANGES),
    MENU_LABEL(CHEAT_IDX),
@@ -3535,44 +3499,7 @@ enum msg_hash_enums
    MENU_LBL_H(FASTFORWARD_RATIO),
    MENU_LABEL(FASTFORWARD_FRAMESKIP),
    MENU_LBL_H(VRR_RUNLOOP_ENABLE),
-   /* GENERATED REGION: rewind group enum rows (see settings/settings_def_rewind.h). */
-#define SETTINGS_DEF_ENUM_PASS
-#define SETTINGS_DEF_STRINGS_PASS
-#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
-#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
-#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
-#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
-#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
-#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
-#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
-#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
-#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
-#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
-#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
-#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
-#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
-#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
-#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
-#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
-#include "settings/settings_def_rewind.h"
-#undef S_BOOL
-#undef S_BOOL_NS
-#undef S_UINT
-#undef S_UINT_NS
-#undef S_INT
-#undef S_INT_NS
-#undef S_FLOAT
-#undef S_FLOAT_NS
-#undef S_BOOL_H
-#undef S_UINT_H
-#undef S_BOOL_NS_H
-#undef S_INT_H
-#undef S_FLOAT_H
-#undef S_UINT_NS_H
-#undef S_INT_NS_H
-#undef S_FLOAT_NS_H
-#undef SETTINGS_DEF_STRINGS_PASS
-#undef SETTINGS_DEF_ENUM_PASS
+   MENU_LABEL(REWIND_ENABLE),
    /* GENERATED REGION: cheats apply group enum rows (see settings/settings_def_cheats_apply.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS
@@ -5375,44 +5302,7 @@ enum msg_hash_enums
 
    MENU_LABEL(VIBRATE_ON_KEYPRESS),
    MENU_LABEL(ENABLE_DEVICE_VIBRATION),
-   /* GENERATED REGION: monitor index setting enum rows (see settings/settings_def_video_monitor_index.h). */
-#define SETTINGS_DEF_ENUM_PASS
-#define SETTINGS_DEF_STRINGS_PASS
-#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
-#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
-#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
-#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
-#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
-#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
-#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
-#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
-#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
-#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
-#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
-#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
-#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
-#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
-#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
-#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
-#include "settings/settings_def_video_monitor_index.h"
-#undef S_BOOL
-#undef S_BOOL_NS
-#undef S_UINT
-#undef S_UINT_NS
-#undef S_INT
-#undef S_INT_NS
-#undef S_FLOAT
-#undef S_FLOAT_NS
-#undef S_BOOL_H
-#undef S_UINT_H
-#undef S_BOOL_NS_H
-#undef S_INT_H
-#undef S_FLOAT_H
-#undef S_UINT_NS_H
-#undef S_INT_NS_H
-#undef S_FLOAT_NS_H
-#undef SETTINGS_DEF_STRINGS_PASS
-#undef SETTINGS_DEF_ENUM_PASS
+   MENU_LABEL(VIDEO_GPU_INDEX),
 
    MSG_DUMPING_DISC,
    MSG_DRIVE_NUMBER,

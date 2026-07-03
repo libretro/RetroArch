@@ -80,7 +80,7 @@ def expand_def_includes(text, base_dir):
                 out.append(def_text[i:line_end])
                 i = line_end + 1
                 continue
-            m = re.match(r'S_(BOOL|UINT|INT|FLOAT)(_NS)?(_EX)?(_H)?\s*\(', def_text[i:])
+            m = re.match(r'S_(BOOL|UINT|INT|FLOAT)(_NS)?(_H)?\s*\(', def_text[i:])
             if not m:
                 i = line_end + 1
                 continue

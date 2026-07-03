@@ -11968,72 +11968,17 @@ static bool setting_append_list(
 
          {
             static const setting_desc_t logging_desc_0[] = {
-/* GENERATED: rows come from settings_def_logging.h in order. */
-#undef S_BOOL
-#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
-                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
-#undef S_BOOL_NS
-#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
-                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
-#undef S_UINT
-#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_UINT_NS
-#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_INT
-#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_INT_NS
-#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_FLOAT
-#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
-                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#undef S_FLOAT_NS
-#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
-                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#undef S_BOOL_EX
-#define S_BOOL_EX(f, T, n, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),
-#undef S_BOOL_EX_NS
-#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),
-#undef S_UINT_EX
-#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_UINT_EX_NS
-#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_INT_EX
-#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_INT_EX_NS
-#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_FLOAT_EX
-#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_FLOAT_EX_NS
-#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),
-#include "../settings/settings_def_logging.h"
-#undef S_BOOL
-#undef S_BOOL_NS
-#undef S_UINT
-#undef S_UINT_NS
-#undef S_INT
-#undef S_INT_NS
-#undef S_FLOAT
-#undef S_FLOAT_NS
-#undef S_BOOL_EX
-#undef S_BOOL_EX_NS
-#undef S_UINT_EX
-#undef S_UINT_EX_NS
-#undef S_INT_EX
-#undef S_INT_EX_NS
-#undef S_FLOAT_EX
-#undef S_FLOAT_EX_NS
+               SDESC_UINT_ROW_EX(libretro_log_level, LIBRETRO_LOG_LEVEL,
+                     DEFAULT_LIBRETRO_LOG_LEVEL,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 3, 1.0, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_libretro_log_level,
+                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_RADIO_BUTTONS),
+               SDESC_BOOL_ROW_EX(log_to_file, LOG_TO_FILE,
+                     DEFAULT_LOG_TO_FILE, SD_FLAG_NONE, 0, 0,
+                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+               SDESC_BOOL_ROW(log_to_file_timestamp, LOG_TO_FILE_TIMESTAMP,
+                     DEFAULT_LOG_TO_FILE_TIMESTAMP, SD_FLAG_NONE, 0, 0),
             };
             settings_list_add_desc(list, list_info, settings,
                   logging_desc_0, ARRAY_SIZE(logging_desc_0),
@@ -12456,72 +12401,14 @@ static bool setting_append_list(
 
          {
             static const setting_desc_t rewind_desc_0[] = {
-/* GENERATED: rows come from settings_def_rewind.h in order. */
-#undef S_BOOL
-#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
-                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
-#undef S_BOOL_NS
-#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
-                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
-#undef S_UINT
-#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_UINT_NS
-#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_INT
-#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_INT_NS
-#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_FLOAT
-#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
-                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#undef S_FLOAT_NS
-#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
-                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#undef S_BOOL_EX
-#define S_BOOL_EX(f, T, n, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),
-#undef S_BOOL_EX_NS
-#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),
-#undef S_UINT_EX
-#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_UINT_EX_NS
-#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_INT_EX
-#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_INT_EX_NS
-#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_FLOAT_EX
-#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_FLOAT_EX_NS
-#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),
-#include "../settings/settings_def_rewind.h"
-#undef S_BOOL
-#undef S_BOOL_NS
-#undef S_UINT
-#undef S_UINT_NS
-#undef S_INT
-#undef S_INT_NS
-#undef S_FLOAT
-#undef S_FLOAT_NS
-#undef S_BOOL_EX
-#undef S_BOOL_EX_NS
-#undef S_UINT_EX
-#undef S_UINT_EX_NS
-#undef S_INT_EX
-#undef S_INT_EX_NS
-#undef S_FLOAT_EX
-#undef S_FLOAT_EX_NS
+               SDESC_BOOL_ROW(rewind_enable, REWIND_ENABLE,
+                     DEFAULT_REWIND_ENABLE, SD_FLAG_NONE, 0, CMD_EVENT_REWIND_TOGGLE),
+               SDESC_UINT_ROW_EX(rewind_granularity, REWIND_GRANULARITY,
+                     DEFAULT_REWIND_GRANULARITY,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     1, 32768, 1, 1,
+                     setting_action_ok_uint, NULL,
+                     NULL, NULL, NULL, NULL, 0),
             };
             settings_list_add_desc(list, list_info, settings,
                   rewind_desc_0, ARRAY_SIZE(rewind_desc_0),
@@ -12546,72 +12433,12 @@ static bool setting_append_list(
 
          {
             static const setting_desc_t rewind_desc_1[] = {
-/* GENERATED: rows come from settings_def_rewind_granularity.h in order. */
-#undef S_BOOL
-#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
-                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
-#undef S_BOOL_NS
-#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
-                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
-#undef S_UINT
-#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_UINT_NS
-#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_INT
-#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_INT_NS
-#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_FLOAT
-#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
-                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#undef S_FLOAT_NS
-#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
-                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#undef S_BOOL_EX
-#define S_BOOL_EX(f, T, n, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),
-#undef S_BOOL_EX_NS
-#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),
-#undef S_UINT_EX
-#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_UINT_EX_NS
-#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_INT_EX
-#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_INT_EX_NS
-#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_FLOAT_EX
-#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_FLOAT_EX_NS
-#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),
-#include "../settings/settings_def_rewind_granularity.h"
-#undef S_BOOL
-#undef S_BOOL_NS
-#undef S_UINT
-#undef S_UINT_NS
-#undef S_INT
-#undef S_INT_NS
-#undef S_FLOAT
-#undef S_FLOAT_NS
-#undef S_BOOL_EX
-#undef S_BOOL_EX_NS
-#undef S_UINT_EX
-#undef S_UINT_EX_NS
-#undef S_INT_EX
-#undef S_INT_EX_NS
-#undef S_FLOAT_EX
-#undef S_FLOAT_EX_NS
+               SDESC_UINT_ROW_EX(rewind_buffer_size_step, REWIND_BUFFER_SIZE_STEP,
+                     DEFAULT_REWIND_BUFFER_SIZE_STEP,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     1, 100, 1, 1,
+                     setting_action_ok_uint, NULL,
+                     NULL, NULL, NULL, NULL, 0),
             };
             settings_list_add_desc(list, list_info, settings,
                   rewind_desc_1, ARRAY_SIZE(rewind_desc_1),
@@ -13207,72 +13034,12 @@ static bool setting_append_list(
 
          {
             static const setting_desc_t vid_desc_1[] = {
-/* GENERATED: rows come from settings_def_video_max_swapchain_wait.h in order. */
-#undef S_BOOL
-#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
-                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
-#undef S_BOOL_NS
-#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
-                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
-#undef S_UINT
-#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_UINT_NS
-#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_INT
-#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_INT_NS
-#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_FLOAT
-#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
-                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#undef S_FLOAT_NS
-#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
-                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#undef S_BOOL_EX
-#define S_BOOL_EX(f, T, n, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),
-#undef S_BOOL_EX_NS
-#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),
-#undef S_UINT_EX
-#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_UINT_EX_NS
-#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_INT_EX
-#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_INT_EX_NS
-#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_FLOAT_EX
-#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_FLOAT_EX_NS
-#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),
-#include "../settings/settings_def_video_max_swapchain_wait.h"
-#undef S_BOOL
-#undef S_BOOL_NS
-#undef S_UINT
-#undef S_UINT_NS
-#undef S_INT
-#undef S_INT_NS
-#undef S_FLOAT
-#undef S_FLOAT_NS
-#undef S_BOOL_EX
-#undef S_BOOL_EX_NS
-#undef S_UINT_EX
-#undef S_UINT_EX_NS
-#undef S_INT_EX
-#undef S_INT_EX_NS
-#undef S_FLOAT_EX
-#undef S_FLOAT_EX_NS
+               SDESC_UINT_ROW_EX(video_monitor_index, VIDEO_MONITOR_INDEX,
+                     DEFAULT_MONITOR_INDEX,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT,
+                     0, 15, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_uint_video_monitor_index,
+                     NULL, NULL, NULL, NULL, 0),
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_1, ARRAY_SIZE(vid_desc_1),
@@ -13340,72 +13107,12 @@ static bool setting_append_list(
 
          {
             static const setting_desc_t vid_desc_3[] = {
-/* GENERATED: rows come from settings_def_video_monitor_index.h in order. */
-#undef S_BOOL
-#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
-                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
-#undef S_BOOL_NS
-#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
-                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
-#undef S_UINT
-#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_UINT_NS
-#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_INT
-#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_INT_NS
-#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
-#undef S_FLOAT
-#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
-                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#undef S_FLOAT_NS
-#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
-                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
-#undef S_BOOL_EX
-#define S_BOOL_EX(f, T, n, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),
-#undef S_BOOL_EX_NS
-#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),
-#undef S_UINT_EX
-#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_UINT_EX_NS
-#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_INT_EX
-#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_INT_EX_NS
-#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_FLOAT_EX
-#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix, us, sub) \
-                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),
-#undef S_FLOAT_EX_NS
-#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix, us) \
-                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),
-#include "../settings/settings_def_video_monitor_index.h"
-#undef S_BOOL
-#undef S_BOOL_NS
-#undef S_UINT
-#undef S_UINT_NS
-#undef S_INT
-#undef S_INT_NS
-#undef S_FLOAT
-#undef S_FLOAT_NS
-#undef S_BOOL_EX
-#undef S_BOOL_EX_NS
-#undef S_UINT_EX
-#undef S_UINT_EX_NS
-#undef S_INT_EX
-#undef S_INT_EX_NS
-#undef S_FLOAT_EX
-#undef S_FLOAT_EX_NS
+               SDESC_INT_ROW_EX(vulkan_gpu_index, VIDEO_GPU_INDEX,
+                     0,
+                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
+                     0, 15, 1, 0,
+                     setting_action_ok_uint, setting_get_string_representation_int_gpu_index,
+                     NULL, NULL, NULL, NULL, 0),
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_3, ARRAY_SIZE(vid_desc_3),
