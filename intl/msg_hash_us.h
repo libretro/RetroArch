@@ -7065,54 +7065,38 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Leaderboards"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
-   "Rich Presence"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
-   "Periodically sends contextual game information to the RetroAchievements website. Has no effect if 'Hardcore Mode' is enabled."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
-   "Achievement Badges"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
-   "Display badges in the Achievement List."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-   "Test Unofficial Achievements"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-   "Use unofficial achievements and/or beta features for testing purposes."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "Unlock Sound"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "Play a sound when an achievement is unlocked."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
-   "Automatic Screenshot"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
-   "Automatically take a screenshot when an achievement is earned."
-   )
-MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
-   "Encore Mode"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
-   "Start the session with all achievements active (even the ones previously unlocked)."
-   )
+/* GENERATED REGION: achievements group (see settings_def_cheevos.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_cheevos.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 
 /* Settings > Achievements > Appearance */
 

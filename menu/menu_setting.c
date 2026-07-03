@@ -18230,20 +18230,32 @@ static bool setting_append_list(
 
          {
             static const setting_desc_t cheevos_desc_0[] = {
-               SDESC_BOOL_ROW(cheevos_test_unofficial, CHEEVOS_TEST_UNOFFICIAL,
-                     false, SD_FLAG_ADVANCED, 0, 0),
-               SDESC_BOOL_ROW(cheevos_richpresence_enable, CHEEVOS_RICHPRESENCE_ENABLE,
-                     true, SD_FLAG_ADVANCED, 0, 0),
-               SDESC_BOOL_ROW(cheevos_badges_enable, CHEEVOS_BADGES_ENABLE,
-                     false, SD_FLAG_ADVANCED, 0, 0),
-#ifdef HAVE_AUDIOMIXER
-               SDESC_BOOL_ROW(cheevos_unlock_sound_enable, CHEEVOS_UNLOCK_SOUND_ENABLE,
-                     false, SD_FLAG_NONE, 0, 0),
-#endif
-               SDESC_BOOL_ROW(cheevos_auto_screenshot, CHEEVOS_AUTO_SCREENSHOT,
-                     false, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(cheevos_start_active, CHEEVOS_START_ACTIVE,
-                     false, SD_FLAG_ADVANCED, 0, 0),
+/* GENERATED: rows come from settings_def_cheevos.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#include "../settings/settings_def_cheevos.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
             };
             settings_list_add_desc(list, list_info, settings,
                   cheevos_desc_0, ARRAY_SIZE(cheevos_desc_0),

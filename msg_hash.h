@@ -2264,9 +2264,44 @@ enum msg_hash_enums
    MENU_LABEL(ACCOUNTS_CHEEVOS_USERNAME),
    MENU_LABEL(CHEEVOS_HARDCORE_MODE_ENABLE),
    MENU_LABEL(CHEEVOS_LEADERBOARDS_ENABLE),
-   MENU_LABEL(CHEEVOS_RICHPRESENCE_ENABLE),
-   MENU_LABEL(CHEEVOS_BADGES_ENABLE),
-   MENU_LABEL(CHEEVOS_TEST_UNOFFICIAL),
+   /* GENERATED REGION: achievements group enum rows (see settings/settings_def_cheevos.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#include "settings/settings_def_cheevos.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef S_INT_H
+#undef S_FLOAT_H
+#undef S_UINT_NS_H
+#undef S_INT_NS_H
+#undef S_FLOAT_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: cheevos visibility group enum rows (see settings/settings_def_cheevos_visibility.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS
@@ -2295,9 +2330,6 @@ enum msg_hash_enums
 #undef S_BOOL_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
-   MENU_LABEL(CHEEVOS_UNLOCK_SOUND_ENABLE),
-   MENU_LABEL(CHEEVOS_AUTO_SCREENSHOT),
-   MENU_LABEL(CHEEVOS_START_ACTIVE),
    MENU_LABEL(CHEEVOS_CHALLENGE_INDICATORS),
    MENU_LABEL(CHEEVOS_ENABLE),
    MENU_LABEL(CHEEVOS_DESCRIPTION),
