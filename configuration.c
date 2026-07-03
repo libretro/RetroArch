@@ -1952,7 +1952,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_ctx_scaling",             &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
    SETTING_BOOL("video_frame_delay_auto",        &settings->bools.video_frame_delay_auto, true, DEFAULT_FRAME_DELAY_AUTO, false);
-   SETTING_BOOL("video_frame_time_sample_gated", &settings->bools.video_frame_time_sample_gated, true, DEFAULT_FRAME_TIME_SAMPLE_GATED, false);
 #if defined(DINGUX)
    SETTING_BOOL("video_dingux_ipu_keep_aspect",  &settings->bools.video_dingux_ipu_keep_aspect, true, DEFAULT_DINGUX_IPU_KEEP_ASPECT, false);
 #endif
@@ -1975,6 +1974,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
@@ -2343,6 +2343,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
@@ -2640,6 +2641,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
@@ -2912,6 +2914,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
