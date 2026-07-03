@@ -1403,7 +1403,9 @@ enum msg_hash_enums
    MENU_LABEL(INPUT_OVERLAY_HIDE_IN_MENU),
    MENU_LABEL(INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED),
 #if defined(ANDROID)
-   ME   /* GENERATED REGION: input vmouse group enum rows (see settings/settings_def_input_vmouse.h). */
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+#endif
+   /* GENERATED REGION: input vmouse group enum rows (see settings/settings_def_input_vmouse.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
@@ -1431,8 +1433,6 @@ enum msg_hash_enums
 #undef S_BOOL_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
-NU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
-#endif
 
    MENU_LABEL(INPUT_OVERLAY_SHOW_INPUTS),
    MENU_LABEL(INPUT_OVERLAY_SHOW_INPUTS_PORT),
