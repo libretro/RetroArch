@@ -1701,12 +1701,12 @@ static const struct
    char s_49d3ca7f[106];
    char s_3b5c8db2[43];
    char s_85678c20[86];
-   char s_cb2c6b22[16];
-   char s_d0fbd490[34];
-   char s_6d24f146[32];
-   char s_b72fefb4[77];
    char s_3fa8bb7e[23];
    char s_08cb2bec[35];
+   char s_6d24f146[32];
+   char s_b72fefb4[77];
+   char s_cb2c6b22[16];
+   char s_d0fbd490[34];
    char s_a209b077[24];
    char s_6473e665[36];
    char s_af1fcb4f[18];
@@ -3762,8 +3762,10 @@ static const struct
    char s_f6a0db44[21];
    char s_b3c7fa93[21];
    char s_7f2380a0[12];
-   char s_ad14307a[18];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[46];
+#endif
+   char s_ad14307a[18];
    char s_93ac5ec8[35];
    char s_2f2ca2b6[153];
    char s_0e2c0fca[35];
@@ -3870,6 +3872,7 @@ static const struct
    char s_16cacb01[15];
    char s_f9db39ef[133];
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    char s_fe8e5e18[52];
    char s_9fcd78c6[65];
    char s_174b92c0[48];
@@ -3880,6 +3883,7 @@ static const struct
    char s_dda6a015[144];
    char s_3326ea36[27];
    char s_d46604e4[96];
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    char s_05359d58[12];
@@ -6248,13 +6252,13 @@ static const struct
    "Mostra desar les personalitzacions del joc",
    "Mostra l'opci\303\263 'Desar personalitzacions del nucli' dins del men\303\272 Personalitzacions"
    ".",
-   "Mostrar Shaders",
-   "Mostra l\342\200\231opci\303\263 de \302\253Shaders\302\273.",
+   "Mostra \302\253Informaci\303\263\302\273",
+   "Mostra l\342\200\231opci\303\263 \302\253Informaci\303\263\302\273.",
    "Mostra \302\253Baixa les miniatures\302\273",
    "Mostra l\342\200\231opci\303\263 \302\253Baixa les miniatures\302\273 quan no s\342\200\231execu"
    "ta el contingut.",
-   "Mostra \302\253Informaci\303\263\302\273",
-   "Mostra l\342\200\231opci\303\263 \302\253Informaci\303\263\302\273.",
+   "Mostrar Shaders",
+   "Mostra l\342\200\231opci\303\263 de \302\253Shaders\302\273.",
    "Mostra \302\253Controladors\302\273",
    "Mostra les opcions de controladors.",
    "Mostra \302\253V\303\255deo\302\273",
@@ -8652,8 +8656,10 @@ static const struct
    "Connecta a una xarxa",
    "Connecta a una xarxa",
    "Desconnecta",
-   "Antipampallugueig",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Estableix l\342\200\231amplada de la pantalla de la VI",
+#endif
+   "Antipampallugueig",
    "Correcci\303\263 d\342\200\231overscan (superior)",
    "Estableix la retallada de la imatge traient un nombre concret de l\303\255nies (a partir de la p"
    "art superior de la pantalla). Pot provocar defectes d'escalat.",
@@ -8786,6 +8792,7 @@ static const struct
    "Ajusta l\342\200\231escala x/y de les coordenades de la pantalla t\303\240ctil per adaptar-les a"
    " l\342\200\231escala de visualitzaci\303\263 del sistema operatiu.",
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    "Fes servir el ratol\303\255 virtual (VMouse) com a punter",
    "Activa aquesta opci\303\263 per enviar els tocs a la pantalla t\303\240ctil.",
    "Empra el ratol\303\255 virtual (VMouse) com a ratol\303\255",
@@ -8800,6 +8807,7 @@ static const struct
    "Gestos del ratol\303\255 virtual",
    "Activa els gestos a la pantalla t\303\240ctil, incloent-hi clicar, arrossegar i combinacions de "
    "dits.",
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    "Escalat RGA",
@@ -8913,7 +8921,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (197716u
+      (sizeof(msg_hash_ca_blob) == (197670u
 #ifdef HAVE_LAKKA
        + 16u
        + 48u
@@ -9057,6 +9065,9 @@ typedef char msg_hash_ca_blob_check[
        + 26u
        + 44u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 46u
+#endif
 #ifdef HAVE_LIBNX
        + 14u
        + 58u
@@ -9109,6 +9120,7 @@ typedef char msg_hash_ca_blob_check[
        + 74u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
        + 52u
        + 65u
        + 48u
@@ -9119,6 +9131,7 @@ typedef char msg_hash_ca_blob_check[
        + 144u
        + 27u
        + 96u
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
        + 12u
@@ -10892,12 +10905,12 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
@@ -12952,8 +12965,10 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
@@ -13060,6 +13075,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
@@ -13070,6 +13086,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

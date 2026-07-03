@@ -1330,11 +1330,11 @@ static const struct
    char s_49d3ca7f[68];
    char s_3b5c8db2[35];
    char s_85678c20[67];
-   char s_cb2c6b22[22];
-   char s_d0fbd490[31];
-   char s_6d24f146[32];
    char s_3fa8bb7e[17];
    char s_08cb2bec[26];
+   char s_6d24f146[32];
+   char s_cb2c6b22[22];
+   char s_d0fbd490[31];
    char s_a209b077[17];
    char s_6473e665[28];
    char s_af1fcb4f[16];
@@ -3161,8 +3161,10 @@ static const struct
    char s_f6a0db44[18];
    char s_b3c7fa93[18];
    char s_7f2380a0[16];
-   char s_ad14307a[21];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[25];
+#endif
+   char s_ad14307a[21];
    char s_93ac5ec8[30];
    char s_2f2ca2b6[187];
    char s_0e2c0fca[29];
@@ -4954,11 +4956,11 @@ static const struct
    "N\303\244yt\303\244 \"Tallenna ytimen ohitukset\" -valinta \"Ohitukset\"-valikossa.",
    "N\303\244yt\303\244 \"Tallenna pelin ohitukset\"",
    "N\303\244yt\303\244 \"Tallenna pelin ohitukset\" -valinta \"Ohitukset\"-valikossa.",
-   "N\303\244yt\303\244 \"Varjostimet\"",
-   "N\303\244yt\303\244 \"Varjostimet\"-valinta.",
-   "N\303\244yt\303\244 \"Lataa esikatselukuvat\"",
    "N\303\244yt\303\244 \"Tiedot\"",
    "N\303\244yt\303\244 \"Tiedot\"-valinta.",
+   "N\303\244yt\303\244 \"Lataa esikatselukuvat\"",
+   "N\303\244yt\303\244 \"Varjostimet\"",
+   "N\303\244yt\303\244 \"Varjostimet\"-valinta.",
    "N\303\244yt\303\244 \"Ajurit\"",
    "N\303\244yt\303\244 \"Ajurit\"-asetukset.",
    "N\303\244yt\303\244 \"Video\"",
@@ -7004,8 +7006,10 @@ static const struct
    "Yhdist\303\244 verkkoon",
    "Yhdist\303\244 verkkoon",
    "Katkaise yhteys",
-   "Vilkkumisen poistaja",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Aseta Vi n\303\244yt\303\266n leveys",
+#endif
+   "Vilkkumisen poistaja",
    "Yliskannauksen korjaus (yl\303\244)",
    "S\303\244\303\244d\303\244 n\303\244yt\303\266n yliskannauksen rajausta pienent\303\244m\303\244"
    "ll\303\244 kuvan kokoa m\303\244\303\244ritellyll\303\244 lukum\303\244\303\244r\303\244ll\303"
@@ -7198,7 +7202,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123277u
+      (sizeof(msg_hash_fi_blob) == (123252u
 #ifdef HAVE_LAKKA
        + 21u
        + 43u
@@ -7316,6 +7320,9 @@ typedef char msg_hash_fi_blob_check[
        + 32u
        + 24u
        + 46u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 25u
 #endif
 #ifdef HAVE_LIBNX
        + 24u
@@ -8729,11 +8736,11 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
@@ -10560,8 +10567,10 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,

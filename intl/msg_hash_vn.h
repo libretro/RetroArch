@@ -1711,12 +1711,12 @@ static const struct
    char s_49d3ca7f[82];
    char s_3b5c8db2[38];
    char s_85678c20[70];
-   char s_cb2c6b22[36];
-   char s_d0fbd490[49];
-   char s_6d24f146[41];
-   char s_b72fefb4[82];
    char s_3fa8bb7e[26];
    char s_08cb2bec[43];
+   char s_6d24f146[41];
+   char s_b72fefb4[82];
+   char s_cb2c6b22[36];
+   char s_d0fbd490[49];
    char s_a209b077[42];
    char s_6473e665[55];
    char s_af1fcb4f[21];
@@ -3806,8 +3806,10 @@ static const struct
    char s_f6a0db44[19];
    char s_b3c7fa93[19];
    char s_7f2380a0[19];
-   char s_ad14307a[19];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[36];
+#endif
+   char s_ad14307a[19];
    char s_93ac5ec8[31];
    char s_2f2ca2b6[224];
    char s_0e2c0fca[33];
@@ -3918,6 +3920,7 @@ static const struct
    char s_16cacb01[22];
    char s_f9db39ef[143];
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    char s_fe8e5e18[40];
    char s_9fcd78c6[67];
    char s_174b92c0[38];
@@ -3928,6 +3931,7 @@ static const struct
    char s_dda6a015[122];
    char s_3326ea36[30];
    char s_d46604e4[78];
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    char s_05359d58[14];
@@ -7630,17 +7634,17 @@ static const struct
    "Hi\341\273\203n th\341\273\213 L\306\260u Ghi \304\221\303\250 Tr\303\262 ch\306\241i",
    "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n \"Ghi \304\221\303\250 tr\303\262 ch"
    "\306\241i\" trong menu \"Ghi \304\221\303\250\".",
-   "Hi\341\273\203n th\341\273\213 \342\200\230B\341\273\231 \304\221\341\273\225 b\303\263ng\342"
-   "\200\231",
-   "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n \342\200\230B\341\273\231 \304\221\341"
-   "\273\225 b\303\263ng\342\200\231.",
+   "Hi\341\273\203n th\341\273\213 'Th\303\264ng tin'",
+   "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n \342\200\230Th\303\264ng tin\342\200"
+   "\231.",
    "Hi\341\273\203n th\341\273\213 \342\200\230T\341\272\243i H\303\254nh thu nh\341\273\217\342\200"
    "\231",
    "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n \342\200\230T\341\272\243i H\303\254nh"
    " thu nh\341\273\217\342\200\231 khi tr\303\262 ch\306\241i ch\306\260a ch\341\272\241y.",
-   "Hi\341\273\203n th\341\273\213 'Th\303\264ng tin'",
-   "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n \342\200\230Th\303\264ng tin\342\200"
-   "\231.",
+   "Hi\341\273\203n th\341\273\213 \342\200\230B\341\273\231 \304\221\341\273\225 b\303\263ng\342"
+   "\200\231",
+   "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n \342\200\230B\341\273\231 \304\221\341"
+   "\273\225 b\303\263ng\342\200\231.",
    "Hi\341\273\203n th\341\273\213 \342\200\230Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n"
    "\342\200\231",
    "Hi\341\273\203n th\341\273\213 c\303\240i \304\221\341\272\267t \342\200\230Tr\303\254nh \304"
@@ -11047,8 +11051,10 @@ static const struct
    "K\341\272\277t n\341\273\221i m\341\272\241ng",
    "K\341\272\277t n\341\273\221i m\341\272\241ng",
    "Ng\341\272\257t k\341\272\277t n\341\273\221i",
-   "Kh\341\273\255 nh\341\272\245p nh\303\241y",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "\304\220\341\272\267t chi\341\273\201u r\341\273\231ng m\303\240n h\303\254nh VI",
+#endif
+   "Kh\341\273\255 nh\341\272\245p nh\303\241y",
    "Ch\341\273\211nh s\341\273\255a Overscan (Tr\303\252n)",
    "\304\220i\341\273\201u ch\341\273\211nh c\341\272\257t overscan hi\341\273\203n th\341\273\213 b"
    "\341\272\261ng c\303\241ch gi\341\272\243m k\303\255ch th\306\260\341\273\233c h\303\254nh \341"
@@ -11232,6 +11238,7 @@ static const struct
    "\203 ph\303\271 h\341\273\243p v\341\273\233i t\341\273\211 l\341\273\207 hi\341\273\203n th\341"
    "\273\213 c\341\273\247a h\341\273\207 \304\221i\341\273\201u h\303\240nh.",
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    "D\303\271ng VMouse c\341\272\243m \341\273\251ng nh\306\260 con tr\341\273\217",
    "B\341\272\255t \304\221\341\273\203 truy\341\273\201n s\341\273\261 ki\341\273\207n c\341\272"
    "\243m \341\273\251ng t\341\273\253 m\303\240n h\303\254nh v\303\240o.",
@@ -11249,6 +11256,7 @@ static const struct
    "C\341\273\255 ch\341\273\211 VMouse c\341\272\243m \341\273\251ng",
    "B\341\272\255t c\341\273\255 ch\341\273\211 c\341\272\243m \341\273\251ng, bao g\341\273\223m nh"
    "\341\272\245n, k\303\251o-th\341\272\243, v\303\240 vu\341\273\221t ng\303\263n.",
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    "T\341\273\267 l\341\273\207 RGA",
@@ -11397,7 +11405,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (215431u
+      (sizeof(msg_hash_vn_blob) == (215395u
 #ifdef HAVE_LAKKA
        + 16u
        + 43u
@@ -11542,6 +11550,9 @@ typedef char msg_hash_vn_blob_check[
        + 23u
        + 43u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 36u
+#endif
 #ifdef HAVE_LIBNX
        + 13u
        + 27u
@@ -11596,6 +11607,7 @@ typedef char msg_hash_vn_blob_check[
        + 74u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
        + 40u
        + 67u
        + 38u
@@ -11606,6 +11618,7 @@ typedef char msg_hash_vn_blob_check[
        + 122u
        + 30u
        + 78u
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
        + 14u
@@ -13384,12 +13397,12 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
@@ -15476,8 +15489,10 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
@@ -15588,6 +15603,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
@@ -15598,6 +15614,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

@@ -1284,7 +1284,9 @@ static const struct
    char s_7059a595[96];
    char s_e0609921[31];
    char s_7f2380a0[21];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[46];
+#endif
    char s_cec8f66d[53];
    char s_0bf629fd[23];
    char s_2f169651[40];
@@ -4602,8 +4604,10 @@ static const struct
    "\316\225\316\275\316\265\317\201\316\263\316\277\317\200\316\277\316\257\316\267\317\203\316\267"
    " Wi-Fi",
    "\316\221\317\200\316\277\317\203\317\215\316\275\316\264\316\265\317\203\316\267",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "\316\237\317\201\316\271\317\203\316\274\317\214\317\202 \316\240\316\273\316\254\317\204\316"
    "\277\317\205\317\202 \316\237\316\270\317\214\316\275\316\267\317\202 VI",
+#endif
    "\316\232\316\261\317\204\316\254\317\203\317\204\316\261\317\203\316\267 \316\243\317\205\316"
    "\275\316\265\317\207\316\277\317\215\317\202 \316\225\317\200\316\257\316\264\316\277\317\203"
    "\316\267\317\202",
@@ -4683,7 +4687,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (68351u
+      (sizeof(msg_hash_el_blob) == (68305u
 #ifdef HAVE_LAKKA
        + 28u
        + 70u
@@ -4721,6 +4725,9 @@ typedef char msg_hash_el_blob_check[
        + 23u
        + 24u
        + 32u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 46u
 #endif
 #ifdef HAVE_LIBNX
        + 50u
@@ -6027,7 +6034,9 @@ static const uint32_t msg_hash_el_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,

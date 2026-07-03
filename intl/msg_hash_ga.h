@@ -1700,12 +1700,12 @@ static const struct
    char s_49d3ca7f[93];
    char s_3b5c8db2[47];
    char s_85678c20[91];
-   char s_cb2c6b22[28];
-   char s_d0fbd490[36];
-   char s_6d24f146[40];
-   char s_b72fefb4[83];
    char s_3fa8bb7e[23];
    char s_08cb2bec[33];
+   char s_6d24f146[40];
+   char s_b72fefb4[83];
+   char s_cb2c6b22[28];
+   char s_d0fbd490[36];
    char s_a209b077[26];
    char s_6473e665[37];
    char s_af1fcb4f[22];
@@ -3800,8 +3800,10 @@ static const struct
    char s_f6a0db44[25];
    char s_b3c7fa93[25];
    char s_7f2380a0[13];
-   char s_ad14307a[14];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[36];
+#endif
+   char s_ad14307a[14];
    char s_93ac5ec8[24];
    char s_2f2ca2b6[215];
    char s_0e2c0fca[23];
@@ -3911,6 +3913,7 @@ static const struct
    char s_16cacb01[16];
    char s_f9db39ef[143];
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    char s_fe8e5e18[36];
    char s_9fcd78c6[86];
    char s_174b92c0[27];
@@ -3921,6 +3924,7 @@ static const struct
    char s_dda6a015[144];
    char s_3326ea36[24];
    char s_d46604e4[111];
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    char s_05359d58[12];
@@ -6572,13 +6576,13 @@ static const struct
    "Taispe\303\241in 'S\303\241bh\303\241il For-riarach\303\241in Cluiche'",
    "Taispe\303\241in an rogha 'S\303\241bh\303\241il Forbhreathnuithe Cluiche' sa roghchl\303\241r '"
    "Forbhreathnuithe'.",
-   "Taispe\303\241in 'Sc\303\241thad\303\263ir\303\255'",
-   "Taispe\303\241in an rogha 'Sc\303\241th\303\263ir\303\255'.",
+   "Taispe\303\241in 'Faisn\303\251is'",
+   "Taispe\303\241in an rogha 'Faisn\303\251is'.",
    "Taispe\303\241in '\303\215osl\303\263d\303\241il Mionsamhlacha'",
    "Taispe\303\241in an rogha '\303\215osl\303\263d\303\241il Mionsamhlacha' nuair nach bhfuil \303"
    "\241bhar ag rith.",
-   "Taispe\303\241in 'Faisn\303\251is'",
-   "Taispe\303\241in an rogha 'Faisn\303\251is'.",
+   "Taispe\303\241in 'Sc\303\241thad\303\263ir\303\255'",
+   "Taispe\303\241in an rogha 'Sc\303\241th\303\263ir\303\255'.",
    "Taispe\303\241in 'Tiom\303\241naithe'",
    "Taispe\303\241in socruithe 'Tiom\303\241naithe'.",
    "Taispe\303\241in 'F\303\255se\303\241n'",
@@ -9181,8 +9185,10 @@ static const struct
    "Ceangail leis an L\303\255onra",
    "Ceangail leis an L\303\255onra",
    "D\303\255cheangail",
-   "D\303\255-caocha\303\255l",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Socraigh Leithead an Sc\303\241ile\303\241in VI",
+#endif
+   "D\303\255-caocha\303\255l",
    "Ceart\303\272 R\303\263-scan (Barr)",
    "Coigeartaigh bearradh r\303\263scanadh taispe\303\241na tr\303\255 mh\303\251id na h\303\255omh"
    "\303\241 a laghd\303\272 de r\303\251ir l\303\255on sonraithe l\303\255nte scanadh (t\303\263gth"
@@ -9334,6 +9340,7 @@ static const struct
    "\241il chun freastal ar sc\303\241l\303\272 taispe\303\241na ar leibh\303\251al an ch\303\263rai"
    "s oibri\303\272ch\303\241in.",
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    "Teagmh\303\241il le VMuche mar Phointeoir",
    "Cumasaigh imeachta\303\255 teagmh\303\241il a chur ar aghaidh \303\263n sc\303\241ile\303\241n t"
    "eagmh\303\241il ionchuir.",
@@ -9349,6 +9356,7 @@ static const struct
    "Gotha\303\255 Tadhaill VMouse",
    "Cumasaigh gotha\303\255 sc\303\241ile\303\241in tadhaill, lena n-\303\241ir\303\255tear tap\303"
    "\241il, tarraingt tap\303\241la agus svaidhpe\303\241il mh\303\251ar.",
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    "Sc\303\241l\303\272 RGA",
@@ -9469,7 +9477,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (199802u
+      (sizeof(msg_hash_ga_blob) == (199766u
 #ifdef HAVE_LAKKA
        + 15u
        + 63u
@@ -9613,6 +9621,9 @@ typedef char msg_hash_ga_blob_check[
        + 20u
        + 43u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 36u
+#endif
 #ifdef HAVE_LIBNX
        + 17u
        + 28u
@@ -9665,6 +9676,7 @@ typedef char msg_hash_ga_blob_check[
        + 57u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
        + 36u
        + 86u
        + 27u
@@ -9675,6 +9687,7 @@ typedef char msg_hash_ga_blob_check[
        + 144u
        + 24u
        + 111u
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
        + 12u
@@ -11446,12 +11459,12 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
@@ -13544,8 +13557,10 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
@@ -13655,6 +13670,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
@@ -13665,6 +13681,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

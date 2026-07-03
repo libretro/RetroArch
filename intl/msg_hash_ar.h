@@ -2147,7 +2147,9 @@ static const struct
    char s_f6a0db44[30];
    char s_b3c7fa93[30];
    char s_7f2380a0[22];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[44];
+#endif
    char s_93ac5ec8[31];
    char s_2f2ca2b6[289];
    char s_0e2c0fca[31];
@@ -7372,8 +7374,10 @@ static const struct
    "\330\247\331\204\330\247\330\252\330\265\330\247\331\204 \330\250\330\247\331\204\330\264\330"
    "\250\331\203\330\251",
    "\331\202\330\267\330\271 \330\247\331\204\330\247\330\252\330\265\330\247\331\204",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "\330\252\330\271\331\212\331\212\331\206 \330\271\330\261\330\266 \330\247\331\204\330\264\330"
    "\247\330\264\330\251 \330\247\331\204\330\263\330\247\330\257\330\263",
+#endif
    "\330\252\330\265\330\255\331\212\330\255 Overscan (\330\243\330\271\331\204\331\211)",
    "\330\266\330\250\330\267 \330\247\331\204\330\271\330\261\330\266 \330\247\331\204\331\205\331"
    "\201\330\261\330\267 \331\204\331\204\331\205\330\263\330\255 \330\247\331\204\330\266\331\210"
@@ -7792,7 +7796,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (107412u
+      (sizeof(msg_hash_ar_blob) == (107368u
 #ifdef HAVE_LAKKA
        + 22u
        + 89u
@@ -7857,6 +7861,9 @@ typedef char msg_hash_ar_blob_check[
        + 43u
        + 90u
        + 11u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 44u
 #endif
 #ifdef HAVE_LIBNX
        + 39u
@@ -10079,7 +10086,9 @@ static const uint32_t msg_hash_ar_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,

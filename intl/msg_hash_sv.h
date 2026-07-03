@@ -1595,12 +1595,12 @@ static const struct
    char s_49d3ca7f[96];
    char s_3b5c8db2[42];
    char s_85678c20[84];
-   char s_cb2c6b22[15];
-   char s_d0fbd490[29];
-   char s_6d24f146[29];
-   char s_b72fefb4[69];
    char s_3fa8bb7e[19];
    char s_08cb2bec[33];
+   char s_6d24f146[29];
+   char s_b72fefb4[69];
+   char s_cb2c6b22[15];
+   char s_d0fbd490[29];
    char s_a209b077[19];
    char s_6473e665[39];
    char s_af1fcb4f[13];
@@ -3632,6 +3632,7 @@ static const struct
    char s_16cacb01[11];
    char s_f9db39ef[102];
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    char s_fe8e5e18[28];
    char s_9fcd78c6[66];
    char s_174b92c0[25];
@@ -3640,6 +3641,7 @@ static const struct
    char s_dda6a015[107];
    char s_3326ea36[29];
    char s_d46604e4[76];
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    char s_05359d58[13];
@@ -5872,12 +5874,12 @@ static const struct
    "Visa '\303\205sidos\303\244ttningar f\303\266r sparat spel'",
    "Visa alternativet '\303\205sidos\303\244ttningar f\303\266r sparat spel' i menyn '\303\205sidos"
    "\303\244ttningar'.",
-   "Visa 'Shaders'",
-   "Visa alternativet 'Shaders'.",
-   "Visa 'H\303\244mta ner miniatyrer'",
-   "Visa alternativet 'H\303\244mta ner miniatyrer' n\303\244r inneh\303\245ll inte k\303\266rs.",
    "Visa 'Information'",
    "Visa alternativet 'Information'.",
+   "Visa 'H\303\244mta ner miniatyrer'",
+   "Visa alternativet 'H\303\244mta ner miniatyrer' n\303\244r inneh\303\245ll inte k\303\266rs.",
+   "Visa 'Shaders'",
+   "Visa alternativet 'Shaders'.",
    "Visa 'Drivrutiner'",
    "Visar inst\303\244llningar f\303\266r drivrutiner.",
    "Visa 'Video'",
@@ -8258,6 +8260,7 @@ static const struct
    "Justera x/y-skalan f\303\266r peksk\303\244rmens koordinater f\303\266r att anpassa den till OS-"
    "niv\303\245ns sk\303\244rmskalning.",
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    "Tryck p\303\245 VMouse som pekare",
    "Aktivera f\303\266r att vidarebefordra pekh\303\244ndelser fr\303\245n peksk\303\244rmen.",
    "Tryck p\303\245 VMouse som mus",
@@ -8268,6 +8271,7 @@ static const struct
    "vilket ger pekaren tr\303\266ghet.",
    "Gester f\303\266r tryck p\303\245 VMouse",
    "Aktivera peksk\303\244rmsgester, inklusive tryck, tryck-dra och svep med fingret.",
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    "RGA-skalning",
@@ -8567,6 +8571,7 @@ typedef char msg_hash_sv_blob_check[
        + 54u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
        + 28u
        + 66u
        + 25u
@@ -8575,6 +8580,7 @@ typedef char msg_hash_sv_blob_check[
        + 107u
        + 29u
        + 76u
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
        + 13u
@@ -10238,12 +10244,12 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
@@ -12274,6 +12280,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
@@ -12282,6 +12289,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

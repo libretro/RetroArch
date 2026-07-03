@@ -1678,12 +1678,12 @@ static const struct
    char s_49d3ca7f[102];
    char s_3b5c8db2[55];
    char s_85678c20[90];
-   char s_cb2c6b22[21];
-   char s_d0fbd490[39];
-   char s_6d24f146[38];
-   char s_b72fefb4[81];
    char s_3fa8bb7e[26];
    char s_08cb2bec[44];
+   char s_6d24f146[38];
+   char s_b72fefb4[81];
+   char s_cb2c6b22[21];
+   char s_d0fbd490[39];
    char s_a209b077[31];
    char s_6473e665[53];
    char s_af1fcb4f[17];
@@ -3662,8 +3662,10 @@ static const struct
    char s_f6a0db44[28];
    char s_b3c7fa93[28];
    char s_7f2380a0[19];
-   char s_ad14307a[24];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[29];
+#endif
+   char s_ad14307a[24];
    char s_93ac5ec8[27];
    char s_2f2ca2b6[116];
    char s_0e2c0fca[27];
@@ -3772,6 +3774,7 @@ static const struct
    char s_16cacb01[32];
    char s_f9db39ef[114];
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    char s_fe8e5e18[48];
    char s_9fcd78c6[58];
    char s_174b92c0[46];
@@ -3782,6 +3785,7 @@ static const struct
    char s_dda6a015[125];
    char s_3326ea36[48];
    char s_d46604e4[69];
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    char s_05359d58[16];
@@ -6438,13 +6442,13 @@ static const struct
    "\303\263",
    "A \"J\303\241t\303\251kspecifikus fel\303\274lb\303\255r\303\241lat ment\303\251se\" jelenjen me"
    "g a Fel\303\274lb\303\255r\303\241latok men\303\274ben.",
-   "\"Shaderek\" l\303\241that\303\263",
-   "A \"Shaderek\" lehet\305\221s\303\251g jelenjen meg.",
+   "\"Inform\303\241ci\303\263k\" l\303\241that\303\263",
+   "Az \"Inform\303\241ci\303\263\" lehet\305\221s\303\251g jelenjen meg.",
    "\"B\303\251lyegk\303\251pek let\303\266lt\303\251se\" l\303\241that\303\263",
    "A \"B\303\251lyegk\303\251pek let\303\266lt\303\251se\" lehet\305\221s\303\251g jelenjen meg, am"
    "ikor nem fut tartalom.",
-   "\"Inform\303\241ci\303\263k\" l\303\241that\303\263",
-   "Az \"Inform\303\241ci\303\263\" lehet\305\221s\303\251g jelenjen meg.",
+   "\"Shaderek\" l\303\241that\303\263",
+   "A \"Shaderek\" lehet\305\221s\303\251g jelenjen meg.",
    "\"Illeszt\305\221programok\" l\303\241that\303\263",
    "Az illeszt\305\221programok be\303\241ll\303\255t\303\241sai jelenjenek meg.",
    "\"K\303\251p\" l\303\241that\303\263",
@@ -8960,8 +8964,10 @@ static const struct
    "Csatlakoz\303\241s a h\303\241l\303\263zathoz",
    "Csatlakoz\303\241s a h\303\241l\303\263zathoz",
    "Kapcsolat bont\303\241sa",
-   "Vill\303\263dz\303\241smentes\303\255t\303\251s",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "A VI k\303\251perny\305\221 sz\303\251less\303\251ge",
+#endif
+   "Vill\303\263dz\303\241smentes\303\255t\303\251s",
    "Overscan korrekci\303\263 (fent)",
    "Ennyi sor lev\303\241g\303\241sa a k\303\251p tetej\303\251r\305\221l, a megjelen\303\255t\305"
    "\221 overscan be\303\241ll\303\255t\303\241s\303\241hoz. M\303\251retez\303\251si hib\303\241kat"
@@ -9109,6 +9115,7 @@ static const struct
    "Az \303\251rint\305\221k\303\251perny\305\221 koordin\303\241t\303\241inak x/y szorz\303\263ja, "
    "az OS szint\305\261 kijelz\305\221 m\303\251retez\303\251shez alkalmazkod\303\241s miatt.",
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    "\303\211rint\305\221s virtu\303\241lis eg\303\251r mutat\303\263 eszk\303\266zk\303\251nt",
    "A bemeneti \303\251rint\305\221k\303\251perny\305\221s esem\303\251nyek tov\303\241bb\303\255t"
    "\303\241sa.",
@@ -9125,6 +9132,7 @@ static const struct
    "\303\211rint\305\221s virtu\303\241lis eg\303\251r gesztusvez\303\251rl\303\251ssel",
    "A gesztusvez\303\251rl\303\251s enged\303\251lyez\303\251se: koppint\303\241s, h\303\272z\303"
    "\241s, legyez\303\251s.",
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    "RGA m\303\251retez\303\251s",
@@ -9243,7 +9251,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (182675u
+      (sizeof(msg_hash_hu_blob) == (182646u
 #ifdef HAVE_LAKKA
        + 15u
        + 47u
@@ -9387,6 +9395,9 @@ typedef char msg_hash_hu_blob_check[
        + 20u
        + 36u
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 29u
+#endif
 #ifdef HAVE_LIBNX
        + 16u
        + 34u
@@ -9439,6 +9450,7 @@ typedef char msg_hash_hu_blob_check[
        + 67u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
        + 48u
        + 58u
        + 46u
@@ -9449,6 +9461,7 @@ typedef char msg_hash_hu_blob_check[
        + 125u
        + 48u
        + 69u
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
        + 16u
@@ -11198,12 +11211,12 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
@@ -13182,8 +13195,10 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
@@ -13292,6 +13307,7 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
@@ -13302,6 +13318,7 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

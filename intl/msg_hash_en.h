@@ -476,7 +476,9 @@ static const struct
    char s_3180dcf5[47];
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    char s_dda6a015[99];
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    char s_e8460c46[55];
@@ -1092,8 +1094,10 @@ static const struct
    "Adjust x/y scale for Wii-mote light gun speed.",
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    "Enable along with Mouse to utilise the touch screen as a trackball, adding inertia to the pointe"
    "r.",
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    "RGA scaling and bi-cubic filtering. May break widgets.",
@@ -1172,7 +1176,9 @@ typedef char msg_hash_en_blob_check[
        + 47u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
        + 99u
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
        + 55u
@@ -1652,7 +1658,9 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+#ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,

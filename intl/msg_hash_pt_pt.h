@@ -1306,7 +1306,9 @@ static const struct
    char s_6dcc2f9f[20];
    char s_e290a5ae[17];
    char s_50d77da7[15];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[28];
+#endif
    char s_2f169651[16];
    char s_ec502f2a[20];
    char s_af6007a1[20];
@@ -2877,7 +2879,9 @@ static const struct
    "Ativar filtro suave",
    "Ativar Bluetooth",
    "Redes sem fios",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Definir largura do ecr\303\243 VI",
+#endif
    "Usar Modo PAL60",
    "Reiniciar RetroArch",
    "Bloquear fotogramas",
@@ -2926,7 +2930,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (54844u
+      (sizeof(msg_hash_pt_pt_blob) == (54816u
 #ifdef HAVE_LAKKA
        + 13u
        + 44u
@@ -2977,6 +2981,9 @@ typedef char msg_hash_pt_pt_blob_check[
        + 10u
        + 16u
        + 16u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 28u
 #endif
 #ifdef HAVE_LAKKA
        + 17u
@@ -4296,7 +4303,9 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,

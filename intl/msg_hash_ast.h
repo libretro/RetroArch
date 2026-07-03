@@ -465,8 +465,8 @@ static const struct
    char s_35dc82a3[18];
    char s_900848a8[31];
    char s_8b826990[19];
-   char s_cb2c6b22[26];
    char s_3fa8bb7e[35];
+   char s_cb2c6b22[26];
    char s_af1fcb4f[17];
    char s_adaa5dca[17];
    char s_14c81b21[18];
@@ -1471,8 +1471,8 @@ static const struct
    "Amosar \302\253Siguir\302\273",
    "Amosar \302\253Zarrar el conten\303\255u\302\273",
    "Amosar \302\253Trampes\302\273",
-   "Amosar \302\253Asolombradores\302\273",
    "Amosar la opci\303\263n \302\253Informaci\303\263n\302\273",
+   "Amosar \302\253Asolombradores\302\273",
    "Amosar \302\253Videu\302\273",
    "Amosar \302\253Audiu\302\273",
    "Amosar \302\253Nucleu\302\273",
@@ -2560,8 +2560,8 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
