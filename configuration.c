@@ -1831,7 +1831,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_filter_enable",           &settings->bools.video_filter_enable, true, true, false);
    SETTING_BOOL("apply_cheats_after_toggle",     &settings->bools.apply_cheats_after_toggle, true, DEFAULT_APPLY_CHEATS_AFTER_TOGGLE, false);
    SETTING_BOOL("apply_cheats_after_load",       &settings->bools.apply_cheats_after_load, true, DEFAULT_APPLY_CHEATS_AFTER_LOAD, false);
-   SETTING_BOOL("rewind_enable",                 &settings->bools.rewind_enable, true, DEFAULT_REWIND_ENABLE, false);
    SETTING_BOOL("fastforward_frameskip",         &settings->bools.fastforward_frameskip, true, DEFAULT_FASTFORWARD_FRAMESKIP, false);
    SETTING_BOOL("vrr_runloop_enable",            &settings->bools.vrr_runloop_enable, true, DEFAULT_VRR_RUNLOOP_ENABLE, false);
    SETTING_BOOL("menu_throttle_framerate",       &settings->bools.menu_throttle_framerate, true, true, false);
@@ -1962,6 +1961,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_rewind.h"
 #include "settings/settings_def_logging.h"
 #include "settings/settings_def_rewind_granularity.h"
 #include "settings/settings_def_overlay_enable.h"
@@ -2348,6 +2348,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_rewind.h"
 #include "settings/settings_def_logging.h"
 #include "settings/settings_def_rewind_granularity.h"
 #include "settings/settings_def_overlay_enable.h"
@@ -2537,7 +2538,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("core_updater_auto_backup_history_size", &settings->uints.core_updater_auto_backup_history_size, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, false);
    SETTING_UINT("autosave_interval",             &settings->uints.autosave_interval,  true, DEFAULT_AUTOSAVE_INTERVAL, false);
    SETTING_UINT("savestate_automatic_interval",  &settings->uints.savestate_automatic_interval, true, DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL, false);
-   SETTING_UINT("rewind_granularity",            &settings->uints.rewind_granularity, true, DEFAULT_REWIND_GRANULARITY, false);
    SETTING_UINT("run_ahead_frames",              &settings->uints.run_ahead_frames, true, DEFAULT_RUN_AHEAD_FRAMES,  false);
    SETTING_UINT("replay_max_keep",               &settings->uints.replay_max_keep, true, DEFAULT_REPLAY_MAX_KEEP, false);
    SETTING_UINT("replay_checkpoint_interval",    &settings->uints.replay_checkpoint_interval,  true, DEFAULT_REPLAY_CHECKPOINT_INTERVAL, false);
@@ -2671,6 +2671,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_rewind.h"
 #include "settings/settings_def_logging.h"
 #include "settings/settings_def_rewind_granularity.h"
 #include "settings/settings_def_overlay_enable.h"
@@ -2971,6 +2972,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_rewind.h"
 #include "settings/settings_def_logging.h"
 #include "settings/settings_def_rewind_granularity.h"
 #include "settings/settings_def_overlay_enable.h"
