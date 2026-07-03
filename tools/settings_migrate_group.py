@@ -38,12 +38,14 @@ SIGS = [('S_BOOL','f, T, n, d, sd, df, c'),
         ('S_UINT','f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp'),
         ('S_INT', 'f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp'),
         ('S_FLOAT','f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp')]
-UNDEFS = '\n'.join('#undef %s%s' % (b, s) for b, _ in SIGS for s in ('', '_NS'))
+EXSIGS = [(b + '_EX', s + (', okx, rpx' if b == 'S_BOOL' else '') + ', stax, selx, lfx, rtx, uix')
+          for b, s in SIGS]
+UNDEFS = '\n'.join('#undef %s%s' % (b, s) for b, _ in SIGS + EXSIGS for s in ('', '_NS'))
 def defs(mk):
     L = []
-    for base, sig in SIGS:
-        L.append('#define %s(%s, us, sub)%s' % (base, sig, mk(base, True)))
-        L.append('#define %s_NS(%s, us)%s' % (base, sig, mk(base, False)))
+    for base, sig in SIGS + EXSIGS:
+        L.append('#undef %s\n#define %s(%s, us, sub)%s' % (base, base, sig, mk(base, True)))
+        L.append('#undef %s_NS\n#define %s_NS(%s, us)%s' % (base, base, sig, mk(base, False)))
     return '\n'.join(L)
 
 ms = open('menu/menu_setting.c').read()
@@ -81,18 +83,20 @@ for ln in body.split('\n'):
         if gstack:
             gstack.pop()
     else:
-        rm = re.match(r'\s*SDESC_\w+_ROW\((\w+),', ln)
+        rm = re.match(r'\s*SDESC_\w+_ROW(?:_EX)?\((\w+),', ln)
         if rm and gstack:
             guards[rm.group(1)] = tuple(gstack)
-rows = [(m.group(1), m.group(2), m.group(3), re.sub(r'\s+',' ',m.group(4)).strip())
-        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT)_ROW\((\w+), (\w+),((?:[^()]|\([^()]*\))*)\)', body)]
+rows = [(m.group(1), m.group(3), m.group(4), re.sub(r'\s+',' ',m.group(5)).strip())
+        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT)_ROW(_EX)?\((\w+), (\w+),((?:[^()]|\([^()]*\))*)\)', body)]
+row_ex = dict((m.group(4), bool(m.group(2)))
+        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT)_ROW(_EX)?\((\w+), (\w+),', body))
 all_invocations = re.findall(r'SDESC_\w+?_ROW(?:_\w+)?\(', body)
 assert len(rows) == len(all_invocations), (
     'table contains %d rows but only %d are plain-grammar '
     'SDESC_{BOOL,UINT,INT,FLOAT}_ROW; variant rows (_EX/_AT/_LV/...) are '
     'outside the def grammar - migrate this table manually or extend the '
     'grammar deliberately' % (len(all_invocations), len(rows)))
-assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW\(', tm.group(1))), (len(rows), tm.group(1)[:200])
+assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW(?:_EX)?\(', tm.group(1))), (len(rows), tm.group(1)[:200])
 
 us = open('intl/msg_hash_us.h').read()
 usval, ussub, usspan, uscmt = {}, {}, [], {}
@@ -127,7 +131,7 @@ for k, f, T, a in rows:
 # variant's resolution - found empirically when the widget scale
 # migration zeroed the fullscreen override's default. Such tables
 # wait for the variant grammar.
-_ms_all = open('menu/menu_setting.c').read()
+_ms_all = open('menu/menu_setting.c').read().replace(body, '')
 for _k, _f, _T, _a in rows:
     _vm = re.search(r'SDESC_\w+_ROW_\w+\(%s,' % _f, _ms_all)
     assert not _vm, ("field %s is entangled with a variant row" % _f,
@@ -175,19 +179,23 @@ out = ['''/* Single-source definitions: %s.
 ''' % TITLE]
 _mh_text = open('msg_hash.h').read()
 _h_used = set()
+_ex_used = set()
 enum_rows = []
 for k, f, T, a in rows:
+    _ex = '_EX' if row_ex.get(T) else ''
     _hs = '_H' if ('MENU_LBL_H(%s),' % T) in _mh_text else ''
     if _hs:
         assert ('MENU_LABEL(%s),' % T) not in _mh_text, (T, 'both enum forms present')
     if T in ussub:
-        row = 'S_%s%s(%s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (
-            k, _hs, f, T, names[T], a, usval[T], ussub[T])
-        if _hs: _h_used.add('S_%s_H' % k)
+        row = 'S_%s%s%s(%s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (
+            k, _ex, _hs, f, T, names[T], a, usval[T], ussub[T])
+        if _hs: _h_used.add('S_%s%s_H' % (k, _ex))
+        if _ex: _ex_used.add(('S_%s_EX%s' % (k, _hs), k, '', _hs))
     else:
-        row = 'S_%s_NS%s(%s, %s,\n      %s,\n      %s,\n      %s)' % (
-            k, _hs, f, T, names[T], a, usval[T])
-        if _hs: _h_used.add('S_%s_NS_H' % k)
+        row = 'S_%s_NS%s%s(%s, %s,\n      %s,\n      %s,\n      %s)' % (
+            k, _ex, _hs, f, T, names[T], a, usval[T])
+        if _hs: _h_used.add('S_%s_NS%s_H' % (k, _ex))
+        if _ex: _ex_used.add(('S_%s_NS_EX%s' % (k, _hs), k, '_NS', _hs))
     if T in uscmt:
         row = '/* %s */\n' % uscmt[T].strip('/* ').rstrip(' */') + row
     if T in KEEP:
@@ -225,6 +233,25 @@ for k, f, T, a in rows:
         enum_rows.append((T, 'S_%s_H' % k in _h_used or 'S_%s_NS_H' % k in _h_used, []))
     out.append(row)
 DEF = os.path.basename(DEF)  # includes are emitted relative to settings/
+EX_EXTRA = {'BOOL': 'okx, rpx, stax, selx, lfx, rtx, uix',
+            'UINT': 'stax, selx, lfx, rtx, uix',
+            'INT':  'stax, selx, lfx, rtx, uix',
+            'FLOAT':'stax, selx, lfx, rtx, uix'}
+if _ex_used:
+    _pre = ['/* Rows marked _EX carry the extended descriptor arguments',
+            ' * (callbacks and ui type); every pass except the menu table',
+            ' * drops them and behaves exactly like the base row. */']
+    _sigd = dict(SIGS)
+    for _al, _k, _ns, _hs2 in sorted(_ex_used):
+        _core = _sigd['S_%s' % _k]
+        _strs = ', us' if _ns else ', us, sub'
+        _full = _core + ', ' + EX_EXTRA[_k] + _strs
+        _base = _core + _strs
+        _tgt = 'S_%s%s%s' % (_k, _ns, _hs2)
+        _pre += ['#ifndef %s' % _al,
+                 '#define %s(%s) %s(%s)' % (_al, _full, _tgt, _base),
+                 '#endif']
+    out.insert(1, '\n'.join(_pre))
 if _h_used:
     _pre = ['/* Rows marked _H reserve a MENU_ENUM_LABEL_HELP_ enum member;',
             ' * outside the enum pass they behave exactly like the base row. */',
@@ -273,7 +300,11 @@ tm = re.search(r'static const setting_desc_t %s\[\] = \{\n(.*?)\n( *)\};' % TABL
 MENU_EMIT = {'S_BOOL':'SDESC_BOOL_ROW(f, T, d, sd, df, c),',
              'S_UINT':'SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),',
              'S_INT': 'SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),',
-             'S_FLOAT':'SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),'}
+             'S_FLOAT':'SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),',
+             'S_BOOL_EX':'SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, okx, rpx, stax, selx, lfx, rtx, uix),',
+             'S_UINT_EX':'SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),',
+             'S_INT_EX':'SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, stax, selx, lfx, rtx, uix),',
+             'S_FLOAT_EX':'SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, stax, selx, lfx, rtx, uix),'}
 mk_menu = lambda b, _s: ' \\\n                  ' + MENU_EMIT[b]
 new_body = ('/* GENERATED: rows come from %s in order. */\n' % DEF
             + defs(mk_menu) + '\n#include "../settings/%s"\n' % DEF + UNDEFS)
@@ -515,7 +546,7 @@ if _enum_ok:
     for _df in _glob.glob('settings/settings_def_*.h'):
         for g in re.findall(r'^#if\w*([^\n]*)', open(_df).read(), re.M):
             _toks |= set(x for x in re.findall(r'\b([A-Z_][A-Z0-9_]{2,})\b', g)
-                         if x != 'defined' and 'SETTINGS_DEF' not in x)
+                         if x != 'defined' and 'SETTINGS_DEF' not in x and not x.startswith('S_'))
     open('/tmp/mh_tu.c','w').write('#include <stdint.h>\n#include "msg_hash.h"\nint main(void){return (int)MSG_LAST;}\n')
     _b = "gcc -std=gnu89 -fsyntax-only -I. -Ilibretro-common/include -DRARCH_INTERNAL"
     _lanes = [''] + ['-D%s' % x for x in sorted(_toks)] + [' '.join('-D%s' % x for x in sorted(_toks))]

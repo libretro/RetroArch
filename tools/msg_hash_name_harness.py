@@ -77,13 +77,13 @@ def parse_enum_names(msg_hash_h):
                     if dskip: dskip.pop()
                     if len(dstack) > len(stack): dstack.pop()
                     continue
-                dm = re.match(r'S_(BOOL|UINT|INT|FLOAT)(_NS)?(_H)?\s*\(\s*\w+,\s*(\w+),', ds)
+                dm = re.match(r'S_(BOOL|UINT|INT|FLOAT)(_NS)?(_EX)?(_H)?\s*\(\s*\w+,\s*(\w+),', ds)
                 if dm:
                     dg = tuple((g[0], g[1]) for g in dstack)
                     for pfx in ('MENU_ENUM_LABEL_', 'MENU_ENUM_SUBLABEL_',
                                 'MENU_ENUM_LABEL_VALUE_') + (
-                                ('MENU_ENUM_LABEL_HELP_',) if dm.group(3) else ()):
-                        names.append((pfx + dm.group(4), dg))
+                                ('MENU_ENUM_LABEL_HELP_',) if dm.group(4) else ()):
+                        names.append((pfx + dm.group(5), dg))
             continue
         if s.startswith('#'):
             continue
