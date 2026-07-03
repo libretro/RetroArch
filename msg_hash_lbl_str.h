@@ -1099,7 +1099,6 @@
 #define MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME_STR "video_shader_preset_save_game"
 #define MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS_STR "video_shader_scale_pass"
 #define MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT_STR "video_shared_context"
-#define MENU_ENUM_LABEL_VIDEO_SMOOTH_STR "video_smooth"
 #define MENU_ENUM_LABEL_VIDEO_CTX_SCALING_STR "video_ctx_scaling"
 #define MENU_ENUM_LABEL_VIDEO_SOFT_FILTER_STR "soft_filter"
 #define MENU_ENUM_LABEL_VIDEO_TAB_STR "video_tab"

@@ -1949,7 +1949,6 @@ static struct config_bool_setting *populate_settings_bool(
 
    SETTING_BOOL("video_allow_rotate",            &settings->bools.video_allow_rotate, true, DEFAULT_ALLOW_ROTATE, false);
    SETTING_BOOL("video_scale_integer",           &settings->bools.video_scale_integer, true, DEFAULT_SCALE_INTEGER, false);
-   SETTING_BOOL("video_smooth",                  &settings->bools.video_smooth, true, DEFAULT_VIDEO_SMOOTH, false);
    SETTING_BOOL("video_ctx_scaling",             &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
    SETTING_BOOL("video_frame_delay_auto",        &settings->bools.video_frame_delay_auto, true, DEFAULT_FRAME_DELAY_AUTO, false);
@@ -1976,6 +1975,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
 #include "settings/settings_def_video_filter_rotation.h"
@@ -2343,6 +2343,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
 #include "settings/settings_def_video_filter_rotation.h"
@@ -2638,6 +2639,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
 #include "settings/settings_def_video_filter_rotation.h"
@@ -2908,6 +2910,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
 #include "settings/settings_def_video_filter_rotation.h"
