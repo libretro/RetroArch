@@ -1829,7 +1829,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, DEFAULT_UI_MENUBAR_ENABLE, false);
    SETTING_BOOL("pause_on_disconnect",           &settings->bools.pause_on_disconnect, true, DEFAULT_PAUSE_ON_DISCONNECT, false);
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, DEFAULT_AUTO_SCREENSHOT_FILENAME, false);
-   SETTING_BOOL("suspend_screensaver_enable",    &settings->bools.ui_suspend_screensaver_enable, true, true, false);
    SETTING_BOOL("video_filter_enable",           &settings->bools.video_filter_enable, true, true, false);
    SETTING_BOOL("apply_cheats_after_toggle",     &settings->bools.apply_cheats_after_toggle, true, DEFAULT_APPLY_CHEATS_AFTER_TOGGLE, false);
    SETTING_BOOL("apply_cheats_after_load",       &settings->bools.apply_cheats_after_load, true, DEFAULT_APPLY_CHEATS_AFTER_LOAD, false);
@@ -1980,6 +1979,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_suspend_screensaver.h"
 #ifdef HAVE_CHEEVOS
 #include "settings/settings_def_cheevos_visibility.h"
 #endif
@@ -2349,6 +2349,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_suspend_screensaver.h"
 #ifdef HAVE_CHEEVOS
 #include "settings/settings_def_cheevos_visibility.h"
 #endif
@@ -2637,6 +2638,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_suspend_screensaver.h"
 #ifdef HAVE_CHEEVOS
 #include "settings/settings_def_cheevos_visibility.h"
 #endif
@@ -2900,6 +2902,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_suspend_screensaver.h"
 #ifdef HAVE_CHEEVOS
 #include "settings/settings_def_cheevos_visibility.h"
 #endif

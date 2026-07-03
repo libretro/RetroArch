@@ -934,7 +934,6 @@
 #define MENU_ENUM_LABEL_START_VIDEO_PROCESSOR_STR "menu_start_video_processor"
 #define MENU_ENUM_LABEL_STATE_SLOT_STR "state_slot"
 #define MENU_ENUM_LABEL_STDIN_CMD_ENABLE_STR "stdin_commands"
-#define MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE_STR "suspend_screensaver_enable"
 #define MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE_STR "system_bgm_enable"
 #define MENU_ENUM_LABEL_SYSTEM_DIRECTORY_STR "system_directory"
 #define MENU_ENUM_LABEL_SYSTEM_INFORMATION_STR "system_information"
