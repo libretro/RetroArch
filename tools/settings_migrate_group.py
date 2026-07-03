@@ -255,7 +255,9 @@ CF = CFB + " -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DH
 def _lakka(flags):
     return (flags + ' -DHAVE_LAKKA_SERVER=\\"x\\" -DHAVE_LAKKA_PROJECT=\\"x\\"'
             if 'HAVE_LAKKA ' in flags + ' ' else flags)
-_gflags = sorted({g.split()[-1] for gs in guards.values() for g in gs})
+_gflags = sorted({tok for gs in guards.values() for g in gs
+                  for tok in __import__('re').findall(r'\b([A-Z_][A-Z0-9_]{2,})\b', g)
+                  if tok != 'defined'})
 _iso = []
 for _fl in _gflags:
     _d = ' -D' + _fl
