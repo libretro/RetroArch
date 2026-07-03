@@ -121,6 +121,17 @@ for k, f, T, a in rows:
     m = re.search(r'MSG_HASH\(\s*\n?\s*MENU_ENUM_LABEL_%s,\s*\n?\s*MENU_ENUM_LABEL_%s_STR\s*\n?\s*\)\n?' % (T, T), lbl)
     assert m, T
     lbl_span.append((m.start(), m.end()))
+# Entanglement guard: a field that also appears in a variant row
+# (_LV level overrides, _EX, _AT and friends) elsewhere shares runtime
+# state with that row; migrating only the plain row breaks the
+# variant's resolution - found empirically when the widget scale
+# migration zeroed the fullscreen override's default. Such tables
+# wait for the variant grammar.
+_ms_all = open('menu/menu_setting.c').read()
+for _k, _f, _T, _a in rows:
+    _vm = re.search(r'SDESC_\w+_ROW_\w+\(%s,' % _f, _ms_all)
+    assert not _vm, ("field %s is entangled with a variant row" % _f,
+                     _ms_all[_vm.start():_vm.start()+60] if _vm else '')
 print("extraction ok: %d settings (%d without sublabel)" % (len(rows), sum(1 for _,_,T,_ in rows if T not in ussub)))
 
 cfg = open('configuration.c').read()
