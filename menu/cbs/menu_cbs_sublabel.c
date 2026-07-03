@@ -1229,7 +1229,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_core,                
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_content,                MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_disc,                   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_dump_disc,                   MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC)
-#ifdef HAVE_LAKKA
+#if defined(HAVE_CDROM) && defined(HAVE_LAKKA)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_eject_disc,                  MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_information,                 MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION)
@@ -3102,7 +3102,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_dump_disc);
             break;
-#ifdef HAVE_LAKKA
+#if defined(HAVE_CDROM) && defined(HAVE_LAKKA)
          case MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_eject_disc);
             break;
