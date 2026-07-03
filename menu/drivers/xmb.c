@@ -7418,6 +7418,12 @@ static void xmb_render(void *data,
    if (!xmb)
       return;
 
+   /* Advance animated thumbnails (animated WebP) once per frame on the
+    * main thread. No-op for still images. */
+   gfx_thumbnail_animate(&xmb->thumbnails.right);
+   gfx_thumbnail_animate(&xmb->thumbnails.left);
+   gfx_thumbnail_animate(&xmb->thumbnails.icon);
+
    /* Handle deferred context reset from a previous scale factor /
     * layout change. We must wait two xmb_render() calls (not one)
     * because xmb_render() is called from runloop_check_state()

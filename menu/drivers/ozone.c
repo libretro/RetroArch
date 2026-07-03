@@ -10422,6 +10422,11 @@ static void ozone_render(void *data,
    if (!ozone)
       return;
 
+   /* Advance animated thumbnails (animated WebP) once per frame on the
+    * main thread. No-op for still images. */
+   gfx_thumbnail_animate(&ozone->thumbnails.right);
+   gfx_thumbnail_animate(&ozone->thumbnails.left);
+
    /* Check whether screen dimensions or menu scale
     * factor have changed */
    scale_factor               = gfx_display_get_dpi_scale(p_disp, settings,

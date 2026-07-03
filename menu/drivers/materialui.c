@@ -3817,6 +3817,15 @@ static bool materialui_render_process_entry_playlist_thumb_list(
    gfx_animation_t *p_anim = anim_get_ptr();
    bool on_screen          = first_entry_found && !last_entry_found;
 
+   /* Advance animated thumbnails for on-screen entries (no-op for
+    * still images) */
+   if (on_screen)
+   {
+      gfx_thumbnail_animate(&node->thumbnails.primary);
+      if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
+         gfx_thumbnail_animate(&node->thumbnails.secondary);
+   }
+
    /* Load thumbnails for all on-screen entries
     * and free thumbnails for all off-screen entries */
    if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
@@ -3859,6 +3868,14 @@ static bool materialui_render_process_entry_playlist_dual_icon(
 {
    gfx_animation_t *p_anim = anim_get_ptr();
    bool on_screen          = first_entry_found && !last_entry_found;
+
+   /* Advance animated thumbnails for on-screen entries (no-op for
+    * still images) */
+   if (on_screen)
+   {
+      gfx_thumbnail_animate(&node->thumbnails.primary);
+      gfx_thumbnail_animate(&node->thumbnails.secondary);
+   }
 
    /* Load thumbnails for all on-screen entries
     * and free thumbnails for all off-screen entries
@@ -3908,6 +3925,14 @@ static bool materialui_render_process_entry_playlist_desktop(
     * smoother fullscreen thumbnail browsing */
    bool is_on_screen = is_selected
          || (entry_idx == mui->desktop_thumbnail_last_selection);
+
+   /* Advance animated thumbnails for on-screen entries (no-op for
+    * still images) */
+   if (is_on_screen)
+   {
+      gfx_thumbnail_animate(&node->thumbnails.primary);
+      gfx_thumbnail_animate(&node->thumbnails.secondary);
+   }
 
    /* Load thumbnails for selected (and last
     * selected) entry and free thumbnails for
