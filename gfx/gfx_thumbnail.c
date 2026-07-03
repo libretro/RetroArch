@@ -28,6 +28,8 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <lists/file_list.h>
+#include <streams/file_stream.h>
+#include <formats/image.h>
 
 #include "gfx_display.h"
 #include "gfx_animation.h"
@@ -107,6 +109,7 @@ typedef struct
 {
    uint64_t list_id;
    gfx_thumbnail_t *thumbnail;
+   char path[PATH_MAX_LENGTH];
 } gfx_thumbnail_tag_t;
 
 static gfx_thumbnail_state_t gfx_thumb_st = {0}; /* uint64_t alignment */
@@ -203,6 +206,231 @@ static void gfx_thumbnail_init_fade(
 
 /* Used to process thumbnail data following completion
  * of image load task */
+/* ---- Animated thumbnails ----
+ * All functions below run on the main thread only: the animation is
+ * opened from the (main-thread) upload callback, advanced from the
+ * (main-thread) stream request/process functions, and torn down from
+ * gfx_thumbnail_reset. The video thread never touches these fields;
+ * it only snapshots 'texture', which is replaced with the usual
+ * load-new / unload-old sequence whose GPU side is serialised onto
+ * the video thread by the texture command queue. */
+
+/* Total decoded-animation frame budget per vsync, shared across all
+ * animated thumbnails; keeps e.g. a grid of animations from stalling
+ * the menu (they degrade to a lower animation rate instead). */
+#define GFX_THUMB_ANIM_BUDGET_US    8000
+/* Refuse to animate anything larger than this many canvas pixels
+ * (frame decode cost scales with it) or a file larger than this
+ * (the file buffer is held for the lifetime of the animation). */
+#define GFX_THUMB_ANIM_MAX_PIXELS   (1024 * 1024)
+#define GFX_THUMB_ANIM_MAX_FILE     (32 * 1024 * 1024)
+/* Frame-duration handling: <= 0 is undefined by the container spec
+ * (browsers substitute 100 ms); very small durations are floored so
+ * a hostile file cannot request thousands of decodes per second. */
+#define GFX_THUMB_ANIM_DUR_DEFAULT  100
+#define GFX_THUMB_ANIM_DUR_MIN      16
+
+static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
+{
+   if (thumbnail->anim)
+      image_transfer_anim_stream_free(thumbnail->anim,
+            (enum image_type_enum)thumbnail->anim_type);
+   if (thumbnail->anim_buf)
+      free(thumbnail->anim_buf);
+   thumbnail->anim            = NULL;
+   thumbnail->anim_buf        = NULL;
+   thumbnail->anim_next_us    = 0;
+   thumbnail->anim_loops_left = 0;
+   thumbnail->anim_type       = 0;
+   thumbnail->flags          &= ~GFX_THUMB_FLAG_ANIM_ACTIVE;
+}
+
+static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
+      const char *path)
+{
+   enum image_type_enum type;
+   int64_t len              = 0;
+   void *buf                = NULL;
+   void *stream             = NULL;
+   unsigned anim_w          = 0;
+   unsigned anim_h          = 0;
+   int num_frames           = 0;
+   int loop_count           = 0;
+
+   if (string_is_empty(path))
+      return;
+
+   /* Cheap gate: only container types with an animation decoder */
+   type = image_texture_get_type(path);
+   if (type != IMAGE_TYPE_WEBP)
+      return;
+
+   if (!filestream_read_file(path, &buf, &len))
+      return;
+   if ((len <= 0) || (len > GFX_THUMB_ANIM_MAX_FILE))
+      goto fail;
+
+   if (!(stream = image_transfer_anim_stream_new(buf, (size_t)len, type)))
+      goto fail;   /* still image or malformed: keep static thumbnail */
+
+   image_transfer_anim_stream_get_info(stream, type,
+         &anim_w, &anim_h, &num_frames, &loop_count);
+
+   if (   (num_frames < 2)
+       || (anim_w < 1)
+       || (anim_h < 1)
+       || ((uint64_t)anim_w * anim_h > GFX_THUMB_ANIM_MAX_PIXELS))
+      goto fail;
+
+   thumbnail->anim            = stream;
+   thumbnail->anim_buf        = buf;
+   thumbnail->anim_type       = (uint8_t)type;
+   thumbnail->anim_loops_left = (loop_count == 0) ? -1 : loop_count;
+   thumbnail->anim_next_us    = 0;   /* first advance establishes timing */
+   thumbnail->flags          |= GFX_THUMB_FLAG_ANIM_ACTIVE;
+   return;
+
+fail:
+   if (stream)
+      image_transfer_anim_stream_free(stream, type);
+   free(buf);
+}
+
+/* Advances an animated thumbnail by (at most) one frame if its
+ * duration has elapsed and the per-vsync decode budget allows.
+ * Runs on the main thread; called from the per-frame stream
+ * request/process functions for on-screen entries. */
+static void gfx_thumbnail_anim_tick(gfx_thumbnail_t *thumbnail)
+{
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+   const uint32_t *frame              = NULL;
+   int64_t now;
+   int64_t decode_start;
+   int duration_ms                    = 0;
+   enum image_type_enum type;
+
+   if (   !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
+       || !thumbnail->anim
+       || (GFX_THUMB_STATUS_LOAD(&thumbnail->status) !=
+             GFX_THUMBNAIL_STATUS_AVAILABLE))
+      return;
+
+   now  = cpu_features_get_time_usec();
+   type = (enum image_type_enum)thumbnail->anim_type;
+
+   if ((thumbnail->anim_next_us != 0) && (now < thumbnail->anim_next_us))
+      return;
+
+   /* Per-vsync decode budget (window resets after ~one 60 Hz frame) */
+   if (now - p_gfx_thumb->anim_budget_start_us > 15000)
+   {
+      p_gfx_thumb->anim_budget_start_us = now;
+      p_gfx_thumb->anim_budget_used_us  = 0;
+   }
+   if (p_gfx_thumb->anim_budget_used_us > GFX_THUMB_ANIM_BUDGET_US)
+      return;   /* try again next frame; animation just runs slower */
+
+   decode_start = now;
+
+   if (!(frame = image_transfer_anim_stream_next(thumbnail->anim, type,
+         &duration_ms)))
+   {
+      /* End of one pass: honour the container loop count */
+      if (thumbnail->anim_loops_left > 0)
+         thumbnail->anim_loops_left--;
+      if (thumbnail->anim_loops_left == 0)
+      {
+         /* Finished: keep the last frame's texture, release the
+          * decoder and file buffer */
+         gfx_thumbnail_anim_close(thumbnail);
+         return;
+      }
+      image_transfer_anim_stream_rewind(thumbnail->anim, type);
+      frame = image_transfer_anim_stream_next(thumbnail->anim, type,
+            &duration_ms);
+      if (!frame)
+      {
+         gfx_thumbnail_anim_close(thumbnail);
+         return;
+      }
+   }
+
+   /* Upload the frame; the stream emits memory-order R,G,B,A, which
+    * matches the RGBA texture path. If the display pipeline expects
+    * ARGB words instead, swap into a shared scratch buffer first. */
+   {
+      static uint32_t *swap_scratch = NULL;
+      static size_t swap_scratch_px = 0;
+      struct texture_image img;
+      uintptr_t new_texture         = 0;
+      unsigned anim_w               = 0;
+      unsigned anim_h               = 0;
+      int num_frames                = 0;
+      int loop_count                = 0;
+      bool use_rgba                 =
+            (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) ? true : false;
+
+      image_transfer_anim_stream_get_info(thumbnail->anim, type,
+            &anim_w, &anim_h, &num_frames, &loop_count);
+
+      img.width         = anim_w;
+      img.height        = anim_h;
+      img.supports_rgba = use_rgba;
+      img.pixels        = (uint32_t*)frame;
+
+      if (!use_rgba)
+      {
+         size_t i, n = (size_t)anim_w * anim_h;
+         if (swap_scratch_px < n)
+         {
+            uint32_t *tmp = (uint32_t*)realloc(swap_scratch,
+                  n * sizeof(uint32_t));
+            if (!tmp)
+               return;
+            swap_scratch    = tmp;
+            swap_scratch_px = n;
+         }
+         for (i = 0; i < n; i++)
+         {
+            uint32_t px      = frame[i];
+            swap_scratch[i]  = (px & 0xFF00FF00u)
+                  | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
+         }
+         img.pixels = swap_scratch;
+      }
+
+      if (video_driver_texture_load(&img,
+            TEXTURE_FILTER_LINEAR, &new_texture) && new_texture)
+      {
+         if (thumbnail->texture)
+            video_driver_texture_unload(&thumbnail->texture);
+         thumbnail->texture = new_texture;
+         thumbnail->width   = anim_w;
+         thumbnail->height  = anim_h;
+      }
+   }
+
+   /* Schedule the next frame. Accumulate from the previous due time
+    * to keep long-term pacing, but never fall so far behind that we
+    * decode continuously to catch up. */
+   if (duration_ms <= 0)
+      duration_ms = GFX_THUMB_ANIM_DUR_DEFAULT;
+   else if (duration_ms < GFX_THUMB_ANIM_DUR_MIN)
+      duration_ms = GFX_THUMB_ANIM_DUR_MIN;
+
+   if (thumbnail->anim_next_us == 0)
+      thumbnail->anim_next_us = now + (int64_t)duration_ms * 1000;
+   else
+   {
+      thumbnail->anim_next_us += (int64_t)duration_ms * 1000;
+      if (thumbnail->anim_next_us < now)
+         thumbnail->anim_next_us = now + (int64_t)duration_ms * 1000;
+   }
+
+   p_gfx_thumb->anim_budget_used_us +=
+         cpu_features_get_time_usec() - decode_start;
+}
+
 static void gfx_thumbnail_handle_upload(
       retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
@@ -263,6 +491,13 @@ static void gfx_thumbnail_handle_upload(
     *   AVAILABLE via acquire-load in gfx_thumbnail_draw() */
    GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
          GFX_THUMBNAIL_STATUS_AVAILABLE);
+
+   /* If the file is an animation, open a streaming decoder for it;
+    * frames are advanced by gfx_thumbnail_anim_tick() while the
+    * entry is on-screen. On failure the static image just uploaded
+    * remains as-is. */
+   gfx_thumbnail_anim_open(thumbnail_tag->thumbnail,
+         thumbnail_tag->path);
 
 end:
    /* Clean up */
@@ -391,6 +626,8 @@ void gfx_thumbnail_request(
                /* Configure user data */
                thumbnail_tag->thumbnail = thumbnail;
                thumbnail_tag->list_id   = p_gfx_thumb->list_id;
+               strlcpy(thumbnail_tag->path, thumbnail_path,
+                     sizeof(thumbnail_tag->path));
 
                /* Would like to cancel any existing image load tasks
                 * here, but can't see how to do it... */
@@ -513,6 +750,9 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    if (!thumbnail)
       return;
 
+   /* Release any animation state (decoder + file buffer) */
+   gfx_thumbnail_anim_close(thumbnail);
+
    /* Unload texture */
    if (thumbnail->texture)
       video_driver_texture_unload(&thumbnail->texture);
@@ -568,10 +808,15 @@ void gfx_thumbnail_request_stream(
 {
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
 
+   if (!thumbnail)
+      return;
+
+   /* Advance any animated thumbnail while it is on-screen */
+   gfx_thumbnail_anim_tick(thumbnail);
+
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
-   if (   !thumbnail
-       || (GFX_THUMB_STATUS_LOAD(&thumbnail->status) != GFX_THUMBNAIL_STATUS_UNKNOWN))
+   if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) != GFX_THUMBNAIL_STATUS_UNKNOWN)
       return;
 
    /* Check if stream delay timer has elapsed */
@@ -634,6 +879,10 @@ void gfx_thumbnail_request_streams(
 
    if (!right_thumbnail || !left_thumbnail)
       return;
+
+   /* Advance any animated thumbnails while they are on-screen */
+   gfx_thumbnail_anim_tick(right_thumbnail);
+   gfx_thumbnail_anim_tick(left_thumbnail);
 
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
@@ -731,6 +980,9 @@ void gfx_thumbnail_process_stream(
 
    if (on_screen)
    {
+      /* Advance any animated thumbnail while it is on-screen */
+      gfx_thumbnail_anim_tick(thumbnail);
+
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
@@ -805,6 +1057,10 @@ void gfx_thumbnail_process_streams(
 
    if (on_screen)
    {
+      /* Advance any animated thumbnails while they are on-screen */
+      gfx_thumbnail_anim_tick(right_thumbnail);
+      gfx_thumbnail_anim_tick(left_thumbnail);
+
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */

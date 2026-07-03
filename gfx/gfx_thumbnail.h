@@ -183,7 +183,8 @@ enum gfx_thumbnail_flags
 {
    GFX_THUMB_FLAG_FADE_ACTIVE = (1 << 0),
    GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1),
-   GFX_THUMB_FLAG_BG_ONLY     = (1 << 2)
+   GFX_THUMB_FLAG_BG_ONLY     = (1 << 2),
+   GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3)
 };
 
 /* Holds all runtime parameters associated with
@@ -204,12 +205,21 @@ enum gfx_thumbnail_flags
 typedef struct
 {
    uintptr_t texture;
+   /* Animated thumbnail state (all main-thread only). 'anim' is a
+    * streaming image_transfer handle which BORROWS 'anim_buf'; both
+    * are owned by the thumbnail and released in gfx_thumbnail_reset
+    * (or when the animation finishes its final loop). */
+   void *anim;
+   void *anim_buf;
+   int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
+   int32_t anim_loops_left; /* remaining loops, -1 = infinite */
    unsigned width;
    unsigned height;
    float alpha;
    float delay_timer;
    retro_atomic_int_t status;
    uint8_t flags;
+   uint8_t anim_type;      /* enum image_type_enum of 'anim' */
 } gfx_thumbnail_t;
 
 /* Field-by-field initializer for non-trivial gfx_thumbnail_t.
@@ -230,13 +240,18 @@ typedef struct
  * UNKNOWN). */
 static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
 {
-   t->texture     = 0;
-   t->width       = 0;
-   t->height      = 0;
-   t->alpha       = 0.0f;
-   t->delay_timer = 0.0f;
+   t->texture         = 0;
+   t->anim            = NULL;
+   t->anim_buf        = NULL;
+   t->anim_next_us    = 0;
+   t->anim_loops_left = 0;
+   t->width           = 0;
+   t->height          = 0;
+   t->alpha           = 0.0f;
+   t->delay_timer     = 0.0f;
    retro_atomic_int_init(&t->status, 0 /* GFX_THUMBNAIL_STATUS_UNKNOWN */);
-   t->flags       = 0;
+   t->flags           = 0;
+   t->anim_type       = 0;
 }
 
 /* Holds all configuration parameters associated
@@ -277,6 +292,12 @@ struct gfx_thumbnail_state
     * playlists), we delay loading until an entry has been on screen
     * for at least gfx_thumbnail_delay ms */
    float stream_delay;
+
+   /* Animated thumbnails: per-vsync frame-decode budget, so many
+    * simultaneously visible animations degrade to a lower frame rate
+    * instead of stalling the menu (main thread only) */
+   int64_t anim_budget_start_us;
+   int64_t anim_budget_used_us;
 
    /* Duration in ms of the thumbnail 'fade in' animation */
    float fade_duration;
