@@ -17603,50 +17603,32 @@ static bool setting_append_list(
 
                   {
             static const setting_desc_t ui_desc_7[] = {
-               SDESC_BOOL_ROW(settings_show_drivers, SETTINGS_SHOW_DRIVERS,
-                     DEFAULT_SETTINGS_SHOW_DRIVERS, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_video, SETTINGS_SHOW_VIDEO,
-                     DEFAULT_SETTINGS_SHOW_VIDEO, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_audio, SETTINGS_SHOW_AUDIO,
-                     DEFAULT_SETTINGS_SHOW_AUDIO, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_input, SETTINGS_SHOW_INPUT,
-                     DEFAULT_SETTINGS_SHOW_INPUT, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_latency, SETTINGS_SHOW_LATENCY,
-                     DEFAULT_SETTINGS_SHOW_LATENCY, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_core, SETTINGS_SHOW_CORE,
-                     DEFAULT_SETTINGS_SHOW_CORE, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_configuration, SETTINGS_SHOW_CONFIGURATION,
-                     DEFAULT_SETTINGS_SHOW_CONFIGURATION, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_saving, SETTINGS_SHOW_SAVING,
-                     DEFAULT_SETTINGS_SHOW_SAVING, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_logging, SETTINGS_SHOW_LOGGING,
-                     DEFAULT_SETTINGS_SHOW_LOGGING, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_file_browser, SETTINGS_SHOW_FILE_BROWSER,
-                     DEFAULT_SETTINGS_SHOW_FILE_BROWSER, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_frame_throttle, SETTINGS_SHOW_FRAME_THROTTLE,
-                     DEFAULT_SETTINGS_SHOW_FRAME_THROTTLE, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_recording, SETTINGS_SHOW_RECORDING,
-                     DEFAULT_SETTINGS_SHOW_RECORDING, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_onscreen_display, SETTINGS_SHOW_ONSCREEN_DISPLAY,
-                     DEFAULT_SETTINGS_SHOW_ONSCREEN_DISPLAY, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_user_interface, SETTINGS_SHOW_USER_INTERFACE,
-                     DEFAULT_SETTINGS_SHOW_USER_INTERFACE, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_ai_service, SETTINGS_SHOW_AI_SERVICE,
-                     DEFAULT_SETTINGS_SHOW_AI_SERVICE, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_accessibility, SETTINGS_SHOW_ACCESSIBILITY,
-                     DEFAULT_SETTINGS_SHOW_ACCESSIBILITY, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_power_management, SETTINGS_SHOW_POWER_MANAGEMENT,
-                     DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_achievements, SETTINGS_SHOW_ACHIEVEMENTS,
-                     DEFAULT_SETTINGS_SHOW_ACHIEVEMENTS, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_network, SETTINGS_SHOW_NETWORK,
-                     DEFAULT_SETTINGS_SHOW_NETWORK, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_playlists, SETTINGS_SHOW_PLAYLISTS,
-                     DEFAULT_SETTINGS_SHOW_PLAYLISTS, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_user, SETTINGS_SHOW_USER,
-                     DEFAULT_SETTINGS_SHOW_USER, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(settings_show_directory, SETTINGS_SHOW_DIRECTORY,
-                     DEFAULT_SETTINGS_SHOW_DIRECTORY, SD_FLAG_NONE, 0, 0),
+/* GENERATED: rows come from settings_def_menu_settings_views.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#include "../settings_def_menu_settings_views.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
             };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_7, ARRAY_SIZE(ui_desc_7),

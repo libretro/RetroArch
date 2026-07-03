@@ -1987,6 +1987,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_menu_settings_views.h"
 #include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
@@ -2059,28 +2060,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, DEFAULT_MENU_SCROLL_FAST, false);
    SETTING_BOOL("menu_ignore_missing_assets",    &settings->bools.menu_ignore_missing_assets, true, DEFAULT_MENU_IGNORE_MISSING_ASSETS, false);
 
-   SETTING_BOOL("settings_show_drivers",         &settings->bools.settings_show_drivers, true, DEFAULT_SETTINGS_SHOW_DRIVERS, false);
-   SETTING_BOOL("settings_show_video",           &settings->bools.settings_show_video, true, DEFAULT_SETTINGS_SHOW_VIDEO, false);
-   SETTING_BOOL("settings_show_audio",           &settings->bools.settings_show_audio, true, DEFAULT_SETTINGS_SHOW_AUDIO, false);
-   SETTING_BOOL("settings_show_input",           &settings->bools.settings_show_input, true, DEFAULT_SETTINGS_SHOW_INPUT, false);
-   SETTING_BOOL("settings_show_latency",         &settings->bools.settings_show_latency, true, DEFAULT_SETTINGS_SHOW_LATENCY, false);
-   SETTING_BOOL("settings_show_core",            &settings->bools.settings_show_core, true, DEFAULT_SETTINGS_SHOW_CORE, false);
-   SETTING_BOOL("settings_show_configuration",   &settings->bools.settings_show_configuration, true, DEFAULT_SETTINGS_SHOW_CONFIGURATION, false);
-   SETTING_BOOL("settings_show_saving",          &settings->bools.settings_show_saving, true, DEFAULT_SETTINGS_SHOW_SAVING, false);
-   SETTING_BOOL("settings_show_logging",         &settings->bools.settings_show_logging, true, DEFAULT_SETTINGS_SHOW_LOGGING, false);
-   SETTING_BOOL("settings_show_file_browser",    &settings->bools.settings_show_file_browser, true, DEFAULT_SETTINGS_SHOW_FILE_BROWSER, false);
-   SETTING_BOOL("settings_show_frame_throttle",  &settings->bools.settings_show_frame_throttle, true, DEFAULT_SETTINGS_SHOW_FRAME_THROTTLE, false);
-   SETTING_BOOL("settings_show_recording",       &settings->bools.settings_show_recording, true, DEFAULT_SETTINGS_SHOW_RECORDING, false);
-   SETTING_BOOL("settings_show_onscreen_display",&settings->bools.settings_show_onscreen_display, true, DEFAULT_SETTINGS_SHOW_ONSCREEN_DISPLAY, false);
-   SETTING_BOOL("settings_show_user_interface",  &settings->bools.settings_show_user_interface, true, DEFAULT_SETTINGS_SHOW_USER_INTERFACE, false);
-   SETTING_BOOL("settings_show_ai_service",      &settings->bools.settings_show_ai_service, true, DEFAULT_SETTINGS_SHOW_AI_SERVICE, false);
-   SETTING_BOOL("settings_show_accessibility",   &settings->bools.settings_show_accessibility, true, DEFAULT_SETTINGS_SHOW_ACCESSIBILITY, false);
-   SETTING_BOOL("settings_show_power_management",&settings->bools.settings_show_power_management, true, DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT, false);
-   SETTING_BOOL("settings_show_achievements",    &settings->bools.settings_show_achievements, true, DEFAULT_SETTINGS_SHOW_ACHIEVEMENTS, false);
-   SETTING_BOOL("settings_show_network",         &settings->bools.settings_show_network, true, DEFAULT_SETTINGS_SHOW_NETWORK, false);
-   SETTING_BOOL("settings_show_playlists",       &settings->bools.settings_show_playlists, true, DEFAULT_SETTINGS_SHOW_PLAYLISTS, false);
-   SETTING_BOOL("settings_show_user",            &settings->bools.settings_show_user, true, DEFAULT_SETTINGS_SHOW_USER, false);
-   SETTING_BOOL("settings_show_directory",       &settings->bools.settings_show_directory, true, DEFAULT_SETTINGS_SHOW_DIRECTORY, false);
 #ifdef HAVE_MIST
    SETTING_BOOL("settings_show_steam",           &settings->bools.settings_show_steam, true, DEFAULT_SETTINGS_SHOW_STEAM, false);
 #endif
@@ -2392,6 +2371,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_menu_settings_views.h"
 #include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
@@ -2645,6 +2625,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_menu_settings_views.h"
 #include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
@@ -2871,6 +2852,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings_def_video_sync.h"
+#include "settings_def_menu_settings_views.h"
 #include "settings_def_video_bias.h"
 #include "settings_def_video_window.h"
 #undef SETTINGS_DEF_CONFIG_PASS
