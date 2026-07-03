@@ -806,7 +806,6 @@
 #define MENU_ENUM_LABEL_REWIND_SETTINGS_STR "rewind_settings"
 #define MENU_ENUM_LABEL_REWIND_GRANULARITY_STR "rewind_granularity"
 #define MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STR "rewind_buffer_size"
-#define MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP_STR "rewind_buffer_size_step"
 #define MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS_STR "frame_throttle_settings"
 #define MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS_STR "frame_time_counter_settings"
 #define MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE_STR "vrr_runloop_enable"
