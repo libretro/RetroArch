@@ -33,6 +33,7 @@ HAVE_THREAD_STORAGE      := 1
 HAVE_WINMM               := 1
 
 HAVE_RPNG                := 1
+HAVE_RWEBP               := 1
 HAVE_ZLIB                := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
