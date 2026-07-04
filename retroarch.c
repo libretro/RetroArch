@@ -8145,6 +8145,16 @@ static void retroarch_validate_cpu_features(void)
  *
  * @return true on success, otherwise false if there was an error.
  **/
+/* Runtime savestate probe for core_info. A running core that reports a
+ * nonzero serializable size can save/load state even if its info file
+ * declares otherwise; core_info.c consults this via a registered seam so
+ * it need not depend on the runloop/retroarch backend directly. */
+static bool retroarch_core_info_savestate_probe(void)
+{
+   return (runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING)
+         && core_serialize_size() > 0;
+}
+
 bool retroarch_main_init(int argc, char *argv[])
 {
 #if defined(DEBUG) && defined(HAVE_DRMINGW)
@@ -8168,6 +8178,8 @@ bool retroarch_main_init(int argc, char *argv[])
 #ifdef HAVE_MENU
    struct menu_state *menu_st    = menu_state_get_ptr();
 #endif
+
+   core_info_set_savestate_probe(retroarch_core_info_savestate_probe);
 
    input_st->osk_idx             = OSK_LOWERCASE_LATIN;
    video_st->flags              |= VIDEO_FLAG_ACTIVE;
