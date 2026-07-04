@@ -1960,6 +1960,73 @@ int rdds_process_image(rdds_t *rdds, void **buf_data,
    return IMAGE_PROCESS_END;
 }
 
+/* Report the BCn mip layout for direct GPU upload without decoding.
+ * Only BC1/BC2/BC3/BC7 (which the GPU samples the same way the CPU path
+ * produces them) are offered; DXT2/DXT4 (premultiplied), BC4/BC5 (channel
+ * swizzle), BC6H (HDR tone-map) and uncompressed DDS return false and go
+ * through the normal decode-to-RGBA8 path. */
+bool rdds_get_gpu_layout(rdds_t *rdds, size_t len, struct image_gpu_layout *out)
+{
+   rdds_info_t info;
+   enum texture_gpu_format gfmt;
+   unsigned block_size, count, i, w, h;
+   size_t   off;
+
+   if (!rdds || !rdds->buff_data || !out)
+      return false;
+   if (len < 128 || len > (size_t)INT_MAX)
+      return false;
+   if (!rdds_parse_header(rdds->buff_data, len, &info))
+      return false;
+
+   switch (info.fmt)
+   {
+      case RDDS_FMT_BC1: gfmt = TEXTURE_GPU_FORMAT_BC1; block_size = 8;  break;
+      case RDDS_FMT_BC2: gfmt = TEXTURE_GPU_FORMAT_BC2; block_size = 16; break;
+      case RDDS_FMT_BC3: gfmt = TEXTURE_GPU_FORMAT_BC3; block_size = 16; break;
+      case RDDS_FMT_BC7: gfmt = TEXTURE_GPU_FORMAT_BC7; block_size = 16; break;
+      default:
+         return false;
+   }
+
+   /* dwMipMapCount lives at header offset 28; 0 means a single level. */
+   count = rdds_rd32(rdds->buff_data + 28);
+   if (count == 0)
+      count = 1;
+   if (count > IMAGE_MAX_MIPS)
+      count = IMAGE_MAX_MIPS;
+
+   w             = info.width;
+   h             = info.height;
+   off           = info.data_offset;
+   out->format   = gfmt;
+   out->num_mips = 0;
+
+   for (i = 0; i < count; i++)
+   {
+      unsigned bx   = (w + 3u) >> 2;
+      unsigned by   = (h + 3u) >> 2;
+      size_t   size = (size_t)bx * (size_t)by * (size_t)block_size;
+
+      if (off + size > len) /* truncated or partial chain: stop here */
+         break;
+
+      out->width[i]  = w;
+      out->height[i] = h;
+      out->offset[i] = off;
+      out->size[i]   = size;
+      out->num_mips  = i + 1;
+
+      off += size;
+      if (w == 1 && h == 1)
+         break;
+      w = (w > 1) ? (w >> 1) : 1u;
+      h = (h > 1) ? (h >> 1) : 1u;
+   }
+
+   return out->num_mips > 0;
+}
+
 bool rdds_set_buf_ptr(rdds_t *rdds, void *data)
 {
    if (!rdds)

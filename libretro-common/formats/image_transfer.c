@@ -400,6 +400,26 @@ int image_transfer_process(
    return ret;
 }
 
+bool image_transfer_get_gpu_layout(
+      void *data,
+      enum image_type_enum type,
+      size_t len,
+      struct image_gpu_layout *out)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_DDS:
+#ifdef HAVE_RDDS
+         return rdds_get_gpu_layout((rdds_t*)data, len, out);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
 bool image_transfer_iterate(void *data, enum image_type_enum type)
 {
 

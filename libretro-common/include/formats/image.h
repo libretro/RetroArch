@@ -40,12 +40,19 @@ enum image_process_code
    IMAGE_PROCESS_END       =  1
 };
 
+struct texture_compressed;  /* defined below, after enum image_type_enum */
+
 struct texture_image
 {
    uint32_t *pixels;
    unsigned width;
    unsigned height;
    bool supports_rgba;
+   /* Optional GPU-native compressed payload (BCn).  When non-NULL a
+    * capable driver may upload it directly and leave ->pixels NULL;
+    * image_texture_realize_rgba() decodes to ->pixels on demand for
+    * drivers that cannot sample the format. */
+   struct texture_compressed *compressed;
 };
 
 enum image_type_enum
@@ -59,6 +66,59 @@ enum image_type_enum
    IMAGE_TYPE_DDS
 };
 
+#define IMAGE_MAX_MIPS 16
+
+/* GPU-native compressed texture formats (block-compressed).  Producers
+ * (currently the DDS loader) report one of these when a texture can be
+ * uploaded to the GPU as-is; capable drivers skip the CPU decode to
+ * RGBA8 entirely.  Extend with ETC2 or ASTC entries later. */
+enum texture_gpu_format
+{
+   TEXTURE_GPU_FORMAT_NONE = 0,
+   TEXTURE_GPU_FORMAT_BC1,       /* DXT1               */
+   TEXTURE_GPU_FORMAT_BC2,       /* DXT3               */
+   TEXTURE_GPU_FORMAT_BC3,       /* DXT5               */
+   TEXTURE_GPU_FORMAT_BC4,       /* RGTC1 (1 channel)  */
+   TEXTURE_GPU_FORMAT_BC5,       /* RGTC2 (2 channel)  */
+   TEXTURE_GPU_FORMAT_BC6H_UF,   /* BPTC unsigned HDR  */
+   TEXTURE_GPU_FORMAT_BC6H_SF,   /* BPTC signed HDR    */
+   TEXTURE_GPU_FORMAT_BC7        /* BPTC LDR           */
+};
+
+/* Numeric mip layout reported by a loader without decoding.  Offsets are
+ * byte offsets from the start of the source file buffer. */
+struct image_gpu_layout
+{
+   enum texture_gpu_format format;
+   unsigned                num_mips;
+   unsigned                width[IMAGE_MAX_MIPS];
+   unsigned                height[IMAGE_MAX_MIPS];
+   size_t                  offset[IMAGE_MAX_MIPS];
+   size_t                  size[IMAGE_MAX_MIPS];
+};
+
+struct texture_mip
+{
+   const void *data;
+   unsigned    width;
+   unsigned    height;
+   size_t      size;
+};
+
+/* Owned, self-contained compressed payload carried on a texture_image.
+ * storage holds a private copy of the source file (so the mip pointers
+ * outlive the loader's buffer) and doubles as the input for the CPU
+ * decode fallback in image_texture_realize_rgba(). */
+struct texture_compressed
+{
+   void                    *storage;
+   size_t                   storage_len;
+   struct texture_mip      *mips;
+   unsigned                 num_mips;
+   enum texture_gpu_format  format;
+   enum image_type_enum     type;      /* for the CPU-decode fallback */
+};
+
 enum image_type_enum image_texture_get_type(const char *path);
 
 bool image_texture_load_buffer(struct texture_image *img,
@@ -66,6 +126,11 @@ bool image_texture_load_buffer(struct texture_image *img,
 
 bool image_texture_load(struct texture_image *img, const char *path);
 void image_texture_free(struct texture_image *img);
+
+/* Force a CPU decode of a compressed texture_image into ->pixels (RGBA8).
+ * No-op returning true if ->pixels is already present.  The fallback when
+ * a driver cannot sample img->compressed->format. */
+bool image_texture_realize_rgba(struct texture_image *img);
 
 /* Image transfer */
 
@@ -89,6 +154,15 @@ int image_transfer_process(
       unsigned *width,
       unsigned *height,
       bool supports_rgba);
+
+/* Report the GPU-native compressed mip layout of an already-started
+ * transfer without decoding.  Returns false for formats that must be
+ * CPU-decoded (non-DDS, uncompressed DDS, premultiplied, BC4/5/6H). */
+bool image_transfer_get_gpu_layout(
+      void *data,
+      enum image_type_enum type,
+      size_t len,
+      struct image_gpu_layout *out);
 
 bool image_transfer_iterate(void *data, enum image_type_enum type);
 

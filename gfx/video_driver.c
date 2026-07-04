@@ -3177,16 +3177,41 @@ bool video_driver_texture_load(void *data,
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
+   struct texture_image *ti           = (struct texture_image*)data;
+   bool threaded;
    if (!id || !poke || !poke->load_texture)
       return false;
    /* Only use the threaded path when the thread wrapper is
     * fully active. During reinit, video_st->threaded may
     * already reflect the new setting while video_st->data
     * still points to the real driver, not thread_video_t. */
-   *id = poke->load_texture(video_st->data, data,
-         VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE),
-         filter_type);
+   threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE);
+
+   /* GPU-native fast path: upload BCn blocks directly when the driver
+    * can sample the format. Non-threaded only for now; the CPU decode
+    * fallback below covers unsupported formats and the threaded path. */
+   if (     ti
+         && ti->compressed
+         && !threaded
+         && poke->supports_texture_format
+         && poke->load_texture_compressed
+         && poke->supports_texture_format(video_st->data,
+               ti->compressed->format))
+   {
+      *id = poke->load_texture_compressed(video_st->data,
+            ti->compressed, false, filter_type);
+      if (*id)
+         return true;
+      /* upload failed: fall through to CPU decode */
+   }
+
+   /* Fallback: realize RGBA8 for drivers that can't sample the format
+    * (or the threaded path), then take the normal upload. */
+   if (ti && ti->compressed && !ti->pixels)
+      image_texture_realize_rgba(ti);
+
+   *id = poke->load_texture(video_st->data, data, threaded, filter_type);
    return true;
 }
 

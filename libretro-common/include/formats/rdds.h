@@ -32,6 +32,8 @@
 
 RETRO_BEGIN_DECLS
 
+struct image_gpu_layout;
+
 typedef struct rdds rdds_t;
 
 /* Decodes mip level 0 of a block-compressed (or uncompressed) DDS
@@ -46,6 +48,11 @@ typedef struct rdds rdds_t;
 int rdds_process_image(rdds_t *rdds, void **buf,
       size_t size, unsigned *width, unsigned *height,
       bool supports_rgba);
+
+/* GPU-native BCn mip layout for direct upload (no decode).  Returns
+ * false for formats that must be CPU-decoded.  See rdds.c. */
+bool rdds_get_gpu_layout(rdds_t *rdds, size_t len,
+      struct image_gpu_layout *out);
 
 bool rdds_set_buf_ptr(rdds_t *rdds, void *data);
 
