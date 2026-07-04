@@ -168,7 +168,10 @@ bool content_undo_load_state(void)
    struct sram_block *blocks = NULL;
    struct string_list *savefile_list = (struct string_list*)savefile_ptr_get();
 
-   if (!core_info_current_supports_savestate())
+   /* The undo buffer holds a state this core produced during this
+    * session - its existence outranks (possibly stale) metadata. */
+   if (   !core_info_current_supports_savestate()
+       && !undo_load_buf.data)
    {
       RARCH_LOG("[State] %s\n",
             msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
@@ -1647,7 +1650,16 @@ bool content_load_state(const char *path,
    save_task_state_t *state        = NULL;
    settings_t *settings            = config_get_ptr();
 
-   if (!core_info_current_supports_savestate())
+   /* Loading is gated by the artifact, not by save-capability: a state
+    * file the user produced outranks (possibly stale) core metadata, and
+    * a core may be able to restore in situations where it cannot
+    * currently serialize - e.g. from a game's own main menu, where
+    * retro_serialize_size() is legitimately 0 but retro_unserialize()
+    * performs a full restore. retro_unserialize() is the final arbiter
+    * and fails gracefully. */
+   if (   !core_info_current_supports_savestate()
+       && !load_to_backup_buffer
+       && !path_is_valid(path))
    {
       RARCH_LOG("[State] %s\n",
             msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));

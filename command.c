@@ -831,14 +831,14 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    bool ret                     = false;
    _len  = strlcpy(reply, "LOAD_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
-   if (savestates_enabled)
-   {
-      size_t info_size;
-      runloop_get_savestate_path(state_path, sizeof(state_path), slot);
-
-      info_size          = core_serialize_size();
-      savestates_enabled = (info_size > 0);
-   }
+   runloop_get_savestate_path(state_path, sizeof(state_path), slot);
+   /* For LOADING, an existing state file outranks metadata and
+    * save-capability probes: core_serialize_size() measures whether the
+    * core can SAVE right now (0 at e.g. a game's own main menu), which
+    * says nothing about whether it can restore. Let the load task and
+    * retro_unserialize() arbitrate. */
+   if (!savestates_enabled)
+      savestates_enabled = path_is_valid(state_path);
    if (savestates_enabled)
    {
       if ((ret = content_load_state(state_path, false, false)))
@@ -1601,8 +1601,8 @@ bool command_event_load_entry_state(settings_t *settings)
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    bool ret                        = false;
 
-   if (!core_info_current_supports_savestate())
-      return false;
+   /* No early save-capability gate here: content_load_state() decides,
+    * and an existing entry-state file outranks stale metadata. */
 
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -1650,8 +1650,8 @@ bool command_event_load_auto_state(void)
    const char *name_savestate      = runloop_st->name.savestate;
    bool ret                        = false;
 
-   if (!core_info_current_supports_savestate())
-      return false;
+   /* No early save-capability gate here: content_load_state() decides,
+    * and an existing .auto state file outranks stale metadata. */
 
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
