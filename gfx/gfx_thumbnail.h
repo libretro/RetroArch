@@ -202,6 +202,16 @@ enum gfx_thumbnail_flags
  * layout is unchanged.  The cost of the acquire/release barriers
  * on weak-memory ARM/PowerPC is negligible at this field's
  * access rates (menu and frame draw, never per-sample). */
+/* LIFECYCLE CONTRACT: every instance must be zeroed before any
+ * other thumbnail API call - including gfx_thumbnail_reset(),
+ * which frees the animation pointers below and therefore treats
+ * nonzero garbage as live allocations. calloc'd and static
+ * instances are inherently safe; anything malloc'd or
+ * stack-allocated must go through gfx_thumbnail_init_blank(),
+ * which also stores the atomically-typed status correctly and
+ * stays complete as fields are added. Manual field-by-field
+ * initialization is how the materialui Android startup abort
+ * happened; do not reintroduce it. */
 typedef struct
 {
    uintptr_t texture;
