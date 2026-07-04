@@ -488,7 +488,42 @@ static uint32_t *vl_decode_stream(vbr *br, int w, int h, int allow_meta);
  * allow_meta: if nonzero, a meta-Huffman (entropy) image may select a
  * different Huffman group per (x >> hbits, y >> hbits) block. Sub-images
  * (transform data, entropy image) pass allow_meta = 0. */
-static uint32_t *vl_decode_stream(vbr *br, int w, int h, int allow_meta)
+/* Resumable VP8L stream decode state: the bit reader, colour cache,
+ * Huffman groups and entropy image persist between pixel batches. */
+typedef struct vlds
+{
+   vbr *br;
+   uint32_t *pix;
+   uint32_t *huff_img;
+   vh_group *groups;
+   uint32_t *cc;
+   uint8_t *cl;
+   int ccb, ccs;
+   int hbits, hxs;
+   int num_groups;
+   int w, h;
+   int pi;
+} vlds;
+
+static void vlds_abort(vlds *s)
+{
+   int gi;
+   free(s->cl);
+   free(s->cc);
+   free(s->huff_img);
+   if (s->groups)
+   {
+      for (gi = 0; gi < s->num_groups; gi++)
+         vl_free_group(&s->groups[gi]);
+      free(s->groups);
+   }
+   free(s->pix);
+   memset(s, 0, sizeof(*s));
+}
+
+/* Parse the stream prologue (colour cache, entropy image, Huffman
+ * groups) and allocate the pixel buffer. Returns 0 on success. */
+static int vlds_begin(vlds *s, vbr *br, int w, int h, int allow_meta)
 {
    uint32_t *pix = NULL;
    uint32_t *huff_img = NULL;
@@ -497,16 +532,18 @@ static uint32_t *vl_decode_stream(vbr *br, int w, int h, int allow_meta)
    uint8_t *cl = NULL;
    int ccb = 0, ccs = 0;
    int hbits = 0, hxs = 0;
-   int num_groups = 1, gi, pi;
+   int num_groups = 1, gi;
+
+   memset(s, 0, sizeof(*s));
 
    /* --- Color cache (before Huffman codes, per DecodeImageStream) --- */
    if (vbr_read(br, 1))
    {
       ccb = vbr_read(br, 4);
-      if (ccb < 1 || ccb > 11) return NULL;
+      if (ccb < 1 || ccb > 11) return -1;
       ccs = 1 << ccb;
       cc = (uint32_t*)calloc(ccs, sizeof(uint32_t));
-      if (!cc) return NULL;
+      if (!cc) return -1;
    }
 
    /* --- Meta-Huffman (entropy image) --- */
@@ -518,7 +555,7 @@ static uint32_t *vl_decode_stream(vbr *br, int w, int h, int allow_meta)
       hys = (h + (1 << hp) - 1) >> hp;
       hpix = hxs * hys;
       huff_img = vl_decode_stream(br, hxs, hys, 0);
-      if (!huff_img) { free(cc); return NULL; }
+      if (!huff_img) { free(cc); return -1; }
       hbits = hp;
       for (i = 0; i < hpix; i++)
       {
@@ -531,18 +568,53 @@ static uint32_t *vl_decode_stream(vbr *br, int w, int h, int allow_meta)
 
    /* --- Read the Huffman groups --- */
    cl = (uint8_t*)malloc(4096);
-   if (!cl) goto sfail;
+   if (!cl) goto bfail;
    groups = (vh_group*)calloc(num_groups, sizeof(vh_group));
-   if (!groups) goto sfail;
+   if (!groups) goto bfail;
    for (gi = 0; gi < num_groups; gi++)
-      if (vl_read_group(br, &groups[gi], ccs, cl) < 0) goto sfail;
+      if (vl_read_group(br, &groups[gi], ccs, cl) < 0) goto bfail;
 
    pix = (uint32_t*)malloc((size_t)w * h * sizeof(uint32_t));
-   if (!pix) goto sfail;
+   if (!pix) goto bfail;
 
-   /* --- Decode pixels; select group per block from the entropy image --- */
-   pi = 0;
-   while (pi < w * h)
+   s->br = br;
+   s->pix = pix;
+   s->huff_img = huff_img;
+   s->groups = groups;
+   s->cc = cc;
+   s->cl = cl;
+   s->ccb = ccb; s->ccs = ccs;
+   s->hbits = hbits; s->hxs = hxs;
+   s->num_groups = num_groups;
+   s->w = w; s->h = h;
+   s->pi = 0;
+   return 0;
+
+bfail:
+   free(cl);
+   free(cc);
+   free(huff_img);
+   if (groups) { for (gi = 0; gi < num_groups; gi++) vl_free_group(&groups[gi]); free(groups); }
+   return -1;
+}
+
+/* Decode up to npix pixels (an LZ77 run in progress may slightly
+ * overshoot). Returns 1 while pixels remain, 0 when complete. The loop
+ * body is the original decode loop verbatim over the state struct. */
+static int vlds_pixels(vlds *s, int npix)
+{
+   vbr *br = s->br;
+   uint32_t *pix = s->pix;
+   uint32_t *huff_img = s->huff_img;
+   uint32_t *cc = s->cc;
+   const int ccb = s->ccb, ccs = s->ccs;
+   const int hbits = s->hbits, hxs = s->hxs;
+   const int num_groups = s->num_groups;
+   const int w = s->w, h = s->h;
+   int pi = s->pi;
+   int stop = pi + npix;
+
+   while (pi < w * h && pi < stop)
    {
       int x = pi % w, y = pi / w;
       vh_group *g;
@@ -551,10 +623,10 @@ static uint32_t *vl_decode_stream(vbr *br, int w, int h, int allow_meta)
       {
          int mi = huff_img[hxs * (y >> hbits) + (x >> hbits)];
          if (mi < 0 || mi >= num_groups) mi = 0;
-         g = &groups[mi];
+         g = &s->groups[mi];
       }
       else
-         g = &groups[0];
+         g = &s->groups[0];
 
       sym = vh_read(&g->t[0], br);
       if (sym < 256)
@@ -587,21 +659,27 @@ static uint32_t *vl_decode_stream(vbr *br, int w, int h, int allow_meta)
          pix[pi++] = (cc && ci < ccs) ? cc[ci] : 0xFF000000u;
       }
    }
+   s->pi = pi;
+   return (pi < w * h) ? 1 : 0;
+}
 
-   free(cl);
-   free(cc);
-   free(huff_img);
-   for (gi = 0; gi < num_groups; gi++) vl_free_group(&groups[gi]);
-   free(groups);
+/* Detach the pixel buffer (ownership to caller) and free the rest. */
+static uint32_t *vlds_finish(vlds *s)
+{
+   uint32_t *pix = s->pix;
+   s->pix = NULL;
+   vlds_abort(s);
    return pix;
+}
 
-sfail:
-   free(cl);
-   free(cc);
-   free(huff_img);
-   if (groups) { for (gi = 0; gi < num_groups; gi++) vl_free_group(&groups[gi]); free(groups); }
-   free(pix);
-   return NULL;
+static uint32_t *vl_decode_stream(vbr *br, int w, int h, int allow_meta)
+{
+   vlds s;
+   if (vlds_begin(&s, br, w, h, allow_meta) != 0)
+      return NULL;
+   while (vlds_pixels(&s, w * h) > 0)
+      ;
+   return vlds_finish(&s);
 }
 
 /* Back-compat wrapper: sub-images never use meta-Huffman. */
@@ -623,15 +701,39 @@ typedef struct { int type, bits, dw, dh; uint32_t *data; } xf_t;
  * The caller supplies dimensions and a positioned bit reader; used both by
  * regular VP8L images (after the signature/size header) and by headerless
  * ALPH-chunk lossless alpha streams. */
-static uint32_t *vl_decode_body(vbr *brp, uint32_t width, uint32_t height)
+/* Resumable VP8L body state: parsed transforms plus the pixel-stream
+ * state, and a row cursor for the inverse-transform stage. */
+typedef struct vlbd
 {
-   vbr *br2 = brp;
-   uint32_t *pix = NULL;
+   vlds st;
    xf_t xf[XF_MAX];
-   int nxf = 0, i, cw, ch;
+   int nxf;
+   uint32_t width, height;
+   int cw, ch;
+   int xi;          /* current inverse transform (reverse order) */
+   int xrow;        /* row cursor within the current transform */
+   uint32_t *xout;  /* CIDX expansion target */
+} vlbd;
 
-   if (width > 16384 || height > 16384) return NULL;
-   memset(xf, 0, sizeof(xf));
+static void vlbd_abort(vlbd *s)
+{
+   int i;
+   vlds_abort(&s->st);
+   for (i = 0; i < s->nxf; i++)
+      free(s->xf[i].data);
+   free(s->xout);
+   memset(s, 0, sizeof(*s));
+}
+
+/* Parse the transform table and the pixel-stream prologue. */
+static int vlbd_begin(vlbd *s, vbr *br2, uint32_t width, uint32_t height)
+{
+   int nxf = 0, cw, ch;
+   xf_t *xf;
+
+   memset(s, 0, sizeof(*s));
+   if (width > 16384 || height > 16384) return -1;
+   xf = s->xf;
    cw = (int)width; ch = (int)height;
 
    /* Read transforms */
@@ -678,24 +780,62 @@ static uint32_t *vl_decode_body(vbr *brp, uint32_t width, uint32_t height)
       }
    }
 
-   /* Decode main image */
-   pix = vl_decode_stream(br2, cw, ch, 1);
-   if (!pix) goto xfail;
+   s->nxf = nxf;
+   s->width = width; s->height = height;
+   s->cw = cw; s->ch = ch;
+   s->xi = nxf - 1;
+   s->xrow = 0;
 
-   /* Inverse transforms in reverse order */
-   for (i = nxf - 1; i >= 0; i--)
+   if (vlds_begin(&s->st, br2, cw, ch, 1) != 0)
+      goto xfail;
+   return 0;
+
+xfail:
    {
-      xf_t *x = &xf[i];
+      int i;
+      for (i = 0; i < nxf; i++) free(xf[i].data);
+   }
+   memset(s, 0, sizeof(*s));
+   return -1;
+}
+
+/* Apply up to nrows rows of the current inverse transform, advancing to
+ * the next transform (reverse order) as each completes. Returns 1 while
+ * transform work remains, 0 when all transforms are done, -1 on error.
+ * Row-range slicing preserves the original top-to-bottom order, which
+ * the predictor transform relies on. The loop bodies are the original
+ * inverse-transform passes verbatim. */
+static int vlbd_xform_rows(vlbd *s, int nrows)
+{
+   uint32_t *pix = s->st.pix;
+   const uint32_t width = s->width;
+   const uint32_t height = s->height;
+   int cw = s->cw;
+   int r0, r1;
+
+   if (s->xi < 0)
+      return 0;
+   r0 = s->xrow;
+   r1 = r0 + nrows;
+   if (r1 > (int)height) r1 = (int)height;
+
+   {
+      xf_t *x = &s->xf[s->xi];
       switch (x->type)
       {
          case XF_CIDX:
          {
             uint32_t *pal = x->data;
             int nc = x->dw, bits = x->bits, rw = (int)width;
-            uint32_t *out = (uint32_t*)malloc((size_t)rw * height * sizeof(uint32_t));
+            uint32_t *out;
             int px2, py2;
-            if (!out) goto xfail;
-            for (py2 = 0; py2 < (int)height; py2++)
+            if (!s->xout)
+            {
+               s->xout = (uint32_t*)malloc((size_t)rw * height * sizeof(uint32_t));
+               if (!s->xout) return -1;
+            }
+            out = s->xout;
+            for (py2 = r0; py2 < r1; py2++)
             {
                for (px2 = 0; px2 < rw; px2++)
                {
@@ -716,13 +856,19 @@ static uint32_t *vl_decode_body(vbr *brp, uint32_t width, uint32_t height)
                   out[py2 * rw + px2] = pal[idx];
                }
             }
-            free(pix); pix = out; cw = rw;
+            if (r1 >= (int)height)
+            {
+               free(s->st.pix);
+               s->st.pix = s->xout;
+               s->xout = NULL;
+               s->cw = rw;
+            }
             break;
          }
          case XF_SUBG:
          {
-            int j, n = cw * (int)height;
-            for (j = 0; j < n; j++)
+            int j, j0 = r0 * cw, j1 = r1 * cw;
+            for (j = j0; j < j1; j++)
             {
                uint32_t c = pix[j];
                uint32_t g = (c >> 8) & 0xFF;
@@ -737,7 +883,7 @@ static uint32_t *vl_decode_body(vbr *brp, uint32_t width, uint32_t height)
             int bw = x->dw;
             uint32_t *td = x->data;
             int px2, py2;
-            for (py2 = 0; py2 < (int)height; py2++)
+            for (py2 = r0; py2 < r1; py2++)
             {
                for (px2 = 0; px2 < cw; px2++)
                {
@@ -765,7 +911,7 @@ static uint32_t *vl_decode_body(vbr *brp, uint32_t width, uint32_t height)
             int bw = x->dw;
             uint32_t *td = x->data;
             int px2, py2;
-            for (py2 = 0; py2 < (int)height; py2++)
+            for (py2 = r0; py2 < r1; py2++)
             {
                for (px2 = 0; px2 < cw; px2++)
                {
@@ -797,12 +943,40 @@ static uint32_t *vl_decode_body(vbr *brp, uint32_t width, uint32_t height)
       }
    }
 
-   for (i = 0; i < nxf; i++) free(xf[i].data);
+   if (r1 >= (int)height)
+   {
+      s->xi--;
+      s->xrow = 0;
+   }
+   else
+      s->xrow = r1;
+   return (s->xi >= 0) ? 1 : 0;
+}
+
+/* Detach the finished pixel buffer and free the rest. */
+static uint32_t *vlbd_finish(vlbd *s)
+{
+   uint32_t *pix = s->st.pix;
+   int i;
+   s->st.pix = NULL;
+   vlds_abort(&s->st);
+   for (i = 0; i < s->nxf; i++)
+      free(s->xf[i].data);
+   free(s->xout);
+   memset(s, 0, sizeof(*s));
    return pix;
-xfail:
-   free(pix);
-   for (i = 0; i < nxf; i++) free(xf[i].data);
-   return NULL;
+}
+
+static uint32_t *vl_decode_body(vbr *brp, uint32_t width, uint32_t height)
+{
+   vlbd s;
+   if (vlbd_begin(&s, brp, width, height) != 0)
+      return NULL;
+   while (vlds_pixels(&s.st, s.cw * s.ch) > 0)
+      ;
+   while (vlbd_xform_rows(&s, (int)height) > 0)
+      ;
+   return vlbd_finish(&s);
 }
 
 static uint32_t *vl_decode_full(const uint8_t *data, size_t len,
@@ -3160,11 +3334,13 @@ afail:
  * The sliced path covers lossy (VP8) images without an alpha chunk -
  * the common large-photo case; lossless and alpha-bearing images fall
  * back to a single-shot decode on the first call. */
-#define RWEBP_PHASE_IDLE     0
-#define RWEBP_PHASE_ROWS     1
-#define RWEBP_PHASE_FILTER   2
-#define RWEBP_PHASE_UPSAMPLE 3
-#define RWEBP_PHASE_SWIZZLE  4
+#define RWEBP_PHASE_IDLE       0
+#define RWEBP_PHASE_ROWS       1
+#define RWEBP_PHASE_FILTER     2
+#define RWEBP_PHASE_UPSAMPLE   3
+#define RWEBP_PHASE_SWIZZLE    4
+#define RWEBP_PHASE_L_PIXELS   5
+#define RWEBP_PHASE_L_XFORM    6
 
 /* MB rows decoded per call (~0.5-3 ms depending on content and host),
  * loop-filter MB rows per call, upsampled luma rows per call, and
@@ -3174,13 +3350,23 @@ afail:
 #define RWEBP_LF_ROWS_PER_CALL  8
 #define RWEBP_UPS_ROWS_PER_CALL 128
 #define RWEBP_SWZ_PX_PER_CALL   (512 * 1024)
+#define RWEBP_L_PX_PER_CALL     (64 * 1024)
+#define RWEBP_L_XF_ROWS_PER_CALL 256
 
 struct rwebp
 {
    uint8_t *buff_data;
    size_t buff_len;
    uint32_t *output_image;
-   vp8d d;
+   union
+   {
+      vp8d d;        /* lossy (VP8) incremental state */
+      struct
+      {
+         vlbd b;     /* lossless (VP8L) incremental state */
+         vbr br;     /* bit reader referenced by b (must not move) */
+      } l;
+   } u;
    int phase;
    int cursor;       /* row / pixel progress within the current phase */
    int swizzle;      /* supports_rgba latched at phase start */
@@ -3193,7 +3379,11 @@ static void rwebp_proc_reset(rwebp_t *rwebp)
 {
    if (rwebp->phase != RWEBP_PHASE_IDLE)
    {
-      vp8d_abort(&rwebp->d);
+      if (rwebp->phase == RWEBP_PHASE_L_PIXELS
+            || rwebp->phase == RWEBP_PHASE_L_XFORM)
+         vlbd_abort(&rwebp->u.l.b);
+      else
+         vp8d_abort(&rwebp->u.d);
       free(rwebp->output_image);
       rwebp->output_image = NULL;
    }
@@ -3220,20 +3410,46 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf_data,
                && !(c.alph && c.alphs > 0))
          {
             /* Sliced lossy path */
-            if (vp8d_begin(c.vp8, c.vp8s, &rwebp->d) != 0)
+            if (vp8d_begin(c.vp8, c.vp8s, &rwebp->u.d) != 0)
                return IMAGE_PROCESS_ERROR;
-            rwebp->output_image = vp8d_output(&rwebp->d);
+            rwebp->output_image = vp8d_output(&rwebp->u.d);
             if (!rwebp->output_image)
             {
-               vp8d_abort(&rwebp->d);
+               vp8d_abort(&rwebp->u.d);
                return IMAGE_PROCESS_ERROR;
             }
             rwebp->phase   = RWEBP_PHASE_ROWS;
             rwebp->cursor  = 0;
             rwebp->swizzle = supports_rgba ? 1 : 0;
-            *width  = (unsigned)rwebp->d.w;
-            *height = (unsigned)rwebp->d.h;
+            *width  = (unsigned)rwebp->u.d.w;
+            *height = (unsigned)rwebp->u.d.h;
             return IMAGE_PROCESS_NEXT;
+         }
+         if (rw_parse(rwebp->buff_data, len, &c)
+               && c.vp8l && c.vp8ls > 0)
+         {
+            /* Sliced lossless path. The header is parsed here; the
+             * bit reader must live in the context because the stream
+             * state keeps a pointer to it across calls. */
+            uint32_t sig, lw, lh;
+            vbr *br = &rwebp->u.l.br;
+            vbr_init(br, c.vp8l, c.vp8ls);
+            sig = vbr_read(br, 8);
+            lw  = vbr_read(br, 14) + 1;
+            lh  = vbr_read(br, 14) + 1;
+            vbr_read(br, 1);                    /* alpha_is_used */
+            if (sig == 0x2F && vbr_read(br, 3) == 0
+                  && vlbd_begin(&rwebp->u.l.b, br, lw, lh) == 0)
+            {
+               rwebp->phase   = RWEBP_PHASE_L_PIXELS;
+               rwebp->cursor  = 0;
+               rwebp->swizzle = supports_rgba ? 1 : 0;
+               *width  = lw;
+               *height = lh;
+               return IMAGE_PROCESS_NEXT;
+            }
+            /* Malformed header: fall through to the one-shot path,
+             * which reports the failure through the usual route. */
          }
          /* Everything else: single-shot decode */
          rwebp->output_image = rwebp_do(rwebp->buff_data, len,
@@ -3242,44 +3458,89 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf_data,
          return rwebp->output_image ? IMAGE_PROCESS_END : IMAGE_PROCESS_ERROR;
       }
 
+      case RWEBP_PHASE_L_PIXELS:
+         if (vlds_pixels(&rwebp->u.l.b.st, RWEBP_L_PX_PER_CALL) == 0)
+            rwebp->phase = RWEBP_PHASE_L_XFORM;
+         *width  = rwebp->u.l.b.width;
+         *height = rwebp->u.l.b.height;
+         return IMAGE_PROCESS_NEXT;
+
+      case RWEBP_PHASE_L_XFORM:
+      {
+         /* Capture dimensions first: vlbd_finish clears the state. */
+         unsigned lw = rwebp->u.l.b.width;
+         unsigned lh = rwebp->u.l.b.height;
+         int rc = vlbd_xform_rows(&rwebp->u.l.b, RWEBP_L_XF_ROWS_PER_CALL);
+         *width  = lw;
+         *height = lh;
+         if (rc < 0)
+         {
+            rwebp_proc_reset(rwebp);
+            return IMAGE_PROCESS_ERROR;
+         }
+         if (rc > 0)
+            return IMAGE_PROCESS_NEXT;
+         rwebp->output_image = vlbd_finish(&rwebp->u.l.b);
+         if (!rwebp->output_image)
+         {
+            rwebp->phase = RWEBP_PHASE_IDLE;
+            return IMAGE_PROCESS_ERROR;
+         }
+         if (rwebp->swizzle)
+         {
+            /* Reuse the shared swizzle phase; it reads dimensions from
+             * the VP8 state slot, so park them there (the union member
+             * holding the lossless state is dead after vlbd_finish). */
+            rwebp->u.d.w = (int)lw;
+            rwebp->u.d.h = (int)lh;
+            rwebp->phase  = RWEBP_PHASE_SWIZZLE;
+            rwebp->cursor = 0;
+            return IMAGE_PROCESS_NEXT;
+         }
+         *buf_data = rwebp->output_image;
+         rwebp->output_image = NULL; /* ownership -> caller */
+         rwebp->phase = RWEBP_PHASE_IDLE;
+         return IMAGE_PROCESS_END;
+      }
+
       case RWEBP_PHASE_ROWS:
-         if (vp8d_rows(&rwebp->d, RWEBP_ROWS_PER_CALL) == 0)
+         if (vp8d_rows(&rwebp->u.d, RWEBP_ROWS_PER_CALL) == 0)
          {
             rwebp->phase  = RWEBP_PHASE_FILTER;
             rwebp->cursor = 0;
          }
-         *width  = (unsigned)rwebp->d.w;
-         *height = (unsigned)rwebp->d.h;
+         *width  = (unsigned)rwebp->u.d.w;
+         *height = (unsigned)rwebp->u.d.h;
          return IMAGE_PROCESS_NEXT;
 
       case RWEBP_PHASE_FILTER:
-         if (rwebp->d.lf_level <= 0)
+         if (rwebp->u.d.lf_level <= 0)
          {
             rwebp->phase  = RWEBP_PHASE_UPSAMPLE;
             rwebp->cursor = 0;
          }
          else
          {
-            vp8d_filter_rows(&rwebp->d, rwebp->cursor,
+            vp8d_filter_rows(&rwebp->u.d, rwebp->cursor,
                   rwebp->cursor + RWEBP_LF_ROWS_PER_CALL);
             rwebp->cursor += RWEBP_LF_ROWS_PER_CALL;
-            if (rwebp->cursor >= rwebp->d.mbh)
+            if (rwebp->cursor >= rwebp->u.d.mbh)
             {
                rwebp->phase  = RWEBP_PHASE_UPSAMPLE;
                rwebp->cursor = 0;
             }
          }
-         *width  = (unsigned)rwebp->d.w;
-         *height = (unsigned)rwebp->d.h;
+         *width  = (unsigned)rwebp->u.d.w;
+         *height = (unsigned)rwebp->u.d.h;
          return IMAGE_PROCESS_NEXT;
 
       case RWEBP_PHASE_UPSAMPLE:
-         rwebp->cursor = vp8d_upsample_rows(&rwebp->d,
+         rwebp->cursor = vp8d_upsample_rows(&rwebp->u.d,
                rwebp->output_image, rwebp->cursor,
                RWEBP_UPS_ROWS_PER_CALL);
-         *width  = (unsigned)rwebp->d.w;
-         *height = (unsigned)rwebp->d.h;
-         if (rwebp->cursor >= rwebp->d.h)
+         *width  = (unsigned)rwebp->u.d.w;
+         *height = (unsigned)rwebp->u.d.h;
+         if (rwebp->cursor >= rwebp->u.d.h)
          {
             if (rwebp->swizzle)
             {
@@ -3299,7 +3560,7 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf_data,
          /* ARGB words -> ABGR (memory R,G,B,A), a bounded pixel batch
           * per call; matches the rwebp_do output conversion. */
          uint32_t *pix = rwebp->output_image;
-         int n = rwebp->d.w * rwebp->d.h;
+         int n = rwebp->u.d.w * rwebp->u.d.h;
          int i = rwebp->cursor;
          int e = i + RWEBP_SWZ_PX_PER_CALL;
          if (e > n) e = n;
@@ -3309,8 +3570,8 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf_data,
             pix[i] = (p & 0xFF00FF00u) | ((p & 0xFF) << 16) | ((p >> 16) & 0xFF);
          }
          rwebp->cursor = e;
-         *width  = (unsigned)rwebp->d.w;
-         *height = (unsigned)rwebp->d.h;
+         *width  = (unsigned)rwebp->u.d.w;
+         *height = (unsigned)rwebp->u.d.h;
          if (e >= n)
          {
             *buf_data = rwebp->output_image;
