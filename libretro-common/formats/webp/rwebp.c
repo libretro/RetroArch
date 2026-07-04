@@ -2791,11 +2791,12 @@ const uint32_t *rwebp_anim_get_frame(const rwebp_anim_t *a, int index,
  * animation has. The eager rwebp_anim_decode below is a thin wrapper
  * that collects every canvas from a stream. */
 
+struct rwebp_anmf_ent { size_t off; uint32_t sz; };
 struct rwebp_anim_stream
 {
    const uint8_t *buf;    /* borrowed; must outlive the stream */
    size_t         len;
-   struct { size_t off; uint32_t sz; } *anmf; /* ANMF payload offsets */
+   struct rwebp_anmf_ent *anmf; /* ANMF payload offsets */
    int       num_anmf;
    int       cursor;      /* next ANMF index to try */
    int       emitted;     /* frames emitted since open/rewind */
@@ -2845,9 +2846,10 @@ rwebp_anim_stream_t *rwebp_anim_stream_open(const uint8_t *buf, size_t len)
       {
          if (s->num_anmf >= cap)
          {
-            void *na;
+            struct rwebp_anmf_ent *na;
             int ncap = cap ? cap * 2 : 16;
-            na = realloc(s->anmf, (size_t)ncap * sizeof(*s->anmf));
+            na = (struct rwebp_anmf_ent*)realloc(s->anmf,
+                  (size_t)ncap * sizeof(*s->anmf));
             if (!na) goto ofail;
             s->anmf = na; cap = ncap;
          }
