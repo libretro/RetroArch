@@ -11676,23 +11676,15 @@ static void materialui_list_insert(void *userdata,
       node->x                                = 0.0f;
       node->y                                = 0.0f;
 
-      node->thumbnails.primary.status        = GFX_THUMBNAIL_STATUS_UNKNOWN;
-      node->thumbnails.primary.texture       = 0;
-      node->thumbnails.primary.width         = 0;
-      node->thumbnails.primary.height        = 0;
-      node->thumbnails.primary.alpha         = 0.0f;
-      node->thumbnails.primary.delay_timer   = 0.0f;
-      node->thumbnails.primary.flags         = 0;
-      node->thumbnails.primary.flags        &= ~GFX_THUMB_FLAG_FADE_ACTIVE;
-
-      node->thumbnails.secondary.status      = GFX_THUMBNAIL_STATUS_UNKNOWN;
-      node->thumbnails.secondary.texture     = 0;
-      node->thumbnails.secondary.width       = 0;
-      node->thumbnails.secondary.height      = 0;
-      node->thumbnails.secondary.alpha       = 0.0f;
-      node->thumbnails.secondary.delay_timer = 0.0f;
-      node->thumbnails.secondary.flags       = 0;
-      node->thumbnails.secondary.flags      &= ~GFX_THUMB_FLAG_FADE_ACTIVE;
+      /* Full blank init: the manual field list predated the
+       * animation state and left 'anim'/'anim_buf' as malloc
+       * garbage, which gfx_thumbnail_reset later freed on the
+       * node-reuse path - the Android startup abort in scudo.
+       * gfx_thumbnail_init_blank covers every field, including
+       * the atomically-typed status, and stays correct when
+       * fields are added. */
+      gfx_thumbnail_init_blank(&node->thumbnails.primary);
+      gfx_thumbnail_init_blank(&node->thumbnails.secondary);
    }
    else
    {
