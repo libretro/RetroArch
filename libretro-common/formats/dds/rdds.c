@@ -34,7 +34,7 @@
  *   FourCC 'DXT5'                     -> BC3
  *   FourCC 'ATI1'/'BC4U'              -> BC4 (R)      [DX10 too]
  *   FourCC 'ATI2'/'BC5U'              -> BC5 (RG)     [DX10 too]
- *   DX10   DXGI_FORMAT_BC6H_UF16/SF16 -> BC6H (HDR RGB, clamped to 8bpp)
+ *   DX10   DXGI_FORMAT_BC6H_UF16/SF16 -> BC6H (HDR RGB, tone-mapped to 8bpp)
  *   DX10   DXGI_FORMAT_BC7_UNORM(_SRGB)-> BC7
  *   (DX10  BC1/BC2/BC3/BC4/BC5 UNORM are accepted as well)
  *
@@ -1600,6 +1600,29 @@ static INLINE uint8_t rdds_float_to_u8(float f)
    return (uint8_t)v;
 }
 
+/* Sanitize a decoded BC6H channel: drop NaN, clamp to [0, max-half]. */
+static INLINE float rdds_sanitize(float c)
+{
+   if (c != c)
+      c = 0.0f;
+   if (c < 0.0f)
+      c = 0.0f;
+   if (c > 65504.0f)
+      c = 65504.0f;
+   return c;
+}
+
+/* Extended Reinhard tone-map for BC6H HDR, white-pointed at the image's
+ * own peak channel value (passed as inv_white2 = 1/white^2).  With
+ * white >= 1 the operator never brightens a value, maps the peak to 1.0,
+ * and rolls highlights above 1.0 into range instead of clipping them to
+ * white.  Only invoked when the image actually exceeds 1.0, so SDR-range
+ * BC6H is quantized unchanged.  c is assumed clamped to [0, 65504]. */
+static INLINE float rdds_tonemap(float c, float inv_white2)
+{
+   return c * (1.0f + c * inv_white2) / (1.0f + c);
+}
+
 /* mask -> shift/scale helper for the uncompressed path */
 static INLINE unsigned rdds_mask_shift(uint32_t mask)
 {
@@ -1677,21 +1700,6 @@ static void rdds_decode_block(enum rdds_fmt fmt, const uint8_t *src,
             rgba[t * 4 + 0] = rg[t * 2 + 0];
             rgba[t * 4 + 1] = rg[t * 2 + 1];
             rgba[t * 4 + 2] = 0;
-            rgba[t * 4 + 3] = 255;
-         }
-         break;
-      }
-      case RDDS_FMT_BC6H_UF16:
-      case RDDS_FMT_BC6H_SF16:
-      {
-         float f[48];
-         int   is_signed = (fmt == RDDS_FMT_BC6H_SF16) ? 1 : 0;
-         rdds_bcdec_bc6h_float(src, f, 12, is_signed);
-         for (t = 0; t < 16; t++)
-         {
-            rgba[t * 4 + 0] = rdds_float_to_u8(f[t * 3 + 0]);
-            rgba[t * 4 + 1] = rdds_float_to_u8(f[t * 3 + 1]);
-            rgba[t * 4 + 2] = rdds_float_to_u8(f[t * 3 + 2]);
             rgba[t * 4 + 3] = 255;
          }
          break;
@@ -1818,6 +1826,104 @@ static uint32_t *rdds_decode_uncompressed(const rdds_info_t *info,
    return out;
 }
 
+/* BC6H HDR path: two passes over the compressed blocks (no large float
+ * scratch).  Pass 1 finds the peak channel value; pass 2 tone-maps (only
+ * if the image exceeds 1.0) and packs to the 8bpp surface. */
+static uint32_t *rdds_decode_bc6h(const rdds_info_t *info,
+      const uint8_t *data, size_t len, bool supports_rgba)
+{
+   uint32_t *out;
+   float     f[48];
+   unsigned  blocks_x  = (info->width  + 3u) >> 2;
+   unsigned  blocks_y  = (info->height + 3u) >> 2;
+   size_t    needed    = (size_t)blocks_x * (size_t)blocks_y * 16u;
+   int       is_signed = (info->fmt == RDDS_FMT_BC6H_SF16) ? 1 : 0;
+   unsigned  bx, by, ty, tx;
+   float     maxc      = 0.0f;
+   float     inv_white2;
+   int       hdr;
+
+   if (len < info->data_offset || (len - info->data_offset) < needed)
+      return NULL;
+   out = (uint32_t*)malloc((size_t)info->width * (size_t)info->height
+         * sizeof(uint32_t));
+   if (!out)
+      return NULL;
+
+   /* Pass 1: peak channel over all in-bounds texels. */
+   for (by = 0; by < blocks_y; by++)
+   {
+      for (bx = 0; bx < blocks_x; bx++)
+      {
+         const uint8_t *src = data + info->data_offset
+                            + ((size_t)by * blocks_x + bx) * 16u;
+         rdds_bcdec_bc6h_float(src, f, 12, is_signed);
+         for (ty = 0; ty < 4; ty++)
+         {
+            unsigned py = by * 4u + ty;
+            if (py >= info->height)
+               break;
+            for (tx = 0; tx < 4; tx++)
+            {
+               unsigned px = bx * 4u + tx;
+               int      k;
+               if (px >= info->width)
+                  continue;
+               for (k = 0; k < 3; k++)
+               {
+                  float c = rdds_sanitize(f[(ty * 4 + tx) * 3 + k]);
+                  if (c > maxc)
+                     maxc = c;
+               }
+            }
+         }
+      }
+   }
+
+   hdr        = (maxc > 1.0f) ? 1 : 0;
+   inv_white2 = hdr ? (1.0f / (maxc * maxc)) : 0.0f;
+
+   /* Pass 2: tone-map (if HDR) + quantize + pack. */
+   for (by = 0; by < blocks_y; by++)
+   {
+      for (bx = 0; bx < blocks_x; bx++)
+      {
+         const uint8_t *src = data + info->data_offset
+                            + ((size_t)by * blocks_x + bx) * 16u;
+         rdds_bcdec_bc6h_float(src, f, 12, is_signed);
+         for (ty = 0; ty < 4; ty++)
+         {
+            unsigned py = by * 4u + ty;
+            if (py >= info->height)
+               break;
+            for (tx = 0; tx < 4; tx++)
+            {
+               unsigned px = bx * 4u + tx;
+               unsigned i3;
+               float    cr, cg, cb;
+               if (px >= info->width)
+                  continue;
+               i3 = (ty * 4 + tx) * 3;
+               cr = rdds_sanitize(f[i3 + 0]);
+               cg = rdds_sanitize(f[i3 + 1]);
+               cb = rdds_sanitize(f[i3 + 2]);
+               if (hdr)
+               {
+                  cr = rdds_tonemap(cr, inv_white2);
+                  cg = rdds_tonemap(cg, inv_white2);
+                  cb = rdds_tonemap(cb, inv_white2);
+               }
+               out[py * info->width + px] = rdds_pack(
+                     rdds_float_to_u8(cr), rdds_float_to_u8(cg),
+                     rdds_float_to_u8(cb), 255u, supports_rgba);
+            }
+         }
+      }
+   }
+
+   return out;
+}
+
 int rdds_process_image(rdds_t *rdds, void **buf_data,
       size_t size, unsigned *width, unsigned *height,
       bool supports_rgba)
@@ -1836,6 +1942,10 @@ int rdds_process_image(rdds_t *rdds, void **buf_data,
 
    if (info.fmt == RDDS_FMT_RGBA)
       rdds->output_image = rdds_decode_uncompressed(&info,
+            rdds->buff_data, size, supports_rgba);
+   else if (   info.fmt == RDDS_FMT_BC6H_UF16
+            || info.fmt == RDDS_FMT_BC6H_SF16)
+      rdds->output_image = rdds_decode_bc6h(&info,
             rdds->buff_data, size, supports_rgba);
    else
       rdds->output_image = rdds_decode_compressed(&info,
