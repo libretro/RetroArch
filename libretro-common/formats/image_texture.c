@@ -79,6 +79,12 @@ enum image_type_enum image_texture_get_type(const char *path)
              (ext[2] | 0x20) == 'a')
             return IMAGE_TYPE_TGA;
 #endif
+#ifdef HAVE_RDDS
+         if ((ext[0] | 0x20) == 'd' &&
+             (ext[1] | 0x20) == 'd' &&
+             (ext[2] | 0x20) == 's')
+            return IMAGE_TYPE_DDS;
+#endif
          break;
 
       case 4:

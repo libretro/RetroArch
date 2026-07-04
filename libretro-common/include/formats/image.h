@@ -55,7 +55,8 @@ enum image_type_enum
    IMAGE_TYPE_JPEG,
    IMAGE_TYPE_BMP,
    IMAGE_TYPE_TGA,
-   IMAGE_TYPE_WEBP
+   IMAGE_TYPE_WEBP,
+   IMAGE_TYPE_DDS
 };
 
 enum image_type_enum image_texture_get_type(const char *path);
