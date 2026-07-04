@@ -797,17 +797,6 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 	vita2d_initialized = 1;
 	return 1;
 }
-
-int vita2d_init()
-{
-	return vita2d_init_internal(DEFAULT_TEMP_POOL_SIZE, SCE_GXM_MULTISAMPLE_NONE, VITA2D_VIDEO_MODE_960x544);
-}
-
-int vita2d_init_advanced(unsigned int temp_pool_size)
-{
-	return vita2d_init_internal(temp_pool_size, SCE_GXM_MULTISAMPLE_NONE, VITA2D_VIDEO_MODE_960x544);
-}
-
 int vita2d_init_advanced_with_msaa(unsigned int temp_pool_size, SceGxmMultisampleMode msaa, vita2d_video_mode video_mode)
 {
 	return vita2d_init_internal(temp_pool_size, msaa, video_mode);
@@ -900,23 +889,6 @@ int vita2d_fini()
 
 	return 1;
 }
-
-void vita2d_clear_screen()
-{
-	// set clear shaders
-	sceGxmSetVertexProgram(_vita2d_context, clearVertexProgram);
-	sceGxmSetFragmentProgram(_vita2d_context, clearFragmentProgram);
-
-	// set the clear color
-	void *color_buffer;
-	sceGxmReserveFragmentDefaultUniformBuffer(_vita2d_context, &color_buffer);
-	sceGxmSetUniformDataF(color_buffer, _vita2d_clearClearColorParam, 0, 4, clear_color);
-
-	// draw the clear triangle
-	sceGxmSetVertexStream(_vita2d_context, 0, clearVertices);
-	sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLES, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 3);
-}
-
 void vita2d_swap_buffers()
 {
 	sceGxmPadHeartbeat(&displaySurface[backBufferIndex], displayBufferSync[backBufferIndex]);
@@ -977,13 +949,6 @@ void vita2d_end_drawing()
 	sceGxmEndScene(_vita2d_context, NULL, NULL);
 	drawing = 0;
 }
-
-void vita2d_enable_clipping()
-{
-	clipping_enabled = 1;
-	vita2d_set_clip_rectangle(clip_rect_x_min, clip_rect_y_min, clip_rect_x_max, clip_rect_y_max);
-}
-
 void vita2d_disable_clipping()
 {
 	clipping_enabled = 0;
@@ -996,12 +961,6 @@ void vita2d_disable_clipping()
 			0xFF,
 			0xFF);
 }
-
-int vita2d_get_clipping_enabled()
-{
-	return clipping_enabled;
-}
-
 void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 {
 	vita2d_set_viewport(0,0,video_mode_data.width,video_mode_data.height);
@@ -1058,33 +1017,6 @@ void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 		}
 	}
 }
-
-void vita2d_get_clip_rectangle(int *x_min, int *y_min, int *x_max, int *y_max)
-{
-	*x_min = clip_rect_x_min;
-	*y_min = clip_rect_y_min;
-	*x_max = clip_rect_x_max;
-	*y_max = clip_rect_y_max;
-}
-
-int vita2d_common_dialog_update()
-{
-	SceCommonDialogUpdateParam updateParam;
-	memset(&updateParam, 0, sizeof(updateParam));
-
-	updateParam.renderTarget.colorFormat    = DISPLAY_COLOR_FORMAT;
-	updateParam.renderTarget.surfaceType    = SCE_GXM_COLOR_SURFACE_LINEAR;
-	updateParam.renderTarget.width          = video_mode_data.width;
-	updateParam.renderTarget.height         = video_mode_data.height;
-	updateParam.renderTarget.strideInPixels = video_mode_data.stride;
-
-	updateParam.renderTarget.colorSurfaceData = displayBufferData[backBufferIndex];
-	updateParam.renderTarget.depthSurfaceData = depthBufferData;
-	updateParam.displaySyncObject = displayBufferSync[backBufferIndex];
-
-	return sceCommonDialogUpdate(&updateParam);
-}
-
 void vita2d_set_clear_color(unsigned int color)
 {
 	clear_color[0] = ((color >> 8*0) & 0xFF)/255.0f;
@@ -1103,22 +1035,6 @@ void vita2d_set_vblank_wait(int enable)
 {
 	vblank_wait = enable;
 }
-
-void *vita2d_get_current_fb()
-{
-	return displayBufferData[frontBufferIndex];
-}
-
-SceGxmContext *vita2d_get_context()
-{
-	return _vita2d_context;
-}
-
-SceGxmShaderPatcher *vita2d_get_shader_patcher()
-{
-	return shaderPatcher;
-}
-
 const uint16_t *vita2d_get_linear_indices()
 {
 	return linearIndices;
@@ -1149,12 +1065,6 @@ void *vita2d_pool_memalign(unsigned int size, unsigned int alignment)
 	}
 	return NULL;
 }
-
-unsigned int vita2d_pool_free_space()
-{
-	return pool_size - pool_index;
-}
-
 void vita2d_pool_reset()
 {
 	pool_index = 0;
