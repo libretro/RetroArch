@@ -3942,7 +3942,6 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_QUIT, NULL);
             break;
          }
-
          /* Closing content via hotkey requires toggling menu
           * and resetting the position later on to prevent
           * going to empty Quick Menu */

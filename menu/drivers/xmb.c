@@ -50,6 +50,7 @@
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../core_info.h"
+#include "../../profile_manager.h"
 #include "../../file_path_special.h"
 #include "../../input/input_osk.h"
 #include "../../tasks/tasks_internal.h"
@@ -484,6 +485,10 @@ typedef struct xmb_handle
    bool use_ps3_layout;
    bool last_use_ps3_layout;
    bool assets_missing;
+
+   char profile_image_path[PATH_MAX_LENGTH];
+   uintptr_t profile_texture;
+   bool profile_texture_loaded;
 
    /* Favorites, History, Images, Music, Videos, user generated */
    bool is_playlist;
@@ -7327,6 +7332,9 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
    if (reinit_textures)
    {
+      char sysicons_dir[PATH_MAX_LENGTH];
+      char icon_path[PATH_MAX_LENGTH];
+
       gfx_display_deinit_white_texture();
       gfx_display_init_white_texture();
       xmb->assets_missing     = false;
@@ -7334,6 +7342,33 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
       if (!path_is_valid(iconpath))
          xmb->assets_missing = true;
+
+      if (xmb->profile_texture_loaded)
+      {
+         video_driver_texture_unload(&xmb->profile_texture);
+         xmb->profile_texture_loaded = false;
+         xmb->profile_texture        = 0;
+      }
+
+      {
+         char tmp_name[128];
+         profile_manager_get_active(tmp_name, sizeof(tmp_name),
+               xmb->profile_image_path, sizeof(xmb->profile_image_path));
+      }
+
+      if (xmb->profile_image_path[0])
+      {
+         profile_manager_get_sysicons_dir(sysicons_dir, sizeof(sysicons_dir));
+         fill_pathname_join_special(icon_path, sysicons_dir,
+               xmb->profile_image_path, sizeof(icon_path));
+         if (path_is_valid(icon_path))
+         {
+            gfx_display_reset_icon_texture(icon_path,
+                  &xmb->profile_texture, TEXTURE_FILTER_LINEAR,
+                  NULL, NULL);
+            xmb->profile_texture_loaded = true;
+         }
+      }
    }
 
    xmb->allow_horizontal_animation = true;
@@ -9630,6 +9665,104 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_width, video_height, xmb->font);
    }
 
+   /* Profile display */
+   {
+      char profile_name[128];
+      char profile_icon_path[PATH_MAX_LENGTH];
+      profile_manager_get_active(profile_name, sizeof(profile_name),
+            profile_icon_path, sizeof(profile_icon_path));
+
+      if (!string_is_equal(profile_icon_path, xmb->profile_image_path))
+      {
+         if (xmb->profile_texture_loaded)
+         {
+            video_driver_texture_unload(&xmb->profile_texture);
+            xmb->profile_texture_loaded = false;
+            xmb->profile_texture        = 0;
+         }
+         strlcpy(xmb->profile_image_path, profile_icon_path,
+               sizeof(xmb->profile_image_path));
+         if (xmb->profile_image_path[0])
+         {
+            char sysicons_dir[PATH_MAX_LENGTH];
+            char full_icon_path[PATH_MAX_LENGTH];
+            profile_manager_get_sysicons_dir(sysicons_dir, sizeof(sysicons_dir));
+            fill_pathname_join_special(full_icon_path, sysicons_dir,
+                  xmb->profile_image_path, sizeof(full_icon_path));
+            if (path_is_valid(full_icon_path))
+            {
+               gfx_display_reset_icon_texture(full_icon_path,
+                     &xmb->profile_texture, TEXTURE_FILTER_LINEAR,
+                     NULL, NULL);
+               xmb->profile_texture_loaded = true;
+            }
+         }
+      }
+
+      if (profile_name[0])
+      {
+         float profile_icon_size = xmb->icon_size * 0.3f;
+         float padding           = 6 * xmb->last_scale_factor;
+         size_t profile_len      = strlen(profile_name);
+         size_t profile_width    = (unsigned)font_driver_get_message_width(
+               xmb->font, profile_name, profile_len, 1.0f);
+         size_t x_pos            = title_header_max_width;
+         float base_x            = video_width - xmb->margins_title_left
+                                 - xmb->icon_size / 4;
+
+         if (x_pos > 0)
+            x_pos += xmb->icon_size / 2;
+
+         if (xmb->profile_texture_loaded && xmb->profile_texture)
+         {
+            float icon_x = base_x - x_pos - profile_icon_size;
+            float icon_y = xmb->margins_title_top + profile_icon_size * 0.1f;
+
+            title_header_max_width = x_pos + profile_width
+                  + (size_t)(profile_icon_size + padding);
+
+            xmb_draw_text(shadows_enable, xmb, settings, profile_name,
+                  base_x - x_pos - profile_icon_size - padding,
+                  xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
+                  video_width, video_height, xmb->font);
+
+            if (dispctx && dispctx->blend_begin)
+               dispctx->blend_begin(userdata);
+            xmb_draw_icon(
+                  userdata,
+                  p_disp,
+                  dispctx,
+                  video_width,
+                  video_height,
+                  shadows_enable,
+                  (int)profile_icon_size,
+                  (int)profile_icon_size,
+                  xmb->profile_texture,
+                  icon_x,
+                  icon_y,
+                  video_width,
+                  video_height,
+                  xmb->alpha,
+                  0,
+                  1,
+                  &xmb_item_color[0],
+                  xmb->shadow_offset,
+                  &mymat);
+            if (dispctx && dispctx->blend_end)
+               dispctx->blend_end(userdata);
+         }
+         else
+         {
+            title_header_max_width = x_pos + profile_width;
+
+            xmb_draw_text(shadows_enable, xmb, settings, profile_name,
+                  base_x - x_pos,
+                  xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
+                  video_width, video_height, xmb->font);
+         }
+      }
+   }
+
    /* Use alternative title if available */
    strlcpy(title_truncated,
           *xmb->title_name_alt
@@ -10354,6 +10487,13 @@ static void xmb_context_destroy(void *data)
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       video_driver_texture_unload(&xmb->textures.list[i]);
+
+   if (xmb->profile_texture_loaded)
+   {
+      video_driver_texture_unload(&xmb->profile_texture);
+      xmb->profile_texture_loaded = false;
+      xmb->profile_texture        = 0;
+   }
 
    xmb_unload_thumbnail_textures(xmb);
    xmb_unload_icon_thumbnail_textures(xmb);

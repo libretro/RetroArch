@@ -103,6 +103,8 @@ GENERIC_DEFERRED_PUSH(deferred_push_history_list,                   DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_database_manager_list,          DISPLAYLIST_DATABASES)
 GENERIC_DEFERRED_PUSH(deferred_push_content_collection_list,        DISPLAYLIST_DATABASE_PLAYLISTS)
 GENERIC_DEFERRED_PUSH(deferred_push_configurations_list,            DISPLAYLIST_CONFIGURATIONS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_profiles_list,                  DISPLAYLIST_PROFILES_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_profile_icons_list,             DISPLAYLIST_PROFILE_ICONS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_load_content_list,              DISPLAYLIST_LOAD_CONTENT_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_dump_disk_list,                 DISPLAYLIST_DUMP_DISC)
@@ -698,6 +700,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_COLLECTION, deferred_push_content_collection_list},
       {MENU_ENUM_LABEL_SETTINGS,   deferred_push_settings},
       {MENU_ENUM_LABEL_CONFIGURATIONS_LIST, deferred_push_configurations_list},
+      {MENU_ENUM_LABEL_PROFILES_LIST, deferred_push_profiles_list},
+      {MENU_ENUM_LABEL_PROFILE_ICON_SELECT, deferred_push_profile_icons_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST, deferred_push_playlist_manager_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS, deferred_push_playlist_manager_settings},
       {MENU_ENUM_LABEL_LOAD_CONTENT_LIST, deferred_push_load_content_list},
@@ -906,6 +910,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations_list);
+            break;
+         case MENU_ENUM_LABEL_PROFILES_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_profiles_list);
+            break;
+         case MENU_ENUM_LABEL_PROFILE_ICON_SELECT:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_profile_icons_list);
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
