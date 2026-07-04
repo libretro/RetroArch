@@ -992,29 +992,139 @@ static void vp8_yuv2rgb(int y, int u, int v, uint8_t *r, uint8_t *g, uint8_t *bo
    *bo = vp8_clip8(yg + vp8_mulhi(u, 33050) - 17685);
 }
 
+/* ---- Row YUV -> ARGB conversion ----
+ * Converts a full row of co-sited (already chroma-interpolated) YUV
+ * samples to 0xFFRRGGBB words. The scalar body matches vp8_yuv2rgb
+ * exactly; the SSE2/NEON paths reproduce it bit-for-bit by loading
+ * samples into the upper byte of each 16-bit lane, so an unsigned
+ * high-multiply computes (x * coeff) >> 8 with the same truncation
+ * (the same construction libwebp's yuv_sse2.c uses). */
+
+#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#define RWEBP_YUV_SSE2 1
+#include <emmintrin.h>
+#endif
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#define RWEBP_YUV_NEON 1
+#include <arm_neon.h>
+#endif
+
+static void vp8_fancy_scratch_free(void);
+static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
+      const uint8_t *v, uint32_t *dst, int len)
+{
+   int i = 0;
+
+#if defined(RWEBP_YUV_SSE2)
+   {
+      const __m128i k19077 = _mm_set1_epi16(19077);
+      const __m128i k26149 = _mm_set1_epi16(26149);
+      const __m128i k14234 = _mm_set1_epi16(14234);
+      /* 33050 does not fit in a signed short: unsigned arithmetic only */
+      const __m128i k33050 = _mm_set1_epi16((short)33050);
+      const __m128i k17685 = _mm_set1_epi16(17685);
+      const __m128i k6419  = _mm_set1_epi16(6419);
+      const __m128i k13320 = _mm_set1_epi16(13320);
+      const __m128i k8708  = _mm_set1_epi16(8708);
+      const __m128i zero   = _mm_setzero_si128();
+      const __m128i alpha  = _mm_set1_epi16(255);
+
+      for (; i + 8 <= len; i += 8)
+      {
+         /* load into the UPPER byte of each lane: value << 8 */
+         __m128i Y0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(y + i)));
+         __m128i U0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(u + i)));
+         __m128i V0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(v + i)));
+         __m128i Y1 = _mm_mulhi_epu16(Y0, k19077);
+         __m128i R2 = _mm_add_epi16(_mm_sub_epi16(Y1, k14234),
+                                    _mm_mulhi_epu16(V0, k26149));
+         __m128i G4 = _mm_sub_epi16(_mm_add_epi16(Y1, k8708),
+                                    _mm_add_epi16(_mm_mulhi_epu16(U0, k6419),
+                                                  _mm_mulhi_epu16(V0, k13320)));
+         /* B path saturates in unsigned 16-bit, then logical shift */
+         __m128i B2 = _mm_subs_epu16(_mm_adds_epu16(_mm_mulhi_epu16(U0, k33050), Y1),
+                                     k17685);
+         __m128i R  = _mm_srai_epi16(R2, 6);
+         __m128i G  = _mm_srai_epi16(G4, 6);
+         __m128i B  = _mm_srli_epi16(B2, 6);
+         /* pack to words 0xFFrrggbb (memory order b,g,r,FF) */
+         __m128i r8 = _mm_packus_epi16(R, R);
+         __m128i g8 = _mm_packus_epi16(G, G);
+         __m128i b8 = _mm_packus_epi16(B, B);
+         __m128i a8 = _mm_packus_epi16(alpha, alpha);
+         __m128i bg = _mm_unpacklo_epi8(b8, g8);
+         __m128i ra = _mm_unpacklo_epi8(r8, a8);
+         _mm_storeu_si128((__m128i*)(dst + i),     _mm_unpacklo_epi16(bg, ra));
+         _mm_storeu_si128((__m128i*)(dst + i + 4), _mm_unpackhi_epi16(bg, ra));
+      }
+   }
+#elif defined(RWEBP_YUV_NEON)
+   {
+      const uint16x4_t c19077 = vdup_n_u16(19077);
+      const uint16x4_t c26149 = vdup_n_u16(26149);
+      const uint16x4_t c6419  = vdup_n_u16(6419);
+      const uint16x4_t c13320 = vdup_n_u16(13320);
+      const uint16x4_t c33050 = vdup_n_u16(33050);
+
+      for (; i + 8 <= len; i += 8)
+      {
+         uint16x8_t Y0, U0, V0, Y1, R0, G0, G1, B0, B2;
+         int16x8_t  R2, G4;
+         uint8x8x4_t px;
+         Y0 = vshll_n_u8(vld1_u8(y + i), 8);
+         U0 = vshll_n_u8(vld1_u8(u + i), 8);
+         V0 = vshll_n_u8(vld1_u8(v + i), 8);
+#define RWEBP_MH8(A, C) \
+         vcombine_u16(vshrn_n_u32(vmull_u16(vget_low_u16(A),  (C)), 16), \
+                      vshrn_n_u32(vmull_u16(vget_high_u16(A), (C)), 16))
+         Y1 = RWEBP_MH8(Y0, c19077);
+         R0 = RWEBP_MH8(V0, c26149);
+         G0 = RWEBP_MH8(U0, c6419);
+         G1 = RWEBP_MH8(V0, c13320);
+         B0 = RWEBP_MH8(U0, c33050);
+#undef RWEBP_MH8
+         R2 = vaddq_s16(vsubq_s16(vreinterpretq_s16_u16(Y1), vdupq_n_s16(14234)),
+                        vreinterpretq_s16_u16(R0));
+         G4 = vsubq_s16(vaddq_s16(vreinterpretq_s16_u16(Y1), vdupq_n_s16(8708)),
+                        vreinterpretq_s16_u16(vaddq_u16(G0, G1)));
+         B2 = vqsubq_u16(vqaddq_u16(B0, Y1), vdupq_n_u16(17685));
+         px.val[0] = vqmovn_u16(vshrq_n_u16(B2, 6));   /* b */
+         px.val[1] = vqshrun_n_s16(G4, 6);             /* g */
+         px.val[2] = vqshrun_n_s16(R2, 6);             /* r */
+         px.val[3] = vdup_n_u8(255);                   /* a */
+         vst4_u8((uint8_t*)(dst + i), px);
+      }
+   }
+#endif
+
+   for (; i < len; i++)
+   {
+      uint8_t r, g, b2;
+      vp8_yuv2rgb(y[i], u[i], v[i], &r, &g, &b2);
+      dst[i] = 0xFF000000u | ((uint32_t)r << 16) | ((uint32_t)g << 8) | b2;
+   }
+}
+
 /* Fancy chroma upsampling (libwebp upsampling.c): interpolate the chroma
  * plane bilinearly with the 9-3-3-1 diagonal scheme while converting a
  * pair of luma rows. top/cur are chroma rows; either may alias for the
  * mirrored first and last rows. bot_y may be NULL (single-row case). */
-static void vp8_fancy_pair(const uint8_t *top_y, const uint8_t *bot_y,
-      const uint8_t *top_u, const uint8_t *top_v,
+/* Fill one output row's interpolated U and V samples (co-sited with the
+ * luma row) into scratch, following the exact 9-3-3-1 fancy scheme, then
+ * hand the co-sited Y/U/V to the vectorized row converter. Splitting the
+ * (serial) chroma interpolation from the (uniform) colour conversion lets
+ * the expensive conversion run 8 pixels at a time while staying bit-exact
+ * with the original fused loop. tu/tv select which diagonal pair each
+ * half of the interpolation uses for this row (top vs bottom of the pair). */
+static void vp8_fancy_uv_top(const uint8_t *top_u, const uint8_t *top_v,
       const uint8_t *cur_u, const uint8_t *cur_v,
-      uint32_t *top_dst, uint32_t *bot_dst, int len)
+      uint8_t *du, uint8_t *dv, int len)
 {
    int x, last_pair = (len - 1) >> 1;
    int tl_u = top_u[0], tl_v = top_v[0];
    int l_u = cur_u[0], l_v = cur_v[0];
-   uint8_t r, g, b2;
-
-   vp8_yuv2rgb(top_y[0], (3*tl_u + l_u + 2) >> 2, (3*tl_v + l_v + 2) >> 2,
-         &r, &g, &b2);
-   top_dst[0] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
-   if (bot_y)
-   {
-      vp8_yuv2rgb(bot_y[0], (3*l_u + tl_u + 2) >> 2, (3*l_v + tl_v + 2) >> 2,
-            &r, &g, &b2);
-      bot_dst[0] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
-   }
+   du[0] = (uint8_t)((3*tl_u + l_u + 2) >> 2);
+   dv[0] = (uint8_t)((3*tl_v + l_v + 2) >> 2);
    for (x = 1; x <= last_pair; x++)
    {
       int t_u = top_u[x], t_v = top_v[x];
@@ -1023,31 +1133,125 @@ static void vp8_fancy_pair(const uint8_t *top_y, const uint8_t *bot_y,
       int avg_v = tl_v + t_v + l_v + c_v + 8;
       int d12_u = (avg_u + 2*(t_u + l_u)) >> 3, d12_v = (avg_v + 2*(t_v + l_v)) >> 3;
       int d03_u = (avg_u + 2*(tl_u + c_u)) >> 3, d03_v = (avg_v + 2*(tl_v + c_v)) >> 3;
-
-      vp8_yuv2rgb(top_y[2*x-1], (d12_u + tl_u) >> 1, (d12_v + tl_v) >> 1, &r, &g, &b2);
-      top_dst[2*x-1] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
-      vp8_yuv2rgb(top_y[2*x], (d03_u + t_u) >> 1, (d03_v + t_v) >> 1, &r, &g, &b2);
-      top_dst[2*x] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
-      if (bot_y)
-      {
-         vp8_yuv2rgb(bot_y[2*x-1], (d03_u + l_u) >> 1, (d03_v + l_v) >> 1, &r, &g, &b2);
-         bot_dst[2*x-1] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
-         vp8_yuv2rgb(bot_y[2*x], (d12_u + c_u) >> 1, (d12_v + c_v) >> 1, &r, &g, &b2);
-         bot_dst[2*x] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
-      }
+      du[2*x-1] = (uint8_t)((d12_u + tl_u) >> 1);
+      dv[2*x-1] = (uint8_t)((d12_v + tl_v) >> 1);
+      du[2*x]   = (uint8_t)((d03_u + t_u) >> 1);
+      dv[2*x]   = (uint8_t)((d03_v + t_v) >> 1);
       tl_u = t_u; tl_v = t_v; l_u = c_u; l_v = c_v;
    }
    if (!(len & 1))
    {
-      vp8_yuv2rgb(top_y[len-1], (3*tl_u + l_u + 2) >> 2, (3*tl_v + l_v + 2) >> 2,
-            &r, &g, &b2);
-      top_dst[len-1] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
-      if (bot_y)
+      du[len-1] = (uint8_t)((3*tl_u + l_u + 2) >> 2);
+      dv[len-1] = (uint8_t)((3*tl_v + l_v + 2) >> 2);
+   }
+}
+
+static void vp8_fancy_uv_bot(const uint8_t *top_u, const uint8_t *top_v,
+      const uint8_t *cur_u, const uint8_t *cur_v,
+      uint8_t *du, uint8_t *dv, int len)
+{
+   int x, last_pair = (len - 1) >> 1;
+   int tl_u = top_u[0], tl_v = top_v[0];
+   int l_u = cur_u[0], l_v = cur_v[0];
+   du[0] = (uint8_t)((3*l_u + tl_u + 2) >> 2);
+   dv[0] = (uint8_t)((3*l_v + tl_v + 2) >> 2);
+   for (x = 1; x <= last_pair; x++)
+   {
+      int t_u = top_u[x], t_v = top_v[x];
+      int c_u = cur_u[x], c_v = cur_v[x];
+      int avg_u = tl_u + t_u + l_u + c_u + 8;
+      int avg_v = tl_v + t_v + l_v + c_v + 8;
+      int d12_u = (avg_u + 2*(t_u + l_u)) >> 3, d12_v = (avg_v + 2*(t_v + l_v)) >> 3;
+      int d03_u = (avg_u + 2*(tl_u + c_u)) >> 3, d03_v = (avg_v + 2*(tl_v + c_v)) >> 3;
+      du[2*x-1] = (uint8_t)((d03_u + l_u) >> 1);
+      dv[2*x-1] = (uint8_t)((d03_v + l_v) >> 1);
+      du[2*x]   = (uint8_t)((d12_u + c_u) >> 1);
+      dv[2*x]   = (uint8_t)((d12_v + c_v) >> 1);
+      tl_u = t_u; tl_v = t_v; l_u = c_u; l_v = c_v;
+   }
+   if (!(len & 1))
+   {
+      du[len-1] = (uint8_t)((3*l_u + tl_u + 2) >> 2);
+      dv[len-1] = (uint8_t)((3*l_v + tl_v + 2) >> 2);
+   }
+}
+
+/* Scratch for interpolated chroma rows (main thread, single decode at a
+ * time). Grown on demand; freed at process exit is acceptable, but we
+ * free explicitly from the decode teardown to keep valgrind quiet. */
+static uint8_t *g_fancy_uv = NULL;
+static int      g_fancy_uv_cap = 0;
+
+static void vp8_fancy_pair(const uint8_t *top_y, const uint8_t *bot_y,
+      const uint8_t *top_u, const uint8_t *top_v,
+      const uint8_t *cur_u, const uint8_t *cur_v,
+      uint32_t *top_dst, uint32_t *bot_dst, int len)
+{
+   uint8_t *du, *dv;
+   if (len <= 0)
+      return;
+   if (g_fancy_uv_cap < len)
+   {
+      uint8_t *nb = (uint8_t*)realloc(g_fancy_uv, (size_t)len * 2);
+      if (!nb)
       {
-         vp8_yuv2rgb(bot_y[len-1], (3*l_u + tl_u + 2) >> 2, (3*l_v + tl_v + 2) >> 2,
-               &r, &g, &b2);
-         bot_dst[len-1] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+         /* Allocation failed: fall back to a scalar per-pixel path that
+          * needs no scratch, preserving correctness. */
+         int x, last_pair = (len - 1) >> 1;
+         int tl_u = top_u[0], tl_v = top_v[0];
+         int l_u = cur_u[0], l_v = cur_v[0];
+         uint8_t r, g, b2;
+         vp8_yuv2rgb(top_y[0], (3*tl_u+l_u+2)>>2, (3*tl_v+l_v+2)>>2, &r, &g, &b2);
+         top_dst[0] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+         if (bot_y)
+         {
+            vp8_yuv2rgb(bot_y[0], (3*l_u+tl_u+2)>>2, (3*l_v+tl_v+2)>>2, &r, &g, &b2);
+            bot_dst[0] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+         }
+         for (x = 1; x <= last_pair; x++)
+         {
+            int t_u = top_u[x], t_v = top_v[x];
+            int c_u = cur_u[x], c_v = cur_v[x];
+            int avg_u = tl_u+t_u+l_u+c_u+8, avg_v = tl_v+t_v+l_v+c_v+8;
+            int d12_u=(avg_u+2*(t_u+l_u))>>3, d12_v=(avg_v+2*(t_v+l_v))>>3;
+            int d03_u=(avg_u+2*(tl_u+c_u))>>3, d03_v=(avg_v+2*(tl_v+c_v))>>3;
+            vp8_yuv2rgb(top_y[2*x-1],(d12_u+tl_u)>>1,(d12_v+tl_v)>>1,&r,&g,&b2);
+            top_dst[2*x-1]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+            vp8_yuv2rgb(top_y[2*x],(d03_u+t_u)>>1,(d03_v+t_v)>>1,&r,&g,&b2);
+            top_dst[2*x]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+            if (bot_y)
+            {
+               vp8_yuv2rgb(bot_y[2*x-1],(d03_u+l_u)>>1,(d03_v+l_v)>>1,&r,&g,&b2);
+               bot_dst[2*x-1]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+               vp8_yuv2rgb(bot_y[2*x],(d12_u+c_u)>>1,(d12_v+c_v)>>1,&r,&g,&b2);
+               bot_dst[2*x]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+            }
+            tl_u=t_u; tl_v=t_v; l_u=c_u; l_v=c_v;
+         }
+         if (!(len & 1))
+         {
+            vp8_yuv2rgb(top_y[len-1],(3*tl_u+l_u+2)>>2,(3*tl_v+l_v+2)>>2,&r,&g,&b2);
+            top_dst[len-1]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+            if (bot_y)
+            {
+               vp8_yuv2rgb(bot_y[len-1],(3*l_u+tl_u+2)>>2,(3*l_v+tl_v+2)>>2,&r,&g,&b2);
+               bot_dst[len-1]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+            }
+         }
+         return;
       }
+      g_fancy_uv = nb;
+      g_fancy_uv_cap = len;
+   }
+   du = g_fancy_uv;
+   dv = g_fancy_uv + len;
+
+   vp8_fancy_uv_top(top_u, top_v, cur_u, cur_v, du, dv, len);
+   vp8_yuv2rgb_row(top_y, du, dv, top_dst, len);
+   if (bot_y)
+   {
+      vp8_fancy_uv_bot(top_u, top_v, cur_u, cur_v, du, dv, len);
+      vp8_yuv2rgb_row(bot_y, du, dv, bot_dst, len);
    }
 }
 
@@ -2267,14 +2471,23 @@ tp_ok:
             pix + (size_t)(h-1)*w, NULL, w);
    }
    free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf); free(bpred_buf);
+   vp8_fancy_scratch_free();
    *ow = (unsigned)w; *oh = (unsigned)h;
    return pix;
 lfail:
    free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf); free(bpred_buf); free(pix);
+   vp8_fancy_scratch_free();
    return NULL;
 }
 
 /* ===== Top-level ===== */
+
+static void vp8_fancy_scratch_free(void)
+{
+   free(g_fancy_uv);
+   g_fancy_uv = NULL;
+   g_fancy_uv_cap = 0;
+}
 
 static uint32_t *rwebp_do(const uint8_t *buf, size_t len,
       unsigned *w, unsigned *h, bool rgba)
