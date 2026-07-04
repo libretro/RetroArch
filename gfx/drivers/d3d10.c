@@ -3791,6 +3791,105 @@ static uint32_t d3d10_get_flags(void *data)
    return flags;
 }
 
+/* --- GPU-native BCn compressed-texture upload (PoC) --- */
+static DXGI_FORMAT d3d10_dxgi_from_gpu_format(enum texture_gpu_format fmt)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: return DXGI_FORMAT_BC1_UNORM;
+      case TEXTURE_GPU_FORMAT_BC2: return DXGI_FORMAT_BC2_UNORM;
+      case TEXTURE_GPU_FORMAT_BC3: return DXGI_FORMAT_BC3_UNORM;
+      case TEXTURE_GPU_FORMAT_BC7: return DXGI_FORMAT_BC7_UNORM;
+      default:                     break;
+   }
+   return DXGI_FORMAT_UNKNOWN;
+}
+
+static bool d3d10_gfx_supports_texture_format(void* data,
+      enum texture_gpu_format fmt)
+{
+   UINT        support = 0;
+   d3d10_video_t* v = (d3d10_video_t*)data;
+   DXGI_FORMAT dxgi    = d3d10_dxgi_from_gpu_format(fmt);
+   if (!v || !v->device || dxgi == DXGI_FORMAT_UNKNOWN)
+      return false;
+   if (FAILED(v->device->lpVtbl->CheckFormatSupport(
+         v->device, dxgi, &support)))
+      return false;
+   return (support & D3D10_FORMAT_SUPPORT_TEXTURE2D) != 0;
+}
+
+static uintptr_t d3d10_gfx_load_texture_compressed(void* video_data,
+      const struct texture_compressed* tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   D3D10_SUBRESOURCE_DATA subres[IMAGE_MAX_MIPS];
+   d3d10_video_t* v = (d3d10_video_t*)video_data;
+   d3d10_texture_t* texture = NULL;
+   DXGI_FORMAT dxgi        = DXGI_FORMAT_UNKNOWN;
+   unsigned    block_bytes = 16;
+   unsigned    i;
+
+   (void)threaded;
+   if (!v || !v->device || !tc || tc->num_mips == 0)
+      return 0;
+   dxgi = d3d10_dxgi_from_gpu_format(tc->format);
+   if (dxgi == DXGI_FORMAT_UNKNOWN)
+      return 0;
+   if (tc->format == TEXTURE_GPU_FORMAT_BC1)
+      block_bytes = 8;
+
+   if (!(texture = (d3d10_texture_t*)calloc(1, sizeof(*texture))))
+      return 0;
+
+   if (     filter_type == TEXTURE_FILTER_NEAREST
+         || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+      texture->sampler = v->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
+   else
+      texture->sampler = v->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      unsigned blocks_w          = (tc->mips[i].width + 3u) >> 2;
+      subres[i].pSysMem          = tc->mips[i].data;
+      subres[i].SysMemPitch      = blocks_w * block_bytes;
+      subres[i].SysMemSlicePitch = (UINT)tc->mips[i].size;
+   }
+
+   texture->desc.Width            = tc->mips[0].width;
+   texture->desc.Height           = tc->mips[0].height;
+   texture->desc.MipLevels        = tc->num_mips;
+   texture->desc.ArraySize        = 1;
+   texture->desc.Format           = dxgi;
+   texture->desc.SampleDesc.Count = 1;
+   texture->desc.Usage            = D3D10_USAGE_IMMUTABLE;
+   texture->desc.BindFlags        = D3D10_BIND_SHADER_RESOURCE;
+
+   if (FAILED(v->device->lpVtbl->CreateTexture2D(
+         v->device, &texture->desc, subres, &texture->handle)))
+   {
+      free(texture);
+      return 0;
+   }
+
+   {
+      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc;
+      memset(&view_desc, 0, sizeof(view_desc));
+      view_desc.Format                    = dxgi;
+      view_desc.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
+      view_desc.Texture2D.MostDetailedMip = 0;
+      view_desc.Texture2D.MipLevels       = tc->num_mips;
+      v->device->lpVtbl->CreateShaderResourceView(v->device,
+            (D3D10Resource)texture->handle, &view_desc, &texture->view);
+   }
+
+   texture->size_data.x = (float)tc->mips[0].width;
+   texture->size_data.y = (float)tc->mips[0].height;
+   texture->size_data.z = 1.0f / (float)tc->mips[0].width;
+   texture->size_data.w = 1.0f / (float)tc->mips[0].height;
+   return (uintptr_t)texture;
+}
+
 static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_get_flags,
    d3d10_gfx_load_texture,
@@ -3832,7 +3931,9 @@ static const video_poke_interface_t d3d10_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   d3d10_gfx_supports_texture_format,
+   d3d10_gfx_load_texture_compressed
 };
 
 static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)
