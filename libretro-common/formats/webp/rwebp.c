@@ -1404,17 +1404,134 @@ static int vp8_decode_block(vp8b *br, int16_t coeffs[16],
 }
 
 /* VP8 4x4 inverse DCT (from RFC 6386 §14.3) */
+/* VP8 4x4 inverse DCT + add. Pass order matches libvpx
+ * vp8_short_idct4x4llm_c: columns first, then rows with final rounding.
+ * The >>16 truncations do not commute, so pass order matters, and the
+ * pass-1 intermediate is 16-bit (libvpx stores it as short).
+ *
+ * The 35468 constant exceeds the signed-16 range, so both the SSE2 and
+ * NEON paths compute (x*35468)>>16 as x + ((x * (int16)0x8A8C) >> 16):
+ * 0x8A8C is 35468 - 65536, and adding x back recovers the unsigned
+ * coefficient exactly (verified against the scalar form). 20091 fits in
+ * signed 16 and multiplies directly. */
+#if defined(RWEBP_YUV_SSE2)
+#define RWEBP_IDCT_SSE2 1
+#endif
+#if defined(RWEBP_YUV_NEON)
+#define RWEBP_IDCT_NEON 1
+#endif
+
+#if defined(RWEBP_IDCT_SSE2)
 static void vp8_idct4x4_add(const int16_t in[16], uint8_t *dst, int stride)
 {
-   /* Pass order matches libvpx vp8_short_idct4x4llm_c exactly:
-    * columns first, then rows with final rounding. The >>16
-    * truncations do not commute, so the order matters for
-    * bit-exactness. */
+   const __m128i k35  = _mm_set1_epi16((short)0x8A8C);
+   const __m128i k20  = _mm_set1_epi16((short)20091);
+   const __m128i four = _mm_set1_epi16(4);
+   __m128i R0 = _mm_loadl_epi64((const __m128i*)(in + 0));
+   __m128i R1 = _mm_loadl_epi64((const __m128i*)(in + 4));
+   __m128i R2 = _mm_loadl_epi64((const __m128i*)(in + 8));
+   __m128i R3 = _mm_loadl_epi64((const __m128i*)(in + 12));
+   __m128i a, b, c, d, T0, T1, T2, T3;
+   __m128i ua, ub, tl, th;
    int i;
-   int16_t tmp[16];   /* libvpx stores the pass-1 result as short, which
-                       * truncates to 16 bits before pass 2 reads it; the
-                       * wider int here would both diverge and overflow the
-                       * DCT-constant multiply on corrupt coefficients. */
+   int16_t O0[8], O1[8], O2[8], O3[8];
+#define RWEBP_MH35(x) _mm_add_epi16((x), _mm_mulhi_epi16((x), k35))
+#define RWEBP_MH20(x) _mm_mulhi_epi16((x), k20)
+   a = _mm_add_epi16(R0, R2);
+   b = _mm_sub_epi16(R0, R2);
+   c = _mm_sub_epi16(RWEBP_MH35(R1), _mm_add_epi16(R3, RWEBP_MH20(R3)));
+   d = _mm_add_epi16(_mm_add_epi16(R1, RWEBP_MH20(R1)), RWEBP_MH35(R3));
+   T0 = _mm_add_epi16(a, d);
+   T1 = _mm_add_epi16(b, c);
+   T2 = _mm_sub_epi16(b, c);
+   T3 = _mm_sub_epi16(a, d);
+   /* transpose the four rows (only low 4 lanes are live) */
+   ua = _mm_unpacklo_epi16(T0, T1);
+   ub = _mm_unpacklo_epi16(T2, T3);
+   tl = _mm_unpacklo_epi32(ua, ub);
+   th = _mm_unpackhi_epi32(ua, ub);
+   T0 = tl;
+   T1 = _mm_srli_si128(tl, 8);
+   T2 = th;
+   T3 = _mm_srli_si128(th, 8);
+   a = _mm_add_epi16(T0, T2);
+   b = _mm_sub_epi16(T0, T2);
+   c = _mm_sub_epi16(RWEBP_MH35(T1), _mm_add_epi16(T3, RWEBP_MH20(T3)));
+   d = _mm_add_epi16(_mm_add_epi16(T1, RWEBP_MH20(T1)), RWEBP_MH35(T3));
+#undef RWEBP_MH35
+#undef RWEBP_MH20
+   _mm_storeu_si128((__m128i*)O0, _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(a, d), four), 3));
+   _mm_storeu_si128((__m128i*)O1, _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(b, c), four), 3));
+   _mm_storeu_si128((__m128i*)O2, _mm_srai_epi16(_mm_add_epi16(_mm_sub_epi16(b, c), four), 3));
+   _mm_storeu_si128((__m128i*)O3, _mm_srai_epi16(_mm_add_epi16(_mm_sub_epi16(a, d), four), 3));
+   for (i = 0; i < 4; i++)
+   {
+      dst[i*stride+0] = vp8_cl(dst[i*stride+0] + O0[i]);
+      dst[i*stride+1] = vp8_cl(dst[i*stride+1] + O1[i]);
+      dst[i*stride+2] = vp8_cl(dst[i*stride+2] + O2[i]);
+      dst[i*stride+3] = vp8_cl(dst[i*stride+3] + O3[i]);
+   }
+}
+#elif defined(RWEBP_IDCT_NEON)
+static INLINE int16x8_t rwebp_idct_mh(int16x8_t x, int16_t c)
+{
+   int32x4_t lo = vmull_n_s16(vget_low_s16(x),  c);
+   int32x4_t hi = vmull_n_s16(vget_high_s16(x), c);
+   return vcombine_s16(vshrn_n_s32(lo, 16), vshrn_n_s32(hi, 16));
+}
+static void vp8_idct4x4_add(const int16_t in[16], uint8_t *dst, int stride)
+{
+   int16x4_t r0 = vld1_s16(in), r1 = vld1_s16(in+4);
+   int16x4_t r2 = vld1_s16(in+8), r3 = vld1_s16(in+12);
+   int16x8_t R0 = vcombine_s16(r0, r0), R1 = vcombine_s16(r1, r1);
+   int16x8_t R2 = vcombine_s16(r2, r2), R3 = vcombine_s16(r3, r3);
+   int16x8_t a, b, c, d;
+   int16x4_t T0, T1, T2, T3, o0, o1, o2, o3;
+   int16x4x2_t p, q; int32x2x2_t s, u;
+   int16x8_t W0, W1, W2, W3;
+   int16_t O0[4], O1[4], O2[4], O3[4]; int i;
+#define RWEBP_MH35(x) vaddq_s16((x), rwebp_idct_mh((x), (int16_t)0x8A8C))
+#define RWEBP_MH20(x) rwebp_idct_mh((x), 20091)
+   a = vaddq_s16(R0, R2);
+   b = vsubq_s16(R0, R2);
+   c = vsubq_s16(RWEBP_MH35(R1), vaddq_s16(R3, RWEBP_MH20(R3)));
+   d = vaddq_s16(vaddq_s16(R1, RWEBP_MH20(R1)), RWEBP_MH35(R3));
+   T0 = vget_low_s16(vaddq_s16(a, d));
+   T1 = vget_low_s16(vaddq_s16(b, c));
+   T2 = vget_low_s16(vsubq_s16(b, c));
+   T3 = vget_low_s16(vsubq_s16(a, d));
+   p = vtrn_s16(T0, T1);
+   q = vtrn_s16(T2, T3);
+   s = vtrn_s32(vreinterpret_s32_s16(p.val[0]), vreinterpret_s32_s16(q.val[0]));
+   u = vtrn_s32(vreinterpret_s32_s16(p.val[1]), vreinterpret_s32_s16(q.val[1]));
+   W0 = vcombine_s16(vreinterpret_s16_s32(s.val[0]), vreinterpret_s16_s32(s.val[0]));
+   W2 = vcombine_s16(vreinterpret_s16_s32(s.val[1]), vreinterpret_s16_s32(s.val[1]));
+   W1 = vcombine_s16(vreinterpret_s16_s32(u.val[0]), vreinterpret_s16_s32(u.val[0]));
+   W3 = vcombine_s16(vreinterpret_s16_s32(u.val[1]), vreinterpret_s16_s32(u.val[1]));
+   a = vaddq_s16(W0, W2);
+   b = vsubq_s16(W0, W2);
+   c = vsubq_s16(RWEBP_MH35(W1), vaddq_s16(W3, RWEBP_MH20(W3)));
+   d = vaddq_s16(vaddq_s16(W1, RWEBP_MH20(W1)), RWEBP_MH35(W3));
+#undef RWEBP_MH35
+#undef RWEBP_MH20
+   o0 = vget_low_s16(vshrq_n_s16(vaddq_s16(vaddq_s16(a, d), vdupq_n_s16(4)), 3));
+   o1 = vget_low_s16(vshrq_n_s16(vaddq_s16(vaddq_s16(b, c), vdupq_n_s16(4)), 3));
+   o2 = vget_low_s16(vshrq_n_s16(vaddq_s16(vsubq_s16(b, c), vdupq_n_s16(4)), 3));
+   o3 = vget_low_s16(vshrq_n_s16(vaddq_s16(vsubq_s16(a, d), vdupq_n_s16(4)), 3));
+   vst1_s16(O0, o0); vst1_s16(O1, o1); vst1_s16(O2, o2); vst1_s16(O3, o3);
+   for (i = 0; i < 4; i++)
+   {
+      dst[i*stride+0] = vp8_cl(dst[i*stride+0] + O0[i]);
+      dst[i*stride+1] = vp8_cl(dst[i*stride+1] + O1[i]);
+      dst[i*stride+2] = vp8_cl(dst[i*stride+2] + O2[i]);
+      dst[i*stride+3] = vp8_cl(dst[i*stride+3] + O3[i]);
+   }
+}
+#else
+static void vp8_idct4x4_add(const int16_t in[16], uint8_t *dst, int stride)
+{
+   int i;
+   int16_t tmp[16];
    for (i = 0; i < 4; i++)
    {
       int a = in[i] + in[8+i];
@@ -1436,6 +1553,7 @@ static void vp8_idct4x4_add(const int16_t in[16], uint8_t *dst, int stride)
       dst[i*stride+3] = vp8_cl(dst[i*stride+3] + ((a-d+4) >> 3));
    }
 }
+#endif
 
 /* Inverse Walsh-Hadamard Transform for Y2 DC block.
  * Output goes directly as DC coefficients to the 4x4 IDCT,
