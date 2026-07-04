@@ -336,6 +336,8 @@ static const struct
    char s_82fab47a[33];
    char s_730df420[15];
    char s_7e96b5ce[45];
+   char s_ef13be35[70];
+   char s_5e14cb20[112];
    char s_7943e750[21];
    char s_1a8301fe[47];
    char s_258060bf[14];
@@ -376,7 +378,9 @@ static const struct
    char s_61213f1d[13];
    char s_4a09218b[37];
 #if defined (WIIU)
+#ifdef WIIU
    char s_7222b7e5[113];
+#endif
 #endif
    char s_6c40d14e[14];
    char s_7c07f6fc[111];
@@ -439,8 +443,10 @@ static const struct
    char s_ad5ff591[14];
    char s_adcf82d6[13];
 #if defined(DINGUX)
+#if defined(DINGUX)
    char s_d374d67d[26];
    char s_c0e554ab[157];
+#endif
 #endif
    char s_8f37930f[45];
    char s_8f379310[45];
@@ -448,7 +454,6 @@ static const struct
    char s_81120e85[116];
    char s_92a02470[41];
    char s_8010a29e[116];
-   char s_5e14cb20[112];
    char s_fb84857a[7];
    char s_bdeebb68[35];
 #ifdef HAVE_MICROPHONE
@@ -463,7 +468,11 @@ static const struct
    char s_dcf2e800[4];
    char s_da068369[6];
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    char s_d3e78762[9];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[6];
    char s_e501ec1b[23];
    char s_f5c1d149[158];
@@ -537,8 +546,14 @@ static const struct
    char s_c9c04b6d[59];
    char s_3e0f9900[17];
    char s_67b3c923[19];
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    char s_53788998[23];
    char s_40e907c6[55];
+#endif
+#endif
+#ifdef HAVE_MIST
    char s_35b60281[21];
    char s_91e3840f[54];
    char s_30512c09[23];
@@ -546,9 +561,10 @@ static const struct
    char s_e78c87a1[36];
    char s_d0746a0f[54];
    char s_50707595[61];
-   char s_ef13be35[70];
    char s_074440cb[13];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_2841f912[31];
+#endif
    char s_c512fde9[28];
 #ifndef SETTINGS_DEF_CONFIG_PASS
    char s_1d39f4b7[27];
@@ -1553,6 +1569,9 @@ static const struct
    "Endre instillinger for HD video.",
    "Synkronisering",
    "Endre innstillinger for videosynkronisering.",
+   "Tar skjermbilde av GPU-skyggelagt materiale hvis det er tilgjengelig.",
+   "Skj\303\246r av noen piksler rundt kanten av bildet som pleier \303\245 v\303\246re svart og inn"
+   "eholder av og til s\303\270ppelpiksler.",
    "Sl\303\245 av skjermsparer",
    "Forhindre at systemets skjermsparer aktiveres.",
    "Tr\303\245det video",
@@ -1601,8 +1620,10 @@ static const struct
    "Skjermindeks",
    "Velg hvilken skjerm som skal brukes.",
 #if defined (WIIU)
+#ifdef WIIU
    "Bruk en eksakt 2x skala av GamePad som visningsregion. Deaktiver for \303\245 vise p\303\245 den"
    " innebygde TV-oppl\303\270sningen.",
+#endif
 #endif
    "Videorotasjon",
    "Tvinger en bestemt rotasjon av videosignalet. Rotasjonen legges til eventuell rotering som er sa"
@@ -1683,9 +1704,11 @@ static const struct
    "Konfigurasjon",
    "Egendefinert",
 #if defined(DINGUX)
+#if defined(DINGUX)
    "Behold st\303\270rrelsesforhold",
    "Ha en 1:1 piksel st\303\270rrelsesforhold n\303\245r du skalerer innhold gjennom den interne IPU"
    "-en. Blider vil bli strekket for \303\245 fylle hele skjermen hvis deaktivert.",
+#endif
 #endif
    "Egendefinert st\303\270rrelsesforhold (X posisjon)",
    "Egendefinert st\303\270rrelsesforhold (Y posisjon)",
@@ -1695,8 +1718,6 @@ static const struct
    "Egendefinert st\303\270rrelsesforhold (h\303\270yde)",
    "Tilpasset visningsregionsh\303\270yde som er brukt hvis st\303\270rrelsesforhold er satt til \"e"
    "gendefinert st\303\270rrelsesforhold\".",
-   "Skj\303\246r av noen piksler rundt kanten av bildet som pleier \303\245 v\303\246re svart og inn"
-   "eholder av og til s\303\270ppelpiksler.",
    "Utdata",
    "Endre innstillinger for lydutgang.",
 #ifdef HAVE_MICROPHONE
@@ -1711,7 +1732,11 @@ static const struct
    "Lyd",
    "Enhet",
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    "Mikrofon",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    "Enhet",
    "WASAPI eksklusiv modus",
    "Tillat RetroArch \303\245 ta eksklusiv kontroll over mikrofonenheten n\303\245r du bruker WASAPI"
@@ -1792,8 +1817,14 @@ static const struct
    "Installer eller avinstaller kjerner distribuert via Steam.",
    "Installer kjerne",
    "Avinstaller kjerne",
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    "Vis 'Behandle kjerner'",
    "Vis 'Administrere kjerner' alternativet i hovedmenyen.",
+#endif
+#endif
+#ifdef HAVE_MIST
    "Installerer kjerne: ",
    "Kjernen vil avinstallere ved avslutning av RetroArch.",
    "Kjernen lastes ned n\303\245",
@@ -1801,9 +1832,10 @@ static const struct
    "Lagre innstillingene ved avslutning",
    "Lagre endringer i konfigurasjonsfilen ved avslutning.",
    "Bytt til sist brukte disk ved oppstart av multidisk-innhold.",
-   "Tar skjermbilde av GPU-skyggelagt materiale hvis det er tilgjengelig.",
    "Logg til fil",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Filtrer etter gjeldende kjerne",
+#endif
    "Husk sist brukte startmappe",
 #ifndef SETTINGS_DEF_CONFIG_PASS
    "Bruk innebygd mediespiller",
@@ -2485,7 +2517,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (28775u
+      (sizeof(msg_hash_no_blob) == (28744u
 #ifdef HAVE_LAKKA
        + 15u
        + 49u
@@ -2512,7 +2544,9 @@ typedef char msg_hash_no_blob_check[
 #endif
 #endif
 #if defined (WIIU)
+#ifdef WIIU
        + 113u
+#endif
 #endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 26u
@@ -2525,12 +2559,20 @@ typedef char msg_hash_no_blob_check[
        + 49u
 #endif
 #if defined(DINGUX)
+#if defined(DINGUX)
        + 26u
        + 157u
 #endif
+#endif
 #ifdef HAVE_MICROPHONE
        + 9u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
        + 9u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
        + 6u
        + 23u
        + 158u
@@ -2549,13 +2591,20 @@ typedef char msg_hash_no_blob_check[
        + 59u
        + 17u
        + 19u
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
        + 23u
        + 55u
+#endif
+#endif
+#ifdef HAVE_MIST
        + 21u
        + 54u
        + 23u
 #endif
 #ifndef SETTINGS_DEF_CONFIG_PASS
+       + 31u
        + 27u
 #endif
 #ifdef HAVE_MIST
@@ -2916,6 +2965,8 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
@@ -2956,7 +3007,9 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
 #if defined (WIIU)
+#ifdef WIIU
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
@@ -3019,8 +3072,10 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
 #if defined(DINGUX)
+#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -3028,7 +3083,6 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
 #ifdef HAVE_MICROPHONE
@@ -3043,7 +3097,11 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
@@ -3117,8 +3175,14 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+#endif
+#endif
+#ifdef HAVE_MIST
    (uint32_t)MSG_CORE_STEAM_INSTALLING,
    (uint32_t)MSG_CORE_STEAM_UNINSTALLED,
    (uint32_t)MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
@@ -3126,9 +3190,10 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
    (uint32_t)MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
    (uint32_t)MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
 #ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,

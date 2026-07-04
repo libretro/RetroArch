@@ -279,6 +279,8 @@ static const struct
    char s_82fab47a[35];
    char s_730df420[15];
    char s_7e96b5ce[42];
+   char s_ef13be35[83];
+   char s_5e14cb20[112];
    char s_7943e750[24];
    char s_1a8301fe[43];
    char s_258060bf[20];
@@ -367,8 +369,10 @@ static const struct
    char s_4d7e9b13[22];
    char s_c79d5013[13];
 #if defined(DINGUX)
+#if defined(DINGUX)
    char s_d374d67d[21];
    char s_c0e554ab[153];
+#endif
 #endif
    char s_8f37930f[34];
    char s_8f379310[34];
@@ -376,7 +380,6 @@ static const struct
    char s_81120e85[102];
    char s_92a02470[30];
    char s_8010a29e[101];
-   char s_5e14cb20[112];
    char s_fb84857a[6];
    char s_bdeebb68[27];
    char s_30acd6fb[15];
@@ -398,7 +401,6 @@ static const struct
    char s_1757647b[6];
    char s_87071f08[8];
    char s_735c53f7[10];
-   char s_ef13be35[83];
    char s_260261d6[10];
    char s_302fdd56[13];
    char s_9da5609f[12];
@@ -716,6 +718,10 @@ static const struct
    "Izmeni pode\305\241avanja vezana za HDR.",
    "Sinhronizacija",
    "Izmeni pode\305\241avanja video sinhronizacije.",
+   "Koristi \305\241ejderovan materijal grafi\304\215ke karte pri slikanju ekrana, ako je mogu\304"
+   "\207e.",
+   "Iseci nekoliko piksela oko ivice slike koji se obi\304\215no ostavljaju praznim i ponekad sadr"
+   "\305\276e nesmislene piksele.",
    "Suspenduj \304\215uvar ekrana",
    "Spre\304\215i pokretanje \304\215uvara ekrana sistema.",
    "Podeli video u niti",
@@ -827,9 +833,11 @@ static const struct
    "Celobrojno skaliranje",
    "Odnos ekrana",
 #if defined(DINGUX)
+#if defined(DINGUX)
    "Zadr\305\276i odnos ekrana",
    "Odr\305\276avaj 1:1 odnos piksela kada se skalira sadr\305\276aj preko unutra\305\241njeg IPU-a."
    " Ako je isklju\304\215eno, slika \304\207e biti razvu\304\215ena da bu popunila ceo displej.",
+#endif
 #endif
    "Postavi odnos ekrana (X pozicija)",
    "Postavi odnos ekrana (Y pozicija)",
@@ -839,8 +847,6 @@ static const struct
    "Postavi odnos ekrana (visina)",
    "Postavi visinu prozora prikaza ako je opcija odnos ekrana postavljena na 'Specifi\304\215an odno"
    "s ekrana'.",
-   "Iseci nekoliko piksela oko ivice slike koji se obi\304\215no ostavljaju praznim i ponekad sadr"
-   "\305\276e nesmislene piksele.",
    "Izlaz",
    "Izmeni pode\305\241avanja zvuka.",
    "Sinhronizacija",
@@ -866,8 +872,6 @@ static const struct
    "Izlaz",
    "Zatvori",
    "VI servis",
-   "Koristi \305\241ejderovan materijal grafi\304\215ke karte pri slikanju ekrana, ako je mogu\304"
-   "\207e.",
    "Brzi meni",
    "Pode\305\241avanja",
    "Glavni meni",
@@ -945,8 +949,10 @@ typedef char msg_hash_sr_blob_check[
        + 23u
 #endif
 #if defined(DINGUX)
+#if defined(DINGUX)
        + 21u
        + 153u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
        + 8u
@@ -1228,6 +1234,8 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
@@ -1316,8 +1324,10 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
 #if defined(DINGUX)
+#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1325,7 +1335,6 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
@@ -1347,7 +1356,6 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,

@@ -423,7 +423,9 @@ static const struct
    char s_8759e741[55];
    char s_adcf82d6[13];
 #if defined(DINGUX)
+#if defined(DINGUX)
    char s_d374d67d[34];
+#endif
 #endif
    char s_8f379310[46];
    char s_b7ef9e17[38];
@@ -454,7 +456,11 @@ static const struct
    char s_23b8ca2e[39];
    char s_da068369[13];
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    char s_d3e78762[15];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[13];
    char s_ca9a92ae[37];
    char s_b4868136[45];
@@ -1722,8 +1728,10 @@ static const struct
    "\331\206.",
    "\330\263\331\201\330\247\330\261\330\264\333\214",
 #if defined(DINGUX)
+#if defined(DINGUX)
    "\331\206\330\263\330\250\330\252 \330\247\330\250\330\271\330\247\330\257 \330\255\331\201\330"
    "\270 \330\264\331\210\330\257",
+#endif
 #endif
    "\331\206\330\261\330\256 \331\206\330\263\330\250\330\252 \330\263\331\201\330\247\330\261\330"
    "\264\333\214 (\331\205\331\210\331\202\330\271\333\214\330\252 Y)",
@@ -1771,7 +1779,11 @@ static const struct
    "\331\210\330\254\333\214 \330\265\330\257\330\247.",
    "\330\257\330\263\330\252\332\257\330\247\331\207",
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    "\331\205\333\214\332\251\330\261\331\210\331\201\331\206",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    "\330\257\330\263\330\252\332\257\330\247\331\207",
    "\332\251\333\214\331\201\333\214\330\252 \330\250\330\247\330\262\331\206\331\205\331\210\331"
    "\206\331\207\342\200\214\332\257\333\214\330\261",
@@ -2362,11 +2374,19 @@ typedef char msg_hash_fa_blob_check[
        + 24u
 #endif
 #if defined(DINGUX)
+#if defined(DINGUX)
        + 34u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
        + 15u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
        + 15u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
        + 13u
        + 37u
        + 45u
@@ -2807,7 +2827,9 @@ static const uint32_t msg_hash_fa_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
 #if defined(DINGUX)
+#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2838,7 +2860,11 @@ static const uint32_t msg_hash_fa_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,

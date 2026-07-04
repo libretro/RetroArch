@@ -296,6 +296,8 @@ static const struct
    char s_82fab47a[39];
    char s_730df420[16];
    char s_7e96b5ce[49];
+   char s_ef13be35[96];
+   char s_5e14cb20[182];
    char s_7943e750[28];
    char s_1a8301fe[57];
    char s_258060bf[16];
@@ -343,7 +345,9 @@ static const struct
    char s_61213f1d[19];
    char s_4a09218b[34];
 #if defined (WIIU)
+#ifdef WIIU
    char s_7222b7e5[177];
+#endif
 #endif
    char s_6c40d14e[19];
    char s_7c07f6fc[99];
@@ -402,8 +406,10 @@ static const struct
    char s_b2f7627c[32];
    char s_f815af2a[78];
 #if defined(DINGUX)
+#if defined(DINGUX)
    char s_d374d67d[29];
    char s_c0e554ab[202];
+#endif
 #endif
    char s_8f37930f[46];
    char s_8f379310[46];
@@ -411,7 +417,6 @@ static const struct
    char s_81120e85[157];
    char s_92a02470[45];
    char s_8010a29e[157];
-   char s_5e14cb20[182];
    char s_c017f975[22];
    char s_d6fb8efe[36];
    char s_44e1c38f[37];
@@ -538,10 +543,13 @@ static const struct
    char s_e567aa86[20];
 #ifdef HAVE_MIST
    char s_c3f0e1ff[20];
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    char s_53788998[27];
    char s_40e907c6[56];
 #endif
-   char s_ef13be35[96];
+#endif
    char s_f02f73fc[42];
    char s_dd9ff22a[98];
    char s_46d040e3[50];
@@ -974,6 +982,10 @@ static const struct
    "Canvia els ajustos de v\303\255deo de l'HDR.",
    "Sincronitzaci\303\263",
    "Canvia els ajustos de sincronitzaci\303\263 de v\303\255deo.",
+   "La imatge de captures de pantalla se voran amb els shaders aplicats per la GPU, si es possible.",
+   "Retalla uns quants p\303\255xels a les vores de la imatge que de vegades els desenvolupadors sol"
+   "en deixar en blanc, o que tamb\303\251 la imatge puga contenir p\303\255xels de residu. (cal rei"
+   "niciar)",
    "Suspendre el salvapantalles",
    "Evita que el salvapantalles del vostre sistema s'active.",
    "V\303\255deo multifil",
@@ -1036,9 +1048,11 @@ static const struct
    "\303\215ndex del monitor",
    "Escull quina pantalla vas a usar.",
 #if defined (WIIU)
+#ifdef WIIU
    "Usa una escala exacta del doble de la resoluci\303\263 del controlador per a l'\303\240rea de vi"
    "sualitzaci\303\263. Mantin esta opci\303\263 desactivada per mostrar la resoluci\303\263 nativa "
    "del televisor.",
+#endif
 #endif
    "Rotaci\303\263 de v\303\255deo",
    "For\303\247a una rotaci\303\263 espec\303\255fica de la imatge de v\303\255deo. S'acollir\303"
@@ -1120,10 +1134,12 @@ static const struct
    "Configura la relaci\303\263 d'aspecte",
    "Valor de punt flotant per a la relaci\303\263 d'aspecte de v\303\255deo (amplada/altura).",
 #if defined(DINGUX)
+#if defined(DINGUX)
    "Mantindre relaci\303\263 d'aspecte",
    "Mant\303\251 les relacions d'aspecte de p\303\255xels 1:1 a l'escalar continguts mitjan\303\247a"
    "nt la IPU interna. Si es desactiva esta opci\303\263, les imatges seran estirades a fi de que oc"
    "upen la totalitat de la pantalla.",
+#endif
 #endif
    "Relaci\303\263 d'aspecte personalitzat (posici\303\263 X)",
    "Relaci\303\263 d'aspecte personalitzat (posici\303\263 Y)",
@@ -1135,9 +1151,6 @@ static const struct
    "Establix l'al\303\247ada personalitzada de l'\303\240rea de visualitzaci\303\263. Este valor s'u"
    "sar\303\240 si ha sigut escollit \302\253Personalitzat\302\273 a l'ajust \302\253Relaci\303\263 "
    "d'aspecte\302\273.",
-   "Retalla uns quants p\303\255xels a les vores de la imatge que de vegades els desenvolupadors sol"
-   "en deixar en blanc, o que tamb\303\251 la imatge puga contenir p\303\255xels de residu. (cal rei"
-   "niciar)",
    "Selecci\303\263 autom\303\240tica",
    "Sincronitzaci\303\263 vertical adaptativa",
    "Retardament autom\303\240tic de fotogrames",
@@ -1292,10 +1305,13 @@ static const struct
    "Gestiona els nuclis",
 #ifdef HAVE_MIST
    "Gestiona els nuclis",
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    "Vore 'Gestiona els nuclis'",
    "Vore l'opci\303\263 'Gestiona els nuclis' al men\303\272 principal.",
 #endif
-   "La imatge de captures de pantalla se voran amb els shaders aplicats per la GPU, si es possible.",
+#endif
    "Limitar velocitat de fotogrames del men\303\272",
    "Assegura una limitaci\303\263 de la velocitat de fotogrames per segon mentres s'est\303\240 a di"
    "ns del men\303\272.",
@@ -1471,7 +1487,9 @@ typedef char msg_hash_val_blob_check[
 #endif
 #endif
 #if defined (WIIU)
+#ifdef WIIU
        + 177u
+#endif
 #endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 46u
@@ -1484,8 +1502,10 @@ typedef char msg_hash_val_blob_check[
        + 53u
 #endif
 #if defined(DINGUX)
+#if defined(DINGUX)
        + 29u
        + 202u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
        + 11u
@@ -1498,8 +1518,12 @@ typedef char msg_hash_val_blob_check[
 #endif
 #ifdef HAVE_MIST
        + 20u
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
        + 27u
        + 56u
+#endif
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
@@ -1796,6 +1820,8 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
@@ -1843,7 +1869,9 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
 #if defined (WIIU)
+#ifdef WIIU
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
@@ -1902,8 +1930,10 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
 #if defined(DINGUX)
+#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1911,7 +1941,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2038,10 +2067,13 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
 #ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,

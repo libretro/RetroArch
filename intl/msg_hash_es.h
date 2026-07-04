@@ -443,8 +443,14 @@ static const struct
    char s_82fab47a[54];
    char s_730df420[16];
    char s_7e96b5ce[49];
-   char s_b853a798[92];
+   char s_e92f8e07[47];
+   char s_ef13be35[99];
+   char s_752ce8b2[47];
+   char s_5e14cb20[107];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_cf6bc52a[25];
+   char s_b853a798[92];
+#endif
    char s_7943e750[25];
    char s_1a8301fe[46];
    char s_a7206ebc[92];
@@ -504,7 +510,9 @@ static const struct
    char s_0e7699a6[251];
    char s_ed22c5f1[24];
    char s_d60aa85f[62];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_95e4b29f[100];
+#endif
    char s_f90edcc2[66];
    char s_c2314d30[253];
    char s_12b8e195[19];
@@ -525,8 +533,10 @@ static const struct
    char s_4a09218b[31];
    char s_4b0e8809[191];
 #if defined (WIIU)
+#ifdef WIIU
    char s_afb881f7[57];
    char s_7222b7e5[172];
+#endif
 #endif
    char s_6c40d14e[20];
    char s_7c07f6fc[92];
@@ -608,8 +618,10 @@ static const struct
    char s_adcf82d6[14];
    char s_e7033e0e[9];
 #if defined(DINGUX)
+#if defined(DINGUX)
    char s_d374d67d[30];
    char s_c0e554ab[201];
+#endif
 #endif
    char s_8f37930f[49];
    char s_9506fc7d[119];
@@ -635,8 +647,6 @@ static const struct
    char s_81120e85[163];
    char s_92a02470[42];
    char s_8010a29e[162];
-   char s_752ce8b2[47];
-   char s_5e14cb20[107];
    char s_7e43d750[220];
    char s_8fc1e4da[11];
    char s_0d2d8eef[7];
@@ -725,8 +735,12 @@ static const struct
    char s_792e0069[23];
    char s_98b02857[235];
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    char s_d3e78762[11];
    char s_b6f7f650[135];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[12];
    char s_b40b91b9[116];
    char s_86e940b7[116];
@@ -1157,8 +1171,14 @@ static const struct
    char s_c9c04b6d[67];
    char s_3e0f9900[17];
    char s_67b3c923[20];
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    char s_53788998[29];
    char s_40e907c6[67];
+#endif
+#endif
+#ifdef HAVE_MIST
    char s_35b60281[21];
    char s_91e3840f[59];
    char s_30512c09[50];
@@ -1232,8 +1252,6 @@ static const struct
    char s_76ebe1a8[124];
    char s_b03e11ed[61];
    char s_d8fa9cdb[77];
-   char s_e92f8e07[47];
-   char s_ef13be35[99];
    char s_7d19b727[45];
    char s_66019995[95];
    char s_be87312d[45];
@@ -1259,8 +1277,10 @@ static const struct
    char s_4555fdb4[66];
    char s_64702d9a[33];
    char s_dc469b88[103];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_2841f912[27];
    char s_37f2ecc0[98];
+#endif
    char s_c512fde9[37];
    char s_84cf9517[190];
    char s_543b5a62[25];
@@ -1329,8 +1349,10 @@ static const struct
    char s_3fb95f49[54];
    char s_b662d01f[23];
    char s_bc47004d[80];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_0c353c96[41];
    char s_c384b984[65];
+#endif
    char s_f6cc615c[35];
    char s_980b7c0a[81];
    char s_46d040e3[44];
@@ -1809,12 +1831,12 @@ static const struct
    char s_7fa7d966[14];
    char s_6d185794[331];
    char s_53f57122[25];
+   char s_a288f873[27];
+   char s_a85861e1[54];
    char s_e3237f35[22];
    char s_ac45efa3[177];
    char s_ad1b6060[20];
    char s_6f85964e[41];
-   char s_a288f873[27];
-   char s_a85861e1[54];
    char s_a8833b4e[21];
    char s_71a5abbc[45];
    char s_ff48fdea[35];
@@ -2462,9 +2484,9 @@ static const struct
 #endif
    char s_d3906073[29];
    char s_934cf7a1[76];
-   char s_138c1cdf[173];
    char s_8bf6ccd4[52];
    char s_977f8e82[107];
+   char s_138c1cdf[173];
    char s_c49aa167[17];
    char s_ad8283d5[89];
    char s_ae87ea53[291];
@@ -4521,9 +4543,17 @@ static const struct
    "Cambia los ajustes de v\303\255deo relacionados con el HDR.",
    "Sincronizaci\303\263n",
    "Cambia los ajustes de sincronizaci\303\263n de v\303\255deo.",
+   "Capturas de pantalla: capturar mediante la GPU",
+   "Si es posible, las capturas de pantalla mostrar\303\241n la imagen con los shaders aplicados por"
+   " la GPU.",
+   "Recortar sobrebarrido (es necesario reiniciar)",
+   "Quita unos p\303\255xeles a los bordes de la imagen que los desarrolladores suelen dejar en blan"
+   "co o con basura.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "Activar filtro de v\303\255deo",
    "Aplica el filtro de v\303\255deo. Es posible que el controlador de v\303\255deo no respete este "
    "ajuste.",
-   "Activar filtro de v\303\255deo",
+#endif
    "Suspender salvapantallas",
    "Evita que se active el protector de pantalla.",
    "Suspende el salvapantallas. Es posible que el controlador de v\303\255deo no respete este ajuste"
@@ -4644,8 +4674,10 @@ static const struct
    "de color. Es posible seleccionar librer\303\255as de filtros de v\303\255deo integrados.",
    "Quitar filtro de v\303\255deo",
    "Descarga cualquier filtro de v\303\255deo por CPU que est\303\251 activo.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Permitir que la pantalla completa sobrepase la muesca (\302\253notch\302\273) de los dispositivo"
    "s Android e iOS",
+#endif
    "Utilizar b\303\272feres de argumentos de Metal (es necesario reiniciar)",
    "Intenta mejorar el rendimiento mediante el uso de los b\303\272feres de argumentos de Metal. Es "
    "posible que algunos n\303\272cleos los necesiten. Podr\303\255a dar problemas con algunos shader"
@@ -4674,10 +4706,12 @@ static const struct
    "adelante (siendo 1 el primer monitor) sugiere a RetroArch que utilice ese monitor espec\303\255f"
    "ico.",
 #if defined (WIIU)
+#ifdef WIIU
    "Optimizar para el Wii U Gamepad (es necesario reiniciar)",
    "Utiliza una escala exacta del doble de la resoluci\303\263n del GamePad para el \303\241rea de v"
    "isualizaci\303\263n. Desactiva esta opci\303\263n para mostrar la resoluci\303\263n nativa del t"
    "elevisor.",
+#endif
 #endif
    "Rotaci\303\263n de v\303\255deo",
    "Fuerza una rotaci\303\263n espec\303\255fica de la pantalla. Se a\303\261adir\303\241 a la impue"
@@ -4794,10 +4828,12 @@ static const struct
    "Personalizada",
    "Completa",
 #if defined(DINGUX)
+#if defined(DINGUX)
    "Mantener relaci\303\263n de aspecto",
    "Preserva las relaciones de aspecto de p\303\255xeles 1:1 al escalar contenidos mediante la IPU i"
    "nterna. Si se desactiva esta opci\303\263n, se estirar\303\241n las im\303\241genes para que ocu"
    "pen la totalidad de la pantalla.",
+#endif
 #endif
    "Relaci\303\263n de aspecto personalizada (posici\303\263n X)",
    "Establece la compensaci\303\263n personalizada con la que se definir\303\241 la posici\303\263n "
@@ -4841,9 +4877,6 @@ static const struct
    "Establece la altura personalizada del \303\241rea de visualizaci\303\263n. Este valor se utiliza"
    "r\303\241 si se ha elegido \302\253Personalizado\302\273 en el ajuste \302\253Relaci\303\263n de"
    " aspecto\302\273.",
-   "Recortar sobrebarrido (es necesario reiniciar)",
-   "Quita unos p\303\255xeles a los bordes de la imagen que los desarrolladores suelen dejar en blan"
-   "co o con basura.",
    "Establece el modo de salida HDR, si tu pantalla es compatible. Nota: el modo scRGB podr\303\255a"
    " aclarar las m\303\241scaras de shaders CRT porque el compositor del SO convierte la imagen a HD"
    "R10 una vez se ha aplicado la m\303\241scara.",
@@ -4981,9 +5014,13 @@ static const struct
    "antener la latencia real en un 50\302\240% de este valor. Puede que este no se respete si el con"
    "trolador de audio no puede producir la latencia establecida.",
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    "Micr\303\263fono",
    "Activa la entrada de audio en aquellos n\303\272cleos compatibles. Si el n\303\272cleo no utiliz"
    "a el micr\303\263fono, no aumentar\303\241 la carga de la CPU.",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    "Dispositivo",
    "Fuerza el dispositivo de entrada que utilizar\303\241 el controlador del micr\303\263fono. Este "
    "ajuste depende del controlador.",
@@ -5589,8 +5626,14 @@ static const struct
    "Instala o desinstala los n\303\272cleos distribuidos a trav\303\251s de Steam.",
    "Instalar n\303\272cleo",
    "Desinstalar n\303\272cleo",
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    "Mostrar Administrar n\303\272cleos",
    "Muestra la opci\303\263n \302\253Administrar n\303\272cleos\302\273 en el men\303\272 principal.",
+#endif
+#endif
+#ifdef HAVE_MIST
    "Instalando n\303\272cleo: ",
    "El n\303\272cleo se desinstalar\303\241 en cuanto salgas de RetroArch.",
    "El n\303\272cleo se est\303\241 descargando en estos momentos",
@@ -5709,9 +5752,6 @@ static const struct
    " donde se encuentre el contenido.",
    "Capturas de pantalla: guardar en el directorio del contenido",
    "Utiliza el directorio de contenidos como directorio de capturas de pantalla.",
-   "Capturas de pantalla: capturar mediante la GPU",
-   "Si es posible, las capturas de pantalla mostrar\303\241n la imagen con los shaders aplicados por"
-   " la GPU.",
    "Guardar registro de ejecuci\303\263n (por n\303\272cleo)",
    "Registra el tiempo de ejecuci\303\263n de cada contenido, separando los registros seg\303\272n e"
    "l n\303\272cleo.",
@@ -5749,9 +5789,11 @@ static const struct
    "Filtrar extensiones desconocidas",
    "Muestra en el explorador de archivos \303\272nicamente a aquellos archivos que tengan extensione"
    "s conocidas.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Filtrar por n\303\272cleo actual",
    "Muestra en el explorador de archivos \303\272nicamente los archivos relacionados con el n\303"
    "\272cleo actual.",
+#endif
    "Recordar el \303\272ltimo directorio usado",
    "Abre el explorador de archivos en el \303\272ltimo directorio usado al cargar contenidos desde e"
    "l directorio inicial. Nota: la posici\303\263n volver\303\241 a su valor predeterminado al reini"
@@ -5841,8 +5883,10 @@ static const struct
    "Cambia la visibilidad de determinadas notificaciones.",
    "Mostrar superposici\303\263n",
    "Las superposiciones sirven para aplicar marcos y mostrar controles en pantalla.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Mostrar superposici\303\263n detr\303\241s del men\303\272",
    "Muestra la superposici\303\263n por detr\303\241s del men\303\272, no por delante.",
+#endif
    "Ocultar superposici\303\263n en el men\303\272",
    "Oculta la superposici\303\263n dentro del men\303\272 y la vuelve a mostrar al salir de \303\251"
    "l.",
@@ -6455,14 +6499,14 @@ static const struct
    " para mostrar a los dem\303\241s lo que eres capaz de hacer sin las ayudas de la emulaci\303\263"
    "n. Si cambias esta opci\303\263n durante una partida, se reiniciar\303\241 el juego.",
    "Tablas de clasificaci\303\263n",
+   "Probar logros no oficiales",
+   "Activa los logros no oficiales o beta para probarlos.",
    "Presencia enriquecida",
    "Env\303\255a de forma peri\303\263dica informaci\303\263n contextual sobre el juego a la p\303"
    "\241gina web de RetroAchievements. Esta opci\303\263n no har\303\241 efecto alguno si el modo Ha"
    "rdcore est\303\241 activado.",
    "Insignias de logros",
    "Muestra insignias en la lista de logros.",
-   "Probar logros no oficiales",
-   "Activa los logros no oficiales o beta para probarlos.",
    "Sonido de desbloqueo",
    "Reproduce un sonido al desbloquear un logro.",
    "Capturar pantalla autom\303\241ticamente",
@@ -7275,11 +7319,11 @@ static const struct
 #endif
    "Comprobar cambios en shaders",
    "Aplica autom\303\241ticamente los cambios hechos a los archivos shader del disco.",
-   "Busca cambios en los archivos de shaders. Una vez hayas guardado los cambios de un shader del di"
-   "sco, el shader se recompilar\303\241 autom\303\241ticamente y se aplicar\303\241 al contenido.",
    "Recordar el \303\272ltimo directorio de shaders utilizado",
    "Abre el explorador de archivos en el \303\272ltimo directorio usado para cargar preajustes y pas"
    "adas de shaders.",
+   "Busca cambios en los archivos de shaders. Una vez hayas guardado los cambios de un shader del di"
+   "sco, el shader se recompilar\303\241 autom\303\241ticamente y se aplicar\303\241 al contenido.",
    "Cargar preajuste",
    "Carga un preajuste de shaders. La secuencia de shaders se configurar\303\241 autom\303\241ticame"
    "nte.",
@@ -9023,7 +9067,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (204114u
+      (sizeof(msg_hash_es_blob) == (203666u
 #ifdef HAVE_LAKKA
        + 15u
        + 49u
@@ -9037,6 +9081,10 @@ typedef char msg_hash_es_blob_check[
        + 29u
        + 74u
        + 35u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 25u
+       + 92u
 #endif
 #if defined(DINGUX)
        + 25u
@@ -9053,9 +9101,14 @@ typedef char msg_hash_es_blob_check[
        + 11u
 #endif
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 100u
+#endif
 #if defined (WIIU)
+#ifdef WIIU
        + 57u
        + 172u
+#endif
 #endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 38u
@@ -9068,8 +9121,10 @@ typedef char msg_hash_es_blob_check[
        + 52u
 #endif
 #if defined(DINGUX)
+#if defined(DINGUX)
        + 30u
        + 201u
+#endif
 #endif
 #if defined(RARCH_MOBILE)
        + 97u
@@ -9082,8 +9137,14 @@ typedef char msg_hash_es_blob_check[
 #ifdef HAVE_MICROPHONE
        + 11u
        + 40u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
        + 11u
        + 135u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
        + 12u
        + 116u
        + 116u
@@ -9128,17 +9189,27 @@ typedef char msg_hash_es_blob_check[
        + 67u
        + 17u
        + 20u
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
        + 29u
        + 67u
+#endif
+#endif
+#ifdef HAVE_MIST
        + 21u
        + 59u
        + 50u
 #endif
 #ifndef SETTINGS_DEF_CONFIG_PASS
+       + 27u
+       + 98u
        + 31u
        + 86u
        + 34u
        + 89u
+       + 41u
+       + 65u
 #endif
 #if defined(ANDROID)
        + 155u
@@ -9774,8 +9845,14 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
@@ -9833,7 +9910,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
@@ -9854,8 +9933,10 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
 #if defined (WIIU)
+#ifdef WIIU
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
@@ -9937,8 +10018,10 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
 #if defined(DINGUX)
+#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
@@ -9964,8 +10047,6 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
@@ -10054,8 +10135,12 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
@@ -10484,8 +10569,14 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+#endif
+#endif
+#ifdef HAVE_MIST
    (uint32_t)MSG_CORE_STEAM_INSTALLING,
    (uint32_t)MSG_CORE_STEAM_UNINSTALLED,
    (uint32_t)MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
@@ -10559,8 +10650,6 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
@@ -10586,8 +10675,10 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
@@ -10656,8 +10747,10 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -11136,12 +11229,12 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
@@ -11788,9 +11881,9 @@ static const uint32_t msg_hash_es_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,

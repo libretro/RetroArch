@@ -325,6 +325,9 @@ static const struct
    char s_82fab47a[27];
    char s_730df420[13];
    char s_7e96b5ce[36];
+   char s_ef13be35[61];
+   char s_752ce8b2[43];
+   char s_5e14cb20[129];
    char s_7943e750[23];
    char s_1a8301fe[40];
    char s_3547866d[120];
@@ -364,7 +367,9 @@ static const struct
    char s_61213f1d[15];
    char s_4a09218b[47];
 #if defined (WIIU)
+#ifdef WIIU
    char s_afb881f7[51];
+#endif
 #endif
    char s_6c40d14e[13];
    char s_7c07f6fc[85];
@@ -418,8 +423,10 @@ static const struct
    char s_4d7e9b13[21];
    char s_c79d5013[12];
 #if defined(DINGUX)
+#if defined(DINGUX)
    char s_d374d67d[21];
    char s_c0e554ab[150];
+#endif
 #endif
    char s_8f37930f[30];
    char s_8f379310[30];
@@ -427,8 +434,6 @@ static const struct
    char s_81120e85[86];
    char s_92a02470[28];
    char s_8010a29e[87];
-   char s_752ce8b2[43];
-   char s_5e14cb20[129];
    char s_c017f975[9];
    char s_6083fff7[16];
    char s_44e1c38f[25];
@@ -604,9 +609,10 @@ static const struct
 #endif
    char s_e78c87a1[30];
    char s_d0746a0f[51];
-   char s_ef13be35[61];
    char s_ea2e0a76[12];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_37f2ecc0[58];
+#endif
    char s_749f0441[13];
    char s_f5338957[22];
    char s_82a25202[18];
@@ -658,9 +664,9 @@ static const struct
    char s_6f947f94[38];
    char s_565cbabb[8];
    char s_7fa7d966[17];
-   char s_ac45efa3[133];
    char s_a288f873[24];
    char s_a85861e1[67];
+   char s_ac45efa3[133];
    char s_71a5abbc[36];
    char s_17d978b1[25];
    char s_572a869b[19];
@@ -1270,6 +1276,10 @@ static const struct
    "Ubah pengaturan HDR video.",
    "Sinkronisasi",
    "Ubah pengaturan sinkronisasi video.",
+   "Cuplikan layar menangkap materi berbayang GPU jika tersedia.",
+   "Pangkas Lebihan Pindai (Perlu Mulai Ulang)",
+   "Memotong beberapa piksel di sekitar tepi gambar yang biasanya pengembang biarkan kosong dan terk"
+   "adang juga berisi piksel sampah.",
    "Tangguhkan Screensaver",
    "Mencegah screensaver sistem Anda aktif.",
    "Meningkatkan kinerja tapi akan banyak latensi dan video patah-patah. Gunakan hanya jika tidak da"
@@ -1316,7 +1326,9 @@ static const struct
    "Indeks Monitor",
    "Pilih layar tampilan mana yang akan digunakan.",
 #if defined (WIIU)
+#ifdef WIIU
    "Optimalkan untuk Wii U GamePad (Perlu Mulai Ulang)",
+#endif
 #endif
    "Rotasi Video",
    "Memaksa rotasi tertentu dari video. Rotasi ditambahkan ke rotasi yang diatur 'core'.",
@@ -1378,9 +1390,11 @@ static const struct
    "Skala Bilangan Bulat",
    "Rasio Aspek",
 #if defined(DINGUX)
+#if defined(DINGUX)
    "Tetapkan Rasio Aspek",
    "Mempertahankan rasio aspek piksel 1:1 saat menskala konten lewat IPU internal. Jika dinonaktifka"
    "n, gambar akan diregangkan memenuhi seluruh tampilan.",
+#endif
 #endif
    "Rasio Aspek Kustom (Posisi X)",
    "Rasio Aspek Kustom (Posisi Y)",
@@ -1388,9 +1402,6 @@ static const struct
    "Lebar viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'.",
    "Rasio Aspek Kustom (Tinggi)",
    "Tinggi viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'.",
-   "Pangkas Lebihan Pindai (Perlu Mulai Ulang)",
-   "Memotong beberapa piksel di sekitar tepi gambar yang biasanya pengembang biarkan kosong dan terk"
-   "adang juga berisi piksel sampah.",
    "Otomatis",
    "Tundaan Bingkai",
    "Tundaan Bingkai Otomatis",
@@ -1582,9 +1593,10 @@ static const struct
 #endif
    "Simpan Konfigurasi dan Keluar",
    "Menyimpan semua perubahan konfigurasi saat keluar.",
-   "Cuplikan layar menangkap materi berbayang GPU jika tersedia.",
    "0 (Awakutu)",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Menyaring berkas sesuai Core saat ini di Peramban Berkas.",
+#endif
    "Gerak Mundur",
    "Dukungan Gerak Mundur",
    "Laju Gerak Mundur",
@@ -1637,10 +1649,10 @@ static const struct
    "Hanya untuk Menu Utama dan Pengaturan",
    "Capaian",
    "Mode Garis Keras",
-   "Secara berkala mengirim konteks info permainan ke situs web RetroAchievements. Tidak berpengaruh"
-   " jika 'Mode Garis Keras' diaktifkan.",
    "Uji Capaian Belum Resmi",
    "Menggunakan capaian dan/atau fitur belum resmi untuk menguji coba.",
+   "Secara berkala mengirim konteks info permainan ke situs web RetroAchievements. Tidak berpengaruh"
+   " jika 'Mode Garis Keras' diaktifkan.",
    "Memutar suara saat capaian terbuka.",
    "Permainan dengan Capaian",
    "Indikator Kemajuan",
@@ -1941,7 +1953,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26676u
+      (sizeof(msg_hash_id_blob) == (26618u
 #ifdef HAVE_LAKKA
        + 17u
        + 43u
@@ -1961,7 +1973,9 @@ typedef char msg_hash_id_blob_check[
 #endif
 #endif
 #if defined (WIIU)
+#ifdef WIIU
        + 51u
+#endif
 #endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 22u
@@ -1974,8 +1988,10 @@ typedef char msg_hash_id_blob_check[
        + 47u
 #endif
 #if defined(DINGUX)
+#if defined(DINGUX)
        + 21u
        + 150u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
        + 10u
@@ -1998,6 +2014,9 @@ typedef char msg_hash_id_blob_check[
 #endif
 #ifdef HAVE_MIST
        + 10u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 58u
 #endif
 #ifdef HAVE_LIBNX
        + 15u
@@ -2339,6 +2358,9 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
@@ -2378,7 +2400,9 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
 #if defined (WIIU)
+#ifdef WIIU
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
@@ -2432,8 +2456,10 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
 #if defined(DINGUX)
+#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2441,8 +2467,6 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2618,9 +2642,10 @@ static const uint32_t msg_hash_id_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
    (uint32_t)MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
@@ -2672,9 +2697,9 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,

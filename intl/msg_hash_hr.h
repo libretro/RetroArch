@@ -204,7 +204,11 @@ static const struct
    char s_dcf2e800[5];
    char s_da068369[8];
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    char s_d3e78762[9];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[8];
 #endif
    char s_ad7c73f6[15];
@@ -477,7 +481,11 @@ static const struct
    "Zvuk",
    "Ure\304\221aj",
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    "Mikrofon",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    "Ure\304\221aj",
 #endif
    "Sinkronizacija",
@@ -581,7 +589,13 @@ typedef char msg_hash_hr_blob_check[
 #endif
 #ifdef HAVE_MICROPHONE
        + 9u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
        + 9u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
        + 8u
 #endif
 #ifdef HAVE_MIST
@@ -789,7 +803,11 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,

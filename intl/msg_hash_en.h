@@ -38,6 +38,7 @@ static const struct
    char s_0d96ed73[34];
    char s_730df420[16];
    char s_7e96b5ce[39];
+   char s_5e14cb20[133];
    char s_a7206ebc[103];
    char s_353c64eb_0[500];
    char s_353c64eb_1[6];
@@ -66,14 +67,18 @@ static const struct
    char s_17663212[152];
    char s_2d9d0a50[211];
    char s_0e7699a6[201];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_95e4b29f[57];
+#endif
    char s_a68d6d11[54];
    char s_da7a38eb[20];
    char s_a39ca959[81];
    char s_8abad013[81];
    char s_a1a8257e[98];
 #if defined (WIIU)
+#ifdef WIIU
    char s_afb881f7[46];
+#endif
 #endif
    char s_0ef856cb[35];
    char s_22ee45f4[34];
@@ -90,7 +95,9 @@ static const struct
    char s_b2f7627c[27];
    char s_ad5ff591[11];
 #if defined(DINGUX)
+#if defined(DINGUX)
    char s_c0e554ab[153];
+#endif
 #endif
    char s_73658ec1[124];
    char s_73658ec2[116];
@@ -98,7 +105,6 @@ static const struct
    char s_82c9e375[147];
    char s_82c9e376[139];
 #endif
-   char s_5e14cb20[133];
    char s_d6fb8efe[16];
    char s_25a21976[52];
    char s_6ac06624[114];
@@ -524,6 +530,8 @@ static const struct
    "Change full-screen mode settings.",
    "Synchronisation",
    "Change video synchronisation settings.",
+   "Cut off a few pixels around the edges of the image customarily left blank by developers which so"
+   "metimes also contain rubbish pixels.",
    "Suspends the screensaver. Is a hint that does not necessarily have to be honoured by the video d"
    "river.",
    "Inserts black frame(s) in between frames for enhanced motion clarity. Only use option designated"
@@ -572,7 +580,9 @@ static const struct
    "Apply a CPU powered video filter. Might come at a high performance cost. Some video filters migh"
    "t only work for cores that use 32-bit or 16-bit colour. Built-in video filter libraries can be s"
    "elected.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Enable full-screen over notch in Android and iOS devices",
+#endif
    "Switch among native and ultra-wide super resolutions.",
    "Horizontal Centring",
    "Cycle through these options if the image is not centred properly on the display.",
@@ -580,7 +590,9 @@ static const struct
    "Switch to high resolution mode-line for use with high-resolution menus when no content is loaded"
    ".",
 #if defined (WIIU)
+#ifdef WIIU
    "Optimise for Wii U GamePad (Restart required)",
+#endif
 #endif
    "Only in Exclusive Full-Screen Mode",
    "Only in Windowed Full-Screen Mode",
@@ -600,8 +612,10 @@ static const struct
    "Configuration Aspect Ratio",
    "Configured",
 #if defined(DINGUX)
+#if defined(DINGUX)
    "Maintain 1:1 pixel aspect ratios when scaling content with the internal IPU. If it's disabled, i"
    "mages will then be stretched to fill the entire display.",
+#endif
 #endif
    "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 i"
    "s centre, 1.0 is far right.",
@@ -613,8 +627,6 @@ static const struct
    "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is cen"
    "tre, 1.0 is bottom. (Portrait Orientation)",
 #endif
-   "Cut off a few pixels around the edges of the image customarily left blank by developers which so"
-   "metimes also contain rubbish pixels.",
    "Adaptive V-Sync",
    "Sync to Exact Content Frame Rate (G-Sync, FreeSync)",
    "No deviation from core requested timing. Use for Variable Refresh Rate screens (G-Sync, Free-Syn"
@@ -1128,7 +1140,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26622u
+      (sizeof(msg_hash_en_blob) == (26565u
 #if defined(DINGUX)
        + 195u
        + 9u
@@ -1140,11 +1152,18 @@ typedef char msg_hash_en_blob_check[
        + 18u
 #endif
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 57u
+#endif
 #if defined (WIIU)
+#ifdef WIIU
        + 46u
 #endif
+#endif
+#if defined(DINGUX)
 #if defined(DINGUX)
        + 153u
+#endif
 #endif
 #if defined(RARCH_MOBILE)
        + 147u
@@ -1227,6 +1246,7 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
@@ -1254,14 +1274,18 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
 #if defined (WIIU)
+#ifdef WIIU
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
@@ -1278,7 +1302,9 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
 #if defined(DINGUX)
+#if defined(DINGUX)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
@@ -1286,7 +1312,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,

@@ -437,8 +437,14 @@ static const struct
    char s_82fab47a[29];
    char s_730df420[15];
    char s_7e96b5ce[40];
-   char s_b853a798[100];
+   char s_e92f8e07[26];
+   char s_ef13be35[92];
+   char s_752ce8b2[37];
+   char s_5e14cb20[147];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_cf6bc52a[27];
+   char s_b853a798[100];
+#endif
    char s_7943e750[27];
    char s_1a8301fe[52];
    char s_a7206ebc[112];
@@ -498,7 +504,9 @@ static const struct
    char s_0e7699a6[262];
    char s_ed22c5f1[18];
    char s_d60aa85f[67];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_95e4b29f[71];
+#endif
    char s_f90edcc2[54];
    char s_c2314d30[198];
    char s_12b8e195[31];
@@ -519,8 +527,10 @@ static const struct
    char s_4a09218b[40];
    char s_4b0e8809[207];
 #if defined (WIIU)
+#ifdef WIIU
    char s_afb881f7[49];
    char s_7222b7e5[115];
+#endif
 #endif
    char s_6c40d14e[13];
    char s_7c07f6fc[90];
@@ -603,8 +613,10 @@ static const struct
    char s_adcf82d6[15];
    char s_e7033e0e[7];
 #if defined(DINGUX)
+#if defined(DINGUX)
    char s_d374d67d[34];
    char s_c0e554ab[183];
+#endif
 #endif
    char s_8f37930f[52];
    char s_9506fc7d[88];
@@ -630,8 +642,6 @@ static const struct
    char s_81120e85[149];
    char s_92a02470[53];
    char s_8010a29e[148];
-   char s_752ce8b2[37];
-   char s_5e14cb20[147];
    char s_7e43d750[183];
    char s_8fc1e4da[12];
    char s_0d2d8eef[10];
@@ -719,8 +729,12 @@ static const struct
    char s_792e0069[28];
    char s_98b02857[248];
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    char s_d3e78762[9];
    char s_b6f7f650[122];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[12];
    char s_b40b91b9[107];
    char s_86e940b7[107];
@@ -1141,8 +1155,14 @@ static const struct
    char s_c9c04b6d[61];
    char s_3e0f9900[18];
    char s_67b3c923[18];
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    char s_53788998[30];
    char s_40e907c6[55];
+#endif
+#endif
+#ifdef HAVE_MIST
    char s_35b60281[21];
    char s_91e3840f[63];
    char s_30512c09[30];
@@ -1216,8 +1236,6 @@ static const struct
    char s_76ebe1a8[93];
    char s_b03e11ed[42];
    char s_d8fa9cdb[60];
-   char s_e92f8e07[26];
-   char s_ef13be35[92];
    char s_7d19b727[47];
    char s_66019995[94];
    char s_be87312d[45];
@@ -1242,8 +1260,10 @@ static const struct
    char s_4555fdb4[56];
    char s_64702d9a[30];
    char s_dc469b88[88];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_2841f912[36];
    char s_37f2ecc0[79];
+#endif
    char s_c512fde9[47];
    char s_84cf9517[216];
    char s_543b5a62[24];
@@ -1313,8 +1333,10 @@ static const struct
    char s_3fb95f49[58];
    char s_b662d01f[17];
    char s_bc47004d[76];
+#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_0c353c96[26];
    char s_c384b984[46];
+#endif
    char s_f6cc615c[24];
    char s_980b7c0a[66];
    char s_46d040e3[45];
@@ -1794,12 +1816,12 @@ static const struct
    char s_7fa7d966[29];
    char s_6d185794[292];
    char s_53f57122[16];
+   char s_a288f873[36];
+   char s_a85861e1[88];
    char s_e3237f35[19];
    char s_ac45efa3[131];
    char s_ad1b6060[21];
    char s_6f85964e[70];
-   char s_a288f873[36];
-   char s_a85861e1[88];
    char s_a8833b4e[34];
    char s_71a5abbc[50];
    char s_ff48fdea[39];
@@ -2446,9 +2468,9 @@ static const struct
 #endif
    char s_d3906073[42];
    char s_934cf7a1[70];
-   char s_138c1cdf[160];
    char s_8bf6ccd4[46];
    char s_977f8e82[113];
+   char s_138c1cdf[160];
    char s_c49aa167[19];
    char s_ad8283d5[91];
    char s_ae87ea53[284];
@@ -4500,9 +4522,18 @@ static const struct
    "Zmie\305\204 ustawienia HDR wideo.",
    "Synchronizacja",
    "Zmie\305\204 ustawienia synchronizacji wideo.",
+   "Zrzut ekranu: U\305\274ywaj GPU",
+   "Zrzuty ekranu przechwytuj\304\205 przetworzony obraz z karty graficznej, je\305\233li jest to mo"
+   "\305\274liwe.",
+   "Przytnij Overscan (Wymagany Restart)",
+   "Wycinaj kilka pikseli wok\303\263\305\202 kraw\304\231dzi obrazu, pozostawione zwykle puste prze"
+   "z deweloper\303\263w, kt\303\263re czasami zawieraj\304\205 r\303\263wnie\305\274 piksele \305"
+   "\233mieci.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
+   "W\305\202\304\205czenie filtr\303\263w wideo",
    "Zastosuj filtr wideo. Jest wskaz\303\263wk\304\205 i niekoniecznie musi by\304\207 to uznawane p"
    "rzez sterownik wideo.",
-   "W\305\202\304\205czenie filtr\303\263w wideo",
+#endif
    "Wstrzymaj wygaszacz ekranu",
    "Zapobiegaj aktywacji systemowego wygaszacza ekranu.",
    "Wstrzymuje wygaszacz ekranu. Jest wskaz\303\263wk\304\205, kt\303\263ra niekoniecznie musi by"
@@ -4626,8 +4657,10 @@ static const struct
    "\274na wybra\304\207 wbudowane biblioteki filtr\303\263w wideo.",
    "Usu\305\204 filtr wideo",
    "Zwolnij ka\305\274dy aktywny filtry wideo zasilane przez procesor (CPU).",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "W\305\202\304\205cz pe\305\202ny ekran nad wyci\304\231ciem na urz\304\205dzeniach z Androidem i"
    " iOS",
+#endif
    "U\305\274ywaj bufor\303\263w argument\303\263w Metal (Wymagany restart)",
    "Spr\303\263buj poprawi\304\207 wydajno\305\233\304\207 u\305\274ywaj\304\205c bufor\303\263w arg"
    "ument\303\263w Metal. Niekt\303\263re rdzenie mog\304\205 tego wymaga\304\207. To mo\305\274e po"
@@ -4660,9 +4693,11 @@ static const struct
    "aden konkretny monitor nie jest preferowany, 1 i wi\304\231cej (1 oznacza pierwszy monitor), sug"
    "eruje RetroArch u\305\274ycie tego konkretnego monitora.",
 #if defined (WIIU)
+#ifdef WIIU
    "Optymalizuj pod Wii U GamePad (Wymagany restart)",
    "U\305\274yj dok\305\202adnej skali 2x GamePada jako podgl\304\205d. Wy\305\202\304\205cz, aby wy"
    "\305\233wietla\304\207 w natywnej rozdzielczo\305\233ci telewizora",
+#endif
 #endif
    "Obr\303\263t wideo",
    "Wymusza okre\305\233lony obr\303\263t wideo. Obr\303\263t jest dodawany do obrot\303\263w, kt"
@@ -4788,10 +4823,12 @@ static const struct
    "Niestandardowa",
    "Pe\305\202na",
 #if defined(DINGUX)
+#if defined(DINGUX)
    "Zachowaj wsp\303\263\305\202czynnik proporcji",
    "Zachowaj proporcje pikseli 1: 1 podczas skalowania tre\305\233ci za pomoc\304\205 wewn\304\231tr"
    "znej jednostki IPU. Je\305\233li jest wy\305\202\304\205czona, obrazy zostan\304\205 rozci\304"
    "\205gni\304\231te, aby wype\305\202ni\304\207 ca\305\202y ekran.",
+#endif
 #endif
    "Niestandardowy wsp\303\263\305\202czynnik proporcji (pozycja X)",
    "Niestandardowe przesuni\304\231cie widoku u\305\274ywane do zdefiniowania po\305\202o\305\274eni"
@@ -4830,10 +4867,6 @@ static const struct
    "Niestandardowa wysoko\305\233\304\207 obszaru widoku u\305\274ywana, je\305\233li wsp\303\263"
    "\305\202czynnik proporcji jest ustawiony na \342\200\236Niestandardowy wsp\303\263\305\202czynni"
    "k proporcji\342\200\235.",
-   "Przytnij Overscan (Wymagany Restart)",
-   "Wycinaj kilka pikseli wok\303\263\305\202 kraw\304\231dzi obrazu, pozostawione zwykle puste prze"
-   "z deweloper\303\263w, kt\303\263re czasami zawieraj\304\205 r\303\263wnie\305\274 piksele \305"
-   "\233mieci.",
    "Ustaw tryb wyj\305\233cia HDR, je\305\274eli ekran je obs\305\202uguje. Uwaga: scRGB mo\305\274e"
    " zmi\304\231kczy\304\207 niekt\303\263re maski cieni CRT, poniewa\305\274 kompozytor systemu kon"
    "wertuje na HDR10 po na\305\202o\305\274eniu maski.",
@@ -4975,10 +5008,14 @@ static const struct
    "\274e nie by\304\207 uznawane przez sterownik, je\305\233li sterownik audio nie mo\305\274e zape"
    "wni\304\207 podanego op\303\263\305\272nienia.",
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    "Mikrofon",
    "W\305\202\304\205cz wej\305\233cie d\305\272wi\304\231ku w obs\305\202ugiwanych rdzeniach. Je"
    "\305\233li rdze\305\204 nie u\305\274ywa mikrofonu, nie wp\305\202ywa to na wydajno\305\233\304"
    "\207.",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    "Urz\304\205dzenie",
    "Zast\304\205p domy\305\233lne urz\304\205dzenie wej\305\233ciowe audio u\305\274ywane przez ster"
    "ownik mikrofonu. Zale\305\274ne od sterownika.",
@@ -5591,8 +5628,14 @@ static const struct
    "Zainstaluj lub odinstaluj rdzenie rozprowadzane przez Steam.",
    "Zainstaluj rdze\305\204",
    "Odinstaluj rdze\305\204",
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    "Poka\305\274 'Zarz\304\205dzaj rdzeniami'",
    "Poka\305\274 opcj\304\231 \"Zarz\304\205dzaj rdzeniami\" w menu g\305\202\303\263wnym.",
+#endif
+#endif
+#ifdef HAVE_MIST
    "Instalacja rdzenia: ",
    "Rdze\305\204 zostanie odinstalowany podczas wychodzenia z RetroArch.",
    "Rdze\305\204 jest obecnie pobierany",
@@ -5712,9 +5755,6 @@ static const struct
    "rto\305\233\304\207.",
    "Zrzut ekranu: Zapisuj do katalogu tre\305\233ci",
    "U\305\274ywaj katalogu tre\305\233ci jako katalogu dla zrzut\303\263w ekranu.",
-   "Zrzut ekranu: U\305\274ywaj GPU",
-   "Zrzuty ekranu przechwytuj\304\205 przetworzony obraz z karty graficznej, je\305\233li jest to mo"
-   "\305\274liwe.",
    "Zapisz dziennik czasu uruchomienia (na rdze\305\204)",
    "\305\232led\305\272 jak d\305\202ugo ka\305\274dy element zawarto\305\233ci dzia\305\202a wraz z"
    " rekordami oddzielonymi rdzeniem.",
@@ -5752,9 +5792,11 @@ static const struct
    "Filtruj nieznane rozszerzenia",
    "Filtruj pliki wy\305\233wietlane w przegl\304\205darce plik\303\263w wed\305\202ug obs\305\202ug"
    "iwanego rozszerzenia.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Filtruj wed\305\202ug bie\305\274\304\205cego rdzenia",
    "Filtruj pliki wy\305\233wietlane w przegl\304\205darce plik\303\263w wed\305\202ug aktualnego rd"
    "zenia.",
+#endif
    "Zapami\304\231taj ostatnio u\305\274ywany katalog startowy",
    "Otw\303\263rz przegl\304\205dark\304\231 plik\303\263w w ostatnio u\305\274ywanej lokalizacji po"
    "dczas \305\202adowania tre\305\233ci z katalogu startowego. Uwaga: Lokalizacja zostanie przywr"
@@ -5851,8 +5893,10 @@ static const struct
    "Nak\305\202adka ekranu",
    "Nak\305\202adki s\304\205 stosowane do obramowa\305\204 i ekranowych element\303\263w steruj\304"
    "\205cych.",
+#ifndef SETTINGS_DEF_CONFIG_PASS
    "Poka\305\274 menu za nak\305\202adk\304\205",
    "Poka\305\274 nak\305\202adk\304\231 za menu zamiast przed menu.",
+#endif
    "Ukryj nak\305\202adk\304\231 w menu",
    "Ukryj nak\305\202adk\304\231 w menu i poka\305\274 j\304\205 ponownie po wyj\305\233ciu z menu.",
    "Ukryj nak\305\202adk\304\231 po pod\305\202\304\205czeniu kontrolera",
@@ -6482,15 +6526,15 @@ static const struct
    "ji pomocowych w emulatorze. W\305\202\304\205czenie tego ustawienia podczas dzia\305\202ania zre"
    "setuje gr\304\231.",
    "Tabele wynik\303\263w",
+   "Sprawd\305\272 nieoficjalne osi\304\205gni\304\231cia",
+   "W\305\202\304\205cz lub wy\305\202\304\205cz nieoficjalne osi\304\205gni\304\231cia i/lub funkcj"
+   "e beta do cel\303\263w testowych.",
    "Tryb Rich Presence",
    "Okresowo wysy\305\202a kontekstowe informacje o grze do strony RetroAchievements. Nie ma efektu,"
    " je\305\233li 'Tryb Hardcore' jest w\305\202\304\205czony.",
    "Odznaki osi\304\205gni\304\231\304\207",
    "W\305\202\304\205cz lub wy\305\202\304\205cz wy\305\233wietlanie znaczk\303\263w na li\305\233ci"
    "e osi\304\205gni\304\231\304\207.",
-   "Sprawd\305\272 nieoficjalne osi\304\205gni\304\231cia",
-   "W\305\202\304\205cz lub wy\305\202\304\205cz nieoficjalne osi\304\205gni\304\231cia i/lub funkcj"
-   "e beta do cel\303\263w testowych.",
    "D\305\272wi\304\231k odblokowania osigni\304\231cia",
    "Odtwarzaj d\305\272wi\304\231k po odblokowaniu osi\304\205gni\304\231cia.",
    "Automatyczny zrzut ekranu osi\304\205gni\304\231\304\207",
@@ -7307,11 +7351,11 @@ static const struct
 #endif
    "Obserwuj pliki shader\303\263w pod k\304\205tem zmian",
    "Automatycznie zastosuj zmiany wprowadzone w plikach shadera na dysku.",
-   "Przegl\304\205daj pliki shader\303\263w w poszukiwaniu nowych zmian. Po zapisaniu zmian shadera "
-   "na dysk zostanie on automatycznie przekompilowany i zastosowany do tre\305\233ci.",
    "Zapami\304\231taj ostatnio u\305\274ywany katalog shadera",
    "Otw\303\263rz przegl\304\205dark\304\231 plik\303\263w w ostatnio u\305\274ywanym katalogu podcz"
    "as \305\202adowania ustawie\305\204 i przebieg\303\263w shadera.",
+   "Przegl\304\205daj pliki shader\303\263w w poszukiwaniu nowych zmian. Po zapisaniu zmian shadera "
+   "na dysk zostanie on automatycznie przekompilowany i zastosowany do tre\305\233ci.",
    "Wczytaj ustawienia",
    "Za\305\202aduj ustawienie wst\304\231pne shadera. Potok shadera zostanie automatycznie skonfigur"
    "owany.",
@@ -9110,7 +9154,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (183506u
+      (sizeof(msg_hash_pl_blob) == (183121u
 #ifdef HAVE_LAKKA
        + 15u
        + 44u
@@ -9124,6 +9168,10 @@ typedef char msg_hash_pl_blob_check[
        + 20u
        + 43u
        + 26u
+#endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 27u
+       + 100u
 #endif
 #if defined(DINGUX)
        + 22u
@@ -9140,9 +9188,14 @@ typedef char msg_hash_pl_blob_check[
        + 13u
 #endif
 #endif
+#ifndef SETTINGS_DEF_CONFIG_PASS
+       + 71u
+#endif
 #if defined (WIIU)
+#ifdef WIIU
        + 49u
        + 115u
+#endif
 #endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
        + 40u
@@ -9155,8 +9208,10 @@ typedef char msg_hash_pl_blob_check[
        + 142u
 #endif
 #if defined(DINGUX)
+#if defined(DINGUX)
        + 34u
        + 183u
+#endif
 #endif
 #if defined(RARCH_MOBILE)
        + 55u
@@ -9169,8 +9224,14 @@ typedef char msg_hash_pl_blob_check[
 #ifdef HAVE_MICROPHONE
        + 9u
        + 38u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
        + 9u
        + 122u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
        + 12u
        + 107u
        + 107u
@@ -9215,17 +9276,27 @@ typedef char msg_hash_pl_blob_check[
        + 61u
        + 18u
        + 18u
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
        + 30u
        + 55u
+#endif
+#endif
+#ifdef HAVE_MIST
        + 21u
        + 63u
        + 30u
 #endif
 #ifndef SETTINGS_DEF_CONFIG_PASS
+       + 36u
+       + 79u
        + 46u
        + 76u
        + 39u
        + 81u
+       + 26u
+       + 46u
 #endif
 #if defined(ANDROID)
        + 149u
@@ -9857,8 +9928,14 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
@@ -9916,7 +9993,9 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
@@ -9937,8 +10016,10 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
 #if defined (WIIU)
+#ifdef WIIU
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
@@ -10020,8 +10101,10 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
 #if defined(DINGUX)
+#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
@@ -10047,8 +10130,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
@@ -10136,8 +10217,12 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
@@ -10557,8 +10642,14 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+#endif
+#ifdef HAVE_MIST
+#ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+#endif
+#endif
+#ifdef HAVE_MIST
    (uint32_t)MSG_CORE_STEAM_INSTALLING,
    (uint32_t)MSG_CORE_STEAM_UNINSTALLED,
    (uint32_t)MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
@@ -10632,8 +10723,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
@@ -10658,8 +10747,10 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
@@ -10729,8 +10820,10 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -11210,12 +11303,12 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
@@ -11861,9 +11954,9 @@ static const uint32_t msg_hash_pl_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,

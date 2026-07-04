@@ -232,7 +232,9 @@ static const struct
    char s_adcf82d6[22];
    char s_e7033e0e[7];
 #if defined(DINGUX)
+#if defined(DINGUX)
    char s_d374d67d[41];
+#endif
 #endif
    char s_aa9bc75d[15];
    char s_57047267[11];
@@ -253,7 +255,11 @@ static const struct
    char s_dcf2e800[7];
    char s_da068369[9];
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    char s_d3e78762[17];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[9];
 #endif
    char s_ad7c73f6[15];
@@ -624,8 +630,10 @@ static const struct
    "\327\236\327\225\327\252\327\220\327\235 \327\220\327\231\327\251\327\231\327\252",
    "\327\236\327\234\327\220",
 #if defined(DINGUX)
+#if defined(DINGUX)
    "\327\251\327\236\327\225\327\250 \327\242\327\234 \327\231\327\227\327\241 \327\224\327\222\327"
    "\225\327\221\327\224-\327\250\327\225\327\227\327\221",
+#endif
 #endif
    "\327\220\327\225\327\230\327\225\327\236\327\230\327\231",
    "\327\221\327\244\327\225\327\242\327\234",
@@ -651,7 +659,11 @@ static const struct
    "\327\251\327\236\327\242",
    "\327\224\327\252\327\247\327\237",
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    "\327\236\327\231\327\247\327\250\327\225\327\244\327\225\327\237",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    "\327\224\327\252\327\247\327\237",
 #endif
    "\327\241\327\231\327\240\327\233\327\250\327\225\327\237",
@@ -759,11 +771,19 @@ typedef char msg_hash_he_blob_check[
        + 18u
 #endif
 #if defined(DINGUX)
+#if defined(DINGUX)
        + 41u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
        + 17u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
        + 17u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
        + 9u
 #endif
 #ifndef SETTINGS_DEF_CONFIG_PASS
@@ -997,7 +1017,9 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
 #if defined(DINGUX)
+#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -1018,7 +1040,11 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
