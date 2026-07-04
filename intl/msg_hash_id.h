@@ -402,12 +402,10 @@ static const struct
    char s_f5ab35c0[22];
    char s_055c296e[97];
    char s_6c1369c6[17];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[14];
    char s_75325963[42];
    char s_0f5266ce[15];
    char s_f83a493c[47];
-#endif
    char s_83e8dc72[29];
    char s_4d0b4ce0[89];
    char s_a64b3a0b[28];
@@ -423,10 +421,8 @@ static const struct
    char s_4d7e9b13[21];
    char s_c79d5013[12];
 #if defined(DINGUX)
-#if defined(DINGUX)
    char s_d374d67d[21];
    char s_c0e554ab[150];
-#endif
 #endif
    char s_8f37930f[30];
    char s_8f379310[30];
@@ -509,12 +505,10 @@ static const struct
    char s_28f025c5[119];
    char s_32f9494f[26];
    char s_daf6d7e2[64];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[25];
    char s_ada81f6a[28];
    char s_c85198e6[33];
    char s_1ef8917a[28];
-#endif
    char s_7c68a1ee[23];
    char s_9c702ee1[39];
    char s_5c2cc60f[70];
@@ -610,9 +604,7 @@ static const struct
    char s_e78c87a1[30];
    char s_d0746a0f[51];
    char s_ea2e0a76[12];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_37f2ecc0[58];
-#endif
    char s_749f0441[13];
    char s_f5338957[22];
    char s_82a25202[18];
@@ -1366,12 +1358,10 @@ static const struct
    "Paksa resolusi di UWP",
    "Paksa resolusi ke ukuran layar penuh, jika disetel ke 0, nilai tetap 3840 x 2160 akan digunakan.",
    "Skala Berjendela",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Lebar Jendela",
    "Atur lebar kustom untuk jendela tampilan.",
    "Tinggi Jendela",
    "Atur ketinggian khusus untuk jendela tampilan.",
-#endif
    "Lebar Maksimal Jendela Layar",
    "Atur tampilan lebar maksimal jendela layar berdasarkan skala yang ditentukan sebelumnya.",
    "Lebar Minimal Jendela Layar",
@@ -1390,11 +1380,9 @@ static const struct
    "Skala Bilangan Bulat",
    "Rasio Aspek",
 #if defined(DINGUX)
-#if defined(DINGUX)
    "Tetapkan Rasio Aspek",
    "Mempertahankan rasio aspek piksel 1:1 saat menskala konten lewat IPU internal. Jika dinonaktifka"
    "n, gambar akan diregangkan memenuhi seluruh tampilan.",
-#endif
 #endif
    "Rasio Aspek Kustom (Posisi X)",
    "Rasio Aspek Kustom (Posisi Y)",
@@ -1489,12 +1477,10 @@ static const struct
    "n dihapus dari memori.",
    "Atur volume stream audio.",
    "Putar stream audio secara bersamaan, meski dalam tampilan menu.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Nyalakan efek suara 'OK'",
    "Nyalakan efek suara 'Batal'",
    "Nyalakan efek suara 'Notifikasi'",
    "Nyalakan efek 'Suara Latar'",
-#endif
    "Jumlah Maksimal Pemain",
    "Ubah Letak Stik Kendali untuk Core Ini",
    "Timpa input bind dengan bind yang telah diubah untuk 'core' saat ini.",
@@ -1594,9 +1580,7 @@ static const struct
    "Simpan Konfigurasi dan Keluar",
    "Menyimpan semua perubahan konfigurasi saat keluar.",
    "0 (Awakutu)",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Menyaring berkas sesuai Core saat ini di Peramban Berkas.",
-#endif
    "Gerak Mundur",
    "Dukungan Gerak Mundur",
    "Laju Gerak Mundur",
@@ -1953,7 +1937,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26618u
+      (sizeof(msg_hash_id_blob) == (26908u
 #ifdef HAVE_LAKKA
        + 17u
        + 43u
@@ -1981,17 +1965,9 @@ typedef char msg_hash_id_blob_check[
        + 22u
        + 106u
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 14u
-       + 42u
-       + 15u
-       + 47u
-#endif
-#if defined(DINGUX)
 #if defined(DINGUX)
        + 21u
        + 150u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
        + 10u
@@ -2002,21 +1978,12 @@ typedef char msg_hash_id_blob_check[
        + 29u
        + 90u
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 25u
-       + 28u
-       + 33u
-       + 28u
-#endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 47u
        + 53u
 #endif
 #ifdef HAVE_MIST
        + 10u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 58u
 #endif
 #ifdef HAVE_LIBNX
        + 15u
@@ -2435,12 +2402,10 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -2456,10 +2421,8 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
 #if defined(DINGUX)
-#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2542,12 +2505,10 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
@@ -2643,9 +2604,7 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
    (uint32_t)MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,

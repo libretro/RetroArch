@@ -379,12 +379,10 @@ static const struct
    char s_f5ab35c0[25];
    char s_055c296e[104];
    char s_6c1369c6[23];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[21];
    char s_75325963[53];
    char s_0f5266ce[23];
    char s_f83a493c[53];
-#endif
    char s_83e8dc72[28];
    char s_4d0b4ce0[121];
    char s_a64b3a0b[31];
@@ -406,10 +404,8 @@ static const struct
    char s_b2f7627c[32];
    char s_f815af2a[78];
 #if defined(DINGUX)
-#if defined(DINGUX)
    char s_d374d67d[29];
    char s_c0e554ab[202];
-#endif
 #endif
    char s_8f37930f[46];
    char s_8f379310[46];
@@ -543,12 +539,8 @@ static const struct
    char s_e567aa86[20];
 #ifdef HAVE_MIST
    char s_c3f0e1ff[20];
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    char s_53788998[27];
    char s_40e907c6[56];
-#endif
 #endif
    char s_f02f73fc[42];
    char s_dd9ff22a[98];
@@ -1097,12 +1089,10 @@ static const struct
    "For\303\247a la resoluci\303\263 a la mida de la pantalla. Si es fica valor 0, s'usar\303\240 un"
    " de fixe de 3840 \303\227 2160.",
    "Escalat en la finestra",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Ample de la finestra",
    "Ajusta una amplada personalitzada per a la finestra.",
    "Al\303\247ada de la finestra",
    "Ajusta l'al\303\247\303\240ria personalitzada per a la finestra.",
-#endif
    "Ample m\303\240xim de la finestra",
    "Ajusta l'ampl\303\240ria m\303\240xima de la finestra al reescalar-la autom\303\240ticament d'ac"
    "ord al valor d'\302\253Escalat en la finestra\302\273.",
@@ -1134,12 +1124,10 @@ static const struct
    "Configura la relaci\303\263 d'aspecte",
    "Valor de punt flotant per a la relaci\303\263 d'aspecte de v\303\255deo (amplada/altura).",
 #if defined(DINGUX)
-#if defined(DINGUX)
    "Mantindre relaci\303\263 d'aspecte",
    "Mant\303\251 les relacions d'aspecte de p\303\255xels 1:1 a l'escalar continguts mitjan\303\247a"
    "nt la IPU interna. Si es desactiva esta opci\303\263, les imatges seran estirades a fi de que oc"
    "upen la totalitat de la pantalla.",
-#endif
 #endif
    "Relaci\303\263 d'aspecte personalitzat (posici\303\263 X)",
    "Relaci\303\263 d'aspecte personalitzat (posici\303\263 Y)",
@@ -1305,12 +1293,8 @@ static const struct
    "Gestiona els nuclis",
 #ifdef HAVE_MIST
    "Gestiona els nuclis",
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    "Vore 'Gestiona els nuclis'",
    "Vore l'opci\303\263 'Gestiona els nuclis' al men\303\272 principal.",
-#endif
 #endif
    "Limitar velocitat de fotogrames del men\303\272",
    "Assegura una limitaci\303\263 de la velocitat de fotogrames per segon mentres s'est\303\240 a di"
@@ -1463,7 +1447,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25582u
+      (sizeof(msg_hash_val_blob) == (25732u
 #ifdef HAVE_LAKKA
        + 14u
        + 52u
@@ -1495,17 +1479,9 @@ typedef char msg_hash_val_blob_check[
        + 46u
        + 155u
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 21u
-       + 53u
-       + 23u
-       + 53u
-#endif
-#if defined(DINGUX)
 #if defined(DINGUX)
        + 29u
        + 202u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
        + 11u
@@ -1518,12 +1494,8 @@ typedef char msg_hash_val_blob_check[
 #endif
 #ifdef HAVE_MIST
        + 20u
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
        + 27u
        + 56u
-#endif
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
@@ -1903,12 +1875,10 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -1930,10 +1900,8 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
 #if defined(DINGUX)
-#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2067,12 +2035,8 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
 #ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,

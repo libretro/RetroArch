@@ -349,12 +349,10 @@ static const struct
    char s_f5ab35c0[27];
    char s_055c296e[104];
    char s_6c1369c6[16];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[16];
    char s_75325963[24];
    char s_0f5266ce[15];
    char s_f83a493c[23];
-#endif
    char s_83e8dc72[27];
    char s_4d0b4ce0[105];
    char s_a64b3a0b[26];
@@ -369,10 +367,8 @@ static const struct
    char s_4d7e9b13[22];
    char s_c79d5013[13];
 #if defined(DINGUX)
-#if defined(DINGUX)
    char s_d374d67d[21];
    char s_c0e554ab[153];
-#endif
 #endif
    char s_8f37930f[34];
    char s_8f379310[34];
@@ -805,12 +801,10 @@ static const struct
    "Forsiraj rezoluciju na veli\304\215inu punog ekrana, ako je 0, bi\304\207e kori\305\241\304\207e"
    "na fiksna vrednost 3840 x 2160.",
    "Razmera prozora",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "\305\240irina prozora",
    "Podesi \305\241irinu prozora.",
    "Visina prozora",
    "Podesi visinu prozora.",
-#endif
    "Maksimalna \305\241irina prozora",
    "Podesi maksimalnu \305\241irinu prozora kada se automatski menja veli\304\215ina na osnovu opcij"
    "e 'Razmera prozora'.",
@@ -833,11 +827,9 @@ static const struct
    "Celobrojno skaliranje",
    "Odnos ekrana",
 #if defined(DINGUX)
-#if defined(DINGUX)
    "Zadr\305\276i odnos ekrana",
    "Odr\305\276avaj 1:1 odnos piksela kada se skalira sadr\305\276aj preko unutra\305\241njeg IPU-a."
    " Ako je isklju\304\215eno, slika \304\207e biti razvu\304\215ena da bu popunila ceo displej.",
-#endif
 #endif
    "Postavi odnos ekrana (X pozicija)",
    "Postavi odnos ekrana (Y pozicija)",
@@ -918,7 +910,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12246u
+      (sizeof(msg_hash_sr_blob) == (12324u
 #ifdef HAVE_LAKKA
        + 12u
        + 40u
@@ -942,17 +934,9 @@ typedef char msg_hash_sr_blob_check[
        + 31u
        + 109u
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 16u
-       + 24u
-       + 15u
-       + 23u
-#endif
-#if defined(DINGUX)
 #if defined(DINGUX)
        + 21u
        + 153u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
        + 8u
@@ -1304,12 +1288,10 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -1324,10 +1306,8 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
 #if defined(DINGUX)
-#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,

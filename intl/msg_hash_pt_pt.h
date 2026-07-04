@@ -497,12 +497,10 @@ static const struct
    char s_f5ab35c0[29];
    char s_055c296e[117];
    char s_6c1369c6[17];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[18];
    char s_75325963[60];
    char s_0f5266ce[17];
    char s_f83a493c[59];
-#endif
    char s_83e8dc72[26];
    char s_a64b3a0b[25];
    char s_2d8cb7ce[25];
@@ -516,10 +514,8 @@ static const struct
    char s_ad5ff591[11];
    char s_adcf82d6[13];
 #if defined(DINGUX)
-#if defined(DINGUX)
    char s_d374d67d[31];
    char s_c0e554ab[164];
-#endif
 #endif
    char s_8f37930f[50];
    char s_8f379310[50];
@@ -553,11 +549,7 @@ static const struct
    char s_37033dd5[109];
    char s_792e0069[22];
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    char s_d3e78762[10];
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[19];
    char s_ca9a92ae[33];
 #endif
@@ -669,10 +661,8 @@ static const struct
    char s_9f6b2d03[28];
    char s_97379d00[25];
    char s_64702d9a[35];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_2841f912[27];
    char s_1d39f4b7[40];
-#endif
    char s_749f0441[36];
    char s_8a8a4bd7[292];
    char s_f02f73fc[36];
@@ -1314,16 +1304,12 @@ static const struct
    char s_6dcc2f9f[20];
    char s_e290a5ae[17];
    char s_50d77da7[15];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[28];
-#endif
    char s_2f169651[16];
    char s_ec502f2a[20];
    char s_af6007a1[20];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d042d680[23];
    char s_ce89e465[23];
-#endif
    char s_fcf05466[23];
 #ifdef HAVE_LAKKA
    char s_0d83eb84[17];
@@ -1973,12 +1959,10 @@ static const struct
    "For\303\247ar a resolu\303\247\303\243o para o tamanho de ecr\303\243 inteiro. Se definido como "
    "0, um valor fixo de 3840 x 2160 ser\303\241 usado.",
    "Escala em janela",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Largura da janela",
    "Define a largura personalizada para a janela de exibi\303\247\303\243o.",
    "Altura da janela",
    "Define a altura personalizada para a janela de exibi\303\247\303\243o.",
-#endif
    "Largura m\303\241xima da janela",
    "Altura m\303\241xima da janela",
    "Transpar\303\252ncia da Janela",
@@ -1997,12 +1981,10 @@ static const struct
    "Configurar",
    "Personalizar",
 #if defined(DINGUX)
-#if defined(DINGUX)
    "Manter a Propor\303\247\303\243o da Imagem",
    "Manter propor\303\247\303\265es de aspeto de 1:1 pixel ao dimensionar conte\303\272do atrav\303"
    "\251s do IPU interno. Se desativado, as imagens ser\303\243o esticadas para preencher toda a tel"
    "a.",
-#endif
 #endif
    "Propor\303\247\303\243o personalizada do ecr\303\243 na posi\303\247\303\243o X",
    "Propor\303\247\303\243o personalizada do ecr\303\243 na posi\303\247\303\243o Y",
@@ -2044,11 +2026,7 @@ static const struct
    "com o controlador.",
    "Lat\303\252ncia de som (ms)",
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    "Microfone",
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    "Dispositivo de som",
    "Qualidade de reamostragem de som",
 #endif
@@ -2175,10 +2153,8 @@ static const struct
    "N\303\255vel de registo principal",
    "Contadores de desempenhp",
    "Extens\303\265es de filtro desconhecidas",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Filtrar pelo n\303\272cleo atual",
    "Usar o reprodutor multim\303\251dia integrado",
-#endif
    "Fun\303\247\303\243o de retrocedimento do tempo",
    "A taxa m\303\241xima na qual o conte\303\272do ser\303\241 executado quando for utilizada a fun"
    "\303\247\303\243o de avan\303\247o-r\303\241pido (ex: 5.0x para conte\303\272dos em 60fps, exist"
@@ -2897,16 +2873,12 @@ static const struct
    "Ativar filtro suave",
    "Ativar Bluetooth",
    "Redes sem fios",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Definir largura do ecr\303\243 VI",
-#endif
    "Usar Modo PAL60",
    "Reiniciar RetroArch",
    "Bloquear fotogramas",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Ativar fun\303\247\303\243o t\303\241til",
    "Preferir toque frontal",
-#endif
    "Ativar teclado pequeno",
 #ifdef HAVE_LAKKA
    "Ativar Bluetooth",
@@ -2950,7 +2922,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (54703u
+      (sizeof(msg_hash_pt_pt_blob) == (54998u
 #ifdef HAVE_LAKKA
        + 13u
        + 44u
@@ -2981,43 +2953,20 @@ typedef char msg_hash_pt_pt_blob_check[
        + 31u
        + 105u
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 18u
-       + 60u
-       + 17u
-       + 59u
-#endif
-#if defined(DINGUX)
 #if defined(DINGUX)
        + 31u
        + 164u
 #endif
-#endif
 #ifdef HAVE_MICROPHONE
        + 10u
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
        + 10u
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
        + 19u
        + 33u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 27u
-       + 40u
 #endif
 #ifdef HAVE_MIST
        + 10u
        + 16u
        + 16u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 28u
-       + 23u
-       + 23u
 #endif
 #ifdef HAVE_LAKKA
        + 17u
@@ -3528,12 +3477,10 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -3547,10 +3494,8 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
 #if defined(DINGUX)
-#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -3584,11 +3529,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
 #endif
@@ -3700,10 +3641,8 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -4345,16 +4284,12 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,

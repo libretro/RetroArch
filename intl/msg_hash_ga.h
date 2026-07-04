@@ -448,10 +448,8 @@ static const struct
    char s_ef13be35[57];
    char s_752ce8b2[43];
    char s_5e14cb20[160];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_cf6bc52a[29];
    char s_b853a798[84];
-#endif
    char s_7943e750[31];
    char s_1a8301fe[61];
    char s_a7206ebc[110];
@@ -511,9 +509,7 @@ static const struct
    char s_0e7699a6[293];
    char s_ed22c5f1[20];
    char s_d60aa85f[67];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_95e4b29f[68];
-#endif
    char s_f90edcc2[66];
    char s_c2314d30[267];
    char s_12b8e195[21];
@@ -580,12 +576,10 @@ static const struct
    char s_f5ab35c0[24];
    char s_055c296e[123];
    char s_6c1369c6[19];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[23];
    char s_75325963[60];
    char s_0f5266ce[20];
    char s_f83a493c[57];
-#endif
    char s_83e8dc72[26];
    char s_4d0b4ce0[123];
    char s_a64b3a0b[26];
@@ -619,10 +613,8 @@ static const struct
    char s_adcf82d6[13];
    char s_e7033e0e[5];
 #if defined(DINGUX)
-#if defined(DINGUX)
    char s_d374d67d[28];
    char s_c0e554ab[176];
-#endif
 #endif
    char s_8f37930f[40];
    char s_9506fc7d[93];
@@ -737,12 +729,8 @@ static const struct
    char s_792e0069[18];
    char s_98b02857[254];
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    char s_d3e78762[11];
    char s_b6f7f650[121];
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[7];
    char s_b40b91b9[124];
    char s_86e940b7[124];
@@ -805,13 +793,11 @@ static const struct
    char s_02027672[33];
    char s_f7e668f4[12];
    char s_daf6d7e2[57];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[32];
    char s_ada81f6a[27];
    char s_c85198e6[25];
    char s_1ef8917a[22];
    char s_d3213ff3[34];
-#endif
    char s_7c68a1ee[24];
    char s_85147d5c[77];
    char s_38cf005e[42];
@@ -1174,14 +1160,8 @@ static const struct
    char s_c9c04b6d[62];
    char s_3e0f9900[16];
    char s_67b3c923[23];
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    char s_53788998[33];
    char s_40e907c6[66];
-#endif
-#endif
-#ifdef HAVE_MIST
    char s_35b60281[21];
    char s_91e3840f[54];
    char s_30512c09[43];
@@ -1280,20 +1260,16 @@ static const struct
    char s_4555fdb4[67];
    char s_64702d9a[28];
    char s_dc469b88[94];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_2841f912[26];
    char s_37f2ecc0[87];
-#endif
    char s_c512fde9[57];
    char s_84cf9517[223];
    char s_543b5a62[24];
    char s_3d233cd0[75];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_1d39f4b7[44];
    char s_62584165[78];
    char s_a158a19e[50];
    char s_611538cc[62];
-#endif
    char s_749f0441[11];
    char s_7d4adfaf[32];
    char s_1c0f54f0[23];
@@ -1353,10 +1329,8 @@ static const struct
    char s_3fb95f49[58];
    char s_b662d01f[21];
    char s_bc47004d[81];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_0c353c96[48];
    char s_c384b984[74];
-#endif
    char s_f6cc615c[32];
    char s_980b7c0a[124];
    char s_46d040e3[61];
@@ -1618,14 +1592,12 @@ static const struct
    char s_d3fc9970[56];
    char s_63af41a7[33];
    char s_236bd8d5[66];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_4a7bf997[40];
    char s_0ce62f85[50];
    char s_e39d2cb2[25];
    char s_e9815ce0[35];
    char s_b055912b[24];
    char s_993d7399[34];
-#endif
    char s_f228c6c5[21];
    char s_01efec73[54];
    char s_7816d5d5[39];
@@ -2403,12 +2375,10 @@ static const struct
    char s_d774fd60[30];
    char s_f3302ed7[23];
    char s_11577805[27];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_870cb022[71];
    char s_96bda3d0[76];
    char s_8fa5e6c4[37];
    char s_4f627df2[45];
-#endif
    char s_c64294aa[26];
    char s_af2a7718[58];
    char s_40e7aacd[9];
@@ -2486,10 +2456,8 @@ static const struct
    char s_bed75ef8[188];
    char s_a9c8430e[25];
    char s_afac733c[39];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_ec9ccdc3[25];
    char s_2ceab671[165];
-#endif
    char s_d3906073[51];
    char s_934cf7a1[91];
    char s_8bf6ccd4[62];
@@ -2793,14 +2761,12 @@ static const struct
    char s_4047c726[17];
    char s_6f56b5d3[14];
    char s_875b5c6b[8];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_dd8ce9f3[19];
    char s_e915aba1[36];
    char s_95c85ee0[24];
    char s_039b790e[63];
    char s_6ca737be[25];
    char s_0bd86aec[63];
-#endif
    char s_a5843c01[34];
    char s_6ea6ac6f[220];
    char s_615c8cdc[18];
@@ -3835,9 +3801,7 @@ static const struct
    char s_f6a0db44[25];
    char s_b3c7fa93[25];
    char s_7f2380a0[13];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[36];
-#endif
    char s_ad14307a[14];
    char s_93ac5ec8[24];
    char s_2f2ca2b6[215];
@@ -3873,10 +3837,8 @@ static const struct
    char s_ec502f2a[19];
    char s_fc0122d8[148];
    char s_af6007a1[14];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d042d680[11];
    char s_ce89e465[28];
-#endif
    char s_0e85a0d1[62];
    char s_d458f013[34];
    char s_e9f0dd82[42];
@@ -3950,7 +3912,6 @@ static const struct
    char s_16cacb01[16];
    char s_f9db39ef[143];
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
    char s_fe8e5e18[36];
    char s_9fcd78c6[86];
    char s_174b92c0[27];
@@ -3961,7 +3922,6 @@ static const struct
    char s_dda6a015[144];
    char s_3326ea36[24];
    char s_d46604e4[111];
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    char s_05359d58[12];
@@ -4631,11 +4591,9 @@ static const struct
    "Gearr c\303\272pla picteil\303\255n timpeall imill na h\303\255omh\303\241 a fh\303\241gtar b"
    "\303\241n de ghn\303\241th ag forbr\303\263ir\303\255 agus a mb\303\255onn picteil\303\255n\303"
    "\255 neamhioml\303\241na iontu uaireanta freisin.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Cumasaigh Scagaire F\303\255se\303\241in",
    "Cuir Scagaire F\303\255se i bhFeidhm. Leid nach g\303\241 don tiom\303\241na\303\255 f\303\255se"
    " a chomhl\303\255onadh.",
-#endif
    "Cuir an Sc\303\241ile\303\241n ar Fionra\303\255",
    "Cosc a chur ar sc\303\241ile\303\241in do ch\303\263rais \303\263 bheith gn\303\255omhach.",
    "Cuireann s\303\251 an sp\303\241r\303\241la\303\255sc\303\241ile\303\241in ar fionra\303\255. Is"
@@ -4775,9 +4733,7 @@ static const struct
    "\303\255se ionsuite a roghn\303\272.",
    "Bain Scagaire F\303\255se",
    "D\303\255luchtaigh aon scagaire f\303\255se gn\303\255omhach faoi thiom\303\241int ag LAP.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Cumasaigh l\303\241nsc\303\241ile\303\241n thar an notch i bhfeist\303\255 Android agus iOS",
-#endif
    "Bain \303\272s\303\241id as Maol\303\241in Arg\303\263int\303\255 Miotail (Atos\303\272 ag teast"
    "\303\241il)",
    "D\303\251an iarracht feidhm\303\255ocht a fheabhs\303\272 tr\303\255 mhaol\303\241in arg\303\263"
@@ -4883,12 +4839,10 @@ static const struct
    "F\303\263rsaigh an taifeach go m\303\251id an sc\303\241ile\303\241in ioml\303\241in, m\303\241 "
    "shocra\303\255tear \303\251 go 0, \303\272s\303\241idfear luach seasta de 3840 x 2160.",
    "Sc\303\241la Fuinneogach",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Leithead na Fuinneoige",
    "Socraigh an leithead saincheaptha don fhuinneog taispe\303\241na.",
    "Airde na Fuinneoige",
    "Socraigh an airde saincheaptha don fhuinneog taispe\303\241na.",
-#endif
    "Uasleithead na Fuinneoige",
    "Socraigh uasleithead na fuinneoige taispe\303\241na nuair a athra\303\255tear m\303\251id go hua"
    "thoibr\303\255och bunaithe ar 'Sc\303\241la Fuinneoige'.",
@@ -4939,12 +4893,10 @@ static const struct
    "Saincheaptha",
    "L\303\241n",
 #if defined(DINGUX)
-#if defined(DINGUX)
    "Coinnigh C\303\263imheas Gn\303\251ithe",
    "Coinnigh c\303\263imheasa gn\303\251 picteil\303\255n 1:1 agus \303\241bhar \303\241 sc\303\241l"
    "\303\272 tr\303\255d an IPU inmhe\303\241nach. M\303\241 t\303\241 s\303\251 d\303\255chumasaith"
    "e, s\303\255nfear \303\255omh\303\241nna chun an taispe\303\241int ar fad a l\303\255onadh.",
-#endif
 #endif
    "C\303\263imheas Gn\303\251 Saincheaptha (Su\303\255omh X)",
    "Frith\303\241ireamh radhairc saincheaptha a \303\272s\303\241idtear chun su\303\255omh ais-X an "
@@ -5132,13 +5084,9 @@ static const struct
    "\231fh\303\251idir nach nd\303\251anfar \303\251 a chomhl\303\255onadh mura f\303\251idir leis a"
    "n tiom\303\241na\303\255 fuaime an moille shonraithe a shol\303\241thar.",
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    "Micreaf\303\263n",
    "Cumasaigh ionchur fuaime i gcro\303\255l\303\241r tacaithe. N\303\255l aon fhorchostais ann mura"
    " bhfuil micreaf\303\263n \303\241 \303\272s\303\241id ag an cro\303\255.",
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    "Gl\303\251as",
    "S\303\241raigh an gl\303\251as ionchuir r\303\251amhshocraithe a \303\272s\303\241ideann tiom"
    "\303\241na\303\255 an mhicreaf\303\263in. Braitheann s\303\251 seo ar an tiom\303\241na\303\255.",
@@ -5261,13 +5209,11 @@ static const struct
    "St\303\241das: Ag seinm (Seicheamhach)",
    "Meascth\303\263ir",
    "Seinn sruthanna fuaime comhuaineacha fi\303\272 sa roghchl\303\241r.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Cumasaigh Fuaim 'Ceart go leor'",
    "Cumasaigh Fuaim 'Cealaigh'",
    "Cumasaigh Fuaim 'F\303\263gra'",
    "Cumasaigh Fuaim 'BGM'",
    "Cumasaigh Fuaimeanna 'Scrollaigh'",
-#endif
    "Uasmh\303\251id \303\232s\303\241ideoir\303\255",
    "Uasmh\303\251id \303\272s\303\241ideoir\303\255 a dtaca\303\255tear leo le RetroArch. (Atos\303"
    "\272 riachtanach)",
@@ -5822,14 +5768,8 @@ static const struct
    " Steam.",
    "Suite\303\241il cro\303\255",
    "D\303\255shuite\303\241il an cro\303\255",
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    "Taispe\303\241in 'Bainistigh cro\303\255the'",
    "Taispe\303\241in an rogha 'Bainistigh cro\303\255the' sa Phr\303\255omh-Roghchl\303\241r.",
-#endif
-#endif
-#ifdef HAVE_MIST
    "Cro\303\255 a shuite\303\241il: ",
    "D\303\255shuite\303\241lfar an cro\303\255 nuair a scoirfear RetroArch.",
    "T\303\241 an cro\303\255 \303\241 \303\255osl\303\263d\303\241il faoi l\303\241thair",
@@ -6009,11 +5949,9 @@ static const struct
    "Scagaire S\303\255neadh Anaithnid",
    "Scag comhaid at\303\241 \303\241 thaispe\303\241int sa Bhrabhs\303\241la\303\255 Comhad de r\303"
    "\251ir s\303\255nt\303\255 a dtaca\303\255tear leo.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Scag de r\303\251ir Croi Reatha",
    "Scag na comhaid at\303\241 \303\241 thaispe\303\241int sa Bhrabhs\303\241la\303\255 Comhad de r"
    "\303\251ir an cro\303\255 reatha.",
-#endif
    "Cuimhnigh ar an Eolaire Tosaigh a \303\232s\303\241ideadh Deireanach",
    "Oscail an Brabhs\303\241la\303\255 Comhad ag an su\303\255omh deireanach a \303\272s\303\241idea"
    "dh agus \303\241bhar \303\241 lucht\303\272 \303\263n Eolaire Tosaigh. Tabhair faoi deara: Athsh"
@@ -6022,13 +5960,11 @@ static const struct
    "Mol Cro\303\255the i gC\303\263na\303\255",
    "Mol cro\303\255leac\303\241in at\303\241 ar f\303\241il fi\303\272 nuair a luchta\303\255tear cr"
    "o\303\255 de l\303\241imh.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "\303\232s\303\241id an Seinnteoir Me\303\241n T\303\263gtha Isteach",
    "Taispe\303\241in comhaid a dtaca\303\255tear leo ag Media Player sa Bhrabhs\303\241la\303\255 Co"
    "mhad.",
    "\303\232s\303\241id an Breathn\303\263ir \303\215omh\303\241nna T\303\263gtha Isteach",
    "Taispe\303\241in comhaid a dtaca\303\255tear leo sa Bhrabhs\303\241la\303\255 Comhad.",
-#endif
    "Athchasadh",
    "Athraigh socruithe athchas\303\241la.",
    "\303\201ireamh\303\241n Ama Fr\303\241ma",
@@ -6112,10 +6048,8 @@ static const struct
    "Forleagan Taispe\303\241na",
    "\303\232s\303\241idtear forleagan le haghaidh teorainneacha agus rialuithe ar an sc\303\241ile"
    "\303\241n.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Taispe\303\241in Forleagan Taobh thiar den Roghchl\303\241r",
    "Taispe\303\241in an forleagan taobh thiar den roghchl\303\241r seachas os a chomhair.",
-#endif
    "Folaigh Forleagan sa Roghchl\303\241r",
    "Folaigh an forleagan agus t\303\272 istigh sa roghchl\303\241r, agus taispe\303\241in ar\303\255"
    "s \303\251 nuair a bheidh t\303\272 ag f\303\241g\303\241il an roghchl\303\241ir.",
@@ -6517,14 +6451,12 @@ static const struct
    "Taispe\303\241in an rogha 'Faisn\303\251is' sa Phr\303\255omh-Roghchl\303\241r.",
    "Taispe\303\241in 'Comhad Cumra\303\255ochta'",
    "Taispe\303\241in an rogha 'Comhad Cumra\303\255ochta' sa Phr\303\255omh-Roghchl\303\241r.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Taispe\303\241in 'Forleagan Ar an Sc\303\241ile\303\241n'",
    "Taispe\303\241in an rogha 'Forleagan Ar an Sc\303\241ile\303\241n'.",
    "Taispe\303\241in 'Aga folaigh'",
    "Taispe\303\241in an rogha 'Aga folaigh'.",
    "Taispe\303\241in 'Athchasadh'",
    "Taispe\303\241in an rogha 'Athchasadh'.",
-#endif
    "Taispe\303\241in 'Cabhair'",
    "Taispe\303\241in an rogha 'Cabhair' sa Phr\303\255omh-Roghchl\303\241r.",
    "Taispe\303\241in 'Nuashonraitheoir Ar L\303\255ne'",
@@ -7577,13 +7509,11 @@ static const struct
    "Cuir aicearra leis an liosta.",
    "Scrios Gach Aicearra\303\255",
    "Glan an liosta aicearra\303\255.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Cuir Aicearra\303\255 i bhFeidhm go Hathoibr\303\255och le linn Luchtaithe Cluiche",
    "Cuir aicearra\303\255 i bhfeidhm go huathoibr\303\255och nuair a l\303\263d\303\241lann an cluic"
    "he.",
    "Cuir i bhFeidhm Tar \303\251is Scor\303\241naigh",
    "Cuir aicearra d\303\255reach tar \303\251is scor\303\241naigh.",
-#endif
    "Cuir Athruithe i bhFeidhm",
    "Tiocfaidh athruithe ar aicearra\303\255 i bhfeidhm l\303\241ithreach.",
    "Aicearra",
@@ -7669,12 +7599,10 @@ static const struct
    "\255 M3U a \303\272s\303\241id le haghaidh teidil ildiosca.",
    "Sc\303\241thad\303\263ir\303\255 F\303\255se\303\241in",
    "Cumasaigh p\303\255bl\303\255ne sc\303\241thaithe f\303\255se.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "R\303\251amhshocruithe Simpl\303\255",
    "S\303\241bh\303\241il r\303\251amhshocr\303\272 sc\303\241thaithe a bhfuil nasc ann chuig an r"
    "\303\251amhshocr\303\272 bunaidh a luchta\303\255odh agus nach bhfuil ann ach na hathruithe para"
    "im\303\251adair a rinne t\303\272.",
-#endif
    "Faire ar Chomhaid Sc\303\241th\303\263ra le haghaidh Athruithe",
    "Cuir athruithe a rinneadh ar chomhaid sc\303\241thaithe ar dhiosca i bhfeidhm go huathoibr\303"
    "\255och.",
@@ -8048,14 +7976,12 @@ static const struct
    "UU:NN:SS (AM/PM)",
    "UU:NN (AM/PM)",
    "\303\223 shin",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "L\303\255ont\303\263ir Teorann",
    "Taispe\303\241in teorainn an roghchl\303\241ir.",
    "Ti\303\272s L\303\255ont\303\263ir C\303\272lra",
    "M\303\251adaigh garbhacht phatr\303\272n seice\303\241la ch\303\272lra an roghchl\303\241ir.",
    "Ti\303\272s L\303\255ont\303\263ir Teorann",
    "M\303\251adaigh garbhacht imeall an roghchl\303\241ir ar chl\303\241r seice\303\241la.",
-#endif
    "\303\232s\303\241id Leagan Amach L\303\241nleithead",
    "Athraigh m\303\251id agus su\303\255omh iontr\303\241lacha an roghchl\303\241ir chun an \303\272"
    "s\303\241id is fearr a bhaint as an sp\303\241s sc\303\241ile\303\241in at\303\241 ar f\303\241i"
@@ -9270,9 +9196,7 @@ static const struct
    "Ceangail leis an L\303\255onra",
    "Ceangail leis an L\303\255onra",
    "D\303\255cheangail",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Socraigh Leithead an Sc\303\241ile\303\241in VI",
-#endif
    "D\303\255-caocha\303\255l",
    "Ceart\303\272 R\303\263-scan (Barr)",
    "Coigeartaigh bearradh r\303\263scanadh taispe\303\241na tr\303\255 mh\303\251id na h\303\255omh"
@@ -9336,10 +9260,8 @@ static const struct
    " ghn\303\255omhacht\303\272 (mar shampla, agus tiom\303\241na\303\255 roghchl\303\241ir \303\241"
    " athr\303\272).",
    "Fr\303\241ma\303\255 Bloc",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Teagmh\303\241il",
    "Is fearr teagmh\303\241il tosaigh",
-#endif
    "Bain \303\272s\303\241id as teagmh\303\241il tosaigh in ionad teagmh\303\241il ch\303\272l.",
    "Map\303\241il Rialaitheora M\303\251archl\303\241ir",
    "Cine\303\241l Map\303\241la Rialaitheora M\303\251archl\303\241ir",
@@ -9427,7 +9349,6 @@ static const struct
    "\241il chun freastal ar sc\303\241l\303\272 taispe\303\241na ar leibh\303\251al an ch\303\263rai"
    "s oibri\303\272ch\303\241in.",
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
    "Teagmh\303\241il le VMuche mar Phointeoir",
    "Cumasaigh imeachta\303\255 teagmh\303\241il a chur ar aghaidh \303\263n sc\303\241ile\303\241n t"
    "eagmh\303\241il ionchuir.",
@@ -9443,7 +9364,6 @@ static const struct
    "Gotha\303\255 Tadhaill VMouse",
    "Cumasaigh gotha\303\255 sc\303\241ile\303\241in tadhaill, lena n-\303\241ir\303\255tear tap\303"
    "\241il, tarraingt tap\303\241la agus svaidhpe\303\241il mh\303\251ar.",
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    "Sc\303\241l\303\272 RGA",
@@ -9564,7 +9484,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (199541u
+      (sizeof(msg_hash_ga_blob) == (201423u
 #ifdef HAVE_LAKKA
        + 15u
        + 63u
@@ -9578,10 +9498,6 @@ typedef char msg_hash_ga_blob_check[
        + 28u
        + 50u
        + 26u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 29u
-       + 84u
 #endif
 #if defined(DINGUX)
        + 21u
@@ -9598,9 +9514,6 @@ typedef char msg_hash_ga_blob_check[
        + 14u
 #endif
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 68u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 49u
@@ -9611,17 +9524,9 @@ typedef char msg_hash_ga_blob_check[
        + 28u
        + 115u
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 23u
-       + 60u
-       + 20u
-       + 57u
-#endif
-#if defined(DINGUX)
 #if defined(DINGUX)
        + 28u
        + 176u
-#endif
 #endif
 #if defined(RARCH_MOBILE)
        + 59u
@@ -9634,14 +9539,8 @@ typedef char msg_hash_ga_blob_check[
 #ifdef HAVE_MICROPHONE
        + 11u
        + 36u
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
        + 11u
        + 121u
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
        + 7u
        + 124u
        + 124u
@@ -9657,13 +9556,6 @@ typedef char msg_hash_ga_blob_check[
        + 100u
        + 33u
        + 102u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 32u
-       + 27u
-       + 25u
-       + 22u
-       + 34u
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 57u
@@ -9686,27 +9578,11 @@ typedef char msg_hash_ga_blob_check[
        + 62u
        + 16u
        + 23u
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
        + 33u
        + 66u
-#endif
-#endif
-#ifdef HAVE_MIST
        + 21u
        + 54u
        + 43u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 26u
-       + 87u
-       + 44u
-       + 78u
-       + 50u
-       + 62u
-       + 48u
-       + 74u
 #endif
 #if defined(ANDROID)
        + 170u
@@ -9721,14 +9597,6 @@ typedef char msg_hash_ga_blob_check[
        + 61u
 #endif
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 40u
-       + 50u
-       + 25u
-       + 35u
-       + 24u
-       + 34u
-#endif
 #ifdef HAVE_MIST
        + 32u
        + 56u
@@ -9740,23 +9608,6 @@ typedef char msg_hash_ga_blob_check[
        + 26u
        + 20u
        + 43u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 71u
-       + 76u
-       + 37u
-       + 45u
-       + 25u
-       + 165u
-       + 19u
-       + 36u
-       + 24u
-       + 63u
-       + 25u
-       + 63u
-       + 36u
-       + 11u
-       + 28u
 #endif
 #ifdef HAVE_LIBNX
        + 17u
@@ -9810,7 +9661,6 @@ typedef char msg_hash_ga_blob_check[
        + 57u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
        + 36u
        + 86u
        + 27u
@@ -9821,7 +9671,6 @@ typedef char msg_hash_ga_blob_check[
        + 144u
        + 24u
        + 111u
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
        + 12u
@@ -10346,10 +10195,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
@@ -10407,9 +10254,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
@@ -10475,12 +10320,10 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -10514,10 +10357,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
 #if defined(DINGUX)
-#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
@@ -10632,12 +10473,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
@@ -10698,13 +10535,11 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -11065,14 +10900,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
-#endif
-#endif
-#ifdef HAVE_MIST
    (uint32_t)MSG_CORE_STEAM_INSTALLING,
    (uint32_t)MSG_CORE_STEAM_UNINSTALLED,
    (uint32_t)MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
@@ -11171,20 +11000,16 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
@@ -11244,10 +11069,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -11509,14 +11332,12 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
@@ -12293,12 +12114,10 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -12376,10 +12195,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -12682,14 +12499,12 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -13724,9 +13539,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
@@ -13762,10 +13575,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-#endif
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
@@ -13839,7 +13650,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
@@ -13850,7 +13660,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

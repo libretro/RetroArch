@@ -185,10 +185,8 @@ static const struct
    char s_bfd4c6ef[11];
    char s_ce997004[11];
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[16];
    char s_0f5266ce[15];
-#endif
    char s_78585119[8];
    char s_c79d5013[12];
    char s_ad5ff591[14];
@@ -204,11 +202,7 @@ static const struct
    char s_dcf2e800[5];
    char s_da068369[8];
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    char s_d3e78762[9];
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[8];
 #endif
    char s_ad7c73f6[15];
@@ -462,10 +456,8 @@ static const struct
    "Bikubi\304\215no",
    "Bilinearno",
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "\305\240irina prozora",
    "Visina prozora",
-#endif
    "Pametno",
    "Omjer slike",
    "Konfiguracija",
@@ -481,11 +473,7 @@ static const struct
    "Zvuk",
    "Ure\304\221aj",
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    "Mikrofon",
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    "Ure\304\221aj",
 #endif
    "Sinkronizacija",
@@ -571,7 +559,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
-      (sizeof(msg_hash_hr_blob) == (4146u
+      (sizeof(msg_hash_hr_blob) == (4177u
 #ifdef HAVE_LAKKA
        + 12u
        + 40u
@@ -583,19 +571,9 @@ typedef char msg_hash_hr_blob_check[
        + 11u
        + 11u
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 16u
-       + 15u
-#endif
 #ifdef HAVE_MICROPHONE
        + 9u
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
        + 9u
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
        + 8u
 #endif
 #ifdef HAVE_MIST
@@ -784,10 +762,8 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
@@ -803,11 +779,7 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,

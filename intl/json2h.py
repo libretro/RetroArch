@@ -65,7 +65,11 @@ def expand_def_includes(text, base_dir):
                 # A guard alternated with the strings pass is always true
                 # for string consumers; this expansion mirrors the us.h
                 # consumer, which defines the pass, so drop the pair.
-                if 'SETTINGS_DEF_STRINGS_PASS' in ls:
+                if 'SETTINGS_DEF' in ls:
+                    # Pass markers - strings-pass alternations, the
+                    # config-pass wrapper on divergent-key rows, the
+                    # enum-pass alias shells - are def-file internals,
+                    # always true for string consumers; drop the pair.
                     skip_endif.append(True)
                     i = line_end + 1
                     continue
@@ -380,7 +384,21 @@ PRAGMA_BLOCK = (
 '#pragma warning(disable:4045)\n'
 '#endif\n')
 
+def dedup_guards(g):
+    # A def row's own platform guard can repeat an enclosing template
+    # guard; nested identical plain guards are meaningless, so emit
+    # each open condition once. Else-branches are never deduplicated.
+    out, open_conds = [], set()
+    for cond, in_else in g:
+        if not in_else and cond in open_conds:
+            continue
+        out.append((cond, in_else))
+        open_conds.add(cond)
+    return tuple(out)
+
 def emit_guard_transition(out, prev, cur):
+    prev = dedup_guards(prev)
+    cur = dedup_guards(cur)
     if prev == cur:
         return
     for _ in prev:

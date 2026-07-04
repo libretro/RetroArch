@@ -280,12 +280,10 @@ static const struct
    char s_84c46931[35];
    char s_59f183c8[32];
    char s_59f183c9[30];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[22];
    char s_75325963[56];
    char s_0f5266ce[20];
    char s_f83a493c[54];
-#endif
    char s_83e8dc72[30];
    char s_a64b3a0b[28];
    char s_2d8cb7ce[23];
@@ -297,9 +295,7 @@ static const struct
    char s_c79d5013[24];
    char s_ad5ff591[15];
 #if defined(DINGUX)
-#if defined(DINGUX)
    char s_d374d67d[34];
-#endif
 #endif
    char s_d6fb8efe[35];
    char s_fb84857a[7];
@@ -315,11 +311,7 @@ static const struct
    char s_dcf2e800[6];
    char s_da068369[8];
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    char s_d3e78762[11];
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[8];
 #endif
    char s_ad7c73f6[16];
@@ -337,12 +329,10 @@ static const struct
    char s_40084357[7];
    char s_f7e668f4[8];
    char s_daf6d7e2[57];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[25];
    char s_ada81f6a[29];
    char s_c85198e6[29];
    char s_1ef8917a[26];
-#endif
    char s_7c68a1ee[18];
    char s_9c702ee1[35];
    char s_e28bc72f[27];
@@ -385,11 +375,7 @@ static const struct
    char s_e567aa86[20];
 #ifdef HAVE_MIST
    char s_c3f0e1ff[20];
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    char s_53788998[40];
-#endif
 #endif
    char s_e78c87a1[35];
    char s_29a48680[68];
@@ -398,9 +384,7 @@ static const struct
    char s_5ae6337d[67];
    char s_a624fe50[19];
    char s_074440cb[22];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_a158a19e[36];
-#endif
    char s_749f0441[10];
    char s_74dcbca5[8];
    char s_3ea80887[6];
@@ -1285,12 +1269,10 @@ static const struct
    "Mou de ventana a pantalla completa",
    "Llargor de la pantalla completa",
    "Altor de la pantalla completa",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Llargor de la ventana",
    "Configura'l llargor predetermin\303\241u p'amosar la ventana.",
    "Altor de la ventana",
    "Configura l'altor predetermin\303\241u p'amosar la ventana.",
-#endif
    "Llargor m\303\241ximu de la ventana",
    "Altor m\303\241ximu de la ventana",
    "Opacid\303\241 de la ventana",
@@ -1305,9 +1287,7 @@ static const struct
    "Proporci\303\263n del aspeutu",
    "Configuraci\303\263n",
 #if defined(DINGUX)
-#if defined(DINGUX)
    "Caltener la proporci\303\263n d'aspeutu",
-#endif
 #endif
    "Sincronizaci\303\263n vertical adautable",
    "Salida",
@@ -1324,11 +1304,7 @@ static const struct
    "Audiu",
    "Pres\303\251u",
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    "Micr\303\263fonu",
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    "Pres\303\251u",
 #endif
    "Sincronizaci\303\263n",
@@ -1349,12 +1325,10 @@ static const struct
    "Quitar",
    "Mecedor",
    "Reproduz fluxos d'audiu simult\303\241neos, tami\303\251n nel men\303\272.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Activar el son\303\255u \302\253OK\302\273",
    "Activar el son\303\255u \302\253Cancel\302\273",
    "Activar el son\303\255u \302\253Notice\302\273",
    "Activar el son\303\255u \302\253BGM\302\273",
-#endif
    "Usuarios m\303\241ximos",
    "Remapiar los controles esti nucleu",
    "Configuraci\303\263n autom\303\241tica",
@@ -1399,11 +1373,7 @@ static const struct
    "Xesti\303\263n de nucleos",
 #ifdef HAVE_MIST
    "Xesti\303\263n de nucleos",
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    "Amosar la opci\303\263n \302\253Xestionar nucleos\302\273",
-#endif
 #endif
    "Guardar la configuraci\303\263n al colar",
    "Guarda nam\303\241s la configuraci\303\263n que s'estreme de la predeterminada.",
@@ -1414,9 +1384,7 @@ static const struct
    "Carga autom\303\241ticamente'l puntu de guard\303\241u autom\303\241ticu nel aniciu.",
    "Rexistru detall\303\241u",
    "Rexistrar nun ficheru",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Usar el visor d'im\303\241xenes integr\303\241u",
-#endif
    "Rebobinar",
    "Calid\303\241",
    "Filos",
@@ -2050,7 +2018,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24187u
+      (sizeof(msg_hash_ast_blob) == (24484u
 #ifdef HAVE_LAKKA
        + 40u
 #endif
@@ -2066,47 +2034,20 @@ typedef char msg_hash_ast_blob_check[
        + 12u
 #endif
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 22u
-       + 56u
-       + 20u
-       + 54u
-#endif
-#if defined(DINGUX)
 #if defined(DINGUX)
        + 34u
 #endif
-#endif
 #ifdef HAVE_MICROPHONE
        + 11u
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
        + 11u
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
        + 8u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 25u
-       + 29u
-       + 29u
-       + 26u
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 77u
 #endif
 #ifdef HAVE_MIST
        + 20u
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
        + 40u
-#endif
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 36u
 #endif
 #ifdef _3DS
        + 60u
@@ -2414,12 +2355,10 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -2431,9 +2370,7 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
 #if defined(DINGUX)
-#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
@@ -2449,11 +2386,7 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
@@ -2471,12 +2404,10 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -2519,11 +2450,7 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
 #ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
    (uint32_t)MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
@@ -2532,9 +2459,7 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,

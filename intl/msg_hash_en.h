@@ -67,9 +67,7 @@ static const struct
    char s_17663212[152];
    char s_2d9d0a50[211];
    char s_0e7699a6[201];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_95e4b29f[57];
-#endif
    char s_a68d6d11[54];
    char s_da7a38eb[20];
    char s_a39ca959[81];
@@ -95,9 +93,7 @@ static const struct
    char s_b2f7627c[27];
    char s_ad5ff591[11];
 #if defined(DINGUX)
-#if defined(DINGUX)
    char s_c0e554ab[153];
-#endif
 #endif
    char s_73658ec1[124];
    char s_73658ec2[116];
@@ -126,9 +122,7 @@ static const struct
    char s_cb67f2a4[36];
    char s_f9005edc[159];
    char s_a83d6467[175];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[20];
-#endif
    char s_38cf005e[37];
    char s_9c702ee1[33];
    char s_e28bc72f[18];
@@ -336,10 +330,8 @@ static const struct
    char s_88ff9936[23];
    char s_085b8f97[15];
    char s_0ea29469[24];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_039b790e[65];
    char s_0bd86aec[49];
-#endif
    char s_6ea6ac6f[148];
    char s_e6600c20[243];
    char s_a9145c83[13];
@@ -484,9 +476,7 @@ static const struct
    char s_3180dcf5[47];
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
    char s_dda6a015[99];
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    char s_e8460c46[55];
@@ -580,9 +570,7 @@ static const struct
    "Apply a CPU powered video filter. Might come at a high performance cost. Some video filters migh"
    "t only work for cores that use 32-bit or 16-bit colour. Built-in video filter libraries can be s"
    "elected.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Enable full-screen over notch in Android and iOS devices",
-#endif
    "Switch among native and ultra-wide super resolutions.",
    "Horizontal Centring",
    "Cycle through these options if the image is not centred properly on the display.",
@@ -612,10 +600,8 @@ static const struct
    "Configuration Aspect Ratio",
    "Configured",
 #if defined(DINGUX)
-#if defined(DINGUX)
    "Maintain 1:1 pixel aspect ratios when scaling content with the internal IPU. If it's disabled, i"
    "mages will then be stretched to fill the entire display.",
-#endif
 #endif
    "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 i"
    "s centre, 1.0 is far right.",
@@ -655,9 +641,7 @@ static const struct
    "sabled, proper synchronisation is nearly impossible to obtain.",
    "Will start playback of the audio stream. Once finished, it will jump to the next audio stream in"
    " sequential order and repeat this behaviour. Useful as an album playback mode.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Enable 'Okay' Sound",
-#endif
    "Polling Behaviour (Restart required)",
    "Remap the Controls for This Core",
    "Autoconfiguration",
@@ -939,10 +923,8 @@ static const struct
    "Left Analogue (Forced)",
    "Right Analogue",
    "Right Analogue (Forced)",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Increase coarseness of the menu background chequerboard pattern.",
    "Increase coarseness of menu border chequerboard.",
-#endif
    "Resize and position menu entries to make the best use of the available screen space. Disable thi"
    "s to use the classic fixed-width two column layout.",
    "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, re"
@@ -1110,10 +1092,8 @@ static const struct
    "Adjust x/y scale for Wii-mote light gun speed.",
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
    "Enable along with Mouse to utilise the touch screen as a trackball, adding inertia to the pointe"
    "r.",
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    "RGA scaling and bi-cubic filtering. May break widgets.",
@@ -1140,7 +1120,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26565u
+      (sizeof(msg_hash_en_blob) == (26756u
 #if defined(DINGUX)
        + 195u
        + 9u
@@ -1152,18 +1132,13 @@ typedef char msg_hash_en_blob_check[
        + 18u
 #endif
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 57u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 46u
 #endif
 #endif
 #if defined(DINGUX)
-#if defined(DINGUX)
        + 153u
-#endif
 #endif
 #if defined(RARCH_MOBILE)
        + 147u
@@ -1173,11 +1148,6 @@ typedef char msg_hash_en_blob_check[
        + 19u
        + 152u
        + 121u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 20u
-       + 65u
-       + 49u
 #endif
 #ifdef HAVE_LIBNX
        + 15u
@@ -1201,9 +1171,7 @@ typedef char msg_hash_en_blob_check[
        + 47u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
        + 99u
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
        + 55u
@@ -1274,9 +1242,7 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-#endif
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
@@ -1302,9 +1268,7 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
 #if defined(DINGUX)
-#if defined(DINGUX)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
@@ -1333,9 +1297,7 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -1543,10 +1505,8 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
@@ -1691,9 +1651,7 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,

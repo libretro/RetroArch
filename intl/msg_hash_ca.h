@@ -444,10 +444,8 @@ static const struct
    char s_ef13be35[91];
    char s_752ce8b2[49];
    char s_5e14cb20[154];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_cf6bc52a[27];
    char s_b853a798[101];
-#endif
    char s_7943e750[36];
    char s_1a8301fe[54];
    char s_a7206ebc[104];
@@ -507,9 +505,7 @@ static const struct
    char s_0e7699a6[242];
    char s_ed22c5f1[28];
    char s_d60aa85f[50];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_95e4b29f[71];
-#endif
    char s_f90edcc2[75];
    char s_c2314d30[278];
    char s_12b8e195[29];
@@ -577,12 +573,10 @@ static const struct
    char s_f5ab35c0[29];
    char s_055c296e[111];
    char s_6c1369c6[23];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[23];
    char s_75325963[66];
    char s_0f5266ce[23];
    char s_f83a493c[66];
-#endif
    char s_83e8dc72[31];
    char s_4d0b4ce0[134];
    char s_a64b3a0b[31];
@@ -616,10 +610,8 @@ static const struct
    char s_adcf82d6[14];
    char s_e7033e0e[9];
 #if defined(DINGUX)
-#if defined(DINGUX)
    char s_d374d67d[29];
    char s_c0e554ab[160];
-#endif
 #endif
    char s_8f37930f[46];
    char s_9506fc7d[93];
@@ -734,12 +726,8 @@ static const struct
    char s_792e0069[27];
    char s_98b02857[216];
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    char s_d3e78762[10];
    char s_b6f7f650[142];
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[11];
    char s_b40b91b9[94];
    char s_86e940b7[94];
@@ -802,13 +790,11 @@ static const struct
    char s_02027672[32];
    char s_f7e668f4[10];
    char s_daf6d7e2[59];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[21];
    char s_ada81f6a[29];
    char s_c85198e6[27];
    char s_1ef8917a[22];
    char s_d3213ff3[30];
-#endif
    char s_7c68a1ee[16];
    char s_85147d5c[63];
    char s_38cf005e[43];
@@ -1173,14 +1159,8 @@ static const struct
    char s_c9c04b6d[67];
    char s_3e0f9900[18];
    char s_67b3c923[24];
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    char s_53788998[28];
    char s_40e907c6[62];
-#endif
-#endif
-#ifdef HAVE_MIST
    char s_35b60281[24];
    char s_91e3840f[56];
    char s_30512c09[41];
@@ -1278,20 +1258,16 @@ static const struct
    char s_4555fdb4[69];
    char s_64702d9a[32];
    char s_dc469b88[82];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_2841f912[24];
    char s_37f2ecc0[78];
-#endif
    char s_c512fde9[39];
    char s_84cf9517[208];
    char s_543b5a62[24];
    char s_3d233cd0[75];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_1d39f4b7[35];
    char s_62584165[59];
    char s_a158a19e[49];
    char s_611538cc[68];
-#endif
    char s_749f0441[9];
    char s_7d4adfaf[39];
    char s_1c0f54f0[38];
@@ -1350,10 +1326,8 @@ static const struct
    char s_3fb95f49[53];
    char s_b662d01f[35];
    char s_bc47004d[75];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_0c353c96[41];
    char s_c384b984[59];
-#endif
    char s_f6cc615c[32];
    char s_980b7c0a[90];
    char s_46d040e3[50];
@@ -1614,14 +1588,12 @@ static const struct
    char s_d3fc9970[54];
    char s_63af41a7[35];
    char s_236bd8d5[66];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_4a7bf997[37];
    char s_0ce62f85[49];
    char s_e39d2cb2[21];
    char s_e9815ce0[33];
    char s_b055912b[20];
    char s_993d7399[29];
-#endif
    char s_f228c6c5[17];
    char s_01efec73[48];
    char s_7816d5d5[37];
@@ -2397,12 +2369,10 @@ static const struct
    char s_d774fd60[29];
    char s_f3302ed7[23];
    char s_11577805[26];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_870cb022[59];
    char s_96bda3d0[57];
    char s_8fa5e6c4[18];
    char s_4f627df2[55];
-#endif
    char s_c64294aa[18];
    char s_af2a7718[49];
    char s_40e7aacd[6];
@@ -2478,10 +2448,8 @@ static const struct
    char s_bed75ef8[196];
    char s_a9c8430e[18];
    char s_afac733c[40];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_ec9ccdc3[23];
    char s_2ceab671[136];
-#endif
    char s_d3906073[35];
    char s_934cf7a1[73];
    char s_8bf6ccd4[57];
@@ -2766,14 +2734,12 @@ static const struct
    char s_d293762b[28];
    char s_35b61838[25];
    char s_875b5c6b[6];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_dd8ce9f3[16];
    char s_e915aba1[26];
    char s_95c85ee0[15];
    char s_039b790e[61];
    char s_6ca737be[17];
    char s_0bd86aec[64];
-#endif
    char s_a5843c01[29];
    char s_6ea6ac6f[197];
    char s_615c8cdc[14];
@@ -3792,9 +3758,7 @@ static const struct
    char s_f6a0db44[21];
    char s_b3c7fa93[21];
    char s_7f2380a0[12];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_6a9b757c[46];
-#endif
    char s_ad14307a[18];
    char s_93ac5ec8[35];
    char s_2f2ca2b6[153];
@@ -3829,10 +3793,8 @@ static const struct
    char s_ec502f2a[20];
    char s_fc0122d8[134];
    char s_af6007a1[22];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d042d680[8];
    char s_ce89e465[41];
-#endif
    char s_0e85a0d1[56];
    char s_d458f013[46];
    char s_e9f0dd82[55];
@@ -3904,7 +3866,6 @@ static const struct
    char s_16cacb01[15];
    char s_f9db39ef[133];
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
    char s_fe8e5e18[52];
    char s_9fcd78c6[65];
    char s_174b92c0[48];
@@ -3915,7 +3876,6 @@ static const struct
    char s_dda6a015[144];
    char s_3326ea36[27];
    char s_d46604e4[96];
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    char s_05359d58[12];
@@ -4514,11 +4474,9 @@ static const struct
    "Retalla el sobreescombrat (Es requereix reinici)",
    "Retalla uns quants p\303\255xels sobre les vores de la imatge deixats en blanc normalment pels d"
    "esenvolupadors i que de vegades tamb\303\251 contenen p\303\255xels brossa.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Activa el filtre de v\303\255deo",
    "Aplica el filtre de v\303\255deo: \303\211s una petici\303\263 que el controlador de v\303\255de"
    "o no t\303\251 per qu\303\250 respectar.",
-#endif
    "Suspensi\303\263 de l'estalvi de pantalla",
    "Evita que s'activi l'estalvi de pantalla del sistema.",
    "Susp\303\250n l'estalvi de pantalla. \303\211s una petici\303\263 que el controlador de v\303"
@@ -4638,9 +4596,7 @@ static const struct
    " Es poden seleccionar biblioteques de filtres de v\303\255deo integrades.",
    "Elimina el filtre de v\303\255deo",
    "Elimina qualsevol filtre de v\303\255deo per CPU actiu.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Activa la pantalla completa sobre l'osca als dispositius Android i iOS",
-#endif
    "Fes servir la mem\303\262ria interm\303\250dia pels arguments de Metal (Cal reiniciar)",
    "Pots provar d'augmentar el rendiment si fas servir la mem\303\262ria interm\303\250dia pels argu"
    "ments de Metal. Alguns nuclis necessiten tenir aquesta opci\303\263 activada. Aquesta opci\303"
@@ -4736,12 +4692,10 @@ static const struct
    "For\303\247a la resoluci\303\263 de la mida de pantalla completa. S'usar\303\240 un valor fix de"
    " 3840 x 2160 si s'estableix a 0.",
    "Escalat de la finestra",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Amplada de la finestra",
    "Estableix l'amplada personalitzada de la finestra de la pantalla.",
    "Al\303\247ada de la finestra",
    "Estableix l'al\303\247ada personalitzada de la finestra de la pantalla.",
-#endif
    "Amplada m\303\240xima de la finestra",
    "Estableix l'amplada m\303\240xima de la finestra de la pantalla quan redimensiona autom\303\240t"
    "icament en funci\303\263 de l'\"Escalat de la finestra\".",
@@ -4787,11 +4741,9 @@ static const struct
    "Personalitzat",
    "Completa",
 #if defined(DINGUX)
-#if defined(DINGUX)
    "Mant\303\251 la relaci\303\263 d'aspecte",
    "Mant\303\251 relacions d'aspecte d'1:1 p\303\255xel en escalar el contingut via l'IPU interna. S"
    "i es desactiva, les imatges s'estiraran fins a omplir la pantalla completa.",
-#endif
 #endif
    "Relaci\303\263 d'aspecte personalitzat (posici\303\263 X)",
    "Despla\303\247ament personalitzat per definir la posici\303\263 en l'eix X de l'\303\240rea de v"
@@ -4971,13 +4923,9 @@ static const struct
    "\240 mantenir la lat\303\250ncia real en un 50% d'aquest valor. Aquesta opci\303\263 no es compl"
    "ir\303\240 si el controlador d'\303\240udio no pot produir aquesta lat\303\250ncia.",
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    "Micr\303\262fon",
    "Activa l'entrada d'\303\240udio en aquells nuclis que siguin compatibles. Si el nucli no fa serv"
    "ir el micr\303\262fon, no augmenta la c\303\240rrega de la CPU.",
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    "Dispositiu",
    "For\303\247a el dispositiu que fa servir el controlador de micr\303\262fon. Aix\303\262 dep\303"
    "\250n del controlador.",
@@ -5085,13 +5033,11 @@ static const struct
    "Estat: Reproduint (Seq\303\274encial)",
    "Mesclador",
    "Reprodueix fluxos d'\303\240udio simultanis fins i tot al men\303\272.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Activa el so de 'OK'",
    "Activa el so de 'Cancel\302\267la'",
    "Activa el so de 'Notifica'",
    "Activa el so de 'BGM'",
    "Activa el so de despla\303\247ament",
-#endif
    "Usuaris m\303\240xims",
    "Nombre m\303\240xim d'usuaris suportat per RetroArch (cal reiniciar)",
    "Sistema de votaci\303\263 (Es requereix reinici)",
@@ -5572,14 +5518,8 @@ static const struct
    "Instal\302\267la o desinstal\302\267la nuclis distribu\303\257ts a trav\303\251s de Steam.",
    "Instal\302\267lar nucli",
    "Desinstal\302\267lar un nucli",
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    "Mostra 'Administrar nuclis'",
    "Mostra l\342\200\231opci\303\263 \302\253Gestiona els nuclis\302\273 al men\303\272 principal.",
-#endif
-#endif
-#ifdef HAVE_MIST
    "Instal\302\267lant el nucli: ",
    "El nucli ser\303\240 desinstal\302\267lat quan es tanqui RetroArch.",
    "El nucli s'est\303\240 descarregant ara mateix",
@@ -5728,22 +5668,18 @@ static const struct
    "Mostra fitxers ocults i carpetes ocultes en l'explorador de fitxers.",
    "Filtrar extensions desconegudes",
    "Mostra nom\303\251s fitxers que tinguin extensions conegudes a l'explorador de fitxers.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Filtra pel nucli actual",
    "Filtra els fitxers que es mostren a l'explorador de fitxers pel nucli actual.",
-#endif
    "Recorda l'\303\272ltima carpeta on has desat",
    "Obre l'explorador de fitxers a l'\303\272ltima localitzaci\303\263 que s'ha fet servir quan es c"
    "arrega contingut des de la carpeta inicial. Nota: La localitzaci\303\263 torna al seu valor pred"
    "eterminat en reiniciar RetroArch.",
    "Suggereix nuclis sempre",
    "Suggereix tots els nuclis disponibles quen es carrega un nucli manualment.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Fes servir el reproductor integrat",
    "Mostra els fitxers que son compatibles amb el reproductor.",
    "Fes servir el visualitzador d\342\200\231imatges integrat",
    "Mostra les imatges que son compatibles amb l'explorador de fitxers.",
-#endif
    "Rebobina",
    "Canvia la configuraci\303\263 del rebobinat.",
    "Comptador de duraci\303\263 dels fotogrames",
@@ -5819,10 +5755,8 @@ static const struct
    "Canvia la visibilitat de determinades notificacions.",
    "Superposici\303\263 de la Visualitzaci\303\263",
    "Les superposicions s'utilitzen pels controls i contorns sobre la pantalla.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Mostra la Superposici\303\263 darrere el Men\303\272",
    "Mostra la superposici\303\263 darrere en lloc de sobre el men\303\272.",
-#endif
    "Amaga la Superposici\303\263 al Men\303\272",
    "Amaga la superposici\303\263 mentre siguem dins el men\303\272, i mosta'l de nou en sortir del m"
    "en\303\272.",
@@ -6176,14 +6110,12 @@ static const struct
    "Mostra \302\253Fitxer de configuraci\303\263\302\273",
    "Mostra l\342\200\231opci\303\263 \302\253Fitxer de configuraci\303\263\302\273 al men\303\272 pr"
    "incipal.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Mostra \302\253Superposici\303\263 en pantalla\302\273",
    "Mostra l\342\200\231opci\303\263 \302\253Superposici\303\263 en pantalla\302\273.",
    "Mostra \302\253Lat\303\250ncia\302\273",
    "Mostra l\342\200\231opci\303\263 \302\253Lat\303\250ncia\302\273.",
    "Mostra \302\253Rebobina\302\273",
    "Mostra l'opci\303\263 'Rebobinar'.",
-#endif
    "Mostra \302\253Ajuda\302\273",
    "Mostra l\342\200\231opci\303\263 \302\253Ajuda\302\273 al men\303\272 principal.",
    "Mostra \342\200\234Actualitzador en l\303\255nia\342\200\235",
@@ -7149,12 +7081,10 @@ static const struct
    "Afegeix un truc a la llista.",
    "Elimina tots els trucs",
    "Buida la llista de trucs.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Aplica els trucs autom\303\240ticament durant en carregar un joc",
    "Aplica els trucs autom\303\240ticament quan es carrega el joc.",
    "Aplica en activar",
    "Aplica els trucs immediatament despr\303\251s d'activar-los.",
-#endif
    "Aplica els canvis",
    "Els canvis en els trucs tindran efecte immediat.",
    "Trucs",
@@ -7236,11 +7166,9 @@ static const struct
    " que fan servir varis discs.",
    "Shaders de V\303\255deo",
    "Activa el proc\303\251s de shaders de v\303\255deo.",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Predefinicions simples",
    "Desa una predefinici\303\263 de shader que t\303\251 un enlla\303\247 a la predefinici\303\263 c"
    "arregada originalment i inclou nom\303\251s els par\303\240metres canviats.",
-#endif
    "Comprova els canvis en els shaders",
    "Aplica els canvis al fitxer de shaders en el disc de manera autom\303\240tica.",
    "Recorda l'\303\272ltima carpeta de shaders que s'ha fet servir",
@@ -7567,14 +7495,12 @@ static const struct
    "DD-MM-AAAA HH:MM:SS (AM/PM)",
    "DD-MM-AAAA HH:MM (AM/PM)",
    "Abans",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Filtre de vores",
    "Mostra la vora del men\303\272.",
    "Gruix del fons",
    "Augmenta les dimensions de la quadr\303\255cula de fons del men\303\272.",
    "Bruix de la vora",
    "Augmenta les dimensions de la quadr\303\257cula de la vora del men\303\272.",
-#endif
    "Utilitzar l'amplada completa",
    "Canvia la longitud i la posici\303\263 dels elements del men\303\272 per aprofitar al m\303\240x"
    "im l'espai disponible en pantalla. Desactiva aquesta opci\303\263 per fer servir una disposici"
@@ -8718,9 +8644,7 @@ static const struct
    "Connecta a una xarxa",
    "Connecta a una xarxa",
    "Desconnecta",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Estableix l\342\200\231amplada de la pantalla de la VI",
-#endif
    "Antipampallugueig",
    "Correcci\303\263 d\342\200\231overscan (superior)",
    "Estableix la retallada de la imatge traient un nombre concret de l\303\255nies (a partir de la p"
@@ -8771,10 +8695,8 @@ static const struct
    "Surt i reinicia RetroArch. \303\211s necessari per activar certes configuracions del men\303\272"
    " (per exemple, canviar el controlador del men\303\272).",
    "Bloquejant fotogrames",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "T\303\240ctil",
    "Prefer\303\250ncia a l'entrada t\303\240ctil frontal",
-#endif
    "Fes servir el toc frontal en comptes del toc posterior.",
    "Configuraci\303\263 del mode teclat del controlador",
    "Tipus de configuraci\303\263 del mode teclat del controlador",
@@ -8856,7 +8778,6 @@ static const struct
    "Ajusta l\342\200\231escala x/y de les coordenades de la pantalla t\303\240ctil per adaptar-les a"
    " l\342\200\231escala de visualitzaci\303\263 del sistema operatiu.",
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
    "Fes servir el ratol\303\255 virtual (VMouse) com a punter",
    "Activa aquesta opci\303\263 per enviar els tocs a la pantalla t\303\240ctil.",
    "Empra el ratol\303\255 virtual (VMouse) com a ratol\303\255",
@@ -8871,7 +8792,6 @@ static const struct
    "Gestos del ratol\303\255 virtual",
    "Activa els gestos a la pantalla t\303\240ctil, incloent-hi clicar, arrossegar i combinacions de "
    "dits.",
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    "Escalat RGA",
@@ -8985,7 +8905,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (196462u
+      (sizeof(msg_hash_ca_blob) == (198212u
 #ifdef HAVE_LAKKA
        + 16u
        + 48u
@@ -8999,10 +8919,6 @@ typedef char msg_hash_ca_blob_check[
        + 25u
        + 62u
        + 29u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 27u
-       + 101u
 #endif
 #if defined(DINGUX)
        + 27u
@@ -9019,9 +8935,6 @@ typedef char msg_hash_ca_blob_check[
        + 11u
 #endif
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 71u
-#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 57u
@@ -9032,17 +8945,9 @@ typedef char msg_hash_ca_blob_check[
        + 39u
        + 134u
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 23u
-       + 66u
-       + 23u
-       + 66u
-#endif
-#if defined(DINGUX)
 #if defined(DINGUX)
        + 29u
        + 160u
-#endif
 #endif
 #if defined(RARCH_MOBILE)
        + 97u
@@ -9055,14 +8960,8 @@ typedef char msg_hash_ca_blob_check[
 #ifdef HAVE_MICROPHONE
        + 10u
        + 44u
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
        + 10u
        + 142u
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
        + 11u
        + 94u
        + 94u
@@ -9078,13 +8977,6 @@ typedef char msg_hash_ca_blob_check[
        + 111u
        + 53u
        + 102u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 21u
-       + 29u
-       + 27u
-       + 22u
-       + 30u
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 75u
@@ -9107,27 +8999,11 @@ typedef char msg_hash_ca_blob_check[
        + 67u
        + 18u
        + 24u
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
        + 28u
        + 62u
-#endif
-#endif
-#ifdef HAVE_MIST
        + 24u
        + 56u
        + 41u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 24u
-       + 78u
-       + 35u
-       + 59u
-       + 49u
-       + 68u
-       + 41u
-       + 59u
 #endif
 #if defined(ANDROID)
        + 160u
@@ -9142,14 +9018,6 @@ typedef char msg_hash_ca_blob_check[
        + 60u
 #endif
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 37u
-       + 49u
-       + 21u
-       + 33u
-       + 20u
-       + 29u
-#endif
 #ifdef HAVE_MIST
        + 21u
        + 69u
@@ -9161,23 +9029,6 @@ typedef char msg_hash_ca_blob_check[
        + 28u
        + 26u
        + 44u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 59u
-       + 57u
-       + 18u
-       + 55u
-       + 23u
-       + 136u
-       + 16u
-       + 26u
-       + 15u
-       + 61u
-       + 17u
-       + 64u
-       + 46u
-       + 8u
-       + 41u
 #endif
 #ifdef HAVE_LIBNX
        + 14u
@@ -9231,7 +9082,6 @@ typedef char msg_hash_ca_blob_check[
        + 74u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
        + 52u
        + 65u
        + 48u
@@ -9242,7 +9092,6 @@ typedef char msg_hash_ca_blob_check[
        + 144u
        + 27u
        + 96u
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
        + 12u
@@ -9763,10 +9612,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
@@ -9824,9 +9671,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
@@ -9893,12 +9738,10 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -9932,10 +9775,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
 #if defined(DINGUX)
-#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
@@ -10050,12 +9891,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
@@ -10117,13 +9954,11 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -10488,14 +10323,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
-#endif
-#endif
-#ifdef HAVE_MIST
    (uint32_t)MSG_CORE_STEAM_INSTALLING,
    (uint32_t)MSG_CORE_STEAM_UNINSTALLED,
    (uint32_t)MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
@@ -10593,20 +10422,16 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
@@ -10665,10 +10490,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -10929,14 +10752,12 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
@@ -11711,12 +11532,10 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -11792,10 +11611,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -12080,14 +11897,12 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -13106,9 +12921,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
@@ -13143,10 +12956,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-#endif
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
@@ -13218,7 +13029,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
-#ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
@@ -13229,7 +13039,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
-#endif
 #endif
 #ifdef HAVE_ODROIDGO2
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

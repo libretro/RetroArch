@@ -415,12 +415,10 @@ static const struct
    char s_f5ab35c0[26];
    char s_055c296e[103];
    char s_6c1369c6[12];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[13];
    char s_75325963[49];
    char s_0f5266ce[13];
    char s_f83a493c[49];
-#endif
    char s_83e8dc72[21];
    char s_4d0b4ce0[112];
    char s_a64b3a0b[21];
@@ -443,10 +441,8 @@ static const struct
    char s_ad5ff591[14];
    char s_adcf82d6[13];
 #if defined(DINGUX)
-#if defined(DINGUX)
    char s_d374d67d[26];
    char s_c0e554ab[157];
-#endif
 #endif
    char s_8f37930f[45];
    char s_8f379310[45];
@@ -468,11 +464,7 @@ static const struct
    char s_dcf2e800[4];
    char s_da068369[6];
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    char s_d3e78762[9];
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[6];
    char s_e501ec1b[23];
    char s_f5c1d149[158];
@@ -487,11 +479,9 @@ static const struct
    char s_df62d56f[6];
    char s_40084357[6];
    char s_4a1166e1[6];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[17];
    char s_ada81f6a[21];
    char s_c85198e6[27];
-#endif
    char s_7c68a1ee[20];
    char s_f9ee4a82[3];
    char s_7beff2c4[4];
@@ -546,14 +536,8 @@ static const struct
    char s_c9c04b6d[59];
    char s_3e0f9900[17];
    char s_67b3c923[19];
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    char s_53788998[23];
    char s_40e907c6[55];
-#endif
-#endif
-#ifdef HAVE_MIST
    char s_35b60281[21];
    char s_91e3840f[54];
    char s_30512c09[23];
@@ -562,13 +546,9 @@ static const struct
    char s_d0746a0f[54];
    char s_50707595[61];
    char s_074440cb[13];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_2841f912[31];
-#endif
    char s_c512fde9[28];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_1d39f4b7[27];
-#endif
    char s_749f0441[13];
    char s_74dcbca5[16];
    char s_b3d1e989[13];
@@ -1668,12 +1648,10 @@ static const struct
    "Tving oppl\303\270sningen til fullskjerm st\303\270rrelsen. Hvis satt til 0, brukes en fast verd"
    "i p\303\245 3840 x 2160.",
    "Vindu skala",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Vindu bredde",
    "Angi en egendefinert bredde for visningsvinduet.",
    "Vindu h\303\270yde",
    "Angi en egendefinert h\303\270yde for visningsvinduet.",
-#endif
    "Maksimal vindubredde",
    "Sett maksimalbredden av visningsvinduet n\303\245r automatisk st\303\270rrelse endring basert p"
    "\303\245 \"vindu skalering\" er p\303\245.",
@@ -1704,11 +1682,9 @@ static const struct
    "Konfigurasjon",
    "Egendefinert",
 #if defined(DINGUX)
-#if defined(DINGUX)
    "Behold st\303\270rrelsesforhold",
    "Ha en 1:1 piksel st\303\270rrelsesforhold n\303\245r du skalerer innhold gjennom den interne IPU"
    "-en. Blider vil bli strekket for \303\245 fylle hele skjermen hvis deaktivert.",
-#endif
 #endif
    "Egendefinert st\303\270rrelsesforhold (X posisjon)",
    "Egendefinert st\303\270rrelsesforhold (Y posisjon)",
@@ -1732,11 +1708,7 @@ static const struct
    "Lyd",
    "Enhet",
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    "Mikrofon",
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    "Enhet",
    "WASAPI eksklusiv modus",
    "Tillat RetroArch \303\245 ta eksklusiv kontroll over mikrofonenheten n\303\245r du bruker WASAPI"
@@ -1752,11 +1724,9 @@ static const struct
    "Stopp",
    "Fjern",
    "Volum",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Aktiver 'OK' lyd",
    "Aktiver 'Avbryt' lyd",
    "Aktiver 'Notifikasjon' lyd",
-#endif
    "Maks antall brukere",
    "AV",
    "P\303\205",
@@ -1817,14 +1787,8 @@ static const struct
    "Installer eller avinstaller kjerner distribuert via Steam.",
    "Installer kjerne",
    "Avinstaller kjerne",
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    "Vis 'Behandle kjerner'",
    "Vis 'Administrere kjerner' alternativet i hovedmenyen.",
-#endif
-#endif
-#ifdef HAVE_MIST
    "Installerer kjerne: ",
    "Kjernen vil avinstallere ved avslutning av RetroArch.",
    "Kjernen lastes ned n\303\245",
@@ -1833,13 +1797,9 @@ static const struct
    "Lagre endringer i konfigurasjonsfilen ved avslutning.",
    "Bytt til sist brukte disk ved oppstart av multidisk-innhold.",
    "Logg til fil",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Filtrer etter gjeldende kjerne",
-#endif
    "Husk sist brukte startmappe",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "Bruk innebygd mediespiller",
-#endif
    "Spol tilbake",
    "Opptakskvalitet",
    "Egendefinert",
@@ -2517,7 +2477,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (28744u
+      (sizeof(msg_hash_no_blob) == (28991u
 #ifdef HAVE_LAKKA
        + 15u
        + 49u
@@ -2552,35 +2512,16 @@ typedef char msg_hash_no_blob_check[
        + 26u
        + 108u
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 13u
-       + 49u
-       + 13u
-       + 49u
-#endif
-#if defined(DINGUX)
 #if defined(DINGUX)
        + 26u
        + 157u
 #endif
-#endif
 #ifdef HAVE_MICROPHONE
        + 9u
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
        + 9u
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
        + 6u
        + 23u
        + 158u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 17u
-       + 21u
-       + 27u
 #endif
 #ifndef HAVE_DYNAMIC
        + 46u
@@ -2591,23 +2532,11 @@ typedef char msg_hash_no_blob_check[
        + 59u
        + 17u
        + 19u
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
        + 23u
        + 55u
-#endif
-#endif
-#ifdef HAVE_MIST
        + 21u
        + 54u
        + 23u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 31u
-       + 27u
-#endif
-#ifdef HAVE_MIST
        + 8u
        + 11u
        + 11u
@@ -3044,12 +2973,10 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -3072,10 +2999,8 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
 #if defined(DINGUX)
-#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -3097,11 +3022,7 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
@@ -3116,11 +3037,9 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
@@ -3175,14 +3094,8 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
-#endif
-#ifdef HAVE_MIST
-#ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
-#endif
-#endif
-#ifdef HAVE_MIST
    (uint32_t)MSG_CORE_STEAM_INSTALLING,
    (uint32_t)MSG_CORE_STEAM_UNINSTALLED,
    (uint32_t)MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
@@ -3191,13 +3104,9 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
    (uint32_t)MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,

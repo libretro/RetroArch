@@ -221,10 +221,8 @@ static const struct
 #endif
    char s_59f183c8[23];
    char s_59f183c9[23];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_30140cb5[18];
    char s_0f5266ce[18];
-#endif
    char s_48da4695[27];
    char s_c79d5013[25];
    char s_ad5ff591[9];
@@ -232,9 +230,7 @@ static const struct
    char s_adcf82d6[22];
    char s_e7033e0e[7];
 #if defined(DINGUX)
-#if defined(DINGUX)
    char s_d374d67d[41];
-#endif
 #endif
    char s_aa9bc75d[15];
    char s_57047267[11];
@@ -255,11 +251,7 @@ static const struct
    char s_dcf2e800[7];
    char s_da068369[9];
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    char s_d3e78762[17];
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    char s_d0fb22cb[9];
 #endif
    char s_ad7c73f6[15];
@@ -272,10 +264,8 @@ static const struct
    char s_40084357[7];
    char s_4a1166e1[18];
    char s_f7e668f4[31];
-#ifndef SETTINGS_DEF_CONFIG_PASS
    char s_d264a13e[25];
    char s_ada81f6a[29];
-#endif
    char s_f9ee4a82[9];
    char s_7beff2c4[9];
    char s_ea5757a0[7];
@@ -618,10 +608,8 @@ static const struct
 #endif
    "\327\250\327\225\327\227\327\221 \327\236\327\241\327\232 \327\236\327\234\327\220",
    "\327\222\327\225\327\221\327\224 \327\236\327\241\327\232 \327\236\327\234\327\220",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "\327\250\327\225\327\227\327\221 \327\227\327\234\327\225\327\237",
    "\327\222\327\225\327\221\327\224 \327\227\327\234\327\225\327\237",
-#endif
    "\327\224\327\246\327\222 \327\251\327\225\327\250\327\252 \327\252\327\244\327\250\327\231\327"
    "\230",
    "\327\231\327\227\327\241 \327\222\327\225\327\221\327\224-\327\250\327\225\327\227\327\221",
@@ -630,10 +618,8 @@ static const struct
    "\327\236\327\225\327\252\327\220\327\235 \327\220\327\231\327\251\327\231\327\252",
    "\327\236\327\234\327\220",
 #if defined(DINGUX)
-#if defined(DINGUX)
    "\327\251\327\236\327\225\327\250 \327\242\327\234 \327\231\327\227\327\241 \327\224\327\222\327"
    "\225\327\221\327\224-\327\250\327\225\327\227\327\221",
-#endif
 #endif
    "\327\220\327\225\327\230\327\225\327\236\327\230\327\231",
    "\327\221\327\244\327\225\327\242\327\234",
@@ -659,11 +645,7 @@ static const struct
    "\327\251\327\236\327\242",
    "\327\224\327\252\327\247\327\237",
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    "\327\236\327\231\327\247\327\250\327\225\327\244\327\225\327\237",
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    "\327\224\327\252\327\247\327\237",
 #endif
    "\327\241\327\231\327\240\327\233\327\250\327\225\327\237",
@@ -677,10 +659,8 @@ static const struct
    "\327\242\327\225\327\246\327\236\327\252 \327\251\327\236\327\242",
    "\327\236\327\242\327\250\327\221\327\234 \327\251\327\236\327\242 (\327\236\327\231\327\247\327"
    "\241\327\250)",
-#ifndef SETTINGS_DEF_CONFIG_PASS
    "\327\220\327\244\327\251\327\250 \327\241\327\220\327\225\327\240\327\223 'OK'",
    "\327\220\327\244\327\251\327\250 \327\241\327\220\327\225\327\240\327\223 'Cancel'",
-#endif
    "\327\233\327\221\327\225\327\231",
    "\327\244\327\225\327\242\327\234",
    "\327\226\327\224\327\224",
@@ -755,7 +735,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_he_blob_check[
-      (sizeof(msg_hash_he_blob) == (6054u
+      (sizeof(msg_hash_he_blob) == (6144u
 #ifdef HAVE_LAKKA
        + 20u
 #endif
@@ -766,29 +746,13 @@ typedef char msg_hash_he_blob_check[
        + 10u
        + 10u
 #endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 18u
-       + 18u
-#endif
-#if defined(DINGUX)
 #if defined(DINGUX)
        + 41u
 #endif
-#endif
 #ifdef HAVE_MICROPHONE
        + 17u
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
        + 17u
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
        + 9u
-#endif
-#ifndef SETTINGS_DEF_CONFIG_PASS
-       + 25u
-       + 29u
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
@@ -1006,10 +970,8 @@ static const uint32_t msg_hash_he_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
@@ -1017,9 +979,7 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
 #if defined(DINGUX)
-#if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -1040,11 +1000,7 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
@@ -1057,10 +1013,8 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-#ifndef SETTINGS_DEF_CONFIG_PASS
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,

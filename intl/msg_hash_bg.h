@@ -212,9 +212,7 @@ static const struct
    char s_ad791974[23];
    char s_dcf2e800[9];
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    char s_d3e78762[17];
-#endif
 #endif
    char s_8be7813a[9];
    char s_1757647b[11];
@@ -752,9 +750,7 @@ static const struct
    "\320\227\320\260\320\263\320\273\321\203\321\210\320\260\320\262\320\260\320\275\320\265",
    "\320\227\320\262\321\203\320\272",
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    "\320\234\320\270\320\272\321\200\320\276\321\204\320\276\320\275",
-#endif
 #endif
    "\320\222\321\205\320\276\320\264",
    "\320\230\320\267\321\205\320\276\320\264",
@@ -857,11 +853,7 @@ typedef char msg_hash_bg_blob_check[
 #ifdef HAVE_MICROPHONE
        + 17u
        + 17u
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
        + 17u
-#endif
 #endif
 #ifdef HAVE_MIST
        + 34u
@@ -1073,9 +1065,7 @@ static const uint32_t msg_hash_bg_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
 #ifdef HAVE_MICROPHONE
-#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
