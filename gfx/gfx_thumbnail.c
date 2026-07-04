@@ -219,17 +219,17 @@ static void gfx_thumbnail_init_fade(
  * animated thumbnails; keeps e.g. a grid of animations from stalling
  * the menu (they degrade to a lower animation rate instead). */
 #define GFX_THUMB_ANIM_BUDGET_US    8000
-/* Refuse to animate anything larger than this many canvas pixels
- * (frame decode cost scales with it) or a file larger than this
- * (the file buffer is held for the lifetime of the animation).
- * The pixel cap admits common thumbnail sources up to ~1440p
- * (e.g. 1618x1080, 1920x1080, 2560x1440) while still excluding 4K,
- * where per-frame decode becomes too heavy to sustain; the shared
- * per-vsync budget above additionally throttles decode so that
- * accepted-but-large animations lower their frame rate rather than
- * stalling the menu. */
-#define GFX_THUMB_ANIM_MAX_PIXELS   (4 * 1024 * 1024)
-#define GFX_THUMB_ANIM_MAX_FILE     (48 * 1024 * 1024)
+/* Refuse to animate anything larger than this many canvas pixels or
+ * a file larger than this (the file buffer is held for the lifetime
+ * of the animation). Decode COST does not need a tight cap here: the
+ * shared per-vsync budget above already makes large animations lower
+ * their own frame rate instead of stalling the menu, so the pixel cap
+ * only bounds MEMORY (two full canvases are kept while animating).
+ * Admit anything up to a full 4K canvas - which also covers tall
+ * portrait sources like 1920x2880 - and leave everything beyond that
+ * as a static image. */
+#define GFX_THUMB_ANIM_MAX_PIXELS   (3840 * 2160)
+#define GFX_THUMB_ANIM_MAX_FILE     (64 * 1024 * 1024)
 /* Frame-duration handling: <= 0 is undefined by the container spec
  * (browsers substitute 100 ms); very small durations are floored so
  * a hostile file cannot request thousands of decodes per second. */
