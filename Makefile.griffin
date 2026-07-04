@@ -215,6 +215,7 @@ else ifeq ($(libogc_platform), 1)
    HAVE_THREADS             := 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -290,6 +291,7 @@ else ifeq ($(platform), psp1)
    BUILD_PRX                 = 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -345,6 +347,7 @@ else ifeq ($(platform), vita)
    HAVE_LANGEXTRA           := 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -368,6 +371,7 @@ else ifeq ($(platform), vita)
 else ifeq ($(platform), windows_msvc6_x86)
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -416,6 +420,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_GDI                 := 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -472,6 +477,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_REWIND              := 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -557,6 +563,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -654,6 +661,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -742,6 +750,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -830,6 +839,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -933,6 +943,7 @@ else ifeq (qnx,$(platform))
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -981,6 +992,7 @@ else ifneq (,$(findstring unix,$(platform)))
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
    HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -1092,6 +1104,10 @@ endif
 
 ifeq ($(HAVE_RWEBP), 1)
    CFLAGS      += -DHAVE_RWEBP
+endif
+
+ifeq ($(HAVE_RDDS), 1)
+   CFLAGS      += -DHAVE_RDDS
 endif
 
 ifeq ($(HAVE_RBMP), 1)

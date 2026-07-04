@@ -11,7 +11,7 @@
 
 #include <streams/file_stream.h>
 
-#if defined(HAVE_RPNG) || defined(HAVE_RJPEG) || defined(HAVE_RTGA) || defined(HAVE_RBMP) || defined(HAVE_RWEBP)
+#if defined(HAVE_RPNG) || defined(HAVE_RJPEG) || defined(HAVE_RTGA) || defined(HAVE_RBMP) || defined(HAVE_RWEBP) || defined(HAVE_RDDS)
 #define PREFER_NON_STB_IMAGE
 #endif
 
@@ -95,7 +95,11 @@ static const char image_formats[] =
 "|webp"
 #endif
 
-#if !defined(HAVE_RJPEG) && !defined(HAVE_RPNG) && !defined(HAVE_RBMP) && !defined(HAVE_RTGA) && !defined(HAVE_RWEBP)
+#ifdef HAVE_RDDS
+"|dds"
+#endif
+
+#if !defined(HAVE_RJPEG) && !defined(HAVE_RPNG) && !defined(HAVE_RBMP) && !defined(HAVE_RTGA) && !defined(HAVE_RWEBP) && !defined(HAVE_RDDS)
 #error "can't build this core with no image formats"
 #endif
 ;

@@ -6675,6 +6675,9 @@ static void retroarch_print_features(void)
 #ifdef HAVE_RWEBP
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_RWEBP,           "RWEBP",           "WebP (RWEBP) image loading");
 #endif
+#ifdef HAVE_RDDS
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_RDDS,            "RDDS",            "DDS (RDDS) image loading");
+#endif
 #ifdef HAVE_SDL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL,             "SDL1",            "SDL1 input/audio/video drivers");
 #endif

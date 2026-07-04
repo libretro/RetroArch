@@ -33,6 +33,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 		   -DHAVE_ZLIB \
 		   -DHAVE_RPNG \
 		   -DHAVE_RWEBP \
+		   -DHAVE_RDDS \
 		   -DHAVE_RJPEG \
 		   -DHAVE_RBMP \
 		   -DHAVE_RTGA \

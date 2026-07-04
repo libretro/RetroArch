@@ -2404,6 +2404,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_RWEBP
          {SUPPORTS_RWEBP, "WebP (RWEBP)"},
 #endif
+#ifdef HAVE_RDDS
+         {SUPPORTS_RDDS, "DDS (RDDS)"},
+#endif
 #ifdef HAVE_SDL
          {SUPPORTS_SDL, "SDL 1.2"},
 #endif
@@ -16007,6 +16010,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                if (_len > 0)
                   _len += strlcpy(new_exts + _len, "|",    sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "webp", sizeof(new_exts) - _len);
+#endif
+#ifdef HAVE_RDDS
+               if (_len > 0)
+                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy(new_exts + _len, "dds", sizeof(new_exts) - _len);
 #endif
                if (info->exts && *info->exts)
                   free(info->exts);

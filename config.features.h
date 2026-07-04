@@ -416,6 +416,12 @@
 #define SUPPORTS_RWEBP false
 #endif
 
+#ifdef HAVE_RDDS
+#define SUPPORTS_RDDS true
+#else
+#define SUPPORTS_RDDS false
+#endif
+
 #ifdef HAVE_CORETEXT
 #define SUPPORTS_CORETEXT true
 #else
