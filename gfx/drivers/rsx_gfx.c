@@ -2505,6 +2505,124 @@ static void rsx_set_osd_msg(void *data,
 
 static uint32_t rsx_get_flags(void *data) { return 0; }
 
+/* --- GPU-native BCn compressed-texture upload (PoC) --- */
+/* RSX (NV47/G70) natively samples DXT1/DXT23/DXT45 == BC1/BC2/BC3.
+ * Nothing above BC3 exists on this GPU. */
+static bool rsx_gcm_compressed_format(enum texture_gpu_format fmt,
+      u32 *gcm_out, u32 *block_bytes)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1:
+         *gcm_out = GCM_TEXTURE_FORMAT_COMPRESSED_DXT1;  *block_bytes = 8;  return true;
+      case TEXTURE_GPU_FORMAT_BC2:
+         *gcm_out = GCM_TEXTURE_FORMAT_COMPRESSED_DXT23; *block_bytes = 16; return true;
+      case TEXTURE_GPU_FORMAT_BC3:
+         *gcm_out = GCM_TEXTURE_FORMAT_COMPRESSED_DXT45; *block_bytes = 16; return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+static bool rsx_supports_texture_format(void *data, enum texture_gpu_format fmt)
+{
+   u32 gcm, bb;
+   (void)data;
+   return rsx_gcm_compressed_format(fmt, &gcm, &bb);
+}
+
+static uintptr_t rsx_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   rsx_t         *rsx = (rsx_t*)video_data;
+   rsx_texture_t *texture;
+   u8            *dst;
+   size_t         total       = 0;
+   size_t         off         = 0;
+   u32            gcm_fmt      = 0;
+   u32            block_bytes  = 16;
+   u32            min_filter, mag_filter;
+   unsigned       blocks_w0;
+   unsigned       i;
+
+   (void)threaded;
+   if (!rsx || !tc || tc->num_mips == 0)
+      return 0;
+   if (!rsx_gcm_compressed_format(tc->format, &gcm_fmt, &block_bytes))
+      return 0;
+
+   if (!(texture = (rsx_texture_t*)malloc(sizeof(rsx_texture_t))))
+      return 0;
+
+   for (i = 0; i < tc->num_mips; i++)
+      total += tc->mips[i].size;
+
+   texture->width  = tc->mips[0].width;
+   texture->height = tc->mips[0].height;
+   texture->data   = (u32*)rsxMemalign(128, total);
+   if (!texture->data)
+   {
+      free(texture);
+      return 0;
+   }
+   rsxAddressToOffset(texture->data, &texture->offset);
+
+   /* Mip chain is stored contiguously; the RSX derives per-level
+    * offsets from the base offset and mip count. */
+   dst = (u8*)texture->data;
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      memcpy(dst + off, tc->mips[i].data, tc->mips[i].size);
+      off += tc->mips[i].size;
+   }
+
+   blocks_w0              = (tc->mips[0].width + 3u) >> 2;
+
+   texture->tex.format    = gcm_fmt | GCM_TEXTURE_FORMAT_LIN;
+   texture->tex.mipmap    = tc->num_mips;
+   texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
+   texture->tex.cubemap   = GCM_FALSE;
+   /* DXT decodes to RGBA on-chip; reuse the driver's remap.  NOTE: RPCS3
+    * uses an identity R,G,B,A swizzle for the DXT formats -- if colours
+    * come out with R/B swapped on hardware, this remap is why. */
+   texture->tex.remap     =  ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+   texture->tex.width     = tc->mips[0].width;
+   texture->tex.height    = tc->mips[0].height;
+   texture->tex.depth     = 1;
+   texture->tex.location  = GCM_LOCATION_RSX;
+   /* Linear compressed surface: pitch is the byte width of one row of
+    * 4x4 blocks at mip 0. */
+   texture->tex.pitch     = blocks_w0 * block_bytes;
+   texture->tex.offset    = texture->offset;
+
+   if (     filter_type == TEXTURE_FILTER_NEAREST
+         || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+   {
+      min_filter = GCM_TEXTURE_NEAREST;
+      mag_filter = GCM_TEXTURE_NEAREST;
+   }
+   else
+   {
+      min_filter = GCM_TEXTURE_LINEAR;
+      mag_filter = GCM_TEXTURE_LINEAR;
+   }
+   texture->min_filter    = min_filter;
+   texture->mag_filter    = mag_filter;
+   texture->wrap_s        = GCM_TEXTURE_CLAMP_TO_EDGE;
+   texture->wrap_t        = GCM_TEXTURE_CLAMP_TO_EDGE;
+
+   return (uintptr_t)texture;
+}
+
 static const video_poke_interface_t rsx_poke_interface = {
    rsx_get_flags,
    rsx_load_texture,
@@ -2531,7 +2649,9 @@ static const video_poke_interface_t rsx_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   rsx_supports_texture_format,
+   rsx_load_texture_compressed
 };
 
 static void rsx_get_poke_interface(void* data,
