@@ -19,6 +19,10 @@
 #include <limits.h>
 #include <math.h>
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h> /* CFRunLoopRunInMode: init-time main-thread pump */
+#endif
+
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 
@@ -79,6 +83,31 @@ static void video_thread_send_packet(thread_video_t *thr,
 /* user -> thread */
 static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
 {
+#if defined(__APPLE__)
+   /* macOS: the worker thread performs AppKit (NSWindow/NSView) work on the
+    * main queue during driver init -- e.g. -[CocoaView setViewType:].  A
+    * plain scond_wait would park the main thread here and deadlock that
+    * dispatch.  For CMD_INIT only, pump the main run loop while waiting so
+    * the main-queue work can run.  All other commands keep the cheap wait. */
+   if (pkt->type == CMD_INIT)
+   {
+      for (;;)
+      {
+         bool done;
+         slock_lock(thr->lock);
+         done = (pkt->type == thr->reply_cmd);
+         if (done)
+         {
+            *pkt               = thr->cmd_data;
+            thr->cmd_data.type = CMD_VIDEO_NONE;
+         }
+         slock_unlock(thr->lock);
+         if (done)
+            return;
+         CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, true);
+      }
+   }
+#endif
    slock_lock(thr->lock);
 
    while (pkt->type != thr->reply_cmd)

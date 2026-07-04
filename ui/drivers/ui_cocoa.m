@@ -749,6 +749,19 @@ static ui_application_t ui_application_cocoa = {
 
 - (void)setViewType:(apple_view_type_t)vt
 {
+   /* The NSWindow/NSView mutation below must run on the main thread.  Under
+    * threaded video the graphics driver init -- and therefore this call --
+    * runs on the video worker thread, which would abort with "NSWindow
+    * should only be modified on the main thread".  Bounce to the main queue;
+    * the main thread pumps its run loop during CMD_INIT (see
+    * video_thread_wait_reply), so this dispatch_sync completes instead of
+    * deadlocking. */
+   if (!NSThread.isMainThread)
+   {
+      dispatch_sync(dispatch_get_main_queue(), ^{ [self setViewType:vt]; });
+      return;
+   }
+
    if (vt == _vt)
       return;
 
@@ -823,6 +836,15 @@ static ui_application_t ui_application_cocoa = {
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode
 {
+   /* Window/fullscreen mutation must run on the main thread.  Under threaded
+    * video this is called from the worker thread during driver init; bounce
+    * to the main queue (which pumps during CMD_INIT -- see -setViewType:). */
+   if (!NSThread.isMainThread)
+   {
+      dispatch_sync(dispatch_get_main_queue(), ^{ [self setVideoMode:mode]; });
+      return;
+   }
+
    BOOL is_fullscreen = (self.window.styleMask
          & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
    if (mode.fullscreen)
