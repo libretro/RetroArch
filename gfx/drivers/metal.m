@@ -3034,7 +3034,17 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 + (instancetype)newFilterWithFunctionName:(NSString *)name device:(id<MTLDevice>)device library:(id<MTLLibrary>)library error:(NSError **)error
 {
    id<MTLFunction> function = RARCH_AUTORELEASE_R([library newFunctionWithName:name]);
-   id<MTLComputePipelineState> kernel = RARCH_AUTORELEASE_R([device newComputePipelineStateWithFunction:function error:error]);
+   id<MTLComputePipelineState> kernel;
+   if (!function)
+   {
+      /* newComputePipelineStateWithFunction asserts (rather than errors)
+       * on a nil function, so guard it: return nil and let the caller
+       * degrade gracefully instead of aborting the process. */
+      RARCH_ERR("[Metal] Compute function \"%s\" not found (library %s).\n",
+            name.UTF8String, library ? "loaded" : "is NIL");
+      return nil;
+   }
+   kernel = RARCH_AUTORELEASE_R([device newComputePipelineStateWithFunction:function error:error]);
    if (*error != nil)
       return nil;
 
@@ -4655,6 +4665,29 @@ static void metal_pull_cached_frame_cb(void *userdata,
 - (bool)_initMetal
 {
    _library = [_device newDefaultLibrary];
+   if (!_library)
+   {
+      /* newDefaultLibrary only resolves the metallib from inside a .app
+       * bundle's resources.  For a bare executable (CLI builds, non-.app
+       * installs, a dev build run in place) it returns nil, so fall back
+       * to loading default.metallib explicitly from the executable's own
+       * directory (where `make install` places it). */
+      NSString *exe = [[NSBundle mainBundle] executablePath];
+      if (exe)
+      {
+         NSString *path = [[exe stringByDeletingLastPathComponent]
+               stringByAppendingPathComponent:@"default.metallib"];
+         NSError  *lerr = nil;
+         _library       = [_device newLibraryWithURL:[NSURL fileURLWithPath:path]
+                                               error:&lerr];
+         if (_library)
+            RARCH_LOG("[Metal] Loaded shader library from \"%s\".\n",
+                  path.UTF8String);
+         else
+            RARCH_ERR("[Metal] Could not load \"%s\": %s.\n", path.UTF8String,
+                  lerr ? lerr.localizedDescription.UTF8String : "unknown error");
+      }
+   }
    _context = [[Context alloc] initWithDevice:_device
                                         layer:_layer
                                       library:_library];
