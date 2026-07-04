@@ -1009,7 +1009,6 @@ static void vp8_yuv2rgb(int y, int u, int v, uint8_t *r, uint8_t *g, uint8_t *bo
 #include <arm_neon.h>
 #endif
 
-static void vp8_fancy_scratch_free(void);
 static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
       const uint8_t *v, uint32_t *dst, int len)
 {
@@ -1176,27 +1175,23 @@ static void vp8_fancy_uv_bot(const uint8_t *top_u, const uint8_t *top_v,
    }
 }
 
-/* Scratch for interpolated chroma rows (main thread, single decode at a
- * time). Grown on demand; freed at process exit is acceptable, but we
- * free explicitly from the decode teardown to keep valgrind quiet. */
-static uint8_t *g_fancy_uv = NULL;
-static int      g_fancy_uv_cap = 0;
-
+/* scratch: caller-provided buffer of 2*len bytes for the interpolated
+ * chroma rows (kept per decode so concurrent decodes cannot interfere);
+ * when NULL (allocation failed upstream) a fused scalar path that needs
+ * no scratch is used instead. */
 static void vp8_fancy_pair(const uint8_t *top_y, const uint8_t *bot_y,
       const uint8_t *top_u, const uint8_t *top_v,
       const uint8_t *cur_u, const uint8_t *cur_v,
-      uint32_t *top_dst, uint32_t *bot_dst, int len)
+      uint32_t *top_dst, uint32_t *bot_dst, int len,
+      uint8_t *scratch)
 {
    uint8_t *du, *dv;
    if (len <= 0)
       return;
-   if (g_fancy_uv_cap < len)
+   if (!scratch)
    {
-      uint8_t *nb = (uint8_t*)realloc(g_fancy_uv, (size_t)len * 2);
-      if (!nb)
       {
-         /* Allocation failed: fall back to a scalar per-pixel path that
-          * needs no scratch, preserving correctness. */
+         /* No scratch (allocation failed upstream): fused scalar path. */
          int x, last_pair = (len - 1) >> 1;
          int tl_u = top_u[0], tl_v = top_v[0];
          int l_u = cur_u[0], l_v = cur_v[0];
@@ -1240,11 +1235,9 @@ static void vp8_fancy_pair(const uint8_t *top_y, const uint8_t *bot_y,
          }
          return;
       }
-      g_fancy_uv = nb;
-      g_fancy_uv_cap = len;
    }
-   du = g_fancy_uv;
-   dv = g_fancy_uv + len;
+   du = scratch;
+   dv = scratch + len;
 
    vp8_fancy_uv_top(top_u, top_v, cur_u, cur_v, du, dv, len);
    vp8_yuv2rgb_row(top_y, du, dv, top_dst, len);
@@ -1273,9 +1266,7 @@ static const int16_t vp8_ac_qlut[128] = {
 /* Default coefficient probabilities — simplified: using a representative subset
  * that covers the most common cases in typical WebP images.
  * Full tables are 4*8*3*11 = 1056 bytes. We embed them directly. */
-static uint8_t vp8_cprob[4][8][3][11];
-
-static void vp8_init_default_cprob(void)
+static void vp8_init_default_cprob(uint8_t dst[4][8][3][11])
 {
    static const uint8_t def[4][8][3][11] = {
    {
@@ -1319,7 +1310,7 @@ static void vp8_init_default_cprob(void)
     {{1,1,255,128,128,128,128,128,128,128,128},{244,1,255,128,128,128,128,128,128,128,128},{238,1,255,128,128,128,128,128,128,128,128}},
    },
    };
-   memcpy(vp8_cprob, def, sizeof(def));
+   memcpy(dst, def, sizeof(def));
 }
 
 /* Decode one 4x4 block of DCT coefficients (matching libvpx GetCoeffs).
@@ -1722,12 +1713,12 @@ static void vp8_simple_lf_edge(uint8_t *p1p, uint8_t *p0p, uint8_t *q0p, uint8_t
 }
 
 static void vp8_loop_filter_simple(uint8_t *y, int ys,
-   int mbw, int mbh, int lf_level, int sharpness,
+   int mbw, int lf_my0, int lf_my1, int lf_level, int sharpness,
    int seg_enabled, int seg_abs, const int *seg_lf,
    const uint8_t *seg_map, const uint8_t *skip_lf_map)
 {
    int mx, my, i, e;
-   for (my = 0; my < mbh; my++)
+   for (my = lf_my0; my < lf_my1; my++)
    {
       for (mx = 0; mx < mbw; mx++)
       {
@@ -1879,13 +1870,13 @@ static void vp8_nlf_edge(uint8_t *s, int tp, int sp, int n,
 
 static void vp8_loop_filter_normal(uint8_t *y, int ys,
    uint8_t *u, uint8_t *v_plane, int uvs,
-   int mbw, int mbh, int lf_level, int sharpness,
+   int mbw, int lf_my0, int lf_my1, int lf_level, int sharpness,
    int seg_enabled, int seg_abs, const int *seg_lf,
    int lf_delta_enabled, const int *ref_lf_delta, const int *mode_lf_delta,
    const uint8_t *seg_map, const uint8_t *skip_lf_map, const uint8_t *bpred_map)
 {
    int mx, my, e;
-   for (my = 0; my < mbh; my++)
+   for (my = lf_my0; my < lf_my1; my++)
    {
       for (mx = 0; mx < mbw; mx++)
       {
@@ -1998,14 +1989,51 @@ static void vp8_pred8(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t 
    }
 }
 
-static uint32_t *vp8_decode(const uint8_t *data, size_t len,
-      unsigned *ow, unsigned *oh)
+/* Resumable VP8 decode state. All state that must survive between
+ * row-batch calls lives here (including the coefficient probabilities
+ * and the chroma-interpolation scratch, which used to be file globals:
+ * a suspended decode must not share mutable state with a concurrent
+ * one). */
+typedef struct vp8d
+{
+   vp8b br;
+   vp8b tbr[8];             /* token partitions */
+   uint8_t cprob[4][8][3][11];
+   uint8_t *seg_map_buf;
+   uint8_t *skip_lf_buf;
+   uint8_t *bpred_buf;
+   uint8_t *yb, *ub, *vb;
+   uint8_t *above_nz_y, *above_nz_u, *above_nz_v, *above_nz_dc;
+   uint8_t *above_bmodes;
+   uint8_t *fancy_uv;       /* 2*w chroma-interp scratch (may be NULL) */
+   int w, h, mbw, mbh, ys, uvs;
+   int base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
+   int skip_enabled, prob_skip, num_parts;
+   int filter_type, lf_level, sharpness, lf_delta_enabled;
+   int ref_lf_delta[4], mode_lf_delta[4];
+   int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
+   int my;                  /* next MB row to decode */
+} vp8d;
+
+static void vp8d_abort(vp8d *s)
+{
+   free(s->seg_map_buf); free(s->skip_lf_buf); free(s->bpred_buf);
+   free(s->yb); free(s->ub); free(s->vb);
+   free(s->above_nz_y); free(s->above_nz_u); free(s->above_nz_v);
+   free(s->above_nz_dc); free(s->above_bmodes);
+   free(s->fancy_uv);
+   memset(s, 0, sizeof(*s));
+}
+
+/* Parse the frame + picture headers, size all buffers, initialize the
+ * token partitions and probability tables. Returns 0 on success; on
+ * failure the state needs no cleanup. */
+static int vp8d_begin(const uint8_t *data, size_t len, vp8d *s)
 {
    uint32_t ft;
-   int kf, w, h, mbw, mbh, ys, uvs, mx, my, i, j;
+   int kf, w, h, mbw, mbh, i;
    uint32_t p0s;
    int base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
-   int qp, y1_dc_q, y1_ac_q, y2_dc_q, y2_ac_q, uv_dc_q, uv_ac_q;
    int skip_enabled, prob_skip, log2parts, num_parts;
    int filter_type, lf_level, sharpness;
    int lf_delta_enabled = 0;
@@ -2013,25 +2041,22 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
    vp8b br;
    vp8b tbr[8]; /* up to 8 token partitions */
-   uint8_t *seg_map_buf = NULL;
-   uint8_t *skip_lf_buf = NULL;
-   uint8_t *bpred_buf = NULL;
    const uint8_t *p0;
-   uint8_t *yb = NULL, *ub = NULL, *vb = NULL;
-   uint32_t *pix = NULL;
 
-   if (len < 10) return NULL;
+   memset(s, 0, sizeof(*s));
+
+   if (len < 10) return -1;
    ft = (uint32_t)data[0] | ((uint32_t)data[1]<<8) | ((uint32_t)data[2]<<16);
    kf = !(ft & 1);
    p0s = (ft >> 5) & 0x7FFFF;
-   if (!kf) return NULL;
-   if (data[3]!=0x9D || data[4]!=0x01 || data[5]!=0x2A) return NULL;
+   if (!kf) return -1;
+   if (data[3]!=0x9D || data[4]!=0x01 || data[5]!=0x2A) return -1;
    w = (data[6]|(data[7]<<8)) & 0x3FFF;
    h = (data[8]|(data[9]<<8)) & 0x3FFF;
-   if (!w || !h || w > 16384 || h > 16384) return NULL;
+   if (!w || !h || w > 16384 || h > 16384) return -1;
    mbw = (w+15) >> 4; mbh = (h+15) >> 4;
    p0 = data + 10;
-   if ((size_t)(p0 - data) + p0s > len) return NULL;
+   if ((size_t)(p0 - data) + p0s > len) return -1;
    vp8b_init(&br, p0, (size_t)(data + len - p0));
 
    vp8b_bit(&br); vp8b_bit(&br); /* color_space, clamping */
@@ -2074,18 +2099,8 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    /* refresh_entropy_probs (RFC 6386) */
    (void)vp8b_bit(&br);
 
-   /* We'll compute per-MB quantizer in the loop using segment info */
-   qp = base_qp < 0 ? 0 : (base_qp > 127 ? 127 : base_qp);
-   { int q2 = qp + y1dc_dq; y1_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; }
-   y1_ac_q = vp8_ac_qlut[qp];
-   { int q2 = qp + y2dc_dq; y2_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2] * 2; }
-   { int q2 = qp + y2ac_dq; y2_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2] * 155 / 100;
-     if (y2_ac_q < 8) y2_ac_q = 8; }
-   { int q2 = qp + uvdc_dq; uv_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; if(uv_dc_q>132)uv_dc_q=132; }
-   { int q2 = qp + uvac_dq; uv_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2]; }
-
    /* Initialize coefficient probabilities */
-   vp8_init_default_cprob();
+   vp8_init_default_cprob(s->cprob);
 
    /* Read coefficient probability updates using the fixed update probabilities
     * defined in RFC 6386 §13.4 (Table 2). Each prob may be updated if a flag
@@ -2131,7 +2146,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
             for (c = 0; c < 3; c++)
                for (p = 0; p < 11; p++)
                   if (vp8b_get(&br, cup[t][b][c][p]))
-                     vp8_cprob[t][b][c][p] = (uint8_t)vp8b_lit(&br, 8);
+                     s->cprob[t][b][c][p] = (uint8_t)vp8b_lit(&br, 8);
    }
 
    /* Dump some probs */
@@ -2198,37 +2213,94 @@ pfail_tp:
 tp_ok:
    ;
 
-   ys = mbw * 16; uvs = mbw * 8;
-   seg_map_buf = (uint8_t*)calloc(mbw * mbh, 1);
-   skip_lf_buf = (uint8_t*)calloc(mbw * mbh, 1);
-   bpred_buf = (uint8_t*)calloc(mbw * mbh, 1);
-   yb = (uint8_t*)calloc(ys * mbh * 16, 1);
-   ub = (uint8_t*)calloc(uvs * mbh * 8, 1);
-   vb = (uint8_t*)calloc(uvs * mbh * 8, 1);
-   if (!yb || !ub || !vb) goto lfail;
-   memset(yb, 127, ys * mbh * 16);
-   memset(ub, 127, uvs * mbh * 8);
-   memset(vb, 127, uvs * mbh * 8);
 
-   /* Non-zero coefficient context tracking (RFC 6386 §13.3).
-    * above_nz_*: one entry per sub-block column across the MB row.
-    * left_nz_*: one entry per sub-block row within current MB. */
+   s->w = w; s->h = h; s->mbw = mbw; s->mbh = mbh;
+   s->ys = mbw * 16; s->uvs = mbw * 8;
+   s->base_qp = base_qp;
+   s->y1dc_dq = y1dc_dq; s->y2dc_dq = y2dc_dq; s->y2ac_dq = y2ac_dq;
+   s->uvdc_dq = uvdc_dq; s->uvac_dq = uvac_dq;
+   s->skip_enabled = skip_enabled; s->prob_skip = prob_skip;
+   s->num_parts = num_parts;
+   s->filter_type = filter_type; s->lf_level = lf_level;
+   s->sharpness = sharpness; s->lf_delta_enabled = lf_delta_enabled;
+   for (i = 0; i < 4; i++)
    {
-      uint8_t *above_nz_y  = (uint8_t*)calloc(mbw * 4, 1); /* 4 Y sub-block cols per MB */
-      uint8_t *above_nz_u  = (uint8_t*)calloc(mbw * 2, 1); /* 2 U sub-block cols per MB */
-      uint8_t *above_nz_v  = (uint8_t*)calloc(mbw * 2, 1);
-      uint8_t *above_nz_dc = (uint8_t*)calloc(mbw, 1);     /* Y2 DC block */
-      uint8_t *above_bmodes = (uint8_t*)calloc(mbw * 4, 1); /* B_PRED sub-block modes */
-      uint8_t left_nz_y[4], left_nz_u[2], left_nz_v[2];
-      uint8_t left_bmodes[4];
-      int left_nz_dc;
+      s->ref_lf_delta[i]  = ref_lf_delta[i];
+      s->mode_lf_delta[i] = mode_lf_delta[i];
+      s->seg_qp[i] = seg_qp[i];
+      s->seg_lf[i] = seg_lf[i];
+   }
+   s->seg_enabled = seg_enabled; s->seg_abs = seg_abs;
+   for (i = 0; i < 3; i++)
+      s->seg_prob[i] = seg_prob[i];
+   s->br = br;
+   for (i = 0; i < 8; i++)
+      s->tbr[i] = tbr[i];
+   s->my = 0;
 
-      if (!above_nz_y || !above_nz_u || !above_nz_v || !above_nz_dc || !above_bmodes)
-      { free(above_nz_y); free(above_nz_u); free(above_nz_v); free(above_nz_dc); free(above_bmodes); goto lfail; }
-
-   for (my = 0; my < mbh; my++)
+   s->seg_map_buf = (uint8_t*)calloc(mbw * mbh, 1);
+   s->skip_lf_buf = (uint8_t*)calloc(mbw * mbh, 1);
+   s->bpred_buf   = (uint8_t*)calloc(mbw * mbh, 1);
+   s->yb = (uint8_t*)calloc(s->ys * mbh * 16, 1);
+   s->ub = (uint8_t*)calloc(s->uvs * mbh * 8, 1);
+   s->vb = (uint8_t*)calloc(s->uvs * mbh * 8, 1);
+   s->above_nz_y   = (uint8_t*)calloc(mbw * 4, 1);
+   s->above_nz_u   = (uint8_t*)calloc(mbw * 2, 1);
+   s->above_nz_v   = (uint8_t*)calloc(mbw * 2, 1);
+   s->above_nz_dc  = (uint8_t*)calloc(mbw, 1);
+   s->above_bmodes = (uint8_t*)calloc(mbw * 4, 1);
+   s->fancy_uv     = (uint8_t*)malloc((size_t)w * 2); /* NULL tolerated */
+   if (!s->yb || !s->ub || !s->vb
+         || !s->above_nz_y || !s->above_nz_u || !s->above_nz_v
+         || !s->above_nz_dc || !s->above_bmodes)
    {
-      vp8b *tp = &tbr[my % num_parts]; /* token partition for this row */
+      vp8d_abort(s);
+      return -1;
+   }
+   memset(s->yb, 127, s->ys * mbh * 16);
+   memset(s->ub, 127, s->uvs * mbh * 8);
+   memset(s->vb, 127, s->uvs * mbh * 8);
+   return 0;
+}
+
+/* Decode up to nrows MB rows (resumable). Returns 1 while rows remain,
+ * 0 when the last row has been decoded. The body below is the original
+ * decode loop verbatim: read-only configuration is copied to same-named
+ * locals, and only the bool decoders and probability tables (which
+ * mutate across calls) go through the state struct. */
+static int vp8d_rows(vp8d *s, int nrows)
+{
+   const int w = s->w, h = s->h, mbw = s->mbw, mbh = s->mbh;
+   const int ys = s->ys, uvs = s->uvs;
+   const int base_qp = s->base_qp;
+   const int y1dc_dq = s->y1dc_dq, y2dc_dq = s->y2dc_dq, y2ac_dq = s->y2ac_dq;
+   const int uvdc_dq = s->uvdc_dq, uvac_dq = s->uvac_dq;
+   const int skip_enabled = s->skip_enabled, prob_skip = s->prob_skip;
+   const int num_parts = s->num_parts;
+   const int seg_enabled = s->seg_enabled, seg_abs = s->seg_abs;
+   const int *seg_qp = s->seg_qp;
+   const int *seg_prob = s->seg_prob;
+   uint8_t *seg_map_buf = s->seg_map_buf;
+   uint8_t *skip_lf_buf = s->skip_lf_buf;
+   uint8_t *bpred_buf   = s->bpred_buf;
+   uint8_t *yb = s->yb, *ub = s->ub, *vb = s->vb;
+   uint8_t *above_nz_y = s->above_nz_y, *above_nz_u = s->above_nz_u;
+   uint8_t *above_nz_v = s->above_nz_v, *above_nz_dc = s->above_nz_dc;
+   uint8_t *above_bmodes = s->above_bmodes;
+   int y1_dc_q, y1_ac_q, y2_dc_q, y2_ac_q, uv_dc_q, uv_ac_q;
+   int mx, my, i, j;
+   int my_end = s->my + nrows;
+   uint8_t left_nz_y[4], left_nz_u[2], left_nz_v[2];
+   uint8_t left_bmodes[4];
+   int left_nz_dc;
+
+   (void)w; (void)h; (void)base_qp;
+   if (my_end > mbh)
+      my_end = mbh;
+
+   for (my = s->my; my < my_end; my++)
+   {
+      vp8b *tp = &s->tbr[my % num_parts]; /* token partition for this row */
       /* Reset left context at start of each row */
       memset(left_nz_y, 0, sizeof(left_nz_y));
       memset(left_nz_u, 0, sizeof(left_nz_u));
@@ -2249,10 +2321,10 @@ tp_ok:
          if (seg_enabled)
          {
             /* VP8 segment tree: prob[0] -> left(prob[1]->seg0/seg1) / right(prob[2]->seg2/seg3) */
-            if (vp8b_get(&br, seg_prob[0]))
-               seg_id = 2 + vp8b_get(&br, seg_prob[2]);
+            if (vp8b_get(&s->br, seg_prob[0]))
+               seg_id = 2 + vp8b_get(&s->br, seg_prob[2]);
             else
-               seg_id = vp8b_get(&br, seg_prob[1]);
+               seg_id = vp8b_get(&s->br, seg_prob[1]);
          }
 
          if (seg_map_buf) seg_map_buf[my * mbw + mx] = (uint8_t)seg_id;
@@ -2276,17 +2348,17 @@ tp_ok:
 
          /* Skip flag (after segment, before y_mode — libvpx order) */
          if (skip_enabled)
-            is_skip = vp8b_get(&br, prob_skip);
+            is_skip = vp8b_get(&s->br, prob_skip);
 
          /* Y mode */
-         if (!vp8b_get(&br, vp8_ymp[0])) {
+         if (!vp8b_get(&s->br, vp8_ymp[0])) {
             ym = 4; /* B_PRED */
-         } else if (!vp8b_get(&br, vp8_ymp[1])) {
+         } else if (!vp8b_get(&s->br, vp8_ymp[1])) {
             /* Left subtree: DC, V */
-            ym = vp8b_get(&br, vp8_ymp[2]) ? 1 : 0;
+            ym = vp8b_get(&s->br, vp8_ymp[2]) ? 1 : 0;
          } else {
             /* Right subtree: H, TM */
-            ym = vp8b_get(&br, vp8_ymp[3]) ? 3 : 2;
+            ym = vp8b_get(&s->br, vp8_ymp[3]) ? 3 : 2;
          }
 
          if (ym == 4)
@@ -2310,7 +2382,7 @@ tp_ok:
                   left_mode = left_bmodes[sb_row];
                else
                   left_mode = 0;
-               bmodes[i] = (uint8_t)vp8_read_bmode(&br, above_mode, left_mode);
+               bmodes[i] = (uint8_t)vp8_read_bmode(&s->br, above_mode, left_mode);
             }
             /* Store bottom row for next MB row's above context */
             for (i = 0; i < 4; i++)
@@ -2333,9 +2405,9 @@ tp_ok:
          }
 
          /* UV mode */
-         if      (!vp8b_get(&br, vp8_uvmp[0])) uvm = 0;
-         else if (!vp8b_get(&br, vp8_uvmp[1])) uvm = 1;
-         else if (!vp8b_get(&br, vp8_uvmp[2])) uvm = 2;
+         if      (!vp8b_get(&s->br, vp8_uvmp[0])) uvm = 0;
+         else if (!vp8b_get(&s->br, vp8_uvmp[1])) uvm = 1;
+         else if (!vp8b_get(&s->br, vp8_uvmp[2])) uvm = 2;
          else uvm = 3;
 
          /* Gather prediction context. Border semantics per libvpx
@@ -2382,7 +2454,7 @@ tp_ok:
                int y2_left  = (mx > 0) ? left_nz_dc : 0;
                int y2_ctx   = (y2_above + y2_left > 1) ? 2 : (y2_above + y2_left);
                memset(y2_block, 0, sizeof(y2_block));
-               nz_y2 = vp8_decode_block(tp, y2_block, vp8_cprob[1], 0, y2_ctx);
+               nz_y2 = vp8_decode_block(tp, y2_block, s->cprob[1], 0, y2_ctx);
                above_nz_dc[mx] = (nz_y2 > 0) ? 1 : 0;
                left_nz_dc = (nz_y2 > 0) ? 1 : 0;
                if (nz_y2 > 0) mb_has_coeffs = 1;
@@ -2459,7 +2531,7 @@ tp_ok:
                   }
                   else
                      nz_cnt = vp8_decode_block(tp, coeffs,
-                           vp8_cprob[(ym == 4) ? 3 : 0], start, sb_ctx);
+                           s->cprob[(ym == 4) ? 3 : 0], start, sb_ctx);
                   /* Dequantize */
                   if (ym != 4)
                      coeffs[0] = dc_vals[by * 4 + bx]; /* DC from WHT */
@@ -2491,7 +2563,7 @@ tp_ok:
                      nz_cnt = 0;
                   }
                   else
-                     nz_cnt = vp8_decode_block(tp, coeffs, vp8_cprob[2], 0, sb_ctx);
+                     nz_cnt = vp8_decode_block(tp, coeffs, s->cprob[2], 0, sb_ctx);
                   coeffs[0] = (int16_t)(coeffs[0] * uv_dc_q);
                   for (i = 1; i < 16; i++)
                      coeffs[i] = (int16_t)(coeffs[i] * uv_ac_q);
@@ -2518,7 +2590,7 @@ tp_ok:
                      nz_cnt = 0;
                   }
                   else
-                     nz_cnt = vp8_decode_block(tp, coeffs, vp8_cprob[2], 0, sb_ctx);
+                     nz_cnt = vp8_decode_block(tp, coeffs, s->cprob[2], 0, sb_ctx);
                   coeffs[0] = (int16_t)(coeffs[0] * uv_dc_q);
                   for (i = 1; i < 16; i++)
                      coeffs[i] = (int16_t)(coeffs[i] * uv_ac_q);
@@ -2553,59 +2625,105 @@ tp_ok:
       }
    }
 
-   free(above_nz_y); free(above_nz_u); free(above_nz_v); free(above_nz_dc); free(above_bmodes);
-   } /* end context tracking block */
 
-   /* Apply post-decode loop filter */
-   if (lf_level > 0)
-   {
-      if (filter_type == 1)
-         vp8_loop_filter_simple(yb, ys, mbw, mbh, lf_level, sharpness,
-               seg_enabled, seg_abs, seg_lf, seg_map_buf, skip_lf_buf);
-      else
-         vp8_loop_filter_normal(yb, ys, ub, vb, uvs, mbw, mbh, lf_level,
-               sharpness, seg_enabled, seg_abs, seg_lf,
-               lf_delta_enabled, ref_lf_delta, mode_lf_delta,
-               seg_map_buf, skip_lf_buf, bpred_buf);
-   }
+   s->my = my_end;
+   return (my_end < mbh) ? 1 : 0;
+}
 
-   /* YUV -> ARGB with fancy chroma upsampling (matches libwebp/dwebp).
-    * Row 0 and the final even row mirror the chroma plane at the border;
-    * interior luma row pairs (2r+1, 2r+2) interpolate chroma rows (r, r+1). */
-   pix = (uint32_t*)malloc((size_t)w * h * sizeof(uint32_t));
-   if (!pix) goto lfail;
-   vp8_fancy_pair(yb, NULL, ub, vb, ub, vb, pix, NULL, w);
-   for (j = 0; j + 2 < h; j += 2)
+/* Post-decode stages, resumable by row range:
+ * vp8d_filter_rows applies the loop filter over MB rows [my0, my1);
+ * vp8d_upsample_rows converts luma row pairs into the output buffer.
+ * vp8d_output allocates the destination (call once, before either). */
+static uint32_t *vp8d_output(vp8d *s)
+{
+   return (uint32_t*)malloc((size_t)s->w * s->h * sizeof(uint32_t));
+}
+
+static void vp8d_filter_rows(vp8d *s, int my0, int my1)
+{
+   if (s->lf_level <= 0)
+      return;
+   if (my1 > s->mbh) my1 = s->mbh;
+   if (my0 >= my1)   return;
+   if (s->filter_type == 1)
+      vp8_loop_filter_simple(s->yb, s->ys, s->mbw, my0, my1,
+            s->lf_level, s->sharpness, s->seg_enabled, s->seg_abs,
+            s->seg_lf, s->seg_map_buf, s->skip_lf_buf);
+   else
+      vp8_loop_filter_normal(s->yb, s->ys, s->ub, s->vb, s->uvs,
+            s->mbw, my0, my1, s->lf_level, s->sharpness,
+            s->seg_enabled, s->seg_abs, s->seg_lf,
+            s->lf_delta_enabled, s->ref_lf_delta, s->mode_lf_delta,
+            s->seg_map_buf, s->skip_lf_buf, s->bpred_buf);
+}
+
+/* Convert a bounded batch of luma rows starting at pair cursor j0 into
+ * pix, running at most max_rows luma rows before yielding. Mirrors the
+ * original whole-image loop exactly: row 0 (on the first call) and the
+ * final even row mirror the chroma border; interior pairs (j+1, j+2)
+ * interpolate chroma rows (j/2, j/2+1). The loop itself defines the
+ * resumption point: the returned value is the next pair cursor, or h
+ * when the image is complete (the caller passes it back unchanged). */
+static int vp8d_upsample_rows(vp8d *s, uint32_t *pix, int j0, int max_rows)
+{
+   const int w = s->w, h = s->h, ys = s->ys, uvs = s->uvs;
+   uint8_t *yb = s->yb, *ub = s->ub, *vb = s->vb;
+   int j     = j0;
+   int limit = j0 + max_rows;
+   if (j0 == 0)
+      vp8_fancy_pair(yb, NULL, ub, vb, ub, vb, pix, NULL, w,
+            s->fancy_uv);
+   for (; j + 2 < h && j < limit; j += 2)
    {
       const uint8_t *tu = ub + (j >> 1) * uvs, *tv = vb + (j >> 1) * uvs;
       vp8_fancy_pair(yb + (j+1)*ys, yb + (j+2)*ys,
             tu, tv, tu + uvs, tv + uvs,
-            pix + (size_t)(j+1)*w, pix + (size_t)(j+2)*w, w);
+            pix + (size_t)(j+1)*w, pix + (size_t)(j+2)*w, w,
+            s->fancy_uv);
    }
-   if (!(h & 1) && h >= 2)
+   if (j + 2 >= h)
    {
-      const uint8_t *lu = ub + ((h-1) >> 1) * uvs, *lv = vb + ((h-1) >> 1) * uvs;
-      vp8_fancy_pair(yb + (size_t)(h-1)*ys, NULL, lu, lv, lu, lv,
-            pix + (size_t)(h-1)*w, NULL, w);
+      if (!(h & 1) && h >= 2)
+      {
+         const uint8_t *lu = ub + ((h-1) >> 1) * uvs;
+         const uint8_t *lv = vb + ((h-1) >> 1) * uvs;
+         vp8_fancy_pair(yb + (size_t)(h-1)*ys, NULL, lu, lv, lu, lv,
+               pix + (size_t)(h-1)*w, NULL, w, s->fancy_uv);
+      }
+      return h;
    }
-   free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf); free(bpred_buf);
-   vp8_fancy_scratch_free();
-   *ow = (unsigned)w; *oh = (unsigned)h;
-   return pix;
-lfail:
-   free(yb); free(ub); free(vb); free(seg_map_buf); free(skip_lf_buf); free(bpred_buf); free(pix);
-   vp8_fancy_scratch_free();
-   return NULL;
+   return j;
 }
+
+/* One-shot wrapper preserving the original entry point: used by the
+ * still-image fallback paths and the animation decoder, and doubling as
+ * the reference composition of the resumable stages. */
+static uint32_t *vp8_decode(const uint8_t *data, size_t len,
+      unsigned *ow, unsigned *oh)
+{
+   vp8d s;
+   uint32_t *pix;
+   if (vp8d_begin(data, len, &s) != 0)
+      return NULL;
+   while (vp8d_rows(&s, s.mbh) > 0)
+      ;
+   pix = vp8d_output(&s);
+   if (!pix)
+   {
+      vp8d_abort(&s);
+      return NULL;
+   }
+   vp8d_filter_rows(&s, 0, s.mbh);
+   vp8d_upsample_rows(&s, pix, 0, s.h);
+   /* (single call: max_rows == h converts the whole image) */
+   *ow = (unsigned)s.w;
+   *oh = (unsigned)s.h;
+   vp8d_abort(&s);
+   return pix;
+}
+
 
 /* ===== Top-level ===== */
-
-static void vp8_fancy_scratch_free(void)
-{
-   free(g_fancy_uv);
-   g_fancy_uv = NULL;
-   g_fancy_uv_cap = 0;
-}
 
 static uint32_t *rwebp_do(const uint8_t *buf, size_t len,
       unsigned *w, unsigned *h, bool rgba)
@@ -3035,18 +3153,175 @@ afail:
 
 /* ===== Public API ===== */
 
-struct rwebp { uint8_t *buff_data; size_t buff_len; uint32_t *output_image; };
+/* Incremental decode phases for rwebp_process_image. Mirrors the
+ * rpng/rjpeg contract: each call does a bounded slice of work and
+ * returns IMAGE_PROCESS_NEXT, so the caller's time-budgeted loop can
+ * yield between slices instead of blocking on one monolithic decode.
+ * The sliced path covers lossy (VP8) images without an alpha chunk -
+ * the common large-photo case; lossless and alpha-bearing images fall
+ * back to a single-shot decode on the first call. */
+#define RWEBP_PHASE_IDLE     0
+#define RWEBP_PHASE_ROWS     1
+#define RWEBP_PHASE_FILTER   2
+#define RWEBP_PHASE_UPSAMPLE 3
+#define RWEBP_PHASE_SWIZZLE  4
+
+/* MB rows decoded per call (~0.5-3 ms depending on content and host),
+ * loop-filter MB rows per call, upsampled luma rows per call, and
+ * swizzled pixels per call. Each is sized to keep individual calls
+ * well under a vsync so the caller's budget check stays responsive. */
+#define RWEBP_ROWS_PER_CALL     4
+#define RWEBP_LF_ROWS_PER_CALL  8
+#define RWEBP_UPS_ROWS_PER_CALL 128
+#define RWEBP_SWZ_PX_PER_CALL   (512 * 1024)
+
+struct rwebp
+{
+   uint8_t *buff_data;
+   size_t buff_len;
+   uint32_t *output_image;
+   vp8d d;
+   int phase;
+   int cursor;       /* row / pixel progress within the current phase */
+   int swizzle;      /* supports_rgba latched at phase start */
+};
+
+/* Tear down an in-flight incremental decode. Frees the pending output
+ * buffer as well - callers that hand the buffer out (the END paths)
+ * must clear output_image first, transferring ownership. */
+static void rwebp_proc_reset(rwebp_t *rwebp)
+{
+   if (rwebp->phase != RWEBP_PHASE_IDLE)
+   {
+      vp8d_abort(&rwebp->d);
+      free(rwebp->output_image);
+      rwebp->output_image = NULL;
+   }
+   rwebp->phase  = RWEBP_PHASE_IDLE;
+   rwebp->cursor = 0;
+}
 
 int rwebp_process_image(rwebp_t *rwebp, void **buf_data,
       size_t size, unsigned *width, unsigned *height,
       bool supports_rgba)
 {
+   size_t len;
    if (!rwebp || !rwebp->buff_data) return IMAGE_PROCESS_ERROR;
-   rwebp->output_image = rwebp_do(rwebp->buff_data,
-         rwebp->buff_len > 0 ? rwebp->buff_len : size,
-         width, height, supports_rgba);
-   *buf_data = rwebp->output_image;
-   return rwebp->output_image ? IMAGE_PROCESS_END : IMAGE_PROCESS_ERROR;
+   len = rwebp->buff_len > 0 ? rwebp->buff_len : size;
+
+   switch (rwebp->phase)
+   {
+      case RWEBP_PHASE_IDLE:
+      {
+         rw_ctr c;
+         if (rw_parse(rwebp->buff_data, len, &c)
+               && c.vp8 && c.vp8s > 0
+               && !(c.vp8l && c.vp8ls > 0)
+               && !(c.alph && c.alphs > 0))
+         {
+            /* Sliced lossy path */
+            if (vp8d_begin(c.vp8, c.vp8s, &rwebp->d) != 0)
+               return IMAGE_PROCESS_ERROR;
+            rwebp->output_image = vp8d_output(&rwebp->d);
+            if (!rwebp->output_image)
+            {
+               vp8d_abort(&rwebp->d);
+               return IMAGE_PROCESS_ERROR;
+            }
+            rwebp->phase   = RWEBP_PHASE_ROWS;
+            rwebp->cursor  = 0;
+            rwebp->swizzle = supports_rgba ? 1 : 0;
+            *width  = (unsigned)rwebp->d.w;
+            *height = (unsigned)rwebp->d.h;
+            return IMAGE_PROCESS_NEXT;
+         }
+         /* Everything else: single-shot decode */
+         rwebp->output_image = rwebp_do(rwebp->buff_data, len,
+               width, height, supports_rgba);
+         *buf_data = rwebp->output_image;
+         return rwebp->output_image ? IMAGE_PROCESS_END : IMAGE_PROCESS_ERROR;
+      }
+
+      case RWEBP_PHASE_ROWS:
+         if (vp8d_rows(&rwebp->d, RWEBP_ROWS_PER_CALL) == 0)
+         {
+            rwebp->phase  = RWEBP_PHASE_FILTER;
+            rwebp->cursor = 0;
+         }
+         *width  = (unsigned)rwebp->d.w;
+         *height = (unsigned)rwebp->d.h;
+         return IMAGE_PROCESS_NEXT;
+
+      case RWEBP_PHASE_FILTER:
+         if (rwebp->d.lf_level <= 0)
+         {
+            rwebp->phase  = RWEBP_PHASE_UPSAMPLE;
+            rwebp->cursor = 0;
+         }
+         else
+         {
+            vp8d_filter_rows(&rwebp->d, rwebp->cursor,
+                  rwebp->cursor + RWEBP_LF_ROWS_PER_CALL);
+            rwebp->cursor += RWEBP_LF_ROWS_PER_CALL;
+            if (rwebp->cursor >= rwebp->d.mbh)
+            {
+               rwebp->phase  = RWEBP_PHASE_UPSAMPLE;
+               rwebp->cursor = 0;
+            }
+         }
+         *width  = (unsigned)rwebp->d.w;
+         *height = (unsigned)rwebp->d.h;
+         return IMAGE_PROCESS_NEXT;
+
+      case RWEBP_PHASE_UPSAMPLE:
+         rwebp->cursor = vp8d_upsample_rows(&rwebp->d,
+               rwebp->output_image, rwebp->cursor,
+               RWEBP_UPS_ROWS_PER_CALL);
+         *width  = (unsigned)rwebp->d.w;
+         *height = (unsigned)rwebp->d.h;
+         if (rwebp->cursor >= rwebp->d.h)
+         {
+            if (rwebp->swizzle)
+            {
+               rwebp->phase  = RWEBP_PHASE_SWIZZLE;
+               rwebp->cursor = 0;
+               return IMAGE_PROCESS_NEXT;
+            }
+            *buf_data = rwebp->output_image;
+            rwebp->output_image = NULL; /* ownership -> caller */
+            rwebp_proc_reset(rwebp);
+            return IMAGE_PROCESS_END;
+         }
+         return IMAGE_PROCESS_NEXT;
+
+      case RWEBP_PHASE_SWIZZLE:
+      {
+         /* ARGB words -> ABGR (memory R,G,B,A), a bounded pixel batch
+          * per call; matches the rwebp_do output conversion. */
+         uint32_t *pix = rwebp->output_image;
+         int n = rwebp->d.w * rwebp->d.h;
+         int i = rwebp->cursor;
+         int e = i + RWEBP_SWZ_PX_PER_CALL;
+         if (e > n) e = n;
+         for (; i < e; i++)
+         {
+            uint32_t p = pix[i];
+            pix[i] = (p & 0xFF00FF00u) | ((p & 0xFF) << 16) | ((p >> 16) & 0xFF);
+         }
+         rwebp->cursor = e;
+         *width  = (unsigned)rwebp->d.w;
+         *height = (unsigned)rwebp->d.h;
+         if (e >= n)
+         {
+            *buf_data = rwebp->output_image;
+            rwebp->output_image = NULL; /* ownership -> caller */
+            rwebp_proc_reset(rwebp);
+            return IMAGE_PROCESS_END;
+         }
+         return IMAGE_PROCESS_NEXT;
+      }
+   }
+   return IMAGE_PROCESS_ERROR;
 }
 
 bool rwebp_set_buf_ptr(rwebp_t *rwebp, void *data, size_t len)
@@ -3057,5 +3332,11 @@ bool rwebp_set_buf_ptr(rwebp_t *rwebp, void *data, size_t len)
    return true;
 }
 
-void rwebp_free(rwebp_t *rwebp) { if (rwebp) free(rwebp); }
+void rwebp_free(rwebp_t *rwebp)
+{
+   if (!rwebp)
+      return;
+   rwebp_proc_reset(rwebp);
+   free(rwebp);
+}
 rwebp_t *rwebp_alloc(void) { return (rwebp_t*)calloc(1, sizeof(rwebp_t)); }
