@@ -33,6 +33,8 @@
 #include "verbosity.h"
 
 #include "core_info.h"
+#include "core.h"
+#include "runloop.h"
 #include "file_path_special.h"
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
@@ -2889,6 +2891,25 @@ static bool core_info_current_supports_savestate_level(uint32_t min_level)
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
+      return true;
+   if (p_coreinfo->current->savestate_support_level >= min_level)
+      return true;
+   /* The info file claims this level is unsupported. Info files can go
+    * stale in the blocking direction: a core that gains serialization
+    * support keeps being rejected here until its metadata is updated,
+    * even though the implementation works (and the API itself has no
+    * capability flag to consult - a nonzero retro_serialize_size() from
+    * the running core is the only ground truth available).
+    *
+    * For BASIC support (user-initiated save/load), let the running core
+    * override stale metadata: if it reports a nonzero serializable size,
+    * savestates demonstrably work. Higher support levels (rewind,
+    * run-ahead, netplay) still require explicit metadata, since those
+    * engage automatic high-frequency serialization that a bare nonzero
+    * size does not prove safe or fast enough. */
+   if (min_level <= CORE_INFO_SAVESTATE_BASIC
+         && (runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING)
+         && core_serialize_size() > 0)
       return true;
    return p_coreinfo->current->savestate_support_level >= min_level;
 }
