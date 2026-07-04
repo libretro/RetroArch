@@ -263,6 +263,11 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
    int num_frames           = 0;
    int loop_count           = 0;
 
+   /* Correctness currently relies on every caller resetting the
+    * thumbnail before install; make the invariant local so a future
+    * second call site cannot leak or double-borrow a live decoder. */
+   gfx_thumbnail_anim_close(thumbnail);
+
    if (string_is_empty(path))
       return;
 
