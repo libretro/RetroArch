@@ -2646,7 +2646,7 @@ static uint32_t *rwebp_do(const uint8_t *buf, size_t len,
  * header) into RGBA. Mirrors rwebp_do's lossy/lossless + ALPH handling
  * but operates on the frame's local chunk list. */
 static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
-      unsigned *ow, unsigned *oh)
+      unsigned *ow, unsigned *oh, int *out_opaque)
 {
    const uint8_t *fv = NULL, *fl = NULL, *fa = NULL;
    size_t fvs = 0, fls = 0, fas = 0;
@@ -2664,10 +2664,18 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
       sp += 8 + ((ss+1) & ~(size_t)1);
    }
 
+   if (out_opaque)
+      *out_opaque = 0;
    if (fl && fls > 0)
       pix = vl_decode_full(fl, fls, &w, &h);
    else if (fv && fvs > 0)
    {
+      /* A VP8 sub-image without an ALPH chunk decodes with every alpha
+       * byte set to 0xFF; blending a fully opaque source over the
+       * canvas is defined (and implemented) as a plain copy, so the
+       * caller can skip per-pixel blending for such frames. */
+      if (out_opaque && !(fa && fas > 0))
+         *out_opaque = 1;
       pix = vp8_decode(fv, fvs, &w, &h);
       if (pix && fa && fas > 0)
       {
@@ -2917,6 +2925,7 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
       unsigned sub_w = 0, sub_h = 0;
       uint32_t *sub;
       int is_key, x, y;
+      int sub_opaque = 0;
 
       s->cursor++;
 
@@ -2924,7 +2933,8 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
             || fx + fw > cw || fy + fh > ch)
          continue;
 
-      sub = rwebp_anim_frame_pixels(d + 16, sz - 16, &sub_w, &sub_h);
+      sub = rwebp_anim_frame_pixels(d + 16, sz - 16, &sub_w, &sub_h,
+            &sub_opaque);
       if (!sub)
          continue;
       if ((int)sub_w != fw || (int)sub_h != fh)
@@ -2946,7 +2956,10 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
       {
          uint32_t *crow = s->canvas + (size_t)(fy + y) * cw + fx;
          const uint32_t *srow = sub + (size_t)y * fw;
-         if (no_blend)
+         /* A fully opaque source blends to a plain copy (the per-pixel
+          * fast path in rwebp_blend_px), so frames known opaque at
+          * parse time skip the per-pixel loop entirely. */
+         if (no_blend || sub_opaque)
             memcpy(crow, srow, (size_t)fw * sizeof(uint32_t));
          else
             for (x = 0; x < fw; x++)
