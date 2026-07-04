@@ -46,12 +46,10 @@
  * Sergii "iOrange" Kudlai, released into the public domain
  * (MIT / The Unlicense). See https://github.com/iOrange/bcdec .
  *
- * NOTE (endianness): the embedded core reads the little-endian on-disk
- * block layout via native typed loads, i.e. it assumes a little-endian
- * host (x86/ARM/AArch64 - every current libretro desktop/mobile
- * target).  DDS container parsing below is endian-clean (byte reads).
- * Big-endian hosts (GC/Wii PPC) would need per-field byte swaps in the
- * core loads; that path is intentionally left as a follow-up. */
+ * NOTE (endianness): all on-disk block and header fields are read
+ * through explicit little-endian accessors, so decoding is byte-for-byte
+ * identical on little- and big-endian hosts (verified on ppc/Wii-class
+ * big-endian via cross-run). No native-endian typed loads remain. */
 
 #include <stdint.h>
 #include <stddef.h>
@@ -68,6 +66,22 @@
  *  Embedded block-decompression core (adapted from bcdec.h, PD/MIT)  *
  * ================================================================== */
 
+/* DDS block payloads are little-endian on disk.  Read every on-disk
+ * field through these explicit little-endian accessors so the decoder
+ * produces identical results on little- and big-endian hosts (the
+ * original bcdec reads used native-endian typed loads). */
+#define RDDS_RL16(p) \
+   ((unsigned short)(  (unsigned)((const unsigned char*)(p))[0] \
+                    | ((unsigned)((const unsigned char*)(p))[1] << 8)))
+#define RDDS_RL32(p) \
+   (  (unsigned int)((const unsigned char*)(p))[0] \
+   | ((unsigned int)((const unsigned char*)(p))[1] << 8) \
+   | ((unsigned int)((const unsigned char*)(p))[2] << 16) \
+   | ((unsigned int)((const unsigned char*)(p))[3] << 24))
+#define RDDS_RL64(p) \
+   (  (unsigned long long)RDDS_RL32((const unsigned char*)(p)) \
+   | ((unsigned long long)RDDS_RL32((const unsigned char*)(p) + 4) << 32))
+
 static void rdds_bcdec__color_block(const void* compressedBlock, void* decompressedBlock, int destinationPitch, int onlyOpaqueMode) {
     unsigned short c0, c1;
     unsigned int refColors[4]; /* 0xAABBGGRR */
@@ -76,8 +90,8 @@ static void rdds_bcdec__color_block(const void* compressedBlock, void* decompres
     int i, j, idx;
     unsigned int r0, g0, b0, r1, g1, b1, r, g, b;
 
-    c0 = ((unsigned short*)compressedBlock)[0];
-    c1 = ((unsigned short*)compressedBlock)[1];
+    c0 = RDDS_RL16((const unsigned char*)compressedBlock);
+    c1 = RDDS_RL16((const unsigned char*)compressedBlock + 2);
 
     /* Unpack 565 ref colors */
     r0 = (c0 >> 11) & 0x1F;
@@ -122,14 +136,17 @@ static void rdds_bcdec__color_block(const void* compressedBlock, void* decompres
         refColors[3] = 0x00000000;
     }
 
-    colorIndices = ((unsigned int*)compressedBlock)[1];
+    colorIndices = RDDS_RL32((const unsigned char*)compressedBlock + 4);
 
     /* Fill out the decompressed color block */
     dstColors = (unsigned char*)decompressedBlock;
     for (i = 0; i < 4; ++i) {
         for (j = 0; j < 4; ++j) {
             idx = colorIndices & 0x03;
-            ((unsigned int*)dstColors)[j] = refColors[idx];
+            dstColors[j * 4 + 0] = (unsigned char)( refColors[idx]        & 0xFF);
+            dstColors[j * 4 + 1] = (unsigned char)((refColors[idx] >>  8) & 0xFF);
+            dstColors[j * 4 + 2] = (unsigned char)((refColors[idx] >> 16) & 0xFF);
+            dstColors[j * 4 + 3] = (unsigned char)((refColors[idx] >> 24) & 0xFF);
             colorIndices >>= 2;
         }
 
@@ -138,16 +155,16 @@ static void rdds_bcdec__color_block(const void* compressedBlock, void* decompres
 }
 
 static void rdds_bcdec__sharp_alpha_block(const void* compressedBlock, void* decompressedBlock, int destinationPitch) {
-    unsigned short* alpha;
+    const unsigned char* alpha;
     unsigned char* decompressed;
     int i, j;
 
-    alpha = (unsigned short*)compressedBlock;
+    alpha = (const unsigned char*)compressedBlock;
     decompressed = (unsigned char*)decompressedBlock;
 
     for (i = 0; i < 4; ++i) {
         for (j = 0; j < 4; ++j) {
-            decompressed[j * 4] = ((alpha[i] >> (4 * j)) & 0x0F) * 17;
+            decompressed[j * 4] = ((RDDS_RL16(alpha + 2 * i) >> (4 * j)) & 0x0F) * 17;
         }
 
         decompressed += destinationPitch;
@@ -160,7 +177,7 @@ static void rdds_bcdec__smooth_alpha_block(const void* compressedBlock, void* de
     int i, j;
     unsigned long long block, indices;
 
-    block = *(unsigned long long*)compressedBlock;
+    block = RDDS_RL64(compressedBlock);
     decompressed = (unsigned char*)decompressedBlock;
 
     alpha[0] = block & 0xFF;
@@ -207,7 +224,7 @@ static void rdds_bcdec__bc4_block(const void* compressedBlock, void* decompresse
     static int aWeights4[4] = { 13107, 26215, 39321, 52429 };
     static int aWeights6[6] = { 9363, 18724, 28086, 37450, 46812, 56173 };
 
-    block = *(unsigned long long*)compressedBlock;
+    block = RDDS_RL64(compressedBlock);
 
     if (isSigned) {
         alpha[0] = (char)(block & 0xFF);
@@ -265,7 +282,7 @@ static void rdds_bcdec__bc4_block_float(const void* compressedBlock, void* decom
     int i, j;
     unsigned long long block, indices;
 
-    block = *(unsigned long long*)compressedBlock;
+    block = RDDS_RL64(compressedBlock);
     decompressed = (float*)decompressedBlock;
 
     if (isSigned) {
@@ -549,8 +566,8 @@ static void rdds_bcdec_bc6h_half(const void* compressedBlock, void* decompressed
 
     decompressed = (unsigned short*)decompressedBlock;
 
-    bstream.low = ((unsigned long long*)compressedBlock)[0];
-    bstream.high = ((unsigned long long*)compressedBlock)[1];
+    bstream.low  = RDDS_RL64((const unsigned char*)compressedBlock);
+    bstream.high = RDDS_RL64((const unsigned char*)compressedBlock + 8);
 
     r[0] = r[1] = r[2] = r[3] = 0;
     g[0] = g[1] = g[2] = g[3] = 0;
@@ -1186,8 +1203,8 @@ static void rdds_bcdec_bc7(const void* compressedBlock, void* decompressedBlock,
 
     decompressed = (unsigned char*)decompressedBlock;
 
-    bstream.low = ((unsigned long long*)compressedBlock)[0];
-    bstream.high = ((unsigned long long*)compressedBlock)[1];
+    bstream.low  = RDDS_RL64((const unsigned char*)compressedBlock);
+    bstream.high = RDDS_RL64((const unsigned char*)compressedBlock + 8);
 
     for (mode = 0; mode < 8 && (0 == rdds_bcdec__bitstream_read_bit(&bstream)); ++mode);
 
