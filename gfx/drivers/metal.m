@@ -164,6 +164,9 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
                        library:(id<MTLLibrary>)l;
 
 - (Texture *)newTexture:(struct texture_image)image filter:(enum texture_filter_type)filter;
+#if TARGET_OS_OSX
+- (Texture *)newTextureCompressed:(const struct texture_compressed *)tc filter:(enum texture_filter_type)filter;
+#endif
 - (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped;
 - (void)convertFormat:(RPixelFormat)fmt from:(id<MTLTexture>)src to:(id<MTLTexture>)dst;
 - (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend;
@@ -1870,6 +1873,49 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
    return t;
 }
+
+#if TARGET_OS_OSX
+- (Texture *)newTextureCompressed:(const struct texture_compressed *)tc
+      filter:(enum texture_filter_type)filter
+{
+   MTLPixelFormat        pf;
+   MTLTextureDescriptor *td;
+   id<MTLTexture>        t;
+   Texture              *tex;
+   unsigned              i;
+   unsigned              block_bytes = 16;
+
+   switch (tc->format)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: pf = MTLPixelFormatBC1_RGBA;    block_bytes = 8; break;
+      case TEXTURE_GPU_FORMAT_BC2: pf = MTLPixelFormatBC2_RGBA;                     break;
+      case TEXTURE_GPU_FORMAT_BC3: pf = MTLPixelFormatBC3_RGBA;                     break;
+      case TEXTURE_GPU_FORMAT_BC7: pf = MTLPixelFormatBC7_RGBAUnorm;                break;
+      default:                     return nil;
+   }
+
+   td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:pf
+         width:tc->mips[0].width
+         height:tc->mips[0].height
+         mipmapped:NO];
+   td.mipmapLevelCount = tc->num_mips;
+
+   t = [_device newTextureWithDescriptor:td];
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      NSUInteger blocks_w = (tc->mips[i].width + 3u) >> 2;
+      [t replaceRegion:MTLRegionMake2D(0, 0, tc->mips[i].width, tc->mips[i].height)
+           mipmapLevel:i
+             withBytes:tc->mips[i].data
+           bytesPerRow:blocks_w * block_bytes];
+   }
+
+   tex         = [Texture new];
+   tex.texture = t;
+   tex.sampler = _samplers[filter];
+   return tex;
+}
+#endif
 
 - (id<CAMetalDrawable>)nextDrawable
 {
@@ -6009,6 +6055,58 @@ static void metal_set_hdr_subpixel_layout(void *data, unsigned subpixel_layout)
       [md.context setHDRSubpixelLayout:subpixel_layout];
 }
 
+static bool metal_supports_texture_format(void *video_data,
+      enum texture_gpu_format fmt)
+{
+#if TARGET_OS_OSX
+   MetalDriver  *md = (__bridge MetalDriver *)video_data;
+   id<MTLDevice> dev;
+   if (!md)
+      return false;
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1:
+      case TEXTURE_GPU_FORMAT_BC2:
+      case TEXTURE_GPU_FORMAT_BC3:
+      case TEXTURE_GPU_FORMAT_BC7:
+         break;
+      default:
+         return false;
+   }
+   dev = md.context.device;
+   if (@available(macOS 11.0, *))
+      return dev.supportsBCTextureCompression ? true : false;
+   return true; /* BC always available on pre-11 (Intel) Macs */
+#else
+   (void)video_data;
+   (void)fmt;
+   return false;
+#endif
+}
+
+static uintptr_t metal_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+#if TARGET_OS_OSX
+   MetalDriver *md = (__bridge MetalDriver *)video_data;
+   Texture     *t;
+   (void)threaded;
+   if (!md || !tc || tc->num_mips == 0)
+      return 0;
+   t = [md.context newTextureCompressed:tc filter:filter_type];
+   if (!t)
+      return 0;
+   return (uintptr_t)(__bridge_retained void *)(t);
+#else
+   (void)video_data;
+   (void)tc;
+   (void)threaded;
+   (void)filter_type;
+   return 0;
+#endif
+}
+
 static const video_poke_interface_t metal_poke_interface = {
    metal_get_flags,
    metal_load_texture,
@@ -6035,7 +6133,9 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_set_hdr_paper_white_nits,
    metal_set_hdr_expand_gamut,
    metal_set_hdr_scanlines,
-   metal_set_hdr_subpixel_layout
+   metal_set_hdr_subpixel_layout,
+   metal_supports_texture_format,
+   metal_load_texture_compressed
 };
 
 static void metal_get_poke_interface(void *data,
