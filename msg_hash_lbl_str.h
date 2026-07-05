@@ -809,7 +809,6 @@
 #define MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE_STR "menu_throttle_framerate"
 #define MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY_STR "rgui_browser_directory"
 #define MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY_STR "rgui_config_directory"
-#define MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN_STR "rgui_show_start_screen"
 #define MENU_ENUM_LABEL_ADD_TO_FAVORITES_STR "favorites_add"
 #define MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST_STR "favorites_add_playlist"
 #define MENU_ENUM_LABEL_ADD_TO_PLAYLIST_STR "playlist_add"
