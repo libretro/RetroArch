@@ -101,18 +101,18 @@ for ln in body.split('\n'):
         if gstack:
             gstack.pop()
     else:
-        rm = re.match(r'\s*SDESC_\w+_ROW\((\w+),', ln)
+        rm = re.match(r'\s*SDESC_\w+_ROW(?:_P|_DS)?\((\w+),', ln)
         if rm and gstack:
             guards[rm.group(1)] = tuple(gstack)
-rows = [(m.group(1), m.group(2), m.group(3), re.sub(r'\s+',' ',m.group(4)).strip())
-        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT|STRING_P|STRING|DIR|PATH_DS|PATH)_ROW\(\s*(\w+),\s*(\w+),((?:[^()]|\([^()]*\))*)\)', body)]
+rows = [(m.group(1) + (m.group(2) or ''), m.group(3), m.group(4), re.sub(r'\s+',' ',m.group(5)).strip())
+        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT|STRING|DIR|PATH)_ROW(_P|_DS)?\(\s*(\w+),\s*(\w+),((?:[^()]|\([^()]*\))*)\)', body)]
 all_invocations = re.findall(r'SDESC_\w+?_ROW(?:_\w+)?\(', body)
 assert len(rows) == len(all_invocations), (
     'table contains %d rows but only %d are plain-grammar '
     'SDESC_{BOOL,UINT,INT,FLOAT}_ROW; variant rows (_EX/_AT/_LV/...) are '
     'outside the def grammar - migrate this table manually or extend the '
     'grammar deliberately' % (len(all_invocations), len(rows)))
-assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW\(', tm.group(1))), (len(rows), tm.group(1)[:200])
+assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW(?:_P|_DS)?\(', tm.group(1))), (len(rows), tm.group(1)[:200])
 
 us = open('intl/msg_hash_us.h').read()
 usval, ussub, usspan, uscmt = {}, {}, [], {}
@@ -149,7 +149,7 @@ for k, f, T, a in rows:
 # wait for the variant grammar.
 _ms_all = open('menu/menu_setting.c').read()
 for _k, _f, _T, _a in rows:
-    _vm = re.search(r'SDESC_\w+_ROW_\w+\(%s,' % _f, _ms_all)
+    _vm = re.search(r'SDESC_\w+_ROW_(?:EX|LV|AT|AT_EX)\(%s,' % _f, _ms_all)
     assert not _vm, ("field %s is entangled with a variant row" % _f,
                      _ms_all[_vm.start():_vm.start()+60] if _vm else '')
 print("extraction ok: %d settings (%d without sublabel)" % (len(rows), sum(1 for _,_,T,_ in rows if T not in ussub)))
