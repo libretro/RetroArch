@@ -1953,6 +1953,8 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
 #define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -2111,6 +2113,8 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_FLOAT_NS
 #undef S_STRING
 #undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
    SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
@@ -2390,6 +2394,8 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT(n, &settings->floats.f, true, d, false);
 #define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -2548,6 +2554,8 @@ static struct config_float_setting *populate_settings_float(
 #undef S_FLOAT_NS
 #undef S_STRING
 #undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
    SETTING_FLOAT("menu_scale_factor",            &settings->floats.menu_scale_factor, true, DEFAULT_MENU_SCALE_FACTOR, false);
    SETTING_FLOAT("menu_widget_scale_factor",     &settings->floats.menu_widget_scale_factor, true, DEFAULT_MENU_WIDGET_SCALE_FACTOR, false);
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
@@ -2786,6 +2794,8 @@ static struct config_uint_setting *populate_settings_uint(
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
 #define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -2944,6 +2954,8 @@ static struct config_uint_setting *populate_settings_uint(
 #undef S_FLOAT_NS
 #undef S_STRING
 #undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
    SETTING_UINT("video_rotation",                &settings->uints.video_rotation, true, ORIENTATION_NORMAL, false);
    SETTING_UINT("screen_orientation",            &settings->uints.screen_orientation, true, ORIENTATION_NORMAL, false);
    SETTING_UINT("video_msg_bgcolor_red",         &settings->uints.video_msg_bgcolor_red, true, DEFAULT_MESSAGE_BGCOLOR_RED, false);
@@ -3158,6 +3170,8 @@ static struct config_int_setting *populate_settings_int(
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
 #define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -3316,6 +3330,8 @@ static struct config_int_setting *populate_settings_int(
 #undef S_FLOAT_NS
 #undef S_STRING
 #undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
 
    /* GENERATED: single-source setting rows (string kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
@@ -3330,6 +3346,8 @@ static struct config_int_setting *populate_settings_int(
    SETTING_ARRAY(n, settings->arrays.f, false, NULL, true);
 #define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
    SETTING_ARRAY(n, settings->arrays.f, false, NULL, true);
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -3488,6 +3506,8 @@ static struct config_int_setting *populate_settings_int(
 #undef S_FLOAT_NS
 #undef S_STRING
 #undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
 
 #ifdef HAVE_D3D10
    SETTING_INT("d3d10_gpu_index",                &settings->ints.d3d10_gpu_index, true, DEFAULT_D3D10_GPU_INDEX, false);
