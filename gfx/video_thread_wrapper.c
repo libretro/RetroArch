@@ -1290,6 +1290,36 @@ static uint32_t thread_get_flags(void *data)
    return 0;
 }
 
+static bool thread_supports_texture_format(void *video_data,
+      enum texture_gpu_format fmt)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+   if (     thr
+         && thr->driver_data
+         && thr->poke
+         && thr->poke->supports_texture_format)
+      return thr->poke->supports_texture_format(thr->driver_data, fmt);
+   return false;
+}
+
+/* Forward the compressed upload with 'threaded' passed through, exactly as
+ * thread_load_texture does. The underlying driver decides whether to marshal
+ * the GPU work onto the video thread; the descriptor stays alive because
+ * video_thread_texture_handle is synchronous. */
+static uintptr_t thread_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+   if (     thr
+         && thr->driver_data
+         && thr->poke
+         && thr->poke->load_texture_compressed)
+      return thr->poke->load_texture_compressed(thr->driver_data,
+         tc, threaded, filter_type);
+   return 0;
+}
+
 static const video_poke_interface_t thread_poke = {
    thread_get_flags,
    thread_load_texture,
@@ -1316,7 +1346,9 @@ static const video_poke_interface_t thread_poke = {
    thread_set_hdr_paper_white_nits,
    thread_set_hdr_expand_gamut,
    thread_set_hdr_scanlines,
-   thread_set_hdr_subpixel_layout
+   thread_set_hdr_subpixel_layout,
+   thread_supports_texture_format,
+   thread_load_texture_compressed
 };
 
 static void video_thread_get_poke_interface(void *data,

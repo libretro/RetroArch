@@ -403,7 +403,11 @@ uintptr_t d3d9_load_texture_compressed(void *data,
    unsigned           i;
    unsigned           block_bytes;
 
-   (void)threaded;
+   /* Regular texture loads on this driver marshal to the video thread;
+    * the compressed path does not yet, so under threading decline here
+    * and let the CPU-decode fallback go through the marshalled path. */
+   if (threaded)
+      return 0;
    (void)filter_type; /* sampler filtering is a render state in D3D9 */
 
    if (!d3d || !d3d->dev || !tc || tc->num_mips == 0)

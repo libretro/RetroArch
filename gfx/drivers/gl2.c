@@ -5489,8 +5489,8 @@ static bool gl2_supports_texture_format(void *data,
    return false;
 }
 
-static uintptr_t gl2_load_texture_compressed(void *video_data,
-      const struct texture_compressed *tc, bool threaded,
+static uintptr_t gl2_upload_texture_compressed(
+      const struct texture_compressed *tc,
       enum texture_filter_type filter_type)
 {
    GLuint   id   = 0;
@@ -5500,8 +5500,6 @@ static uintptr_t gl2_load_texture_compressed(void *video_data,
    GLint    magf;
    bool     nearest;
 
-   (void)video_data;
-   (void)threaded;
    if (!tc || tc->num_mips == 0)
       return 0;
    ifmt = gl2_gpu_format(tc->format);
@@ -5539,6 +5537,45 @@ static uintptr_t gl2_load_texture_compressed(void *video_data,
    glBindTexture(GL_TEXTURE_2D, 0);
 
    return (uintptr_t)id;
+}
+
+#ifdef HAVE_THREADS
+typedef struct
+{
+   gl2_t                           *gl;
+   const struct texture_compressed *tc;
+   enum texture_filter_type         filter;
+} gl2_texture_compressed_cmd_t;
+
+static uintptr_t video_texture_load_wrap_gl2_compressed(void *data)
+{
+   gl2_texture_compressed_cmd_t *cmd = (gl2_texture_compressed_cmd_t*)data;
+   gl2_t                        *gl  = cmd->gl;
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+   return gl2_upload_texture_compressed(cmd->tc, cmd->filter);
+}
+#endif
+
+static uintptr_t gl2_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      gl2_texture_compressed_cmd_t cmd;
+      cmd.gl     = (gl2_t*)video_data;
+      cmd.tc     = tc;
+      cmd.filter = filter_type;
+      return video_thread_texture_handle(&cmd,
+            video_texture_load_wrap_gl2_compressed);
+   }
+#else
+   (void)video_data;
+   (void)threaded;
+#endif
+   return gl2_upload_texture_compressed(tc, filter_type);
 }
 
 static const video_poke_interface_t gl2_poke_interface = {

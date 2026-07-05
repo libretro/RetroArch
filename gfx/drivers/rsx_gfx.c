@@ -2547,7 +2547,11 @@ static uintptr_t rsx_load_texture_compressed(void *video_data,
    unsigned       blocks_w0;
    unsigned       i;
 
-   (void)threaded;
+   /* Regular texture loads on this driver marshal to the video thread;
+    * the compressed path does not yet, so under threading decline here
+    * and let the CPU-decode fallback go through the marshalled path. */
+   if (threaded)
+      return 0;
    if (!rsx || !tc || tc->num_mips == 0)
       return 0;
    if (!rsx_gcm_compressed_format(tc->format, &gcm_fmt, &block_bytes))
