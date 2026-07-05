@@ -1879,7 +1879,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("cloud_sync_sync_configs",       &settings->bools.cloud_sync_sync_configs, true, true, false);
    SETTING_BOOL("cloud_sync_sync_thumbs",        &settings->bools.cloud_sync_sync_thumbs, true, false, false);
    SETTING_BOOL("cloud_sync_sync_system",        &settings->bools.cloud_sync_sync_system, true, false, false);
-   SETTING_BOOL("discord_allow",                 &settings->bools.discord_enable, true, false, false);
 #ifdef HAVE_MIST
    SETTING_BOOL("steam_rich_presence_enable",    &settings->bools.steam_rich_presence_enable, true, false, false);
 #endif
@@ -1958,6 +1957,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_privacy_discord.h"
 #include "settings/settings_def_privacy_location.h"
 #include "settings/settings_def_privacy_camera.h"
 #ifdef HAVE_MENU
@@ -2370,6 +2370,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_privacy_discord.h"
 #include "settings/settings_def_privacy_location.h"
 #include "settings/settings_def_privacy_camera.h"
 #ifdef HAVE_MENU
@@ -2734,6 +2735,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_privacy_discord.h"
 #include "settings/settings_def_privacy_location.h"
 #include "settings/settings_def_privacy_camera.h"
 #ifdef HAVE_MENU
@@ -3073,6 +3075,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_privacy_discord.h"
 #include "settings/settings_def_privacy_location.h"
 #include "settings/settings_def_privacy_camera.h"
 #ifdef HAVE_MENU
