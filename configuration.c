@@ -1837,7 +1837,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_throttle_framerate",       &settings->bools.menu_throttle_framerate, true, true, false);
    SETTING_BOOL("run_ahead_enabled",             &settings->bools.run_ahead_enabled, true, false, false);
    SETTING_BOOL("run_ahead_secondary_instance",  &settings->bools.run_ahead_secondary_instance, true, DEFAULT_RUN_AHEAD_SECONDARY_INSTANCE, false);
-   SETTING_BOOL("run_ahead_hide_warnings",       &settings->bools.run_ahead_hide_warnings, true, DEFAULT_RUN_AHEAD_HIDE_WARNINGS, false);
    SETTING_BOOL("preemptive_frames_enable",      &settings->bools.preemptive_frames_enable, true, false, false);
 #if HAVE_MENU
    SETTING_BOOL("kiosk_mode_enable",             &settings->bools.kiosk_mode_enable, true, DEFAULT_KIOSK_MODE_ENABLE, false);
@@ -1964,6 +1963,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_runahead_warnings.h"
 #include "settings/settings_def_input_auto_mouse_grab.h"
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #include "settings/settings_def_input_nowinkey.h"
@@ -2348,6 +2348,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_runahead_warnings.h"
 #include "settings/settings_def_input_auto_mouse_grab.h"
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #include "settings/settings_def_input_nowinkey.h"
@@ -2675,6 +2676,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_runahead_warnings.h"
 #include "settings/settings_def_input_auto_mouse_grab.h"
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #include "settings/settings_def_input_nowinkey.h"
@@ -2977,6 +2979,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_runahead_warnings.h"
 #include "settings/settings_def_input_auto_mouse_grab.h"
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #include "settings/settings_def_input_nowinkey.h"

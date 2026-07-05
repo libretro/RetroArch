@@ -897,7 +897,6 @@
 #define MENU_ENUM_LABEL_SLOWMOTION_RATIO_STR "slowmotion_ratio"
 #define MENU_ENUM_LABEL_RUN_AHEAD_UNSUPPORTED_STR "run_ahead_unsupported"
 #define MENU_ENUM_LABEL_RUNAHEAD_MODE_STR "run_ahead_mode"
-#define MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS_STR "run_ahead_hide_warnings"
 #define MENU_ENUM_LABEL_RUN_AHEAD_FRAMES_STR "run_ahead_frames"
 #define MENU_ENUM_LABEL_PREEMPT_FRAMES_STR "preemptive_frames"
 #define MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE_STR "sort_savefiles_enable"
