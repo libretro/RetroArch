@@ -7536,6 +7536,11 @@ static size_t setting_get_string_representation_uint_menu_screensaver_animation(
                   msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX),
                   len);
+         case MENU_SCREENSAVER_MATRIX:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_MATRIX),
+                  len);
       }
    }
    return 0;

@@ -6770,6 +6770,10 @@ MSG_HASH(
    "Vortex"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_MATRIX,
+   "Matrix Digital Rain"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
    "Menu Screensaver Animation Speed"
    )

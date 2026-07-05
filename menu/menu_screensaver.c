@@ -73,6 +73,11 @@
  * > lum must not exceed 1.0f */
 #define MENU_SS_PARTICLE_COLOR(tint_r, tint_g, tint_b, lum) (((uint32_t)(tint_r * lum) << 24) | ((uint32_t)(tint_g * lum) << 16) | ((uint32_t)(tint_b * lum) << 8) | 0xFF)
 
+/* Specifies the precise number of active rendering particles for the Matrix effect.
+ * Kept under the system cap of 256 to ensure complete memory safety and isolate
+ * this high-density effect from other default screen savers like Snow. */
+#define MENU_SS_MATRIX_DENSE_COUNT 230
+
 /* Definition of screensaver 'particle':
  * - symbol:          string representation of a font glyph
  * - x:               centre x-coordinate of draw position
@@ -160,6 +165,29 @@ static const char * const menu_ss_vortex_symbols[] = {
    "\xE2\x97\x86"  /* Black Diamond, U+25C6 */
 };
 
+/* Matrix character symbols mapped exclusively to Unicode Private Use Area (PUA) 
+ * U+E000 to U+E00F. This ensures 100% isolation from stock ASCII character font buffers. */
+#define MENU_SS_NUM_MATRIX_SYMBOLS 17
+static const char * const menu_ss_matrix_symbols[] = {
+   "\xEE\x80\x80", /* PUA 0x00 (Custom glyph for '0') */
+   "\xEE\x80\x81", /* PUA 0x01 (Custom glyph for '1') */
+   "\xEE\x80\x82", /* PUA 0x02 (Custom glyph for '2') */
+   "\xEE\x80\x83", /* PUA 0x03 (Custom glyph for '3') */
+   "\xEE\x80\x84", /* PUA 0x04 (Custom glyph for '4') */
+   "\xEE\x80\x85", /* PUA 0x05 (Custom glyph for '5') */
+   "\xEE\x80\x86", /* PUA 0x06 (Custom glyph for '6') */
+   "\xEE\x80\x87", /* PUA 0x07 (Custom glyph for '7') */
+   "\xEE\x80\x88", /* PUA 0x08 (Custom glyph for '8') */
+   "\xEE\x80\x89", /* PUA 0x09 (Custom glyph for '9') */
+   "\xEE\x80\x8A", /* PUA 0x0A (Custom glyph for 'ｳ') */
+   "\xEE\x80\x8B", /* PUA 0x0B (Custom glyph for 'ｶ') */
+   "\xEE\x80\x8C", /* PUA 0x0C (Custom glyph for 'ﾒ') */
+   "\xEE\x80\x8D", /* PUA 0x0D (Custom glyph for 'ﾓ') */
+   "\xEE\x80\x8E", /* PUA 0x0E (Custom glyph for 'ﾜ') */
+   "\xEE\x80\x8F", /* PUA 0x0F (Custom glyph for 'ﾚ') */
+   "\xEE\x80\x90"  /* PUA 0x10 (Custom glyph for '*') */
+};
+
 /***********************/
 /* Pseudo-random numbers */
 /***********************/
@@ -194,6 +222,16 @@ static INLINE uint32_t menu_ss_rand(void)
    menu_ss_rng_state = x;
    return x;
 }
+
+/* Forward declarations for Matrix screen saver functions to avoid implicit declaration errors */
+static void menu_screensaver_init_matrix(
+      menu_screensaver_t *screensaver,
+      unsigned width, unsigned height);
+
+static void menu_screensaver_animate_matrix(
+      menu_screensaver_t *screensaver,
+      float base_particle_size, float global_speed_factor,
+      unsigned width, unsigned height);
 
 /******************/
 /* Initialisation */
@@ -431,6 +469,9 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
                   particle->symbol = menu_ss_vortex_symbols[(unsigned)(menu_ss_rand() % MENU_SS_NUM_VORTEX_SYMBOLS)];
             }
          }
+         break;
+      case MENU_SCREENSAVER_MATRIX:
+         menu_screensaver_init_matrix(screensaver, width, height);
          break;
       default:
          /* Error condition - do nothing */
@@ -773,9 +814,92 @@ void menu_screensaver_iterate(
                   (int (*)(const void *, const void *))menu_ss_vortex_qsort_func);
          }
          break;
+      case MENU_SCREENSAVER_MATRIX:
+         menu_screensaver_animate_matrix(screensaver, base_particle_size, global_speed_factor, width, height);
+         break;
       default:
          /* Error condition - do nothing */
          break;
+   }
+}
+
+/* --- Matrix Digital Rain Screen Saver --- */
+
+/* Logic for updating and rendering the matrix rain effect */
+static void menu_screensaver_animate_matrix(
+      menu_screensaver_t *screensaver,
+      float base_particle_size, float global_speed_factor,
+      unsigned width, unsigned height)
+{
+   size_t i;
+   float luminosity;
+
+   for (i = 0; i < MENU_SS_MATRIX_DENSE_COUNT; i++)
+   {
+      menu_ss_particle_t *particle = &screensaver->particles[i];
+      float particle_size_px       = particle->size * base_particle_size;
+
+      /* 1. Move downwards based on randomized particle speed (stored in 'a') */
+      particle->y += global_speed_factor * particle->size * particle->a;
+
+      /* 2. Periodically change characters to mimic glitchy matrix rain (stored in 'b') */
+      particle->b += global_speed_factor;
+      if (particle->b > 9.5f)
+      {
+         particle->b = 0.0f;
+         particle->symbol = menu_ss_matrix_symbols[(unsigned)(rand() % MENU_SS_NUM_MATRIX_SYMBOLS)];
+      }
+
+      /* 3. Smoothly fade out the trails over time to create the iconic matrix fade effect */
+      particle->c -= 0.00395f * global_speed_factor;
+      if (particle->c < 0.05f)
+         particle->c = 0.05f;
+
+      /* 4. Determine brightness/luminosity (stored in 'c' combined with scale size) */
+      luminosity = particle->c * (0.4f + (particle->size / 3.0f));
+      if (luminosity > 1.0f)
+         luminosity = 1.0f;
+
+      /* Pure Matrix green (No Red, Full Green, No Blue) */
+      particle->color = MENU_SS_PARTICLE_COLOR(0, 255, 0, luminosity);
+
+      /* 5. Reset particle if it falls off the bottom screen boundary */
+      if (particle->y > (float)height + particle_size_px)
+      {
+         particle->x      = (float)(rand() % width);
+         particle->y      = -particle_size_px - (float)(rand() % 100);
+         particle->a      = 0.6f + ((float)(rand() % 20) * 0.1f); /* downward velocity */
+         particle->b      = 0.0f; /* glitch timer */
+         particle->c      = 1.0f; /* reset tail fade opacity to full */
+         particle->size   = 2.0f + ((float)(rand() % 150) / 100.0f); /* randomized font size scale */
+         particle->symbol = menu_ss_matrix_symbols[(unsigned)(rand() % MENU_SS_NUM_MATRIX_SYMBOLS)];
+      }
+   }
+}
+
+/* Initialization logic for the matrix rain effect */
+static void menu_screensaver_init_matrix(
+      menu_screensaver_t *screensaver,
+      unsigned width, unsigned height)
+{
+   size_t i;
+   float screen_size = (float)((width < height) ? width : height);
+   float font_size   = ((screen_size * MENU_SS_FONT_SIZE_FACTOR) + 0.5f) * 0.5f;
+   float particle_scale = (screen_size * MENU_SS_PARTICLE_SIZE_FACTOR) / font_size;
+   float base_particle_size = particle_scale * font_size;
+
+   for (i = 0; i < MENU_SS_MATRIX_DENSE_COUNT; i++)
+   {
+      menu_ss_particle_t *particle = &screensaver->particles[i];
+
+      particle->x      = (float)(rand() % width);
+      /* Stagger initial vertical positions to allow trail structures to form naturally */
+      particle->y      = (float)(rand() % height) - (base_particle_size * 4.0f);
+      particle->a      = 0.6f + ((float)(rand() % 20) * 0.1f); /* speed */
+      particle->b      = 0.0f; /* character swap timer */
+      particle->c      = (float)(rand() % 100) / 100.0f; /* randomized initial fade */
+      particle->size   = 2.0f + ((float)(rand() % 150) / 100.0f); /* scale */
+      particle->symbol = menu_ss_matrix_symbols[(unsigned)(rand() % MENU_SS_NUM_MATRIX_SYMBOLS)];
    }
 }
 
@@ -821,6 +945,7 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
        && screensaver->particles)
    {
       size_t i;
+      size_t max_particles;
       float y_centre_offset = screensaver->font_data.y_centre_offset;
       float particle_scale  = screensaver->particle_scale;
 
@@ -829,7 +954,11 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
       screensaver->font_data.raster_block.carr.coords.vertices = 0;
 
       /* Render text */
-      for (i = 0; i < MENU_SS_NUM_PARTICLES; i++)
+      max_particles  = MENU_SS_NUM_PARTICLES;
+      if (screensaver->effect == MENU_SCREENSAVER_MATRIX)
+         max_particles = MENU_SS_MATRIX_DENSE_COUNT;
+
+      for (i = 0; i < max_particles; i++)
       {
          menu_ss_particle_t *particle = &screensaver->particles[i];
 
