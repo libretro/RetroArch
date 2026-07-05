@@ -397,6 +397,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
       img.height        = anim_h;
       img.supports_rgba = use_rgba;
       img.pixels        = (uint32_t*)frame;
+      img.compressed    = NULL; /* raw frame, not a loaded compressed texture */
 
       if (!use_rgba)
       {

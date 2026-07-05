@@ -1236,9 +1236,10 @@ void gfx_display_init_white_texture(void)
    struct texture_image ti;
    static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
 
-   ti.width  = 1;
-   ti.height = 1;
-   ti.pixels = (uint32_t*)&white_data;
+   ti.width      = 1;
+   ti.height     = 1;
+   ti.pixels     = (uint32_t*)&white_data;
+   ti.compressed = NULL; /* raw pixels, not a loaded compressed texture */
 
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_NEAREST, &gfx_white_texture);

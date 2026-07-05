@@ -392,6 +392,11 @@ bool task_image_load_handler(retro_task_t *task)
 
       if (img)
       {
+         /* malloc (not calloc) above: this is a raw-built image that never
+          * goes through image_texture_load, so the compressed descriptor
+          * must be cleared explicitly or video_driver_texture_load() will
+          * dereference a garbage pointer. */
+         img->compressed = NULL;
          if (image->upscale_threshold > 0)
          {
             if (   ((image->ti.width  > 0)
