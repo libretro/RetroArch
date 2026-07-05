@@ -4903,8 +4903,6 @@ enum msg_hash_enums
 
    MENU_LBL_H(SAVEFILE_DIRECTORY),
    MENU_LABEL(SAVESTATE_DIRECTORY),
-   MENU_LABEL(DYNAMIC_WALLPAPERS_DIRECTORY),
-   MENU_LABEL(THUMBNAILS_DIRECTORY),
 
    MENU_LABEL(SLOWMOTION_RATIO),
    MENU_LABEL(RUN_AHEAD_UNSUPPORTED),
@@ -5810,7 +5808,6 @@ enum msg_hash_enums
    MENU_LABEL(NO_PLAYLIST_ENTRIES_AVAILABLE),
    MENU_LABEL(NO_DISK),
 
-   MENU_LABEL(CHEAT_DATABASE_PATH),
    MENU_LABEL(CHEAT_FILE_LOAD),
    MENU_LABEL(CHEAT_FILE_LOAD_APPEND),
    MENU_LABEL(CHEAT_FILE_SAVE_AS),
@@ -5851,8 +5848,6 @@ enum msg_hash_enums
    MENU_LABEL(VIDEO_FILTER_REMOVE),
    MENU_LABEL(PAL60_ENABLE),
 
-   MENU_LABEL(RGUI_BROWSER_DIRECTORY),
-   MENU_LABEL(CONTENT_DATABASE_DIRECTORY),
    MENU_LABEL(PLAYLIST_DIRECTORY),
    MENU_LABEL(CONTENT_FAVORITES_DIRECTORY),
    MENU_LABEL(CONTENT_HISTORY_DIRECTORY),
@@ -5860,19 +5855,64 @@ enum msg_hash_enums
    MENU_LABEL(CONTENT_MUSIC_HISTORY_DIRECTORY),
    MENU_LABEL(CONTENT_VIDEO_HISTORY_DIRECTORY),
    MENU_LABEL(RUNTIME_LOG_DIRECTORY),
-   MENU_LABEL(CORE_ASSETS_DIRECTORY),
    MENU_LABEL(SCREENSHOT_DIRECTORY),
-   MENU_LABEL(VIDEO_SHADER_DIR),
-   MENU_LABEL(VIDEO_FILTER_DIR),
-   MENU_LABEL(AUDIO_FILTER_DIR),
 
-   MENU_LABEL(LIBRETRO_DIR_PATH),
-   MENU_LABEL(LIBRETRO_INFO_PATH),
-   MENU_LABEL(RGUI_CONFIG_DIRECTORY),
    MENU_LABEL(OVERLAY_DIRECTORY),
    MENU_LABEL(VIDEO_LAYOUT_DIRECTORY),
-   MENU_LABEL(SYSTEM_DIRECTORY),
-   MENU_LABEL(ASSETS_DIRECTORY),
+   /* GENERATED REGION: core directories group enum rows (see settings/settings_def_dir_core.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) MENU_LABEL(T),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_DIR_H(f, T, n, d, el, sd, c, sta, us, sub) MENU_LBL_H(T),
+#define S_DIR_NS_H(f, T, n, d, el, sd, c, sta, us) MENU_LBL_H(T),
+#include "settings/settings_def_dir_core.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef S_INT_H
+#undef S_FLOAT_H
+#undef S_UINT_NS_H
+#undef S_INT_NS_H
+#undef S_FLOAT_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: cache and log directory group enum rows (see settings/settings_def_dir_cache_log.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS

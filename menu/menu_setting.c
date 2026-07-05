@@ -20465,66 +20465,44 @@ static bool setting_append_list(
 
                   {
             static const setting_desc_t dir_desc_0[] = {
-               SDESC_DIR_ROW(directory_system, SYSTEM_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-                     DIRECTORY_CONTENT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_core_assets, CORE_ASSETS_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_assets, ASSETS_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_ASSETS],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_dynamic_wallpapers, DYNAMIC_WALLPAPERS_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_thumbnails, THUMBNAILS_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_menu_content, RGUI_BROWSER_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_menu_config, RGUI_CONFIG_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_libretro, LIBRETRO_DIR_PATH,
-                     g_defaults.dirs[DEFAULT_DIR_CORE],
-                     DIRECTORY_NONE, SD_FLAG_NONE, CMD_EVENT_CORE_INFO_INIT,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(path_libretro_info, LIBRETRO_INFO_PATH,
-                     g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
-                     DIRECTORY_NONE, SD_FLAG_NONE, CMD_EVENT_CORE_INFO_INIT,
-                     directory_action_start_generic),
-#ifdef HAVE_LIBRETRODB
-               SDESC_DIR_ROW(path_content_database, CONTENT_DATABASE_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_DATABASE],
-                     DIRECTORY_NONE, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-#endif
-               SDESC_DIR_ROW(path_cheat_database, CHEAT_DATABASE_PATH,
-                     g_defaults.dirs[DEFAULT_DIR_CHEATS],
-                     DIRECTORY_NONE, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_video_filter, VIDEO_FILTER_DIR,
-                     g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_audio_filter, AUDIO_FILTER_DIR,
-                     g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               SDESC_DIR_ROW(directory_video_shader, VIDEO_SHADER_DIR,
-                     g_defaults.dirs[DEFAULT_DIR_SHADER],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-#endif
+/* GENERATED: rows come from settings_def_dir_core.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#include "../settings/settings_def_dir_core.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
             };
             settings_list_add_desc(list, list_info, settings,
                   dir_desc_0, ARRAY_SIZE(dir_desc_0),

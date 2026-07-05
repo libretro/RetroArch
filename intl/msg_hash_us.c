@@ -541,6 +541,7 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_dir_core.h"
 #include "../settings/settings_def_dir_cache_log.h"
 #include "../settings/settings_def_cloud_sync_s3.h"
 #include "../settings/settings_def_cloud_sync_webdav.h"
@@ -645,6 +646,7 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_dir_core.h"
 #include "../settings/settings_def_dir_cache_log.h"
 #include "../settings/settings_def_cloud_sync_s3.h"
 #include "../settings/settings_def_cloud_sync_webdav.h"
