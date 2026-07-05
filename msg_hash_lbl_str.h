@@ -445,7 +445,6 @@
 #define MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE_STR "input_autodetect_enable"
 #define MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD_STR "input_android_physical_keyboard"
 #define MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE_STR "input_sensors_enable"
-#define MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB_STR "input_auto_mouse_grab"
 #define MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS_STR "input_auto_game_focus"
 #define MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD_STR "input_axis_threshold"
 #define MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE_STR "input_analog_deadzone"
