@@ -7726,7 +7726,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
             /* Menu background image */
             if (  string_is_equal(info.label,
-                  MENU_ENUM_LABEL_MENU_WALLPAPER_STR)
+                  msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER))
                && settings->paths.path_menu_wallpaper[0] != '\0')
             {
                free(info.path);

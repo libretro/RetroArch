@@ -3695,7 +3695,7 @@ static void xmb_populate_entries(void *data,
     *   selecting 'load content' */
    xmb->is_file_list =
             string_is_equal(label, MENU_ENUM_LABEL_FAVORITES_STR)
-         || string_is_equal(label, MENU_ENUM_LABEL_MENU_WALLPAPER_STR);
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER));
 
    /* Determine whether this is the quick menu */
    xmb->is_quick_menu =

@@ -73,7 +73,7 @@ int action_cancel_pop_default(const char *path,
             string_is_equal(menu_label,
                MENU_ENUM_LABEL_PLAYLISTS_TAB_STR)
          || string_is_equal(menu_label,
-               MENU_ENUM_LABEL_MENU_WALLPAPER_STR)
+               msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER))
          )
          filebrowser_clear_type();
    }
