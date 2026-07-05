@@ -5569,9 +5569,52 @@ enum msg_hash_enums
    MENU_LABEL(CLOUD_SYNC_SYNC_NOW),
    MENU_LABEL(CLOUD_SYNC_RESOLVE_KEEP_LOCAL),
    MENU_LABEL(CLOUD_SYNC_RESOLVE_KEEP_SERVER),
-   MENU_LABEL(CLOUD_SYNC_S3_URL),
-   MENU_LABEL(CLOUD_SYNC_ACCESS_KEY_ID),
-   MENU_LABEL(CLOUD_SYNC_SECRET_ACCESS_KEY),
+   /* GENERATED REGION: S3 credentials group enum rows (see settings/settings_def_cloud_sync_s3.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#include "settings/settings_def_cloud_sync_s3.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef S_INT_H
+#undef S_FLOAT_H
+#undef S_UINT_NS_H
+#undef S_INT_NS_H
+#undef S_FLOAT_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(RECORDING_SETTINGS),
    MENU_LABEL(OVERLAY_SETTINGS),
    MENU_LABEL(REWIND_SETTINGS),

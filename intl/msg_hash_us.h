@@ -1173,30 +1173,45 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_STRING
 #undef S_STRING_NS
 #undef SETTINGS_DEF_STRINGS_PASS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
-   "Access Key ID"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
-   "Your access key ID for your cloud storage account."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   "Secret Access Key"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   "Your secret access key for your cloud storage account."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
-   "S3 URL"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
-   "Your S3 endpoint URL for cloud storage."
-   )
+/* GENERATED REGION: S3 credentials group (see settings_def_cloud_sync_s3.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_cloud_sync_s3.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Logging"

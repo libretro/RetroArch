@@ -539,6 +539,7 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_cloud_sync_s3.h"
 #include "../settings/settings_def_cloud_sync_webdav.h"
 #include "../settings/settings_def_microphone_block.h"
 #include "../settings/settings_def_updater_backup.h"
@@ -637,6 +638,7 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_cloud_sync_s3.h"
 #include "../settings/settings_def_cloud_sync_webdav.h"
 #include "../settings/settings_def_microphone_block.h"
 #include "../settings/settings_def_updater_backup.h"
