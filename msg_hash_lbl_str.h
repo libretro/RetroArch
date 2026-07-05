@@ -1278,7 +1278,6 @@
 #define MENU_ENUM_LABEL_MIDI_INPUT_STR "midi_input"
 #define MENU_ENUM_LABEL_MIDI_OUTPUT_STR "midi_output"
 #define MENU_ENUM_LABEL_MIDI_VOLUME_STR "midi_volume"
-#define MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE_STR "sustained_performance_mode"
 #define MENU_ENUM_LABEL_CHEAT_IDX_STR "cheat_idx"
 #define MENU_ENUM_LABEL_CHEAT_DESC_STR "cheat_desc"
 #define MENU_ENUM_LABEL_CHEAT_STATE_STR "cheat_state"
