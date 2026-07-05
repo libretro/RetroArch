@@ -547,6 +547,7 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_notification_font_path.h"
 #include "../settings/settings_def_menu_wallpaper_path.h"
 #include "../settings/settings_def_audio_dsp_path.h"
 #include "../settings/settings_def_video_filter_path.h"
@@ -668,6 +669,7 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_notification_font_path.h"
 #include "../settings/settings_def_menu_wallpaper_path.h"
 #include "../settings/settings_def_audio_dsp_path.h"
 #include "../settings/settings_def_video_filter_path.h"
