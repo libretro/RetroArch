@@ -365,3 +365,78 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
    d3dpp->MultiSampleQuality      = 0;
 #endif
 }
+
+/* --- GPU-native BCn compressed-texture upload (shared by d3d9cg/d3d9hlsl) --- */
+/* Direct3D 9 samples DXT1/DXT3/DXT5 == BC1/BC2/BC3; nothing above BC3
+ * exists in D3D9 (BC7 is a D3D11 format). */
+static D3DFORMAT d3d9_bc_to_d3dfmt(enum texture_gpu_format fmt)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: return D3DFMT_DXT1;
+      case TEXTURE_GPU_FORMAT_BC2: return D3DFMT_DXT3;
+      case TEXTURE_GPU_FORMAT_BC3: return D3DFMT_DXT5;
+      default:                     break;
+   }
+   return D3DFMT_UNKNOWN;
+}
+
+bool d3d9_supports_texture_format(void *data, enum texture_gpu_format fmt)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   D3DFORMAT      f  = d3d9_bc_to_d3dfmt(fmt);
+   if (!d3d || !d3d->d3d9 || f == D3DFMT_UNKNOWN)
+      return false;
+   return SUCCEEDED(IDirect3D9_CheckDeviceFormat(d3d->d3d9,
+         D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8,
+         0, D3DRTYPE_TEXTURE, f));
+}
+
+uintptr_t d3d9_load_texture_compressed(void *data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   d3d9_video_t      *d3d   = (d3d9_video_t*)data;
+   LPDIRECT3DTEXTURE9 tex   = NULL;
+   void              *_tbuf = NULL;
+   D3DFORMAT          f;
+   unsigned           i;
+   unsigned           block_bytes;
+
+   (void)threaded;
+   (void)filter_type; /* sampler filtering is a render state in D3D9 */
+
+   if (!d3d || !d3d->dev || !tc || tc->num_mips == 0)
+      return 0;
+   if ((f = d3d9_bc_to_d3dfmt(tc->format)) == D3DFMT_UNKNOWN)
+      return 0;
+   block_bytes = (tc->format == TEXTURE_GPU_FORMAT_BC1) ? 8 : 16;
+
+   if (FAILED(IDirect3DDevice9_CreateTexture(d3d->dev,
+               tc->mips[0].width, tc->mips[0].height, tc->num_mips,
+               0, f, D3DPOOL_MANAGED,
+               (struct IDirect3DTexture9**)&_tbuf, NULL)))
+      return 0;
+   tex = (LPDIRECT3DTEXTURE9)_tbuf;
+
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      D3DLOCKED_RECT lr;
+      if (SUCCEEDED(IDirect3DTexture9_LockRect(tex, i, &lr, NULL, 0)))
+      {
+         unsigned       blocks_w  = (tc->mips[i].width  + 3) >> 2;
+         unsigned       blocks_h  = (tc->mips[i].height + 3) >> 2;
+         unsigned       row_bytes = blocks_w * block_bytes;
+         const uint8_t *src       = (const uint8_t*)tc->mips[i].data;
+         uint8_t       *dst       = (uint8_t*)lr.pBits;
+         unsigned       r;
+         /* lr.Pitch is the byte size of one row of 4x4 blocks and may be
+          * padded, so copy row by row rather than in one shot. */
+         for (r = 0; r < blocks_h; r++)
+            memcpy(dst + r * lr.Pitch, src + r * row_bytes, row_bytes);
+         IDirect3DTexture9_UnlockRect(tex, i);
+      }
+   }
+
+   return (uintptr_t)tex;
+}
