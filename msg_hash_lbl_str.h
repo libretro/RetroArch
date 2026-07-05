@@ -637,7 +637,6 @@
 #define MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY_STR "video_layout_directory"
 #define MENU_ENUM_LABEL_OVERLAY_OPACITY_STR "input_overlay_opacity"
 #define MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY_STR "input_osk_overlay_opacity"
-#define MENU_ENUM_LABEL_OVERLAY_PRESET_STR "input_overlay"
 #define MENU_ENUM_LABEL_OSK_OVERLAY_PRESET_STR "input_osk_overlay"
 #define MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE_STR "input_overlay_scale_landscape"
 #define MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE_STR "input_overlay_aspect_adjust_landscape"
