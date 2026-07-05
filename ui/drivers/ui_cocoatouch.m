@@ -28,6 +28,9 @@
 
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
+#import "cocoa/RetroArchPlaylistManager.h"
+#endif
 
 #if defined(HAVE_COCOA_METAL)
 #include "../../gfx/common/metal_view.h"
@@ -1147,7 +1150,10 @@ enum
       return YES; // Just bring app to foreground
    }
 
-   // Handle game launch URL: retroarch://game/filename
+   // Handle game launch URL: retroarch://game/<filename>
+   // The <filename> matches the "titleId" exported by the library query below,
+   // so a frontend app can round-trip a fetched game straight back into a
+   // launch URL.
    if ([url.host isEqualToString:@"game"])
    {
       NSString *filename = [url.path hasPrefix:@"/"] ? [url.path substringFromIndex:1] : url.path;
@@ -1157,6 +1163,48 @@ enum
          return cocoa_launch_game_by_filename(filename);
       }
    }
+
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
+   // Handle library query URL: retroarch://library?scheme=<callerScheme>
+   // Serializes the whole game library and hands it back to the requesting app
+   // by opening <callerScheme>://retroarch?games=<base64url-encoded-JSON>.
+   if ([url.host isEqualToString:@"library"])
+   {
+      NSURLComponents *comp = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+      RARCH_AUTORELEASE(comp);
+      NSString *caller_scheme = nil;
+      for (NSURLQueryItem *q in comp.queryItems)
+      {
+         if ([q.name isEqualToString:@"scheme"])
+            caller_scheme = q.value;
+      }
+
+      if (!caller_scheme || caller_scheme.length == 0)
+      {
+         RARCH_WARN("Library query missing 'scheme' parameter: %s\n", [[url absoluteString] UTF8String]);
+         return NO;
+      }
+
+      NSString *encoded = [RetroArchPlaylistManager exportAllGamesAsBase64URLString];
+      if (!encoded)
+      {
+         RARCH_WARN("Failed to export game library for '%s'\n", [caller_scheme UTF8String]);
+         return NO;
+      }
+
+      NSString *reply = [NSString stringWithFormat:@"%@://retroarch?games=%@", caller_scheme, encoded];
+      NSURL *replyURL = [NSURL URLWithString:reply];
+      if (!replyURL)
+      {
+         RARCH_WARN("Could not build reply URL for scheme '%s'\n", [caller_scheme UTF8String]);
+         return NO;
+      }
+
+      RARCH_LOG("Returning game library to '%s'\n", [caller_scheme UTF8String]);
+      [[UIApplication sharedApplication] openURL:replyURL options:@{} completionHandler:nil];
+      return YES;
+   }
+#endif
 
    RARCH_LOG("Unknown RetroArch URL format: %s\n", [[url absoluteString] UTF8String]);
    return NO;
