@@ -1084,7 +1084,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          filebrowser_clear_type();
          info.directory_ptr = idx;
-         info_label         = MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_STR;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
          info.enum_idx      = MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -9987,7 +9987,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   || string_is_equal(menu_label,
                      MENU_ENUM_LABEL_OZONE_FONT_STR)
                   || string_is_equal(menu_label,
-                     MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_STR)
+                     msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN))
                   || string_is_equal(menu_label,
                      msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FILTER)))
                BIND_ACTION_OK(cbs, action_ok_directory_push);
