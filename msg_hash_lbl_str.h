@@ -99,7 +99,6 @@
 #define MENU_ENUM_LABEL_MICROPHONE_DRIVER_STR "microphone_driver"
 #define MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE_STR "microphone_input_rate"
 #define MENU_ENUM_LABEL_MICROPHONE_LATENCY_STR "microphone_latency"
-#define MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES_STR "microphone_block_frames"
 #define MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE_STR "microphone_wasapi_exclusive_mode"
 #define MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT_STR "microphone_wasapi_float_format"
 #define MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH_STR "microphone_wasapi_sh_buffer_length"

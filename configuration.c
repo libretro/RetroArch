@@ -1954,6 +1954,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone_block.h"
+#endif
 #include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
@@ -2382,6 +2385,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone_block.h"
+#endif
 #include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
@@ -2722,7 +2728,6 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_MICROPHONE
    SETTING_UINT("microphone_latency",            &settings->uints.microphone_latency, false, 0 /* TODO */, false);
    SETTING_UINT("microphone_resampler_quality",  &settings->uints.microphone_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
-   SETTING_UINT("microphone_block_frames",       &settings->uints.microphone_block_frames, true, 0, false);
    SETTING_UINT("microphone_rate",               &settings->uints.microphone_sample_rate, true, DEFAULT_INPUT_RATE, false);
 #ifdef HAVE_WASAPI
    SETTING_UINT("microphone_wasapi_sh_buffer_length", &settings->uints.microphone_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH, false);
@@ -2770,6 +2775,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone_block.h"
+#endif
 #include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
@@ -3133,6 +3141,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone_block.h"
+#endif
 #include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
