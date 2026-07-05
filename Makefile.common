@@ -1222,14 +1222,14 @@ ifeq ($(HAVE_VITA2D), 1)
    # The vita2d GXM backend is now folded directly into vita2d_gfx.c; only
    # the precompiled shader blobs remain as a dependency (the driver still
    # references clear_v_gxp/texture_v_gxp/... as externs).
-   OBJ += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_tint_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
+   OBJ += gfx/drivers/vita_shaders/clear_v_gxp.o \
+          gfx/drivers/vita_shaders/clear_f_gxp.o \
+          gfx/drivers/vita_shaders/color_v_gxp.o \
+          gfx/drivers/vita_shaders/color_f_gxp.o \
+          gfx/drivers/vita_shaders/texture_v_gxp.o \
+          gfx/drivers/vita_shaders/texture_f_gxp.o \
+          gfx/drivers/vita_shaders/texture_tint_v_gxp.o \
+          gfx/drivers/vita_shaders/texture_tint_f_gxp.o
 
    OBJ += gfx/drivers/vita2d_gfx.o
 endif
