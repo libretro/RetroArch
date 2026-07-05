@@ -560,7 +560,6 @@
 #define MENU_ENUM_LABEL_MENU_LINEAR_FILTER_STR "menu_linear_filter"
 #define MENU_ENUM_LABEL_MENU_SETTINGS_STR "menu_settings"
 #define MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS_STR "menu_bottom_settings"
-#define MENU_ENUM_LABEL_MENU_WALLPAPER_STR "menu_wallpaper"
 #define MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY_STR "menu_wallpaper_opacity"
 #define MENU_ENUM_LABEL_MOUSE_ENABLE_STR "menu_mouse_enable"
 #define MENU_ENUM_LABEL_MUSIC_TAB_STR "music_tab"
