@@ -1273,7 +1273,6 @@
 #define MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL_STR "rgui_internal_upscale_level"
 #define MENU_ENUM_LABEL_MENU_RGUI_ASPECT_RATIO_STR "rgui_aspect_ratio"
 #define MENU_ENUM_LABEL_MENU_RGUI_ASPECT_RATIO_LOCK_STR "rgui_aspect_ratio_lock"
-#define MENU_ENUM_LABEL_MENU_RGUI_TRANSPARENCY_STR "menu_rgui_transparency"
 #define MENU_ENUM_LABEL_MENU_RGUI_SHADOWS_STR "menu_rgui_shadows"
 #define MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_STR "rgui_particle_effect"
 #define MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED_STR "rgui_particle_effect_speed"
