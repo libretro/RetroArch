@@ -1372,6 +1372,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1380,6 +1382,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_input_nowinkey.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -1389,6 +1393,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1397,6 +1403,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
 
@@ -1411,6 +1419,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1419,6 +1429,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_input_android_workaround.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -1428,6 +1440,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1436,6 +1450,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
 #ifdef ANDROID
@@ -1454,6 +1470,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1462,6 +1480,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_input_auto_mouse_grab.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -1471,6 +1491,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1479,6 +1501,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
 
@@ -1518,6 +1542,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1526,6 +1552,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_overlay_enable.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -1535,6 +1563,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1543,6 +1573,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(INPUT_OVERLAY_HIDE_IN_MENU),
@@ -1561,6 +1593,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1573,6 +1607,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1620,6 +1656,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1632,6 +1670,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1699,6 +1739,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1711,6 +1753,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1726,6 +1770,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1734,6 +1780,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_filter_rotation.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -1743,6 +1791,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1751,6 +1801,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LBL_H(VIDEO_BLACK_FRAME_INSERTION),
@@ -1768,6 +1820,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1776,6 +1830,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_frame_time_sample.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -1785,6 +1841,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1793,6 +1851,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -1809,6 +1869,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1817,6 +1879,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_adaptive_vsync.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -1826,6 +1890,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1834,6 +1900,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_SCANLINE_SYNC),
@@ -1848,6 +1916,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1860,6 +1930,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1883,6 +1955,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1895,6 +1969,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1912,6 +1988,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1920,6 +1998,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_srgb.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -1929,6 +2009,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1937,6 +2019,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_ROTATION),
@@ -1953,6 +2037,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -1961,6 +2047,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_smooth.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -1970,6 +2058,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -1978,6 +2068,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_CTX_SCALING),
@@ -1996,6 +2088,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2004,6 +2098,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_notch.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2013,6 +2109,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2021,6 +2119,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_USE_METAL_ARG_BUFFERS),
@@ -2096,6 +2196,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2104,6 +2206,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_main_views.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2113,6 +2217,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2121,6 +2227,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(MENU_SHOW_QUIT_RETROARCH),
@@ -2136,6 +2244,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2144,6 +2254,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_restart_view.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2153,6 +2265,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2161,6 +2275,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: menu power views group enum rows (see settings/settings_def_menu_power_views.h). */
@@ -2174,6 +2290,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2186,6 +2304,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2202,6 +2322,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2210,6 +2332,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_online_updater_view.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2219,6 +2343,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2227,6 +2353,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: core updater visibility setting enum rows (see settings/settings_def_menu_core_updater_view.h). */
@@ -2240,6 +2368,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2248,6 +2378,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_core_updater_view.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2257,6 +2389,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2265,6 +2399,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(MENU_SCROLL_FAST),
@@ -2286,6 +2422,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2294,6 +2432,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_wallpaper.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2303,6 +2443,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2311,6 +2453,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: ui focus group enum rows (see settings/settings_def_ui_focus.h). */
@@ -2324,6 +2468,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2336,6 +2482,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2363,6 +2511,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2375,6 +2525,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2394,6 +2546,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2402,6 +2556,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_rgui_transparency.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2411,6 +2567,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2419,6 +2577,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(MENU_RGUI_SHADOWS),
@@ -2439,6 +2599,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2447,6 +2609,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_horizontal_animation.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2456,6 +2620,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2464,6 +2630,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: navigation wraparound setting enum rows (see settings/settings_def_menu_wraparound.h). */
@@ -2477,6 +2645,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2485,6 +2655,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_wraparound.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2494,6 +2666,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2502,6 +2676,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(SHOW_ADVANCED_SETTINGS),
@@ -2516,6 +2692,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2524,6 +2702,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_threaded_data.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2533,6 +2713,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2541,6 +2723,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(XMB_ALPHA_FACTOR),
@@ -2571,6 +2755,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2579,6 +2765,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_content_settings_view.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2588,6 +2776,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2596,6 +2786,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(CONTENT_SHOW_SETTINGS_PASSWORD),
@@ -2641,6 +2833,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2649,6 +2843,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_thumbnail_background.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2658,6 +2854,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2666,6 +2864,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: menu rgui thumbnails group enum rows (see settings/settings_def_menu_rgui_thumbnails.h). */
@@ -2679,6 +2879,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2691,6 +2893,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2739,6 +2943,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2751,6 +2957,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2767,6 +2975,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2775,6 +2985,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_settings_show_steam.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2784,6 +2996,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2792,6 +3006,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(SETTINGS_SHOW_SMB_CLIENT),
@@ -2806,6 +3022,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2818,6 +3036,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2834,6 +3054,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2842,6 +3064,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2851,6 +3075,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2859,6 +3085,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: menu desktop group enum rows (see settings/settings_def_menu_desktop.h). */
@@ -2872,6 +3100,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2884,6 +3114,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2928,6 +3160,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -2936,6 +3170,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_ui_menubar.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -2945,6 +3181,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -2953,6 +3191,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
 #ifdef _3DS
@@ -3027,6 +3267,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -3035,6 +3277,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_filebrowser.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -3044,6 +3288,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -3052,6 +3298,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
 
@@ -3159,6 +3407,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -3167,6 +3417,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_cheevos.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -3176,6 +3428,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -3184,6 +3438,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: cheevos visibility group enum rows (see settings/settings_def_cheevos_visibility.h). */
@@ -3197,6 +3453,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -3209,6 +3467,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -3507,6 +3767,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -3519,6 +3781,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -3589,6 +3853,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -3597,6 +3863,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_audio_enable.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -3606,6 +3874,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -3614,6 +3884,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: menu sounds group enum rows (see settings/settings_def_menu_sounds.h). */
@@ -3627,6 +3899,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -3639,6 +3913,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -3672,6 +3948,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -3680,6 +3958,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_audio_sync.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -3689,6 +3969,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -3697,6 +3979,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LBL_H(AUDIO_VOLUME),
@@ -3726,6 +4010,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -3734,6 +4020,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_microphone.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -3743,6 +4031,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -3751,6 +4041,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(MICROPHONE_INPUT_RATE),
@@ -3825,6 +4117,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -3833,6 +4127,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_start_screen.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -3842,6 +4138,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -3850,6 +4148,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(SCREENSHOT),
@@ -3942,6 +4242,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -3954,6 +4256,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4064,6 +4368,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4076,6 +4382,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4303,6 +4611,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4311,6 +4621,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_runahead_warnings.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -4320,6 +4632,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4328,6 +4642,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(RUN_AHEAD_FRAMES),
@@ -4347,6 +4663,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4355,6 +4673,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_privacy_camera.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -4364,6 +4684,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4372,6 +4694,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: Discord presence setting enum rows (see settings/settings_def_privacy_discord.h). */
@@ -4385,6 +4709,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4393,6 +4719,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_privacy_discord.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -4402,6 +4730,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4410,6 +4740,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: location permission setting enum rows (see settings/settings_def_privacy_location.h). */
@@ -4423,6 +4755,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4431,6 +4765,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_privacy_location.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -4440,6 +4776,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4448,6 +4786,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
 
@@ -4649,6 +4989,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4657,6 +4999,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_network_stdin_cmd.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -4666,6 +5010,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4674,6 +5020,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(NETWORK_REMOTE_ENABLE),
@@ -4689,6 +5037,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4697,6 +5047,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_network_ondemand_thumbnails.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -4706,6 +5058,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4714,6 +5068,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
 
@@ -4765,6 +5121,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4773,6 +5131,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_menu_steam.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -4782,6 +5142,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4790,6 +5152,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MSG_CORE_STEAM_INSTALLING,
@@ -4807,6 +5171,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4815,6 +5181,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_updater_extract.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -4824,6 +5192,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4832,6 +5202,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: experimental cores setting enum rows (see settings/settings_def_updater_experimental.h). */
@@ -4845,6 +5217,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4853,6 +5227,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_updater_experimental.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -4862,6 +5238,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4870,6 +5248,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: core backup setting enum rows (see settings/settings_def_updater_backup.h). */
@@ -4883,6 +5263,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -4891,6 +5273,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_updater_backup.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -4900,6 +5284,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -4908,6 +5294,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE),
@@ -5156,6 +5544,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -5164,6 +5554,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_frame_time_counter.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -5173,6 +5565,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -5181,6 +5575,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(CHEAT_SETTINGS),
@@ -5307,6 +5703,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -5319,6 +5717,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -5349,6 +5749,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -5361,6 +5763,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -5378,6 +5782,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -5390,6 +5796,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -5413,6 +5821,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -5421,6 +5831,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_dingux_ipu.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -5430,6 +5842,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -5438,6 +5852,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_DINGUX_IPU_FILTER_TYPE),
@@ -5469,6 +5885,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -5481,6 +5899,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -5792,6 +6212,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -5800,6 +6222,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_window_decorations.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -5809,6 +6233,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -5817,6 +6243,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_WINDOW_SAVE_POSITION),
@@ -5977,6 +6405,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -5985,6 +6415,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_sustained_performance.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -5994,6 +6426,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -6002,6 +6436,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(CPU_PERF_MODE),
@@ -6025,6 +6461,8 @@ enum msg_hash_enums
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
 #define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
 #define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
 #define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
@@ -6033,6 +6471,8 @@ enum msg_hash_enums
 #define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
 #define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #include "settings/settings_def_gamemode.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -6042,6 +6482,8 @@ enum msg_hash_enums
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL_H
 #undef S_UINT_H
 #undef S_BOOL_NS_H
@@ -6050,6 +6492,8 @@ enum msg_hash_enums
 #undef S_UINT_NS_H
 #undef S_INT_NS_H
 #undef S_FLOAT_NS_H
+#undef S_STRING_H
+#undef S_STRING_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,

@@ -37,7 +37,8 @@ TABLE, DEF, TITLE = sys.argv[1], sys.argv[2], sys.argv[3]
 SIGS = [('S_BOOL','f, T, n, d, sd, df, c'),
         ('S_UINT','f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp'),
         ('S_INT', 'f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp'),
-        ('S_FLOAT','f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp')]
+        ('S_FLOAT','f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp'),
+        ('S_STRING','f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui')]
 UNDEFS = '\n'.join('#undef %s%s' % (b, s) for b, _ in SIGS for s in ('', '_NS'))
 def defs(mk):
     L = []
@@ -100,7 +101,7 @@ for ln in body.split('\n'):
         if rm and gstack:
             guards[rm.group(1)] = tuple(gstack)
 rows = [(m.group(1), m.group(2), m.group(3), re.sub(r'\s+',' ',m.group(4)).strip())
-        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT)_ROW\(\s*(\w+),\s*(\w+),((?:[^()]|\([^()]*\))*)\)', body)]
+        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT|STRING)_ROW\(\s*(\w+),\s*(\w+),((?:[^()]|\([^()]*\))*)\)', body)]
 all_invocations = re.findall(r'SDESC_\w+?_ROW(?:_\w+)?\(', body)
 assert len(rows) == len(all_invocations), (
     'table contains %d rows but only %d are plain-grammar '
@@ -153,10 +154,11 @@ cfg = open('configuration.c').read()
 cfg_spans = []
 cfg_keeps = []
 for k, f, T, a in rows:
-    m = re.search(r' *SETTING_%s\(\s*%s, *&settings->\w+\.%s,[^;]*;\n' % (k, re.escape(names[T]), f), cfg)
+    _mac = {'STRING': 'ARRAY'}.get(k, k)
+    m = re.search(r' *SETTING_%s\(\s*%s, *&?settings->\w+\.%s,[^;]*;\n' % (_mac, re.escape(names[T]), f), cfg)
     if m:
         cfg_spans.append((m.start(), m.end())); continue
-    m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&settings->\w+\.%s,[^;]*;\n' % (k, f), cfg)
+    m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (_mac, f), cfg)
     assert m, (T, f, "no config row at all")
     cfg_keeps.append((T, m.group(1)))
     print("  note: %s config key %s differs from label %s - config row stays literal" % (T, m.group(1), names[T]))
@@ -276,7 +278,7 @@ assert mc.count('#include "../settings/settings_def_video_sync.h"') == 2
 mc = mc.replace('#include "../settings/settings_def_video_sync.h"',
                 '#include "../settings/settings_def_video_sync.h"\n#include "../settings/%s"' % DEF)
 open('intl/msg_hash_us.c','w').write(mc)
-assert cfg.count('#include "settings/settings_def_video_sync.h"') == 4
+assert cfg.count('#include "settings/settings_def_video_sync.h"') == 5
 if '#define SETTINGS_DEF_CONFIG_PASS' not in cfg:
     cfg = cfg.replace('#include "settings/settings_def_video_sync.h"',
         '#define SETTINGS_DEF_CONFIG_PASS\n#include "settings/settings_def_video_sync.h"')
@@ -291,7 +293,8 @@ cfg = cfg.replace('#include "settings/settings_def_video_sync.h"',
 open('configuration.c','w').write(cfg)
 ms = open('menu/menu_setting.c').read()
 tm = re.search(r'static const setting_desc_t %s\[\] = \{\n(.*?)\n( *)\};' % TABLE, ms, re.S)
-MENU_EMIT = {'S_BOOL':'SDESC_BOOL_ROW(f, T, d, sd, df, c),',
+MENU_EMIT = {'S_STRING':'SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),',
+             'S_BOOL':'SDESC_BOOL_ROW(f, T, d, sd, df, c),',
              'S_UINT':'SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),',
              'S_INT': 'SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),',
              'S_FLOAT':'SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),'}
@@ -510,14 +513,16 @@ if _enum_ok:
     _d = ['   /* GENERATED REGION: %s enum rows (see settings/%s). */' % (TITLE, DEF),
           '#define SETTINGS_DEF_ENUM_PASS',
           '#define SETTINGS_DEF_STRINGS_PASS']
-    for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS'):
+    for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS','S_STRING','S_STRING_NS'):
         _d.append('#define %s(%s) MENU_LABEL(T),' % (_n, _ar[_n]))
     for _hn, _b in (('S_BOOL_H','S_BOOL'), ('S_UINT_H','S_UINT'), ('S_BOOL_NS_H','S_BOOL_NS'),
                     ('S_INT_H','S_INT'), ('S_FLOAT_H','S_FLOAT'),
-                    ('S_UINT_NS_H','S_UINT_NS'), ('S_INT_NS_H','S_INT_NS'), ('S_FLOAT_NS_H','S_FLOAT_NS')):
+                    ('S_UINT_NS_H','S_UINT_NS'), ('S_INT_NS_H','S_INT_NS'), ('S_FLOAT_NS_H','S_FLOAT_NS'),
+                    ('S_STRING_H','S_STRING'), ('S_STRING_NS_H','S_STRING_NS')):
         _d.append('#define %s(%s) MENU_LBL_H(T),' % (_hn, _ar[_b]))
     _d.append('#include "settings/%s"' % DEF)
     for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS',
+               'S_STRING','S_STRING_NS','S_STRING_H','S_STRING_NS_H',
                'S_BOOL_H','S_UINT_H','S_BOOL_NS_H','S_INT_H','S_FLOAT_H','S_UINT_NS_H','S_INT_NS_H','S_FLOAT_NS_H',
                'SETTINGS_DEF_STRINGS_PASS','SETTINGS_DEF_ENUM_PASS'):
         _d.append('#undef %s' % _n)

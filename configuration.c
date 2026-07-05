@@ -1951,6 +1951,8 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -2105,6 +2107,8 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
    SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
@@ -2382,6 +2386,8 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT(n, &settings->floats.f, true, d, false);
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
    SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -2536,6 +2542,8 @@ static struct config_float_setting *populate_settings_float(
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
    SETTING_FLOAT("menu_scale_factor",            &settings->floats.menu_scale_factor, true, DEFAULT_MENU_SCALE_FACTOR, false);
    SETTING_FLOAT("menu_widget_scale_factor",     &settings->floats.menu_widget_scale_factor, true, DEFAULT_MENU_WIDGET_SCALE_FACTOR, false);
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
@@ -2772,6 +2780,8 @@ static struct config_uint_setting *populate_settings_uint(
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -2926,6 +2936,8 @@ static struct config_uint_setting *populate_settings_uint(
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
    SETTING_UINT("video_rotation",                &settings->uints.video_rotation, true, ORIENTATION_NORMAL, false);
    SETTING_UINT("screen_orientation",            &settings->uints.screen_orientation, true, ORIENTATION_NORMAL, false);
    SETTING_UINT("video_msg_bgcolor_red",         &settings->uints.video_msg_bgcolor_red, true, DEFAULT_MESSAGE_BGCOLOR_RED, false);
@@ -3138,6 +3150,8 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT(n, &settings->ints.f, true, d, false);
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -3292,6 +3306,178 @@ static struct config_int_setting *populate_settings_int(
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+
+   /* GENERATED: single-source setting rows (string kind emits here) */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+   SETTING_ARRAY(n, settings->arrays.f, false, NULL, true);
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+   SETTING_ARRAY(n, settings->arrays.f, false, NULL, true);
+#include "settings/settings_def_video_fullscreen.h"
+#define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone_block.h"
+#endif
+#include "settings/settings_def_updater_backup.h"
+#include "settings/settings_def_updater_experimental.h"
+#include "settings/settings_def_updater_extract.h"
+#include "settings/settings_def_gamemode.h"
+#include "settings/settings_def_sustained_performance.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_quick_menu_shaders_view.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_online_updater_view.h"
+#endif
+#ifdef HAVE_SMBCLIENT
+#include "settings/settings_def_settings_show_smb.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_MIST
+#include "settings/settings_def_settings_show_steam.h"
+#endif
+#endif
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_network_ondemand_thumbnails.h"
+#endif
+#include "settings/settings_def_network_stdin_cmd.h"
+#include "settings/settings_def_privacy_discord.h"
+#include "settings/settings_def_privacy_location.h"
+#include "settings/settings_def_privacy_camera.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_core_updater_view.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_restart_view.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_thumbnail_background.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_start_screen.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_content_settings_view.h"
+#endif
+#ifdef HAVE_THREADS
+#include "settings/settings_def_menu_threaded_data.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_wraparound.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_horizontal_animation.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_transparency.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_wallpaper.h"
+#endif
+#include "settings/settings_def_runahead_warnings.h"
+#include "settings/settings_def_input_auto_mouse_grab.h"
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#include "settings/settings_def_input_nowinkey.h"
+#endif
+#include "settings/settings_def_overlay_enable.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone.h"
+#endif
+#include "settings/settings_def_audio_sync.h"
+#include "settings/settings_def_audio_enable.h"
+#include "settings/settings_def_ui_menubar.h"
+#include "settings/settings_def_video_window_decorations.h"
+#include "settings/settings_def_video_srgb.h"
+#ifdef WIIU
+#include "settings/settings_def_video_wiiu_drc.h"
+#endif
+#include "settings/settings_def_shader_watch.h"
+#if defined(DINGUX)
+#include "settings/settings_def_video_dingux_ipu.h"
+#endif
+#include "settings/settings_def_video_notch.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_MIST
+#include "settings/settings_def_menu_steam.h"
+#endif
+#endif
+#ifdef ANDROID
+#include "settings/settings_def_input_android_workaround.h"
+#endif
+#include "settings/settings_def_video_frame_time_sample.h"
+#include "settings/settings_def_video_adaptive_vsync.h"
+#include "settings/settings_def_video_smooth.h"
+#include "settings/settings_def_frame_time_counter.h"
+#include "settings/settings_def_menu_filebrowser.h"
+#include "settings/settings_def_video_filter_rotation.h"
+#ifdef HAVE_CHEEVOS
+#include "settings/settings_def_cheevos.h"
+#endif
+#include "settings/settings_def_video_suspend_screensaver.h"
+#ifdef HAVE_CHEEVOS
+#include "settings/settings_def_cheevos_visibility.h"
+#endif
+#include "settings/settings_def_ui_focus.h"
+#include "settings/settings_def_multimedia.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_thumbnails.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_power_views.h"
+#endif
+#include "settings/settings_def_recording_video.h"
+#include "settings/settings_def_input_backtouch.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_menu_rgui_layout.h"
+#endif
+#endif
+#include "settings/settings_def_cheats_apply.h"
+#include "settings/settings_def_shader_preset.h"
+#ifdef UDEV_TOUCH_SUPPORT
+#include "settings/settings_def_input_vmouse.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_desktop.h"
+#endif
+#ifdef GEKKO
+#include "settings/settings_def_video_gamecube.h"
+#endif
+#include "settings/settings_def_menu_sounds.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_main_views.h"
+#include "settings/settings_def_menu_quick_views.h"
+#include "settings/settings_def_menu_settings_views.h"
+#endif
+#include "settings/settings_def_video_bias.h"
+#include "settings/settings_def_video_window.h"
+#undef SETTINGS_DEF_CONFIG_PASS
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 
 #ifdef HAVE_D3D10
    SETTING_INT("d3d10_gpu_index",                &settings->ints.d3d10_gpu_index, true, DEFAULT_D3D10_GPU_INDEX, false);

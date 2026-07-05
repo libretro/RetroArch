@@ -535,6 +535,8 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) n,
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) n,
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) n,
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) n,
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
 #include "../settings/settings_def_microphone_block.h"
@@ -613,6 +615,8 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef SETTINGS_DEF_STRINGS_PASS
 };
 #undef MSG_HASH
@@ -628,6 +632,8 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
 #include "../settings/settings_def_microphone_block.h"
@@ -706,6 +712,8 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #undef S_INT_NS
 #undef S_FLOAT
 #undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
 #undef SETTINGS_DEF_STRINGS_PASS
 };
 #undef MSG_HASH
