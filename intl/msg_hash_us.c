@@ -547,6 +547,7 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_kiosk_password.h"
 #include "../settings/settings_def_ozone_font_path.h"
 #include "../settings/settings_def_xmb_font_path.h"
 #include "../settings/settings_def_rgui_theme_path.h"
@@ -673,6 +674,7 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_kiosk_password.h"
 #include "../settings/settings_def_ozone_font_path.h"
 #include "../settings/settings_def_xmb_font_path.h"
 #include "../settings/settings_def_rgui_theme_path.h"

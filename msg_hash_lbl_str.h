@@ -1129,7 +1129,6 @@
 #define MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING_STR "quick_menu_stop_streaming"
 #define MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE_STR "menu_enable_kiosk_mode"
 #define MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE_STR "menu_disable_kiosk_mode"
-#define MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD_STR "menu_disable_kiosk_mode_password"
 #define MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE_STR "video_msg_bgcolor_enable"
 #define MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED_STR "video_msg_bgcolor_red"
 #define MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN_STR "video_msg_bgcolor_green"
