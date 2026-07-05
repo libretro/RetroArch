@@ -577,7 +577,6 @@
 #define MENU_ENUM_LABEL_MENU_DRIVER_XMB_STR "xmb"
 #define MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS_STR "menu_file_browser_settings"
 #define MENU_ENUM_LABEL_MENU_LINEAR_FILTER_STR "menu_linear_filter"
-#define MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION_STR "menu_horizontal_animation"
 #define MENU_ENUM_LABEL_MENU_SETTINGS_STR "menu_settings"
 #define MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS_STR "menu_bottom_settings"
 #define MENU_ENUM_LABEL_MENU_WALLPAPER_STR "menu_wallpaper"

@@ -1964,6 +1964,9 @@ static struct config_bool_setting *populate_settings_bool(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_MENU
+#include "settings/settings_def_menu_horizontal_animation.h"
+#endif
+#ifdef HAVE_MENU
 #ifdef HAVE_RGUI
 #include "settings/settings_def_menu_rgui_transparency.h"
 #endif
@@ -2099,7 +2102,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_disable_left_analog",      &settings->bools.menu_disable_left_analog, true, false, false);
    SETTING_BOOL("menu_disable_right_analog",     &settings->bools.menu_disable_right_analog, true, false, false);
    SETTING_BOOL("menu_linear_filter",            &settings->bools.menu_linear_filter, true, DEFAULT_VIDEO_SMOOTH, false);
-   SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, DEFAULT_MENU_HORIZONTAL_ANIMATION, false);
    SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
    SETTING_BOOL("menu_savestate_resume",         &settings->bools.menu_savestate_resume, true, DEFAULT_MENU_SAVESTATE_RESUME, false);
    SETTING_BOOL("menu_insert_disk_resume",       &settings->bools.menu_insert_disk_resume, true, DEFAULT_MENU_INSERT_DISK_RESUME, false);
@@ -2354,6 +2356,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_horizontal_animation.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_RGUI
 #include "settings/settings_def_menu_rgui_transparency.h"
@@ -2691,6 +2696,9 @@ static struct config_uint_setting *populate_settings_uint(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_MENU
+#include "settings/settings_def_menu_horizontal_animation.h"
+#endif
+#ifdef HAVE_MENU
 #ifdef HAVE_RGUI
 #include "settings/settings_def_menu_rgui_transparency.h"
 #endif
@@ -3001,6 +3009,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_horizontal_animation.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_RGUI
 #include "settings/settings_def_menu_rgui_transparency.h"
