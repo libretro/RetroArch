@@ -616,7 +616,6 @@
 #define MENU_ENUM_LABEL_NETWORK_REMOTE_PORT_STR "network_remote_base_port"
 #define MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE_STR "network_remote_user_1_enable"
 #define MENU_ENUM_LABEL_NETWORK_REMOTE_USER_LAST_ENABLE_STR "network_remote_user_last_enable"
-#define MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS_STR "network_on_demand_thumbnails"
 #define MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS_STR "subsystem_settings"
 #define MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS_STR "network_hosting_settings"
 #define MENU_ENUM_LABEL_NETWORK_SETTINGS_STR "network_settings"

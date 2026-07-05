@@ -1957,6 +1957,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_network_ondemand_thumbnails.h"
+#endif
 #include "settings/settings_def_network_stdin_cmd.h"
 #include "settings/settings_def_privacy_discord.h"
 #include "settings/settings_def_privacy_location.h"
@@ -2313,7 +2316,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("netplay_request_device_p15",    &settings->bools.netplay_request_devices[14], true, false, false);
    SETTING_BOOL("netplay_request_device_p16",    &settings->bools.netplay_request_devices[15], true, false, false);
    SETTING_BOOL("netplay_ping_show",             &settings->bools.netplay_ping_show, true, DEFAULT_NETPLAY_PING_SHOW, false);
-   SETTING_BOOL("network_on_demand_thumbnails",  &settings->bools.network_on_demand_thumbnails, true, DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS, false);
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_BOOL("network_remote_enable",         &settings->bools.network_remote_enable, false, false /* TODO */, false);
 #endif
@@ -2371,6 +2373,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_network_ondemand_thumbnails.h"
+#endif
 #include "settings/settings_def_network_stdin_cmd.h"
 #include "settings/settings_def_privacy_discord.h"
 #include "settings/settings_def_privacy_location.h"
@@ -2737,6 +2742,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_network_ondemand_thumbnails.h"
+#endif
 #include "settings/settings_def_network_stdin_cmd.h"
 #include "settings/settings_def_privacy_discord.h"
 #include "settings/settings_def_privacy_location.h"
@@ -3078,6 +3086,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_network_ondemand_thumbnails.h"
+#endif
 #include "settings/settings_def_network_stdin_cmd.h"
 #include "settings/settings_def_privacy_discord.h"
 #include "settings/settings_def_privacy_location.h"
