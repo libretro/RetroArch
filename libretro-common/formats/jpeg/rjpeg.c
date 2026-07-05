@@ -205,10 +205,8 @@ struct rjpeg_jpeg_s
    uint8_t *img_buffer_original;
    uint8_t *img_buffer_end;
    int      img_n;
-   int      img_out_n;
    uint32_t img_x;
    uint32_t img_y;
-   uint8_t  buffer_start[128];
 
    /* kernels */
    void (*idct_block_kernel)(uint8_t *out, int out_stride, short data[64]);
@@ -322,7 +320,6 @@ static INLINE uint32_t rjpeg_get16be(rjpeg_jpeg *s)
 #define JPEG_MARKER_APP2      0xE2
 
 /* use comparisons since in some cases we handle more than one case (e.g. SOF) */
-#define RJPEG_SOF(x)               ((x) == 0xc0 || (x) == 0xc1 || (x) == 0xc2)
 
 #define RJPEG_DIV4(x)              ((uint8_t) ((x) >> 2))
 #define RJPEG_DIV16(x)             ((uint8_t) ((x) >> 4))
@@ -2749,7 +2746,9 @@ static int rjpeg_decode_jpeg_header(rjpeg_jpeg *z, int scan)
       return 1;
 
    m = rjpeg_get_marker(z);
-   while (!RJPEG_SOF(m))
+   /* Consume tables/misc segments until a start-of-frame marker:
+    * SOF0 (baseline), SOF1 (extended sequential) or SOF2 (progressive). */
+   while (m != 0xc0 && m != 0xc1 && m != 0xc2)
    {
       if (!rjpeg_process_marker(z,m))
          return 0;
