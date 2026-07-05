@@ -142,38 +142,6 @@ struct rjpeg
 #endif
 
 /* x86/x64 detection */
-#if defined(__x86_64__) || defined(_M_X64)
-#define RJPEG_X64_TARGET
-#elif defined(__i386) || defined(_M_IX86)
-#define RJPEG_X86_TARGET
-#endif
-
-#if defined(__GNUC__) && (defined(RJPEG_X86_TARGET) || defined(RJPEG_X64_TARGET)) && !defined(__SSE2__) && !defined(RJPEG_NO_SIMD)
-/* NOTE: not clear do we actually need this for the 64-bit path?
- * gcc doesn't support sse2 intrinsics unless you compile with -msse2,
- * (but compiling with -msse2 allows the compiler to use SSE2 everywhere;
- * this is just broken and gcc are jerks for not fixing it properly
- * http://www.virtualdub.org/blog/pivot/entry.php?id=363 )
- */
-#define RJPEG_NO_SIMD
-#endif
-
-#if defined(__MINGW32__) && defined(RJPEG_X86_TARGET) && !defined(RJPEG_MINGW_ENABLE_SSE2) && !defined(RJPEG_NO_SIMD)
-/* Note that __MINGW32__ doesn't actually mean 32-bit, so we have to avoid RJPEG_X64_TARGET
- *
- * 32-bit MinGW wants ESP to be 16-byte aligned, but this is not in the
- * Windows ABI and VC++ as well as Windows DLLs don't maintain that invariant.
- * As a result, enabling SSE2 on 32-bit MinGW is dangerous when not
- * simultaneously enabling "-mstackrealign".
- *
- * See https://github.com/nothings/stb/issues/81 for more information.
- *
- * So default to no SSE2 on 32-bit MinGW. If you've read this far and added
- * -mstackrealign to your build settings, feel free to #define RJPEG_MINGW_ENABLE_SSE2.
- */
-#define RJPEG_NO_SIMD
-#endif
-
 #if defined(__SSE2__)
 #include <emmintrin.h>
 
@@ -186,14 +154,9 @@ struct rjpeg
 #endif
 
 /* Auto-detect NEON support */
-#if !defined(RJPEG_NO_SIMD) && !defined(RJPEG_NEON) \
+#if !defined(RJPEG_NEON) \
    && (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
 #define RJPEG_NEON
-#endif
-
-/* ARM NEON */
-#if defined(RJPEG_NO_SIMD) && defined(RJPEG_NEON)
-#undef RJPEG_NEON
 #endif
 
 #ifdef RJPEG_NEON
@@ -307,18 +270,13 @@ struct rjpeg_jpeg_s
    uint8_t dequant[4][64];
 };
 
-static INLINE uint8_t rjpeg_get8(rjpeg_jpeg *s)
-{
-   if (s->img_buffer < s->img_buffer_end)
-      return *s->img_buffer++;
-
-   return 0;
-}
-
 #define RJPEG_AT_EOF(s)     ((s)->img_buffer >= (s)->img_buffer_end)
 
+/* Checked byte read: 0 at end of buffer (the inverse of RJPEG_AT_EOF). */
+#define RJPEG_GET8(s)       (RJPEG_AT_EOF(s) ? 0 : *(s)->img_buffer++)
+
 /* Fast 16-bit big-endian read: single bounds check for 2 bytes.
- * The old RJPEG_GET16BE called rjpeg_get8 twice (2 bounds checks).
+ * A one-byte-at-a-time read would do 2 bounds checks.
  * At EOF, returns partial or zero like the original. */
 static INLINE uint32_t rjpeg_get16be(rjpeg_jpeg *s)
 {
@@ -330,26 +288,8 @@ static INLINE uint32_t rjpeg_get16be(rjpeg_jpeg *s)
       return (hi << 8) | s->img_buffer[-1];
    }
    /* Fallback for last byte or empty */
-   hi = rjpeg_get8(s);
-   return (hi << 8) | rjpeg_get8(s);
-}
-
-#define RJPEG_GET16BE(s)    rjpeg_get16be((s))
-
-/* Unchecked byte read: caller guarantees img_buffer < img_buffer_end.
- * Used in bulk parsing loops after a segment-length bounds check. */
-static INLINE uint8_t rjpeg_get8_fast(rjpeg_jpeg *s)
-{
-   return *s->img_buffer++;
-}
-
-/* Skip n bytes, clamping to end of buffer */
-static INLINE void rjpeg_skip(rjpeg_jpeg *s, int n)
-{
-   if (s->img_buffer + n > s->img_buffer_end)
-      s->img_buffer = s->img_buffer_end;
-   else
-      s->img_buffer += n;
+   hi = RJPEG_GET8(s);
+   return (hi << 8) | RJPEG_GET8(s);
 }
 
 #define RJPEG_F2F(x)  ((int) (((x) * 4096 + 0.5)))
@@ -468,7 +408,7 @@ static void rjpeg_build_fast_ac(int16_t *fast_ac, rjpeg_huffman *h)
  * Bulk bitstream fill
  *
  * The original grow_buffer_unsafe reads one byte at a time via
- * rjpeg_get8(), branching on 0xFF for each byte.  Since this function
+ * RJPEG_GET8, branching on 0xFF for each byte.  Since this function
  * is called on every Huffman symbol (up to 63× per 8×8 block), the
  * per-byte overhead dominates small-block decode time.
  *
@@ -609,10 +549,10 @@ handle_ff:
       else
       {
          /* Fewer than 4 bytes remain: byte-at-a-time fallback */
-         int b = rjpeg_get8(s);
+         int b = RJPEG_GET8(s);
          if (b == 0xFF)
          {
-            int c = rjpeg_get8(s);
+            int c = RJPEG_GET8(s);
             if (c != 0)
             {
                j->marker = (unsigned char)c;
@@ -1708,11 +1648,11 @@ static uint8_t rjpeg_get_marker(rjpeg_jpeg *j)
       return x;
    }
 
-   x = rjpeg_get8(j);
+   x = RJPEG_GET8(j);
    if (x != 0xff)
       return RJPEG_MARKER_NONE;
    while (x == 0xff)
-      x = rjpeg_get8(j);
+      x = RJPEG_GET8(j);
    return x;
 }
 
@@ -2367,17 +2307,17 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
       case 0xDD: /* DRI - specify restart interval */
 
          /* Bad DRI length. Corrupt JPEG? */
-         if (RJPEG_GET16BE(z) != 4)
+         if (rjpeg_get16be(z) != 4)
             return 0;
 
-         z->restart_interval = RJPEG_GET16BE(z);
+         z->restart_interval = rjpeg_get16be(z);
          return 1;
 
       case 0xDB: /* DQT - define quantization table */
-         L = RJPEG_GET16BE(z)-2;
+         L = rjpeg_get16be(z)-2;
          while (L > 0)
          {
-            int q = rjpeg_get8(z);
+            int q = RJPEG_GET8(z);
             int p = q >> 4;
             int t = q & 15,i;
 
@@ -2390,29 +2330,29 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
                return 0;
 
             /* Bulk-read 64 quantization values directly from buffer.
-             * The old code called rjpeg_get8 64 times (64 bounds checks).
+             * The old code did a bounds check per byte (64 checks).
              * After verifying 64 bytes remain, we read with no per-byte check. */
             if (z->img_buffer + 64 <= z->img_buffer_end)
             {
                for (i = 0; i < 64; ++i)
-                  z->dequant[t][rjpeg_jpeg_dezigzag[i]] = rjpeg_get8_fast(z);
+                  z->dequant[t][rjpeg_jpeg_dezigzag[i]] = *z->img_buffer++;
             }
             else
             {
                for (i = 0; i < 64; ++i)
-                  z->dequant[t][rjpeg_jpeg_dezigzag[i]] = rjpeg_get8(z);
+                  z->dequant[t][rjpeg_jpeg_dezigzag[i]] = RJPEG_GET8(z);
             }
             L -= 65;
          }
          return L == 0;
 
       case 0xC4: /* DHT - define huffman table */
-         L = RJPEG_GET16BE(z)-2;
+         L = rjpeg_get16be(z)-2;
          while (L > 0)
          {
             int sizes[16],i,n = 0;
             uint8_t *v = NULL;
-            int q      = rjpeg_get8(z);
+            int q      = RJPEG_GET8(z);
             int tc     = q >> 4;
             int th     = q & 15;
 
@@ -2425,7 +2365,7 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
             {
                for (i = 0; i < 16; ++i)
                {
-                  sizes[i] = rjpeg_get8_fast(z);
+                  sizes[i] = *z->img_buffer++;
                   n += sizes[i];
                }
             }
@@ -2433,7 +2373,7 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
             {
                for (i = 0; i < 16; ++i)
                {
-                  sizes[i] = rjpeg_get8(z);
+                  sizes[i] = RJPEG_GET8(z);
                   n += sizes[i];
                }
             }
@@ -2460,7 +2400,7 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
             else
             {
                for (i = 0; i < n; ++i)
-                  v[i] = rjpeg_get8(z);
+                  v[i] = RJPEG_GET8(z);
             }
             if (tc != 0)
                rjpeg_build_fast_ac(z->fast_ac[th], z->huff_ac + th);
@@ -2472,8 +2412,12 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
    /* check for comment block or APP blocks */
    if ((m >= 0xE0 && m <= 0xEF) || m == 0xFE)
    {
-      int n = RJPEG_GET16BE(z)-2;
-      rjpeg_skip(z, n);
+      /* Skip the segment payload, clamped to the end of the buffer. */
+      int n = rjpeg_get16be(z)-2;
+      if (z->img_buffer + n > z->img_buffer_end)
+         z->img_buffer = z->img_buffer_end;
+      else
+         z->img_buffer += n;
       return 1;
    }
    return 0;
@@ -2484,9 +2428,9 @@ static int rjpeg_process_scan_header(rjpeg_jpeg *z)
 {
    int i;
    int aa;
-   int Ls    = RJPEG_GET16BE(z);
+   int Ls    = rjpeg_get16be(z);
 
-   z->scan_n = rjpeg_get8(z);
+   z->scan_n = RJPEG_GET8(z);
 
    /* Bad SOS component count. Corrupt JPEG? */
    if (z->scan_n < 1 || z->scan_n > 4 || z->scan_n > (int) z->img_n)
@@ -2499,8 +2443,8 @@ static int rjpeg_process_scan_header(rjpeg_jpeg *z)
    for (i = 0; i < z->scan_n; ++i)
    {
       int which;
-      int id = rjpeg_get8(z);
-      int q  = rjpeg_get8(z);
+      int id = RJPEG_GET8(z);
+      int q  = RJPEG_GET8(z);
 
       for (which = 0; which < z->img_n; ++which)
          if (z->img_comp[which].id == id)
@@ -2519,9 +2463,9 @@ static int rjpeg_process_scan_header(rjpeg_jpeg *z)
       z->order[i] = which;
    }
 
-   z->spec_start = rjpeg_get8(z);
-   z->spec_end   = rjpeg_get8(z); /* should be 63, but might be 0 */
-   aa            = rjpeg_get8(z);
+   z->spec_start = RJPEG_GET8(z);
+   z->spec_end   = RJPEG_GET8(z); /* should be 63, but might be 0 */
+   aa            = RJPEG_GET8(z);
    z->succ_high  = (aa >> 4);
    z->succ_low   = (aa & 15);
 
@@ -2553,7 +2497,7 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
 {
    rjpeg_jpeg *s = z;
    int Lf,p,i,q, h_max=1,v_max=1,c;
-   Lf = RJPEG_GET16BE(s);
+   Lf = rjpeg_get16be(s);
 
    /* JPEG */
 
@@ -2561,7 +2505,7 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
    if (Lf < 11)
       return 0;
 
-   p  = rjpeg_get8(s);
+   p  = RJPEG_GET8(s);
 
    /* JPEG baseline */
 
@@ -2569,7 +2513,7 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
    if (p != 8)
       return 0;
 
-   s->img_y = RJPEG_GET16BE(s);
+   s->img_y = rjpeg_get16be(s);
 
    /* Legal, but we don't handle it--but neither does IJG */
 
@@ -2577,7 +2521,7 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
    if (s->img_y == 0)
       return 0;
 
-   s->img_x = RJPEG_GET16BE(s);
+   s->img_x = rjpeg_get16be(s);
 
    /* No header width. Corrupt JPEG? */
    if (s->img_x == 0)
@@ -2601,7 +2545,7 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
       return 0;
 #endif
 
-   c = rjpeg_get8(s);
+   c = RJPEG_GET8(s);
 
    /* JFIF requires */
 
@@ -2623,12 +2567,12 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
 
    for (i = 0; i < s->img_n; ++i)
    {
-      z->img_comp[i].id = rjpeg_get8(s);
+      z->img_comp[i].id = RJPEG_GET8(s);
       if (z->img_comp[i].id != i+1)   /* JFIF requires */
          if (z->img_comp[i].id != i)  /* some version of jpegtran outputs non-JFIF-compliant files! */
             return 0;
 
-      q                = rjpeg_get8(s);
+      q                = RJPEG_GET8(s);
       z->img_comp[i].h = (q >> 4);
 
       /* Bad H. Corrupt JPEG? */
@@ -2641,7 +2585,7 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
       if (!z->img_comp[i].v || z->img_comp[i].v > 4)
          return 0;
 
-      z->img_comp[i].tq = rjpeg_get8(s);
+      z->img_comp[i].tq = RJPEG_GET8(s);
 
       /* Bad TQ. Corrupt JPEG? */
       if (z->img_comp[i].tq > 3)
