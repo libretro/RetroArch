@@ -1958,6 +1958,9 @@ static struct config_bool_setting *populate_settings_bool(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_MENU
+#include "settings/settings_def_quick_menu_shaders_view.h"
+#endif
+#ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
 #ifdef HAVE_SMBCLIENT
@@ -2152,7 +2155,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_ignore_missing_assets",    &settings->bools.menu_ignore_missing_assets, true, DEFAULT_MENU_IGNORE_MISSING_ASSETS, false);
 
 
-   SETTING_BOOL("quick_menu_show_shaders",                    &settings->bools.quick_menu_show_shaders, true, DEFAULT_QUICK_MENU_SHOW_SHADERS, false);
 
    SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, DEFAULT_CONTENT_SHOW_FAVORITES, false);
    SETTING_BOOL("content_show_favorites_first",  &settings->bools.menu_content_show_favorites_first, true, DEFAULT_CONTENT_SHOW_FAVORITES_FIRST, false);
@@ -2379,6 +2381,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_quick_menu_shaders_view.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
@@ -2760,6 +2765,9 @@ static struct config_uint_setting *populate_settings_uint(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_MENU
+#include "settings/settings_def_quick_menu_shaders_view.h"
+#endif
+#ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
 #ifdef HAVE_SMBCLIENT
@@ -3114,6 +3122,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_quick_menu_shaders_view.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif

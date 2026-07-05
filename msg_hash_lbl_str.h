@@ -1172,7 +1172,6 @@
 #define MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING_STR "quick_menu_start_streaming"
 #define MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING_STR "quick_menu_stop_recording"
 #define MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING_STR "quick_menu_stop_streaming"
-#define MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS_STR "quick_menu_show_shaders"
 #define MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE_STR "menu_enable_kiosk_mode"
 #define MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE_STR "menu_disable_kiosk_mode"
 #define MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD_STR "menu_disable_kiosk_mode_password"
