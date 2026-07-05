@@ -443,7 +443,6 @@
 #define MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL_STR "menu_swap_ok_cancel"
 #define MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL_STR "menu_swap_scroll"
 #define MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE_STR "input_autodetect_enable"
-#define MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE_STR "input_nowinkey_enable"
 #define MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD_STR "input_android_physical_keyboard"
 #define MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE_STR "input_sensors_enable"
 #define MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB_STR "input_auto_mouse_grab"
