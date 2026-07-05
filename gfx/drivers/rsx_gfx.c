@@ -2514,11 +2514,11 @@ static bool rsx_gcm_compressed_format(enum texture_gpu_format fmt,
    switch (fmt)
    {
       case TEXTURE_GPU_FORMAT_BC1:
-         *gcm_out = GCM_TEXTURE_FORMAT_COMPRESSED_DXT1;  *block_bytes = 8;  return true;
+         *gcm_out = GCM_TEXTURE_FORMAT_DXT1;  *block_bytes = 8;  return true;
       case TEXTURE_GPU_FORMAT_BC2:
-         *gcm_out = GCM_TEXTURE_FORMAT_COMPRESSED_DXT23; *block_bytes = 16; return true;
+         *gcm_out = GCM_TEXTURE_FORMAT_DXT23; *block_bytes = 16; return true;
       case TEXTURE_GPU_FORMAT_BC3:
-         *gcm_out = GCM_TEXTURE_FORMAT_COMPRESSED_DXT45; *block_bytes = 16; return true;
+         *gcm_out = GCM_TEXTURE_FORMAT_DXT45; *block_bytes = 16; return true;
       default:
          break;
    }

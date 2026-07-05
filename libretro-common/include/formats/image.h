@@ -68,6 +68,14 @@ enum image_type_enum
 
 #define IMAGE_MAX_MIPS 16
 
+/* Several MIPS toolchains (RS90/Dingux, PSP, PS2, ...) predefine the bare
+ * macro `mips` as 1 in GNU mode, which collides with the `mips` field of
+ * struct texture_compressed below (and every `->mips` access downstream).
+ * RA never uses the legacy macro (it uses __mips__), so drop it here. */
+#ifdef mips
+#undef mips
+#endif
+
 /* GPU-native compressed texture formats (block-compressed).  Producers
  * (currently the DDS loader) report one of these when a texture can be
  * uploaded to the GPU as-is; capable drivers skip the CPU decode to

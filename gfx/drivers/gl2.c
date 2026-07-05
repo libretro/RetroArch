@@ -5525,8 +5525,13 @@ static uintptr_t gl2_load_texture_compressed(void *video_data,
             (GLsizei)tc->mips[i].width, (GLsizei)tc->mips[i].height, 0,
             (GLsizei)tc->mips[i].size, tc->mips[i].data);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL,
-         (GLint)(tc->num_mips - 1));
+#ifdef GL_TEXTURE_MAX_LEVEL
+   /* Not defined by GLES2 / Orbis (PS4) GL headers; only meaningful when
+    * the file actually carries a mip chain. */
+   if (tc->num_mips > 1)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL,
+            (GLint)(tc->num_mips - 1));
+#endif
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minf);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magf);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
