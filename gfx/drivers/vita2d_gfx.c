@@ -3332,11 +3332,16 @@ static uintptr_t vita2d_load_texture_compressed(void *video_data,
       off += tc->mips[i].size;
    }
 
-   /* NOTE: block-compressed data is uploaded with the linear initialiser,
-    * mirroring the driver's uncompressed path.  If UBC textures come out
-    * twiddled on real hardware, GXM wants the swizzled layout instead --
-    * switch to sceGxmTextureInitSwizzled() and Morton-order the blocks.
-    * This is the one thing that cannot be settled by a compile check. */
+   /* Block-compressed data uses the linear texture type. GXM stores the
+    * memory layout (linear/swizzled/tiled) as a property of the texture,
+    * and a linear-typed texture is sampled as plain row-major blocks --
+    * exactly the DDS block order copied above, so no Morton reorder is
+    * needed. Verified against Vita3K (the reference emulator), which reads
+    * linear/swizzled/tiled BCn per that type field; Sony's GXT tooling
+    * emits the swizzled type, but that is a tooling choice, not a hardware
+    * requirement. Should a GXM revision refuse InitLinear for a UBC format,
+    * the err check below returns 0 and video_driver_texture_load falls back
+    * to the CPU decode path. */
    err = sceGxmTextureInitLinear(
          &texture->gxm_tex,
          tex_data,
