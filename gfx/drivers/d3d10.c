@@ -3799,7 +3799,8 @@ static DXGI_FORMAT d3d10_dxgi_from_gpu_format(enum texture_gpu_format fmt)
       case TEXTURE_GPU_FORMAT_BC1: return DXGI_FORMAT_BC1_UNORM;
       case TEXTURE_GPU_FORMAT_BC2: return DXGI_FORMAT_BC2_UNORM;
       case TEXTURE_GPU_FORMAT_BC3: return DXGI_FORMAT_BC3_UNORM;
-      case TEXTURE_GPU_FORMAT_BC7: return DXGI_FORMAT_BC7_UNORM;
+      /* BC7/BPTC is a Direct3D 11 format; 10.1 has no BC7, so it is not
+       * advertised here and BC7 assets take the CPU-decode fallback. */
       default:                     break;
    }
    return DXGI_FORMAT_UNKNOWN;
