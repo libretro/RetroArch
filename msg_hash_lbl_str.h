@@ -548,7 +548,6 @@
 #define MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL_STR "load_special"
 #define MENU_ENUM_LABEL_LOAD_CONTENT_LIST_STR "load_content"
 #define MENU_ENUM_LABEL_LOAD_STATE_STR "load_state"
-#define MENU_ENUM_LABEL_LOCATION_ALLOW_STR "location_allow"
 #define MENU_ENUM_LABEL_LOCATION_DRIVER_STR "location_driver"
 #define MENU_ENUM_LABEL_LOGGING_SETTINGS_STR "logging_settings"
 #define MENU_ENUM_LABEL_LOG_VERBOSITY_STR "log_verbosity"
