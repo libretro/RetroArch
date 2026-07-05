@@ -1112,7 +1112,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_OVERLAY_PRESET:
          filebrowser_set_type(FILEBROWSER_SELECT_OVERLAY);
          info.directory_ptr = idx;
-         info_label         = MENU_ENUM_LABEL_OVERLAY_PRESET_STR;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_PRESET);
          info.enum_idx      = MENU_ENUM_LABEL_OVERLAY_PRESET;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -1155,7 +1155,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_VIDEO_FONT:
          filebrowser_set_type(FILEBROWSER_SELECT_VIDEO_FONT);
          info.directory_ptr = idx;
-         info_label         = MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
          info.enum_idx      = MENU_ENUM_LABEL_VIDEO_FONT_PATH;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -9981,11 +9981,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   || string_is_equal(menu_label,
                      MENU_ENUM_LABEL_SUBSYSTEM_ADD_STR)
                   || string_is_equal(menu_label,
-                     MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR)
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH))
                   || string_is_equal(menu_label,
-                     MENU_ENUM_LABEL_XMB_FONT_STR)
+                     msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT))
                   || string_is_equal(menu_label,
-                     MENU_ENUM_LABEL_OZONE_FONT_STR)
+                     msg_hash_to_str(MENU_ENUM_LABEL_OZONE_FONT))
                   || string_is_equal(menu_label,
                      msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN))
                   || string_is_equal(menu_label,

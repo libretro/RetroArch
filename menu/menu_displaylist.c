@@ -12306,7 +12306,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_BROWSE_URL_LIST:
          if (menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL),
-                  MENU_ENUM_LABEL_BROWSE_URL_STR,
+                  msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL),
                   MENU_ENUM_LABEL_BROWSE_URL,
                   0, 0, 0, NULL))
             count++;
