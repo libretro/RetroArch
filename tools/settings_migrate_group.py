@@ -100,7 +100,7 @@ for ln in body.split('\n'):
         if rm and gstack:
             guards[rm.group(1)] = tuple(gstack)
 rows = [(m.group(1), m.group(2), m.group(3), re.sub(r'\s+',' ',m.group(4)).strip())
-        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT)_ROW\((\w+), (\w+),((?:[^()]|\([^()]*\))*)\)', body)]
+        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT)_ROW\(\s*(\w+),\s*(\w+),((?:[^()]|\([^()]*\))*)\)', body)]
 all_invocations = re.findall(r'SDESC_\w+?_ROW(?:_\w+)?\(', body)
 assert len(rows) == len(all_invocations), (
     'table contains %d rows but only %d are plain-grammar '
