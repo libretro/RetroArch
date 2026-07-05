@@ -1885,9 +1885,6 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_MIST
    SETTING_BOOL("steam_rich_presence_enable",    &settings->bools.steam_rich_presence_enable, true, false, false);
 #endif
-#ifdef HAVE_THREADS
-   SETTING_BOOL("threaded_data_runloop_enable",  &settings->bools.threaded_data_runloop_enable, true, DEFAULT_THREADED_DATA_RUNLOOP_ENABLE, false);
-#endif
    SETTING_BOOL("log_to_file",                   &settings->bools.log_to_file, true, DEFAULT_LOG_TO_FILE, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
    SETTING_BOOL("log_to_file_timestamp",         &settings->bools.log_to_file_timestamp, true, DEFAULT_LOG_TO_FILE_TIMESTAMP, false);
@@ -1963,6 +1960,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_THREADS
+#include "settings/settings_def_menu_threaded_data.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_wraparound.h"
 #endif
@@ -2358,6 +2358,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_THREADS
+#include "settings/settings_def_menu_threaded_data.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_wraparound.h"
 #endif
@@ -2700,6 +2703,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_THREADS
+#include "settings/settings_def_menu_threaded_data.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_wraparound.h"
 #endif
@@ -3017,6 +3023,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_THREADS
+#include "settings/settings_def_menu_threaded_data.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_wraparound.h"
 #endif

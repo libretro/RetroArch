@@ -923,7 +923,6 @@
 #define MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY_STR "system_info_entry"
 #define MENU_ENUM_LABEL_ICON_THUMBNAILS_STR "icon_thumbnails"
 #define MENU_ENUM_LABEL_TAKE_SCREENSHOT_STR "take_screenshot"
-#define MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE_STR "threaded_data_runloop_enable"
 #define MENU_ENUM_LABEL_THUMBNAILS_STR "thumbnails"
 #define MENU_ENUM_LABEL_LEFT_THUMBNAILS_STR "left thumbnails"
 #define MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS_STR "xmb_vertical_thumbnails"
