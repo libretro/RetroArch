@@ -2023,22 +2023,467 @@ static void vp8_nlf_mb(int mask, int hev,
    *op2 = (uint8_t)(vp8_sc(ps2 + u) + 128);
 }
 
-/* Walk one edge: n filtered positions, taps tp apart, positions sp apart. */
+#if defined(RWEBP_YUV_SSE2)
+#define RWEBP_LF_SSE2 1
+#endif
+#if defined(RWEBP_YUV_NEON)
+#define RWEBP_LF_NEON 1
+#endif
+#if defined(RWEBP_LF_SSE2)
+/* 16-lane normal loop filter. The per-lane math mirrors vp8_nlf_inner /
+ * vp8_nlf_mb exactly: the +-128 bias is the 0x80 xor, vp8_sc is the
+ * saturating signed-8 arithmetic, 3*(qs0-ps0) is three saturating adds,
+ * and the (63 + fv*K) >> 7 taps widen to 16-bit lanes. Verified
+ * bit-exact against the scalar filters over randomized exhaustive
+ * sweeps and whole-plane edge tests in both orientations. */
+#define RWEBP_ABSD(a,b) _mm_or_si128(_mm_subs_epu8(a,b),_mm_subs_epu8(b,a))
+
+static INLINE __m128i rwebp_gtu8(__m128i a, __m128i b)
+{
+   return _mm_xor_si128(_mm_cmpeq_epi8(_mm_subs_epu8(a, b),
+         _mm_setzero_si128()), _mm_set1_epi8((char)0xFF));
+}
+
+static void vp8_nlf_mask_hev_x(__m128i p3, __m128i p2, __m128i p1,
+      __m128i p0, __m128i q0, __m128i q1, __m128i q2, __m128i q3,
+      int lim, int blim, int thr, __m128i *maskv, __m128i *hevv)
+{
+   __m128i L = _mm_set1_epi8((char)lim);
+   __m128i T = _mm_set1_epi8((char)thr);
+   __m128i m = _mm_setzero_si128();
+   m = _mm_or_si128(m, rwebp_gtu8(RWEBP_ABSD(p3, p2), L));
+   m = _mm_or_si128(m, rwebp_gtu8(RWEBP_ABSD(p2, p1), L));
+   m = _mm_or_si128(m, rwebp_gtu8(RWEBP_ABSD(p1, p0), L));
+   m = _mm_or_si128(m, rwebp_gtu8(RWEBP_ABSD(q1, q0), L));
+   m = _mm_or_si128(m, rwebp_gtu8(RWEBP_ABSD(q2, q1), L));
+   m = _mm_or_si128(m, rwebp_gtu8(RWEBP_ABSD(q3, q2), L));
+   {
+      __m128i d0 = RWEBP_ABSD(p0, q0), d1 = RWEBP_ABSD(p1, q1);
+      __m128i z  = _mm_setzero_si128();
+      __m128i bl = _mm_set1_epi16((short)blim);
+      __m128i sl = _mm_add_epi16(_mm_slli_epi16(_mm_unpacklo_epi8(d0, z), 1),
+                                 _mm_srli_epi16(_mm_unpacklo_epi8(d1, z), 1));
+      __m128i sh = _mm_add_epi16(_mm_slli_epi16(_mm_unpackhi_epi8(d0, z), 1),
+                                 _mm_srli_epi16(_mm_unpackhi_epi8(d1, z), 1));
+      m = _mm_or_si128(m, _mm_packs_epi16(_mm_cmpgt_epi16(sl, bl),
+                                          _mm_cmpgt_epi16(sh, bl)));
+   }
+   *maskv = _mm_cmpeq_epi8(m, _mm_setzero_si128());
+   *hevv  = _mm_or_si128(rwebp_gtu8(RWEBP_ABSD(p1, p0), T),
+                         rwebp_gtu8(RWEBP_ABSD(q1, q0), T));
+}
+
+static void vp8_nlf_inner_x(__m128i maskv, __m128i hevv,
+      __m128i *p1, __m128i *p0, __m128i *q0, __m128i *q1)
+{
+   __m128i t80 = _mm_set1_epi8((char)0x80);
+   __m128i ps1 = _mm_xor_si128(*p1, t80), ps0 = _mm_xor_si128(*p0, t80);
+   __m128i qs0 = _mm_xor_si128(*q0, t80), qs1 = _mm_xor_si128(*q1, t80);
+   __m128i fv  = _mm_subs_epi8(ps1, qs1);
+   __m128i qp  = _mm_subs_epi8(qs0, ps0);
+   __m128i f1, f2;
+   __m128i z   = _mm_setzero_si128();
+   fv = _mm_and_si128(fv, hevv);
+   fv = _mm_adds_epi8(fv, qp);
+   fv = _mm_adds_epi8(fv, qp);
+   fv = _mm_adds_epi8(fv, qp);
+   fv = _mm_and_si128(fv, maskv);
+   f1 = _mm_adds_epi8(fv, _mm_set1_epi8(4));
+   f2 = _mm_adds_epi8(fv, _mm_set1_epi8(3));
+   {
+      __m128i a = _mm_srai_epi16(_mm_unpacklo_epi8(z, f1), 11);
+      __m128i b = _mm_srai_epi16(_mm_unpackhi_epi8(z, f1), 11);
+      __m128i c = _mm_srai_epi16(_mm_unpacklo_epi8(z, f2), 11);
+      __m128i d = _mm_srai_epi16(_mm_unpackhi_epi8(z, f2), 11);
+      f1 = _mm_packs_epi16(a, b);
+      f2 = _mm_packs_epi16(c, d);
+   }
+   qs0 = _mm_subs_epi8(qs0, f1);
+   ps0 = _mm_adds_epi8(ps0, f2);
+   {
+      __m128i one = _mm_set1_epi16(1);
+      __m128i l = _mm_srai_epi16(_mm_add_epi16(
+            _mm_srai_epi16(_mm_unpacklo_epi8(z, f1), 8), one), 1);
+      __m128i h = _mm_srai_epi16(_mm_add_epi16(
+            _mm_srai_epi16(_mm_unpackhi_epi8(z, f1), 8), one), 1);
+      fv = _mm_packs_epi16(l, h);
+   }
+   fv  = _mm_andnot_si128(hevv, fv);
+   qs1 = _mm_subs_epi8(qs1, fv);
+   ps1 = _mm_adds_epi8(ps1, fv);
+   *q0 = _mm_xor_si128(qs0, t80); *p0 = _mm_xor_si128(ps0, t80);
+   *q1 = _mm_xor_si128(qs1, t80); *p1 = _mm_xor_si128(ps1, t80);
+}
+
+static void vp8_nlf_mb_x(__m128i maskv, __m128i hevv,
+      __m128i *p2, __m128i *p1, __m128i *p0,
+      __m128i *q0, __m128i *q1, __m128i *q2)
+{
+   __m128i t80 = _mm_set1_epi8((char)0x80);
+   __m128i ps2 = _mm_xor_si128(*p2, t80), ps1 = _mm_xor_si128(*p1, t80);
+   __m128i ps0 = _mm_xor_si128(*p0, t80), qs0 = _mm_xor_si128(*q0, t80);
+   __m128i qs1 = _mm_xor_si128(*q1, t80), qs2 = _mm_xor_si128(*q2, t80);
+   __m128i fv  = _mm_subs_epi8(ps1, qs1);
+   __m128i qp  = _mm_subs_epi8(qs0, ps0);
+   __m128i f1, f2;
+   __m128i z   = _mm_setzero_si128();
+   fv = _mm_adds_epi8(fv, qp);
+   fv = _mm_adds_epi8(fv, qp);
+   fv = _mm_adds_epi8(fv, qp);
+   fv = _mm_and_si128(fv, maskv);
+   f2 = _mm_and_si128(fv, hevv);
+   f1 = _mm_adds_epi8(f2, _mm_set1_epi8(4));
+   f2 = _mm_adds_epi8(f2, _mm_set1_epi8(3));
+   {
+      __m128i a = _mm_srai_epi16(_mm_unpacklo_epi8(z, f1), 11);
+      __m128i b = _mm_srai_epi16(_mm_unpackhi_epi8(z, f1), 11);
+      __m128i c = _mm_srai_epi16(_mm_unpacklo_epi8(z, f2), 11);
+      __m128i d = _mm_srai_epi16(_mm_unpackhi_epi8(z, f2), 11);
+      f1 = _mm_packs_epi16(a, b);
+      f2 = _mm_packs_epi16(c, d);
+   }
+   qs0 = _mm_subs_epi8(qs0, f1);
+   ps0 = _mm_adds_epi8(ps0, f2);
+   fv = _mm_andnot_si128(hevv, fv);
+   {
+      __m128i fl  = _mm_srai_epi16(_mm_unpacklo_epi8(z, fv), 8);
+      __m128i fh  = _mm_srai_epi16(_mm_unpackhi_epi8(z, fv), 8);
+      __m128i s63 = _mm_set1_epi16(63);
+      __m128i u27 = _mm_packs_epi16(
+            _mm_srai_epi16(_mm_add_epi16(s63, _mm_mullo_epi16(fl, _mm_set1_epi16(27))), 7),
+            _mm_srai_epi16(_mm_add_epi16(s63, _mm_mullo_epi16(fh, _mm_set1_epi16(27))), 7));
+      __m128i u18 = _mm_packs_epi16(
+            _mm_srai_epi16(_mm_add_epi16(s63, _mm_mullo_epi16(fl, _mm_set1_epi16(18))), 7),
+            _mm_srai_epi16(_mm_add_epi16(s63, _mm_mullo_epi16(fh, _mm_set1_epi16(18))), 7));
+      __m128i u9  = _mm_packs_epi16(
+            _mm_srai_epi16(_mm_add_epi16(s63, _mm_mullo_epi16(fl, _mm_set1_epi16(9))), 7),
+            _mm_srai_epi16(_mm_add_epi16(s63, _mm_mullo_epi16(fh, _mm_set1_epi16(9))), 7));
+      qs0 = _mm_subs_epi8(qs0, u27); ps0 = _mm_adds_epi8(ps0, u27);
+      qs1 = _mm_subs_epi8(qs1, u18); ps1 = _mm_adds_epi8(ps1, u18);
+      qs2 = _mm_subs_epi8(qs2, u9);  ps2 = _mm_adds_epi8(ps2, u9);
+   }
+   *q0 = _mm_xor_si128(qs0, t80); *p0 = _mm_xor_si128(ps0, t80);
+   *q1 = _mm_xor_si128(qs1, t80); *p1 = _mm_xor_si128(ps1, t80);
+   *q2 = _mm_xor_si128(qs2, t80); *p2 = _mm_xor_si128(ps2, t80);
+}
+#endif /* RWEBP_LF_SSE2 */
+
+#if defined(RWEBP_LF_NEON)
+/* NEON port of the same 16-lane filters; identical decomposition
+ * (saturating signed-8 arithmetic, 16-bit widening for the wide taps). */
+static void vp8_nlf_mask_hev_n(uint8x16_t p3, uint8x16_t p2, uint8x16_t p1,
+      uint8x16_t p0, uint8x16_t q0, uint8x16_t q1, uint8x16_t q2,
+      uint8x16_t q3, int lim, int blim, int thr,
+      uint8x16_t *maskv, uint8x16_t *hevv)
+{
+   uint8x16_t L = vdupq_n_u8((uint8_t)lim);
+   uint8x16_t T = vdupq_n_u8((uint8_t)thr);
+   uint8x16_t m = vcgtq_u8(vabdq_u8(p3, p2), L);
+   uint16x8_t bl, sl, sh;
+   uint8x16_t d0, d1;
+   m = vorrq_u8(m, vcgtq_u8(vabdq_u8(p2, p1), L));
+   m = vorrq_u8(m, vcgtq_u8(vabdq_u8(p1, p0), L));
+   m = vorrq_u8(m, vcgtq_u8(vabdq_u8(q1, q0), L));
+   m = vorrq_u8(m, vcgtq_u8(vabdq_u8(q2, q1), L));
+   m = vorrq_u8(m, vcgtq_u8(vabdq_u8(q3, q2), L));
+   d0 = vabdq_u8(p0, q0);
+   d1 = vabdq_u8(p1, q1);
+   bl = vdupq_n_u16((uint16_t)blim);
+   sl = vaddq_u16(vshlq_n_u16(vmovl_u8(vget_low_u8(d0)), 1),
+                  vshrq_n_u16(vmovl_u8(vget_low_u8(d1)), 1));
+   sh = vaddq_u16(vshlq_n_u16(vmovl_u8(vget_high_u8(d0)), 1),
+                  vshrq_n_u16(vmovl_u8(vget_high_u8(d1)), 1));
+   m = vorrq_u8(m, vcombine_u8(vmovn_u16(vcgtq_u16(sl, bl)),
+                               vmovn_u16(vcgtq_u16(sh, bl))));
+   *maskv = vceqq_u8(m, vdupq_n_u8(0));
+   *hevv  = vorrq_u8(vcgtq_u8(vabdq_u8(p1, p0), T),
+                     vcgtq_u8(vabdq_u8(q1, q0), T));
+}
+
+static void vp8_nlf_inner_n(uint8x16_t maskv, uint8x16_t hevv,
+      uint8x16_t *p1, uint8x16_t *p0, uint8x16_t *q0, uint8x16_t *q1)
+{
+   uint8x16_t t80 = vdupq_n_u8(0x80);
+   int8x16_t ps1 = vreinterpretq_s8_u8(veorq_u8(*p1, t80));
+   int8x16_t ps0 = vreinterpretq_s8_u8(veorq_u8(*p0, t80));
+   int8x16_t qs0 = vreinterpretq_s8_u8(veorq_u8(*q0, t80));
+   int8x16_t qs1 = vreinterpretq_s8_u8(veorq_u8(*q1, t80));
+   int8x16_t fv  = vqsubq_s8(ps1, qs1);
+   int8x16_t qp  = vqsubq_s8(qs0, ps0);
+   int8x16_t f1, f2, fo;
+   fv = vandq_s8(fv, vreinterpretq_s8_u8(hevv));
+   fv = vqaddq_s8(fv, qp);
+   fv = vqaddq_s8(fv, qp);
+   fv = vqaddq_s8(fv, qp);
+   fv = vandq_s8(fv, vreinterpretq_s8_u8(maskv));
+   f1 = vqaddq_s8(fv, vdupq_n_s8(4));
+   f2 = vqaddq_s8(fv, vdupq_n_s8(3));
+   f1 = vshrq_n_s8(f1, 3);
+   f2 = vshrq_n_s8(f2, 3);
+   qs0 = vqsubq_s8(qs0, f1);
+   ps0 = vqaddq_s8(ps0, f2);
+   fo  = vrshrq_n_s8(f1, 1); /* (f1+1)>>1 rounding shift */
+   fo  = vbicq_s8(fo, vreinterpretq_s8_u8(hevv));
+   qs1 = vqsubq_s8(qs1, fo);
+   ps1 = vqaddq_s8(ps1, fo);
+   *q0 = veorq_u8(vreinterpretq_u8_s8(qs0), t80);
+   *p0 = veorq_u8(vreinterpretq_u8_s8(ps0), t80);
+   *q1 = veorq_u8(vreinterpretq_u8_s8(qs1), t80);
+   *p1 = veorq_u8(vreinterpretq_u8_s8(ps1), t80);
+}
+
+static void vp8_nlf_mb_n(uint8x16_t maskv, uint8x16_t hevv,
+      uint8x16_t *p2, uint8x16_t *p1, uint8x16_t *p0,
+      uint8x16_t *q0, uint8x16_t *q1, uint8x16_t *q2)
+{
+   uint8x16_t t80 = vdupq_n_u8(0x80);
+   int8x16_t ps2 = vreinterpretq_s8_u8(veorq_u8(*p2, t80));
+   int8x16_t ps1 = vreinterpretq_s8_u8(veorq_u8(*p1, t80));
+   int8x16_t ps0 = vreinterpretq_s8_u8(veorq_u8(*p0, t80));
+   int8x16_t qs0 = vreinterpretq_s8_u8(veorq_u8(*q0, t80));
+   int8x16_t qs1 = vreinterpretq_s8_u8(veorq_u8(*q1, t80));
+   int8x16_t qs2 = vreinterpretq_s8_u8(veorq_u8(*q2, t80));
+   int8x16_t fv  = vqsubq_s8(ps1, qs1);
+   int8x16_t qp  = vqsubq_s8(qs0, ps0);
+   int8x16_t f1, f2;
+   int16x8_t fl, fh, s63;
+   int8x16_t u27, u18, u9;
+   fv = vqaddq_s8(fv, qp);
+   fv = vqaddq_s8(fv, qp);
+   fv = vqaddq_s8(fv, qp);
+   fv = vandq_s8(fv, vreinterpretq_s8_u8(maskv));
+   f2 = vandq_s8(fv, vreinterpretq_s8_u8(hevv));
+   f1 = vshrq_n_s8(vqaddq_s8(f2, vdupq_n_s8(4)), 3);
+   f2 = vshrq_n_s8(vqaddq_s8(f2, vdupq_n_s8(3)), 3);
+   qs0 = vqsubq_s8(qs0, f1);
+   ps0 = vqaddq_s8(ps0, f2);
+   fv = vbicq_s8(fv, vreinterpretq_s8_u8(hevv));
+   fl = vmovl_s8(vget_low_s8(fv));
+   fh = vmovl_s8(vget_high_s8(fv));
+   s63 = vdupq_n_s16(63);
+   u27 = vcombine_s8(
+         vqmovn_s16(vshrq_n_s16(vmlaq_n_s16(s63, fl, 27), 7)),
+         vqmovn_s16(vshrq_n_s16(vmlaq_n_s16(s63, fh, 27), 7)));
+   u18 = vcombine_s8(
+         vqmovn_s16(vshrq_n_s16(vmlaq_n_s16(s63, fl, 18), 7)),
+         vqmovn_s16(vshrq_n_s16(vmlaq_n_s16(s63, fh, 18), 7)));
+   u9  = vcombine_s8(
+         vqmovn_s16(vshrq_n_s16(vmlaq_n_s16(s63, fl, 9), 7)),
+         vqmovn_s16(vshrq_n_s16(vmlaq_n_s16(s63, fh, 9), 7)));
+   qs0 = vqsubq_s8(qs0, u27); ps0 = vqaddq_s8(ps0, u27);
+   qs1 = vqsubq_s8(qs1, u18); ps1 = vqaddq_s8(ps1, u18);
+   qs2 = vqsubq_s8(qs2, u9);  ps2 = vqaddq_s8(ps2, u9);
+   *q0 = veorq_u8(vreinterpretq_u8_s8(qs0), t80);
+   *p0 = veorq_u8(vreinterpretq_u8_s8(ps0), t80);
+   *q1 = veorq_u8(vreinterpretq_u8_s8(qs1), t80);
+   *p1 = veorq_u8(vreinterpretq_u8_s8(ps1), t80);
+   *q2 = veorq_u8(vreinterpretq_u8_s8(qs2), t80);
+   *p2 = veorq_u8(vreinterpretq_u8_s8(ps2), t80);
+}
+#endif /* RWEBP_LF_NEON */
+
+/* Walk one edge: n filtered positions, taps tp apart, positions sp apart.
+ * With SSE2 the whole edge (16 luma / 8 chroma positions) is filtered as
+ * one vector: a horizontal edge (tp==stride) loads each tap row
+ * directly; a vertical edge (tp==1) gathers the 8 taps of every
+ * position through a small transpose buffer. The scalar loop remains
+ * the fallback for other targets and odd call shapes. */
 static void vp8_nlf_edge(uint8_t *s, int tp, int sp, int n,
       int edge_lim, int lim, int thr, int is_mb)
 {
-   int i;
-   for (i = 0; i < n; i++)
+#if defined(RWEBP_LF_SSE2)
+   if ((n == 16 || n == 8) && tp != 1)
    {
-      int p3 = s[-4*tp], p2 = s[-3*tp], p1 = s[-2*tp], p0 = s[-1*tp];
-      int q0 = s[0],     q1 = s[1*tp],  q2 = s[2*tp],  q3 = s[3*tp];
-      int mask = vp8_nlf_mask(lim, edge_lim, p3, p2, p1, p0, q0, q1, q2, q3);
-      int hev  = vp8_nlf_hev(thr, p1, p0, q0, q1);
-      if (is_mb)
-         vp8_nlf_mb(mask, hev, s-3*tp, s-2*tp, s-1*tp, s, s+1*tp, s+2*tp);
+      /* Horizontal edge: tap rows are contiguous runs of n bytes. */
+      __m128i p3, p2, p1, p0, q0, q1, q2, q3, mv, hv;
+      uint8_t buf[16];
+      if (n == 16)
+      {
+         p3 = _mm_loadu_si128((const __m128i*)(s - 4*tp));
+         p2 = _mm_loadu_si128((const __m128i*)(s - 3*tp));
+         p1 = _mm_loadu_si128((const __m128i*)(s - 2*tp));
+         p0 = _mm_loadu_si128((const __m128i*)(s - 1*tp));
+         q0 = _mm_loadu_si128((const __m128i*)(s));
+         q1 = _mm_loadu_si128((const __m128i*)(s + 1*tp));
+         q2 = _mm_loadu_si128((const __m128i*)(s + 2*tp));
+         q3 = _mm_loadu_si128((const __m128i*)(s + 3*tp));
+      }
       else
-         vp8_nlf_inner(mask, hev, s-2*tp, s-1*tp, s, s+1*tp);
-      s += sp;
+      {
+         memset(buf, 0, sizeof(buf));
+#define RWEBP_LD8(v, off) do { memcpy(buf, s + (off)*tp, 8);          (v) = _mm_loadu_si128((const __m128i*)buf); } while (0)
+         RWEBP_LD8(p3, -4); RWEBP_LD8(p2, -3); RWEBP_LD8(p1, -2);
+         RWEBP_LD8(p0, -1); RWEBP_LD8(q0,  0); RWEBP_LD8(q1,  1);
+         RWEBP_LD8(q2,  2); RWEBP_LD8(q3,  3);
+#undef RWEBP_LD8
+      }
+      vp8_nlf_mask_hev_x(p3, p2, p1, p0, q0, q1, q2, q3,
+            lim, edge_lim, thr, &mv, &hv);
+      if (is_mb)
+         vp8_nlf_mb_x(mv, hv, &p2, &p1, &p0, &q0, &q1, &q2);
+      else
+         vp8_nlf_inner_x(mv, hv, &p1, &p0, &q0, &q1);
+      if (n == 16)
+      {
+         if (is_mb)
+         {
+            _mm_storeu_si128((__m128i*)(s - 3*tp), p2);
+            _mm_storeu_si128((__m128i*)(s + 2*tp), q2);
+         }
+         _mm_storeu_si128((__m128i*)(s - 2*tp), p1);
+         _mm_storeu_si128((__m128i*)(s - 1*tp), p0);
+         _mm_storeu_si128((__m128i*)(s),        q0);
+         _mm_storeu_si128((__m128i*)(s + 1*tp), q1);
+      }
+      else
+      {
+#define RWEBP_ST8(v, off) do { _mm_storeu_si128((__m128i*)buf, v);          memcpy(s + (off)*tp, buf, 8); } while (0)
+         if (is_mb) { RWEBP_ST8(p2, -3); RWEBP_ST8(q2, 2); }
+         RWEBP_ST8(p1, -2); RWEBP_ST8(p0, -1);
+         RWEBP_ST8(q0,  0); RWEBP_ST8(q1,  1);
+#undef RWEBP_ST8
+      }
+      return;
+   }
+   if ((n == 16 || n == 8) && tp == 1)
+   {
+      /* Vertical edge: gather the 8 taps of each position (transpose). */
+      uint8_t tmp[8][16];
+      int i, k;
+      __m128i p3, p2, p1, p0, q0, q1, q2, q3, mv, hv;
+      for (i = 0; i < n; i++)
+      {
+         const uint8_t *r = s + i*sp - 4;
+         for (k = 0; k < 8; k++)
+            tmp[k][i] = r[k];
+      }
+      for (; i < 16; i++)
+         for (k = 0; k < 8; k++)
+            tmp[k][i] = 0;
+      p3 = _mm_loadu_si128((const __m128i*)tmp[0]);
+      p2 = _mm_loadu_si128((const __m128i*)tmp[1]);
+      p1 = _mm_loadu_si128((const __m128i*)tmp[2]);
+      p0 = _mm_loadu_si128((const __m128i*)tmp[3]);
+      q0 = _mm_loadu_si128((const __m128i*)tmp[4]);
+      q1 = _mm_loadu_si128((const __m128i*)tmp[5]);
+      q2 = _mm_loadu_si128((const __m128i*)tmp[6]);
+      q3 = _mm_loadu_si128((const __m128i*)tmp[7]);
+      vp8_nlf_mask_hev_x(p3, p2, p1, p0, q0, q1, q2, q3,
+            lim, edge_lim, thr, &mv, &hv);
+      if (is_mb)
+         vp8_nlf_mb_x(mv, hv, &p2, &p1, &p0, &q0, &q1, &q2);
+      else
+         vp8_nlf_inner_x(mv, hv, &p1, &p0, &q0, &q1);
+      _mm_storeu_si128((__m128i*)tmp[1], p2);
+      _mm_storeu_si128((__m128i*)tmp[2], p1);
+      _mm_storeu_si128((__m128i*)tmp[3], p0);
+      _mm_storeu_si128((__m128i*)tmp[4], q0);
+      _mm_storeu_si128((__m128i*)tmp[5], q1);
+      _mm_storeu_si128((__m128i*)tmp[6], q2);
+      for (i = 0; i < n; i++)
+      {
+         uint8_t *r = s + i*sp - 4;
+         if (is_mb) { r[1] = tmp[1][i]; r[6] = tmp[6][i]; }
+         r[2] = tmp[2][i]; r[3] = tmp[3][i];
+         r[4] = tmp[4][i]; r[5] = tmp[5][i];
+      }
+      return;
+   }
+#endif /* RWEBP_LF_SSE2 */
+#if defined(RWEBP_LF_NEON)
+   if ((n == 16 || n == 8) && tp != 1)
+   {
+      uint8x16_t p3, p2, p1, p0, q0, q1, q2, q3, mv, hv;
+      uint8_t buf[16];
+      if (n == 16)
+      {
+         p3 = vld1q_u8(s - 4*tp); p2 = vld1q_u8(s - 3*tp);
+         p1 = vld1q_u8(s - 2*tp); p0 = vld1q_u8(s - 1*tp);
+         q0 = vld1q_u8(s);        q1 = vld1q_u8(s + 1*tp);
+         q2 = vld1q_u8(s + 2*tp); q3 = vld1q_u8(s + 3*tp);
+      }
+      else
+      {
+         memset(buf, 0, sizeof(buf));
+#define RWEBP_LD8N(v, off) do { memcpy(buf, s + (off)*tp, 8);          (v) = vld1q_u8(buf); } while (0)
+         RWEBP_LD8N(p3, -4); RWEBP_LD8N(p2, -3); RWEBP_LD8N(p1, -2);
+         RWEBP_LD8N(p0, -1); RWEBP_LD8N(q0,  0); RWEBP_LD8N(q1,  1);
+         RWEBP_LD8N(q2,  2); RWEBP_LD8N(q3,  3);
+#undef RWEBP_LD8N
+      }
+      vp8_nlf_mask_hev_n(p3, p2, p1, p0, q0, q1, q2, q3,
+            lim, edge_lim, thr, &mv, &hv);
+      if (is_mb)
+         vp8_nlf_mb_n(mv, hv, &p2, &p1, &p0, &q0, &q1, &q2);
+      else
+         vp8_nlf_inner_n(mv, hv, &p1, &p0, &q0, &q1);
+      if (n == 16)
+      {
+         if (is_mb) { vst1q_u8(s - 3*tp, p2); vst1q_u8(s + 2*tp, q2); }
+         vst1q_u8(s - 2*tp, p1); vst1q_u8(s - 1*tp, p0);
+         vst1q_u8(s,        q0); vst1q_u8(s + 1*tp, q1);
+      }
+      else
+      {
+#define RWEBP_ST8N(v, off) do { vst1q_u8(buf, v);          memcpy(s + (off)*tp, buf, 8); } while (0)
+         if (is_mb) { RWEBP_ST8N(p2, -3); RWEBP_ST8N(q2, 2); }
+         RWEBP_ST8N(p1, -2); RWEBP_ST8N(p0, -1);
+         RWEBP_ST8N(q0,  0); RWEBP_ST8N(q1,  1);
+#undef RWEBP_ST8N
+      }
+      return;
+   }
+   if ((n == 16 || n == 8) && tp == 1)
+   {
+      uint8_t tmp[8][16];
+      int i, k;
+      uint8x16_t p3, p2, p1, p0, q0, q1, q2, q3, mv, hv;
+      for (i = 0; i < n; i++)
+      {
+         const uint8_t *r = s + i*sp - 4;
+         for (k = 0; k < 8; k++)
+            tmp[k][i] = r[k];
+      }
+      for (; i < 16; i++)
+         for (k = 0; k < 8; k++)
+            tmp[k][i] = 0;
+      p3 = vld1q_u8(tmp[0]); p2 = vld1q_u8(tmp[1]);
+      p1 = vld1q_u8(tmp[2]); p0 = vld1q_u8(tmp[3]);
+      q0 = vld1q_u8(tmp[4]); q1 = vld1q_u8(tmp[5]);
+      q2 = vld1q_u8(tmp[6]); q3 = vld1q_u8(tmp[7]);
+      vp8_nlf_mask_hev_n(p3, p2, p1, p0, q0, q1, q2, q3,
+            lim, edge_lim, thr, &mv, &hv);
+      if (is_mb)
+         vp8_nlf_mb_n(mv, hv, &p2, &p1, &p0, &q0, &q1, &q2);
+      else
+         vp8_nlf_inner_n(mv, hv, &p1, &p0, &q0, &q1);
+      vst1q_u8(tmp[1], p2); vst1q_u8(tmp[2], p1);
+      vst1q_u8(tmp[3], p0); vst1q_u8(tmp[4], q0);
+      vst1q_u8(tmp[5], q1); vst1q_u8(tmp[6], q2);
+      for (i = 0; i < n; i++)
+      {
+         uint8_t *r = s + i*sp - 4;
+         if (is_mb) { r[1] = tmp[1][i]; r[6] = tmp[6][i]; }
+         r[2] = tmp[2][i]; r[3] = tmp[3][i];
+         r[4] = tmp[4][i]; r[5] = tmp[5][i];
+      }
+      return;
+   }
+#endif /* RWEBP_LF_NEON */
+   {
+      int i;
+      for (i = 0; i < n; i++)
+      {
+         int p3 = s[-4*tp], p2 = s[-3*tp], p1 = s[-2*tp], p0 = s[-1*tp];
+         int q0 = s[0],     q1 = s[1*tp],  q2 = s[2*tp],  q3 = s[3*tp];
+         int mask = vp8_nlf_mask(lim, edge_lim, p3, p2, p1, p0, q0, q1, q2, q3);
+         int hev  = vp8_nlf_hev(thr, p1, p0, q0, q1);
+         if (is_mb)
+            vp8_nlf_mb(mask, hev, s-3*tp, s-2*tp, s-1*tp, s, s+1*tp, s+2*tp);
+         else
+            vp8_nlf_inner(mask, hev, s-2*tp, s-1*tp, s, s+1*tp);
+         s += sp;
+      }
    }
 }
 
