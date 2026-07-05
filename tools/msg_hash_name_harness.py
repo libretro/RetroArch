@@ -77,7 +77,7 @@ def parse_enum_names(msg_hash_h):
                     if dskip: dskip.pop()
                     if len(dstack) > len(stack): dstack.pop()
                     continue
-                dm = re.match(r'S_(BOOL|UINT|INT|FLOAT|STRING|DIR)(_NS)?(_H)?\s*\(\s*\w+,\s*(\w+),', ds)
+                dm = re.match(r'S_(BOOL|UINT|INT|FLOAT|STRING_P|STRING|DIR|PATH_DS|PATH)(_NS)?(_H)?\s*\(\s*\w+,\s*(\w+),', ds)
                 if dm:
                     dg = tuple((g[0], g[1]) for g in dstack)
                     for pfx in ('MENU_ENUM_LABEL_', 'MENU_ENUM_SUBLABEL_',
