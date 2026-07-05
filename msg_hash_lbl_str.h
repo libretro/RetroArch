@@ -538,7 +538,6 @@
 #define MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP_STR "log_to_file_timestamp"
 #define MENU_ENUM_LABEL_MAIN_MENU_STR "main_menu"
 #define MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME_STR "rgui_menu_color_theme"
-#define MENU_ENUM_LABEL_OZONE_FONT_STR "ozone_font"
 #define MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME_STR "ozone_menu_color_theme"
 #define MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR_STR "ozone_collapse_sidebar"
 #define MENU_ENUM_LABEL_OZONE_SHOW_SIDEBAR_STR "ozone_show_sidebar"
