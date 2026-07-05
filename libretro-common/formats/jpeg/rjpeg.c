@@ -20,7 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Modified version of stb_image's JPEG sources. */
+/* Baseline and progressive JPEG decoder.
+ *
+ * Originally derived from stb_image's JPEG sources and since reworked
+ * for RetroArch: the decoder is driven incrementally (rjpeg_process_image
+ * yields between bounded row batches so a large image never blocks the
+ * caller for a whole decode), the hot IDCT / upsample / YCbCr-to-RGBA
+ * stages have SSE2 and NEON kernels selected at runtime, and the output
+ * pipeline is shared between the two drivers.
+ *
+ * The decode proceeds in the usual JPEG order:
+ *
+ *   markers  -> the segment parser (rjpeg_process_marker / frame / scan
+ *               headers) reads quantisation and Huffman tables and the
+ *               frame geometry;
+ *   entropy  -> rjpeg_parse_entropy_coded_data walks the MCUs, Huffman-
+ *               decoding coefficients into per-component blocks (with a
+ *               separate progressive-refinement path);
+ *   spatial  -> each 8x8 block is dequantised and run through the inverse
+ *               DCT back to pixels;
+ *   output   -> chroma planes are upsampled to full resolution and the
+ *               YCbCr samples are converted to BGRA/RGBA, one row at a
+ *               time (see the "Shared output pipeline" section).
+ */
 
 #include <stdint.h>
 #include <stdarg.h>
@@ -34,20 +56,12 @@
 #include <formats/rjpeg.h>
 #include <features/features_cpu.h>
 
-enum
-{
-   RJPEG_DEFAULT = 0, /* only used for req_comp */
-   RJPEG_GREY,
-   RJPEG_GREY_ALPHA,
-   RJPEG_RGB,
-   RJPEG_RGB_ALPHA
-};
-
+/* Header-parse modes for rjpeg_decode_jpeg_header: SCAN_LOAD parses and
+ * keeps the tables for a full decode; SCAN_TYPE only sniffs geometry. */
 enum
 {
    RJPEG_SCAN_LOAD = 0,
-   RJPEG_SCAN_TYPE,
-   RJPEG_SCAN_HEADER
+   RJPEG_SCAN_TYPE
 };
 
 typedef uint8_t *(*rjpeg_resample_row_func)(uint8_t *out, uint8_t *in0, uint8_t *in1,
@@ -89,12 +103,9 @@ struct rjpeg_jpeg_s;
 struct rjpeg_process
 {
    struct rjpeg_jpeg_s  *j;            /* heap-allocated decode state           */
-   uint8_t          *output;       /* output pixel buffer (n * w * h)       */
+   uint8_t          *output;       /* output pixel buffer (4 * w * h)       */
    rjpeg_resample    res_comp[4];  /* per-component resample state          */
-   uint8_t          *coutput[4];   /* per-component line pointers           */
    unsigned          cur_row;      /* current output row during resample    */
-   int               n;            /* output components (always 4)          */
-   int               decode_n;     /* components to actually decode         */
    enum rjpeg_phase  phase;
 };
 
@@ -131,15 +142,11 @@ struct rjpeg
    bool                    supports_rgba;
 };
 
-#ifdef _MSC_VER
-#define RJPEG_HAS_LROTL
-#endif
-
-#ifdef RJPEG_HAS_LROTL
-   #define RJPEG_LROT(x,y)  _lrotl(x,y)
-#else
-   #define RJPEG_LROT(x,y)  (((x) << (y)) | ((x) >> (32 - (y))))
-#endif
+/* 32-bit rotate-left, recognised as a single ROL instruction by GCC,
+ * Clang and MSVC.  Every caller guards the bit count so that y >= 1
+ * (a zero-length receive is skipped upstream), keeping the (32 - y)
+ * shift in range. */
+#define RJPEG_LROT(x,y)  (((x) << (y)) | ((x) >> (32 - (y))))
 
 /* x86/x64 detection */
 #if defined(__SSE2__)
@@ -291,6 +298,9 @@ static INLINE uint32_t rjpeg_get16be(rjpeg_jpeg *s)
    hi = RJPEG_GET8(s);
    return (hi << 8) | RJPEG_GET8(s);
 }
+
+/* Output rows emitted per rjpeg_process_image call while resampling. */
+#define RJPEG_ROWS_PER_CALL 8
 
 #define RJPEG_F2F(x)  ((int) (((x) * 4096 + 0.5)))
 #define RJPEG_FSH(x)  ((x) << 12)
@@ -809,6 +819,9 @@ static INLINE int rjpeg_jpeg_decode_block(
  * that decode_block wrote to.  data[0] (DC) is always written and always
  * needs zeroing.  AC positions are at dezigzag[1..k_end-1].
  * For DC-only blocks (k_end==1), only data[0] is zeroed — no loop. */
+/* Zero the AC coefficients [k_end, 64) of a block that ended early via
+ * an end-of-block Huffman symbol, leaving the already-written low
+ * coefficients intact before the inverse DCT. */
 static INLINE void rjpeg_block_cleanup(short data[64], int k_end)
 {
    int k;
@@ -3987,31 +4000,104 @@ bool rjpeg_is_valid(rjpeg_t *rjpeg)
  * those rows into the BGRA output buffer.
  *
  * max_row = min(img_y, (mcu_row+1) * v_max * 8) -- clamp to image height. */
-static void rjpeg_iterate_resample_rows(rjpeg_t *rjpeg, unsigned max_row)
+/* -----------------------------------------------------------------------
+ * Shared output pipeline
+ *
+ * Both decode drivers - the fused iterate path (rjpeg_iterate_image)
+ * and the phase machine in rjpeg_process_image - finish the same way:
+ * per-component chroma upsampling followed by YCbCr-to-BGRA conversion,
+ * one output row at a time.  The two helpers below are that pipeline;
+ * the drivers differ only in where the cursor and buffers live and in
+ * how many rows they emit per call.  Output is always 4 bytes per pixel
+ * (BGRA, or RGBA when supports_rgba is set).
+ * ----------------------------------------------------------------------- */
+
+/* Set up per-component resample state after the frame header has been
+ * parsed.  hs/vs are the horizontal/vertical subsample factors relative
+ * to the largest component (1 or 2 for all common JPEGs; anything else
+ * falls back to the generic box resampler).  Returns 0 on allocation
+ * failure. */
+static int rjpeg_resample_setup(rjpeg_jpeg *j, rjpeg_resample *res)
 {
-   rjpeg_jpeg *z = rjpeg->iter_j;
+   int k;
+   int decode_n = (j->img_n >= 3) ? 3 : j->img_n;
+
+   for (k = 0; k < decode_n; ++k)
+   {
+      rjpeg_resample *r = &res[k];
+
+      /* Resample scratch for one upsampled row.  Normally this points
+       * into the component arena; the malloc is a fallback so the
+       * pipeline never dereferences NULL if the arena was bypassed. */
+      if (!j->img_comp[k].linebuf)
+      {
+         j->img_comp[k].linebuf = (uint8_t *) malloc(j->img_x + 3);
+         if (!j->img_comp[k].linebuf)
+            return 0;
+      }
+
+      r->hs       = j->img_h_max / j->img_comp[k].h;
+      r->vs       = j->img_v_max / j->img_comp[k].v;
+      r->ystep    = r->vs >> 1;
+      r->w_lores  = (j->img_x + r->hs - 1) / r->hs;
+      r->ypos     = 0;
+      r->line0    = r->line1 = j->img_comp[k].data;
+      r->resample = rjpeg_resample_row_generic;
+
+      if      (r->hs == 1 && r->vs == 1)
+         r->resample = rjpeg_resample_row_1;
+      else if (r->hs == 1 && r->vs == 2)
+         r->resample = rjpeg_resample_row_v_2;
+      else if (r->hs == 2 && r->vs == 1)
+         r->resample = rjpeg_resample_row_h_2;
+      else if (r->hs == 2 && r->vs == 2)
+         r->resample = j->resample_row_hv_2_kernel;
+   }
+   return 1;
+}
+
+/* Emit output rows until *cur_row reaches stop_row (clamped to the
+ * image height), advancing the per-component resample cursors.
+ *
+ * For the dominant 4:2:0 colour case a fused kernel upsamples chroma
+ * and colour-converts in one pass, so the Cb/Cr rows are never
+ * materialised; the fused near/far row pointers must be captured
+ * BEFORE the resample loop advances ystep, which is why they are
+ * computed up front.  Grayscale replicates Y into all three channels.
+ * The alpha byte is always 0xFF. */
+static void rjpeg_output_rows(rjpeg_jpeg *z, rjpeg_resample *res,
+      uint8_t *output, unsigned *cur_row, unsigned stop_row,
+      bool supports_rgba)
+{
    uint8_t *coutput[4];
    int decode_n = (z->img_n >= 3) ? 3 : z->img_n;
 
-   while (rjpeg->iter_out_row < max_row)
+   /* use_fused depends only on the frame geometry and the selected
+    * kernel, all fixed once the header is parsed, so it is constant for
+    * every row in the image - hoist it out of the row loop. */
+   int use_fused = (z->img_n == 3
+         && z->upsample_YCbCr_to_BGRA_kernel
+         && decode_n >= 3
+         && res[1].hs == 2
+         && res[1].vs == 2);
+
+   if (stop_row > z->img_y)
+      stop_row = z->img_y;
+
+   while (*cur_row < stop_row)
    {
       int k;
-      unsigned jj  = rjpeg->iter_out_row;
-      uint8_t *out = rjpeg->iter_output + 4 * z->img_x * jj;
+      unsigned jj  = *cur_row;
+      uint8_t *out = output + (size_t)4 * z->img_x * jj;
 
-      int use_fused = (z->img_n == 3
-            && z->upsample_YCbCr_to_BGRA_kernel
-            && decode_n >= 3
-            && rjpeg->iter_res[1].hs == 2
-            && rjpeg->iter_res[1].vs == 2);
       int fused_y_bot1 = 0, fused_y_bot2 = 0;
       uint8_t *fused_cb_near = NULL, *fused_cb_far = NULL;
       uint8_t *fused_cr_near = NULL, *fused_cr_far = NULL;
 
       if (use_fused)
       {
-         rjpeg_resample *r1 = &rjpeg->iter_res[1];
-         rjpeg_resample *r2 = &rjpeg->iter_res[2];
+         rjpeg_resample *r1 = &res[1];
+         rjpeg_resample *r2 = &res[2];
          fused_y_bot1 = r1->ystep >= (r1->vs >> 1);
          fused_y_bot2 = r2->ystep >= (r2->vs >> 1);
          fused_cb_near = fused_y_bot1 ? r1->line1 : r1->line0;
@@ -4022,9 +4108,11 @@ static void rjpeg_iterate_resample_rows(rjpeg_t *rjpeg, unsigned max_row)
 
       for (k = 0; k < decode_n; ++k)
       {
-         rjpeg_resample *r = &rjpeg->iter_res[k];
+         rjpeg_resample *r = &res[k];
          int y_bot = r->ystep >= (r->vs >> 1);
 
+         /* When the fused kernel handles Cb/Cr, skip their resample;
+          * Y (k==0) still runs so out gets its zero-copy row pointer. */
          if (use_fused && k >= 1)
             coutput[k] = NULL;
          else
@@ -4052,34 +4140,43 @@ static void rjpeg_iterate_resample_rows(rjpeg_t *rjpeg, unsigned max_row)
                z->upsample_YCbCr_to_BGRA_kernel(out, y,
                      fused_cb_near, fused_cb_far,
                      fused_cr_near, fused_cr_far,
-                     rjpeg->iter_res[1].w_lores, z->img_x,
-                     rjpeg->supports_rgba);
+                     res[1].w_lores, z->img_x,
+                     supports_rgba);
             }
             else
             {
                z->YCbCr_to_RGB_kernel(out, y, coutput[1],
                      coutput[2], z->img_x, 4,
-                     rjpeg->supports_rgba);
+                     supports_rgba);
             }
          }
       }
       else
       {
+         /* Grayscale: replicate luma into R, G and B.  The three colour
+          * bytes are equal so byte order does not matter, and alpha is
+          * constant, so each pixel is a single 32-bit store. */
          uint8_t *y = coutput[0];
          if (y)
          {
+            uint32_t *out32 = (uint32_t *)out;
             unsigned i;
             for (i = 0; i < z->img_x; ++i)
             {
-               out[0] = out[1] = out[2] = y[i];
-               out[3] = 255;
-               out += 4;
+               uint32_t g = y[i];
+               out32[i] = 0xFF000000u | (g << 16) | (g << 8) | g;
             }
          }
       }
 
-      rjpeg->iter_out_row++;
+      (*cur_row)++;
    }
+}
+
+static void rjpeg_iterate_resample_rows(rjpeg_t *rjpeg, unsigned max_row)
+{
+   rjpeg_output_rows(rjpeg->iter_j, rjpeg->iter_res, rjpeg->iter_output,
+         &rjpeg->iter_out_row, max_row, rjpeg->supports_rgba);
 }
 
 /* Initialize the fused iterate+resample state after the header is parsed.
@@ -4087,29 +4184,9 @@ static void rjpeg_iterate_resample_rows(rjpeg_t *rjpeg, unsigned max_row)
 static int rjpeg_iterate_init_resample(rjpeg_t *rjpeg)
 {
    rjpeg_jpeg *j = rjpeg->iter_j;
-   int k;
 
-   for (k = 0; k < j->img_n; ++k)
-   {
-      rjpeg_resample *r = &rjpeg->iter_res[k];
-
-      r->hs       = j->img_h_max / j->img_comp[k].h;
-      r->vs       = j->img_v_max / j->img_comp[k].v;
-      r->ystep    = r->vs >> 1;
-      r->w_lores  = (j->img_x + r->hs - 1) / r->hs;
-      r->ypos     = 0;
-      r->line0    = r->line1 = j->img_comp[k].data;
-      r->resample = rjpeg_resample_row_generic;
-
-      if      (r->hs == 1 && r->vs == 1)
-         r->resample = rjpeg_resample_row_1;
-      else if (r->hs == 1 && r->vs == 2)
-         r->resample = rjpeg_resample_row_v_2;
-      else if (r->hs == 2 && r->vs == 1)
-         r->resample = rjpeg_resample_row_h_2;
-      else if (r->hs == 2 && r->vs == 2)
-         r->resample = j->resample_row_hv_2_kernel;
-   }
+   if (!rjpeg_resample_setup(j, rjpeg->iter_res))
+      return 0;
 
    /* (size_t) casts: img_x and img_y are uint32_t.  Even with the
     * 0x4000 cap above this only matters on 32-bit hosts, but the
@@ -4493,7 +4570,6 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
     * ----------------------------------------------------------- */
    if (!rjpeg->process)
    {
-      int k;
       struct rjpeg_process *proc = NULL;
       rjpeg_jpeg    *j    = NULL;
 
@@ -4573,53 +4649,15 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
 
       proc->j = j;
 
-      /* Determine actual number of components to generate */
-      proc->n       = 4; /* always request RGBA */
-
-      if (j->img_n == 3 && proc->n < 3)
-         proc->decode_n = 1;
-      else
-         proc->decode_n = j->img_n;
-
-      /* Set up per-component resample state */
-      for (k = 0; k < proc->decode_n; ++k)
+      if (!rjpeg_resample_setup(j, proc->res_comp))
       {
-         rjpeg_resample *r = &proc->res_comp[k];
-
-         /* allocate line buffer big enough for upsampling off the edges
-          * with upsample factor of 4.  If the arena already allocated
-          * linebuf (it points into comp_arena), skip the malloc. */
-         if (!j->img_comp[k].linebuf)
-         {
-            j->img_comp[k].linebuf = (uint8_t *) malloc(j->img_x + 3);
-            if (!j->img_comp[k].linebuf)
-            {
-               rjpeg_process_free(proc);
-               return IMAGE_PROCESS_ERROR;
-            }
-         }
-
-         r->hs       = j->img_h_max / j->img_comp[k].h;
-         r->vs       = j->img_v_max / j->img_comp[k].v;
-         r->ystep    = r->vs >> 1;
-         r->w_lores  = (j->img_x + r->hs-1) / r->hs;
-         r->ypos     = 0;
-         r->line0    = r->line1 = j->img_comp[k].data;
-         r->resample = rjpeg_resample_row_generic;
-
-         if      (r->hs == 1 && r->vs == 1)
-            r->resample = rjpeg_resample_row_1;
-         else if (r->hs == 1 && r->vs == 2)
-            r->resample = rjpeg_resample_row_v_2;
-         else if (r->hs == 2 && r->vs == 1)
-            r->resample = rjpeg_resample_row_h_2;
-         else if (r->hs == 2 && r->vs == 2)
-            r->resample = j->resample_row_hv_2_kernel;
+         rjpeg_process_free(proc);
+         return IMAGE_PROCESS_ERROR;
       }
 
-      /* Allocate output buffer */
+      /* Allocate output buffer (always 4 bytes per pixel) */
       proc->output = (uint8_t *) malloc(
-            (size_t)proc->n * (size_t)j->img_x * (size_t)j->img_y);
+            (size_t)4 * (size_t)j->img_x * (size_t)j->img_y);
       if (!proc->output)
       {
          rjpeg_process_free(proc);
@@ -4646,129 +4684,18 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
    if (rjpeg->process->phase == RJPEG_PHASE_RESAMPLE)
    {
       struct rjpeg_process *proc = rjpeg->process;
-      rjpeg_jpeg           *z   = proc->j;
-      unsigned          rows_done = 0;
-
-      /* Process up to 8 rows per call. 8 rows at ~6 us/row (1080p) ~ 50 us,
-       * well within any reasonable frame budget while cutting call count
-       * from ~1080 to ~135 for 1080p images. */
-      #define RJPEG_ROWS_PER_CALL 8
+      rjpeg_jpeg           *z    = proc->j;
 
       *width  = z->img_x;
       *height = z->img_y;
 
-      while (proc->cur_row < z->img_y && rows_done < RJPEG_ROWS_PER_CALL)
-      {
-         int k;
-         unsigned jj  = proc->cur_row;
-         uint8_t *out = proc->output + proc->n * z->img_x * jj;
-
-         /* Determine if we can use the fused upsample+colorconvert path
-          * for this row.  Must be computed BEFORE the resample loop
-          * advances ystep. */
-         int use_fused = (proc->n >= 3 && z->img_n == 3
-               && z->upsample_YCbCr_to_BGRA_kernel
-               && proc->decode_n >= 3
-               && proc->res_comp[1].hs == 2
-               && proc->res_comp[1].vs == 2);
-         int fused_y_bot1 = 0, fused_y_bot2 = 0;
-         uint8_t *fused_cb_near = NULL, *fused_cb_far = NULL;
-         uint8_t *fused_cr_near = NULL, *fused_cr_far = NULL;
-
-         if (use_fused)
-         {
-            rjpeg_resample *r1 = &proc->res_comp[1];
-            rjpeg_resample *r2 = &proc->res_comp[2];
-            fused_y_bot1 = r1->ystep >= (r1->vs >> 1);
-            fused_y_bot2 = r2->ystep >= (r2->vs >> 1);
-            fused_cb_near = fused_y_bot1 ? r1->line1 : r1->line0;
-            fused_cb_far  = fused_y_bot1 ? r1->line0 : r1->line1;
-            fused_cr_near = fused_y_bot2 ? r2->line1 : r2->line0;
-            fused_cr_far  = fused_y_bot2 ? r2->line0 : r2->line1;
-         }
-
-         for (k = 0; k < proc->decode_n; ++k)
-         {
-            rjpeg_resample *r = &proc->res_comp[k];
-            int         y_bot = r->ystep >= (r->vs >> 1);
-
-            /* Skip the actual Cb/Cr resample when the fused kernel
-             * will do the upsample+colorconvert in one shot.
-             * Y (k==0) still needs resample_row_1 for the zero-copy ptr. */
-            if (use_fused && k >= 1)
-               proc->coutput[k] = NULL; /* not used */
-            else
-               proc->coutput[k]  = r->resample(z->img_comp[k].linebuf,
-                     y_bot ? r->line1 : r->line0,
-                     y_bot ? r->line0 : r->line1,
-                     r->w_lores, r->hs);
-
-            if (++r->ystep >= r->vs)
-            {
-               r->ystep = 0;
-               r->line0 = r->line1;
-               if (++r->ypos < z->img_comp[k].y)
-                  r->line1 += z->img_comp[k].w2;
-            }
-         }
-
-         if (proc->n >= 3)
-         {
-            uint8_t *y = proc->coutput[0];
-            if (y)
-            {
-               if (z->img_n == 3)
-               {
-                  if (use_fused)
-                  {
-                     z->upsample_YCbCr_to_BGRA_kernel(out, y,
-                           fused_cb_near, fused_cb_far,
-                           fused_cr_near, fused_cr_far,
-                           proc->res_comp[1].w_lores, z->img_x,
-                           rjpeg->supports_rgba);
-                  }
-                  else
-                  {
-                     z->YCbCr_to_RGB_kernel(out, y, proc->coutput[1],
-                           proc->coutput[2], z->img_x, proc->n,
-                           rjpeg->supports_rgba);
-                  }
-               }
-               else
-               {
-                  unsigned i;
-                  for (i = 0; i < z->img_x; ++i)
-                  {
-                     out[0]  = out[1] = out[2] = y[i];
-                     out[3]  = 255; /* not used if n==3 */
-                     out    += proc->n;
-                  }
-               }
-            }
-         }
-         else
-         {
-            uint8_t *y = proc->coutput[0];
-            if (proc->n == 1)
-            {
-               unsigned i;
-               for (i = 0; i < z->img_x; ++i)
-                  out[i] = y[i];
-            }
-            else
-            {
-               unsigned i;
-               for (i = 0; i < z->img_x; ++i)
-               {
-                  *out++ = y[i];
-                  *out++ = 255;
-               }
-            }
-         }
-
-         proc->cur_row++;
-         rows_done++;
-      }
+      /* Emit a bounded batch of rows through the shared pipeline.
+       * 8 rows at ~6 us/row (1080p) ~ 50 us per call - well within any
+       * frame budget while cutting the call count from ~1080 to ~135
+       * for 1080p images. */
+      rjpeg_output_rows(z, proc->res_comp, proc->output,
+            &proc->cur_row, proc->cur_row + RJPEG_ROWS_PER_CALL,
+            rjpeg->supports_rgba);
 
       if (proc->cur_row < z->img_y)
          return IMAGE_PROCESS_NEXT;
