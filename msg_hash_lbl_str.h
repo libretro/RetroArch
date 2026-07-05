@@ -583,7 +583,6 @@
 #define MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY_STR "menu_wallpaper_opacity"
 #define MENU_ENUM_LABEL_MOUSE_ENABLE_STR "menu_mouse_enable"
 #define MENU_ENUM_LABEL_MUSIC_TAB_STR "music_tab"
-#define MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND_STR "menu_navigation_wraparound_enable"
 #define MENU_ENUM_LABEL_NETPLAY_STR "netplay"
 #define MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES_STR "netplay_check_frames"
 #define MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_I_STR "netplay_request_device_%u"
