@@ -396,7 +396,6 @@
 #define MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS_STR "core_info_savestate_bypass"
 #define MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN_STR "dummy_on_core_shutdown"
 #define MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT_STR "always_reload_core_on_run_content"
-#define MENU_ENUM_LABEL_DYNAMIC_WALLPAPER_STR "menu_dynamic_wallpaper_enable"
 #define MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY_STR "dynamic_wallpapers_directory"
 #define MENU_ENUM_LABEL_FASTFORWARD_RATIO_STR "fastforward_ratio"
 #define MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP_STR "fastforward_frameskip"
