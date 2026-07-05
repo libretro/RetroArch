@@ -1060,7 +1060,6 @@
 #define MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES_FIRST_STR "content_show_favorites_first"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES_STR "content_show_images"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC_STR "content_show_music"
-#define MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD_STR "content_show_settings_password"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO_STR "content_show_video"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY_STR "content_show_netplay"
 #define MENU_ENUM_LABEL_XMB_LAYOUT_STR "xmb_layout"
