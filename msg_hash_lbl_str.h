@@ -1409,7 +1409,6 @@
 #define MENU_ENUM_LABEL_AI_SERVICE_ENABLE_STR "ai_service_enable"
 #define MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG_STR "ai_service_target_lang"
 #define MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG_STR "ai_service_source_lang"
-#define MENU_ENUM_LABEL_SETTINGS_SHOW_STEAM_STR "settings_show_steam"
 #define MENU_ENUM_LABEL_DELETE_PLAYLIST_STR "delete_playlist"
 #define MENU_ENUM_LABEL_LOCALAP_ENABLE_STR "localap_enable"
 #define MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE_STR "driver_switch_enable"
