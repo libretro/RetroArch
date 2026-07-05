@@ -12145,7 +12145,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS_STR)
-                  || string_is_equal(label, MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS_STR)
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;
