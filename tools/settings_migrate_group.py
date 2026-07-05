@@ -49,12 +49,27 @@ def defs(mk):
 ms = open('menu/menu_setting.c').read()
 tm = re.search(r'static const setting_desc_t %s\[\] = \{\n(.*?)\n( *)\};' % TABLE, ms, re.S)
 assert tm, TABLE
+def _negate_guard(g):
+    body = g.strip()
+    if body.startswith('#ifdef'):
+        return '#if !defined(%s)' % body.split()[1]
+    if body.startswith('#ifndef'):
+        return '#if defined(%s)' % body.split()[1]
+    return '#if !(%s)' % body[len('#if'):].strip()
+
 def guard_at(text, pos):
+    """Enclosing guard stack, else-aware: a position inside the #else
+    branch carries the negation of the branch condition. Blindness to
+    #else prepended '(HAVE_LAKKA || HAVE_ODROIDGO2)' to the
+    restart-visibility row that actually lives in that conditional's
+    else branch."""
     stack = []
     for gl in re.finditer(r'^[ \t]*#(if\w*[^\n]*|else|endif)', text[:pos], re.M):
         s = gl.group(1)
         if s.startswith('if'):
             stack.append('#' + s.strip())
+        elif s.startswith('else') and stack:
+            stack[-1] = _negate_guard(stack[-1])
         elif s.startswith('endif') and stack:
             stack.pop()
     return tuple(stack)
