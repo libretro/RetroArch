@@ -26,12 +26,7 @@
 #define STBI_NO_PNM
 #endif
 #define STBI_SUPPORT_ZLIB
-
-#ifdef RARCH_INTERNAL
-#include "../../deps/stb/stb_image.h"
-#else
-#include <stb_image.h>
-#endif
+#include "stb_image.h"
 #else
 #include <formats/image.h>
 #endif
