@@ -1813,7 +1813,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("core_info_cache_enable",        &settings->bools.core_info_cache_enable, true, DEFAULT_CORE_INFO_CACHE_ENABLE, false);
 #endif
    SETTING_BOOL("core_set_supports_no_game_enable", &settings->bools.set_supports_no_game_enable, true, true, false);
-   SETTING_BOOL("core_updater_auto_backup",      &settings->bools.core_updater_auto_backup, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP, false);
 #ifndef HAVE_DYNAMIC
    SETTING_BOOL("always_reload_core_on_run_content", &settings->bools.always_reload_core_on_run_content, true, DEFAULT_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT, false);
 #endif
@@ -1955,6 +1954,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
@@ -2382,6 +2382,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
@@ -2769,6 +2770,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
@@ -3131,6 +3133,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
