@@ -118,7 +118,6 @@
 #define MENU_ENUM_LABEL_TIMEZONE_STR "timezone"
 #define MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL_STR "buildbot_assets_url"
 #define MENU_ENUM_LABEL_CACHE_DIRECTORY_STR "cache_directory"
-#define MENU_ENUM_LABEL_CAMERA_ALLOW_STR "camera_allow"
 #define MENU_ENUM_LABEL_DISCORD_ALLOW_STR "discord_allow"
 #define MENU_ENUM_LABEL_CAMERA_DRIVER_STR "camera_driver"
 #define MENU_ENUM_LABEL_BLUETOOTH_DRIVER_STR "bluetooth_driver"
