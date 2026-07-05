@@ -1048,7 +1048,6 @@
 #define MENU_ENUM_LABEL_MENU_FONT_COLOR_RED_STR "menu_font_color_red"
 #define MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN_STR "menu_font_color_green"
 #define MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE_STR "menu_font_color_blue"
-#define MENU_ENUM_LABEL_XMB_FONT_STR "xmb_font"
 #define MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS_STR "xmb_main_menu_enable_settings"
 #define MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME_STR "xmb_menu_color_theme"
 #define MENU_ENUM_LABEL_XMB_RIBBON_ENABLE_STR "xmb_ribbon_enable"
