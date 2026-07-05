@@ -1456,7 +1456,6 @@
 #define MENU_ENUM_LABEL_MIXER_ACTION_STOP_STR "mixer_action_stop"
 #define MENU_ENUM_LABEL_MIXER_ACTION_REMOVE_STR "mixer_action_remove"
 #define MENU_ENUM_LABEL_MIXER_ACTION_VOLUME_STR "mixer_action_volume"
-#define MENU_ENUM_LABEL_GAMEMODE_ENABLE_STR "game_mode_enable"
 #define MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS_STR "core_game_ai_options"
 #define MENU_ENUM_LABEL_QUICK_MENU_SHOW_GAME_AI_STR "quick_menu_show_game_ai"
 #define MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P1_STR "game_ai_override_p1"
