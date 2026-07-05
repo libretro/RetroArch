@@ -204,7 +204,13 @@ for k, f, T, a in rows:
             if g.startswith('#ifndef '):
                 return '!defined(%s)' % g[len('#ifndef '):].strip()
             return g[len('#if '):].strip()
-        cond   = ' && '.join(_cond(g) for g in gs)
+        # Parenthesize each guard level: an OR inside one level must
+        # not associate with the && joining the levels - unbracketed,
+        # 'A || B' && 'C' parses as A || (B && C), which eliminated
+        # the restart-visibility row in every non-Lakka menu pass.
+        cond   = ' && '.join(
+            ('(%s)' % _cond(g)) if ('||' in _cond(g) or '&&' in _cond(g))
+            else _cond(g) for g in gs)
         gopen  = '\n'.join(gs)
         gclose = '\n'.join('#endif' for _ in gs)
         us_g  = guard_of(open('intl/msg_hash_us.h').read(), r'MENU_ENUM_LABEL_VALUE_%s,' % T)
