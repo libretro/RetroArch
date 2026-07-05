@@ -3251,6 +3251,115 @@ static uint32_t vita2d_get_flags(void *data)
    return flags;
 }
 
+/* --- GPU-native BCn compressed-texture upload --- */
+/* The Vita GPU (SGX543) samples UBC1/UBC2/UBC3, which are exactly
+ * BC1/BC2/BC3 (DXT1/DXT3/DXT5).  Nothing above BC3 exists here (no UBC for
+ * BC6H/BC7, and UBC4/UBC5 are single/two-channel only). */
+static bool vita2d_bc_to_ubc(enum texture_gpu_format fmt,
+      SceGxmTextureFormat *out, unsigned *block_bytes)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1:
+         *out = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR; *block_bytes = 8;  return true;
+      case TEXTURE_GPU_FORMAT_BC2:
+         *out = SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR; *block_bytes = 16; return true;
+      case TEXTURE_GPU_FORMAT_BC3:
+         *out = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR; *block_bytes = 16; return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+static bool vita2d_supports_texture_format(void *data,
+      enum texture_gpu_format fmt)
+{
+   SceGxmTextureFormat gxm;
+   unsigned bb;
+   (void)data;
+   return vita2d_bc_to_ubc(fmt, &gxm, &bb);
+}
+
+static uintptr_t vita2d_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   vita2d_texture      *texture;
+   void                *tex_data;
+   SceGxmTextureFormat  gxm_fmt   = 0;
+   unsigned             block_bytes = 16;
+   unsigned             i;
+   size_t               total     = 0;
+   size_t               off       = 0;
+   int                  err;
+
+   (void)video_data;
+   (void)threaded;
+
+   if (!tc || tc->num_mips == 0)
+      return 0;
+   if (!vita2d_bc_to_ubc(tc->format, &gxm_fmt, &block_bytes))
+      return 0;
+   if (tc->mips[0].width > GXM_TEX_MAX_SIZE || tc->mips[0].height > GXM_TEX_MAX_SIZE)
+      return 0;
+
+   if (!(texture = malloc(sizeof(*texture))))
+      return 0;
+   memset(texture, 0, sizeof(*texture));
+
+   for (i = 0; i < tc->num_mips; i++)
+      total += tc->mips[i].size;
+
+   tex_data = gpu_alloc(
+         MemBlockType,
+         total,
+         SCE_GXM_TEXTURE_ALIGNMENT,
+         SCE_GXM_MEMORY_ATTRIB_READ,
+         &texture->data_UID);
+
+   if (!tex_data)
+   {
+      free(texture);
+      return 0;
+   }
+
+   /* Mip chain is copied contiguously; block-compressed layout is derived
+    * by GXM from the UBC format + dimensions. */
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      memcpy((uint8_t*)tex_data + off, tc->mips[i].data, tc->mips[i].size);
+      off += tc->mips[i].size;
+   }
+
+   /* NOTE: block-compressed data is uploaded with the linear initialiser,
+    * mirroring the driver's uncompressed path.  If UBC textures come out
+    * twiddled on real hardware, GXM wants the swizzled layout instead --
+    * switch to sceGxmTextureInitSwizzled() and Morton-order the blocks.
+    * This is the one thing that cannot be settled by a compile check. */
+   err = sceGxmTextureInitLinear(
+         &texture->gxm_tex,
+         tex_data,
+         gxm_fmt,
+         tc->mips[0].width,
+         tc->mips[0].height,
+         (tc->num_mips > 0) ? (tc->num_mips - 1) : 0);
+
+   if (err < 0)
+   {
+      vita2d_free_texture(texture);
+      return 0;
+   }
+
+   if (     filter_type == TEXTURE_FILTER_MIPMAP_LINEAR
+         || filter_type == TEXTURE_FILTER_LINEAR)
+      vita2d_texture_set_filters(texture,
+            SCE_GXM_TEXTURE_FILTER_LINEAR,
+            SCE_GXM_TEXTURE_FILTER_LINEAR);
+
+   return (uintptr_t)texture;
+}
+
 static const video_poke_interface_t vita_poke_interface = {
    vita2d_get_flags,
    vita2d_load_texture,
@@ -3277,7 +3386,9 @@ static const video_poke_interface_t vita_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   vita2d_supports_texture_format,
+   vita2d_load_texture_compressed
 };
 
 static void vita2d_get_poke_interface(void *data,
