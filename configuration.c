@@ -1958,6 +1958,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_dir_user.h"
 #include "settings/settings_def_dir_core.h"
 #include "settings/settings_def_dir_cache_log.h"
 #include "settings/settings_def_cloud_sync_s3.h"
@@ -2401,6 +2402,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_dir_user.h"
 #include "settings/settings_def_dir_core.h"
 #include "settings/settings_def_dir_cache_log.h"
 #include "settings/settings_def_cloud_sync_s3.h"
@@ -2803,6 +2805,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_dir_user.h"
 #include "settings/settings_def_dir_core.h"
 #include "settings/settings_def_dir_cache_log.h"
 #include "settings/settings_def_cloud_sync_s3.h"
@@ -3181,6 +3184,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_dir_user.h"
 #include "settings/settings_def_dir_core.h"
 #include "settings/settings_def_dir_cache_log.h"
 #include "settings/settings_def_cloud_sync_s3.h"
@@ -3359,6 +3363,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_dir_user.h"
 #include "settings/settings_def_dir_core.h"
 #include "settings/settings_def_dir_cache_log.h"
 #include "settings/settings_def_cloud_sync_s3.h"

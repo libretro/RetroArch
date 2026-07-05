@@ -20543,56 +20543,44 @@ static bool setting_append_list(
          }
          {
             static const setting_desc_t dir_desc_1[] = {
-#ifdef HAVE_OVERLAY
-               SDESC_DIR_ROW(directory_overlay, OVERLAY_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_OVERLAY],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_osk_overlay, OSK_OVERLAY_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-#endif
-               SDESC_DIR_ROW(directory_screenshot, SCREENSHOT_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                     DIRECTORY_CONTENT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_autoconfig, JOYPAD_AUTOCONFIG_DIR,
-                     g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_input_remapping, INPUT_REMAPPING_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_REMAP],
-                     DIRECTORY_NONE, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_playlist, PLAYLIST_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_content_favorites, CONTENT_FAVORITES_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_CONTENT_FAVORITES],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_content_history, CONTENT_HISTORY_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_content_image_history, CONTENT_IMAGE_HISTORY_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_CONTENT_IMAGE_HISTORY],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_content_music_history, CONTENT_MUSIC_HISTORY_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_CONTENT_MUSIC_HISTORY],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_content_video_history, CONTENT_VIDEO_HISTORY_DIRECTORY,
-                     g_defaults.dirs[DEFAULT_DIR_CONTENT_VIDEO_HISTORY],
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
-               SDESC_DIR_ROW(directory_runtime_log, RUNTIME_LOG_DIRECTORY,
-                     "",
-                     DIRECTORY_DEFAULT, SD_FLAG_NONE, 0,
-                     directory_action_start_generic),
+/* GENERATED: rows come from settings_def_dir_user.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#include "../settings/settings_def_dir_user.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
             };
             settings_list_add_desc(list, list_info, settings,
                   dir_desc_1, ARRAY_SIZE(dir_desc_1),

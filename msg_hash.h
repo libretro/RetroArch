@@ -1123,7 +1123,6 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_INPUT_RETROPAD_SETTINGS,
    MENU_ENUM_LABEL_INPUT_HOTKEY_SETTINGS,
 
-   MENU_LABEL(INPUT_REMAPPING_DIRECTORY),
 
    MENU_ENUM_LABEL_INPUT_OVERLAY,
    MENU_ENUM_LABEL_INPUT_OSK_OVERLAY,
@@ -5840,7 +5839,6 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    MENU_ENUM_LABEL_VALUE_MANAGE,
-   MENU_LABEL(OSK_OVERLAY_DIRECTORY),
    MENU_LABEL(RECORDING_OUTPUT_DIRECTORY),
    MENU_LABEL(RECORDING_CONFIG_DIRECTORY),
    MENU_LBL_H(VIDEO_FILTER),
@@ -5848,16 +5846,61 @@ enum msg_hash_enums
    MENU_LABEL(VIDEO_FILTER_REMOVE),
    MENU_LABEL(PAL60_ENABLE),
 
-   MENU_LABEL(PLAYLIST_DIRECTORY),
-   MENU_LABEL(CONTENT_FAVORITES_DIRECTORY),
-   MENU_LABEL(CONTENT_HISTORY_DIRECTORY),
-   MENU_LABEL(CONTENT_IMAGE_HISTORY_DIRECTORY),
-   MENU_LABEL(CONTENT_MUSIC_HISTORY_DIRECTORY),
-   MENU_LABEL(CONTENT_VIDEO_HISTORY_DIRECTORY),
-   MENU_LABEL(RUNTIME_LOG_DIRECTORY),
-   MENU_LABEL(SCREENSHOT_DIRECTORY),
 
-   MENU_LABEL(OVERLAY_DIRECTORY),
+   /* GENERATED REGION: user directories group enum rows (see settings/settings_def_dir_user.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) MENU_LABEL(T),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_DIR_H(f, T, n, d, el, sd, c, sta, us, sub) MENU_LBL_H(T),
+#define S_DIR_NS_H(f, T, n, d, el, sd, c, sta, us) MENU_LBL_H(T),
+#include "settings/settings_def_dir_user.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef S_INT_H
+#undef S_FLOAT_H
+#undef S_UINT_NS_H
+#undef S_INT_NS_H
+#undef S_FLOAT_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(VIDEO_LAYOUT_DIRECTORY),
    /* GENERATED REGION: core directories group enum rows (see settings/settings_def_dir_core.h). */
 #define SETTINGS_DEF_ENUM_PASS
@@ -5967,7 +6010,6 @@ enum msg_hash_enums
 #undef S_FLOAT_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
-   MENU_LABEL(JOYPAD_AUTOCONFIG_DIR),
    MENU_LABEL(DRIVER_SETTINGS),
    MENU_LABEL(VIDEO_SETTINGS),
    MENU_LABEL(VIDEO_WINDOWED_MODE_SETTINGS),
