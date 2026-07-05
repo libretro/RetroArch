@@ -1219,11 +1219,9 @@ ifeq ($(HAVE_THREAD_STORAGE), 1)
 endif
 
 ifeq ($(HAVE_VITA2D), 1)
-   OBJ += $(DEPS_DIR)/libvita2d/source/vita2d.o \
-          $(DEPS_DIR)/libvita2d/source/vita2d_texture.o \
-          $(DEPS_DIR)/libvita2d/source/vita2d_draw.o \
-          $(DEPS_DIR)/libvita2d/source/utils.o
-
+   # The vita2d GXM backend is now folded directly into vita2d_gfx.c; only
+   # the precompiled shader blobs remain as a dependency (the driver still
+   # references clear_v_gxp/texture_v_gxp/... as externs).
    OBJ += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
@@ -1234,8 +1232,6 @@ ifeq ($(HAVE_VITA2D), 1)
           $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
    OBJ += gfx/drivers/vita2d_gfx.o
-
-   INCLUDE_DIRS += -I$(DEPS_DIR)/libvita2d/include
 endif
 
 ifeq ($(TARGET), retroarch_3ds)

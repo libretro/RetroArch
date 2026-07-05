@@ -315,7 +315,6 @@ else ifeq ($(platform), vita)
    EXT_TARGET := $(TARGET_NAME)_$(platform).velf
    EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
    MACHDEP := -DVITA
-   INCLUDE += -Ideps/libvita2d/include
    PLATCFLAGS := -mfloat-abi=hard -fsingle-precision-constant \
         -mword-relocations -fno-unwind-tables -fno-asynchronous-unwind-tables -ftree-vectorize -fno-optimize-sibling-calls
    LIBS += -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\

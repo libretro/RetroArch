@@ -576,11 +576,6 @@ VIDEO DRIVER
 #elif defined(PS2)
 #include "../gfx/drivers/ps2_gfx.c"
 #elif defined(HAVE_VITA2D)
-#include "../deps/libvita2d/source/vita2d.c"
-#include "../deps/libvita2d/source/vita2d_texture.c"
-#include "../deps/libvita2d/source/vita2d_draw.c"
-#include "../deps/libvita2d/source/utils.c"
-
 #include "../gfx/drivers/vita2d_gfx.c"
 #elif defined(_3DS)
 #include "../gfx/drivers/ctr_gfx.c"
