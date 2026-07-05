@@ -1961,6 +1961,9 @@ static struct config_bool_setting *populate_settings_bool(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_MENU
+#include "settings/settings_def_menu_thumbnail_background.h"
+#endif
+#ifdef HAVE_MENU
 #ifdef HAVE_RGUI
 #include "settings/settings_def_menu_start_screen.h"
 #endif
@@ -2163,7 +2166,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("filter_by_current_core",        &settings->bools.filter_by_current_core, true, DEFAULT_FILTER_BY_CURRENT_CORE, false);
    SETTING_BOOL("menu_use_preferred_system_color_theme", &settings->bools.menu_use_preferred_system_color_theme, true, DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME, false);
    SETTING_BOOL("menu_show_advanced_settings",   &settings->bools.menu_show_advanced_settings, true, DEFAULT_SHOW_ADVANCED_SETTINGS, false);
-   SETTING_BOOL("menu_thumbnail_background_enable", &settings->bools.menu_thumbnail_background_enable, true, DEFAULT_MENU_THUMBNAIL_BACKGROUND_ENABLE, false);
 #ifdef HAVE_MATERIALUI
    SETTING_BOOL("materialui_icons_enable",                    &settings->bools.menu_materialui_icons_enable, true, DEFAULT_MATERIALUI_ICONS_ENABLE, false);
    SETTING_BOOL("materialui_switch_icons",                    &settings->bools.menu_materialui_switch_icons, true, DEFAULT_MATERIALUI_SWITCH_ICONS, false);
@@ -2364,6 +2366,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_thumbnail_background.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_RGUI
 #include "settings/settings_def_menu_start_screen.h"
@@ -2718,6 +2723,9 @@ static struct config_uint_setting *populate_settings_uint(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_MENU
+#include "settings/settings_def_menu_thumbnail_background.h"
+#endif
+#ifdef HAVE_MENU
 #ifdef HAVE_RGUI
 #include "settings/settings_def_menu_start_screen.h"
 #endif
@@ -3045,6 +3053,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_thumbnail_background.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_RGUI
 #include "settings/settings_def_menu_start_screen.h"
