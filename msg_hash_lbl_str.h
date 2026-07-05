@@ -1151,7 +1151,6 @@
 #define MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME_STR "audio_mixer_volume"
 #define MENU_ENUM_LABEL_AUDIO_MIXER_MUTE_STR "audio_mixer_mute_enable"
 #define MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER_STR "menu_show_online_updater"
-#define MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER_STR "menu_show_core_updater"
 #define MENU_ENUM_LABEL_MENU_SCROLL_FAST_STR "menu_scroll_fast"
 #define MENU_ENUM_LABEL_MENU_SCROLL_DELAY_STR "menu_scroll_delay"
 #define MENU_ENUM_LABEL_CORE_LOCK_STR "core_lock"
