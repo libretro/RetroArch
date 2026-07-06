@@ -431,7 +431,6 @@
 #define MENU_ENUM_LABEL_INPUT_TOUCH_SCALE_STR "input_touch_scale"
 #define MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT_STR "input_bind_timeout"
 #define MENU_ENUM_LABEL_INPUT_BIND_HOLD_STR "input_bind_hold"
-#define MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT_STR "input_block_timeout"
 #define MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND_STR "input_descriptor_hide_unbound"
 #define MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW_STR "input_descriptor_label_show"
 #define MENU_ENUM_LABEL_INPUT_DRIVER_STR "input_driver"

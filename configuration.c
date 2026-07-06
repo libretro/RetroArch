@@ -1977,6 +1977,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef ANDROID
+#include "settings/settings_def_frame_throttle_slowmotion.h"
+#endif
 #include "settings/settings_def_frame_throttle_fastforward.h"
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
@@ -2526,6 +2529,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef ANDROID
+#include "settings/settings_def_frame_throttle_slowmotion.h"
+#endif
 #include "settings/settings_def_frame_throttle_fastforward.h"
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
@@ -3043,6 +3049,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef ANDROID
+#include "settings/settings_def_frame_throttle_slowmotion.h"
+#endif
 #include "settings/settings_def_frame_throttle_fastforward.h"
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
@@ -3342,9 +3351,6 @@ static struct config_uint_setting *populate_settings_uint(
 #else
    SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 1, false);
 #endif
-#ifdef ANDROID
-   SETTING_UINT("input_block_timeout",           &settings->uints.input_block_timeout, true, DEFAULT_INPUT_BLOCK_TIMEOUT, false);
-#endif
    SETTING_UINT("keyboard_gamepad_mapping_type", &settings->uints.input_keyboard_gamepad_mapping_type, true, 1, false);
 
 #if defined(HAVE_OVERLAY)
@@ -3528,6 +3534,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef ANDROID
+#include "settings/settings_def_frame_throttle_slowmotion.h"
+#endif
 #include "settings/settings_def_frame_throttle_fastforward.h"
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
@@ -3821,6 +3830,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef ANDROID
+#include "settings/settings_def_frame_throttle_slowmotion.h"
+#endif
 #include "settings/settings_def_frame_throttle_fastforward.h"
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
