@@ -1859,9 +1859,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("savefiles_in_content_dir",      &settings->bools.savefiles_in_content_dir, true, DEFAULT_SAVEFILES_IN_CONTENT_DIR, false);
    SETTING_BOOL("systemfiles_in_content_dir",    &settings->bools.systemfiles_in_content_dir, true, DEFAULT_SYSTEMFILES_IN_CONTENT_DIR, false);
    SETTING_BOOL("screenshots_in_content_dir",    &settings->bools.screenshots_in_content_dir, true, DEFAULT_SCREENSHOTS_IN_CONTENT_DIR, false);
-   SETTING_BOOL("confirm_quit",                  &settings->bools.confirm_quit, true, DEFAULT_CONFIRM_QUIT, false);
-   SETTING_BOOL("confirm_close",                 &settings->bools.confirm_close, true, DEFAULT_CONFIRM_CLOSE, false);
-   SETTING_BOOL("confirm_reset",                 &settings->bools.confirm_reset, true, DEFAULT_CONFIRM_RESET, false);
    SETTING_BOOL("config_save_on_exit",           &settings->bools.config_save_on_exit, true, DEFAULT_CONFIG_SAVE_ON_EXIT, false);
    SETTING_BOOL("config_save_minimal",           &settings->bools.config_save_minimal, true, DEFAULT_CONFIG_SAVE_MINIMAL, false);
    SETTING_BOOL("remap_save_on_exit",            &settings->bools.remap_save_on_exit, true, DEFAULT_REMAP_SAVE_ON_EXIT, false);
@@ -1961,6 +1958,11 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_haptics.h"
+#include "settings/settings_def_input_general.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_ozone_appearance.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_XMB
 #include "settings/settings_def_rgui_appearance.h"
@@ -2376,21 +2378,6 @@ static struct config_bool_setting *populate_settings_bool(
 
 
 
-   SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, DEFAULT_CONTENT_SHOW_FAVORITES, false);
-   SETTING_BOOL("content_show_favorites_first",  &settings->bools.menu_content_show_favorites_first, true, DEFAULT_CONTENT_SHOW_FAVORITES_FIRST, false);
-#ifdef HAVE_IMAGEVIEWER
-   SETTING_BOOL("content_show_images",           &settings->bools.menu_content_show_images, true, DEFAULT_CONTENT_SHOW_IMAGES, false);
-#endif
-   SETTING_BOOL("content_show_music",            &settings->bools.menu_content_show_music, true, DEFAULT_CONTENT_SHOW_MUSIC, false);
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   SETTING_BOOL("content_show_video",            &settings->bools.menu_content_show_video, true, DEFAULT_CONTENT_SHOW_VIDEO, false);
-#endif
-   SETTING_BOOL("content_show_history",          &settings->bools.menu_content_show_history, true, DEFAULT_CONTENT_SHOW_HISTORY, false);
-   SETTING_BOOL("content_show_playlists",        &settings->bools.menu_content_show_playlists, true, DEFAULT_CONTENT_SHOW_PLAYLISTS, false);
-   SETTING_BOOL("content_show_playlist_tabs",    &settings->bools.menu_content_show_playlist_tabs, true, DEFAULT_CONTENT_SHOW_PLAYLIST_TABS, false);
-#if defined(HAVE_LIBRETRODB)
-   SETTING_BOOL("content_show_explore",          &settings->bools.menu_content_show_explore, true, DEFAULT_MENU_CONTENT_SHOW_EXPLORE, false);
-#endif
 #ifdef HAVE_CDROM
 #endif /* HAVE_CDROM */
 
@@ -2462,23 +2449,13 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("small_keyboard_enable",         &settings->bools.input_small_keyboard_enable, true, false, false);
 #endif
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE, false);
-   SETTING_BOOL("input_autodetect_enable",       &settings->bools.input_autodetect_enable, true, DEFAULT_INPUT_AUTODETECT_ENABLE, false);
    SETTING_BOOL("input_turbo_enable",            &settings->bools.input_turbo_enable, true, DEFAULT_TURBO_ENABLE, false);
    SETTING_BOOL("input_turbo_allow_dpad",        &settings->bools.input_turbo_allow_dpad, true, DEFAULT_TURBO_ALLOW_DPAD, false);
-   SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
-   SETTING_BOOL("input_remap_sort_by_controller_enable",      &settings->bools.input_remap_sort_by_controller_enable, true, false, false);
-   SETTING_BOOL("input_hotkey_device_merge",     &settings->bools.input_hotkey_device_merge, true, DEFAULT_INPUT_HOTKEY_DEVICE_MERGE, false);
-   SETTING_BOOL("input_hotkey_follows_player1",  &settings->bools.input_hotkey_follows_player1, true, DEFAULT_INPUT_HOTKEY_FOLLOWS_PLAYER1, false);
 #ifdef HAVE_MENU
-   SETTING_BOOL("all_users_control_menu",        &settings->bools.input_all_users_control_menu, true, DEFAULT_ALL_USERS_CONTROL_MENU, false);
    SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS, false);
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
-   SETTING_BOOL("menu_singleclick_playlists",    &settings->bools.input_menu_singleclick_playlists, true, DEFAULT_MENU_SINGLECLICK_PLAYLISTS, false);
-   SETTING_BOOL("menu_allow_tabs_back",          &settings->bools.input_menu_allow_tabs_back, true, DEFAULT_MENU_ALLOW_TABS_BACK, false);
 #endif
    SETTING_BOOL("input_sensors_enable",          &settings->bools.input_sensors_enable, true, DEFAULT_INPUT_SENSORS_ENABLE, false);
-   SETTING_BOOL("vibrate_on_keypress",           &settings->bools.vibrate_on_keypress, true, DEFAULT_VIBRATE_ON_KEYPRESS, false);
-   SETTING_BOOL("enable_device_vibration",       &settings->bools.enable_device_vibration, true, DEFAULT_ENABLE_DEVICE_VIBRATION, false);
 
    SETTING_BOOL("content_runtime_log",           &settings->bools.content_runtime_log, true, DEFAULT_CONTENT_RUNTIME_LOG, false);
    SETTING_BOOL("content_runtime_log_aggregate", &settings->bools.content_runtime_log_aggregate, true, DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE, false);
@@ -2595,6 +2572,11 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_haptics.h"
+#include "settings/settings_def_input_general.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_ozone_appearance.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_XMB
 #include "settings/settings_def_rgui_appearance.h"
@@ -3063,11 +3045,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("replay_checkpoint_interval",    &settings->uints.replay_checkpoint_interval,  true, DEFAULT_REPLAY_CHECKPOINT_INTERVAL, false);
    SETTING_UINT("savestate_max_keep",            &settings->uints.savestate_max_keep, true, DEFAULT_SAVESTATE_MAX_KEEP, false);
 #ifdef HAVE_MENU
-   SETTING_UINT("content_show_add_entry",        &settings->uints.menu_content_show_add_entry, true, DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY, false);
-   SETTING_UINT("content_show_contentless_cores",&settings->uints.menu_content_show_contentless_cores, true, DEFAULT_MENU_CONTENT_SHOW_CONTENTLESS_CORES, false);
-#ifdef HAVE_NETWORKING
-   SETTING_UINT("content_show_netplay",          &settings->uints.menu_content_show_netplay, true, DEFAULT_CONTENT_SHOW_NETPLAY, false);
-#endif
    SETTING_UINT("content_history_size",          &settings->uints.content_history_size, true, DEFAULT_CONTENT_HISTORY_SIZE, false);
    SETTING_UINT("playlist_entry_remove_enable",        &settings->uints.playlist_entry_remove_enable, true, DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE, false);
    SETTING_UINT("menu_thumbnails",               &settings->uints.gfx_thumbnails, true, DEFAULT_GFX_THUMBNAILS_DEFAULT, false);
@@ -3178,6 +3155,11 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_haptics.h"
+#include "settings/settings_def_input_general.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_ozone_appearance.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_XMB
 #include "settings/settings_def_rgui_appearance.h"
@@ -3563,12 +3545,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_turbo_duty_cycle",        &settings->uints.input_turbo_duty_cycle, true, DEFAULT_TURBO_DUTY_CYCLE, false);
    SETTING_UINT("input_turbo_mode",              &settings->uints.input_turbo_mode,       true, DEFAULT_TURBO_MODE, false);
    SETTING_UINT("input_turbo_button",            &settings->uints.input_turbo_button,     true, DEFAULT_TURBO_BUTTON, false);
-   SETTING_UINT("input_max_users",               &settings->uints.input_max_users,          true, DEFAULT_INPUT_MAX_USERS, false);
-   SETTING_UINT("input_menu_toggle_gamepad_combo", &settings->uints.input_menu_toggle_gamepad_combo, true, DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO, false);
-   SETTING_UINT("input_poll_type_behavior",      &settings->uints.input_poll_type_behavior, true, DEFAULT_INPUT_POLL_TYPE_BEHAVIOR, false);
-   SETTING_UINT("input_quit_gamepad_combo",      &settings->uints.input_quit_gamepad_combo, true, DEFAULT_QUIT_GAMEPAD_COMBO, false);
-   SETTING_UINT("input_hotkey_block_delay",      &settings->uints.input_hotkey_block_delay, true, DEFAULT_INPUT_HOTKEY_BLOCK_DELAY, false);
-   SETTING_UINT("input_rumble_gain",             &settings->uints.input_rumble_gain, true, DEFAULT_RUMBLE_GAIN, false);
 #ifdef ANDROID
    SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 0, false);
 #else
@@ -3742,6 +3718,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_haptics.h"
+#include "settings/settings_def_input_general.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_ozone_appearance.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_XMB
 #include "settings/settings_def_rgui_appearance.h"
@@ -4145,6 +4126,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_haptics.h"
+#include "settings/settings_def_input_general.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_ozone_appearance.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_XMB
 #include "settings/settings_def_rgui_appearance.h"

@@ -6529,50 +6529,228 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 
 /* Settings > Input */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-   "Maximum Users"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Maximum amount of users supported by RetroArch. (Restart required)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Polling Behavior (Restart required)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-   "Influences how input polling is done in RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
-   )
+/* GENERATED REGION: general input group (see settings_def_input_general.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION(T, n, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_NS(T, n, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_input_general.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
    "Influences how input polling is done inside RetroArch.\nEarly - Input polling is performed before the frame is processed.\nNormal - Input polling is performed when polling is requested.\nLate - Input polling is performed on first input state request per frame.\nSetting it to 'Early' or 'Late' can result in less latency, depending on your configuration. Will be ignored when using netplay."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   "Remap Controls for This Core"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   "Override the input binds with the remapped binds set for the current core."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Sort Remaps By Gamepad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Remaps will only apply to the active gamepad in which they were saved."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   "Autoconfig"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   "Automatically configures controllers that have a profile, Plug-and-Play style."
-   )
+/* GENERATED REGION: haptics and sensors group (see settings_def_input_haptics.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION(T, n, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_NS(T, n, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_input_haptics.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 /* GENERATED REGION: Windows hotkey passthrough setting (see settings_def_input_nowinkey.h). */
 #define SETTINGS_DEF_STRINGS_PASS
@@ -7121,101 +7299,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_FLOAT
 #undef S_FLOAT_NS
 #undef SETTINGS_DEF_STRINGS_PASS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
-   "Confirm Quit"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
-   "Require the Quit hotkey to be pressed twice."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
-   "Confirm Close Content"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
-   "Require the Close Content hotkey to be pressed twice."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
-   "Confirm Reset Content"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
-   "Require the Reset Content hotkey to be pressed twice."
-   )
 
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
-   "Vibrate on Key Press"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-   "Enable Device Vibration (For Supported Cores)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   "Vibration Strength"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
-   "Specify the magnitude of haptic feedback effects."
-   )
 
 /* Settings > Input > Menu Controls */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-   "Unified Menu Controls"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   "Use the same controls for both the menu and the game. Applies to the keyboard."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Swap OK and Cancel Buttons"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "Swap buttons for OK/Cancel. Disabled is the Japanese button orientation, enabled is the western orientation."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Swap Scroll Buttons"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   "Swap buttons for scrolling. Disabled scrolls 10 items with L/R and alphabetically with L2/R2."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   "All Users Control Menu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "Allow any user to control the menu. If disabled, only User 1 can control the menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
-   "Single-Click Playlists"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
-   "Skip 'Run' menu when launching playlist entries. Press D-Pad while holding OK to access 'Run' menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
-   "Allow Back From Tabs"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
-   "Return to Main Menu from tabs/sidebar when pressing Back."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    "Scroll Acceleration"
@@ -7231,38 +7321,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
    "Initial delay in milliseconds when holding a direction to scroll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
-   "Disable Info Button"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Prevent menu info function."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
-   "Disable Search Button"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Prevent menu search function."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   "Disable Left Analog in Menu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   "Prevent menu left analog stick input."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   "Disable Right Analog in Menu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   "Prevent menu right analog stick input. Right analog stick cycles thumbnails in playlists."
    )
 
 /* Settings > Input > Hotkeys */
@@ -7280,52 +7338,12 @@ MSG_HASH(
    "If this hotkey is bound to either keyboard, joybutton or joyaxis, all other hotkeys will be disabled unless this hotkey is also held at the same time.\nThis is useful for RETRO_KEYBOARD centric implementations which query a large area of the keyboard, where it is not desirable that hotkeys get in the way."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   "Hotkey Enable Delay (Frames)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   "Add a delay in frames before normal input is blocked after pressing the assigned 'Hotkey Enable' key. Allows normal input from the 'Hotkey Enable' key to be captured when it is mapped to another action (e.g. RetroPad 'Select')."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
-   "Hotkey Device Type Merge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
-   "Block all hotkeys from both keyboard and controller device types if either type has 'Hotkey Enable' set."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-   "Hotkeys Follow Player 1"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-   "Hotkeys are bound to core port 1, even if core port 1 is remapped to a different user. Note: keyboard hotkeys will not work if core port 1 is remapped to any user > 1 (keyboard input is from user 1)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "Menu Toggle (Controller Combo)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "Controller button combination to toggle menu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
    "Menu Toggle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
    "Switches the current display between menu and content."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
-   "Quit (Controller Combo)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
-   "Controller button combination to quit RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
@@ -11816,70 +11834,115 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_PATH_DS
 #undef S_PATH_DS_NS
 #undef SETTINGS_DEF_STRINGS_PASS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
-   "Show 'Favorites'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Show the 'Favorites' menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
-   "Show Favorites First"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
-   "Show 'Favorites' before 'History'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
-   "Show 'Images'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Show the 'Images' menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
-   "Show 'Music'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Show the 'Music' menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
-   "Show 'Videos'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Show the 'Videos' menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-   "Show 'Netplay'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Show the 'Netplay' entry inside the Main Menu or Playlists."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
-   "Show 'History'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Show the recent history menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
-   "Show 'Import Content'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Show the 'Import Content' entry inside the Main Menu or Playlists."
-   )
+/* GENERATED REGION: Ozone appearance group (see settings_def_ozone_appearance.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION(T, n, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_NS(T, n, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_ozone_appearance.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "Main Menu"
@@ -11887,38 +11950,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    "Playlists Menu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
-   "Show 'Playlists'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Show the playlists in Main Menu. Ignored in GLUI if playlist tabs and navbar are enabled."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
-   "Show Playlist Tabs"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
-   "Show the playlist tabs. Does not affect RGUI. Navbar must be enabled in GLUI."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
-   "Show 'Explore'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Show the content explorer option."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Show 'Contentless Cores'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Specify the type of core (if any) to show in the 'Contentless Cores' menu. When set to 'Custom', individual core visibility may be toggled via the 'Manage Cores' menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
