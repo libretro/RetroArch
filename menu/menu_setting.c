@@ -17039,7 +17039,7 @@ static bool setting_append_list(
                   {
             static const setting_desc_t osn_desc_0[] = {
                SDESC_BOOL_ROW_EX(menu_enable_widgets, MENU_WIDGETS_ENABLE,
-                     DEFAULT_MENU_ENABLE_WIDGETS, SD_FLAG_NONE, 0, CMD_EVENT_REINIT,
+                     DEFAULT_MENU_ENABLE_WIDGETS, SD_FLAG_NONE, 0, CMD_EVENT_OSD_NOTIFICATION_TOGGLE,
                      setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
                SDESC_BOOL_ROW_EX(menu_widget_scale_auto, MENU_WIDGET_SCALE_AUTO,
                      DEFAULT_MENU_WIDGET_SCALE_AUTO, SD_FLAG_NONE, 0, 0,
