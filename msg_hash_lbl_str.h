@@ -942,7 +942,6 @@
 #define MENU_ENUM_LABEL_VIDEO_DRIVER_NULL_STR "null"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE_STR "video_filter_remove"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER_STR "video_filter_flicker"
-#define MENU_ENUM_LABEL_VIDEO_FONT_ENABLE_STR "video_font_enable"
 #define MENU_ENUM_LABEL_VIDEO_FONT_SIZE_STR "video_font_size"
 #define MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_STR "video_frame_delay"
 #define MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO_STR "video_frame_delay_auto"
