@@ -1317,7 +1317,6 @@
 #define MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL_STR "memory_update_interval"
 #define MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS_STR "accessibility_settings"
 #define MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS_STR "power_management_settings"
-#define MENU_ENUM_LABEL_CPU_PERFPOWER_STR "cpu_perfpower_list"
 #define MENU_ENUM_LABEL_AI_SERVICE_SETTINGS_STR "ai_service_settings"
 #define MENU_ENUM_LABEL_AI_SERVICE_MODE_STR "ai_service_mode"
 #define MENU_ENUM_LABEL_AI_SERVICE_URL_STR "ai_service_url"
