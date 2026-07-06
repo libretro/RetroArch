@@ -1977,6 +1977,16 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_touch_scale.h"
+#ifdef GEKKO
+#include "settings/settings_def_input_mouse_scale.h"
+#endif
+#include "settings/settings_def_black_frame_insertion.h"
+#include "settings/settings_def_shader_delay.h"
+#include "settings/settings_def_screen_brightness.h"
+#include "settings/settings_def_video_rotation.h"
+#include "settings/settings_def_video_monitor_index.h"
+#include "settings/settings_def_rewind_step.h"
 #ifdef ANDROID
 #include "settings/settings_def_frame_throttle_slowmotion.h"
 #endif
@@ -2529,6 +2539,16 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_touch_scale.h"
+#ifdef GEKKO
+#include "settings/settings_def_input_mouse_scale.h"
+#endif
+#include "settings/settings_def_black_frame_insertion.h"
+#include "settings/settings_def_shader_delay.h"
+#include "settings/settings_def_screen_brightness.h"
+#include "settings/settings_def_video_rotation.h"
+#include "settings/settings_def_video_monitor_index.h"
+#include "settings/settings_def_rewind_step.h"
 #ifdef ANDROID
 #include "settings/settings_def_frame_throttle_slowmotion.h"
 #endif
@@ -2893,7 +2913,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("autosave_interval",             &settings->uints.autosave_interval,  true, DEFAULT_AUTOSAVE_INTERVAL, false);
    SETTING_UINT("savestate_automatic_interval",  &settings->uints.savestate_automatic_interval, true, DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL, false);
    SETTING_UINT("rewind_granularity",            &settings->uints.rewind_granularity, true, DEFAULT_REWIND_GRANULARITY, false);
-   SETTING_UINT("rewind_buffer_size_step",       &settings->uints.rewind_buffer_size_step, true, DEFAULT_REWIND_BUFFER_SIZE_STEP, false);
    SETTING_UINT("run_ahead_frames",              &settings->uints.run_ahead_frames, true, DEFAULT_RUN_AHEAD_FRAMES,  false);
    SETTING_UINT("replay_max_keep",               &settings->uints.replay_max_keep, true, DEFAULT_REPLAY_MAX_KEEP, false);
    SETTING_UINT("replay_checkpoint_interval",    &settings->uints.replay_checkpoint_interval,  true, DEFAULT_REPLAY_CHECKPOINT_INTERVAL, false);
@@ -2992,7 +3011,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("custom_viewport_y",             (unsigned*)&settings->video_vp_custom.y, false, 0 /* TODO */, false);
    SETTING_UINT("aspect_ratio_index",            &settings->uints.video_aspect_ratio_idx, true, DEFAULT_ASPECT_RATIO_IDX, false);
    SETTING_UINT("video_autoswitch_refresh_rate", &settings->uints.video_autoswitch_refresh_rate, true, DEFAULT_AUTOSWITCH_REFRESH_RATE, false);
-   SETTING_UINT("video_monitor_index",           &settings->uints.video_monitor_index, true, DEFAULT_MONITOR_INDEX, false);
    SETTING_UINT("video_windowed_position_x",     &settings->uints.window_position_x,    true, 0, false);
    SETTING_UINT("video_windowed_position_y",     &settings->uints.window_position_y,    true, 0, false);
    SETTING_UINT("video_windowed_position_width", &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
@@ -3004,13 +3022,10 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
    SETTING_UINT("video_scale_integer_axis",      &settings->uints.video_scale_integer_axis, true, DEFAULT_SCALE_INTEGER_AXIS, false);
    SETTING_UINT("video_scale_integer_scaling",   &settings->uints.video_scale_integer_scaling, true, DEFAULT_SCALE_INTEGER_SCALING, false);
-   SETTING_UINT("video_shader_delay",            &settings->uints.video_shader_delay, true, DEFAULT_SHADER_DELAY, false);
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
 #endif
    SETTING_UINT("video_frame_delay",             &settings->uints.video_frame_delay,      true, DEFAULT_FRAME_DELAY, false);
-   SETTING_UINT("video_black_frame_insertion",   &settings->uints.video_black_frame_insertion, true, DEFAULT_BLACK_FRAME_INSERTION, false);
-   SETTING_UINT("video_bfi_dark_frames",         &settings->uints.video_bfi_dark_frames, true, DEFAULT_BFI_DARK_FRAMES, false);
    /* GENERATED: single-source setting rows (uint kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
 #define S_BOOL_NS(f, T, n, d, sd, df, c, us)
@@ -3049,6 +3064,16 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_touch_scale.h"
+#ifdef GEKKO
+#include "settings/settings_def_input_mouse_scale.h"
+#endif
+#include "settings/settings_def_black_frame_insertion.h"
+#include "settings/settings_def_shader_delay.h"
+#include "settings/settings_def_screen_brightness.h"
+#include "settings/settings_def_video_rotation.h"
+#include "settings/settings_def_video_monitor_index.h"
+#include "settings/settings_def_rewind_step.h"
 #ifdef ANDROID
 #include "settings/settings_def_frame_throttle_slowmotion.h"
 #endif
@@ -3308,8 +3333,6 @@ static struct config_uint_setting *populate_settings_uint(
 #undef S_FLOAT_EX_NS
 #undef S_ACTION_EX
 #undef S_ACTION_EX_NS
-   SETTING_UINT("video_rotation",                &settings->uints.video_rotation, true, ORIENTATION_NORMAL, false);
-   SETTING_UINT("screen_orientation",            &settings->uints.screen_orientation, true, ORIENTATION_NORMAL, false);
    SETTING_UINT("video_msg_bgcolor_red",         &settings->uints.video_msg_bgcolor_red, true, DEFAULT_MESSAGE_BGCOLOR_RED, false);
    SETTING_UINT("video_msg_bgcolor_green",       &settings->uints.video_msg_bgcolor_green, true, DEFAULT_MESSAGE_BGCOLOR_GREEN, false);
    SETTING_UINT("video_msg_bgcolor_blue",        &settings->uints.video_msg_bgcolor_blue, true, DEFAULT_MESSAGE_BGCOLOR_BLUE, false);
@@ -3327,7 +3350,6 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_NETWORKING
    SETTING_UINT("streaming_mode",                &settings->uints.streaming_mode, true, STREAMING_MODE_TWITCH, false);
 #endif
-   SETTING_UINT("screen_brightness",             &settings->uints.screen_brightness, true, DEFAULT_SCREEN_BRIGHTNESS, false);
 
    SETTING_UINT("input_bind_timeout",            &settings->uints.input_bind_timeout,     true, DEFAULT_INPUT_BIND_TIMEOUT, false);
    SETTING_UINT("input_bind_hold",               &settings->uints.input_bind_hold,        true, DEFAULT_INPUT_BIND_HOLD, false);
@@ -3340,10 +3362,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_poll_type_behavior",      &settings->uints.input_poll_type_behavior, true, DEFAULT_INPUT_POLL_TYPE_BEHAVIOR, false);
    SETTING_UINT("input_quit_gamepad_combo",      &settings->uints.input_quit_gamepad_combo, true, DEFAULT_QUIT_GAMEPAD_COMBO, false);
    SETTING_UINT("input_hotkey_block_delay",      &settings->uints.input_hotkey_block_delay, true, DEFAULT_INPUT_HOTKEY_BLOCK_DELAY, false);
-#ifdef GEKKO
-   SETTING_UINT("input_mouse_scale",             &settings->uints.input_mouse_scale, true, DEFAULT_MOUSE_SCALE, false);
-#endif
-   SETTING_UINT("input_touch_scale",             &settings->uints.input_touch_scale, true, DEFAULT_TOUCH_SCALE, false);
    SETTING_UINT("input_rumble_gain",             &settings->uints.input_rumble_gain, true, DEFAULT_RUMBLE_GAIN, false);
    SETTING_UINT("input_auto_game_focus",         &settings->uints.input_auto_game_focus, true, DEFAULT_INPUT_AUTO_GAME_FOCUS, false);
 #ifdef ANDROID
@@ -3534,6 +3552,16 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_touch_scale.h"
+#ifdef GEKKO
+#include "settings/settings_def_input_mouse_scale.h"
+#endif
+#include "settings/settings_def_black_frame_insertion.h"
+#include "settings/settings_def_shader_delay.h"
+#include "settings/settings_def_screen_brightness.h"
+#include "settings/settings_def_video_rotation.h"
+#include "settings/settings_def_video_monitor_index.h"
+#include "settings/settings_def_rewind_step.h"
 #ifdef ANDROID
 #include "settings/settings_def_frame_throttle_slowmotion.h"
 #endif
@@ -3830,6 +3858,16 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_touch_scale.h"
+#ifdef GEKKO
+#include "settings/settings_def_input_mouse_scale.h"
+#endif
+#include "settings/settings_def_black_frame_insertion.h"
+#include "settings/settings_def_shader_delay.h"
+#include "settings/settings_def_screen_brightness.h"
+#include "settings/settings_def_video_rotation.h"
+#include "settings/settings_def_video_monitor_index.h"
+#include "settings/settings_def_rewind_step.h"
 #ifdef ANDROID
 #include "settings/settings_def_frame_throttle_slowmotion.h"
 #endif
