@@ -25272,14 +25272,145 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_PATH_DS
 #undef S_PATH_DS_NS
 #undef SETTINGS_DEF_STRINGS_PASS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
-   "Font Scale"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
-   "Define whether the font size in the menu should have its own scaling, and if it should be scaled globally or with separate values for each part of the menu."
-   )
+/* GENERATED REGION: Material UI appearance group (see settings_def_ozone_typography.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION(T, n, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_NS(T, n, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_ozone_typography.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_BOOL_H
+#undef S_BOOL_NS_H
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_UINT_H
+#undef S_UINT_NS_H
+#undef S_INT
+#undef S_INT_NS
+#undef S_INT_H
+#undef S_INT_NS_H
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_FLOAT_H
+#undef S_FLOAT_NS_H
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
    "Global"
@@ -25287,62 +25418,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
    "Separate values"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
-   "Font Scale Factor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
-   "Scale the font size linearly across the menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
-   "Title Font Scale Factor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
-   "Scale the font size for the title text in the menu header."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
-   "Left Sidebar Font Scale Factor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
-   "Scale the font size for the text in the left sidebar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
-   "Labels Font Scale Factor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
-   "Scale the font size for the labels of menu options and playlist entries. Also affects text size in the help boxes."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
-   "Sublabels Font Scale Factor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
-   "Scale the font size for the sublabels of menu options and playlist entries."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
-   "Timedate Font Scale Factor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
-   "Scale the font size of the time and date indicator in the top-right corner of the menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
-   "Footer Font Scale Factor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
-   "Scale the font size of the text in the menu footer. Also affects text size in the right thumbnail sidebar."
    )
 /* GENERATED REGION: Ozone sidebar group (see settings_def_ozone_sidebar.h). */
 #define SETTINGS_DEF_STRINGS_PASS
@@ -25629,46 +25704,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
    "Replace the content metadata panel with another thumbnail."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "Use Ticker Text for Content Metadata"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "When enabled, each item of content metadata shown on the right sidebar of playlists (associated core, play time) will occupy a single line; strings exceeding the width of the sidebar will be displayed as scrolling ticker text. When disabled, each item of content metadata will be displayed statically, wrapped to occupy as many lines as required."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Thumbnail Scale Factor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Scale the size of the thumbnail bar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_PADDING_FACTOR,
-   "Padding Factor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_PADDING_FACTOR,
-   "Scale the horizontal padding size."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
-   "Header Icon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
-   "Header logo can be hidden, dynamic depending on navigation or fixed to classic invader."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
-   "Header Separator"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
-   "Alternative width for header and footer separators."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,

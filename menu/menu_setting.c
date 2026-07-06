@@ -27879,71 +27879,128 @@ static bool setting_append_list(
 
          {
             static const setting_desc_t menu_desc_32[] = {
-               SDESC_UINT_ROW_EX(menu_ozone_font_scale, OZONE_FONT_SCALE,
-                     DEFAULT_OZONE_FONT_SCALE,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, OZONE_FONT_SCALE_LAST-1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_ozone_font_scale,
-                     NULL, NULL, setting_uint_action_left_with_refresh, setting_uint_action_right_with_refresh, 0),
-               SDESC_FLOAT_ROW_EX(ozone_font_scale_factor_global, OZONE_FONT_SCALE_FACTOR_GLOBAL,
-                     DEFAULT_OZONE_FONT_SCALE_FACTOR_GLOBAL, "%.2fx",
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0.0, 3.0, 0.05,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(ozone_font_scale_factor_title, OZONE_FONT_SCALE_FACTOR_TITLE,
-                     DEFAULT_OZONE_FONT_SCALE_FACTOR_TITLE, "%.2fx",
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0.0, 3.0, 0.05,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(ozone_font_scale_factor_sidebar, OZONE_FONT_SCALE_FACTOR_SIDEBAR,
-                     DEFAULT_OZONE_FONT_SCALE_FACTOR_SIDEBAR, "%.2fx",
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0.0, 3.0, 0.05,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(ozone_font_scale_factor_label, OZONE_FONT_SCALE_FACTOR_LABEL,
-                     DEFAULT_OZONE_FONT_SCALE_FACTOR_LABEL, "%.2fx",
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0.0, 3.0, 0.05,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(ozone_font_scale_factor_sublabel, OZONE_FONT_SCALE_FACTOR_SUBLABEL,
-                     DEFAULT_OZONE_FONT_SCALE_FACTOR_SUBLABEL, "%.2fx",
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0.0, 3.0, 0.05,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(ozone_font_scale_factor_time, OZONE_FONT_SCALE_FACTOR_TIME,
-                     DEFAULT_OZONE_FONT_SCALE_FACTOR_TIME, "%.2fx",
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0.0, 3.0, 0.05,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(ozone_font_scale_factor_footer, OZONE_FONT_SCALE_FACTOR_FOOTER,
-                     DEFAULT_OZONE_FONT_SCALE_FACTOR_FOOTER, "%.2fx",
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0.0, 3.0, 0.05,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_BOOL_ROW(ozone_scroll_content_metadata, OZONE_SCROLL_CONTENT_METADATA,
-                     DEFAULT_OZONE_SCROLL_CONTENT_METADATA, SD_FLAG_NONE, 0, 0),
-               SDESC_FLOAT_ROW_EX(ozone_thumbnail_scale_factor, OZONE_THUMBNAIL_SCALE_FACTOR,
-                     DEFAULT_OZONE_THUMBNAIL_SCALE_FACTOR, "%.2fx",
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     1.0, 2.0, 0.05,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(ozone_padding_factor, OZONE_PADDING_FACTOR,
-                     DEFAULT_OZONE_PADDING_FACTOR, "%.2fx",
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0.0, 2.0, 0.01,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_UINT_ROW_EX(menu_ozone_header_icon, OZONE_HEADER_ICON,
-                     DEFAULT_OZONE_HEADER_ICON,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, OZONE_HEADER_ICON_LAST-1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_ozone_header_icon,
-                     NULL, NULL, setting_uint_action_left_with_refresh, setting_uint_action_right_with_refresh, 0),
-               SDESC_UINT_ROW_EX(menu_ozone_header_separator, OZONE_HEADER_SEPARATOR,
-                     DEFAULT_OZONE_HEADER_SEPARATOR,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, OZONE_HEADER_SEPARATOR_LAST-1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_ozone_header_separator,
-                     NULL, NULL, NULL, NULL, 0),
+/* GENERATED: rows come from settings_def_ozone_typography.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+                  SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+                  SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+                  SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+                  SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),
+#define S_ACTION(T, n, us, sub) \
+                  SDESC_ACTION_ROW(T),
+#define S_ACTION_NS(T, n, us) \
+                  SDESC_ACTION_ROW(T),
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+                  SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+                  SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),
+#include "../settings/settings_def_ozone_typography.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_BOOL_H
+#undef S_BOOL_NS_H
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_UINT_H
+#undef S_UINT_NS_H
+#undef S_INT
+#undef S_INT_NS
+#undef S_INT_H
+#undef S_INT_NS_H
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_FLOAT_H
+#undef S_FLOAT_NS_H
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_32, ARRAY_SIZE(menu_desc_32),

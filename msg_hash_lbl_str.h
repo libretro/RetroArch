@@ -424,8 +424,6 @@
 #define MENU_ENUM_LABEL_LOCATION_DRIVER_STR "location_driver"
 #define MENU_ENUM_LABEL_LOG_VERBOSITY_STR "log_verbosity"
 #define MENU_ENUM_LABEL_MAIN_MENU_STR "main_menu"
-#define MENU_ENUM_LABEL_OZONE_SCROLL_CONTENT_METADATA_STR "ozone_scroll_content_metadata"
-#define MENU_ENUM_LABEL_OZONE_THUMBNAIL_SCALE_FACTOR_STR "ozone_menu_thumbnail_scale_factor"
 #define MENU_ENUM_LABEL_MENU_DRIVER_STR "menu_driver"
 #define MENU_ENUM_LABEL_MENU_DRIVER_RGUI_STR "rgui"
 #define MENU_ENUM_LABEL_MENU_DRIVER_OZONE_STR "ozone"
@@ -1041,14 +1039,3 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
 
 #endif /* MSG_HASH_LBL_STR_H__ */
-#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_STR "ozone_font_scale"
-#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL_STR "ozone_font_scale_factor_global"
-#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TITLE_STR "ozone_font_scale_factor_title"
-#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR_STR "ozone_font_scale_factor_sidebar"
-#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_LABEL_STR "ozone_font_scale_factor_label"
-#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL_STR "ozone_font_scale_factor_sublabel"
-#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TIME_STR "ozone_font_scale_factor_time"
-#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_FOOTER_STR "ozone_font_scale_factor_footer"
-#define MENU_ENUM_LABEL_OZONE_PADDING_FACTOR_STR "ozone_padding_factor"
-#define MENU_ENUM_LABEL_OZONE_HEADER_ICON_STR "ozone_header_icon"
-#define MENU_ENUM_LABEL_OZONE_HEADER_SEPARATOR_STR "ozone_header_separator"

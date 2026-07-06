@@ -1932,6 +1932,11 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_OZONE
+#include "settings/settings_def_ozone_typography.h"
+#endif
+#endif
 #include "settings/settings_def_saving.h"
 #include "settings/settings_def_notification_positions.h"
 #include "settings/settings_def_menu_main_lists_4.h"
@@ -2466,9 +2471,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("rgui_switch_icons",                       &settings->bools.menu_rgui_switch_icons, true, DEFAULT_RGUI_SWITCH_ICONS, false);
    SETTING_BOOL("rgui_particle_effect_screensaver",        &settings->bools.menu_rgui_particle_effect_screensaver, true, DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER, false);
 #endif
-#ifdef HAVE_OZONE
-   SETTING_BOOL("ozone_scroll_content_metadata", &settings->bools.ozone_scroll_content_metadata, true, DEFAULT_OZONE_SCROLL_CONTENT_METADATA, false);
-#endif
 #endif /* HAVE_MENU */
 
 #ifdef HAVE_CHEEVOS
@@ -2604,6 +2606,11 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_OZONE
+#include "settings/settings_def_ozone_typography.h"
+#endif
+#endif
 #include "settings/settings_def_saving.h"
 #include "settings/settings_def_notification_positions.h"
 #include "settings/settings_def_menu_main_lists_4.h"
@@ -3081,14 +3088,6 @@ static struct config_float_setting *populate_settings_float(
 #endif
 #ifdef HAVE_OZONE
    SETTING_FLOAT("ozone_thumbnail_scale_factor", &settings->floats.ozone_thumbnail_scale_factor, true, DEFAULT_OZONE_THUMBNAIL_SCALE_FACTOR, false);
-   SETTING_FLOAT("ozone_padding_factor",         &settings->floats.ozone_padding_factor, true, DEFAULT_OZONE_PADDING_FACTOR, false);
-   SETTING_FLOAT("ozone_font_scale_factor_global",   &settings->floats.ozone_font_scale_factor_global, true, DEFAULT_OZONE_FONT_SCALE_FACTOR_GLOBAL, false);
-   SETTING_FLOAT("ozone_font_scale_factor_title",    &settings->floats.ozone_font_scale_factor_title, true, DEFAULT_OZONE_FONT_SCALE_FACTOR_TITLE, false);
-   SETTING_FLOAT("ozone_font_scale_factor_sidebar",  &settings->floats.ozone_font_scale_factor_sidebar, true, DEFAULT_OZONE_FONT_SCALE_FACTOR_SIDEBAR, false);
-   SETTING_FLOAT("ozone_font_scale_factor_label",    &settings->floats.ozone_font_scale_factor_label, true, DEFAULT_OZONE_FONT_SCALE_FACTOR_LABEL, false);
-   SETTING_FLOAT("ozone_font_scale_factor_sublabel", &settings->floats.ozone_font_scale_factor_sublabel, true, DEFAULT_OZONE_FONT_SCALE_FACTOR_SUBLABEL, false);
-   SETTING_FLOAT("ozone_font_scale_factor_time",     &settings->floats.ozone_font_scale_factor_time, true, DEFAULT_OZONE_FONT_SCALE_FACTOR_TIME, false);
-   SETTING_FLOAT("ozone_font_scale_factor_footer",   &settings->floats.ozone_font_scale_factor_footer, true, DEFAULT_OZONE_FONT_SCALE_FACTOR_FOOTER, false);
 #endif
 #endif /* HAVE_MENU */
 
@@ -3159,11 +3158,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_xmb_thumbnail_scale_factor",         &settings->uints.menu_xmb_thumbnail_scale_factor, true, DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR, false);
    SETTING_UINT("menu_shader_pipeline",          &settings->uints.menu_xmb_shader_pipeline, true, DEFAULT_MENU_SHADER_PIPELINE, false);
 #endif
-#ifdef HAVE_OZONE
-   SETTING_UINT("ozone_header_icon",             &settings->uints.menu_ozone_header_icon, true, DEFAULT_OZONE_HEADER_ICON, false);
-   SETTING_UINT("ozone_header_separator",        &settings->uints.menu_ozone_header_separator, true, DEFAULT_OZONE_HEADER_SEPARATOR, false);
-   SETTING_UINT("ozone_font_scale",              &settings->uints.menu_ozone_font_scale, true, DEFAULT_OZONE_FONT_SCALE, false);
-#endif
 #endif /* HAVE_MENU */
 
    SETTING_UINT("audio_out_rate",                &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
@@ -3230,6 +3224,11 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_OZONE
+#include "settings/settings_def_ozone_typography.h"
+#endif
+#endif
 #include "settings/settings_def_saving.h"
 #include "settings/settings_def_notification_positions.h"
 #include "settings/settings_def_menu_main_lists_4.h"
@@ -3864,6 +3863,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_OZONE
+#include "settings/settings_def_ozone_typography.h"
+#endif
+#endif
 #include "settings/settings_def_saving.h"
 #include "settings/settings_def_notification_positions.h"
 #include "settings/settings_def_menu_main_lists_4.h"
@@ -4370,6 +4374,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_OZONE
+#include "settings/settings_def_ozone_typography.h"
+#endif
+#endif
 #include "settings/settings_def_saving.h"
 #include "settings/settings_def_notification_positions.h"
 #include "settings/settings_def_menu_main_lists_4.h"
