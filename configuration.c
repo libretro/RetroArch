@@ -1977,6 +1977,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef _3DS
+#include "settings/settings_def_3ds_bottom_lcd.h"
+#endif
 #ifdef HAVE_OVERLAY
 #include "settings/settings_def_overlay_auto_scale.h"
 #endif
@@ -2441,7 +2444,6 @@ static struct config_bool_setting *populate_settings_bool(
 
 #ifdef _3DS
    SETTING_BOOL("new3ds_speedup_enable",         &settings->bools.new3ds_speedup_enable, true, DEFAULT_NEW_3DS_SPEEDUP_ENABLE,      false);
-   SETTING_BOOL("video_3ds_lcd_bottom",          &settings->bools.video_3ds_lcd_bottom,  true, DEFAULT_VIDEO_3DS_LCD_BOTTOM, false);
    SETTING_BOOL("bottom_font_enable",            &settings->bools.bottom_font_enable,    true, DEFAULT_BOTTOM_FONT_ENABLE, false);
 #endif
 
@@ -2507,6 +2509,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef _3DS
+#include "settings/settings_def_3ds_bottom_lcd.h"
+#endif
 #ifdef HAVE_OVERLAY
 #include "settings/settings_def_overlay_auto_scale.h"
 #endif
@@ -3004,6 +3009,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef _3DS
+#include "settings/settings_def_3ds_bottom_lcd.h"
+#endif
 #ifdef HAVE_OVERLAY
 #include "settings/settings_def_overlay_auto_scale.h"
 #endif
@@ -3478,6 +3486,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef _3DS
+#include "settings/settings_def_3ds_bottom_lcd.h"
+#endif
 #ifdef HAVE_OVERLAY
 #include "settings/settings_def_overlay_auto_scale.h"
 #endif
@@ -3750,6 +3761,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef _3DS
+#include "settings/settings_def_3ds_bottom_lcd.h"
+#endif
 #ifdef HAVE_OVERLAY
 #include "settings/settings_def_overlay_auto_scale.h"
 #endif

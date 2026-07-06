@@ -1247,7 +1247,6 @@
 #define MENU_ENUM_LABEL_NO_IMAGES_AVAILABLE_STR "no_images"
 #define MENU_ENUM_LABEL_NO_FAVORITES_AVAILABLE_STR "no_favorites"
 #define MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE_STR "new3ds_speedup_enable"
-#define MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM_STR "video_3ds_lcd_bottom"
 #define MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE_STR "video_3ds_display_mode"
 #define MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY_STR "bottom_assets_directory"
 #define MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE_STR "bottom_font_enable"
