@@ -1823,7 +1823,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("statistics_show",               &settings->bools.video_statistics_show, true, DEFAULT_STATISTICS_SHOW, false);
    SETTING_BOOL("framecount_show",               &settings->bools.video_framecount_show, true, DEFAULT_FRAMECOUNT_SHOW, false);
    SETTING_BOOL("memory_show",                   &settings->bools.video_memory_show, true, DEFAULT_MEMORY_SHOW, false);
-   SETTING_BOOL("pause_on_disconnect",           &settings->bools.pause_on_disconnect, true, DEFAULT_PAUSE_ON_DISCONNECT, false);
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, DEFAULT_AUTO_SCREENSHOT_FILENAME, false);
    SETTING_BOOL("video_filter_enable",           &settings->bools.video_filter_enable, true, true, false);
    SETTING_BOOL("apply_cheats_after_toggle",     &settings->bools.apply_cheats_after_toggle, true, DEFAULT_APPLY_CHEATS_AFTER_TOGGLE, false);
@@ -1908,12 +1907,8 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    SETTING_BOOL("audio_fastforward_mute",        &settings->bools.audio_fastforward_mute, true, DEFAULT_AUDIO_FASTFORWARD_MUTE, false);
    SETTING_BOOL("audio_fastforward_speedup",     &settings->bools.audio_fastforward_speedup, true, DEFAULT_AUDIO_FASTFORWARD_SPEEDUP, false);
-   SETTING_BOOL("audio_fastpath_s16",            &settings->bools.audio_fastpath_s16, true, DEFAULT_AUDIO_FASTPATH_S16, false);
    SETTING_BOOL("audio_rewind_mute",             &settings->bools.audio_rewind_mute, true, DEFAULT_AUDIO_REWIND_MUTE, false);
 
-#ifdef HAVE_WASAPI
-   SETTING_BOOL("audio_wasapi_exclusive_mode",   &settings->bools.audio_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
-#endif
 
 #ifdef HAVE_MICROPHONE
 #ifdef HAVE_WASAPI
@@ -1935,7 +1930,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_scale_integer",           &settings->bools.video_scale_integer, true, DEFAULT_SCALE_INTEGER, false);
    SETTING_BOOL("video_ctx_scaling",             &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
-   SETTING_BOOL("video_frame_delay_auto",        &settings->bools.video_frame_delay_auto, true, DEFAULT_FRAME_DELAY_AUTO, false);
    SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, DEFAULT_VIDEO_THREADED, false);
    SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, DEFAULT_VIDEO_SHARED_CONTEXT, false);
    SETTING_BOOL("video_hdr_scanlines",           &settings->bools.video_hdr_scanlines, true, DEFAULT_VIDEO_HDR_SCANLINES, false);
@@ -1977,6 +1971,20 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_scroll.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_menu_thumbnails.h"
+#endif
+#endif
+#include "settings/settings_def_input_turbo.h"
+#include "settings/settings_def_frame_delay.h"
+#ifdef HAVE_WASAPI
+#include "settings/settings_def_audio_wasapi.h"
+#endif
+#include "settings/settings_def_audio_resampler_quality.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_wallpaper_opacity.h"
 #endif
@@ -2335,7 +2343,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_disable_search_button",    &settings->bools.menu_disable_search_button, true, false, false);
    SETTING_BOOL("menu_disable_left_analog",      &settings->bools.menu_disable_left_analog, true, false, false);
    SETTING_BOOL("menu_disable_right_analog",     &settings->bools.menu_disable_right_analog, true, false, false);
-   SETTING_BOOL("menu_linear_filter",            &settings->bools.menu_linear_filter, true, DEFAULT_VIDEO_SMOOTH, false);
    SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
    SETTING_BOOL("menu_savestate_resume",         &settings->bools.menu_savestate_resume, true, DEFAULT_MENU_SAVESTATE_RESUME, false);
    SETTING_BOOL("menu_insert_disk_resume",       &settings->bools.menu_insert_disk_resume, true, DEFAULT_MENU_INSERT_DISK_RESUME, false);
@@ -2400,7 +2407,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, DEFAULT_XMB_SHADOWS_ENABLE, false);
    SETTING_BOOL("xmb_entry_icons",               &settings->bools.menu_xmb_entry_icons, true, DEFAULT_XMB_ENTRY_ICONS, false);
    SETTING_BOOL("xmb_switch_icons",              &settings->bools.menu_xmb_switch_icons, true, DEFAULT_XMB_SWITCH_ICONS, false);
-   SETTING_BOOL("xmb_vertical_thumbnails",       &settings->bools.menu_xmb_vertical_thumbnails, true, DEFAULT_XMB_VERTICAL_THUMBNAILS, false);
    SETTING_BOOL("menu_xmb_show_horizontal_list", &settings->bools.menu_xmb_show_horizontal_list, true, DEFAULT_XMB_SHOW_HORIZONTAL_LIST, false);
    SETTING_BOOL("menu_xmb_show_title_header",    &settings->bools.menu_xmb_show_title_header, true, DEFAULT_XMB_SHOW_TITLE_HEADER, false);
 #endif
@@ -2590,6 +2596,20 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_scroll.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_menu_thumbnails.h"
+#endif
+#endif
+#include "settings/settings_def_input_turbo.h"
+#include "settings/settings_def_frame_delay.h"
+#ifdef HAVE_WASAPI
+#include "settings/settings_def_audio_wasapi.h"
+#endif
+#include "settings/settings_def_audio_resampler_quality.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_wallpaper_opacity.h"
 #endif
@@ -3039,7 +3059,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_remember_selection",       &settings->uints.menu_remember_selection, true, DEFAULT_MENU_REMEMBER_SELECTION, false);
    SETTING_UINT("menu_startup_page",             &settings->uints.menu_startup_page, true, DEFAULT_MENU_STARTUP_PAGE, false);
 #ifdef HAVE_RGUI
-   SETTING_UINT("rgui_internal_upscale_level",   &settings->uints.menu_rgui_internal_upscale_level, true, DEFAULT_RGUI_INTERNAL_UPSCALE_LEVEL, false);
    SETTING_UINT("rgui_particle_effect",          &settings->uints.menu_rgui_particle_effect, true, DEFAULT_RGUI_PARTICLE_EFFECT, false);
 #endif
 #ifdef HAVE_XMB
@@ -3074,12 +3093,8 @@ static struct config_uint_setting *populate_settings_uint(
 
    SETTING_UINT("audio_out_rate",                &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
    SETTING_UINT("audio_latency",                 &settings->uints.audio_latency, false, 0 /* TODO */, false);
-   SETTING_UINT("audio_resampler_quality",       &settings->uints.audio_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
    SETTING_UINT("audio_block_frames",            &settings->uints.audio_block_frames, true, 0, false);
 
-#ifdef HAVE_WASAPI
-   SETTING_UINT("audio_wasapi_sh_buffer_length",  &settings->uints.audio_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_SH_BUFFER_LENGTH, false);
-#endif
 
 #ifdef HAVE_MICROPHONE
    SETTING_UINT("microphone_latency",            &settings->uints.microphone_latency, false, 0 /* TODO */, false);
@@ -3112,7 +3127,6 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
 #endif
-   SETTING_UINT("video_frame_delay",             &settings->uints.video_frame_delay,      true, DEFAULT_FRAME_DELAY, false);
    /* GENERATED: single-source setting rows (uint kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
 #define S_BOOL_NS(f, T, n, d, sd, df, c, us)
@@ -3151,6 +3165,20 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_scroll.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_menu_thumbnails.h"
+#endif
+#endif
+#include "settings/settings_def_input_turbo.h"
+#include "settings/settings_def_frame_delay.h"
+#ifdef HAVE_WASAPI
+#include "settings/settings_def_audio_wasapi.h"
+#endif
+#include "settings/settings_def_audio_resampler_quality.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_wallpaper_opacity.h"
 #endif
@@ -3497,7 +3525,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_quit_gamepad_combo",      &settings->uints.input_quit_gamepad_combo, true, DEFAULT_QUIT_GAMEPAD_COMBO, false);
    SETTING_UINT("input_hotkey_block_delay",      &settings->uints.input_hotkey_block_delay, true, DEFAULT_INPUT_HOTKEY_BLOCK_DELAY, false);
    SETTING_UINT("input_rumble_gain",             &settings->uints.input_rumble_gain, true, DEFAULT_RUMBLE_GAIN, false);
-   SETTING_UINT("input_auto_game_focus",         &settings->uints.input_auto_game_focus, true, DEFAULT_INPUT_AUTO_GAME_FOCUS, false);
 #ifdef ANDROID
    SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 0, false);
 #else
@@ -3675,6 +3702,20 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_scroll.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_menu_thumbnails.h"
+#endif
+#endif
+#include "settings/settings_def_input_turbo.h"
+#include "settings/settings_def_frame_delay.h"
+#ifdef HAVE_WASAPI
+#include "settings/settings_def_audio_wasapi.h"
+#endif
+#include "settings/settings_def_audio_resampler_quality.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_wallpaper_opacity.h"
 #endif
@@ -4032,6 +4073,20 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_scroll.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_menu_thumbnails.h"
+#endif
+#endif
+#include "settings/settings_def_input_turbo.h"
+#include "settings/settings_def_frame_delay.h"
+#ifdef HAVE_WASAPI
+#include "settings/settings_def_audio_wasapi.h"
+#endif
+#include "settings/settings_def_audio_resampler_quality.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_wallpaper_opacity.h"
 #endif
