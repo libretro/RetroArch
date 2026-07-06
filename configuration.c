@@ -1977,6 +1977,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ai_service.h"
 #include "settings/settings_def_video_window_custom_size.h"
 #include "settings/settings_def_video_window_save_position.h"
 #include "settings/settings_def_user_language_action.h"
@@ -2511,6 +2512,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ai_service.h"
 #include "settings/settings_def_video_window_custom_size.h"
 #include "settings/settings_def_video_window_save_position.h"
 #include "settings/settings_def_user_language_action.h"
@@ -3014,6 +3016,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ai_service.h"
 #include "settings/settings_def_video_window_custom_size.h"
 #include "settings/settings_def_video_window_save_position.h"
 #include "settings/settings_def_user_language_action.h"
@@ -3364,7 +3367,6 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
    SETTING_UINT("accessibility_narrator_speech_speed", &settings->uints.accessibility_narrator_speech_speed, true, DEFAULT_ACCESSIBILITY_NARRATOR_SPEECH_SPEED, false);
    SETTING_UINT("accessibility_narrator_engine", &settings->uints.accessibility_narrator_engine, true, DEFAULT_ACCESSIBILITY_NARRATOR_ENGINE, false);
-   SETTING_UINT("ai_service_mode",              &settings->uints.ai_service_mode,            true, DEFAULT_AI_SERVICE_MODE, false);
    SETTING_UINT("ai_service_target_lang",       &settings->uints.ai_service_target_lang,     true, 0, false);
    SETTING_UINT("ai_service_source_lang",       &settings->uints.ai_service_source_lang,     true, 0, false);
 
@@ -3494,6 +3496,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ai_service.h"
 #include "settings/settings_def_video_window_custom_size.h"
 #include "settings/settings_def_video_window_save_position.h"
 #include "settings/settings_def_user_language_action.h"
@@ -3772,6 +3775,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ai_service.h"
 #include "settings/settings_def_video_window_custom_size.h"
 #include "settings/settings_def_video_window_save_position.h"
 #include "settings/settings_def_user_language_action.h"

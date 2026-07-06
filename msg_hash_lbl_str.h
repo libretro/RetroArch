@@ -1299,7 +1299,6 @@
 #define MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS_STR "accessibility_settings"
 #define MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS_STR "power_management_settings"
 #define MENU_ENUM_LABEL_AI_SERVICE_SETTINGS_STR "ai_service_settings"
-#define MENU_ENUM_LABEL_AI_SERVICE_MODE_STR "ai_service_mode"
 #define MENU_ENUM_LABEL_AI_SERVICE_URL_STR "ai_service_url"
 #define MENU_ENUM_LABEL_AI_SERVICE_ENABLE_STR "ai_service_enable"
 #define MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG_STR "ai_service_target_lang"
