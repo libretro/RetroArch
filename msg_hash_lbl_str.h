@@ -7,7 +7,6 @@
 
 #define MENU_ENUM_LABEL_SWITCH_CPU_PROFILE_STR "switch_cpu_profile"
 #define MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME_STR "accounts_cheevos_username"
-#define MENU_ENUM_LABEL_ACCOUNTS_LIST_STR "accounts_list"
 #define MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU_STR "achievement_pause_menu"
 #define MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL_STR "achievement_pause_cancel"
 #define MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL_STR "achievement_resume_cancel"
