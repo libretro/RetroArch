@@ -218,7 +218,11 @@ for k, f, T, a in rows:
             k, _hs, f, T, names[T], a, usval[T], ussub[T])
         if _hs: _h_used.add('S_%s_H' % k)
     else:
-        row = 'S_%s_NS%s(%s, %s,\n      %s,\n      %s,\n      %s)' % (
+        if k == 'ACTION':
+            row = 'S_ACTION_NS%s(%s,\n      %s,\n      %s)' % (_hs, T, names[T], usval[T])
+        el_row_generic = True
+        if k != 'ACTION':
+            row = 'S_%s_NS%s(%s, %s,\n      %s,\n      %s,\n      %s)' % (
             k, _hs, f, T, names[T], a, usval[T])
         if _hs: _h_used.add('S_%s_NS_H' % k)
     if T in uscmt:
