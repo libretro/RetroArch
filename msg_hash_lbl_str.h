@@ -1365,7 +1365,6 @@
 #define MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P2_STR "game_ai_override_p2"
 #define MENU_ENUM_LABEL_GAME_AI_SHOW_DEBUG_STR "game_ai_show_debug"
 #define MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST_STR "deferred_smb_client_settings_list"
-#define MENU_ENUM_LABEL_SMB_CLIENT_ENABLE_STR "smb_client_enable"
 #define MENU_ENUM_LABEL_SMB_CLIENT_SERVER_STR "smb_client_server"
 #define MENU_ENUM_LABEL_SMB_CLIENT_SHARE_STR "smb_client_share"
 #define MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR_STR "smb_client_subdir"
