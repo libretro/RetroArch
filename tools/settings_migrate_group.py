@@ -59,6 +59,7 @@ DEFINE_COUPLES = {
     'TARGET_OS_IOS': ('IOS',),
     'TARGET_OS_TV': ('IOS',),
     'HAVE_COCOATOUCH': ('HAVE_COCOA_METAL',),
+    'HAVE_CLOUDSYNC': ('HAVE_NETWORKING',),
 }
 def _couple(flag):
     toks = [f[2:] for f in flag.split() if f.startswith('-D')]
