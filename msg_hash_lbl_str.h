@@ -733,7 +733,6 @@
 #define MENU_ENUM_LABEL_REMAP_FILE_RESET_STR "remap_file_reset"
 #define MENU_ENUM_LABEL_REMAP_FILE_FLUSH_STR "remap_file_flush"
 #define MENU_ENUM_LABEL_RESTART_CONTENT_STR "restart_content"
-#define MENU_ENUM_LABEL_RESTART_RETROARCH_STR "restart_retroarch"
 #define MENU_ENUM_LABEL_RESUME_CONTENT_STR "resume_content"
 #define MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS_STR "retro_achievements_settings"
 #define MENU_ENUM_LABEL_CHEAT_SETTINGS_STR "cheat_settings"
