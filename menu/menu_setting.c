@@ -4310,7 +4310,9 @@ static size_t setting_get_string_representation_uint_menu_ticker_type(
    return 0;
 }
 
-#ifdef HAVE_XMB
+/* The XMB animation settings are shared with the Ozone driver; their
+ * handlers must build whenever either driver does. */
+#if defined(HAVE_XMB) || defined(HAVE_OZONE)
 static size_t setting_get_string_representation_uint_menu_xmb_animation_move_up_down(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -4367,6 +4369,8 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_horizont
    return 0;
 }
 
+#endif
+#ifdef HAVE_XMB
 static size_t setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting, char *s, size_t len)
 {
