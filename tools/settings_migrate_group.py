@@ -34,6 +34,8 @@ import re, subprocess, os, json, sys
 def run(cmd): return subprocess.run(cmd, shell=True, capture_output=True, text=True)
 CSTR = r'"(?:[^"\\]|\\.)*"(?:\s*"(?:[^"\\]|\\.)*")*'
 TABLE, DEF, TITLE = sys.argv[1], sys.argv[2], sys.argv[3]
+assert not os.path.exists(os.path.join('settings', os.path.basename(DEF))), \
+    'def file %s already exists upstream - pick a different name' % DEF
 SIGS = [('S_BOOL','f, T, n, d, sd, df, c'),
         ('S_UINT','f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp'),
         ('S_INT', 'f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp'),
