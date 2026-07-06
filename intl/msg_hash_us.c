@@ -559,6 +559,7 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_rgui_appearance.h"
 #include "../settings/settings_def_playlist_display.h"
 #include "../settings/settings_def_cheevos_general.h"
 #include "../settings/settings_def_menu_appearance.h"
@@ -800,6 +801,7 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_rgui_appearance.h"
 #include "../settings/settings_def_playlist_display.h"
 #include "../settings/settings_def_cheevos_general.h"
 #include "../settings/settings_def_menu_appearance.h"

@@ -933,11 +933,7 @@
 #define MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION_STR "video_force_resolution"
 #define MENU_ENUM_LABEL_WIFI_DRIVER_STR "wifi_driver"
 #define MENU_ENUM_LABEL_XMB_ALPHA_FACTOR_STR "xmb_alpha_factor"
-#define MENU_ENUM_LABEL_MENU_FONT_COLOR_RED_STR "menu_font_color_red"
-#define MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN_STR "menu_font_color_green"
-#define MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE_STR "menu_font_color_blue"
 #define MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS_STR "xmb_main_menu_enable_settings"
-#define MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE_STR "xmb_shadows_enable"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY_STR "content_show_history"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY_STR "content_show_add_entry"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS_STR "content_show_playlists"
@@ -949,8 +945,6 @@
 #define MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC_STR "content_show_music"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO_STR "content_show_video"
 #define MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY_STR "content_show_netplay"
-#define MENU_ENUM_LABEL_XMB_LAYOUT_STR "xmb_layout"
-#define MENU_ENUM_LABEL_XMB_THEME_STR "xmb_theme"
 #define MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT_STR "bringing_up_command_interface_at_port"
 #define MSG_CONNECT_DEVICE_FROM_A_VALID_PORT_STR "connect_device_from_a_valid_port"
 #define MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT_STR "disconnect_device_from_a_valid_port"
@@ -1274,5 +1268,3 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
 
 #endif /* MSG_HASH_LBL_STR_H__ */
-#define MENU_ENUM_LABEL_XMB_ENTRY_ICONS_STR "xmb_entry_icons"
-#define MENU_ENUM_LABEL_XMB_SWITCH_ICONS_STR "xmb_switch_icons"

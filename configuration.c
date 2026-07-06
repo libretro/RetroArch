@@ -1961,6 +1961,11 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_rgui_appearance.h"
+#endif
+#endif
 #include "settings/settings_def_playlist_display.h"
 #ifdef HAVE_CHEEVOS
 #include "settings/settings_def_cheevos_general.h"
@@ -2416,9 +2421,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("rgui_particle_effect_screensaver",        &settings->bools.menu_rgui_particle_effect_screensaver, true, DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER, false);
 #endif
 #ifdef HAVE_XMB
-   SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, DEFAULT_XMB_SHADOWS_ENABLE, false);
-   SETTING_BOOL("xmb_entry_icons",               &settings->bools.menu_xmb_entry_icons, true, DEFAULT_XMB_ENTRY_ICONS, false);
-   SETTING_BOOL("xmb_switch_icons",              &settings->bools.menu_xmb_switch_icons, true, DEFAULT_XMB_SWITCH_ICONS, false);
    SETTING_BOOL("menu_xmb_show_horizontal_list", &settings->bools.menu_xmb_show_horizontal_list, true, DEFAULT_XMB_SHOW_HORIZONTAL_LIST, false);
    SETTING_BOOL("menu_xmb_show_title_header",    &settings->bools.menu_xmb_show_title_header, true, DEFAULT_XMB_SHOW_TITLE_HEADER, false);
 #endif
@@ -2593,6 +2595,11 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_rgui_appearance.h"
+#endif
+#endif
 #include "settings/settings_def_playlist_display.h"
 #ifdef HAVE_CHEEVOS
 #include "settings/settings_def_cheevos_general.h"
@@ -3084,12 +3091,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_xmb_vertical_fade_factor",           &settings->uints.menu_xmb_vertical_fade_factor, true, DEFAULT_XMB_VERTICAL_FADE_FACTOR, false);
    SETTING_UINT("xmb_alpha_factor",              &settings->uints.menu_xmb_alpha_factor, true, DEFAULT_XMB_ALPHA_FACTOR, false);
    SETTING_UINT("xmb_current_menu_icon",         &settings->uints.menu_xmb_current_menu_icon, true, DEFAULT_XMB_CURRENT_MENU_ICON, false);
-   SETTING_UINT("xmb_layout",                    &settings->uints.menu_xmb_layout, true, DEFAULT_XMB_MENU_LAYOUT, false);
-   SETTING_UINT("xmb_theme",                     &settings->uints.menu_xmb_theme, true, DEFAULT_XMB_ICON_THEME, false);
    SETTING_UINT("menu_shader_pipeline",          &settings->uints.menu_xmb_shader_pipeline, true, DEFAULT_MENU_SHADER_PIPELINE, false);
-   SETTING_UINT("menu_font_color_red",           &settings->uints.menu_font_color_red, true, DEFAULT_MENU_FONT_COLOR_RED, false);
-   SETTING_UINT("menu_font_color_green",         &settings->uints.menu_font_color_green, true, DEFAULT_MENU_FONT_COLOR_GREEN, false);
-   SETTING_UINT("menu_font_color_blue",          &settings->uints.menu_font_color_blue, true, DEFAULT_MENU_FONT_COLOR_BLUE, false);
 #endif
 #ifdef HAVE_MATERIALUI
    SETTING_UINT("materialui_menu_color_theme",              &settings->uints.menu_materialui_color_theme, true, DEFAULT_MATERIALUI_THEME, false);
@@ -3176,6 +3178,11 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_rgui_appearance.h"
+#endif
+#endif
 #include "settings/settings_def_playlist_display.h"
 #ifdef HAVE_CHEEVOS
 #include "settings/settings_def_cheevos_general.h"
@@ -3735,6 +3742,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_rgui_appearance.h"
+#endif
+#endif
 #include "settings/settings_def_playlist_display.h"
 #ifdef HAVE_CHEEVOS
 #include "settings/settings_def_cheevos_general.h"
@@ -4133,6 +4145,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_rgui_appearance.h"
+#endif
+#endif
 #include "settings/settings_def_playlist_display.h"
 #ifdef HAVE_CHEEVOS
 #include "settings/settings_def_cheevos_general.h"
