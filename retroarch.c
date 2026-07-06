@@ -3979,9 +3979,12 @@ bool command_event(enum event_command cmd, void *data)
              * only the widget lifecycle needs adjusting. Mirrors the enable
              * decision in drivers_init() and the threaded deinit barrier in
              * driver_uninit(). */
+            /* Gate on the *active* state -- what gfx_widgets_ready() and the
+             * menu read -- not the INITED flag. A persisting deinit leaves
+             * INITED set, which would wedge the toggle after the first use
+             * (toggle worked once, then the menu stopped updating). */
             dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
-            bool widgets_inited            =
-                  (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED) != 0;
+            bool widgets_active            = p_dispwidget->active;
             bool want_widgets              =
                      settings->bools.video_font_enable
                   && settings->bools.menu_enable_widgets
@@ -3990,7 +3993,7 @@ bool command_event(enum event_command cmd, void *data)
                   && video_st->current_video->gfx_widgets_enabled(
                         video_st->data);
 
-            if (want_widgets && !widgets_inited)
+            if (want_widgets && !widgets_active)
             {
                bool force_fs            = (video_st->flags &
                      VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
@@ -4008,7 +4011,7 @@ bool command_event(enum event_command cmd, void *data)
                      settings->paths.directory_assets,
                      settings->paths.path_font);
             }
-            else if (!want_widgets && widgets_inited)
+            else if (!want_widgets && widgets_active)
             {
 #ifdef HAVE_THREADS
                /* Same barrier as driver_uninit(): never free widget GPU
@@ -4017,8 +4020,9 @@ bool command_event(enum event_command cmd, void *data)
                      && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
                   video_thread_wait_idle();
 #endif
-               gfx_widgets_deinit(p_dispwidget->flags &
-                     DISPGFX_WIDGET_FLAG_PERSISTING);
+               /* Full teardown (not persisting): a real user toggle-off
+                * must clear INITED so a later toggle-on re-inits cleanly. */
+               gfx_widgets_deinit(false);
                p_dispwidget->active = false;
             }
          }
