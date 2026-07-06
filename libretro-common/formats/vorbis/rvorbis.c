@@ -4774,7 +4774,7 @@ int rvorbis_seek(rvorbis *f, unsigned int sample_number)
    if (sample_number < f->p_first.last_decoded_sample)
    {
       vorbis_seek_frame_from_page(f, p[0].page_start, 0, sample_number);
-      return 0;
+      return 1;
    }
    while (p[0].page_end < p[1].page_start)
    {
@@ -4840,7 +4840,7 @@ int rvorbis_seek(rvorbis *f, unsigned int sample_number)
    {
       vorbis_seek_frame_from_page(f, p[1].page_start, p[0].last_decoded_sample,
 sample_number);
-      return 0;
+      return 1;
    }
    return error(f, RVORBIS_seek_failed);
 }
