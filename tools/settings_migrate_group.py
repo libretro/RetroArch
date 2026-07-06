@@ -42,7 +42,8 @@ SIGS = [('S_BOOL','f, T, n, d, sd, df, c'),
         ('S_DIR','f, T, n, d, el, sd, c, sta'),
         ('S_STRING_P','f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui'),
         ('S_PATH','f, T, n, d, sd, c, vals, rp, ui'),
-        ('S_PATH_DS','f, T, n, df2, sd, c, vals, rp, ui')]
+        ('S_PATH_DS','f, T, n, df2, sd, c, vals, rp, ui'),
+        ('S_ACTION','T, n')]
 UNDEFS = '\n'.join('#undef %s%s' % (b, s) for b, _ in SIGS for s in ('', '_NS'))
 def defs(mk):
     L = []
@@ -106,6 +107,7 @@ for ln in body.split('\n'):
             guards[rm.group(1)] = tuple(gstack)
 rows = [(m.group(1) + (m.group(2) or ''), m.group(3), m.group(4), re.sub(r'\s+',' ',m.group(5)).strip())
         for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT|STRING|DIR|PATH)_ROW(_P|_DS)?\(\s*(\w+),\s*(\w+),((?:[^()]|\([^()]*\))*)\)', body)]
+rows += [('ACTION', '', m.group(1), '') for m in re.finditer(r'SDESC_ACTION_ROW\(\s*(\w+)\s*\)', body)]
 all_invocations = re.findall(r'SDESC_\w+?_ROW(?:_\w+)?\(', body)
 assert len(rows) == len(all_invocations), (
     'table contains %d rows but only %d are plain-grammar '
@@ -160,12 +162,12 @@ cfg_keeps = []
 for k, f, T, a in rows:
     _mac = {'STRING': 'ARRAY', 'DIR': 'PATH'}.get(k, k)
     m = re.search(r' *SETTING_%s\(\s*%s, *&?settings->\w+\.%s,[^;]*;\n' % (_mac, re.escape(names[T]), f), cfg)
-    if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P'):
+    if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION'):
         m = None  # dirs keep literal config rows: default-enable varies per row 
     if m:
         cfg_spans.append((m.start(), m.end())); continue
-    m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (r'\w+' if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P') else _mac, f), cfg)
-    if not m and k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P'):
+    m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (r'\w+' if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION') else _mac, f), cfg)
+    if not m and k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION'):
         # unpersisted setting: keep-literal kinds may lack a
         # config row entirely; nothing to delete or emit
         print('  note: %s has no config row - unpersisted, kept absent' % T)
@@ -209,7 +211,10 @@ for k, f, T, a in rows:
     if _hs:
         assert ('MENU_LABEL(%s),' % T) not in _mh_text, (T, 'both enum forms present')
     if T in ussub:
-        row = 'S_%s%s(%s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (
+        if k == 'ACTION':
+            row = 'S_ACTION(%s,\n      %s,\n      %s,\n      %s)' % (T, names[T], usval[T], ussub[T])
+        elif True:
+            row = 'S_%s%s(%s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (
             k, _hs, f, T, names[T], a, usval[T], ussub[T])
         if _hs: _h_used.add('S_%s_H' % k)
     else:
@@ -304,7 +309,8 @@ cfg = cfg.replace('#include "settings/settings_def_video_sync.h"',
 open('configuration.c','w').write(cfg)
 ms = open('menu/menu_setting.c').read()
 tm = re.search(r'static const setting_desc_t %s\[\] = \{\n(.*?)\n( *)\};' % TABLE, ms, re.S)
-MENU_EMIT = {'S_STRING_P':'SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),',
+MENU_EMIT = {'S_ACTION':'SDESC_ACTION_ROW(T),',
+             'S_STRING_P':'SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),',
              'S_PATH':'SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),',
              'S_PATH_DS':'SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),',
              'S_DIR':'SDESC_DIR_ROW(f, T, d, el, sd, c, sta),',
@@ -528,7 +534,7 @@ if _enum_ok:
     _d = ['   /* GENERATED REGION: %s enum rows (see settings/%s). */' % (TITLE, DEF),
           '#define SETTINGS_DEF_ENUM_PASS',
           '#define SETTINGS_DEF_STRINGS_PASS']
-    for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS','S_STRING','S_STRING_NS','S_DIR','S_DIR_NS','S_STRING_P','S_STRING_P_NS','S_PATH','S_PATH_NS','S_PATH_DS','S_PATH_DS_NS'):
+    for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS','S_STRING','S_STRING_NS','S_DIR','S_DIR_NS','S_STRING_P','S_STRING_P_NS','S_PATH','S_PATH_NS','S_PATH_DS','S_PATH_DS_NS','S_ACTION','S_ACTION_NS'):
         _d.append('#define %s(%s) MENU_LABEL(T),' % (_n, _ar[_n]))
     for _hn, _b in (('S_BOOL_H','S_BOOL'), ('S_UINT_H','S_UINT'), ('S_BOOL_NS_H','S_BOOL_NS'),
                     ('S_INT_H','S_INT'), ('S_FLOAT_H','S_FLOAT'),
@@ -537,7 +543,8 @@ if _enum_ok:
                     ('S_DIR_H','S_DIR'), ('S_DIR_NS_H','S_DIR_NS'),
                     ('S_STRING_P_H','S_STRING_P'), ('S_STRING_P_NS_H','S_STRING_P_NS'),
                     ('S_PATH_H','S_PATH'), ('S_PATH_NS_H','S_PATH_NS'),
-                    ('S_PATH_DS_H','S_PATH_DS'), ('S_PATH_DS_NS_H','S_PATH_DS_NS')):
+                    ('S_PATH_DS_H','S_PATH_DS'), ('S_PATH_DS_NS_H','S_PATH_DS_NS'),
+                    ('S_ACTION_H','S_ACTION'), ('S_ACTION_NS_H','S_ACTION_NS')):
         _d.append('#define %s(%s) MENU_LBL_H(T),' % (_hn, _ar[_b]))
     _d.append('#include "settings/%s"' % DEF)
     for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS',
@@ -546,6 +553,7 @@ if _enum_ok:
                'S_STRING_P','S_STRING_P_NS','S_STRING_P_H','S_STRING_P_NS_H',
                'S_PATH','S_PATH_NS','S_PATH_H','S_PATH_NS_H',
                'S_PATH_DS','S_PATH_DS_NS','S_PATH_DS_H','S_PATH_DS_NS_H',
+               'S_ACTION','S_ACTION_NS','S_ACTION_H','S_ACTION_NS_H',
                'S_BOOL_H','S_UINT_H','S_BOOL_NS_H','S_INT_H','S_FLOAT_H','S_UINT_NS_H','S_INT_NS_H','S_FLOAT_NS_H',
                'SETTINGS_DEF_STRINGS_PASS','SETTINGS_DEF_ENUM_PASS'):
         _d.append('#undef %s' % _n)

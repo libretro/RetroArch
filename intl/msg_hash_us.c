@@ -545,6 +545,8 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) n,
 #define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) n,
 #define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) n,
+#define S_ACTION(T, n, us, sub) n,
+#define S_ACTION_NS(T, n, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
 #include "../settings/settings_def_user_identity.h"
@@ -653,6 +655,8 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #undef S_PATH_NS
 #undef S_PATH_DS
 #undef S_PATH_DS_NS
+#undef S_ACTION
+#undef S_ACTION_NS
 #undef SETTINGS_DEF_STRINGS_PASS
 };
 #undef MSG_HASH
@@ -678,6 +682,8 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_ACTION(T, n, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_ACTION_NS(T, n, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
 #include "../settings/settings_def_user_identity.h"
@@ -786,6 +792,8 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #undef S_PATH_NS
 #undef S_PATH_DS
 #undef S_PATH_DS_NS
+#undef S_ACTION
+#undef S_ACTION_NS
 #undef SETTINGS_DEF_STRINGS_PASS
 };
 #undef MSG_HASH
