@@ -8937,6 +8937,14 @@ static void general_write_handler(rarch_setting_t *setting)
 #ifdef HAVE_CHEEVOS
          rcheevos_validate_config_settings();
 #endif
+         /* Sync to Exact Content Framerate only changes the audio/video
+          * system rates (audio locks to the exact content rate instead of the
+          * display refresh) plus the per-frame swap interval, so re-adjust the
+          * rates in place rather than reinitialising the drivers -- the runloop
+          * reads vrr_runloop_enable every frame. */
+         if (setting->enum_idx == MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE)
+            driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE,
+                  &settings->floats.video_refresh_rate);
          break;
 
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
@@ -17325,7 +17333,7 @@ static bool setting_append_list(
                SDESC_BOOL_ROW(fastforward_frameskip, FASTFORWARD_FRAMESKIP,
                      DEFAULT_FASTFORWARD_FRAMESKIP, SD_FLAG_NONE, 0, 0),
                SDESC_BOOL_ROW_EX(vrr_runloop_enable, VRR_RUNLOOP_ENABLE,
-                     false, SD_FLAG_CMD_APPLY_AUTO, 0, CMD_EVENT_REINIT,
+                     false, SD_FLAG_CMD_APPLY_AUTO, 0, CMD_EVENT_NONE,
                      setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
             };
             settings_list_add_desc(list, list_info, settings,

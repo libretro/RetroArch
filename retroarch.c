@@ -5890,6 +5890,11 @@ bool command_event(enum event_command cmd, void *data)
                      settings->bools.vrr_runloop_enable ? MSG_VRR_RUNLOOP_ENABLED
                      : MSG_VRR_RUNLOOP_DISABLED);
             settings->bools.vrr_runloop_enable = !(settings->bools.vrr_runloop_enable);
+            /* Re-adjust audio/video system rates for the new VRR mode so the
+             * hotkey matches the menu toggle instead of leaving the audio
+             * input rate stale until the next reinit. */
+            driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE,
+                  &settings->floats.video_refresh_rate);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
