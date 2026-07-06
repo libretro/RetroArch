@@ -547,6 +547,16 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) n,
 #define S_ACTION(T, n, us, sub) n,
 #define S_ACTION_NS(T, n, us) n,
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) n,
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) n,
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) n,
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) n,
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) n,
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) n,
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) n,
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) n,
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) n,
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
 #include "../settings/settings_def_accounts_streaming.h"
@@ -676,6 +686,16 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #undef S_PATH_DS_NS
 #undef S_ACTION
 #undef S_ACTION_NS
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
 #undef SETTINGS_DEF_STRINGS_PASS
 };
 #undef MSG_HASH
@@ -703,6 +723,16 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_ACTION(T, n, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_ACTION_NS(T, n, us) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
 #include "../settings/settings_def_accounts_streaming.h"
@@ -832,6 +862,16 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #undef S_PATH_DS_NS
 #undef S_ACTION
 #undef S_ACTION_NS
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
 #undef SETTINGS_DEF_STRINGS_PASS
 };
 #undef MSG_HASH
