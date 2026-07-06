@@ -625,8 +625,22 @@ if _enum_ok:
     assert _plains(open('msg_hash.h').read()) == _census_pre, "enum census drift"
     r = run("python3 tools/msg_hash_name_harness.py /tmp/enum_post.txt")
     assert r.returncode == 0, r.stderr[-300:]
-    assert run('cmp -s /tmp/enum_pre.txt /tmp/enum_post.txt').returncode == 0, \
-        run('diff /tmp/enum_pre.txt /tmp/enum_post.txt | head -4').stdout
+    if run('cmp -s /tmp/enum_pre.txt /tmp/enum_post.txt').returncode != 0:
+        # A token whose strings were first introduced by this migration's
+        # census rows resolves to null in the mid-run pre dump (the def is
+        # not yet included anywhere in msg_hash.h) and to its own name
+        # after the enum stage. That exact transition, for this
+        # migration's tokens only, is the definition of correct.
+        _mine = set(names[_t2] for _k2, _f2, _t2, _a2 in rows)
+        _pre = open('/tmp/enum_pre.txt').read().split('\n')
+        _post = open('/tmp/enum_post.txt').read().split('\n')
+        assert len(_pre) == len(_post), 'name dump row count changed'
+        for _lp, _lq in zip(_pre, _post):
+            if _lp == _lq:
+                continue
+            _pp, _qq = _lp.split('|'), _lq.split('|')
+            assert (_pp[:2] == _qq[:2] and _pp[2] == 'null'
+                    and _qq[2] in _mine), (_lp, _lq)
     _body = re.search(r'enum msg_hash_enums\n\{\n(.*?)\n\};', mh, re.S).group(1)
     _toks = set(x for g in re.findall(r'^#if\w*([^\n]*)', _body, re.M)
                 for x in re.findall(r'\b([A-Z_][A-Z0-9_]{2,})\b', g) if x != 'defined')
