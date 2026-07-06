@@ -1798,10 +1798,6 @@ static struct config_bool_setting *populate_settings_bool(
 
    SETTING_BOOL("accessibility_enable",          &settings->bools.accessibility_enable, true, DEFAULT_ACCESSIBILITY_ENABLE, false);
    SETTING_BOOL("driver_switch_enable",          &settings->bools.driver_switch_enable, true, DEFAULT_DRIVER_SWITCH_ENABLE, false);
-   SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, DEFAULT_UI_COMPANION_START_ON_BOOT, false);
-   SETTING_BOOL("ui_companion_enable",           &settings->bools.ui_companion_enable, true, DEFAULT_UI_COMPANION_ENABLE, false);
-   SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, DEFAULT_UI_COMPANION_TOGGLE, false);
-   SETTING_BOOL("desktop_menu_enable",           &settings->bools.desktop_menu_enable, true, DEFAULT_DESKTOP_MENU_ENABLE, false);
    SETTING_BOOL("input_descriptor_label_show",   &settings->bools.input_descriptor_label_show, true, DEFAULT_INPUT_DESCRIPTOR_LABEL_SHOW, false);
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->bools.input_descriptor_hide_unbound, true, DEFAULT_INPUT_DESCRIPTOR_HIDE_UNBOUND, false);
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->bools.load_dummy_on_core_shutdown, true, DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN, false);
@@ -1947,6 +1943,8 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_analog_deadzone.h"
+#include "settings/settings_def_desktop_menu.h"
 #include "settings/settings_def_audio_device.h"
 #include "settings/settings_def_ai_service_options.h"
 #include "settings/settings_def_video_output_misc.h"
@@ -2510,7 +2508,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS, false);
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
 #endif
-   SETTING_BOOL("input_sensors_enable",          &settings->bools.input_sensors_enable, true, DEFAULT_INPUT_SENSORS_ENABLE, false);
 
    SETTING_BOOL("content_runtime_log",           &settings->bools.content_runtime_log, true, DEFAULT_CONTENT_RUNTIME_LOG, false);
    SETTING_BOOL("content_runtime_log_aggregate", &settings->bools.content_runtime_log_aggregate, true, DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE, false);
@@ -2621,6 +2618,8 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_analog_deadzone.h"
+#include "settings/settings_def_desktop_menu.h"
 #include "settings/settings_def_audio_device.h"
 #include "settings/settings_def_ai_service_options.h"
 #include "settings/settings_def_video_output_misc.h"
@@ -3103,9 +3102,6 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("video_font_size",              &settings->floats.video_font_size, true, DEFAULT_FONT_SIZE, false);
    SETTING_FLOAT("video_msg_bgcolor_opacity",    &settings->floats.video_msg_bgcolor_opacity, true, DEFAULT_MESSAGE_BGCOLOR_OPACITY, false);
 
-   SETTING_FLOAT("input_axis_threshold",         &settings->floats.input_axis_threshold,     true, DEFAULT_AXIS_THRESHOLD, false);
-   SETTING_FLOAT("input_analog_deadzone",        &settings->floats.input_analog_deadzone,    true, DEFAULT_ANALOG_DEADZONE, false);
-   SETTING_FLOAT("input_analog_sensitivity",     &settings->floats.input_analog_sensitivity, true, DEFAULT_ANALOG_SENSITIVITY, false);
    SETTING_FLOAT("input_sensor_accelerometer_sensitivity",&settings->floats.input_sensor_accelerometer_sensitivity, true, DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY, false);
    SETTING_FLOAT("input_sensor_gyroscope_sensitivity",    &settings->floats.input_sensor_gyroscope_sensitivity, true, DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY, false);
 #ifdef HAVE_OVERLAY
@@ -3162,7 +3158,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_icon_thumbnails",          &settings->uints.menu_icon_thumbnails, true, DEFAULT_MENU_ICON_THUMBNAILS_DEFAULT, false);
    SETTING_UINT("menu_timedate_style",           &settings->uints.menu_timedate_style, true, DEFAULT_MENU_TIMEDATE_STYLE, false);
    SETTING_UINT("menu_timedate_date_separator",  &settings->uints.menu_timedate_date_separator, true, DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR, false);
-   SETTING_UINT("menu_scroll_delay",             &settings->uints.menu_scroll_delay, true, DEFAULT_MENU_SCROLL_DELAY, false);
 #ifdef HAVE_RGUI
    SETTING_UINT("rgui_particle_effect",          &settings->uints.menu_rgui_particle_effect, true, DEFAULT_RGUI_PARTICLE_EFFECT, false);
 #endif
@@ -3256,6 +3251,8 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_analog_deadzone.h"
+#include "settings/settings_def_desktop_menu.h"
 #include "settings/settings_def_audio_device.h"
 #include "settings/settings_def_ai_service_options.h"
 #include "settings/settings_def_video_output_misc.h"
@@ -3885,6 +3882,8 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_analog_deadzone.h"
+#include "settings/settings_def_desktop_menu.h"
 #include "settings/settings_def_audio_device.h"
 #include "settings/settings_def_ai_service_options.h"
 #include "settings/settings_def_video_output_misc.h"
@@ -4366,6 +4365,8 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_analog_deadzone.h"
+#include "settings/settings_def_desktop_menu.h"
 #include "settings/settings_def_audio_device.h"
 #include "settings/settings_def_ai_service_options.h"
 #include "settings/settings_def_video_output_misc.h"
