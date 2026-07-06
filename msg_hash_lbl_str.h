@@ -202,6 +202,7 @@
 #define MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL_STR "core_updater_buildbot_url"
 #define MENU_ENUM_LABEL_CORE_UPDATER_LIST_STR "core_updater_list"
 #define MENU_ENUM_LABEL_CORE_MANAGER_LIST_STR "core_manager_list"
+#define MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST_STR "core_manager_steam_list"
 #define MENU_ENUM_LABEL_CORE_STEAM_INSTALL_STR "core_steam_install"
 #define MENU_ENUM_LABEL_CORE_STEAM_UNINSTALL_STR "core_steam_uninstall"
 #define MENU_ENUM_LABEL_STEAM_SETTINGS_STR "steam_settings"
