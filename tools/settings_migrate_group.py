@@ -150,7 +150,7 @@ usval, ussub, usspan, uscmt = {}, {}, [], {}
 for k, f, T, a in rows:
     m = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
     if not m:
-        _own = run("grep -l 'S_\\w*(%s,' settings/*.h" % T).stdout.strip()
+        _own = run("grep -lE 'S_\\w*\\((\\w+, *)?%s,' settings/*.h" % T).stdout.strip()
         assert not _own, ('token %s strings are owned by %s; this table only '
             'references it and needs no migration' % (T, _own))
     assert m, ('VALUE', T)
