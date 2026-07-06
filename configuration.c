@@ -1869,15 +1869,11 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("cloud_sync_sync_configs",       &settings->bools.cloud_sync_sync_configs, true, true, false);
    SETTING_BOOL("cloud_sync_sync_thumbs",        &settings->bools.cloud_sync_sync_thumbs, true, false, false);
    SETTING_BOOL("cloud_sync_sync_system",        &settings->bools.cloud_sync_sync_system, true, false, false);
-#ifdef HAVE_MIST
-   SETTING_BOOL("steam_rich_presence_enable",    &settings->bools.steam_rich_presence_enable, true, false, false);
-#endif
    SETTING_BOOL("log_to_file",                   &settings->bools.log_to_file, true, DEFAULT_LOG_TO_FILE, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
    SETTING_BOOL("log_to_file_timestamp",         &settings->bools.log_to_file_timestamp, true, DEFAULT_LOG_TO_FILE_TIMESTAMP, false);
    SETTING_BOOL("ai_service_enable",             &settings->bools.ai_service_enable, true, DEFAULT_AI_SERVICE_ENABLE, false);
    SETTING_BOOL("ai_service_pause",              &settings->bools.ai_service_pause, true, DEFAULT_AI_SERVICE_PAUSE, false);
-   SETTING_BOOL("wifi_enabled",                  &settings->bools.wifi_enabled, true, DEFAULT_WIFI_ENABLE, false);
 #ifndef HAVE_LAKKA
    SETTING_BOOL("gamemode_enable",               &settings->bools.gamemode_enable, true, DEFAULT_GAMEMODE_ENABLE, false);
 #endif
@@ -1958,6 +1954,11 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_wifi.h"
+#ifdef HAVE_MIST
+#include "settings/settings_def_steam_presence.h"
+#endif
+#include "settings/settings_def_playlist_sorting.h"
 #ifdef HAVE_MENU
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
 #include "settings/settings_def_playlist_flags.h"
@@ -2468,7 +2469,6 @@ static struct config_bool_setting *populate_settings_bool(
 
    SETTING_BOOL("content_runtime_log",           &settings->bools.content_runtime_log, true, DEFAULT_CONTENT_RUNTIME_LOG, false);
    SETTING_BOOL("content_runtime_log_aggregate", &settings->bools.content_runtime_log_aggregate, true, DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE, false);
-   SETTING_BOOL("history_list_enable",           &settings->bools.history_list_enable, true, DEFAULT_HISTORY_LIST_ENABLE, false);
    SETTING_BOOL("playlist_entry_rename",         &settings->bools.playlist_entry_rename, true, DEFAULT_PLAYLIST_ENTRY_RENAME, false);
    SETTING_BOOL("playlist_use_old_format",       &settings->bools.playlist_use_old_format, true, DEFAULT_PLAYLIST_USE_OLD_FORMAT, false);
    SETTING_BOOL("playlist_compression",          &settings->bools.playlist_compression, true, DEFAULT_PLAYLIST_COMPRESSION, false);
@@ -2581,6 +2581,11 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_wifi.h"
+#ifdef HAVE_MIST
+#include "settings/settings_def_steam_presence.h"
+#endif
+#include "settings/settings_def_playlist_sorting.h"
 #ifdef HAVE_MENU
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
 #include "settings/settings_def_playlist_flags.h"
@@ -3067,7 +3072,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("replay_checkpoint_interval",    &settings->uints.replay_checkpoint_interval,  true, DEFAULT_REPLAY_CHECKPOINT_INTERVAL, false);
    SETTING_UINT("savestate_max_keep",            &settings->uints.savestate_max_keep, true, DEFAULT_SAVESTATE_MAX_KEEP, false);
 #ifdef HAVE_MENU
-   SETTING_UINT("content_history_size",          &settings->uints.content_history_size, true, DEFAULT_CONTENT_HISTORY_SIZE, false);
    SETTING_UINT("playlist_entry_remove_enable",        &settings->uints.playlist_entry_remove_enable, true, DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE, false);
    SETTING_UINT("menu_thumbnails",               &settings->uints.gfx_thumbnails, true, DEFAULT_GFX_THUMBNAILS_DEFAULT, false);
    SETTING_UINT("menu_left_thumbnails",          &settings->uints.menu_left_thumbnails, true, DEFAULT_MENU_LEFT_THUMBNAILS_DEFAULT, false);
@@ -3177,6 +3181,11 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_wifi.h"
+#ifdef HAVE_MIST
+#include "settings/settings_def_steam_presence.h"
+#endif
+#include "settings/settings_def_playlist_sorting.h"
 #ifdef HAVE_MENU
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
 #include "settings/settings_def_playlist_flags.h"
@@ -3660,9 +3669,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("cpu_max_freq",                  &settings->uints.cpu_max_freq,        true, ~0U, false);
 #endif
 
-#ifdef HAVE_MIST
-   SETTING_UINT("steam_rich_presence_format",    &settings->uints.steam_rich_presence_format, true, DEFAULT_STEAM_RICH_PRESENCE_FORMAT, false);
-#endif
 
 #ifdef HAVE_OVERLAY
    SETTING_UINT("input_overlay_lightgun_trigger_delay",     &settings->uints.input_overlay_lightgun_trigger_delay, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY, false);
@@ -3755,6 +3761,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_wifi.h"
+#ifdef HAVE_MIST
+#include "settings/settings_def_steam_presence.h"
+#endif
+#include "settings/settings_def_playlist_sorting.h"
 #ifdef HAVE_MENU
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
 #include "settings/settings_def_playlist_flags.h"
@@ -4178,6 +4189,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_wifi.h"
+#ifdef HAVE_MIST
+#include "settings/settings_def_steam_presence.h"
+#endif
+#include "settings/settings_def_playlist_sorting.h"
 #ifdef HAVE_MENU
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
 #include "settings/settings_def_playlist_flags.h"

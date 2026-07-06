@@ -559,6 +559,9 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_wifi.h"
+#include "../settings/settings_def_steam_presence.h"
+#include "../settings/settings_def_playlist_sorting.h"
 #include "../settings/settings_def_playlist_flags.h"
 #include "../settings/settings_def_notification_enable.h"
 #include "../settings/settings_def_rgui_particle_effect.h"
@@ -809,6 +812,9 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_wifi.h"
+#include "../settings/settings_def_steam_presence.h"
+#include "../settings/settings_def_playlist_sorting.h"
 #include "../settings/settings_def_playlist_flags.h"
 #include "../settings/settings_def_notification_enable.h"
 #include "../settings/settings_def_rgui_particle_effect.h"
