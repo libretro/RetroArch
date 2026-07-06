@@ -212,7 +212,7 @@ for k, f, T, a in rows:
         assert ('MENU_LABEL(%s),' % T) not in _mh_text, (T, 'both enum forms present')
     if T in ussub:
         if k == 'ACTION':
-            row = 'S_ACTION(%s,\n      %s,\n      %s,\n      %s)' % (T, names[T], usval[T], ussub[T])
+            row = 'S_ACTION%s(%s,\n      %s,\n      %s,\n      %s)' % (_hs, T, names[T], usval[T], ussub[T])
         elif True:
             row = 'S_%s%s(%s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (
             k, _hs, f, T, names[T], a, usval[T], ussub[T])
