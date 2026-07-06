@@ -1977,6 +1977,26 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_xmb_color_theme.h"
+#endif
+#endif
+#include "settings/settings_def_xmb_shader_pipeline.h"
+#include "settings/settings_def_xmb_animations.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_color_theme.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_aspect.h"
+#endif
+#endif
+#include "settings/settings_def_record_threads.h"
+#include "settings/settings_def_stream_quality.h"
+#include "settings/settings_def_record_quality.h"
 #include "settings/settings_def_input_touch_scale.h"
 #ifdef GEKKO
 #include "settings/settings_def_input_mouse_scale.h"
@@ -2539,6 +2559,26 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_xmb_color_theme.h"
+#endif
+#endif
+#include "settings/settings_def_xmb_shader_pipeline.h"
+#include "settings/settings_def_xmb_animations.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_color_theme.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_aspect.h"
+#endif
+#endif
+#include "settings/settings_def_record_threads.h"
+#include "settings/settings_def_stream_quality.h"
+#include "settings/settings_def_record_quality.h"
 #include "settings/settings_def_input_touch_scale.h"
 #ifdef GEKKO
 #include "settings/settings_def_input_mouse_scale.h"
@@ -2945,12 +2985,9 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_remember_selection",       &settings->uints.menu_remember_selection, true, DEFAULT_MENU_REMEMBER_SELECTION, false);
    SETTING_UINT("menu_startup_page",             &settings->uints.menu_startup_page, true, DEFAULT_MENU_STARTUP_PAGE, false);
 #ifdef HAVE_RGUI
-   SETTING_UINT("rgui_menu_color_theme",         &settings->uints.menu_rgui_color_theme, true, DEFAULT_RGUI_COLOR_THEME, false);
    SETTING_UINT("rgui_thumbnail_downscaler",     &settings->uints.menu_rgui_thumbnail_downscaler, true, DEFAULT_RGUI_THUMBNAIL_DOWNSCALER, false);
    SETTING_UINT("rgui_thumbnail_delay",          &settings->uints.menu_rgui_thumbnail_delay, true, DEFAULT_RGUI_THUMBNAIL_DELAY, false);
    SETTING_UINT("rgui_internal_upscale_level",   &settings->uints.menu_rgui_internal_upscale_level, true, DEFAULT_RGUI_INTERNAL_UPSCALE_LEVEL, false);
-   SETTING_UINT("rgui_aspect_ratio",             &settings->uints.menu_rgui_aspect_ratio, true, DEFAULT_RGUI_ASPECT, false);
-   SETTING_UINT("rgui_aspect_ratio_lock",        &settings->uints.menu_rgui_aspect_ratio_lock, true, DEFAULT_RGUI_ASPECT_LOCK, false);
    SETTING_UINT("rgui_particle_effect",          &settings->uints.menu_rgui_particle_effect, true, DEFAULT_RGUI_PARTICLE_EFFECT, false);
 #endif
 #ifdef HAVE_XMB
@@ -2963,7 +3000,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("xmb_current_menu_icon",         &settings->uints.menu_xmb_current_menu_icon, true, DEFAULT_XMB_CURRENT_MENU_ICON, false);
    SETTING_UINT("xmb_layout",                    &settings->uints.menu_xmb_layout, true, DEFAULT_XMB_MENU_LAYOUT, false);
    SETTING_UINT("xmb_theme",                     &settings->uints.menu_xmb_theme, true, DEFAULT_XMB_ICON_THEME, false);
-   SETTING_UINT("xmb_menu_color_theme",          &settings->uints.menu_xmb_color_theme, true, DEFAULT_XMB_THEME, false);
    SETTING_UINT("menu_shader_pipeline",          &settings->uints.menu_xmb_shader_pipeline, true, DEFAULT_MENU_SHADER_PIPELINE, false);
    SETTING_UINT("menu_font_color_red",           &settings->uints.menu_font_color_red, true, DEFAULT_MENU_FONT_COLOR_RED, false);
    SETTING_UINT("menu_font_color_green",         &settings->uints.menu_font_color_green, true, DEFAULT_MENU_FONT_COLOR_GREEN, false);
@@ -3064,6 +3100,26 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_xmb_color_theme.h"
+#endif
+#endif
+#include "settings/settings_def_xmb_shader_pipeline.h"
+#include "settings/settings_def_xmb_animations.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_color_theme.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_aspect.h"
+#endif
+#endif
+#include "settings/settings_def_record_threads.h"
+#include "settings/settings_def_stream_quality.h"
+#include "settings/settings_def_record_quality.h"
 #include "settings/settings_def_input_touch_scale.h"
 #ifdef GEKKO
 #include "settings/settings_def_input_mouse_scale.h"
@@ -3338,9 +3394,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_msg_bgcolor_blue",        &settings->uints.video_msg_bgcolor_blue, true, DEFAULT_MESSAGE_BGCOLOR_BLUE, false);
 
    SETTING_UINT("video_stream_port",             &settings->uints.video_stream_port, true, RARCH_STREAM_DEFAULT_PORT, false);
-   SETTING_UINT("video_record_threads",          &settings->uints.video_record_threads, true, DEFAULT_VIDEO_RECORD_THREADS, false);
-   SETTING_UINT("video_record_quality",          &settings->uints.video_record_quality, true, RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY, false);
-   SETTING_UINT("video_stream_quality",          &settings->uints.video_stream_quality, true, RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY, false);
    SETTING_UINT("video_record_scale_factor",     &settings->uints.video_record_scale_factor, true, 1, false);
    SETTING_UINT("video_stream_scale_factor",     &settings->uints.video_stream_scale_factor, true, 1, false);
 
@@ -3552,6 +3605,26 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_xmb_color_theme.h"
+#endif
+#endif
+#include "settings/settings_def_xmb_shader_pipeline.h"
+#include "settings/settings_def_xmb_animations.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_color_theme.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_aspect.h"
+#endif
+#endif
+#include "settings/settings_def_record_threads.h"
+#include "settings/settings_def_stream_quality.h"
+#include "settings/settings_def_record_quality.h"
 #include "settings/settings_def_input_touch_scale.h"
 #ifdef GEKKO
 #include "settings/settings_def_input_mouse_scale.h"
@@ -3858,6 +3931,26 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+#include "settings/settings_def_xmb_color_theme.h"
+#endif
+#endif
+#include "settings/settings_def_xmb_shader_pipeline.h"
+#include "settings/settings_def_xmb_animations.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_color_theme.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_aspect.h"
+#endif
+#endif
+#include "settings/settings_def_record_threads.h"
+#include "settings/settings_def_stream_quality.h"
+#include "settings/settings_def_record_quality.h"
 #include "settings/settings_def_input_touch_scale.h"
 #ifdef GEKKO
 #include "settings/settings_def_input_mouse_scale.h"
