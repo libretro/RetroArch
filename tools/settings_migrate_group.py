@@ -222,14 +222,14 @@ for k, f, T, a in rows:
         assert ('MENU_LABEL(%s),' % T) not in _mh_text, (T, 'both enum forms present')
     if T in ussub:
         if k.startswith('ACTION'):
-            row = 'S_%s%s(%s,%s\n      %s,\n      %s,\n      %s)' % (k, _hs, T, (' ' + a + ',') if a else '', names[T], usval[T], ussub[T])
+            row = 'S_%s%s(%s,\n      %s,%s\n      %s,\n      %s)' % (k, _hs, T, names[T], (' ' + a + ',') if a else '', usval[T], ussub[T])
         elif True:
             row = 'S_%s%s(%s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (
             k, _hs, f, T, names[T], a, usval[T], ussub[T])
         if _hs: _h_used.add('S_%s_H' % k)
     else:
         if k.startswith('ACTION'):
-            row = 'S_%s_NS%s(%s,%s\n      %s,\n      %s)' % (k, _hs, T, (' ' + a + ',') if a else '', names[T], usval[T])
+            row = 'S_%s_NS%s(%s,\n      %s,%s\n      %s)' % (k, _hs, T, names[T], (' ' + a + ',') if a else '', usval[T])
         el_row_generic = True
         if k != 'ACTION':
             row = 'S_%s_NS%s(%s, %s,\n      %s,\n      %s,\n      %s)' % (
