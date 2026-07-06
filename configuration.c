@@ -1954,6 +1954,8 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_refresh_autoswitch.h"
+#include "settings/settings_def_audio_skew.h"
 #include "settings/settings_def_wifi.h"
 #ifdef HAVE_MIST
 #include "settings/settings_def_steam_presence.h"
@@ -2581,6 +2583,8 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_refresh_autoswitch.h"
+#include "settings/settings_def_audio_skew.h"
 #include "settings/settings_def_wifi.h"
 #ifdef HAVE_MIST
 #include "settings/settings_def_steam_presence.h"
@@ -3003,7 +3007,6 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("fastforward_ratio",            &settings->floats.fastforward_ratio, true, DEFAULT_FASTFORWARD_RATIO, false);
 
    SETTING_FLOAT("audio_rate_control_delta",     &settings->floats.audio_rate_control_delta, true, DEFAULT_RATE_CONTROL_DELTA, false);
-   SETTING_FLOAT("audio_max_timing_skew",        &settings->floats.audio_max_timing_skew, true, DEFAULT_MAX_TIMING_SKEW, false);
    SETTING_FLOAT("audio_volume",                 &settings->floats.audio_volume, true, DEFAULT_AUDIO_VOLUME, false);
 #ifdef HAVE_AUDIOMIXER
    SETTING_FLOAT("audio_mixer_volume",           &settings->floats.audio_mixer_volume, true, DEFAULT_AUDIO_MIXER_VOLUME, false);
@@ -3011,7 +3014,6 @@ static struct config_float_setting *populate_settings_float(
 
    SETTING_FLOAT("video_aspect_ratio",           &settings->floats.video_aspect_ratio, true, DEFAULT_ASPECT_RATIO, false);
    SETTING_FLOAT("video_refresh_rate",           &settings->floats.video_refresh_rate, true, DEFAULT_REFRESH_RATE, false);
-   SETTING_FLOAT("video_autoswitch_pal_threshold", &settings->floats.video_autoswitch_pal_threshold, true, DEFAULT_AUTOSWITCH_PAL_THRESHOLD, false);
    SETTING_FLOAT("crt_video_refresh_rate",       &settings->floats.crt_video_refresh_rate, true, DEFAULT_CRT_REFRESH_RATE, false);
    SETTING_FLOAT("video_message_pos_x",          &settings->floats.video_msg_pos_x, true, DEFAULT_MESSAGE_POS_OFFSET_X, false);
    SETTING_FLOAT("video_message_pos_y",          &settings->floats.video_msg_pos_y, true, DEFAULT_MESSAGE_POS_OFFSET_Y, false);
@@ -3112,7 +3114,6 @@ static struct config_uint_setting *populate_settings_uint(
 
    SETTING_UINT("audio_out_rate",                &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
    SETTING_UINT("audio_latency",                 &settings->uints.audio_latency, false, 0 /* TODO */, false);
-   SETTING_UINT("audio_block_frames",            &settings->uints.audio_block_frames, true, 0, false);
 
 
 #ifdef HAVE_MICROPHONE
@@ -3128,7 +3129,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("custom_viewport_x",             (unsigned*)&settings->video_vp_custom.x, false, 0 /* TODO */, false);
    SETTING_UINT("custom_viewport_y",             (unsigned*)&settings->video_vp_custom.y, false, 0 /* TODO */, false);
    SETTING_UINT("aspect_ratio_index",            &settings->uints.video_aspect_ratio_idx, true, DEFAULT_ASPECT_RATIO_IDX, false);
-   SETTING_UINT("video_autoswitch_refresh_rate", &settings->uints.video_autoswitch_refresh_rate, true, DEFAULT_AUTOSWITCH_REFRESH_RATE, false);
    SETTING_UINT("video_windowed_position_x",     &settings->uints.window_position_x,    true, 0, false);
    SETTING_UINT("video_windowed_position_y",     &settings->uints.window_position_y,    true, 0, false);
    SETTING_UINT("video_windowed_position_width", &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
@@ -3181,6 +3181,8 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_refresh_autoswitch.h"
+#include "settings/settings_def_audio_skew.h"
 #include "settings/settings_def_wifi.h"
 #ifdef HAVE_MIST
 #include "settings/settings_def_steam_presence.h"
@@ -3761,6 +3763,8 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_refresh_autoswitch.h"
+#include "settings/settings_def_audio_skew.h"
 #include "settings/settings_def_wifi.h"
 #ifdef HAVE_MIST
 #include "settings/settings_def_steam_presence.h"
@@ -4189,6 +4193,8 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_refresh_autoswitch.h"
+#include "settings/settings_def_audio_skew.h"
 #include "settings/settings_def_wifi.h"
 #ifdef HAVE_MIST
 #include "settings/settings_def_steam_presence.h"
