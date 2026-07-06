@@ -1978,6 +1978,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_audio_format.h"
 #include "settings/settings_def_menu_main_actions_12.h"
 #include "settings/settings_def_menu_main_actions_11.h"
 #include "settings/settings_def_menu_main_actions_10.h"
@@ -2502,6 +2503,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_audio_format.h"
 #include "settings/settings_def_menu_main_actions_12.h"
 #include "settings/settings_def_menu_main_actions_11.h"
 #include "settings/settings_def_menu_main_actions_10.h"
@@ -2905,7 +2907,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("audio_out_rate",                &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
    SETTING_UINT("audio_latency",                 &settings->uints.audio_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",       &settings->uints.audio_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
-   SETTING_UINT("audio_format_negotiation",      &settings->uints.audio_format_negotiation, true, DEFAULT_AUDIO_FORMAT_NEGOTIATION, false);
    SETTING_UINT("audio_block_frames",            &settings->uints.audio_block_frames, true, 0, false);
    SETTING_UINT("midi_volume",                   &settings->uints.midi_volume, true, DEFAULT_MIDI_VOLUME, false);
 
@@ -2987,6 +2988,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_audio_format.h"
 #include "settings/settings_def_menu_main_actions_12.h"
 #include "settings/settings_def_menu_main_actions_11.h"
 #include "settings/settings_def_menu_main_actions_10.h"
@@ -3448,6 +3450,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_audio_format.h"
 #include "settings/settings_def_menu_main_actions_12.h"
 #include "settings/settings_def_menu_main_actions_11.h"
 #include "settings/settings_def_menu_main_actions_10.h"
@@ -3707,6 +3710,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_audio_format.h"
 #include "settings/settings_def_menu_main_actions_12.h"
 #include "settings/settings_def_menu_main_actions_11.h"
 #include "settings/settings_def_menu_main_actions_10.h"
