@@ -1950,6 +1950,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone_general.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_startup.h"
 #endif
@@ -2620,6 +2623,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone_general.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_startup.h"
 #endif
@@ -3186,7 +3192,6 @@ static struct config_uint_setting *populate_settings_uint(
 
 #ifdef HAVE_MICROPHONE
    SETTING_UINT("microphone_latency",            &settings->uints.microphone_latency, false, 0 /* TODO */, false);
-   SETTING_UINT("microphone_resampler_quality",  &settings->uints.microphone_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
    SETTING_UINT("microphone_rate",               &settings->uints.microphone_sample_rate, true, DEFAULT_INPUT_RATE, false);
 #endif
 
@@ -3249,6 +3254,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone_general.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_startup.h"
 #endif
@@ -3871,6 +3879,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone_general.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_startup.h"
 #endif
@@ -4343,6 +4354,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MICROPHONE
+#include "settings/settings_def_microphone_general.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_startup.h"
 #endif
