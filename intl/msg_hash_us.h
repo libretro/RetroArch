@@ -5874,30 +5874,115 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
    "Desired audio input latency in milliseconds. Might not be honored if the microphone driver can't provide given latency."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-   "WASAPI Exclusive Mode"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-   "Allow RetroArch to take exclusive control of the microphone device when using the WASAPI microphone driver. If disabled, RetroArch will use shared mode instead."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
-   "WASAPI Float Format"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
-   "Use floating-point input for the WASAPI driver, if supported by your audio device."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   "WASAPI Shared Buffer Length"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode."
-   )
+/* GENERATED REGION: microphone WASAPI group (see settings_def_mic_wasapi.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION(T, n, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_NS(T, n, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_mic_wasapi.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 #endif
 
 /* Settings > Audio > Resampler */
@@ -11189,22 +11274,115 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_PATH_DS
 #undef S_PATH_DS_NS
 #undef SETTINGS_DEF_STRINGS_PASS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   "Mouse Support"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "Allow the menu to be controlled with a mouse."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "Touch Support"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Allow the menu to be controlled with a touchscreen."
-   )
+/* GENERATED REGION: menu visibility group (see settings_def_menu_visibility.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION(T, n, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_NS(T, n, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_menu_visibility.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 /* GENERATED REGION: threaded data runloop setting (see settings_def_menu_threaded_data.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
@@ -12424,14 +12602,6 @@ MSG_HASH(
    "Use smooth scrolling animation when displaying long menu text. Has a small performance impact."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   "Remember Selection When Changing Tabs"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Remember previous cursor position in tabs. RGUI does not have tabs, but Playlists and Settings behave as such."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
    "Always"
    )
@@ -12442,14 +12612,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Only for Main Menu and Settings"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
-   "Startup Page"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
-   "Initial menu page on startup."
    )
 
 /* Settings > AI Service */
@@ -13279,18 +13441,115 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    "The range of frames of input latency that may be used by netplay to hide network latency.\nIf set, netplay will adjust the number of frames of input latency dynamically to balance CPU time, input latency and network latency. This reduces jitter and makes netplay less CPU-intensive, but at the price of unpredictable input lag."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-   "Netplay NAT Traversal"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-   "When hosting, attempt to listen for connections from the public Internet, using UPnP or similar technologies to escape LANs."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
-   "Digital Input Sharing"
-   )
+/* GENERATED REGION: netplay sync group (see settings_def_netplay_sync.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION(T, n, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_NS(T, n, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_netplay_sync.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
    "Request Device %u"
@@ -17217,10 +17476,6 @@ MSG_HASH(
    "Vote"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
-   "Analog Input Sharing"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
    "Max"
    )
@@ -19956,22 +20211,115 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
    "Scale the font size of the text in the menu footer. Also affects text size in the right thumbnail sidebar."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
-   "Collapse the Sidebar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
-   "Have the left sidebar always collapsed."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
-   "Show the Sidebar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
-   "Allow left sidebar navigation and playlists."
-   )
+/* GENERATED REGION: Ozone sidebar group (see settings_def_ozone_sidebar.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION(T, n, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_NS(T, n, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_ozone_sidebar.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Truncate Playlist Names (Restart required)"
@@ -20061,14 +20409,6 @@ MSG_HASH(
    "Maximum"
    )
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Color Theme"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-   "Select a different color theme."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
    "Basic White"

@@ -1909,12 +1909,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("audio_rewind_mute",             &settings->bools.audio_rewind_mute, true, DEFAULT_AUDIO_REWIND_MUTE, false);
 
 
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_WASAPI
-   SETTING_BOOL("microphone_wasapi_exclusive_mode", &settings->bools.microphone_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
-   SETTING_BOOL("microphone_wasapi_float_format",   &settings->bools.microphone_wasapi_float_format, true, DEFAULT_WASAPI_FLOAT_FORMAT, false);
-#endif
-#endif
 
    SETTING_BOOL("crt_switch_resolution_use_custom_refresh_rate", &settings->bools.crt_switch_custom_refresh_enable, true, false, false);
    SETTING_BOOL("crt_switch_hires_menu",         &settings->bools.crt_switch_hires_menu, true, false, true);
@@ -1969,6 +1963,22 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_visibility.h"
+#endif
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_sync.h"
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+#include "settings/settings_def_mic_wasapi.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_OZONE
+#include "settings/settings_def_ozone_sidebar.h"
+#endif
+#endif
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_rewind.h"
@@ -2348,8 +2358,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
    SETTING_BOOL("menu_savestate_resume",         &settings->bools.menu_savestate_resume, true, DEFAULT_MENU_SAVESTATE_RESUME, false);
    SETTING_BOOL("menu_insert_disk_resume",       &settings->bools.menu_insert_disk_resume, true, DEFAULT_MENU_INSERT_DISK_RESUME, false);
-   SETTING_BOOL("menu_mouse_enable",             &settings->bools.menu_mouse_enable, true, DEFAULT_MOUSE_ENABLE, false);
-   SETTING_BOOL("menu_pointer_enable",           &settings->bools.menu_pointer_enable, true, DEFAULT_POINTER_ENABLE, false);
    SETTING_BOOL("menu_timedate_enable",          &settings->bools.menu_timedate_enable, true, DEFAULT_MENU_TIMEDATE_ENABLE, false);
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
@@ -2413,8 +2421,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_xmb_show_title_header",    &settings->bools.menu_xmb_show_title_header, true, DEFAULT_XMB_SHOW_TITLE_HEADER, false);
 #endif
 #ifdef HAVE_OZONE
-   SETTING_BOOL("ozone_collapse_sidebar",        &settings->bools.ozone_collapse_sidebar, true, DEFAULT_OZONE_COLLAPSE_SIDEBAR, false);
-   SETTING_BOOL("ozone_show_sidebar",            &settings->bools.ozone_show_sidebar, true, DEFAULT_OZONE_SHOW_SIDEBAR, false);
    SETTING_BOOL("ozone_scroll_content_metadata", &settings->bools.ozone_scroll_content_metadata, true, DEFAULT_OZONE_SCROLL_CONTENT_METADATA, false);
 #endif
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
@@ -2501,7 +2507,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("netplay_show_passworded",       &settings->bools.netplay_show_passworded, true, DEFAULT_NETPLAY_SHOW_PASSWORDED, false);
    SETTING_BOOL("netplay_public_announce",       &settings->bools.netplay_public_announce, true, DEFAULT_NETPLAY_PUBLIC_ANNOUNCE, false);
    SETTING_BOOL("netplay_start_as_spectator",    &settings->bools.netplay_start_as_spectator, false, DEFAULT_NETPLAY_START_AS_SPECTATOR, false);
-   SETTING_BOOL("netplay_nat_traversal",         &settings->bools.netplay_nat_traversal, true, true, false);
    SETTING_BOOL("netplay_fade_chat",             &settings->bools.netplay_fade_chat, true, DEFAULT_NETPLAY_FADE_CHAT, false);
    SETTING_BOOL("netplay_allow_pausing",         &settings->bools.netplay_allow_pausing, true, DEFAULT_NETPLAY_ALLOW_PAUSING, false);
    SETTING_BOOL("netplay_allow_slaves",          &settings->bools.netplay_allow_slaves, true, DEFAULT_NETPLAY_ALLOW_SLAVES, false);
@@ -2597,6 +2602,22 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_visibility.h"
+#endif
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_sync.h"
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+#include "settings/settings_def_mic_wasapi.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_OZONE
+#include "settings/settings_def_ozone_sidebar.h"
+#endif
+#endif
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_rewind.h"
@@ -3059,8 +3080,6 @@ static struct config_uint_setting *populate_settings_uint(
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
    SETTING_UINT("menu_screensaver_animation",    &settings->uints.menu_screensaver_animation, true, DEFAULT_MENU_SCREENSAVER_ANIMATION, false);
 #endif
-   SETTING_UINT("menu_remember_selection",       &settings->uints.menu_remember_selection, true, DEFAULT_MENU_REMEMBER_SELECTION, false);
-   SETTING_UINT("menu_startup_page",             &settings->uints.menu_startup_page, true, DEFAULT_MENU_STARTUP_PAGE, false);
 #ifdef HAVE_RGUI
    SETTING_UINT("rgui_particle_effect",          &settings->uints.menu_rgui_particle_effect, true, DEFAULT_RGUI_PARTICLE_EFFECT, false);
 #endif
@@ -3087,7 +3106,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("materialui_landscape_layout_optimization", &settings->uints.menu_materialui_landscape_layout_optimization, true, DEFAULT_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION, false);
 #endif
 #ifdef HAVE_OZONE
-   SETTING_UINT("ozone_menu_color_theme",        &settings->uints.menu_ozone_color_theme, true, DEFAULT_OZONE_COLOR_THEME, false);
    SETTING_UINT("ozone_header_icon",             &settings->uints.menu_ozone_header_icon, true, DEFAULT_OZONE_HEADER_ICON, false);
    SETTING_UINT("ozone_header_separator",        &settings->uints.menu_ozone_header_separator, true, DEFAULT_OZONE_HEADER_SEPARATOR, false);
    SETTING_UINT("ozone_font_scale",              &settings->uints.menu_ozone_font_scale, true, DEFAULT_OZONE_FONT_SCALE, false);
@@ -3103,9 +3121,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("microphone_latency",            &settings->uints.microphone_latency, false, 0 /* TODO */, false);
    SETTING_UINT("microphone_resampler_quality",  &settings->uints.microphone_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
    SETTING_UINT("microphone_rate",               &settings->uints.microphone_sample_rate, true, DEFAULT_INPUT_RATE, false);
-#ifdef HAVE_WASAPI
-   SETTING_UINT("microphone_wasapi_sh_buffer_length", &settings->uints.microphone_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH, false);
-#endif
 #endif
 
    SETTING_UINT("crt_switch_resolution",         &settings->uints.crt_switch_resolution, true, DEFAULT_CRT_SWITCH_RESOLUTION, false);
@@ -3168,6 +3183,22 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_visibility.h"
+#endif
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_sync.h"
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+#include "settings/settings_def_mic_wasapi.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_OZONE
+#include "settings/settings_def_ozone_sidebar.h"
+#endif
+#endif
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_rewind.h"
@@ -3568,8 +3599,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("netplay_chat_color_msg",             &settings->uints.netplay_chat_color_msg, true, DEFAULT_NETPLAY_CHAT_COLOR_MSG, false);
    SETTING_UINT("netplay_input_latency_frames_min",   &settings->uints.netplay_input_latency_frames_min, true, 0, false);
    SETTING_UINT("netplay_input_latency_frames_range", &settings->uints.netplay_input_latency_frames_range, true, 0, false);
-   SETTING_UINT("netplay_share_digital",              &settings->uints.netplay_share_digital, true, DEFAULT_NETPLAY_SHARE_DIGITAL, false);
-   SETTING_UINT("netplay_share_analog",               &settings->uints.netplay_share_analog,  true, DEFAULT_NETPLAY_SHARE_ANALOG, false);
 #endif
 #ifdef HAVE_COMMAND
    SETTING_UINT("network_cmd_port",              &settings->uints.network_cmd_port,    true, DEFAULT_NETWORK_CMD_PORT, false);
@@ -3707,6 +3736,22 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_visibility.h"
+#endif
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_sync.h"
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+#include "settings/settings_def_mic_wasapi.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_OZONE
+#include "settings/settings_def_ozone_sidebar.h"
+#endif
+#endif
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_rewind.h"
@@ -4082,6 +4127,22 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_visibility.h"
+#endif
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_sync.h"
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+#include "settings/settings_def_mic_wasapi.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_OZONE
+#include "settings/settings_def_ozone_sidebar.h"
+#endif
+#endif
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_rewind.h"
