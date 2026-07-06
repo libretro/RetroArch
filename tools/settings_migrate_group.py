@@ -146,13 +146,15 @@ assert len(rows) == len(all_invocations), (
 assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW(?:_P|_DS|_EX)?\(', tm.group(1))), (len(rows), tm.group(1)[:200])
 
 us = open('intl/msg_hash_us.h').read()
+ref_tokens = set()
 usval, ussub, usspan, uscmt = {}, {}, [], {}
 for k, f, T, a in rows:
     m = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
     if not m:
         _own = run("grep -lE 'S_\\w*\\((\\w+, *)?%s,' settings/*.h" % T).stdout.strip()
-        assert not _own, ('token %s strings are owned by %s; this table only '
-            'references it and needs no migration' % (T, _own))
+        if _own:
+            ref_tokens.add(T)
+            continue
     assert m, ('VALUE', T)
     usval[T] = re.sub(r'\s*\n\s*', ' ', m.group(2)); usspan.append((m.start(), m.end()))
     if m.group(1):
@@ -162,6 +164,21 @@ for k, f, T, a in rows:
         ussub[T] = re.sub(r'\s*\n\s*', ' ', m.group(2)); usspan.append((m.start(), m.end()))
         if m.group(1):
             uscmt[T] = (uscmt.get(T, '') + ' ' + m.group(1)).strip()
+if ref_tokens:
+    _tail = [r for r in rows if r[2] in ref_tokens]
+    assert rows[len(rows)-len(_tail):] == _tail, 'reference rows must trail the table'
+    _ref_literals = []
+    for _k3, _f3, _t3, _a3 in _tail:
+        _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX)?\(\s*%s,\s*%s,(?:[^()]|\([^()]*\))*\),?' % (_f3, _t3), body)
+        assert _rm3, _t3
+        _rl3 = _rm3.group(0).strip()
+        for _g3 in reversed(guards.get(_f3 or _t3, ())):
+            _rl3 = _g3 + '\n                  ' + _rl3 + '\n#endif'
+        _ref_literals.append(_rl3)
+    rows = [r for r in rows if r[2] not in ref_tokens]
+    print('  note: %d reference row(s) stay literal after the include' % len(_ref_literals))
+else:
+    _ref_literals = []
 lblstr = open('msg_hash_lbl_str.h').read()
 names, lblstr_span = {}, []
 for k, f, T, a in rows:
@@ -373,6 +390,8 @@ MENU_EMIT = {'S_BOOL_EX':'SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel
 mk_menu = lambda b, _s: ' \\\n                  ' + MENU_EMIT[b]
 new_body = ('/* GENERATED: rows come from %s in order. */\n' % DEF
             + defs(mk_menu) + '\n#include "../settings/%s"\n' % DEF + UNDEFS)
+if _ref_literals:
+    new_body += '\n' + '\n'.join('                  ' + _r for _r in _ref_literals)
 ms = ms[:tm.start(1)] + new_body + ms[tm.end(1):]
 open('menu/menu_setting.c','w').write(ms)
 print("surgeries ok")
