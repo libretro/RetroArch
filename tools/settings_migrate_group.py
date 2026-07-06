@@ -51,6 +51,23 @@ SIGS = [('S_BOOL','f, T, n, d, sd, df, c'),
         ('S_INT_EX','f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui'),
         ('S_FLOAT_EX','f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui'),
         ('S_ACTION_EX','T, n, sd, ok, rp, c')]
+# Coupled platform defines: the polarity lanes derive tokens from row
+# guards, but some tokens only ever appear alongside a partner in real
+# builds (the SDK conditional vs the build system's own define); a lane
+# carrying one without the other is a build no target produces.
+DEFINE_COUPLES = {
+    'TARGET_OS_IOS': ('IOS',),
+    'TARGET_OS_TV': ('IOS',),
+    'HAVE_COCOATOUCH': ('HAVE_COCOA_METAL',),
+}
+def _couple(flag):
+    toks = [f[2:] for f in flag.split() if f.startswith('-D')]
+    extra = []
+    for tk in toks:
+        for p in DEFINE_COUPLES.get(tk, ()):
+            if p not in toks and ('-D%s' % p) not in extra:
+                extra.append('-D%s' % p)
+    return (flag + ' ' + ' '.join(extra)).strip()
 UNDEFS = '\n'.join('#undef %s%s' % (b, s) for b, _ in SIGS for s in ('', '_NS', '_H', '_NS_H'))
 def defs(mk):
     L = []
@@ -420,7 +437,7 @@ _gflags = sorted({tok for gs in guards.values() for g in gs
                   if tok != 'defined'})
 _iso = []
 for _fl in _gflags:
-    _d = ' -D' + _fl
+    _d = ' ' + _couple('-D' + _fl)
     # menu_setting.c carries pre-existing -pedantic noise under HAVE_LAKKA
     # (systemd_service_toggle static initializer); the base LAKKA lane
     # already tolerates it with ('0','4'), so match that here rather than
@@ -489,9 +506,9 @@ for _g in guard_at(_head, _tm.start()):
 for _gs in guards.values():
     for _g in (_gs if isinstance(_gs, (list, tuple)) else [_gs]):
         _gtoks |= set(re.findall(r'\b([A-Z_][A-Z0-9_]{2,})\b', str(_g))) - {'defined'}
-pols = [""] + sorted("-D%s" % g for g in _gtoks)
+pols = [""] + sorted(_couple("-D%s" % g) for g in _gtoks)
 if len(_gtoks) > 1:
-    pols.append(' '.join(sorted("-D%s" % g for g in _gtoks)))
+    pols.append(_couple(' '.join(sorted("-D%s" % g for g in _gtoks))))
 seen_present = False
 for pol in pols:
     pre_t = table_tokens('/tmp/ms_head.c', pol)
@@ -678,7 +695,7 @@ if _enum_ok:
                          if x != 'defined' and 'SETTINGS_DEF' not in x)
     open('/tmp/mh_tu.c','w').write('#include <stdint.h>\n#include "msg_hash.h"\nint main(void){return (int)MSG_LAST;}\n')
     _b = "gcc -std=gnu89 -fsyntax-only -I. -Ilibretro-common/include -DRARCH_INTERNAL"
-    _lanes = [''] + ['-D%s' % x for x in sorted(_toks)] + [' '.join('-D%s' % x for x in sorted(_toks))]
+    _lanes = [''] + [_couple('-D%s' % x) for x in sorted(_toks)] + [_couple(' '.join('-D%s' % x for x in sorted(_toks)))]
     for _lane in _lanes:
         r = run("%s %s /tmp/mh_tu.c 2>&1 | grep -c error:" % (_b, _lane))
         assert r.stdout.strip() == '0', (_lane[:60],)
