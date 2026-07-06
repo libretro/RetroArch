@@ -222,10 +222,25 @@ static uint32_t *rtga_tga_load(rtga_context *s,
             }
             else
             {
-               /* Need ARGB = A<<24|R<<16|G<<8|B.
-                * TGA bytes [B,G,R,A] as little-endian uint32 is already ARGB.
-                * Direct memcpy! */
+               /* !supports_rgba wants each pixel as the uint32 value
+                * ARGB = A<<24|R<<16|G<<8|B.
+                * TGA stores bytes [B,G,R,A]; on a little-endian host those
+                * bytes reinterpreted as a uint32 already equal ARGB, so a
+                * straight memcpy is correct and fast. On a big-endian host
+                * the same bytes would read as BGRA, so we must build the
+                * ARGB value explicitly by shifting. */
+#ifndef MSB_FIRST
+               /* Direct memcpy! (little-endian) */
                memcpy(dst, src, tga_width * 4);
+#else
+               for (col = 0; col < tga_width; ++col)
+               {
+                  uint8_t b = src[0], g = src[1], r = src[2], a = src[3];
+                  dst[col] = ((uint32_t)a << 24) | ((uint32_t)r << 16)
+                           | ((uint32_t)g << 8)  | (uint32_t)b;
+                  src += 4;
+               }
+#endif
             }
          }
          else /* tga_comp == 3 */
