@@ -3034,7 +3034,6 @@ static void *gl3_init(const video_info_t *video,
       goto error;
    }
 
-   if (video->font_enable)
       font_driver_init_osd(gl,
             video,
             false,

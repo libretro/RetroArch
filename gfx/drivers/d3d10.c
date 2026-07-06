@@ -2661,7 +2661,6 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    d3d10->device->lpVtbl->RSSetState(d3d10->device, d3d10->state);
 
-   if (video->font_enable)
       font_driver_init_osd(d3d10,
             video,
             false,

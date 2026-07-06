@@ -4801,7 +4801,6 @@ static void *gl2_init(const video_info_t *video,
             input, input_data);
    }
 
-   if (video->font_enable)
       font_driver_init_osd(gl, video,
             false,
             video->is_threaded,

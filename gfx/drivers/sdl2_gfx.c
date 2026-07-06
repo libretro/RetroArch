@@ -463,7 +463,6 @@ static void *sdl2_gfx_init(const video_info_t *video,
     * We also gain a working render_msg path for any other RA
     * subsystem that calls font_driver_render_msg with NULL font -
     * this is the same wiring every other modern driver does. */
-   if (video->font_enable)
       font_driver_init_osd(vid, video, false, video->is_threaded,
             FONT_DRIVER_RENDER_SDL2);
 #endif
