@@ -392,7 +392,11 @@ static const struct
    char s_d1df7807[9];
    char s_35324f11[30];
    char s_fe54bf7f[58];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[25];
+#endif
 #endif
    char s_5b2d8d2f[25];
    char s_6ade80dd[40];
@@ -1940,8 +1944,6 @@ static const struct
    char s_4c1871ec[33];
    char s_c6e67d8a[20];
    char s_8950b378[42];
-   char s_5741c1d0[17];
-   char s_66f2b57e[39];
    char s_bcf3997a[21];
    char s_c2d7c9a8[43];
    char s_4e2f19db[22];
@@ -1962,6 +1964,8 @@ static const struct
    char s_e04176ec[44];
    char s_9a0b2e21[28];
    char s_5c75640f[54];
+   char s_5741c1d0[17];
+   char s_66f2b57e[39];
    char s_8fa632ab[18];
    char s_d4c47f59[129];
    char s_03580e17[186];
@@ -4270,7 +4274,11 @@ static const struct
    "Mikrofon",
    "Mikrofon Yeniden \303\226rnekleyici",
    "Kullan\304\261lacak mikrofon yeniden \303\266rnekleyici s\303\274r\303\274c\303\274s\303\274.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Mikrofon Kare Engeliyici",
+#endif
 #endif
    "Ses Yeniden \303\226rnekleyici",
    "Kullan\304\261lacak yeniden ses \303\266rnekleyici.",
@@ -6676,8 +6684,6 @@ static const struct
    "Kaplamalar bu dizinde saklan\304\261r.",
    "Klavye Kaplamalar\304\261",
    "Klavye kaplamalar\304\261 bu dizinde saklan\304\261r.",
-   "Video D\303\274zenleri",
-   "Video d\303\274zenleri bu dizinde saklan\304\261r.",
    "Ekran G\303\266r\303\274nt\303\274leri",
    "Ekran g\303\266r\303\274nt\303\274leri bu dizinde saklan\304\261r.",
    "Kontrolc\303\274 Profilleri",
@@ -6699,6 +6705,8 @@ static const struct
    "Video oynatma listesini bu dizine kaydedin.",
    "\303\207al\304\261\305\237ma Zaman\304\261 G\303\274nl\303\274k",
    "\303\207al\304\261\305\237ma zaman\304\261 g\303\274nl\303\274kleri bu dizinde saklan\304\261r.",
+   "Video D\303\274zenleri",
+   "Video d\303\274zenleri bu dizinde saklan\304\261r.",
    "Dosyalar\304\261 Kaydet",
    "T\303\274m kay\304\261t dosyalar\304\261n\304\261 bu dizine kaydedin. Ayarlanmam\304\261\305\237"
    "sa, i\303\247erik dosyas\304\261n\304\261n \303\247al\304\261\305\237ma dizinine kaydetmeye \303"
@@ -8915,7 +8923,11 @@ typedef char msg_hash_tr_blob_check[
        + 9u
        + 30u
        + 58u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 25u
+#endif
 #endif
 #if defined(DINGUX)
        + 26u
@@ -9527,7 +9539,11 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -11071,8 +11087,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -11093,6 +11107,8 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

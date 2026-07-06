@@ -282,12 +282,12 @@ static const struct
    char s_4c0a8b68[54];
    char s_7d00b7ed[7];
    char s_65e89a5b[41];
+   char s_33fd3a92[7];
+   char s_170da980[46];
    char s_b0096460[19];
    char s_6fc5fb8e[55];
    char s_d4c7eb99[22];
    char s_c23869c7[58];
-   char s_33fd3a92[7];
-   char s_170da980[46];
    char s_8cb3b95f[10];
    char s_aadb028d[29];
    char s_3a0a3fef[22];
@@ -403,7 +403,11 @@ static const struct
    char s_b4efe6f5[51];
    char s_35324f11[20];
    char s_fe54bf7f[43];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[26];
+#endif
 #endif
    char s_5b2d8d2f[20];
    char s_6ade80dd[43];
@@ -741,6 +745,12 @@ static const struct
 #endif
    char s_affd948c[30];
    char s_b5ccfdfa[176];
+   char s_3c9950ad[47];
+   char s_81b79d5b[443];
+   char s_734f5242[32];
+   char s_330be970_0[500];
+   char s_330be970_1[58];
+   char s_55404857[19];
    char s_b271ae95[25];
    char s_95821d83[41];
    char s_ad7c73f6[15];
@@ -2058,8 +2068,6 @@ static const struct
    char s_4c1871ec[44];
    char s_c6e67d8a[21];
    char s_8950b378[55];
-   char s_5741c1d0[14];
-   char s_66f2b57e[48];
    char s_bcf3997a[14];
    char s_c2d7c9a8[48];
    char s_4e2f19db[19];
@@ -2080,6 +2088,8 @@ static const struct
    char s_e04176ec[44];
    char s_9a0b2e21[29];
    char s_5c75640f[47];
+   char s_5741c1d0[14];
+   char s_66f2b57e[48];
    char s_8fa632ab[13];
    char s_d4c47f59[127];
    char s_03580e17[169];
@@ -4283,12 +4293,12 @@ static const struct
    "Twoja nazwa u\305\274ytkownika dla Twojego konta w chmurze.",
    "Has\305\202o",
    "Twoje has\305\202o do twojego konta w chmurze.",
+   "URL S3",
+   "Tw\303\263j URL enpointu S3 dla pami\304\231ci w chmurze.",
    "ID Klucza dost\304\231pu",
    "Twoje ID klucza dost\304\231pu dla konta pami\304\231ci w chmurze.",
    "Klucz dost\304\231pu secret",
    "Tw\303\263j klucz dost\304\231pu secret dla konta pami\304\231ci w chmurze.",
-   "URL S3",
-   "Tw\303\263j URL enpointu S3 dla pami\304\231ci w chmurze.",
    "Logowanie",
    "Zmie\305\204 ustawienia logowania.",
    "Przegl\304\205darka plik\303\263w",
@@ -4441,7 +4451,11 @@ static const struct
    "Sterownik mikrofonu do u\305\274ycia. (Wymagany restart)",
    "Resampler mikrofonu",
    "Sterownik resamplera mikrofonu do u\305\274ycia.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Ramki blokuj\304\205ce mikrofon",
+#endif
 #endif
    "Resampler d\305\272wi\304\231ku",
    "Sterownik resamplera d\305\272wi\304\231ku do u\305\274ycia.",
@@ -4997,6 +5011,26 @@ static const struct
    "\303\263\305\272nienie nad jako\305\233ci\304\205 d\305\272wi\304\231ku, zwi\304\231ksza jako"
    "\305\233\304\207 d\305\272wi\304\231ku kosztem wydajno\305\233ci/ni\305\274szego op\303\263\305"
    "\272nienia.",
+   "Resampluj do sta\305\202ej liczby ca\305\202kowitej (Hint)",
+   "U\305\274ywaj resamplera ze sta\305\202\304\205 liczb\304\205 (ca\305\202kowit\304\205) zamiast "
+   "zmiennoprzecinkowego, gdy rdze\305\204 wysy\305\202a 16-bitowy d\305\272wi\304\231k. Unika niepo"
+   "trzebnej zmiany sta\305\202ej-na-zmiennoprzecinkow\304\205 i produkuje identyczne co do bita wyj"
+   "\305\233cie na ka\305\274dej platformie, co pomaga w determinizmie netplay. Nie ma wp\305\202ywu"
+   " na rdzenie kt\303\263re wysylaj\304\205 d\305\272wi\304\231k zmiennoprzecinkowy, wracaj\304\205"
+   " one na zmiennoprzecinkow\304\205 \305\233cie\305\274k\304\231 gdy aktywny jest niekompatybilny "
+   "filtr DSP.",
+   "Negocjacja formatu audio (Hint)",
+   "Format sampli o kt\303\263re sterownik audio prosi z urz\304\205dzenia wyj\305\233ciowego. 'Zmie"
+   "nnoprzecinkowe' prosi o 32-bitow\304\205 liczb\304\231 zmiennoprzecinkow\304\205, 'Int16' 16-bit"
+   "ow\304\205 liczb\304\231 ca\305\202kowit\304\205. Ma wp\305\202yw tylko na sterowniki kt\303\263"
+   "re mog\304\205 negocjowa\304\207 format (WASAPI, DirectSound, XAudio2, Alsa, SDL2); inne b\304"
+   "\231d\304\205 u\305\274ywa\304\207 ich sta\305\202ego formatu. Tylko hint: sterownik prze\305"
+   "\202\304\205czy si\304\231 na zapasowy je\305\274eli urz\304\205dzenie odrzuci wybrany format. '"
+   "Int16' \305\202\304\205czy si\304\231 z hint 'Resampluj do sta\305\202ej liczby ca\305\202kowite"
+   "j', aby",
+   " zachowa\304\207 ca\305\202\304\205 \305\233cie\305\274k\304\231 audio w domenie ca\305\202kowit"
+   "ej.",
+   "Zmiennoprzecinkowe",
    "Szybko\305\233\304\207 wyj\305\233cia (Hz)",
    "Pr\304\231dko\305\233\304\207 pr\303\263bkowania wyj\305\233cia audio.",
    "Synchronizacja",
@@ -6840,8 +6874,6 @@ static const struct
    "Nak\305\202adki s\304\205 przechowywane w tym katalogu.",
    "Nak\305\202adki klawiatury",
    "Nak\305\202adki klawiatury s\304\205 przechowywane w tym katalogu.",
-   "Uk\305\202ady wideo",
-   "Uk\305\202ady wideo s\304\205 przechowywane w tym katalogu.",
    "Zrzuty ekranu",
    "Zrzuty ekranu s\304\205 przechowywane w tym katalogu.",
    "Profile kontrolera",
@@ -6863,6 +6895,8 @@ static const struct
    "Zapisz playlist\304\231 film\303\263w do tego katalogu.",
    "Dzienniki czasu uruchomienia",
    "Logi runtime s\304\205 przechowywane w tym katalogu.",
+   "Uk\305\202ady wideo",
+   "Uk\305\202ady wideo s\304\205 przechowywane w tym katalogu.",
    "Zapisz pliki",
    "Zapisz wszystkie pliki zapisu w tym katalogu. Je\305\233li nie jest ustawione, spr\303\263buje z"
    "apisa\304\207 w katalogu roboczym pliku tre\305\233ci.",
@@ -9074,7 +9108,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (184988u
+      (sizeof(msg_hash_pl_blob) == (186087u
 #ifdef HAVE_LAKKA
        + 15u
        + 44u
@@ -9087,7 +9121,11 @@ typedef char msg_hash_pl_blob_check[
        + 51u
        + 20u
        + 43u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 26u
+#endif
 #endif
 #if defined(DINGUX)
        + 22u
@@ -9622,12 +9660,12 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -9743,7 +9781,11 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -10078,6 +10120,11 @@ static const uint32_t msg_hash_pl_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
@@ -11393,8 +11440,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -11415,6 +11460,8 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

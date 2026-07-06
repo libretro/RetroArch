@@ -285,11 +285,11 @@ static const struct
    char s_4c0a8b68[55];
    char s_7d00b7ed[13];
    char s_65e89a5b[49];
+   char s_170da980[61];
    char s_b0096460[20];
    char s_6fc5fb8e[72];
    char s_d4c7eb99[27];
    char s_c23869c7[79];
-   char s_170da980[61];
    char s_8cb3b95f[15];
    char s_aadb028d[40];
    char s_3a0a3fef[21];
@@ -410,7 +410,11 @@ static const struct
    char s_b4efe6f5[76];
    char s_35324f11[30];
    char s_fe54bf7f[61];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[20];
+#endif
 #endif
    char s_5b2d8d2f[27];
    char s_6ade80dd[64];
@@ -2090,8 +2094,6 @@ static const struct
    char s_4c1871ec[54];
    char s_c6e67d8a[23];
    char s_8950b378[60];
-   char s_5741c1d0[17];
-   char s_66f2b57e[54];
    char s_bcf3997a[24];
    char s_c2d7c9a8[61];
    char s_4e2f19db[19];
@@ -2112,6 +2114,8 @@ static const struct
    char s_e04176ec[50];
    char s_9a0b2e21[18];
    char s_5c75640f[55];
+   char s_5741c1d0[17];
+   char s_66f2b57e[54];
    char s_8fa632ab[16];
    char s_d4c47f59[162];
    char s_03580e17[206];
@@ -4428,14 +4432,14 @@ static const struct
    "M\341\272\255t kh\341\272\251u",
    "M\341\272\255t kh\341\272\251u t\303\240i kho\341\272\243n l\306\260u tr\341\273\257 \304\221"
    "\303\241m m\303\242y.",
+   "URL \304\221i\341\273\203m cu\341\273\221i S3 c\341\273\247a b\341\272\241n cho l\306\260u tr"
+   "\341\273\257 \304\221\303\241m m\303\242y.",
    "ID kh\303\263a truy c\341\272\255p",
    "ID kh\303\263a truy c\341\272\255p c\341\273\247a b\341\272\241n cho t\303\240i kho\341\272\243n"
    " l\306\260u tr\341\273\257 \304\221\303\241m m\303\242y.",
    "Kh\303\263a truy c\341\272\255p b\303\255 m\341\272\255t",
    "Kh\303\263a truy c\341\272\255p b\303\255 m\341\272\255t c\341\273\247a b\341\272\241n cho t\303"
    "\240i kho\341\272\243n l\306\260u tr\341\273\257 \304\221\303\241m m\303\242y.",
-   "URL \304\221i\341\273\203m cu\341\273\221i S3 c\341\273\247a b\341\272\241n cho l\306\260u tr"
-   "\341\273\257 \304\221\303\241m m\303\242y.",
    "Ghi nh\341\272\255t k\303\275",
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t ghi nh\341\272\255t k\303\275.",
    "Qu\341\272\243n l\303\275 t\341\272\255p tin",
@@ -4700,7 +4704,11 @@ static const struct
    "B\341\273\231 l\341\272\245y m\341\272\253u l\341\272\241i micr\303\264",
    "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n l\341\272\245y m\341\272\253u micr\303\264 "
    "\304\221\341\273\203 s\341\273\255 d\341\273\245ng.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Khung kh\341\273\221i micr\303\264",
+#endif
 #endif
    "\303\202m thanh Resampler Driver",
    "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n l\341\272\245y m\341\272\253u \303\242m tha"
@@ -8464,9 +8472,6 @@ static const struct
    "L\341\273\233p ph\341\273\247 b\303\240n ph\303\255m",
    "L\341\273\233p ph\341\273\247 b\303\240n ph\303\255m \304\221\306\260\341\273\243c l\306\260u tr"
    "ong th\306\260 m\341\273\245c n\303\240y.",
-   "B\341\273\221 c\341\273\245c Video",
-   "B\341\273\221 c\341\273\245c Video \304\221\306\260\341\273\243c l\306\260u trong th\306\260 m"
-   "\341\273\245c n\303\240y.",
    "Ch\341\273\245p \341\272\243nh m\303\240n h\303\254nh",
    "\341\272\242nh ch\341\273\245p m\303\240n h\303\254nh \304\221\306\260\341\273\243c l\306\260u t"
    "rong th\306\260 m\341\273\245c n\303\240y.",
@@ -8497,6 +8502,9 @@ static const struct
    "Nh\341\272\255t k\303\275 ch\341\272\241y",
    "Nh\341\272\255t k\303\275 ch\341\272\241y \304\221\306\260\341\273\243c l\306\260u trong th\306"
    "\260 m\341\273\245c n\303\240y.",
+   "B\341\273\221 c\341\273\245c Video",
+   "B\341\273\221 c\341\273\245c Video \304\221\306\260\341\273\243c l\306\260u trong th\306\260 m"
+   "\341\273\245c n\303\240y.",
    "Th\306\260 m\341\273\245c l\306\260u",
    "L\306\260u t\341\272\245t c\341\272\243 c\303\241c file l\306\260u tr\341\273\257 v\303\240o th"
    "\306\260 m\341\273\245c n\303\240y. N\341\272\277u kh\303\264ng thi\341\272\277t l\341\272\255p,"
@@ -11444,7 +11452,11 @@ typedef char msg_hash_vn_blob_check[
        + 76u
        + 30u
        + 61u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 20u
+#endif
 #endif
 #if defined(DINGUX)
        + 22u
@@ -11980,11 +11992,11 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -12104,7 +12116,11 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -13774,8 +13790,6 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -13796,6 +13810,8 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

@@ -280,11 +280,11 @@ static const struct
    char s_4c0a8b68[70];
    char s_7d00b7ed[8];
    char s_65e89a5b[60];
+   char s_170da980[50];
    char s_b0096460[32];
    char s_6fc5fb8e[84];
    char s_d4c7eb99[28];
    char s_c23869c7[80];
-   char s_170da980[50];
    char s_8cb3b95f[11];
    char s_aadb028d[29];
    char s_3a0a3fef[17];
@@ -404,7 +404,11 @@ static const struct
    char s_b4efe6f5[60];
    char s_35324f11[30];
    char s_fe54bf7f[56];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[30];
+#endif
 #endif
    char s_5b2d8d2f[26];
    char s_6ade80dd[47];
@@ -2039,8 +2043,6 @@ static const struct
    char s_4c1871ec[53];
    char s_c6e67d8a[24];
    char s_8950b378[57];
-   char s_5741c1d0[18];
-   char s_66f2b57e[51];
    char s_bcf3997a[17];
    char s_c2d7c9a8[50];
    char s_4e2f19db[19];
@@ -2061,6 +2063,8 @@ static const struct
    char s_e04176ec[52];
    char s_9a0b2e21[15];
    char s_5c75640f[59];
+   char s_5741c1d0[18];
+   char s_66f2b57e[51];
    char s_8fa632ab[16];
    char s_d4c47f59[116];
    char s_03580e17[149];
@@ -4202,13 +4206,13 @@ static const struct
    "Jelsz\303\263",
    "A felh\305\221 alap\303\272 t\303\241rhelyszolg\303\241ltat\303\263hoz haszn\303\241lt jelsz\303"
    "\263.",
+   "A felh\305\221 alap\303\272 t\303\241rhely S3 v\303\251gpontj\303\241nak c\303\255me.",
    "Hozz\303\241f\303\251r\303\251si kulcsazonos\303\255t\303\263",
    "A felh\305\221 alap\303\272 t\303\241rhelyszolg\303\241ltat\303\263hoz haszn\303\241lt hozz\303"
    "\241f\303\251r\303\251si kulcsazonos\303\255t\303\263.",
    "Titkos hozz\303\241f\303\251r\303\251si kulcs",
    "A felh\305\221 alap\303\272 t\303\241rhelyszolg\303\241ltat\303\263hoz haszn\303\241lt titkos ho"
    "zz\303\241f\303\251r\303\251si kulcs.",
-   "A felh\305\221 alap\303\272 t\303\241rhely S3 v\303\251gpontj\303\241nak c\303\255me.",
    "Napl\303\263z\303\241s",
    "A napl\303\263z\303\241s be\303\241ll\303\255t\303\241sai.",
    "F\303\241jlb\303\266ng\303\251sz\305\221",
@@ -4385,7 +4389,11 @@ static const struct
    "\251ges)",
    "Mikrofon \303\272jramintav\303\251telez\305\221",
    "A mikrofonhoz haszn\303\241lt \303\272jramintav\303\251telez\305\221 illeszt\305\221.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Mikrofon keretek blokkonk\303\251nt",
+#endif
 #endif
    "Hang-\303\272jramintav\303\251telez\305\221",
    "A hang-\303\272jramintav\303\251telez\305\221 elj\303\241r\303\241s t\303\255pusa.",
@@ -6969,8 +6977,6 @@ static const struct
    "A k\303\251perny\305\221r\303\241t\303\251tek ebbe a k\303\266nyvt\303\241rba ker\303\274lnek.",
    "Billenty\305\261zet r\303\241t\303\251tek",
    "A billenty\305\261zet r\303\241t\303\251tek ebbe a k\303\266nyvt\303\241rba ker\303\274lnek.",
-   "K\303\251pelrendez\303\251sek",
-   "A k\303\251pelrendez\303\251sek ebbe a k\303\266nyvt\303\241rba ker\303\274lnek.",
    "K\303\251perny\305\221k\303\251pek",
    "A k\303\251perny\305\221k\303\251pek ebbe a k\303\266nyvt\303\241rba ker\303\274lnek.",
    "Kontrollerprofilok",
@@ -6994,6 +7000,8 @@ static const struct
    "Fut\303\241si napl\303\263",
    "A fut\303\241sid\305\221 napl\303\263f\303\241jljai ebbe a k\303\266nyvt\303\241rba ker\303\274l"
    "nek.",
+   "K\303\251pelrendez\303\251sek",
+   "A k\303\251pelrendez\303\251sek ebbe a k\303\266nyvt\303\241rba ker\303\274lnek.",
    "Ment\303\251s f\303\241jlok",
    "Minden ment\303\251s f\303\241jl ide ker\303\274l. Ha nincs be\303\241ll\303\255tva, akkor a tar"
    "talom munkak\303\266nyvt\303\241r\303\241ba pr\303\263b\303\241lja meg ki\303\255rni.",
@@ -9248,7 +9256,11 @@ typedef char msg_hash_hu_blob_check[
        + 60u
        + 30u
        + 56u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 30u
+#endif
 #endif
 #if defined(DINGUX)
        + 20u
@@ -9775,11 +9787,11 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -9899,7 +9911,11 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -11532,8 +11548,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -11554,6 +11568,8 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

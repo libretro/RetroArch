@@ -274,11 +274,11 @@ static const struct
    char s_4c0a8b68[48];
    char s_7d00b7ed[10];
    char s_65e89a5b[44];
+   char s_170da980[40];
    char s_b0096460[18];
    char s_6fc5fb8e[52];
    char s_d4c7eb99[22];
    char s_c23869c7[56];
-   char s_170da980[40];
    char s_8cb3b95f[9];
    char s_aadb028d[32];
    char s_3a0a3fef[13];
@@ -390,7 +390,11 @@ static const struct
    char s_d1df7807[9];
    char s_35324f11[19];
    char s_fe54bf7f[33];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[23];
+#endif
 #endif
    char s_5b2d8d2f[15];
    char s_6ade80dd[29];
@@ -1950,8 +1954,6 @@ static const struct
    char s_4c1871ec[35];
    char s_c6e67d8a[23];
    char s_8950b378[47];
-   char s_5741c1d0[14];
-   char s_66f2b57e[38];
    char s_bcf3997a[13];
    char s_c2d7c9a8[37];
    char s_4e2f19db[22];
@@ -1972,6 +1974,8 @@ static const struct
    char s_e04176ec[42];
    char s_9a0b2e21[14];
    char s_5c75640f[44];
+   char s_5741c1d0[14];
+   char s_66f2b57e[38];
    char s_8fa632ab[12];
    char s_d4c47f59[127];
    char s_03580e17[163];
@@ -4019,11 +4023,11 @@ static const struct
    "Ditt anv\303\244ndarnamn f\303\266r ditt molnlagringskonto.",
    "L\303\266senord",
    "Ditt l\303\266senord f\303\266r ditt molnlagringskonto.",
+   "Din S3-slutpunkts-URL f\303\266r molnlagring.",
    "\303\205tkomstnyckel-ID",
    "Ditt \303\245tkomstnyckel-ID f\303\266r ditt molnlagringskonto.",
    "Hemlig \303\245tkomstnyckel",
    "Din hemliga \303\245tkomstnyckel f\303\266r ditt molnlagringskonto.",
-   "Din S3-slutpunkts-URL f\303\266r molnlagring.",
    "Loggning",
    "\303\204ndra loggningsinst\303\244llningar.",
    "Filhanterare",
@@ -4172,7 +4176,11 @@ static const struct
    "Mikrofon",
    "Mikrofonomsamplare",
    "Mikrofonomsamplare att anv\303\244nda.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Mikrofon bildrutsblock",
+#endif
 #endif
    "Ljudomsamplare",
    "Ljudomsamplare att anv\303\244nda.",
@@ -6343,8 +6351,6 @@ static const struct
    "\303\226verl\303\244gg lagras i denna katalog.",
    "Tangentbords\303\266verl\303\244gg",
    "Tangentbords\303\266verl\303\244gg lagras i denna katalog.",
-   "Videolayouter",
-   "Videolayouter lagras i denna katalog.",
    "Sk\303\244rmdumpar",
    "Sk\303\244rmbilder lagras i denna katalog.",
    "Spelkontrollsprofiler",
@@ -6365,6 +6371,8 @@ static const struct
    "Spara videospellistan till denna katalog.",
    "K\303\266rningslogg",
    "K\303\266rtidsloggar lagras i den h\303\244r katalogen.",
+   "Videolayouter",
+   "Videolayouter lagras i denna katalog.",
    "Spara filer",
    "Spara alla sparningsfiler till denna katalog. Om den inte \303\244r inst\303\244lld f\303\266rs"
    "\303\266ker den spara i inneh\303\245llsfilens arbetskatalog.",
@@ -8380,7 +8388,11 @@ typedef char msg_hash_sv_blob_check[
        + 9u
        + 19u
        + 33u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 23u
+#endif
 #endif
 #if defined(DINGUX)
        + 18u
@@ -8894,11 +8906,11 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -9010,7 +9022,11 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -10565,8 +10581,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -10587,6 +10601,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

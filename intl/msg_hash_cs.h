@@ -379,7 +379,11 @@ static const struct
    char s_d1df7807[9];
    char s_35324f11[27];
    char s_fe54bf7f[53];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[29];
+#endif
 #endif
    char s_5b2d8d2f[23];
    char s_6ade80dd[44];
@@ -1860,8 +1864,6 @@ static const struct
    char s_4c1871ec[44];
    char s_c6e67d8a[22];
    char s_8950b378[56];
-   char s_5741c1d0[18];
-   char s_66f2b57e[52];
    char s_bcf3997a[18];
    char s_c2d7c9a8[54];
    char s_4e2f19db[24];
@@ -1882,6 +1884,8 @@ static const struct
    char s_e04176ec[46];
    char s_9a0b2e21[23];
    char s_5c75640f[57];
+   char s_5741c1d0[18];
+   char s_66f2b57e[52];
    char s_8fa632ab[18];
    char s_d4c47f59[144];
    char s_03580e17[192];
@@ -4069,7 +4073,11 @@ static const struct
    "Mikrofon",
    "Mikrofonn\303\255 p\305\231evzorkova\304\215",
    "Ovlada\304\215 pro p\305\231evzorkov\303\241n\303\255 mikrofonu k pou\305\276it\303\255.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Sn\303\255mky mikrofonn\303\255ch blok\305\257",
+#endif
 #endif
    "P\305\231evzorkov\303\241n\303\255 Zvuku",
    "Pou\305\276it\303\255 ovlada\304\215u p\305\231evzorkov\303\241n\303\255 zvuku.",
@@ -6414,8 +6422,6 @@ static const struct
    "P\305\231ekryvy jsou ulo\305\276eny v tomto adres\303\241\305\231i.",
    "P\305\231ekryvy kl\303\241vesnice",
    "V tomto adres\303\241\305\231i jsou ulo\305\276eny p\305\231ekryvy kl\303\241vesnice.",
-   "Rozlo\305\276en\303\255 videa",
-   "Rozlo\305\276en\303\255 videa jsou ulo\305\276ena v tomto adres\303\241\305\231i.",
    "Sn\303\255mky obrazovky",
    "Do tohoto adres\303\241\305\231e se ukl\303\241daj\303\255 sn\303\255mky obrazovky.",
    "Profily her. ovlada\304\215\305\257",
@@ -6437,6 +6443,8 @@ static const struct
    "Do tohoto adres\303\241\305\231e ulo\305\276te playlist vide\303\255.",
    "Protokoly doby provozu",
    "V tomto adres\303\241\305\231i jsou ulo\305\276eny protokoly doby provozu.",
+   "Rozlo\305\276en\303\255 videa",
+   "Rozlo\305\276en\303\255 videa jsou ulo\305\276ena v tomto adres\303\241\305\231i.",
    "Ulo\305\276en\303\251 soubory",
    "Do tohoto adres\303\241\305\231e ulo\305\276te v\305\241echny ulo\305\276en\303\251 soubory. Pok"
    "ud nen\303\255 nastaveno, pokus\303\255 se ulo\305\276it do pracovn\303\255ho adres\303\241\305"
@@ -8555,7 +8563,11 @@ typedef char msg_hash_cs_blob_check[
        + 9u
        + 27u
        + 53u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 29u
+#endif
 #endif
 #if defined(DINGUX)
        + 19u
@@ -9150,7 +9162,11 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -10626,8 +10642,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -10648,6 +10662,8 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

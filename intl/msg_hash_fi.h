@@ -388,7 +388,11 @@ static const struct
    char s_d1df7807[10];
    char s_35324f11[27];
    char s_fe54bf7f[35];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[21];
+#endif
 #endif
    char s_5b2d8d2f[22];
    char s_6ade80dd[37];
@@ -1653,8 +1657,6 @@ static const struct
    char s_4c1871ec[46];
    char s_c6e67d8a[27];
    char s_8950b378[60];
-   char s_5741c1d0[17];
-   char s_66f2b57e[50];
    char s_bcf3997a[16];
    char s_c2d7c9a8[49];
    char s_4e2f19db[19];
@@ -1675,6 +1677,8 @@ static const struct
    char s_e04176ec[49];
    char s_9a0b2e21[19];
    char s_5c75640f[55];
+   char s_5741c1d0[17];
+   char s_66f2b57e[50];
    char s_8fa632ab[19];
    char s_d4c47f59[139];
    char s_03580e17[194];
@@ -3738,7 +3742,11 @@ static const struct
    "Mikrofoni",
    "Mikrofonin n\303\244ytteenottaja",
    "Mikrofonin n\303\244ytteenottajan ajuri.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Mikrofonin estokuvat",
+#endif
 #endif
    "\303\204\303\244nin\303\244ytteenottaja",
    "K\303\244ytett\303\244v\303\244 \303\244\303\244nin\303\244ytteenottaja.",
@@ -5341,8 +5349,6 @@ static const struct
    "N\303\244pp\303\244imist\303\266p\303\244\303\244llykset",
    "N\303\244pp\303\244imist\303\266p\303\244\303\244llykset on tallennettu t\303\244h\303\244n kans"
    "ioon.",
-   "Videon asettelut",
-   "Videon asettelut on tallennettu t\303\244h\303\244n kansioon.",
    "Kuvakaappaukset",
    "Kuvakaappaukset on tallennettu t\303\244h\303\244n kansioon.",
    "Ohjaimen profiilit",
@@ -5364,6 +5370,8 @@ static const struct
    "Tallenna videoiden soittolista t\303\244h\303\244n kansioon.",
    "Ajonaikaiset lokit",
    "Ajonaikaiset lokit on tallennettu t\303\244h\303\244n hakemistoon.",
+   "Videon asettelut",
+   "Videon asettelut on tallennettu t\303\244h\303\244n kansioon.",
    "Tallennustiedostot",
    "Tallenna kaikki tallennustiedostot t\303\244h\303\244n kansioon. Jos t\303\244t\303\244 ei ole a"
    "setettu, yritet\303\244\303\244n tallentaa sis\303\244lt\303\266tiedoston ty\303\266hakemistoon.",
@@ -7202,7 +7210,11 @@ typedef char msg_hash_fi_blob_check[
        + 10u
        + 27u
        + 35u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 21u
+#endif
 #endif
 #if defined(DINGUX)
        + 20u
@@ -7760,7 +7772,11 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -9025,8 +9041,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -9047,6 +9061,8 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

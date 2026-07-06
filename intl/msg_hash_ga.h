@@ -284,12 +284,12 @@ static const struct
    char s_4c0a8b68[52];
    char s_7d00b7ed[10];
    char s_65e89a5b[47];
+   char s_33fd3a92[7];
+   char s_170da980[57];
    char s_b0096460[29];
    char s_6fc5fb8e[66];
    char s_d4c7eb99[24];
    char s_c23869c7[59];
-   char s_33fd3a92[7];
-   char s_170da980[57];
    char s_8cb3b95f[8];
    char s_aadb028d[28];
    char s_3a0a3fef[20];
@@ -409,7 +409,11 @@ static const struct
    char s_b4efe6f5[58];
    char s_35324f11[28];
    char s_fe54bf7f[50];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[26];
+#endif
 #endif
    char s_5b2d8d2f[21];
    char s_6ade80dd[45];
@@ -2076,8 +2080,6 @@ static const struct
    char s_4c1871ec[45];
    char s_c6e67d8a[24];
    char s_8950b378[55];
-   char s_5741c1d0[23];
-   char s_66f2b57e[54];
    char s_bcf3997a[12];
    char s_c2d7c9a8[46];
    char s_4e2f19db[25];
@@ -2098,6 +2100,8 @@ static const struct
    char s_e04176ec[58];
    char s_9a0b2e21[16];
    char s_5c75640f[47];
+   char s_5741c1d0[23];
+   char s_66f2b57e[54];
    char s_8fa632ab[18];
    char s_d4c47f59[162];
    char s_03580e17[184];
@@ -4342,12 +4346,12 @@ static const struct
    "D'ainm \303\272s\303\241ideora do do chuntas st\303\263r\303\241la scamall.",
    "Pasfhocal",
    "Do phasfhocal do do chuntas st\303\263r\303\241la scamall.",
+   "URL S3",
+   "URL do chr\303\255ochphointe S3 le haghaidh st\303\263r\303\241la scamall.",
    "Aitheantas Eochrach Rochtana",
    "D\342\200\231aitheantas eochrach rochtana do do chuntas st\303\263r\303\241la scamall.",
    "Eochair Rochtana R\303\272nda",
    "D'eochair rochtana r\303\272nda do do chuntas st\303\263r\303\241la scamall.",
-   "URL S3",
-   "URL do chr\303\255ochphointe S3 le haghaidh st\303\263r\303\241la scamall.",
    "Log\303\241il",
    "Athraigh socruithe log\303\241la.",
    "Brabhs\303\241la\303\255 Comhad",
@@ -4537,7 +4541,11 @@ static const struct
    "il)",
    "Athshampl\303\241la\303\255 Micreaf\303\263in",
    "Tiom\303\241na\303\255 athshampl\303\241la micreaf\303\263in le h\303\272s\303\241id.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Fr\303\241ma\303\255 Bloc Micreaf\303\263in",
+#endif
 #endif
    "Athshampl\303\263ir Fuaime",
    "Tiom\303\241na\303\255 athshampl\303\241la fuaime le h\303\272s\303\241id.",
@@ -7140,8 +7148,6 @@ static const struct
    "St\303\263r\303\241iltear forleaganacha san eolaire seo.",
    "Forleagain M\303\251archl\303\241ir",
    "St\303\263r\303\241iltear Forleagain M\303\251archl\303\241ir san eolaire seo.",
-   "Leagan Amach F\303\255se\303\241in",
-   "St\303\263r\303\241iltear Leagan Amach F\303\255se\303\241in san eolaire seo.",
    "Sc\303\241ile\303\241in",
    "St\303\263r\303\241iltear sc\303\241ile\303\241in sa chomhadlann seo.",
    "Pr\303\263if\303\255l\303\255 Rialaitheora",
@@ -7163,6 +7169,8 @@ static const struct
    "S\303\241bh\303\241il seinmliosta na bhf\303\255se\303\241n chuig an eolaire seo.",
    "Loga\303\255 Ama Rith",
    "St\303\263r\303\241iltear loga\303\255 rith-ama san eolaire seo.",
+   "Leagan Amach F\303\255se\303\241in",
+   "St\303\263r\303\241iltear Leagan Amach F\303\255se\303\241in san eolaire seo.",
    "S\303\241bh\303\241il Comhaid",
    "S\303\241bh\303\241il na comhaid s\303\241bh\303\241la go l\303\251ir sa chomhadlann seo. Mura s"
    "ocra\303\255tear \303\251, d\303\251anfar iarracht iad a sh\303\241bh\303\241il laistigh d'eolai"
@@ -9497,7 +9505,11 @@ typedef char msg_hash_ga_blob_check[
        + 58u
        + 28u
        + 50u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 26u
+#endif
 #endif
 #if defined(DINGUX)
        + 21u
@@ -10031,12 +10043,12 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -10156,7 +10168,11 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -11815,8 +11831,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -11837,6 +11851,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

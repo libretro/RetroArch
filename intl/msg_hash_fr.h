@@ -278,12 +278,12 @@ static const struct
    char s_4c0a8b68[61];
    char s_7d00b7ed[14];
    char s_65e89a5b[56];
+   char s_33fd3a92[7];
+   char s_170da980[58];
    char s_b0096460[23];
    char s_6fc5fb8e[63];
    char s_d4c7eb99[23];
    char s_c23869c7[66];
-   char s_33fd3a92[7];
-   char s_170da980[58];
    char s_8cb3b95f[15];
    char s_aadb028d[42];
    char s_3a0a3fef[23];
@@ -401,7 +401,11 @@ static const struct
    char s_b4efe6f5[56];
    char s_35324f11[34];
    char s_fe54bf7f[57];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[27];
+#endif
 #endif
    char s_5b2d8d2f[28];
    char s_6ade80dd[49];
@@ -2065,8 +2069,6 @@ static const struct
    char s_4c1871ec[53];
    char s_c6e67d8a[26];
    char s_8950b378[63];
-   char s_5741c1d0[26];
-   char s_66f2b57e[63];
    char s_bcf3997a[19];
    char s_c2d7c9a8[56];
    char s_4e2f19db[20];
@@ -2087,6 +2089,8 @@ static const struct
    char s_e04176ec[54];
    char s_9a0b2e21[26];
    char s_5c75640f[59];
+   char s_5741c1d0[26];
+   char s_66f2b57e[63];
    char s_8fa632ab[24];
    char s_d4c47f59[156];
    char s_03580e17[198];
@@ -4296,12 +4300,12 @@ static const struct
    "Votre nom d'utilisateur pour votre compte de stockage Cloud.",
    "Mot de passe ",
    "Votre mot de passe pour votre compte de stockage Cloud.",
+   "URL S3",
+   "Votre URL point de terminaison S3 pour le stockage Cloud.",
    "ID de la cl\303\251 d'acc\303\250s",
    "Votre ID de cl\303\251 d'acc\303\250s pour votre compte de stockage Cloud.",
    "Cl\303\251 d'acc\303\250s secr\303\250te",
    "Votre cl\303\251 d'acc\303\250s secr\303\250te pour votre compte de stockage Cloud.",
-   "URL S3",
-   "Votre URL point de terminaison S3 pour le stockage Cloud.",
    "Journalisation",
    "Modifier les r\303\251glages de journalisation.",
    "Navigateur de fichiers",
@@ -4457,7 +4461,11 @@ static const struct
    "Pilote de microphone \303\240 utiliser. (Red\303\251marrage requis)",
    "R\303\251\303\251chantillonneur du microphone",
    "Pilote de r\303\251\303\251chantillonnage du microphone \303\240 utiliser.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Images blocs du microphone",
+#endif
 #endif
    "R\303\251-\303\251chantillonneur audio ",
    "Pilote de r\303\251\303\251chantillonnage audio \303\240 utiliser.",
@@ -6873,8 +6881,6 @@ static const struct
    "Les surimpressions sont conserv\303\251es dans ce dossier.",
    "Claviers en surimpression",
    "Les claviers en surimpression sont conserv\303\251s dans ce dossier.",
-   "Dispositions d'affichage ",
-   "Les dispositions d'affichage sont conserv\303\251es dans ce dossier.",
    "Captures d'\303\251cran ",
    "Les captures d'\303\251cran sont conserv\303\251es dans ce dossier.",
    "Profils de manettes",
@@ -6896,6 +6902,8 @@ static const struct
    "La liste des vid\303\251os sera conserv\303\251e dans ce dossier.",
    "Journaux du temps de jeu ",
    "Les journaux d'ex\303\251cution sont conserv\303\251s dans ce dossier.",
+   "Dispositions d'affichage ",
+   "Les dispositions d'affichage sont conserv\303\251es dans ce dossier.",
    "Fichiers de sauvegarde ",
    "Les fichiers de sauvegarde seront conserv\303\251s dans ce dossier. Si aucun dossier n'est d\303"
    "\251fini, ils seront sauvegard\303\251s dans le m\303\252me dossier que le contenu.",
@@ -9126,7 +9134,11 @@ typedef char msg_hash_fr_blob_check[
        + 56u
        + 34u
        + 57u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 27u
+#endif
 #endif
 #if defined(DINGUX)
        + 25u
@@ -9651,12 +9663,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -9774,7 +9786,11 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -11430,8 +11446,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -11452,6 +11466,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

@@ -281,11 +281,11 @@ static const struct
    char s_4c0a8b68[64];
    char s_7d00b7ed[6];
    char s_65e89a5b[47];
+   char s_170da980[48];
    char s_b0096460[27];
    char s_6fc5fb8e[68];
    char s_d4c7eb99[28];
    char s_c23869c7[69];
-   char s_170da980[48];
    char s_8cb3b95f[8];
    char s_aadb028d[27];
    char s_3a0a3fef[18];
@@ -403,7 +403,11 @@ static const struct
    char s_b4efe6f5[57];
    char s_35324f11[24];
    char s_fe54bf7f[49];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[29];
+#endif
 #endif
    char s_5b2d8d2f[17];
    char s_6ade80dd[38];
@@ -2045,8 +2049,6 @@ static const struct
    char s_4c1871ec[42];
    char s_c6e67d8a[22];
    char s_8950b378[57];
-   char s_5741c1d0[18];
-   char s_66f2b57e[51];
    char s_bcf3997a[18];
    char s_c2d7c9a8[45];
    char s_4e2f19db[28];
@@ -2067,6 +2069,8 @@ static const struct
    char s_e04176ec[43];
    char s_9a0b2e21[16];
    char s_5c75640f[49];
+   char s_5741c1d0[18];
+   char s_66f2b57e[51];
    char s_8fa632ab[18];
    char s_d4c47f59[138];
    char s_03580e17[185];
@@ -4196,13 +4200,13 @@ static const struct
    "\251ho \303\272lo\305\276iska.",
    "Heslo",
    "Va\305\241e heslo pre \303\272\304\215et cloudov\303\251ho \303\272lo\305\276iska.",
+   "Va\305\241a S3 endpoint URL pre cloudov\303\251 \303\272lo\305\276isko.",
    "ID pr\303\255stupov\303\251ho k\304\276\303\272\304\215a",
    "Va\305\241e ID pr\303\255stupov\303\251ho k\304\276\303\272\304\215a pre \303\272\304\215et clou"
    "dov\303\251ho \303\272lo\305\276iska.",
    "Tajn\303\275 pr\303\255stupov\303\275 k\304\276\303\272\304\215",
    "V\303\241\305\241 tajn\303\275 pr\303\255stupov\303\275 k\304\276\303\272\304\215 pre \303\272"
    "\304\215et cloudov\303\251ho \303\272lo\305\276iska.",
-   "Va\305\241a S3 endpoint URL pre cloudov\303\251 \303\272lo\305\276isko.",
    "Z\303\241znam",
    "Zmena nastaven\303\255 z\303\241znamu.",
    "Spr\303\241vca s\303\272borov",
@@ -4371,7 +4375,11 @@ static const struct
    "\241tart)",
    "Resamplova\304\215 mikrof\303\263nu",
    "Ak\303\275 mikrof\303\263nov\303\275 resampler ovl\303\241da\304\215 pou\305\276i\305\245.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Sn\303\255mky mikrof\303\263nnych blokov",
+#endif
 #endif
    "Vzorkova\304\215 zvuku",
    "Pou\305\276i\305\245 ovl\303\241da\304\215 vzorkova\304\215a zvuku.",
@@ -6797,8 +6805,6 @@ static const struct
    "Overlaye s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
    "Prekrytia kl\303\241vesnice",
    "Kl\303\241vesnicov\303\251 overlaye s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
-   "Rozlo\305\276enie videa",
-   "Video rozlo\305\276enia s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
    "Sn\303\255mky obrazovky",
    "Screenshoty s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
    "Profily hern\303\251ho ovl\303\241da\304\215a",
@@ -6820,6 +6826,8 @@ static const struct
    "Ulo\305\276i\305\245 zoznam Vide\303\255 do tohto adres\303\241ra.",
    "Logy \304\215asu behu",
    "Logy \304\215asu behu s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
+   "Rozlo\305\276enie videa",
+   "Video rozlo\305\276enia s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
    "S\303\272bory ulo\305\276enia",
    "Ulo\305\276i\305\245 v\305\241etky s\303\272bory ulo\305\276enia do tohto adres\303\241ra. Ak ni"
    "e je nastaven\303\251, pok\303\272si sa ulo\305\276i\305\245 do pracovn\303\251ho adres\303\241r"
@@ -9002,7 +9010,11 @@ typedef char msg_hash_sk_blob_check[
        + 57u
        + 24u
        + 49u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 29u
+#endif
 #endif
 #if defined(DINGUX)
        + 21u
@@ -9530,11 +9542,11 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -9652,7 +9664,11 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -11291,8 +11307,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -11313,6 +11327,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

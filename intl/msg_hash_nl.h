@@ -266,11 +266,11 @@ static const struct
    char s_4c0a8b68[46];
    char s_7d00b7ed[11];
    char s_65e89a5b[42];
+   char s_170da980[37];
    char s_b0096460[19];
    char s_6fc5fb8e[50];
    char s_d4c7eb99[24];
    char s_c23869c7[55];
-   char s_170da980[37];
    char s_8cb3b95f[7];
    char s_aadb028d[30];
    char s_3a0a3fef[15];
@@ -379,7 +379,11 @@ static const struct
    char s_d1df7807[10];
    char s_35324f11[20];
    char s_fe54bf7f[38];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[23];
+#endif
 #endif
    char s_6ade80dd[48];
    char s_a4a373a7[29];
@@ -1970,8 +1974,6 @@ static const struct
    char s_4c1871ec[40];
    char s_c6e67d8a[21];
    char s_8950b378[52];
-   char s_5741c1d0[14];
-   char s_66f2b57e[46];
    char s_bcf3997a[19];
    char s_c2d7c9a8[50];
    char s_4e2f19db[20];
@@ -1992,6 +1994,8 @@ static const struct
    char s_e04176ec[42];
    char s_9a0b2e21[17];
    char s_5c75640f[48];
+   char s_5741c1d0[14];
+   char s_66f2b57e[46];
    char s_8fa632ab[21];
    char s_d4c47f59[128];
    char s_03580e17[177];
@@ -4098,11 +4102,11 @@ static const struct
    "Je gebruikersnaam voor je cloudopslagaccount.",
    "Wachtwoord",
    "Uw wachtwoord voor uw cloudopslagaccount.",
+   "Je S3 eindpunt URL voor cloudopslag.",
    "Toegangssleutel-ID",
    "Je toegangssleutel-ID voor uw cloudopslagaccount.",
    "Geheime toegangssleutel",
    "Je geheime toegangssleutel voor je cloudopslagaccount.",
-   "Je S3 eindpunt URL voor cloudopslag.",
    "Loggen",
    "Logboekinstellingen wijzigen.",
    "Bestandsbeheer",
@@ -4236,7 +4240,11 @@ static const struct
    "Microfoon",
    "Microfoon Resampler",
    "Te gebruiken microfoonstuurprogramma.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Microfoon block frames",
+#endif
 #endif
    "Audio resampler stuurprogramma om te gebruiken.",
    "Windowed Sinc implementatie.",
@@ -6261,8 +6269,6 @@ static const struct
    "Overlays worden opgeslagen in deze map.",
    "Toetsenbord-overlays",
    "Toetsenbord-overlays worden opgeslagen in deze map.",
-   "Videolay-outs",
-   "Video lay-outs worden opgeslagen in deze map.",
    "Schermafbeeldingen",
    "Schermafbeeldingen worden in deze map opgeslagen.",
    "Controllerprofielen",
@@ -6284,6 +6290,8 @@ static const struct
    "Sla de video-afspeellijst op in deze map.",
    "Runtimelogboeken",
    "Runtimelogboeken worden opgeslagen in deze map.",
+   "Videolay-outs",
+   "Video lay-outs worden opgeslagen in deze map.",
    "Opgeslagen bestanden",
    "Sla alle opslagbestanden op in deze map. Als dit niet is ingesteld, zal het proberen op te slaan"
    " in de werkmap van het bestand.",
@@ -8301,7 +8309,11 @@ typedef char msg_hash_nl_blob_check[
        + 10u
        + 20u
        + 38u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 23u
+#endif
 #endif
 #if defined(DINGUX)
        + 18u
@@ -8815,11 +8827,11 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -8928,7 +8940,11 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
@@ -10516,8 +10532,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -10538,6 +10552,8 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

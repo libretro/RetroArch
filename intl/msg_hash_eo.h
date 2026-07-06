@@ -285,12 +285,12 @@ static const struct
    char s_4c0a8b68[43];
    char s_7d00b7ed[9];
    char s_65e89a5b[42];
+   char s_33fd3a92[10];
+   char s_170da980[53];
    char s_b0096460[24];
    char s_6fc5fb8e[60];
    char s_d4c7eb99[18];
    char s_c23869c7[51];
-   char s_33fd3a92[10];
-   char s_170da980[53];
    char s_8cb3b95f[12];
    char s_aadb028d[34];
    char s_3a0a3fef[16];
@@ -410,7 +410,11 @@ static const struct
    char s_b4efe6f5[45];
    char s_35324f11[24];
    char s_fe54bf7f[41];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[11];
+#endif
 #endif
    char s_5b2d8d2f[14];
    char s_6ade80dd[28];
@@ -2076,8 +2080,6 @@ static const struct
    char s_4c1871ec[54];
    char s_c6e67d8a[21];
    char s_8950b378[63];
-   char s_5741c1d0[16];
-   char s_66f2b57e[58];
    char s_bcf3997a[12];
    char s_c2d7c9a8[54];
    char s_4e2f19db[17];
@@ -2098,6 +2100,8 @@ static const struct
    char s_e04176ec[54];
    char s_9a0b2e21[21];
    char s_5c75640f[63];
+   char s_5741c1d0[16];
+   char s_66f2b57e[58];
    char s_8fa632ab[16];
    char s_d4c47f59[142];
    char s_03580e17[184];
@@ -4312,12 +4316,12 @@ static const struct
    "Via uzantnomo por via nubkonserveja konto.",
    "Pasvorto",
    "Via pasvorto por via nubkonserveja konto.",
+   "URL de S3",
+   "La URL de la finpunkto de S3 de via nuba konservejo.",
    "Identigilo de alirklavo",
    "La identigilo de via alirklavo por via nubkonserveja konto.",
    "Sekreta alirklavo",
    "Via sekreta alirklavo por via nubkonserveja konto.",
-   "URL de S3",
-   "La URL de la finpunkto de S3 de via nuba konservejo.",
    "Protokolado",
    "\305\234an\304\235i agordojn pri protokolado.",
    "Dosieresplorilo",
@@ -4462,7 +4466,11 @@ static const struct
    "Mikrofona pelilo uzota. Bezonas restartigon.",
    "Mikrofona resonpecigado",
    "Pelilo de mikrofona resonpecigado uzota.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "rarapidigo",
+#endif
 #endif
    "Resonpecigado",
    "Resonpecigada pelilo uzota.",
@@ -6637,8 +6645,6 @@ static const struct
    "Surmeta\304\265oj estas enmemorigitaj en \304\211i tiu dosierujo.",
    "Klavaraj surmeta\304\265oj",
    "Klavaraj surmeta\304\265oj estas enmemorigitaj en \304\211i tiu dosierujo.",
-   "Videaj aran\304\235oj",
-   "Videaj aran\304\235oj estas enmemorigitaj en \304\211i tiu dosierujo.",
    "Ekrankopioj",
    "Ekrankopioj estas enmemorigitaj en \304\211i tiu dosierujo.",
    "Regilaj profiloj",
@@ -6660,6 +6666,8 @@ static const struct
    "Konservi la ludliston Videa\304\265oj en \304\211i tiu dosierujo.",
    "Rultempaj protokoloj",
    "Rultempaj protokoloj estas enmemorigitaj en \304\211i tiu dosierujo.",
+   "Videaj aran\304\235oj",
+   "Videaj aran\304\235oj estas enmemorigitaj en \304\211i tiu dosierujo.",
    "Konservdosieroj",
    "Konservi \304\211iujn konservdosierojn en \304\211i tiu dosierujo. Se ne agordite, \304\235i pro"
    "vos konservi en la funkciantan dosierujon de la enhava dosiero.",
@@ -8776,7 +8784,11 @@ typedef char msg_hash_eo_blob_check[
        + 45u
        + 24u
        + 41u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 11u
+#endif
 #endif
 #if defined(DINGUX)
        + 18u
@@ -9313,12 +9325,12 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -9438,7 +9450,11 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -11099,8 +11115,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -11121,6 +11135,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,

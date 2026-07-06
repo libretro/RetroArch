@@ -382,7 +382,11 @@ static const struct
    char s_d1df7807[10];
    char s_35324f11[26];
    char s_fe54bf7f[53];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[36];
+#endif
 #endif
    char s_5b2d8d2f[23];
    char s_6ade80dd[46];
@@ -1778,7 +1782,11 @@ static const struct
    "Microfone",
    "Reamostrador de microfone",
    "Controlador de reamostrador do microfone a utilizar.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Estruturas de bloqueio do microfone",
+#endif
 #endif
    "Reamostragem de \303\241udio",
    "Driver de reamostragem de \303\241udio a ser usado.",
@@ -2934,7 +2942,11 @@ typedef char msg_hash_pt_pt_blob_check[
        + 10u
        + 26u
        + 53u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 36u
+#endif
 #endif
 #if defined(DINGUX)
        + 25u
@@ -3364,7 +3376,11 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,

@@ -282,11 +282,11 @@ static const struct
    char s_4c0a8b68[59];
    char s_7d00b7ed[12];
    char s_65e89a5b[58];
+   char s_170da980[65];
    char s_b0096460[23];
    char s_6fc5fb8e[57];
    char s_d4c7eb99[25];
    char s_c23869c7[64];
-   char s_170da980[65];
    char s_8cb3b95f[10];
    char s_aadb028d[33];
    char s_3a0a3fef[21];
@@ -405,7 +405,11 @@ static const struct
    char s_b4efe6f5[61];
    char s_35324f11[25];
    char s_fe54bf7f[62];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    char s_f0db2883[29];
+#endif
 #endif
    char s_5b2d8d2f[20];
    char s_6ade80dd[56];
@@ -2072,8 +2076,6 @@ static const struct
    char s_4c1871ec[49];
    char s_c6e67d8a[26];
    char s_8950b378[58];
-   char s_5741c1d0[23];
-   char s_66f2b57e[57];
    char s_bcf3997a[21];
    char s_c2d7c9a8[55];
    char s_4e2f19db[23];
@@ -2094,6 +2096,8 @@ static const struct
    char s_e04176ec[63];
    char s_9a0b2e21[24];
    char s_5c75640f[58];
+   char s_5741c1d0[23];
+   char s_66f2b57e[57];
    char s_8fa632ab[14];
    char s_d4c47f59[123];
    char s_03580e17[185];
@@ -4267,11 +4271,11 @@ static const struct
    "El nom d'usuari del teu compte d'emmagatzematge al n\303\272vol.",
    "Contrasenya",
    "La contrasenya del teu compte d'emmagatzematge al n\303\272vol.",
+   "El teu punt final d'adre\303\247a web S3 per emmagatzematge al n\303\272vol.",
    "ID de la clau d'acc\303\251s",
    "La teva clau d'acc\303\251s ID per l'emmagatzematge al n\303\272vol.",
    "Codi de la clau d'acc\303\251s",
    "El teu codi de la clau d'acc\303\251s per l'emmagatzematge al n\303\272vol.",
-   "El teu punt final d'adre\303\247a web S3 per emmagatzematge al n\303\272vol.",
    "Registres",
    "Canvia les opcions del registre.",
    "Navegador de fitxers",
@@ -4425,7 +4429,11 @@ static const struct
    "Controlador de micr\303\262fon que es far\303\240 servir (cal reiniciar)",
    "Remostreig del micr\303\262fon",
    "Controlador del remostreig del micr\303\262fon que es far\303\240 servir.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    "Marcs de blocs del micr\303\262fon",
+#endif
 #endif
    "Remostreig d'\303\240udio",
    "Controlador de remostreig d'\303\240udio que es far\303\240 servir.",
@@ -6739,8 +6747,6 @@ static const struct
    "Les superposicions es desen en aquest directori.",
    "Superposicions del teclat",
    "En aquesta carpeta es desen les superposicions de teclat.",
-   "Disposicions de v\303\255deo",
-   "Les disposicions de v\303\255deo es desen en aquest directori.",
    "Captures de pantalla",
    "Les captures de pantalla es desen en aquest directori.",
    "Perfils de controlador",
@@ -6762,6 +6768,8 @@ static const struct
    "Desa la llista de reproducci\303\263 de v\303\255deos en aquest directori.",
    "Registres d\342\200\231execuci\303\263",
    "Els registres d\342\200\231execuci\303\263 es desen en aquest directori.",
+   "Disposicions de v\303\255deo",
+   "Les disposicions de v\303\255deo es desen en aquest directori.",
    "Desar fitxers",
    "Desa tots els estats desats en aquesta carpeta. Si no hi ha una carpeta assignada, es desaran en"
    " la carpeta del contingut.",
@@ -8918,7 +8926,11 @@ typedef char msg_hash_ca_blob_check[
        + 61u
        + 25u
        + 62u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
        + 29u
+#endif
 #endif
 #if defined(DINGUX)
        + 27u
@@ -9450,11 +9462,11 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -9573,7 +9585,11 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -11235,8 +11251,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -11257,6 +11271,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
