@@ -3965,7 +3965,7 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
                || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR)
-               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
                || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
          {
@@ -9089,7 +9089,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             if (list->size)
             {
                if (!strcmp(list->list[list->size - 1].label,
-                   MENU_ENUM_LABEL_CONFIGURATIONS_STR))
+                   msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS)))
                   ozone->flags2 |= OZONE_FLAG2_RESET_DEPTH;
             }
          }
@@ -13081,7 +13081,7 @@ static void ozone_populate_entries(
       /* Quick Menu under Explore list must also be Quick Menu */
       if (     string_is_equal(entry.label, MENU_ENUM_LABEL_RUN_STR)
             || string_is_equal(entry.label, MENU_ENUM_LABEL_RESUME_CONTENT_STR)
-            || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
+            || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
          )
       {
          ozone->flags2 |=  OZONE_FLAG2_IS_QUICK_MENU;

@@ -3715,7 +3715,7 @@ static int menu_displaylist_parse_load_content_settings(
          {
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS),
-                     MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS),
                      MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
@@ -3725,7 +3725,7 @@ static int menu_displaylist_parse_load_content_settings(
          {
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS),
-                     MENU_ENUM_LABEL_LATENCY_SETTINGS_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_LATENCY_SETTINGS),
                      MENU_ENUM_LABEL_LATENCY_SETTINGS,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
@@ -7031,7 +7031,7 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
    if (menu_entries_append(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),
-         MENU_ENUM_LABEL_NETWORK_SETTINGS_STR,
+         msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS),
          MENU_ENUM_LABEL_NETWORK_SETTINGS,
          MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
@@ -7250,7 +7250,7 @@ unsigned menu_displaylist_build_list(
                   {
                      if (menu_entries_append(list,
                               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-                              MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME_STR,
+                              msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
                               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
                               MENU_SETTING_ACTION, 0, 0, NULL))
                         count++;
@@ -7259,7 +7259,7 @@ unsigned menu_displaylist_build_list(
                      {
                         if (menu_entries_append(list,
                                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME),
-                                 MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME_STR,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME),
                                  MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
                            count++;
@@ -7270,7 +7270,7 @@ unsigned menu_displaylist_build_list(
                   {
                      if (menu_entries_append(list,
                               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
-                              MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR_STR,
+                              msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
                               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
                               MENU_SETTING_ACTION, 0, 0, NULL))
                         count++;
@@ -7279,7 +7279,7 @@ unsigned menu_displaylist_build_list(
                      {
                         if (menu_entries_append(list,
                                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
-                                 MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR_STR,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
                                  MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
                            count++;
@@ -7291,7 +7291,7 @@ unsigned menu_displaylist_build_list(
                {
                   if (menu_entries_append(list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-                           MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE_STR,
+                           msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
                            MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
                            MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;
@@ -7300,7 +7300,7 @@ unsigned menu_displaylist_build_list(
                   {
                      if (menu_entries_append(list,
                               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE),
-                              MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE_STR,
+                              msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE),
                               MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
                               MENU_SETTING_ACTION, 0, 0, NULL))
                         count++;
@@ -8251,7 +8251,7 @@ unsigned menu_displaylist_build_list(
                &&  settings->bools.settings_show_file_browser)
             menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
-                  MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS_STR,
+                  msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
                   MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
                   MENU_SETTING_ACTION, 0, 0, NULL);
          break;
@@ -11167,19 +11167,19 @@ unsigned menu_displaylist_build_list(
             rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS),
-                     MENU_ENUM_LABEL_CONFIGURATIONS_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS),
                      MENU_ENUM_LABEL_CONFIGURATIONS,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
-                     MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
                      MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG),
-                     MENU_ENUM_LABEL_SAVE_NEW_CONFIG_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
                      MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
@@ -11197,7 +11197,7 @@ unsigned menu_displaylist_build_list(
                count++;
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
-                     MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
                      MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;

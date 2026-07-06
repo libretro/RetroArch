@@ -8169,7 +8169,7 @@ size_t menu_update_fullscreen_thumbnail_label(
    /* > State slot label */
    else if (   is_quick_menu
             && (
-               string_is_equal(selected_entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
+               string_is_equal(selected_entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
             || string_is_equal(selected_entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
             || string_is_equal(selected_entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR)
                )
