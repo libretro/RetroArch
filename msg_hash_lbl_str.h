@@ -571,7 +571,6 @@
 #define MENU_ENUM_LABEL_NETWORK_CMD_PORT_STR "network_cmd_port"
 #define MENU_ENUM_LABEL_NETWORK_INFORMATION_STR "network_information"
 #define MENU_ENUM_LABEL_NETWORK_INFO_ENTRY_STR "network_info_entry"
-#define MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE_STR "network_remote_enable"
 #define MENU_ENUM_LABEL_NETWORK_REMOTE_PORT_STR "network_remote_base_port"
 #define MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE_STR "network_remote_user_1_enable"
 #define MENU_ENUM_LABEL_NETWORK_REMOTE_USER_LAST_ENABLE_STR "network_remote_user_last_enable"
