@@ -6345,7 +6345,7 @@ static enum runloop_state_enum runloop_check_state(
                generic_action_ok_displaylist_push(
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB),
                      NULL,
-                     MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                      MENU_SETTING_ACTION,
                      0, 0, ACTION_OK_DL_GENERIC);
                break;
@@ -6385,7 +6385,7 @@ static enum runloop_state_enum runloop_check_state(
                generic_action_ok_displaylist_push(
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
                      NULL,
-                     MENU_ENUM_LABEL_LOAD_CONTENT_LIST_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST),
                      MENU_SETTING_ACTION,
                      0, 0, ACTION_OK_DL_GENERIC);
                break;

@@ -10508,7 +10508,7 @@ static bool setting_append_list_input_player_options(
 
    START_GROUP(list, list_info, &group_info, binds_group_label, parent_group);
 
-   parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+   parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
    START_SUB_GROUP(
          list,
@@ -10846,7 +10846,7 @@ static bool setting_append_list_input_libretro_device_options(
    START_GROUP(list, list_info, &group_info,
          "Libretro Device Type", parent_group);
 
-   parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+   parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", &group_info,
          &subgroup_info, parent_group);
@@ -10913,7 +10913,7 @@ static bool setting_append_list_input_remap_port_options(
    START_GROUP(list, list_info, &group_info,
          "Mapped Ports", parent_group);
 
-   parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+   parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", &group_info,
          &subgroup_info, parent_group);
@@ -11513,7 +11513,7 @@ static bool setting_append_list(
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
 
-            parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info,
                   &subgroup_info, parent_group);
@@ -11712,7 +11712,7 @@ static bool setting_append_list(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_CORE_SETTINGS);
 
-            parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                   parent_group);
@@ -12281,7 +12281,7 @@ static bool setting_append_list(
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS),
                parent_group);
-         parent_group = MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS);
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
@@ -13090,7 +13090,7 @@ static bool setting_append_list(
                   parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_VIDEO_SETTINGS);
 
-            parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -14458,7 +14458,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS), parent_group);
          MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -14557,7 +14557,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS), parent_group);
          MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_AUDIO_SETTINGS);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -14672,7 +14672,7 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(
                list,
@@ -14830,7 +14830,7 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(
                list,
@@ -14989,7 +14989,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS), parent_group);
          MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_MICROPHONE_SETTINGS);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -15029,7 +15029,7 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          /* Descriptor holdout: runtime default value. */
          CONFIG_UINT(
@@ -15086,7 +15086,7 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(
                list,
@@ -15165,7 +15165,7 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_INPUT_SETTINGS_BEGIN_STR,
                   parent_group);
 
-            parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -15668,7 +15668,7 @@ static bool setting_append_list(
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS),
                parent_group);
-         parent_group = MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -15995,7 +15995,7 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS_BEGIN_STR,
                   parent_group);
 
-            parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                   parent_group);
@@ -18870,7 +18870,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS),
                parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -19007,7 +19007,7 @@ static bool setting_append_list(
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS),
                parent_group);
-         parent_group = MENU_ENUM_LABEL_WIFI_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_WIFI_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -19706,7 +19706,7 @@ static bool setting_append_list(
                parent_group);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "History", &group_info, &subgroup_info, parent_group);
 
@@ -20806,7 +20806,7 @@ static bool setting_append_list(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES),
                   parent_group);
 
-            parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
             START_SUB_GROUP(list, list_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES),
@@ -20926,7 +20926,7 @@ static bool setting_append_list(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS),
                   parent_group);
 
-            parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
             START_SUB_GROUP(list, list_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS),
@@ -21122,7 +21122,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END),
                parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -21159,7 +21159,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE),
                parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -21188,7 +21188,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH),
                parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -21216,7 +21216,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK),
                parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -21244,7 +21244,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK),
                parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -21272,7 +21272,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS),
                parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -21908,7 +21908,7 @@ static bool setting_append_list(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS),
             parent_group);
 
-         parent_group = MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR;
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 

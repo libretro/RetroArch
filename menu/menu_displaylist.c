@@ -3841,7 +3841,7 @@ static int menu_displaylist_parse_load_content_settings(
       {
          if (menu_entries_append(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS),
-               MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR,
+               msg_hash_to_str(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS),
                MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
                MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
@@ -4269,7 +4269,7 @@ static unsigned menu_displaylist_parse_playlists(
             if (settings->bools.menu_content_show_history && g_defaults.content_history)
                if (menu_entries_append(info_list,
                         playlist_get_conf_path(g_defaults.content_history),
-                        MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR,
+                        msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
@@ -4279,7 +4279,7 @@ static unsigned menu_displaylist_parse_playlists(
             if (settings->bools.menu_content_show_history && g_defaults.content_history)
                if (menu_entries_append(info_list,
                         playlist_get_conf_path(g_defaults.content_history),
-                        MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR,
+                        msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
@@ -4325,7 +4325,7 @@ static unsigned menu_displaylist_parse_playlists(
       if (show_netplay)
          if (menu_entries_append(info_list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY),
-                  MENU_ENUM_LABEL_NETPLAY_STR,
+                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY),
                   MENU_ENUM_LABEL_NETPLAY,
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
@@ -4333,7 +4333,7 @@ static unsigned menu_displaylist_parse_playlists(
       if (show_add_content)
          if (menu_entries_append(info_list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
-                  MENU_ENUM_LABEL_ADD_CONTENT_LIST_STR,
+                  msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST),
                   MENU_ENUM_LABEL_ADD_CONTENT_LIST,
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
@@ -8184,7 +8184,7 @@ unsigned menu_displaylist_build_list(
 #endif
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS),
-                     MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS),
                      MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
@@ -15594,7 +15594,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (settings->bools.menu_content_show_history && g_defaults.content_history)
                         if (menu_entries_append(info->list,
                                  playlist_get_conf_path(g_defaults.content_history),
-                                 MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                                  MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
                            count++;
@@ -15604,7 +15604,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (settings->bools.menu_content_show_history && g_defaults.content_history)
                         if (menu_entries_append(info->list,
                                  playlist_get_conf_path(g_defaults.content_history),
-                                 MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                                  MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
                            count++;
@@ -15667,7 +15667,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                if (show_add_content)
                   if (menu_entries_append(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
-                           MENU_ENUM_LABEL_ADD_CONTENT_LIST_STR,
+                           msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST),
                            MENU_ENUM_LABEL_ADD_CONTENT_LIST,
                            MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;

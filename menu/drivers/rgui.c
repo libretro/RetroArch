@@ -7619,7 +7619,7 @@ static void rgui_populate_entries(
 
    /* Check whether we are currently viewing a playlist */
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
-         || string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
@@ -7686,7 +7686,7 @@ static void rgui_populate_entries(
    rgui->flags &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
 
    if (     rgui->flags & RGUI_FLAG_IS_PLAYLIST
-         && !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR))
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
@@ -7698,7 +7698,7 @@ static void rgui_populate_entries(
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
          menu_st->selection_ptr = rgui->playlist_selection_ptr;
    }
-   else if (string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_STR))
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS)))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_MAIN)

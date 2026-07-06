@@ -3645,7 +3645,7 @@ static void xmb_populate_entries(void *data,
 #endif
             )
          )
-         || string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)

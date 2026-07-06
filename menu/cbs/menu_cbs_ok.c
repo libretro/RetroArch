@@ -6961,7 +6961,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
 
    /* Don't push the results if we left the netplay menu */
    if (     !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_TAB_STR)
-         && !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_STR))
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
       return;
 
    if (err)
@@ -7042,7 +7042,7 @@ static void netplay_refresh_lan_cb(const void *data)
 
    /* Don't push the results if we left the netplay menu */
    if (     !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_TAB_STR)
-         && !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_STR))
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
       return;
 
    if (!hosts || !hosts->size)

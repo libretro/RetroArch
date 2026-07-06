@@ -3364,7 +3364,7 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
                     || (type == FILE_TYPE_PLAYLIST_COLLECTION);
 
    if (!filter_enabled && label && *label)
-      filter_enabled =    string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
+      filter_enabled =    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
