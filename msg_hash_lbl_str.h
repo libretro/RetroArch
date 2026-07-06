@@ -823,7 +823,6 @@
 #define MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS_STR "refresh_rooms"
 #define MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN_STR "refresh_lan"
 #define MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY_STR "scan_this_directory"
-#define MENU_ENUM_LABEL_SCREEN_RESOLUTION_STR "screen_resolution"
 #define MENU_ENUM_LABEL_SETTINGS_TAB_STR "settings_tab"
 #define MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS_STR "menu_show_advanced_settings"
 #define MENU_ENUM_LABEL_SHOW_HIDDEN_FILES_STR "show_hidden_files"
