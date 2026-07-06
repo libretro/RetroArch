@@ -192,12 +192,14 @@ print("extraction ok: %d settings (%d without sublabel)" % (len(rows), sum(1 for
 cfg = open('configuration.c').read()
 cfg_spans = []
 cfg_keeps = []
+cfg_guards = {}
 for k, f, T, a in rows:
     _mac = {'STRING': 'ARRAY', 'DIR': 'PATH'}.get(k, k.replace('_EX', ''))
     m = re.search(r' *SETTING_%s\(\s*%s, *&?settings->\w+\.%s,[^;]*;\n' % (_mac, re.escape(names[T]), f), cfg)
     if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX'):
         m = None  # dirs keep literal config rows: default-enable varies per row 
     if m:
+        cfg_guards[T] = tuple(g for g in guard_at(cfg, m.start()) if g not in table_guard)
         cfg_spans.append((m.start(), m.end())); continue
     m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (r'\w+' if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX') else _mac, f), cfg)
     if not m and k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX'):
@@ -260,6 +262,13 @@ for k, f, T, a in rows:
         if _hs: _h_used.add('S_%s_NS_H' % k)
     if T in uscmt:
         row = '/* %s */\n' % uscmt[T].strip('/* ').rstrip(' */') + row
+    if cfg_guards.get(T):
+        _cc = ' && '.join(('defined(%s)' % g[len('#ifdef '):].strip()) if g.startswith('#ifdef ')
+                          else ('!defined(%s)' % g[len('#ifndef '):].strip()) if g.startswith('#ifndef ')
+                          else '(' + g[len('#if '):].strip() + ')' for g in cfg_guards[T])
+        row = ('/* The configuration row lives under %s; other passes are\n'
+               ' * unaffected. */\n'
+               '#if !defined(SETTINGS_DEF_CONFIG_PASS) || (%s)\n' % (_cc.replace('defined(', '').replace(')', '') if False else _cc, _cc)) + row + '\n#endif'
     if T in KEEP:
         ck = dict(cfg_keeps)[T]
         row = ('/* config key %s differs from the label string; the\n'
