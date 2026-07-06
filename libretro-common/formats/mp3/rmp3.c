@@ -1844,7 +1844,7 @@ uint64_t rmp3_src_read_frames_linear(rmp3_src* pSRC, uint64_t frameCount, void* 
 
 static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
 {
-    if (pMP3->atEnd)
+    if (pMP3->atEnd && pMP3->dataSize == 0)
         return 0;
 
     do
@@ -1853,7 +1853,7 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
        uint32_t samplesRead;
 
        /* minimp3 recommends doing data submission in 16K chunks. If we don't have at least 16K bytes available, get more. */
-       if (pMP3->dataSize < RMP3_DATA_CHUNK_SIZE)
+       if (pMP3->dataSize < RMP3_DATA_CHUNK_SIZE && !pMP3->atEnd)
        {
           size_t bytesRead;
 
@@ -1873,11 +1873,19 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
           bytesRead = pMP3->onRead(pMP3->pUserData, pMP3->pData + pMP3->dataSize, (pMP3->dataCapacity - pMP3->dataSize));
           if (bytesRead == 0)
           {
+             /* The source is exhausted, but the buffer may still hold
+              * complete undecoded frames - up to a whole refill chunk.
+              * Only give up when the buffer is empty too; otherwise
+              * fall through and let the decoder drain what remains. */
+             if (pMP3->dataSize == 0)
+             {
+                pMP3->atEnd = 1;
+                return 0; /* No data. */
+             }
              pMP3->atEnd = 1;
-             return 0; /* No data. */
           }
-
-          pMP3->dataSize += bytesRead;
+          else
+             pMP3->dataSize += bytesRead;
        }
 
        if (pMP3->dataSize > INT_MAX)
@@ -1920,7 +1928,10 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
              pMP3->pData = pNewData;
           }
 
-          /* Fill in a chunk. */
+          /* Fill in a chunk. If the source is exhausted here, the
+           * decoder has already rejected everything in the buffer
+           * (samplesRead == 0 with no more input possible), so this
+           * exit cannot drop decodable frames. */
           bytesRead = pMP3->onRead(pMP3->pUserData, pMP3->pData + pMP3->dataSize, (pMP3->dataCapacity - pMP3->dataSize));
           if (bytesRead == 0)
           {
