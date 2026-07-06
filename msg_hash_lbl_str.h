@@ -976,7 +976,6 @@
 #define MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_AXIS_STR "video_scale_integer_axis"
 #define MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_SCALING_STR "video_scale_integer_scaling"
 #define MENU_ENUM_LABEL_VIDEO_SETTINGS_STR "video_settings"
-#define MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS_STR "video_hdr_settings"
 #define MENU_ENUM_LABEL_VIDEO_USE_METAL_ARG_BUFFERS_STR "video_use_metal_arg_buffers"
 #define MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS_STR "video_output_settings"
 #define MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS_STR "crt_switchres_settings"
