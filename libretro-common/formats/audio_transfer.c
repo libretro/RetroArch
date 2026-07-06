@@ -36,7 +36,9 @@
 #ifdef HAVE_RMP3
 #include <formats/rmp3.h>
 #endif
+#ifdef HAVE_RWAV
 #include <formats/rwav.h>
+#endif
 
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
@@ -45,6 +47,7 @@
 /* WAV is decoded whole by rwav_load() at start(); the context then holds the
  * decoded interleaved 16-bit PCM and a per-frame read cursor so read_s16 /
  * read_f32 can pull it out in bounded chunks like the other codecs. */
+#ifdef HAVE_RWAV
 struct audio_transfer_wav
 {
    const void *data;    /* encoded bytes from set_buffer_ptr (caller-owned) */
@@ -53,6 +56,7 @@ struct audio_transfer_wav
    int         opened;  /* rwav_load succeeded                               */
    size_t      cursor;  /* next frame to hand out                            */
 };
+#endif
 
 #ifdef HAVE_RFLAC
 struct audio_transfer_flac
@@ -119,7 +123,9 @@ void *audio_transfer_new(enum audio_type_enum type)
          return calloc(1, sizeof(struct audio_transfer_mp3));
 #endif
       case AUDIO_TYPE_WAV:
+#ifdef HAVE_RWAV
          return calloc(1, sizeof(struct audio_transfer_wav));
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -169,6 +175,7 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
       }
 #endif
       case AUDIO_TYPE_WAV:
+#ifdef HAVE_RWAV
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          if (w)
@@ -178,6 +185,7 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          }
          break;
       }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -224,6 +232,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       }
 #endif
       case AUDIO_TYPE_WAV:
+#ifdef HAVE_RWAV
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          if (!w || !w->data)
@@ -241,6 +250,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          w->cursor = 0;
          return true;
       }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -274,10 +284,12 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
       }
 #endif
       case AUDIO_TYPE_WAV:
+#ifdef HAVE_RWAV
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          return w && w->opened;
       }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -338,6 +350,7 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
       }
 #endif
       case AUDIO_TYPE_WAV:
+#ifdef HAVE_RWAV
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          if (!w || !w->opened)
@@ -350,6 +363,7 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
             *total_frames = (uint64_t)w->wav.numsamples;
          return true;
       }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -397,6 +411,7 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
       }
 #endif
       case AUDIO_TYPE_WAV:
+#ifdef HAVE_RWAV
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          size_t avail, want, ch, i;
@@ -420,6 +435,7 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          produced   = want;
          break;
       }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          return AUDIO_PROCESS_ERROR;
@@ -472,6 +488,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
       }
 #endif
       case AUDIO_TYPE_WAV:
+#ifdef HAVE_RWAV
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          size_t avail, want, ch, i;
@@ -496,6 +513,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          produced   = want;
          break;
       }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          return AUDIO_PROCESS_ERROR;
@@ -545,6 +563,7 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
       }
 #endif
       case AUDIO_TYPE_WAV:
+#ifdef HAVE_RWAV
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          if (!w || !w->opened || frame > (uint64_t)w->wav.numsamples)
@@ -552,6 +571,7 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          w->cursor = (size_t)frame;
          return true;
       }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -594,12 +614,14 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
       }
 #endif
       case AUDIO_TYPE_WAV:
+#ifdef HAVE_RWAV
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          if (w && w->opened)
             rwav_free(&w->wav);
          break;
       }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
