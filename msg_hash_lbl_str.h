@@ -716,7 +716,6 @@
 #define MENU_ENUM_LABEL_REBOOT_STR "reboot"
 #define MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY_STR "recording_config_directory"
 #define MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY_STR "recording_output_directory"
-#define MENU_ENUM_LABEL_RECORDING_SETTINGS_STR "recording_settings"
 #define MENU_ENUM_LABEL_RECORD_DRIVER_STR "record_driver"
 #define MENU_ENUM_LABEL_MIDI_DRIVER_STR "midi_driver"
 #define MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST_STR "deferred_remap_file_manager_list"
