@@ -1977,6 +1977,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_auto_scale.h"
+#endif
 #include "settings/settings_def_notification_widgets.h"
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client.h"
@@ -2349,7 +2352,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_overlay_hide_when_gamepad_connected", &settings->bools.input_overlay_hide_when_gamepad_connected, true, DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED, false);
    SETTING_BOOL("input_overlay_show_mouse_cursor", &settings->bools.input_overlay_show_mouse_cursor, true, DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR, false);
    SETTING_BOOL("input_overlay_auto_rotate",     &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
-   SETTING_BOOL("input_overlay_auto_scale",      &settings->bools.input_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
    SETTING_BOOL("input_osk_overlay_auto_scale",  &settings->bools.input_osk_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
    SETTING_BOOL("input_overlay_pointer_enable",  &settings->bools.input_overlay_pointer_enable, true, DEFAULT_INPUT_OVERLAY_POINTER_ENABLE, false);
    SETTING_BOOL("input_overlay_lightgun_trigger_on_touch", &settings->bools.input_overlay_lightgun_trigger_on_touch, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH, false);
@@ -2505,6 +2507,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_auto_scale.h"
+#endif
 #include "settings/settings_def_notification_widgets.h"
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client.h"
@@ -2999,6 +3004,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_auto_scale.h"
+#endif
 #include "settings/settings_def_notification_widgets.h"
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client.h"
@@ -3470,6 +3478,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_auto_scale.h"
+#endif
 #include "settings/settings_def_notification_widgets.h"
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client.h"
@@ -3739,6 +3750,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_auto_scale.h"
+#endif
 #include "settings/settings_def_notification_widgets.h"
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client.h"
