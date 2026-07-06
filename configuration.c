@@ -1868,8 +1868,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("cloud_sync_sync_thumbs",        &settings->bools.cloud_sync_sync_thumbs, true, false, false);
    SETTING_BOOL("cloud_sync_sync_system",        &settings->bools.cloud_sync_sync_system, true, false, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
-   SETTING_BOOL("ai_service_enable",             &settings->bools.ai_service_enable, true, DEFAULT_AI_SERVICE_ENABLE, false);
-   SETTING_BOOL("ai_service_pause",              &settings->bools.ai_service_pause, true, DEFAULT_AI_SERVICE_PAUSE, false);
 #ifndef HAVE_LAKKA
    SETTING_BOOL("gamemode_enable",               &settings->bools.gamemode_enable, true, DEFAULT_GAMEMODE_ENABLE, false);
 #endif
@@ -1907,7 +1905,6 @@ static struct config_bool_setting *populate_settings_bool(
 
 
    SETTING_BOOL("video_allow_rotate",            &settings->bools.video_allow_rotate, true, DEFAULT_ALLOW_ROTATE, false);
-   SETTING_BOOL("video_scale_integer",           &settings->bools.video_scale_integer, true, DEFAULT_SCALE_INTEGER, false);
    SETTING_BOOL("video_ctx_scaling",             &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
    SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, DEFAULT_VIDEO_THREADED, false);
@@ -1950,6 +1947,11 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ai_service_options.h"
+#include "settings/settings_def_video_output_misc.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_visibility.h"
+#endif
 #ifdef HAVE_MICROPHONE
 #include "settings/settings_def_microphone_general.h"
 #endif
@@ -2523,16 +2525,11 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 
 #ifdef HAVE_NETWORKING
-   SETTING_BOOL("netplay_show_only_connectable", &settings->bools.netplay_show_only_connectable, true, DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE, false);
-   SETTING_BOOL("netplay_show_only_installed_cores", &settings->bools.netplay_show_only_installed_cores, true, DEFAULT_NETPLAY_SHOW_ONLY_INSTALLED_CORES, false);
-   SETTING_BOOL("netplay_show_passworded",       &settings->bools.netplay_show_passworded, true, DEFAULT_NETPLAY_SHOW_PASSWORDED, false);
-   SETTING_BOOL("netplay_public_announce",       &settings->bools.netplay_public_announce, true, DEFAULT_NETPLAY_PUBLIC_ANNOUNCE, false);
    SETTING_BOOL("netplay_start_as_spectator",    &settings->bools.netplay_start_as_spectator, false, DEFAULT_NETPLAY_START_AS_SPECTATOR, false);
    SETTING_BOOL("netplay_fade_chat",             &settings->bools.netplay_fade_chat, true, DEFAULT_NETPLAY_FADE_CHAT, false);
    SETTING_BOOL("netplay_allow_pausing",         &settings->bools.netplay_allow_pausing, true, DEFAULT_NETPLAY_ALLOW_PAUSING, false);
    SETTING_BOOL("netplay_allow_slaves",          &settings->bools.netplay_allow_slaves, true, DEFAULT_NETPLAY_ALLOW_SLAVES, false);
    SETTING_BOOL("netplay_require_slaves",        &settings->bools.netplay_require_slaves, true, DEFAULT_NETPLAY_REQUIRE_SLAVES, false);
-   SETTING_BOOL("netplay_use_mitm_server",       &settings->bools.netplay_use_mitm_server, true, DEFAULT_NETPLAY_USE_MITM_SERVER, false);
    SETTING_BOOL("netplay_request_device_p1",     &settings->bools.netplay_request_devices[0], true, false, false);
    SETTING_BOOL("netplay_request_device_p2",     &settings->bools.netplay_request_devices[1], true, false, false);
    SETTING_BOOL("netplay_request_device_p3",     &settings->bools.netplay_request_devices[2], true, false, false);
@@ -2623,6 +2620,11 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ai_service_options.h"
+#include "settings/settings_def_video_output_misc.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_visibility.h"
+#endif
 #ifdef HAVE_MICROPHONE
 #include "settings/settings_def_microphone_general.h"
 #endif
@@ -3211,8 +3213,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_fullscreen_x",            &settings->uints.video_fullscreen_x, true, DEFAULT_FULLSCREEN_X, false);
    SETTING_UINT("video_fullscreen_y",            &settings->uints.video_fullscreen_y, true, DEFAULT_FULLSCREEN_Y, false);
 #endif
-   SETTING_UINT("video_scale_integer_axis",      &settings->uints.video_scale_integer_axis, true, DEFAULT_SCALE_INTEGER_AXIS, false);
-   SETTING_UINT("video_scale_integer_scaling",   &settings->uints.video_scale_integer_scaling, true, DEFAULT_SCALE_INTEGER_SCALING, false);
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
 #endif
@@ -3254,6 +3254,11 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ai_service_options.h"
+#include "settings/settings_def_video_output_misc.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_visibility.h"
+#endif
 #ifdef HAVE_MICROPHONE
 #include "settings/settings_def_microphone_general.h"
 #endif
@@ -3771,8 +3776,6 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_CHEEVOS
    SETTING_UINT("cheevos_appearance_anchor",     &settings->uints.cheevos_appearance_anchor, true, DEFAULT_CHEEVOS_APPEARANCE_ANCHOR, false);
 #endif
-   SETTING_UINT("ai_service_target_lang",       &settings->uints.ai_service_target_lang,     true, 0, false);
-   SETTING_UINT("ai_service_source_lang",       &settings->uints.ai_service_source_lang,     true, 0, false);
 
 #ifdef HAVE_LIBNX
    SETTING_UINT("libnx_overclock",               &settings->uints.libnx_overclock, true, SWITCH_DEFAULT_CPU_PROFILE, false);
@@ -3879,6 +3882,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ai_service_options.h"
+#include "settings/settings_def_video_output_misc.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_visibility.h"
+#endif
 #ifdef HAVE_MICROPHONE
 #include "settings/settings_def_microphone_general.h"
 #endif
@@ -4354,6 +4362,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_ai_service_options.h"
+#include "settings/settings_def_video_output_misc.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_visibility.h"
+#endif
 #ifdef HAVE_MICROPHONE
 #include "settings/settings_def_microphone_general.h"
 #endif
