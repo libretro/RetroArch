@@ -1935,6 +1935,12 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_MATERIALUI
+#include "settings/settings_def_ozone_extras.h"
+#endif
+#endif
+#include "settings/settings_def_menu_main_lists_2.h"
 #ifdef HAVE_OVERLAY
 #include "settings/settings_def_overlay_mouse.h"
 #endif
@@ -2451,15 +2457,6 @@ static struct config_bool_setting *populate_settings_bool(
 
    SETTING_BOOL("menu_show_quit_retroarch",      &settings->bools.menu_show_quit_retroarch, true, DEFAULT_MENU_SHOW_QUIT, false);
    SETTING_BOOL("filter_by_current_core",        &settings->bools.filter_by_current_core, true, DEFAULT_FILTER_BY_CURRENT_CORE, false);
-#ifdef HAVE_MATERIALUI
-   SETTING_BOOL("materialui_icons_enable",                    &settings->bools.menu_materialui_icons_enable, true, DEFAULT_MATERIALUI_ICONS_ENABLE, false);
-   SETTING_BOOL("materialui_switch_icons",                    &settings->bools.menu_materialui_switch_icons, true, DEFAULT_MATERIALUI_SWITCH_ICONS, false);
-   SETTING_BOOL("materialui_playlist_icons_enable",           &settings->bools.menu_materialui_playlist_icons_enable, true, DEFAULT_MATERIALUI_PLAYLIST_ICONS_ENABLE, false);
-   SETTING_BOOL("materialui_show_nav_bar",                    &settings->bools.menu_materialui_show_nav_bar, true, DEFAULT_MATERIALUI_SHOW_NAV_BAR, false);
-   SETTING_BOOL("materialui_auto_rotate_nav_bar",             &settings->bools.menu_materialui_auto_rotate_nav_bar, true, DEFAULT_MATERIALUI_AUTO_ROTATE_NAV_BAR, false);
-   SETTING_BOOL("materialui_dual_thumbnail_list_view_enable", &settings->bools.menu_materialui_dual_thumbnail_list_view_enable, true, DEFAULT_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE, false);
-   SETTING_BOOL("materialui_thumbnail_background_enable",     &settings->bools.menu_materialui_thumbnail_background_enable, true, DEFAULT_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE, false);
-#endif
 #ifdef HAVE_RGUI
    SETTING_BOOL("rgui_background_filler_thickness_enable", &settings->bools.menu_rgui_background_filler_thickness_enable, true, true, false);
    SETTING_BOOL("rgui_border_filler_thickness_enable",     &settings->bools.menu_rgui_border_filler_thickness_enable, true, true, false);
@@ -2612,6 +2609,12 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_MATERIALUI
+#include "settings/settings_def_ozone_extras.h"
+#endif
+#endif
+#include "settings/settings_def_menu_main_lists_2.h"
 #ifdef HAVE_OVERLAY
 #include "settings/settings_def_overlay_mouse.h"
 #endif
@@ -3166,13 +3169,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_xmb_thumbnail_scale_factor",         &settings->uints.menu_xmb_thumbnail_scale_factor, true, DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR, false);
    SETTING_UINT("menu_shader_pipeline",          &settings->uints.menu_xmb_shader_pipeline, true, DEFAULT_MENU_SHADER_PIPELINE, false);
 #endif
-#ifdef HAVE_MATERIALUI
-   SETTING_UINT("materialui_menu_color_theme",              &settings->uints.menu_materialui_color_theme, true, DEFAULT_MATERIALUI_THEME, false);
-   SETTING_UINT("materialui_menu_transition_animation",     &settings->uints.menu_materialui_transition_animation, true, DEFAULT_MATERIALUI_TRANSITION_ANIM, false);
-   SETTING_UINT("materialui_thumbnail_view_portrait",       &settings->uints.menu_materialui_thumbnail_view_portrait, true, DEFAULT_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT, false);
-   SETTING_UINT("materialui_thumbnail_view_landscape",      &settings->uints.menu_materialui_thumbnail_view_landscape, true, DEFAULT_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE, false);
-   SETTING_UINT("materialui_landscape_layout_optimization", &settings->uints.menu_materialui_landscape_layout_optimization, true, DEFAULT_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION, false);
-#endif
 #ifdef HAVE_OZONE
    SETTING_UINT("ozone_header_icon",             &settings->uints.menu_ozone_header_icon, true, DEFAULT_OZONE_HEADER_ICON, false);
    SETTING_UINT("ozone_header_separator",        &settings->uints.menu_ozone_header_separator, true, DEFAULT_OZONE_HEADER_SEPARATOR, false);
@@ -3244,6 +3240,12 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_MATERIALUI
+#include "settings/settings_def_ozone_extras.h"
+#endif
+#endif
+#include "settings/settings_def_menu_main_lists_2.h"
 #ifdef HAVE_OVERLAY
 #include "settings/settings_def_overlay_mouse.h"
 #endif
@@ -3871,6 +3873,12 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_MATERIALUI
+#include "settings/settings_def_ozone_extras.h"
+#endif
+#endif
+#include "settings/settings_def_menu_main_lists_2.h"
 #ifdef HAVE_OVERLAY
 #include "settings/settings_def_overlay_mouse.h"
 #endif
@@ -4367,6 +4375,12 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#ifdef HAVE_MATERIALUI
+#include "settings/settings_def_ozone_extras.h"
+#endif
+#endif
+#include "settings/settings_def_menu_main_lists_2.h"
 #ifdef HAVE_OVERLAY
 #include "settings/settings_def_overlay_mouse.h"
 #endif

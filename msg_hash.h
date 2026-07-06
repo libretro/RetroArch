@@ -1611,13 +1611,132 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    MENU_ENUM_LABEL_VALUE_AUTO,
 
-   MENU_LABEL(MATERIALUI_ICONS_ENABLE),
-   MENU_LABEL(MATERIALUI_SWITCH_ICONS),
-   MENU_LABEL(MATERIALUI_PLAYLIST_ICONS_ENABLE),
-   MENU_LABEL(MATERIALUI_SHOW_NAV_BAR),
-   MENU_LABEL(MATERIALUI_AUTO_ROTATE_NAV_BAR),
-   MENU_LABEL(MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE),
-   MENU_LABEL(MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE),
+   /* GENERATED REGION: Ozone extras group enum rows (see settings/settings_def_ozone_extras.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) MENU_LABEL(T),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) MENU_LABEL(T),
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) MENU_LABEL(T),
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) MENU_LABEL(T),
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) MENU_LABEL(T),
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) MENU_LABEL(T),
+#define S_ACTION(T, n, us, sub) MENU_LABEL(T),
+#define S_ACTION_NS(T, n, us) MENU_LABEL(T),
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) MENU_LABEL(T),
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_DIR_H(f, T, n, d, el, sd, c, sta, us, sub) MENU_LBL_H(T),
+#define S_DIR_NS_H(f, T, n, d, el, sd, c, sta, us) MENU_LBL_H(T),
+#define S_STRING_P_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_P_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_PATH_H(f, T, n, d, sd, c, vals, rp, ui, us, sub) MENU_LBL_H(T),
+#define S_PATH_NS_H(f, T, n, d, sd, c, vals, rp, ui, us) MENU_LBL_H(T),
+#define S_PATH_DS_H(f, T, n, df2, sd, c, vals, rp, ui, us, sub) MENU_LBL_H(T),
+#define S_PATH_DS_NS_H(f, T, n, df2, sd, c, vals, rp, ui, us) MENU_LBL_H(T),
+#define S_ACTION_H(T, n, us, sub) MENU_LBL_H(T),
+#define S_ACTION_NS_H(T, n, us) MENU_LBL_H(T),
+#define S_BOOL_EX_H(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_BOOL_EX_NS_H(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_UINT_EX_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_UINT_EX_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_INT_EX_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_INT_EX_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_FLOAT_EX_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_EX_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_ACTION_EX_H(T, n, sd, ok, rp, c, us, sub) MENU_LBL_H(T),
+#define S_ACTION_EX_NS_H(T, n, sd, ok, rp, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_ozone_extras.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef S_INT_H
+#undef S_FLOAT_H
+#undef S_UINT_NS_H
+#undef S_INT_NS_H
+#undef S_FLOAT_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
 
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED,
@@ -1759,14 +1878,11 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DRACULA,
 
-   MENU_LABEL(MATERIALUI_MENU_TRANSITION_ANIMATION),
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE,
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
 
-   MENU_LABEL(MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT),
-   MENU_LABEL(MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE),
 
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
@@ -1779,7 +1895,6 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE,
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP,
 
-   MENU_LABEL(MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION),
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
@@ -12884,7 +12999,6 @@ enum msg_hash_enums
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_LABEL(OZONE_SCROLL_CONTENT_METADATA),
    MENU_LABEL(OZONE_THUMBNAIL_SCALE_FACTOR),
-   MENU_LABEL(MATERIALUI_MENU_COLOR_THEME),
    MENU_LABEL(QUICK_MENU_OVERRIDE_OPTIONS),
    /* GENERATED REGION: menu settings views group enum rows (see settings/settings_def_menu_settings_views.h). */
 #define SETTINGS_DEF_ENUM_PASS
@@ -16025,7 +16139,6 @@ enum msg_hash_enums
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
 
-   MENU_LABEL(HELP_LIST),
 
    MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
    MENU_ENUM_LABEL_WELCOME_TO_RETROARCH,
@@ -16485,7 +16598,6 @@ enum msg_hash_enums
 #undef S_FLOAT_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
-   MENU_LABEL(CONFIGURATIONS_LIST),
 
    MENU_ENUM_LABEL_VALUE_DONT_CARE,
    MENU_ENUM_LABEL_VALUE_LINEAR,
@@ -23104,7 +23216,6 @@ enum msg_hash_enums
    MENU_LABEL(BUILDBOT_ASSETS_URL),
    MENU_LABEL(CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
    MENU_LABEL(CLOSE_CONTENT),
-   MENU_LABEL(SHOW_WIMP),
    /* GENERATED REGION: seventh main menu action enum rows (see settings/settings_def_menu_main_actions_7.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS
@@ -24951,9 +25062,132 @@ enum msg_hash_enums
 #undef S_FLOAT_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
-   MENU_LABEL(CLOUD_SYNC_SYNC_NOW),
-   MENU_LABEL(CLOUD_SYNC_RESOLVE_KEEP_LOCAL),
-   MENU_LABEL(CLOUD_SYNC_RESOLVE_KEEP_SERVER),
+   /* GENERATED REGION: second main menu list actions enum rows (see settings/settings_def_menu_main_lists_2.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) MENU_LABEL(T),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) MENU_LABEL(T),
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) MENU_LABEL(T),
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) MENU_LABEL(T),
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) MENU_LABEL(T),
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) MENU_LABEL(T),
+#define S_ACTION(T, n, us, sub) MENU_LABEL(T),
+#define S_ACTION_NS(T, n, us) MENU_LABEL(T),
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) MENU_LABEL(T),
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_DIR_H(f, T, n, d, el, sd, c, sta, us, sub) MENU_LBL_H(T),
+#define S_DIR_NS_H(f, T, n, d, el, sd, c, sta, us) MENU_LBL_H(T),
+#define S_STRING_P_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_P_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_PATH_H(f, T, n, d, sd, c, vals, rp, ui, us, sub) MENU_LBL_H(T),
+#define S_PATH_NS_H(f, T, n, d, sd, c, vals, rp, ui, us) MENU_LBL_H(T),
+#define S_PATH_DS_H(f, T, n, df2, sd, c, vals, rp, ui, us, sub) MENU_LBL_H(T),
+#define S_PATH_DS_NS_H(f, T, n, df2, sd, c, vals, rp, ui, us) MENU_LBL_H(T),
+#define S_ACTION_H(T, n, us, sub) MENU_LBL_H(T),
+#define S_ACTION_NS_H(T, n, us) MENU_LBL_H(T),
+#define S_BOOL_EX_H(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_BOOL_EX_NS_H(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_UINT_EX_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_UINT_EX_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_INT_EX_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_INT_EX_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_FLOAT_EX_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_EX_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_ACTION_EX_H(T, n, sd, ok, rp, c, us, sub) MENU_LBL_H(T),
+#define S_ACTION_EX_NS_H(T, n, sd, ok, rp, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_menu_main_lists_2.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef S_INT_H
+#undef S_FLOAT_H
+#undef S_UINT_NS_H
+#undef S_INT_NS_H
+#undef S_FLOAT_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: S3 credentials group enum rows (see settings/settings_def_cloud_sync_s3.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS
@@ -25455,7 +25689,6 @@ enum msg_hash_enums
 #ifdef HAVE_LAKKA_SWITCH
    MENU_LABEL(LAKKA_SWITCH_OPTIONS),
 #endif
-   MENU_LABEL(SAVE_NEW_CONFIG),
    MENU_LABEL(SAVE_AS_CONFIG),
    MENU_LABEL(SAVE_MAIN_CONFIG),
    MENU_LABEL(ONSCREEN_DISPLAY_SETTINGS),
@@ -25469,7 +25702,6 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS,
 
    MENU_ENUM_LABEL_COLLECTION,
-   MENU_LABEL(CONFIGURATIONS),
    MENU_LABEL(BROWSE_URL_LIST),
 
    MENU_ENUM_LABEL_CUSTOM_BIND,
@@ -27012,14 +27244,6 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,
    MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE,
 
-   MENU_LABEL(RESET_TO_DEFAULT_CONFIG),
-   MENU_LABEL(SAVE_CURRENT_CONFIG),
-   MENU_LABEL(SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-   MENU_LABEL(SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
-   MENU_LABEL(SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-   MENU_LABEL(REMOVE_CURRENT_CONFIG_OVERRIDE_CORE),
-   MENU_LABEL(REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
-   MENU_LABEL(REMOVE_CURRENT_CONFIG_OVERRIDE_GAME),
 
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,

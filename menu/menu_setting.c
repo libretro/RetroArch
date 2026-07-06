@@ -11674,42 +11674,128 @@ static bool setting_append_list(
 
          {
             static const setting_desc_t mm_desc_8[] = {
-#ifdef HAVE_CLOUDSYNC
-               SDESC_ACTION_ROW_EX(CLOUD_SYNC_SYNC_NOW, SD_FLAG_NONE,
-                     NULL, NULL, CMD_EVENT_CLOUD_SYNC),
-               SDESC_ACTION_ROW_EX(CLOUD_SYNC_RESOLVE_KEEP_LOCAL, SD_FLAG_NONE,
-                     NULL, NULL, CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_LOCAL),
-               SDESC_ACTION_ROW_EX(CLOUD_SYNC_RESOLVE_KEEP_SERVER, SD_FLAG_NONE,
-                     NULL, NULL, CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_SERVER),
-#endif
-               SDESC_ACTION_ROW_EX(CONFIGURATIONS_LIST, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, 0),
-               SDESC_ACTION_ROW_EX(CONFIGURATIONS, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, 0),
-               SDESC_ACTION_ROW_EX(SAVE_CURRENT_CONFIG, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG),
-               SDESC_ACTION_ROW_EX(SAVE_NEW_CONFIG, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, CMD_EVENT_MENU_SAVE_CONFIG),
-               SDESC_ACTION_ROW_EX(RESET_TO_DEFAULT_CONFIG, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG),
-               SDESC_ACTION_ROW_EX(SAVE_CURRENT_CONFIG_OVERRIDE_CORE, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-               SDESC_ACTION_ROW_EX(SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
-               SDESC_ACTION_ROW_EX(SAVE_CURRENT_CONFIG_OVERRIDE_GAME, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-               SDESC_ACTION_ROW_EX(REMOVE_CURRENT_CONFIG_OVERRIDE_CORE, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE),
-               SDESC_ACTION_ROW_EX(REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
-               SDESC_ACTION_ROW_EX(REMOVE_CURRENT_CONFIG_OVERRIDE_GAME, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME),
-               SDESC_ACTION_ROW_EX(HELP_LIST, SD_FLAG_LAKKA_ADVANCED,
-                     NULL, NULL, 0),
-#ifdef HAVE_QT
-               SDESC_ACTION_ROW_EX(SHOW_WIMP, SD_FLAG_NONE,
-                     NULL, NULL, CMD_EVENT_UI_COMPANION_TOGGLE),
-#endif
+/* GENERATED: rows come from settings_def_menu_main_lists_2.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+                  SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+                  SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+                  SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+                  SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),
+#define S_ACTION(T, n, us, sub) \
+                  SDESC_ACTION_ROW(T),
+#define S_ACTION_NS(T, n, us) \
+                  SDESC_ACTION_ROW(T),
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+                  SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+                  SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),
+#include "../settings/settings_def_menu_main_lists_2.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_BOOL_H
+#undef S_BOOL_NS_H
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_UINT_H
+#undef S_UINT_NS_H
+#undef S_INT
+#undef S_INT_NS
+#undef S_INT_H
+#undef S_INT_NS_H
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_FLOAT_H
+#undef S_FLOAT_NS_H
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_8, ARRAY_SIZE(mm_desc_8),
@@ -27160,52 +27246,128 @@ static bool setting_append_list(
              * them on other drivers. */
          {
             static const setting_desc_t menu_desc_30[] = {
-               SDESC_BOOL_ROW_EX(menu_materialui_icons_enable, MATERIALUI_ICONS_ENABLE,
-                     DEFAULT_MATERIALUI_ICONS_ENABLE, SD_FLAG_ADVANCED, 0, 0,
-                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
-               SDESC_BOOL_ROW(menu_materialui_switch_icons, MATERIALUI_SWITCH_ICONS,
-                     DEFAULT_MATERIALUI_SWITCH_ICONS, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(menu_materialui_playlist_icons_enable, MATERIALUI_PLAYLIST_ICONS_ENABLE,
-                     DEFAULT_MATERIALUI_PLAYLIST_ICONS_ENABLE, SD_FLAG_NONE, 0, 0),
-               SDESC_UINT_ROW_EX(menu_materialui_color_theme, MATERIALUI_MENU_COLOR_THEME,
-                     DEFAULT_MATERIALUI_THEME,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, MATERIALUI_THEME_LAST-1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_materialui_menu_color_theme,
-                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
-               SDESC_UINT_ROW_EX(menu_materialui_transition_animation, MATERIALUI_MENU_TRANSITION_ANIMATION,
-                     DEFAULT_MATERIALUI_TRANSITION_ANIM,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, MATERIALUI_TRANSITION_ANIM_LAST-1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_materialui_menu_transition_animation,
-                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
-               SDESC_UINT_ROW_EX(menu_materialui_landscape_layout_optimization, MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-                     DEFAULT_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_LAST-1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_materialui_landscape_layout_optimization,
-                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
-               SDESC_BOOL_ROW_EX(menu_materialui_show_nav_bar, MATERIALUI_SHOW_NAV_BAR,
-                     DEFAULT_MATERIALUI_SHOW_NAV_BAR, SD_FLAG_NONE, 0, 0,
-                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
-               SDESC_BOOL_ROW(menu_materialui_auto_rotate_nav_bar, MATERIALUI_AUTO_ROTATE_NAV_BAR,
-                     DEFAULT_MATERIALUI_AUTO_ROTATE_NAV_BAR, SD_FLAG_NONE, 0, 0),
-               SDESC_UINT_ROW_EX(menu_materialui_thumbnail_view_portrait, MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
-                     DEFAULT_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LAST-1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_materialui_menu_thumbnail_view_portrait,
-                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
-               SDESC_UINT_ROW_EX(menu_materialui_thumbnail_view_landscape, MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-                     DEFAULT_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LAST-1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_materialui_menu_thumbnail_view_landscape,
-                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
-               SDESC_BOOL_ROW(menu_materialui_dual_thumbnail_list_view_enable, MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-                     DEFAULT_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(menu_materialui_thumbnail_background_enable, MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-                     DEFAULT_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE, SD_FLAG_NONE, 0, 0),
+/* GENERATED: rows come from settings_def_ozone_extras.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+                  SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+                  SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+                  SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+                  SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),
+#define S_ACTION(T, n, us, sub) \
+                  SDESC_ACTION_ROW(T),
+#define S_ACTION_NS(T, n, us) \
+                  SDESC_ACTION_ROW(T),
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+                  SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+                  SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),
+#include "../settings/settings_def_ozone_extras.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_BOOL_H
+#undef S_BOOL_NS_H
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_UINT_H
+#undef S_UINT_NS_H
+#undef S_INT
+#undef S_INT_NS
+#undef S_INT_H
+#undef S_INT_NS_H
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_FLOAT_H
+#undef S_FLOAT_NS_H
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_30, ARRAY_SIZE(menu_desc_30),
