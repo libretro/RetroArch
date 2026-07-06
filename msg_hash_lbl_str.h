@@ -1251,7 +1251,6 @@
 #define MENU_ENUM_LABEL_KICK_STREAM_KEY_STR "kick_stream_key"
 #define MENU_ENUM_LABEL_STREAMING_MODE_STR "streaming_mode"
 #define MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG_STR "reset_to_default_config"
-#define MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME_STR "menu_use_preferred_system_color_theme"
 #define MENU_ENUM_LABEL_NO_MUSIC_AVAILABLE_STR "no_music"
 #define MENU_ENUM_LABEL_NO_VIDEOS_AVAILABLE_STR "no_videos"
 #define MENU_ENUM_LABEL_NO_IMAGES_AVAILABLE_STR "no_images"
