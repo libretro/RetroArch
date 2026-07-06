@@ -166,22 +166,22 @@ for k, f, T, a in rows:
             uscmt[T] = (uscmt.get(T, '') + ' ' + m.group(1)).strip()
 if ref_tokens:
     _tail = [r for r in rows if r[2] in ref_tokens]
-    assert rows[len(rows)-len(_tail):] == _tail, 'reference rows must trail the table'
-    _ref_literals = []
+    _ref_literals = {}
     for _k3, _f3, _t3, _a3 in _tail:
         _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX)?\(\s*%s,\s*%s,(?:[^()]|\([^()]*\))*\),?' % (_f3, _t3), body)
         assert _rm3, _t3
         _rl3 = _rm3.group(0).strip()
         for _g3 in reversed(guards.get(_f3 or _t3, ())):
             _rl3 = _g3 + '\n                  ' + _rl3 + '\n#endif'
-        _ref_literals.append(_rl3)
-    rows = [r for r in rows if r[2] not in ref_tokens]
-    print('  note: %d reference row(s) stay literal after the include' % len(_ref_literals))
+        _ref_literals[_t3] = _rl3
+    print('  note: %d reference row(s) carried literal inside the def' % len(_ref_literals))
 else:
-    _ref_literals = []
+    _ref_literals = {}
 lblstr = open('msg_hash_lbl_str.h').read()
 names, lblstr_span = {}, []
 for k, f, T, a in rows:
+    if T in ref_tokens:
+        continue
     m = re.search(r'#define MENU_ENUM_LABEL_%s_STR (%s)\n' % (T, CSTR), lblstr)
     assert m, T
     names[T] = m.group(1); lblstr_span.append((m.start(), m.end()))
@@ -190,6 +190,8 @@ for k, f, T, a in rows:
 lbl = open('intl/msg_hash_lbl.h').read()
 lbl_span = []
 for k, f, T, a in rows:
+    if T in ref_tokens:
+        continue
     m = re.search(r'MSG_HASH\(\s*\n?\s*MENU_ENUM_LABEL_%s,\s*\n?\s*MENU_ENUM_LABEL_%s_STR\s*\n?\s*\)\n?' % (T, T), lbl)
     assert m, T
     lbl_span.append((m.start(), m.end()))
@@ -211,6 +213,8 @@ cfg_spans = []
 cfg_keeps = []
 cfg_guards = {}
 for k, f, T, a in rows:
+    if T in ref_tokens:
+        continue
     _mac = {'STRING': 'ARRAY', 'DIR': 'PATH'}.get(k, k.replace('_EX', ''))
     m = re.search(r' *SETTING_%s\(\s*%s, *&?settings->\w+\.%s,[^;]*;\n' % (_mac, re.escape(names[T]), f), cfg)
     if k in ('DIR', 'PATH', 'PATH_DS', 'STRING', 'STRING_P', 'ACTION', 'ACTION_EX'):
@@ -259,6 +263,11 @@ _mh_text = open('msg_hash.h').read()
 _h_used = set()
 enum_rows = []
 for k, f, T, a in rows:
+    if T in ref_tokens:
+        out.append('/* Row referencing %s; strings owned by another def file. */\n'
+                   '#if !defined(SETTINGS_DEF_STRINGS_PASS) && !defined(SETTINGS_DEF_CONFIG_PASS) && !defined(SETTINGS_DEF_ENUM_PASS)\n'
+                   '%s\n#endif' % (T, _ref_literals[T]))
+        continue
     _hs = '_H' if ('MENU_LBL_H(%s),' % T) in _mh_text else ''
     if _hs:
         assert ('MENU_LABEL(%s),' % T) not in _mh_text, (T, 'both enum forms present')
@@ -390,8 +399,7 @@ MENU_EMIT = {'S_BOOL_EX':'SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel
 mk_menu = lambda b, _s: ' \\\n                  ' + MENU_EMIT[b]
 new_body = ('/* GENERATED: rows come from %s in order. */\n' % DEF
             + defs(mk_menu) + '\n#include "../settings/%s"\n' % DEF + UNDEFS)
-if _ref_literals:
-    new_body += '\n' + '\n'.join('                  ' + _r for _r in _ref_literals)
+
 ms = ms[:tm.start(1)] + new_body + ms[tm.end(1):]
 open('menu/menu_setting.c','w').write(ms)
 print("surgeries ok")
