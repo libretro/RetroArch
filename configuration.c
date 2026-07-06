@@ -1931,7 +1931,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
    SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, DEFAULT_VIDEO_THREADED, false);
    SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, DEFAULT_VIDEO_SHARED_CONTEXT, false);
-   SETTING_BOOL("video_hdr_scanlines",           &settings->bools.video_hdr_scanlines, true, DEFAULT_VIDEO_HDR_SCANLINES, false);
    /* GENERATED: single-source setting rows (bool kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
    SETTING_BOOL(n, &settings->bools.f, true, d, false);
@@ -1970,6 +1969,8 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_bind_timeouts.h"
+#include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_rewind.h"
 #include "settings/settings_def_playlist_history.h"
 #ifdef HAVE_MENU
@@ -2596,6 +2597,8 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_bind_timeouts.h"
+#include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_rewind.h"
 #include "settings/settings_def_playlist_history.h"
 #ifdef HAVE_MENU
@@ -3165,6 +3168,8 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_bind_timeouts.h"
+#include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_rewind.h"
 #include "settings/settings_def_playlist_history.h"
 #ifdef HAVE_MENU
@@ -3510,7 +3515,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_stream_scale_factor",     &settings->uints.video_stream_scale_factor, true, 1, false);
 
    SETTING_UINT("video_hdr_mode",                &settings->uints.video_hdr_mode, true, DEFAULT_VIDEO_HDR_MODE, false);
-   SETTING_UINT("video_hdr_subpixel_layout",     &settings->uints.video_hdr_subpixel_layout, true, DEFAULT_VIDEO_HDR_SUBPIXEL_LAYOUT, false);
 #ifdef HAVE_NETWORKING
    SETTING_UINT("streaming_mode",                &settings->uints.streaming_mode, true, STREAMING_MODE_TWITCH, false);
 #endif
@@ -3532,7 +3536,6 @@ static struct config_uint_setting *populate_settings_uint(
 #else
    SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 1, false);
 #endif
-   SETTING_UINT("keyboard_gamepad_mapping_type", &settings->uints.input_keyboard_gamepad_mapping_type, true, 1, false);
 
 #if defined(HAVE_OVERLAY)
    SETTING_UINT("input_overlay_show_inputs",               &settings->uints.input_overlay_show_inputs, true, DEFAULT_OVERLAY_SHOW_INPUTS, false);
@@ -3704,6 +3707,8 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_bind_timeouts.h"
+#include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_rewind.h"
 #include "settings/settings_def_playlist_history.h"
 #ifdef HAVE_MENU
@@ -4077,6 +4082,8 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_input_bind_timeouts.h"
+#include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_rewind.h"
 #include "settings/settings_def_playlist_history.h"
 #ifdef HAVE_MENU

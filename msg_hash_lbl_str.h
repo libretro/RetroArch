@@ -431,8 +431,6 @@
 #define MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS_BEGIN_STR "input_hotkey_binds_begin"
 #define MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY_STR "input_hotkey_block_delay"
 #define MENU_ENUM_LABEL_INPUT_HOTKEY_DEVICE_MERGE_STR "input_hotkey_device_merge"
-#define MENU_ENUM_LABEL_INPUT_ICADE_ENABLE_STR "input_icade_enable"
-#define MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE_STR "keyboard_gamepad_mapping_type"
 #define MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE_STR "input_libretro_device_p%u"
 #define MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE_STR "input_player%u_analog_dpad_mode"
 #define MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_STR "input_device_p%u"
@@ -481,7 +479,6 @@
 #define MENU_ENUM_LABEL_INPUT_SETTINGS_STR "input_settings"
 #define MENU_ENUM_LABEL_INPUT_SETTINGS_BEGIN_STR "input_settings_begin"
 #define MENU_ENUM_LABEL_LATENCY_SETTINGS_STR "latency_settings"
-#define MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE_STR "input_small_keyboard_enable"
 #define MENU_ENUM_LABEL_INPUT_USER_10_BINDS_STR "10_input_binds_list"
 #define MENU_ENUM_LABEL_INPUT_USER_11_BINDS_STR "11_input_binds_list"
 #define MENU_ENUM_LABEL_INPUT_USER_12_BINDS_STR "12_input_binds_list"
@@ -1312,5 +1309,3 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
 
 #endif /* MSG_HASH_LBL_STR_H__ */
-#define MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES_STR "video_hdr_scanlines"
-#define MENU_ENUM_LABEL_VIDEO_HDR_SUBPIXEL_LAYOUT_STR "video_hdr_subpixel_layout"
