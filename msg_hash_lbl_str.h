@@ -895,7 +895,6 @@
 #define MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST_STR "crt_switch_vertical_size"
 #define MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_STR "video_aspect_ratio"
 #define MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX_STR "aspect_ratio_index"
-#define MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE_STR "video_dingux_rs90_softfilter_type"
 #define MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION_STR "video_black_frame_insertion"
 #define MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES_STR "video_bfi_dark_frames"
 #define MENU_ENUM_LABEL_VIDEO_DRIVER_STR "video_driver"

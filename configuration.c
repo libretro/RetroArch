@@ -1978,6 +1978,11 @@ static struct config_bool_setting *populate_settings_bool(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+#include "settings/settings_def_dingux_rs90.h"
+#endif
+#endif
+#if defined(DINGUX)
 #if defined(DINGUX_BETA)
 #include "settings/settings_def_dingux_refresh_rate.h"
 #endif
@@ -2521,6 +2526,11 @@ static struct config_float_setting *populate_settings_float(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+#include "settings/settings_def_dingux_rs90.h"
+#endif
+#endif
+#if defined(DINGUX)
 #if defined(DINGUX_BETA)
 #include "settings/settings_def_dingux_refresh_rate.h"
 #endif
@@ -3033,6 +3043,11 @@ static struct config_uint_setting *populate_settings_uint(
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
 #if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+#include "settings/settings_def_dingux_rs90.h"
+#endif
+#endif
+#if defined(DINGUX)
 #if defined(DINGUX_BETA)
 #include "settings/settings_def_dingux_refresh_rate.h"
 #endif
@@ -3401,9 +3416,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_3ds_display_mode",        &settings->uints.video_3ds_display_mode, true, DEFAULT_VIDEO_3DS_DISPLAY_MODE, false);
 #endif
 #if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   SETTING_UINT("video_dingux_rs90_softfilter_type", &settings->uints.video_dingux_rs90_softfilter_type, true, DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE, false);
-#endif
 #endif
 
 #ifdef HAVE_LAKKA
@@ -3516,6 +3528,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+#include "settings/settings_def_dingux_rs90.h"
+#endif
+#endif
 #if defined(DINGUX)
 #if defined(DINGUX_BETA)
 #include "settings/settings_def_dingux_refresh_rate.h"
@@ -3803,6 +3820,11 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+#include "settings/settings_def_dingux_rs90.h"
+#endif
+#endif
 #if defined(DINGUX)
 #if defined(DINGUX_BETA)
 #include "settings/settings_def_dingux_refresh_rate.h"
