@@ -1977,6 +1977,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_frame_throttle_fastforward.h"
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
 #include "settings/settings_def_dingux_rs90.h"
@@ -2525,6 +2526,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_frame_throttle_fastforward.h"
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
 #include "settings/settings_def_dingux_rs90.h"
@@ -2815,7 +2817,6 @@ static struct config_float_setting *populate_settings_float(
 #endif
 
    SETTING_FLOAT("fastforward_ratio",            &settings->floats.fastforward_ratio, true, DEFAULT_FASTFORWARD_RATIO, false);
-   SETTING_FLOAT("slowmotion_ratio",             &settings->floats.slowmotion_ratio,  true, DEFAULT_SLOWMOTION_RATIO, false);
 
    SETTING_FLOAT("audio_rate_control_delta",     &settings->floats.audio_rate_control_delta, true, DEFAULT_RATE_CONTROL_DELTA, false);
    SETTING_FLOAT("audio_max_timing_skew",        &settings->floats.audio_max_timing_skew, true, DEFAULT_MAX_TIMING_SKEW, false);
@@ -3042,6 +3043,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_frame_throttle_fastforward.h"
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
 #include "settings/settings_def_dingux_rs90.h"
@@ -3415,8 +3417,6 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef _3DS
    SETTING_UINT("video_3ds_display_mode",        &settings->uints.video_3ds_display_mode, true, DEFAULT_VIDEO_3DS_DISPLAY_MODE, false);
 #endif
-#if defined(DINGUX)
-#endif
 
 #ifdef HAVE_LAKKA
    SETTING_UINT("cpu_scaling_mode",              &settings->uints.cpu_scaling_mode,    true,   0, false);
@@ -3528,6 +3528,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_frame_throttle_fastforward.h"
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
 #include "settings/settings_def_dingux_rs90.h"
@@ -3820,6 +3821,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_frame_throttle_fastforward.h"
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
 #include "settings/settings_def_dingux_rs90.h"

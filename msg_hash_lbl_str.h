@@ -812,7 +812,6 @@
 #define MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS_STR "menu_show_advanced_settings"
 #define MENU_ENUM_LABEL_SHOW_HIDDEN_FILES_STR "show_hidden_files"
 #define MENU_ENUM_LABEL_SHUTDOWN_STR "shutdown"
-#define MENU_ENUM_LABEL_SLOWMOTION_RATIO_STR "slowmotion_ratio"
 #define MENU_ENUM_LABEL_RUN_AHEAD_UNSUPPORTED_STR "run_ahead_unsupported"
 #define MENU_ENUM_LABEL_RUNAHEAD_MODE_STR "run_ahead_mode"
 #define MENU_ENUM_LABEL_RUN_AHEAD_FRAMES_STR "run_ahead_frames"
