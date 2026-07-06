@@ -1977,6 +1977,18 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_wallpaper_opacity.h"
+#endif
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_opacity.h"
+#endif
+#ifdef HAVE_MENU
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+#include "settings/settings_def_widget_scale_windowed.h"
+#endif
+#endif
+#include "settings/settings_def_video_hdr.h"
 #ifdef HAVE_WINDOW_OFFSET
 #include "settings/settings_def_video_window_offset.h"
 #endif
@@ -2578,6 +2590,18 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_wallpaper_opacity.h"
+#endif
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_opacity.h"
+#endif
+#ifdef HAVE_MENU
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+#include "settings/settings_def_widget_scale_windowed.h"
+#endif
+#endif
+#include "settings/settings_def_video_hdr.h"
 #ifdef HAVE_WINDOW_OFFSET
 #include "settings/settings_def_video_window_offset.h"
 #endif
@@ -2888,10 +2912,6 @@ static struct config_float_setting *populate_settings_float(
 #undef S_ACTION_EX_NS
    SETTING_FLOAT("menu_scale_factor",            &settings->floats.menu_scale_factor, true, DEFAULT_MENU_SCALE_FACTOR, false);
    SETTING_FLOAT("menu_widget_scale_factor",     &settings->floats.menu_widget_scale_factor, true, DEFAULT_MENU_WIDGET_SCALE_FACTOR, false);
-#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
-   SETTING_FLOAT("menu_widget_scale_factor_windowed", &settings->floats.menu_widget_scale_factor_windowed, true, DEFAULT_MENU_WIDGET_SCALE_FACTOR_WINDOWED, false);
-#endif
-   SETTING_FLOAT("menu_wallpaper_opacity",       &settings->floats.menu_wallpaper_opacity,   true, DEFAULT_MENU_WALLPAPER_OPACITY, false);
    SETTING_FLOAT("menu_framebuffer_opacity",     &settings->floats.menu_framebuffer_opacity, true, DEFAULT_MENU_FRAMEBUFFER_OPACITY, false);
    SETTING_FLOAT("menu_footer_opacity",          &settings->floats.menu_footer_opacity,      true, DEFAULT_MENU_FOOTER_OPACITY, false);
    SETTING_FLOAT("menu_header_opacity",          &settings->floats.menu_header_opacity,      true, DEFAULT_MENU_HEADER_OPACITY, false);
@@ -2937,8 +2957,6 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("video_message_pos_y",          &settings->floats.video_msg_pos_y, true, DEFAULT_MESSAGE_POS_OFFSET_Y, false);
    SETTING_FLOAT("video_font_size",              &settings->floats.video_font_size, true, DEFAULT_FONT_SIZE, false);
    SETTING_FLOAT("video_msg_bgcolor_opacity",    &settings->floats.video_msg_bgcolor_opacity, true, DEFAULT_MESSAGE_BGCOLOR_OPACITY, false);
-   SETTING_FLOAT("video_hdr_menu_nits",           &settings->floats.video_hdr_menu_nits, true, DEFAULT_MENU_HDR_BRIGHTNESS_NITS, false);
-   SETTING_FLOAT("video_hdr_paper_white_nits",   &settings->floats.video_hdr_paper_white_nits, true, DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS, false);
 
    SETTING_FLOAT("input_axis_threshold",         &settings->floats.input_axis_threshold,     true, DEFAULT_AXIS_THRESHOLD, false);
    SETTING_FLOAT("input_analog_deadzone",        &settings->floats.input_analog_deadzone,    true, DEFAULT_ANALOG_DEADZONE, false);
@@ -2946,7 +2964,6 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("input_sensor_accelerometer_sensitivity",&settings->floats.input_sensor_accelerometer_sensitivity, true, DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY, false);
    SETTING_FLOAT("input_sensor_gyroscope_sensitivity",    &settings->floats.input_sensor_gyroscope_sensitivity, true, DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY, false);
 #ifdef HAVE_OVERLAY
-   SETTING_FLOAT("input_overlay_opacity",                 &settings->floats.input_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
    SETTING_FLOAT("input_osk_overlay_opacity",             &settings->floats.input_osk_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
    SETTING_FLOAT("input_overlay_scale_landscape",         &settings->floats.input_overlay_scale_landscape, true, DEFAULT_INPUT_OVERLAY_SCALE_LANDSCAPE, false);
    SETTING_FLOAT("input_overlay_aspect_adjust_landscape", &settings->floats.input_overlay_aspect_adjust_landscape, true, DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_LANDSCAPE, false);
@@ -3134,6 +3151,18 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_wallpaper_opacity.h"
+#endif
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_opacity.h"
+#endif
+#ifdef HAVE_MENU
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+#include "settings/settings_def_widget_scale_windowed.h"
+#endif
+#endif
+#include "settings/settings_def_video_hdr.h"
 #ifdef HAVE_WINDOW_OFFSET
 #include "settings/settings_def_video_window_offset.h"
 #endif
@@ -3452,7 +3481,6 @@ static struct config_uint_setting *populate_settings_uint(
 
    SETTING_UINT("video_hdr_mode",                &settings->uints.video_hdr_mode, true, DEFAULT_VIDEO_HDR_MODE, false);
    SETTING_UINT("video_hdr_subpixel_layout",     &settings->uints.video_hdr_subpixel_layout, true, DEFAULT_VIDEO_HDR_SUBPIXEL_LAYOUT, false);
-   SETTING_UINT("video_hdr_expand_gamut",        &settings->uints.video_hdr_expand_gamut, true, DEFAULT_VIDEO_HDR_EXPAND_GAMUT, false);
 #ifdef HAVE_NETWORKING
    SETTING_UINT("streaming_mode",                &settings->uints.streaming_mode, true, STREAMING_MODE_TWITCH, false);
 #endif
@@ -3647,6 +3675,18 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_wallpaper_opacity.h"
+#endif
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_opacity.h"
+#endif
+#ifdef HAVE_MENU
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+#include "settings/settings_def_widget_scale_windowed.h"
+#endif
+#endif
+#include "settings/settings_def_video_hdr.h"
 #ifdef HAVE_WINDOW_OFFSET
 #include "settings/settings_def_video_window_offset.h"
 #endif
@@ -3992,6 +4032,18 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_wallpaper_opacity.h"
+#endif
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_opacity.h"
+#endif
+#ifdef HAVE_MENU
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+#include "settings/settings_def_widget_scale_windowed.h"
+#endif
+#endif
+#include "settings/settings_def_video_hdr.h"
 #ifdef HAVE_WINDOW_OFFSET
 #include "settings/settings_def_video_window_offset.h"
 #endif
