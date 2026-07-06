@@ -1958,6 +1958,21 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#if defined(HAVE_OZONE) || defined(HAVE_XMB)
+#include "settings/settings_def_playlist_flags.h"
+#endif
+#endif
+#include "settings/settings_def_notification_enable.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_rgui_particle_effect.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_savestate_resume.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_framebuffer_opacity.h"
+#endif
 #include "settings/settings_def_input_haptics.h"
 #include "settings/settings_def_input_general.h"
 #ifdef HAVE_MENU
@@ -2338,7 +2353,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_window_save_positions",   &settings->bools.video_window_save_positions, true, DEFAULT_WINDOW_SAVE_POSITIONS, false);
 
    SETTING_BOOL("menu_enable_widgets",           &settings->bools.menu_enable_widgets, true, DEFAULT_MENU_ENABLE_WIDGETS, false);
-   SETTING_BOOL("menu_widget_scale_auto",        &settings->bools.menu_widget_scale_auto, true, DEFAULT_MENU_WIDGET_SCALE_AUTO, false);
    SETTING_BOOL("menu_show_load_content_animation", &settings->bools.menu_show_load_content_animation, true, DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION, false);
    SETTING_BOOL("notification_show_autoconfig",  &settings->bools.notification_show_autoconfig, true, DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG, false);
    SETTING_BOOL("notification_show_autoconfig_fails", &settings->bools.notification_show_autoconfig_fails, true, DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG_FAILS, false);
@@ -2388,7 +2402,6 @@ static struct config_bool_setting *populate_settings_bool(
 
    SETTING_BOOL("menu_show_quit_retroarch",      &settings->bools.menu_show_quit_retroarch, true, DEFAULT_MENU_SHOW_QUIT, false);
    SETTING_BOOL("filter_by_current_core",        &settings->bools.filter_by_current_core, true, DEFAULT_FILTER_BY_CURRENT_CORE, false);
-   SETTING_BOOL("menu_show_advanced_settings",   &settings->bools.menu_show_advanced_settings, true, DEFAULT_SHOW_ADVANCED_SETTINGS, false);
 #ifdef HAVE_MATERIALUI
    SETTING_BOOL("materialui_icons_enable",                    &settings->bools.menu_materialui_icons_enable, true, DEFAULT_MATERIALUI_ICONS_ENABLE, false);
    SETTING_BOOL("materialui_switch_icons",                    &settings->bools.menu_materialui_switch_icons, true, DEFAULT_MATERIALUI_SWITCH_ICONS, false);
@@ -2413,10 +2426,6 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #ifdef HAVE_OZONE
    SETTING_BOOL("ozone_scroll_content_metadata", &settings->bools.ozone_scroll_content_metadata, true, DEFAULT_OZONE_SCROLL_CONTENT_METADATA, false);
-#endif
-#if defined(HAVE_OZONE) || defined(HAVE_XMB)
-   SETTING_BOOL("ozone_truncate_playlist_name",            &settings->bools.ozone_truncate_playlist_name, true, DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME, false);
-   SETTING_BOOL("ozone_sort_after_truncate_playlist_name", &settings->bools.ozone_sort_after_truncate_playlist_name, true, DEFAULT_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME, false);
 #endif
 #endif /* HAVE_MENU */
 
@@ -2572,6 +2581,21 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#if defined(HAVE_OZONE) || defined(HAVE_XMB)
+#include "settings/settings_def_playlist_flags.h"
+#endif
+#endif
+#include "settings/settings_def_notification_enable.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_rgui_particle_effect.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_savestate_resume.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_framebuffer_opacity.h"
+#endif
 #include "settings/settings_def_input_haptics.h"
 #include "settings/settings_def_input_general.h"
 #ifdef HAVE_MENU
@@ -2943,9 +2967,7 @@ static struct config_float_setting *populate_settings_float(
 #undef S_FLOAT_EX_NS
 #undef S_ACTION_EX
 #undef S_ACTION_EX_NS
-   SETTING_FLOAT("menu_scale_factor",            &settings->floats.menu_scale_factor, true, DEFAULT_MENU_SCALE_FACTOR, false);
    SETTING_FLOAT("menu_widget_scale_factor",     &settings->floats.menu_widget_scale_factor, true, DEFAULT_MENU_WIDGET_SCALE_FACTOR, false);
-   SETTING_FLOAT("menu_framebuffer_opacity",     &settings->floats.menu_framebuffer_opacity, true, DEFAULT_MENU_FRAMEBUFFER_OPACITY, false);
    SETTING_FLOAT("menu_footer_opacity",          &settings->floats.menu_footer_opacity,      true, DEFAULT_MENU_FOOTER_OPACITY, false);
    SETTING_FLOAT("menu_header_opacity",          &settings->floats.menu_header_opacity,      true, DEFAULT_MENU_HEADER_OPACITY, false);
    SETTING_FLOAT("menu_ticker_speed",            &settings->floats.menu_ticker_speed,        true, DEFAULT_MENU_TICKER_SPEED,   false);
@@ -3155,6 +3177,21 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#if defined(HAVE_OZONE) || defined(HAVE_XMB)
+#include "settings/settings_def_playlist_flags.h"
+#endif
+#endif
+#include "settings/settings_def_notification_enable.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_rgui_particle_effect.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_savestate_resume.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_framebuffer_opacity.h"
+#endif
 #include "settings/settings_def_input_haptics.h"
 #include "settings/settings_def_input_general.h"
 #ifdef HAVE_MENU
@@ -3718,6 +3755,21 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#if defined(HAVE_OZONE) || defined(HAVE_XMB)
+#include "settings/settings_def_playlist_flags.h"
+#endif
+#endif
+#include "settings/settings_def_notification_enable.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_rgui_particle_effect.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_savestate_resume.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_framebuffer_opacity.h"
+#endif
 #include "settings/settings_def_input_haptics.h"
 #include "settings/settings_def_input_general.h"
 #ifdef HAVE_MENU
@@ -4126,6 +4178,21 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#if defined(HAVE_OZONE) || defined(HAVE_XMB)
+#include "settings/settings_def_playlist_flags.h"
+#endif
+#endif
+#include "settings/settings_def_notification_enable.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_rgui_particle_effect.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_savestate_resume.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_framebuffer_opacity.h"
+#endif
 #include "settings/settings_def_input_haptics.h"
 #include "settings/settings_def_input_general.h"
 #ifdef HAVE_MENU
