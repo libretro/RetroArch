@@ -569,7 +569,6 @@
 #define MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT_STR "netplay_tcp_udp_port"
 #define MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS_STR "netplay_max_connections"
 #define MENU_ENUM_LABEL_NETPLAY_MAX_PING_STR "netplay_max_ping"
-#define MENU_ENUM_LABEL_NETWORK_CMD_ENABLE_STR "network_cmd_enable"
 #define MENU_ENUM_LABEL_NETWORK_CMD_PORT_STR "network_cmd_port"
 #define MENU_ENUM_LABEL_NETWORK_INFORMATION_STR "network_information"
 #define MENU_ENUM_LABEL_NETWORK_INFO_ENTRY_STR "network_info_entry"
