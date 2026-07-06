@@ -120,6 +120,10 @@ us = open('intl/msg_hash_us.h').read()
 usval, ussub, usspan, uscmt = {}, {}, [], {}
 for k, f, T, a in rows:
     m = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
+    if not m:
+        _own = run("grep -l 'S_\\w*(%s,' settings/*.h" % T).stdout.strip()
+        assert not _own, ('token %s strings are owned by %s; this table only '
+            'references it and needs no migration' % (T, _own))
     assert m, ('VALUE', T)
     usval[T] = re.sub(r'\s*\n\s*', ' ', m.group(2)); usspan.append((m.start(), m.end()))
     if m.group(1):
