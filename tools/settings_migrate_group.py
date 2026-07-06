@@ -102,7 +102,7 @@ for ln in body.split('\n'):
         if gstack:
             gstack.pop()
     else:
-        rm = re.match(r'\s*SDESC_\w+_ROW(?:_P|_DS)?\((\w+),', ln)
+        rm = re.match(r'\s*SDESC_\w+_ROW(?:_P|_DS)?\(\s*(\w+)\s*[,)]', ln)
         if rm and gstack:
             guards[rm.group(1)] = tuple(gstack)
 rows = [(m.group(1) + (m.group(2) or ''), m.group(3), m.group(4), re.sub(r'\s+',' ',m.group(5)).strip())
@@ -228,7 +228,7 @@ for k, f, T, a in rows:
         row = ('/* config key %s differs from the label string; the\n'
                ' * configuration.c row stays literal for this setting. */\n'
                '#ifndef SETTINGS_DEF_CONFIG_PASS\n' % ck) + row + '\n#endif'
-    row_gs = list(table_guard) + (list(guards[f]) if f in guards else [])
+    row_gs = list(table_guard) + (list(guards[f or T]) if (f or T) in guards else [])
     if row_gs:
         gs = row_gs
         def _cond(g):
