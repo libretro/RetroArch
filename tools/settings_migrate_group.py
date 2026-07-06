@@ -166,6 +166,7 @@ assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW(?:_P|_DS|_EX)?\(', t
 
 us = open('intl/msg_hash_us.h').read()
 ref_tokens = set()
+cfg_absent = set()
 usval, ussub, usspan, uscmt = {}, {}, [], {}
 for k, f, T, a in rows:
     m = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
@@ -247,6 +248,13 @@ for k, f, T, a in rows:
         # config row entirely; nothing to delete or emit
         print('  note: %s has no config row - unpersisted, kept absent' % T)
         continue
+    if not m and f and re.search(r'settings->\w+\.%s\s*=' % re.escape(f), cfg):
+        # custom persistence: the field is assigned outside the SETTING_
+        # rows (packed or computed defaults); config semantics stay with
+        # that code and the def emits no config row
+        print('  note: %s persists through custom code - config row kept absent' % T)
+        cfg_absent.add(T)
+        continue
     assert m, (T, f, "no config row at all")
     cfg_keeps.append((T, m.group(1)))
     print("  note: %s config key %s differs from label %s - config row stays literal" % (T, m.group(1), names[T]))
@@ -306,6 +314,10 @@ for k, f, T, a in rows:
         if _hs: _h_used.add('S_%s_NS_H' % k)
     if T in uscmt:
         row = '/* %s */\n' % uscmt[T].strip('/* ').rstrip(' */') + row
+    if T in cfg_absent:
+        row = ('/* Persistence lives in custom configuration code; no config\n'
+               ' * row is emitted. */\n'
+               '#ifndef SETTINGS_DEF_CONFIG_PASS\n') + row + '\n#endif'
     if cfg_guards.get(T):
         _cc = ' && '.join(('defined(%s)' % g[len('#ifdef '):].strip()) if g.startswith('#ifdef ')
                           else ('!defined(%s)' % g[len('#ifndef '):].strip()) if g.startswith('#ifndef ')
