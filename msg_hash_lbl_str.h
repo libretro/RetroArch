@@ -1041,3 +1041,14 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
 
 #endif /* MSG_HASH_LBL_STR_H__ */
+#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_STR "ozone_font_scale"
+#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL_STR "ozone_font_scale_factor_global"
+#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TITLE_STR "ozone_font_scale_factor_title"
+#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR_STR "ozone_font_scale_factor_sidebar"
+#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_LABEL_STR "ozone_font_scale_factor_label"
+#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL_STR "ozone_font_scale_factor_sublabel"
+#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TIME_STR "ozone_font_scale_factor_time"
+#define MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_FOOTER_STR "ozone_font_scale_factor_footer"
+#define MENU_ENUM_LABEL_OZONE_PADDING_FACTOR_STR "ozone_padding_factor"
+#define MENU_ENUM_LABEL_OZONE_HEADER_ICON_STR "ozone_header_icon"
+#define MENU_ENUM_LABEL_OZONE_HEADER_SEPARATOR_STR "ozone_header_separator"
