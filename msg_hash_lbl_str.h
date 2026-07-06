@@ -772,9 +772,6 @@
 #define MENU_ENUM_LABEL_TIMEDATE_ENABLE_STR "menu_timedate_enable"
 #define MENU_ENUM_LABEL_TIMEDATE_STYLE_STR "menu_timedate_style"
 #define MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR_STR "menu_timedate_date_separator"
-#define MENU_ENUM_LABEL_MENU_TICKER_TYPE_STR "menu_ticker_type"
-#define MENU_ENUM_LABEL_MENU_TICKER_SPEED_STR "menu_ticker_speed"
-#define MENU_ENUM_LABEL_MENU_TICKER_SMOOTH_STR "menu_ticker_smooth"
 #define MENU_ENUM_LABEL_UI_COMPANION_ENABLE_STR "ui_companion_enable"
 #define MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT_STR "ui_companion_start_on_boot"
 #define MENU_ENUM_LABEL_UI_COMPANION_TOGGLE_STR "ui_companion_toggle"
@@ -1169,8 +1166,6 @@
 #define MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE_STR "manual_content_scan_overwrite"
 #define MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES_STR "manual_content_scan_validate_entries"
 #define MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START_STR "manual_content_scan_start"
-#define MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED_STR "accessibility_enabled"
-#define MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED_STR "accessibility_narrator_speech_speed"
 #define MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST_STR "deferred_audio_output_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST_STR "deferred_audio_synchronization_settings_list"
 #define MENU_ENUM_LABEL_INPUT_MENU_SETTINGS_STR "input_menu_settings"
@@ -1206,4 +1201,3 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
 
 #endif /* MSG_HASH_LBL_STR_H__ */
-#define MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_ENGINE_STR "accessibility_narrator_engine"

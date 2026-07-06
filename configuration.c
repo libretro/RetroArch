@@ -1950,6 +1950,10 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_startup.h"
+#endif
+#include "settings/settings_def_accessibility.h"
 #include "settings/settings_def_video_refresh_rate.h"
 #ifdef HAVE_MENU
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
@@ -2393,7 +2397,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
    SETTING_BOOL("menu_show_sublabels",           &settings->bools.menu_show_sublabels, true, DEFAULT_MENU_SHOW_SUBLABELS, false);
    SETTING_BOOL("menu_show_confirm",             &settings->bools.menu_show_confirm, true, DEFAULT_MENU_SHOW_CONFIRM, false);
-   SETTING_BOOL("menu_ticker_smooth",            &settings->bools.menu_ticker_smooth, true, DEFAULT_MENU_TICKER_SMOOTH, false);
    SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, DEFAULT_MENU_SCROLL_FAST, false);
    SETTING_BOOL("menu_ignore_missing_assets",    &settings->bools.menu_ignore_missing_assets, true, DEFAULT_MENU_IGNORE_MISSING_ASSETS, false);
 
@@ -2587,6 +2590,10 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_startup.h"
+#endif
+#include "settings/settings_def_accessibility.h"
 #include "settings/settings_def_video_refresh_rate.h"
 #ifdef HAVE_MENU
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
@@ -2991,7 +2998,6 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("menu_widget_scale_factor",     &settings->floats.menu_widget_scale_factor, true, DEFAULT_MENU_WIDGET_SCALE_FACTOR, false);
    SETTING_FLOAT("menu_footer_opacity",          &settings->floats.menu_footer_opacity,      true, DEFAULT_MENU_FOOTER_OPACITY, false);
    SETTING_FLOAT("menu_header_opacity",          &settings->floats.menu_header_opacity,      true, DEFAULT_MENU_HEADER_OPACITY, false);
-   SETTING_FLOAT("menu_ticker_speed",            &settings->floats.menu_ticker_speed,        true, DEFAULT_MENU_TICKER_SPEED,   false);
 #ifdef HAVE_RGUI
    SETTING_FLOAT("rgui_particle_effect_speed",   &settings->floats.menu_rgui_particle_effect_speed, true, DEFAULT_RGUI_PARTICLE_EFFECT_SPEED, false);
 #endif
@@ -3086,7 +3092,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_icon_thumbnails",          &settings->uints.menu_icon_thumbnails, true, DEFAULT_MENU_ICON_THUMBNAILS_DEFAULT, false);
    SETTING_UINT("menu_timedate_style",           &settings->uints.menu_timedate_style, true, DEFAULT_MENU_TIMEDATE_STYLE, false);
    SETTING_UINT("menu_timedate_date_separator",  &settings->uints.menu_timedate_date_separator, true, DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR, false);
-   SETTING_UINT("menu_ticker_type",              &settings->uints.menu_ticker_type, true, DEFAULT_MENU_TICKER_TYPE, false);
    SETTING_UINT("menu_scroll_delay",             &settings->uints.menu_scroll_delay, true, DEFAULT_MENU_SCROLL_DELAY, false);
 #ifdef HAVE_RGUI
    SETTING_UINT("rgui_particle_effect",          &settings->uints.menu_rgui_particle_effect, true, DEFAULT_RGUI_PARTICLE_EFFECT, false);
@@ -3184,6 +3189,10 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_startup.h"
+#endif
+#include "settings/settings_def_accessibility.h"
 #include "settings/settings_def_video_refresh_rate.h"
 #ifdef HAVE_MENU
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
@@ -3664,8 +3673,6 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_CHEEVOS
    SETTING_UINT("cheevos_appearance_anchor",     &settings->uints.cheevos_appearance_anchor, true, DEFAULT_CHEEVOS_APPEARANCE_ANCHOR, false);
 #endif
-   SETTING_UINT("accessibility_narrator_speech_speed", &settings->uints.accessibility_narrator_speech_speed, true, DEFAULT_ACCESSIBILITY_NARRATOR_SPEECH_SPEED, false);
-   SETTING_UINT("accessibility_narrator_engine", &settings->uints.accessibility_narrator_engine, true, DEFAULT_ACCESSIBILITY_NARRATOR_ENGINE, false);
    SETTING_UINT("ai_service_target_lang",       &settings->uints.ai_service_target_lang,     true, 0, false);
    SETTING_UINT("ai_service_source_lang",       &settings->uints.ai_service_source_lang,     true, 0, false);
 
@@ -3774,6 +3781,10 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_startup.h"
+#endif
+#include "settings/settings_def_accessibility.h"
 #include "settings/settings_def_video_refresh_rate.h"
 #ifdef HAVE_MENU
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
@@ -4212,6 +4223,10 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_startup.h"
+#endif
+#include "settings/settings_def_accessibility.h"
 #include "settings/settings_def_video_refresh_rate.h"
 #ifdef HAVE_MENU
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
