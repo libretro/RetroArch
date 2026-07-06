@@ -802,7 +802,6 @@
 #define MENU_ENUM_LABEL_PLAY_REPLAY_STR "play_replay"
 #define MENU_ENUM_LABEL_HALT_REPLAY_STR "halt_replay"
 #define MENU_ENUM_LABEL_SAVING_SETTINGS_STR "saving_settings"
-#define MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS_STR "cloud_sync_settings"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE_STR "cloud_sync_enable"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE_STR "cloud_sync_sync_mode"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE_AUTOMATIC_STR "cloud_sync_sync_mode_automatic"
