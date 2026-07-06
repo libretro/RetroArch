@@ -4393,7 +4393,7 @@ static int vorbis_analyze_page(rvorbis *f, ProbedPage *z)
    z->page_end = z->page_start + 27 + header[26] + len;
 
    /* read the last-decoded sample out of the data */
-   z->last_decoded_sample = header[6] + (header[7] << 8) + (header[8] << 16) + (header[9] << 16);
+   z->last_decoded_sample = header[6] + (header[7] << 8) + (header[8] << 16) + (header[9] << 24);
 
    if (header[5] & 4)
    {
@@ -4556,121 +4556,235 @@ static int rvorbis_get_frame_float(rvorbis *f, int *channels, float ***output)
 }
 
 
-static int vorbis_seek_frame_from_page(rvorbis *f, uint32_t page_start, uint32_t first_sample, uint32_t target_sample)
+/* --- ported from current stb_vorbis: correct coarse+linear seek --- */
+
+void rvorbis_seek_start(rvorbis *f); /* forward decl (defined below) */
+static unsigned int rvorbis_stream_length_in_samples(rvorbis *f); /* forward decl */
+
+/* Read a page header at the current offset into z, then restore offset. */
+static int get_seek_page_info(rvorbis *f, ProbedPage *z)
 {
-   int left_start, left_end, right_start, right_end, mode,i;
-   int frame=0;
-   uint32_t frame_start;
-   int frames_to_skip, data_to_skip;
+   uint8_t header[27], lacing[255];
+   int i, len;
 
-   /* first_sample is the sample # of the first sample that doesn't
-    * overlap the previous page... note that this requires us to
-    * _partially_ discard the first packet! bleh. */
-   set_file_offset(f, page_start);
+   z->page_start = (unsigned int)(f->stream - f->stream_start);
 
-   f->next_seg = -1;  /* force page resync */
+   if (!getn(f, header, 27))
+      return 0;
+   if (header[0] != 'O' || header[1] != 'g' || header[2] != 'g' || header[3] != 'S')
+      return 0;
+   if (!getn(f, lacing, header[26]))
+      return 0;
 
-   frame_start = first_sample;
-   /* frame start is where the previous packet's last decoded sample
-    * was, which corresponds to left_end... EXCEPT if the previous
-    * packet was long and this packet is short? Probably a bug here.
+   len = 0;
+   for (i = 0; i < header[26]; ++i)
+      len += lacing[i];
 
+   z->page_end = z->page_start + 27 + header[26] + len;
 
-    * now, we can start decoding frames... we'll only FAKE decode them,
-    * until we find the frame that contains our sample; then we'll rewind,
-    * and try again */
-   for (;;)
-   {
-      int start;
+   z->last_decoded_sample = header[6] + (header[7] << 8)
+                          + (header[8] << 16) + (header[9] << 24);
 
-      if (!vorbis_decode_initial(f, &left_start, &left_end, &right_start, &right_end, &mode))
-         return error(f, RVORBIS_seek_failed);
+   set_file_offset(f, z->page_start);
+   return 1;
+}
 
-      if (frame == 0)
-         start = left_end;
-      else
-         start = left_start;
+/* Seek back to the page preceding limit_offset while locating a packet start. */
+static int go_to_page_before(rvorbis *f, unsigned int limit_offset)
+{
+   unsigned int previous_safe;
+   uint32_t end;
 
-      /* the window starts at left_start; the last valid sample we generate
-       * before the next frame's window start is right_start-1 */
-      if (target_sample < frame_start + right_start-start)
-         break;
-
-      while (get8_packet_raw(f) != EOP);
-      if (f->eof)
-         return error(f, RVORBIS_seek_failed);
-
-      frame_start += right_start - start;
-
-      ++frame;
-   }
-
-   /* ok, at this point, the sample we want is contained in frame #'frame'
-
-    * to decode frame #'frame' normally, we have to decode the
-    * previous frame first... but if it's the FIRST frame of the page
-    * we can't. if it's the first frame, it means it falls in the part
-    * of the first frame that doesn't overlap either of the other frames.
-    * so, if we have to handle that case for the first frame, we might
-    * as well handle it for all of them, so: */
-   if (target_sample > frame_start + (left_end - left_start))
-   {
-      /* so what we want to do is go ahead and just immediately decode
-       * this frame, but then make it so the next get_frame_float() uses
-       * this already-decoded data? or do we want to go ahead and rewind,
-       * and leave a flag saying to skip the first N data? let's do that
-       */
-      frames_to_skip = frame;  /* if this is frame #1, skip 1 frame (#0) */
-      data_to_skip   = left_end - left_start;
-   }
+   if (limit_offset >= 65536 && limit_offset - 65536 >= f->first_audio_page_offset)
+      previous_safe = limit_offset - 65536;
    else
-   {
-      /* otherwise, we want to skip frames 0, 1, 2, ... frame-2
-       * (which means frame-2+1 total frames) then decode frame-1,
-       * then leave frame pending */
-      frames_to_skip = frame - 1;
-      assert(frames_to_skip >= 0);
-      data_to_skip = -1;
-   }
+      previous_safe = f->first_audio_page_offset;
 
-   set_file_offset(f, page_start);
-   f->next_seg = - 1; /* force page resync */
+   set_file_offset(f, previous_safe);
 
-   for (i=0; i < frames_to_skip; ++i)
+   while (vorbis_find_page(f, &end, NULL))
    {
-      maybe_start_packet(f);
-      while (get8_packet_raw(f) != EOP);
-   }
-
-   if (data_to_skip >= 0)
-   {
-      int i,j,n = f->blocksize_0 >> 1;
-      f->discard_samples_deferred = data_to_skip;
-      for (i=0; i < f->channels; ++i)
-         for (j=0; j < n; ++j)
-            f->previous_window[i][j] = 0;
-      f->previous_length = n;
-      frame_start += data_to_skip;
-   }
-   else
-   {
-      f->previous_length = 0;
-      vorbis_pump_first_frame(f);
-   }
-
-   /* at this point, the NEXT decoded frame will generate the desired sample.
-    * So if we're doing sample accurate streaming, we want to go ahead 
-    * and decode it! */
-   if (target_sample != frame_start)
-   {
-      int n;
-      rvorbis_get_frame_float(f, &n, NULL);
-      assert(target_sample > frame_start);
-      assert(f->channel_buffer_start + (int) (target_sample-frame_start) < f->channel_buffer_end);
-      f->channel_buffer_start += (target_sample - frame_start);
+      if (end >= limit_offset && (unsigned int)(f->stream - f->stream_start) < limit_offset)
+         return 1;
+      set_file_offset(f, end);
    }
 
    return 0;
+}
+
+/* vorbis_decode_initial without advancing (rewinds the bytes it read). */
+static int peek_decode_initial(rvorbis *f, int *p_left_start, int *p_left_end,
+      int *p_right_start, int *p_right_end, int *mode)
+{
+   int bits_read, bytes_read;
+
+   if (!vorbis_decode_initial(f, p_left_start, p_left_end, p_right_start, p_right_end, mode))
+      return 0;
+
+   bits_read = 1 + ilog(f->mode_count - 1);
+   if (f->mode_config[*mode].blockflag)
+      bits_read += 2;
+   bytes_read = (bits_read + 7) / 8;
+
+   f->bytes_in_seg  += bytes_read;
+   f->packet_bytes  -= bytes_read;
+   skip(f, -bytes_read);
+   if (f->next_seg == -1)
+      f->next_seg = f->segment_count - 1;
+   else
+      f->next_seg--;
+   f->valid_bits = 0;
+
+   return 1;
+}
+
+/* Coarse page-level search: leaves current_loc_valid set and
+ * current_loc <= sample_number. Mirrors stb_vorbis seek_to_sample_coarse. */
+static int seek_to_sample_coarse(rvorbis *f, uint32_t sample_number)
+{
+   ProbedPage left, right, mid;
+   int i, start_seg_with_known_loc, end_pos, page_start;
+   uint32_t delta, stream_length, padding, last_sample_limit;
+   double offset = 0.0, bytes_per_sample = 0.0;
+   int probe = 0;
+
+   stream_length = rvorbis_stream_length_in_samples(f);
+   if (stream_length == 0)            return error(f, RVORBIS_cant_find_last_page);
+   if (sample_number > stream_length) return error(f, RVORBIS_seek_invalid);
+
+   padding = ((f->blocksize_1 - f->blocksize_0) >> 2);
+   if (sample_number < padding)
+      last_sample_limit = 0;
+   else
+      last_sample_limit = sample_number - padding;
+
+   left = f->p_first;
+   while (left.last_decoded_sample == ~0U)
+   {
+      set_file_offset(f, left.page_end);
+      if (!get_seek_page_info(f, &left)) goto error;
+   }
+
+   right = f->p_last;
+   assert(right.last_decoded_sample != ~0U);
+
+   if (last_sample_limit <= left.last_decoded_sample)
+   {
+      rvorbis_seek_start(f);
+      if (f->current_loc > sample_number)
+         return error(f, RVORBIS_seek_failed);
+      return 1;
+   }
+
+   while (left.page_end != right.page_start)
+   {
+      assert(left.page_end < right.page_start);
+      delta = right.page_start - left.page_end;
+      if (delta <= 65536)
+      {
+         set_file_offset(f, left.page_end);
+      }
+      else
+      {
+         if (probe < 2)
+         {
+            if (probe == 0)
+            {
+               double data_bytes = right.page_end - left.page_start;
+               bytes_per_sample = data_bytes / right.last_decoded_sample;
+               offset = left.page_start + bytes_per_sample * (last_sample_limit - left.last_decoded_sample);
+            }
+            else
+            {
+               double err = ((double) last_sample_limit - mid.last_decoded_sample) * bytes_per_sample;
+               if (err >= 0 && err <  8000) err =  8000;
+               if (err <  0 && err > -8000) err = -8000;
+               offset += err * 2;
+            }
+
+            if (offset < left.page_end)
+               offset = left.page_end;
+            if (offset > right.page_start - 65536)
+               offset = right.page_start - 65536;
+
+            set_file_offset(f, (unsigned int) offset);
+         }
+         else
+         {
+            set_file_offset(f, left.page_end + (delta / 2) - 32768);
+         }
+
+         if (!vorbis_find_page(f, NULL, NULL)) goto error;
+      }
+
+      for (;;)
+      {
+         if (!get_seek_page_info(f, &mid)) goto error;
+         if (mid.last_decoded_sample != ~0U) break;
+         set_file_offset(f, mid.page_end);
+         assert(mid.page_start < right.page_start);
+      }
+
+      if (mid.page_start == right.page_start)
+      {
+         if (probe >= 2 || delta <= 65536)
+            break;
+      }
+      else
+      {
+         if (last_sample_limit < mid.last_decoded_sample)
+            right = mid;
+         else
+            left = mid;
+      }
+
+      ++probe;
+   }
+
+   page_start = left.page_start;
+   set_file_offset(f, page_start);
+   if (!start_page(f)) return error(f, RVORBIS_seek_failed);
+   end_pos = f->end_seg_with_known_loc;
+   assert(end_pos >= 0);
+
+   for (;;)
+   {
+      for (i = end_pos; i > 0; --i)
+         if (f->segments[i-1] != 255)
+            break;
+
+      start_seg_with_known_loc = i;
+
+      if (start_seg_with_known_loc > 0 || !(f->page_flag & PAGEFLAG_continued_packet))
+         break;
+
+      if (!go_to_page_before(f, page_start))
+         goto error;
+
+      page_start = (unsigned int)(f->stream - f->stream_start);
+      if (!start_page(f)) goto error;
+      end_pos = f->segment_count - 1;
+   }
+
+   f->current_loc_valid = 0;
+   f->last_seg          = 0;
+   f->valid_bits        = 0;
+   f->packet_bytes      = 0;
+   f->bytes_in_seg      = 0;
+   f->previous_length   = 0;
+   f->next_seg          = start_seg_with_known_loc;
+
+   for (i = 0; i < start_seg_with_known_loc; i++)
+      skip(f, f->segments[i]);
+
+   vorbis_pump_first_frame(f);
+   if (f->current_loc > sample_number)
+      return error(f, RVORBIS_seek_failed);
+   return 1;
+
+error:
+   rvorbis_seek_start(f);
+   return error(f, RVORBIS_seek_failed);
 }
 
 static unsigned int rvorbis_stream_length_in_samples(rvorbis *f)
@@ -4752,97 +4866,74 @@ done:
    return 0;
 }
 
+/* seek to the frame containing sample_number; leaves current_loc <= it. */
+static int rvorbis_seek_frame(rvorbis *f, unsigned int sample_number)
+{
+   uint32_t max_frame_samples;
+
+   if (!seek_to_sample_coarse(f, sample_number))
+      return 0;
+
+   assert(f->current_loc_valid);
+   assert(f->current_loc <= sample_number);
+
+   /* linear search for the relevant packet */
+   max_frame_samples = (f->blocksize_1*3 - f->blocksize_0) >> 2;
+   while (f->current_loc < sample_number)
+   {
+      int left_start, left_end, right_start, right_end, mode, frame_samples;
+      if (!peek_decode_initial(f, &left_start, &left_end, &right_start, &right_end, &mode))
+         return error(f, RVORBIS_seek_failed);
+      frame_samples = right_start - left_start;
+      if (f->current_loc + frame_samples > sample_number)
+      {
+         return 1; /* the next frame will contain the sample */
+      }
+      else if (f->current_loc + frame_samples + max_frame_samples > sample_number)
+      {
+         /* there's a chance the frame after this could contain the sample */
+         vorbis_pump_first_frame(f);
+      }
+      else
+      {
+         /* this frame is too early to be relevant */
+         f->current_loc += frame_samples;
+         f->previous_length = 0;
+         maybe_start_packet(f);
+         while (get8_packet_raw(f) != EOP)
+            ;
+      }
+   }
+   if (f->current_loc != sample_number) return error(f, RVORBIS_seek_failed);
+   return 1;
+}
+
 int rvorbis_seek(rvorbis *f, unsigned int sample_number)
 {
-   int attempts=0;
-   ProbedPage p[2],q;
-
-   /* Do we know the location of the last page? */
+   /* clamp to valid range using the known last-page granule */
    if (f->p_last.page_start == 0)
    {
-      uint32_t z = rvorbis_stream_length_in_samples(f);
-      if (z == 0)
+      if (rvorbis_stream_length_in_samples(f) == 0)
          return error(f, RVORBIS_cant_find_last_page);
    }
+   if (f->p_last.last_decoded_sample != ~0U
+         && sample_number >= f->p_last.last_decoded_sample)
+      sample_number = f->p_last.last_decoded_sample - 1;
 
-   p[0] = f->p_first;
-   p[1] = f->p_last;
+   if (!rvorbis_seek_frame(f, sample_number))
+      return 0;
 
-   if (sample_number >= f->p_last.last_decoded_sample)
-      sample_number = f->p_last.last_decoded_sample-1;
-
-   if (sample_number < f->p_first.last_decoded_sample)
+   if (sample_number != f->current_loc)
    {
-      vorbis_seek_frame_from_page(f, p[0].page_start, 0, sample_number);
-      return 1;
-   }
-   while (p[0].page_end < p[1].page_start)
-   {
-      uint32_t probe;
-      uint32_t start_offset, end_offset;
-      uint32_t start_sample, end_sample;
-
-      /* copy these into local variables so we can tweak them
-       * if any are unknown */
-      start_offset = p[0].page_end;
-      end_offset   = p[1].after_previous_page_start; /* an address known to seek to page p[1] */
-      start_sample = p[0].last_decoded_sample;
-      end_sample   = p[1].last_decoded_sample;
-
-      /* currently there is no such tweaking logic needed/possible? */
-      if (start_sample == SAMPLE_unknown || end_sample == SAMPLE_unknown)
-         return error(f, RVORBIS_seek_failed);
-
-      /* now we want to lerp between these for the target samples... */
-
-      /* step 1: we need to bias towards the page start... */
-      if (start_offset + 4000 < end_offset)
-         end_offset -= 4000;
-
-      /* now compute an interpolated search loc */
-      probe = start_offset + (int) floor((float) (end_offset - start_offset) / (end_sample - start_sample) * (sample_number - start_sample));
-
-      /* next we need to bias towards binary search...
-       * code is a little wonky to allow for full 32-bit unsigned values */
-      if (attempts >= 4)
-      {
-         uint32_t probe2 = start_offset + ((end_offset - start_offset) >> 1);
-         if (attempts >= 8)
-            probe = probe2;
-         else if (probe < probe2)
-            probe = probe + ((probe2 - probe) >> 1);
-         else
-            probe = probe2 + ((probe - probe2) >> 1);
-      }
-      ++attempts;
-
-      set_file_offset(f, probe);
-      if (!vorbis_find_page(f, NULL, NULL))
-         return error(f, RVORBIS_seek_failed);
-      if (!vorbis_analyze_page(f, &q))
-         return error(f, RVORBIS_seek_failed);
-      q.after_previous_page_start = probe;
-
-      /* it's possible we've just found the last page again */
-      if (q.page_start == p[1].page_start)
-      {
-         p[1] = q;
-         continue;
-      }
-
-      if (sample_number < q.last_decoded_sample)
-         p[1] = q;
-      else
-         p[0] = q;
+      int n;
+      uint32_t frame_start = f->current_loc;
+      rvorbis_get_frame_float(f, &n, NULL);
+      assert(sample_number > frame_start);
+      assert(f->channel_buffer_start + (int)(sample_number - frame_start) <= f->channel_buffer_end);
+      f->channel_buffer_start += (sample_number - frame_start);
    }
 
-   if (p[0].last_decoded_sample <= sample_number && sample_number < p[1].last_decoded_sample)
-   {
-      vorbis_seek_frame_from_page(f, p[1].page_start, p[0].last_decoded_sample,
-sample_number);
-      return 1;
-   }
-   return error(f, RVORBIS_seek_failed);
+   return 1;
 }
 
 void rvorbis_seek_start(rvorbis *f)
