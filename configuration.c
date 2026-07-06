@@ -67,6 +67,7 @@
 
 #ifdef HAVE_LAKKA_SWITCH
 #include "lakka-switch.h"
+   }
 #endif
 
 #if defined(HAVE_LIBNX)
@@ -6660,11 +6661,14 @@ static bool config_load_file(global_t *global,
 
 #ifdef HAVE_LIBNX
    /* Apply initial clocks */
-   extern void libnx_apply_overclock();
-   libnx_apply_overclock();
+   {
+      extern void libnx_apply_overclock(void);
+      libnx_apply_overclock();
+   }
 #endif
 
 #ifdef HAVE_LAKKA_SWITCH
+   {
    FILE* f = fopen(SWITCH_OC_TOGGLE_PATH, "w");
    if (settings->bools.switch_oc)
       fprintf(f, "1\n");
