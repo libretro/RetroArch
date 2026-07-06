@@ -19,7 +19,6 @@
 #define MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK_STR "facebook"
 #define MENU_ENUM_LABEL_ACCOUNTS_KICK_STR "kick"
 #define MENU_ENUM_LABEL_ACHIEVEMENT_LIST_STR "achievement_list"
-#define MENU_ENUM_LABEL_ADD_CONTENT_LIST_STR "add_content"
 #define MENU_ENUM_LABEL_CONFIGURATIONS_LIST_STR "configurations_list"
 #define MENU_ENUM_LABEL_EXPLORE_TAB_STR "explore_tab"
 #define MENU_ENUM_LABEL_EXPLORE_ITEM_STR "explore_item"
