@@ -1977,6 +1977,22 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_vulkan_gpu_index.h"
+#ifdef HAVE_SMBCLIENT
+#include "settings/settings_def_smb_client_auth.h"
+#endif
+#include "settings/settings_def_midi_volume.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_ports.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_thumbnail_downscale.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_thumbnail_upscale.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_XMB
 #include "settings/settings_def_xmb_color_theme.h"
@@ -2559,6 +2575,22 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_vulkan_gpu_index.h"
+#ifdef HAVE_SMBCLIENT
+#include "settings/settings_def_smb_client_auth.h"
+#endif
+#include "settings/settings_def_midi_volume.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_ports.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_thumbnail_downscale.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_thumbnail_upscale.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_XMB
 #include "settings/settings_def_xmb_color_theme.h"
@@ -2973,7 +3005,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_thumbnails",               &settings->uints.gfx_thumbnails, true, DEFAULT_GFX_THUMBNAILS_DEFAULT, false);
    SETTING_UINT("menu_left_thumbnails",          &settings->uints.menu_left_thumbnails, true, DEFAULT_MENU_LEFT_THUMBNAILS_DEFAULT, false);
    SETTING_UINT("menu_icon_thumbnails",          &settings->uints.menu_icon_thumbnails, true, DEFAULT_MENU_ICON_THUMBNAILS_DEFAULT, false);
-   SETTING_UINT("menu_thumbnail_upscale_threshold", &settings->uints.gfx_thumbnail_upscale_threshold, true, DEFAULT_GFX_THUMBNAIL_UPSCALE_THRESHOLD, false);
    SETTING_UINT("menu_timedate_style",           &settings->uints.menu_timedate_style, true, DEFAULT_MENU_TIMEDATE_STYLE, false);
    SETTING_UINT("menu_timedate_date_separator",  &settings->uints.menu_timedate_date_separator, true, DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR, false);
    SETTING_UINT("menu_ticker_type",              &settings->uints.menu_ticker_type, true, DEFAULT_MENU_TICKER_TYPE, false);
@@ -2985,8 +3016,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_remember_selection",       &settings->uints.menu_remember_selection, true, DEFAULT_MENU_REMEMBER_SELECTION, false);
    SETTING_UINT("menu_startup_page",             &settings->uints.menu_startup_page, true, DEFAULT_MENU_STARTUP_PAGE, false);
 #ifdef HAVE_RGUI
-   SETTING_UINT("rgui_thumbnail_downscaler",     &settings->uints.menu_rgui_thumbnail_downscaler, true, DEFAULT_RGUI_THUMBNAIL_DOWNSCALER, false);
-   SETTING_UINT("rgui_thumbnail_delay",          &settings->uints.menu_rgui_thumbnail_delay, true, DEFAULT_RGUI_THUMBNAIL_DELAY, false);
    SETTING_UINT("rgui_internal_upscale_level",   &settings->uints.menu_rgui_internal_upscale_level, true, DEFAULT_RGUI_INTERNAL_UPSCALE_LEVEL, false);
    SETTING_UINT("rgui_particle_effect",          &settings->uints.menu_rgui_particle_effect, true, DEFAULT_RGUI_PARTICLE_EFFECT, false);
 #endif
@@ -3024,7 +3053,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("audio_latency",                 &settings->uints.audio_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",       &settings->uints.audio_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
    SETTING_UINT("audio_block_frames",            &settings->uints.audio_block_frames, true, 0, false);
-   SETTING_UINT("midi_volume",                   &settings->uints.midi_volume, true, DEFAULT_MIDI_VOLUME, false);
 
 #ifdef HAVE_WASAPI
    SETTING_UINT("audio_wasapi_sh_buffer_length",  &settings->uints.audio_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_SH_BUFFER_LENGTH, false);
@@ -3100,6 +3128,22 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_vulkan_gpu_index.h"
+#ifdef HAVE_SMBCLIENT
+#include "settings/settings_def_smb_client_auth.h"
+#endif
+#include "settings/settings_def_midi_volume.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_ports.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_thumbnail_downscale.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_thumbnail_upscale.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_XMB
 #include "settings/settings_def_xmb_color_theme.h"
@@ -3451,8 +3495,6 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_NETWORKING
    SETTING_UINT("netplay_ip_port",                    &settings->uints.netplay_port, true, RARCH_DEFAULT_PORT, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
-   SETTING_UINT("netplay_max_connections",            &settings->uints.netplay_max_connections, true, DEFAULT_NETPLAY_MAX_CONNECTIONS, false);
-   SETTING_UINT("netplay_max_ping",                   &settings->uints.netplay_max_ping, true, DEFAULT_NETPLAY_MAX_PING, false);
    SETTING_UINT("netplay_chat_color_name",            &settings->uints.netplay_chat_color_name, true, DEFAULT_NETPLAY_CHAT_COLOR_NAME, false);
    SETTING_UINT("netplay_chat_color_msg",             &settings->uints.netplay_chat_color_msg, true, DEFAULT_NETPLAY_CHAT_COLOR_MSG, false);
    SETTING_UINT("netplay_input_latency_frames_min",   &settings->uints.netplay_input_latency_frames_min, true, 0, false);
@@ -3515,11 +3557,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_overlay_mouse_alt_two_touch_input",  &settings->uints.input_overlay_mouse_alt_two_touch_input, true, DEFAULT_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT, false);
 #endif
 
-#ifdef HAVE_SMBCLIENT
-   SETTING_UINT("smb_client_auth_mode",           &settings->uints.smb_client_auth_mode, true, DEFAULT_SMB_CLIENT_AUTH_MODE, false);
-   SETTING_UINT("smb_client_num_contexts",        &settings->uints.smb_client_num_contexts, true, DEFAULT_SMB_CLIENT_NUM_CONTEXTS, false);
-   SETTING_UINT("smb_client_timeout",             &settings->uints.smb_client_timeout, true, DEFAULT_SMB_CLIENT_TIMEOUT, false);
-#endif
 
    *size = count;
 
@@ -3605,6 +3642,22 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_vulkan_gpu_index.h"
+#ifdef HAVE_SMBCLIENT
+#include "settings/settings_def_smb_client_auth.h"
+#endif
+#include "settings/settings_def_midi_volume.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_ports.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_thumbnail_downscale.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_thumbnail_upscale.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_XMB
 #include "settings/settings_def_xmb_color_theme.h"
@@ -3931,6 +3984,22 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_vulkan_gpu_index.h"
+#ifdef HAVE_SMBCLIENT
+#include "settings/settings_def_smb_client_auth.h"
+#endif
+#include "settings/settings_def_midi_volume.h"
+#ifdef HAVE_NETWORKING
+#include "settings/settings_def_netplay_ports.h"
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_RGUI
+#include "settings/settings_def_rgui_thumbnail_downscale.h"
+#endif
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_thumbnail_upscale.h"
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_XMB
 #include "settings/settings_def_xmb_color_theme.h"
