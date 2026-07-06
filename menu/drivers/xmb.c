@@ -3702,7 +3702,7 @@ static void xmb_populate_entries(void *data,
             string_is_equal(label,
                   MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
          || string_is_equal(label,
-               MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
+               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
          || string_is_equal(label,
                MENU_ENUM_LABEL_SAVESTATE_LIST_STR);
 

@@ -3737,7 +3737,7 @@ static int menu_displaylist_parse_load_content_settings(
          {
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS),
-                     MENU_ENUM_LABEL_REWIND_SETTINGS_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS),
                      MENU_ENUM_LABEL_REWIND_SETTINGS,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
@@ -6419,14 +6419,14 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
 #if defined(HAVE_VIDEOPROCESSOR)
       menu_entries_append(info_list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
-            MENU_ENUM_LABEL_START_VIDEO_PROCESSOR_STR,
+            msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
             MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
             MENU_SETTING_ACTION, 0, 0, NULL);
 #endif
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
       menu_entries_append(info_list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD),
-            MENU_ENUM_LABEL_START_NET_RETROPAD_STR,
+            msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),
             MENU_ENUM_LABEL_START_NET_RETROPAD,
             MENU_SETTING_ACTION, 0, 0, NULL);
 #endif
@@ -11800,7 +11800,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_ONLINE_UPDATER
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS),
-                     MENU_ENUM_LABEL_UPDATER_SETTINGS_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS),
                      MENU_ENUM_LABEL_UPDATER_SETTINGS,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;

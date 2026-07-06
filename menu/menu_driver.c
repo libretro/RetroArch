@@ -1088,7 +1088,7 @@ size_t menu_entries_get_title(char *s, size_t len)
          const char *path      = NULL;
          unsigned menu_type    = 0;
 
-         if (     string_is_equal(label, MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
+         if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
                && !path_is_empty(RARCH_PATH_CONTENT))
          {
             char content_label[NAME_MAX_LENGTH];
