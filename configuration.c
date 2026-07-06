@@ -1977,6 +1977,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_WINDOW_OFFSET
+#include "settings/settings_def_video_window_offset.h"
+#endif
 #include "settings/settings_def_vulkan_gpu_index.h"
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client_auth.h"
@@ -2575,6 +2578,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_WINDOW_OFFSET
+#include "settings/settings_def_video_window_offset.h"
+#endif
 #include "settings/settings_def_vulkan_gpu_index.h"
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client_auth.h"
@@ -3128,6 +3134,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_WINDOW_OFFSET
+#include "settings/settings_def_video_window_offset.h"
+#endif
 #include "settings/settings_def_vulkan_gpu_index.h"
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client_auth.h"
@@ -3600,10 +3609,6 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT("crt_switch_center_adjust",       &settings->ints.crt_switch_center_adjust, false, DEFAULT_CRT_SWITCH_CENTER_ADJUST, false);
    SETTING_INT("crt_switch_porch_adjust",        &settings->ints.crt_switch_porch_adjust, false, DEFAULT_CRT_SWITCH_PORCH_ADJUST, false);
    SETTING_INT("crt_switch_vertical_adjust",     &settings->ints.crt_switch_vertical_adjust, false, DEFAULT_CRT_SWITCH_VERTICAL_ADJUST, false);
-#ifdef HAVE_WINDOW_OFFSET
-   SETTING_INT("video_window_offset_x",          &settings->ints.video_window_offset_x, true, DEFAULT_WINDOW_OFFSET_X, false);
-   SETTING_INT("video_window_offset_y",          &settings->ints.video_window_offset_y, true, DEFAULT_WINDOW_OFFSET_Y, false);
-#endif
    /* GENERATED: single-source setting rows (int kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
 #define S_BOOL_NS(f, T, n, d, sd, df, c, us)
@@ -3642,6 +3647,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_WINDOW_OFFSET
+#include "settings/settings_def_video_window_offset.h"
+#endif
 #include "settings/settings_def_vulkan_gpu_index.h"
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client_auth.h"
@@ -3984,6 +3992,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_WINDOW_OFFSET
+#include "settings/settings_def_video_window_offset.h"
+#endif
 #include "settings/settings_def_vulkan_gpu_index.h"
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client_auth.h"

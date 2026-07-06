@@ -929,8 +929,6 @@
 #define MENU_ENUM_LABEL_VIDEO_GAMMA_STR "video_gamma"
 #define MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X_STR "video_message_pos_x"
 #define MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y_STR "video_message_pos_y"
-#define MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X_STR "video_window_offset_x"
-#define MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y_STR "video_window_offset_y"
 #define MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_STR "video_refresh_rate"
 #define MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO_STR "video_refresh_rate_auto"
 #define MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED_STR "video_refresh_rate_polled"
