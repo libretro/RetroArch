@@ -7716,6 +7716,9 @@ typedef void (RETRO_CALLCONV *retro_input_poll_t)(void);
  *
  * @param port Which player 'port' to query.
  * @param device Which device to query for. Will be masked with \c RETRO_DEVICE_MASK.
+ * @warning Poll with a base device ID only; passing an ID created via
+ * \c RETRO_DEVICE_SUBCLASS is reserved for future definition, and the masking
+ * noted above is a frontend convenience that must not be relied upon.
  * @param index The input index to retrieve.
  * The exact semantics depend on the device type given in \c device.
  * @param id The ID of which value to query, like \c RETRO_DEVICE_ID_JOYPAD_B.
