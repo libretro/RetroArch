@@ -80,7 +80,18 @@ def guard_at(text, pos):
     for gl in re.finditer(r'^[ \t]*#(if\w*[^\n]*|else|endif)', text[:pos], re.M):
         s = gl.group(1)
         if s.startswith('if'):
-            stack.append('#' + s.strip())
+            _full, _e = s, gl.end()
+            while _full.rstrip().endswith('\\'):
+                _nl = text.find('\n', _e)
+                if _nl < 0:
+                    break
+                _nl2 = text.find('\n', _nl + 1)
+                _cont = text[_nl + 1:(_nl2 if _nl2 >= 0 else len(text))]
+                _full = _full.rstrip().rstrip('\\').rstrip() + ' ' + _cont.strip()
+                if _nl2 < 0:
+                    break
+                _e = _nl2
+            stack.append('#' + _full.strip())
         elif s.startswith('else') and stack:
             stack[-1] = _negate_guard(stack[-1])
         elif s.startswith('endif') and stack:
@@ -92,6 +103,7 @@ def guard_of(text, pat):
 
 table_guard = tuple(guard_at(ms, tm.start()))
 guards = {}
+_cont_prev = None
 body = tm.group(1)
 # Depth-aware: record the FULL stack of enclosing #if guards for each row.
 # A flat "#if ... #endif" regex (non-greedy) stops at the first #endif and
@@ -103,7 +115,16 @@ body = tm.group(1)
 gstack = []
 for ln in body.split('\n'):
     s = ln.strip()
+    if _cont_prev is not None:
+        _joined = _cont_prev.rstrip('\\').rstrip() + ' ' + s
+        _cont_prev = _joined if s.endswith('\\') else None
+        if _cont_prev is None:
+            gstack.append(_joined)
+        continue
     if s.startswith('#if'):
+        if s.endswith('\\'):
+            _cont_prev = s
+            continue
         gstack.append(s)
     elif s.startswith('#endif'):
         if gstack:
