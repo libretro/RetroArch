@@ -84,6 +84,9 @@ enum event_command
    CMD_EVENT_QUIT,
    /* Reinitialize all drivers. */
    CMD_EVENT_REINIT_FROM_TOGGLE,
+   /* Re-evaluate the on-screen notification (gfx_widgets) system to
+    * match current settings, without a full driver reinit. */
+   CMD_EVENT_OSD_NOTIFICATION_TOGGLE,
    /* Reinitialize all drivers. */
    CMD_EVENT_REINIT,
    /* Toggles cheevos hardcore mode. */

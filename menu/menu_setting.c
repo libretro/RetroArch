@@ -17097,7 +17097,7 @@ static bool setting_append_list(
                   {
             static const setting_desc_t osn_desc_3[] = {
                SDESC_BOOL_ROW_EX(video_font_enable, VIDEO_FONT_ENABLE,
-                     DEFAULT_FONT_ENABLE, SD_FLAG_NONE, 0, CMD_EVENT_REINIT,
+                     DEFAULT_FONT_ENABLE, SD_FLAG_NONE, 0, CMD_EVENT_OSD_NOTIFICATION_TOGGLE,
                      setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
             };
             settings_list_add_desc(list, list_info, settings,

@@ -3970,6 +3970,60 @@ bool command_event(enum event_command cmd, void *data)
          rcheevos_toggle_hardcore_paused();
 #endif
          break;
+      case CMD_EVENT_OSD_NOTIFICATION_TOGGLE:
+#if defined(HAVE_GFX_WIDGETS)
+         {
+            /* Toggle the gfx_widgets notification system to match current
+             * settings WITHOUT a full driver reinit. The classic OSD font is
+             * always initialised by the video drivers and gated per-frame, so
+             * only the widget lifecycle needs adjusting. Mirrors the enable
+             * decision in drivers_init() and the threaded deinit barrier in
+             * driver_uninit(). */
+            dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+            bool widgets_inited            =
+                  (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED) != 0;
+            bool want_widgets              =
+                     settings->bools.video_font_enable
+                  && settings->bools.menu_enable_widgets
+                  && video_st->current_video
+                  && video_st->current_video->gfx_widgets_enabled
+                  && video_st->current_video->gfx_widgets_enabled(
+                        video_st->data);
+
+            if (want_widgets && !widgets_inited)
+            {
+               bool force_fs            = (video_st->flags &
+                     VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
+               bool video_is_fullscreen = settings->bools.video_fullscreen
+                     || force_fs;
+               p_dispwidget->active     = gfx_widgets_init(
+                     disp_get_ptr(),
+                     anim_get_ptr(),
+                     settings,
+                     (uintptr_t)&p_dispwidget->active,
+                     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st),
+                     video_st->width,
+                     video_st->height,
+                     video_is_fullscreen,
+                     settings->paths.directory_assets,
+                     settings->paths.path_font);
+            }
+            else if (!want_widgets && widgets_inited)
+            {
+#ifdef HAVE_THREADS
+               /* Same barrier as driver_uninit(): never free widget GPU
+                * resources while the video thread may still reference them. */
+               if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+                     && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+                  video_thread_wait_idle();
+#endif
+               gfx_widgets_deinit(p_dispwidget->flags &
+                     DISPGFX_WIDGET_FLAG_PERSISTING);
+               p_dispwidget->active = false;
+            }
+         }
+#endif
+         break;
       case CMD_EVENT_REINIT_FROM_TOGGLE:
          video_st->flags &= ~VIDEO_FLAG_FORCE_FULLSCREEN;
          /* this fallthrough is on purpose, it should do
