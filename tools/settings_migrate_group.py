@@ -51,7 +51,7 @@ SIGS = [('S_BOOL','f, T, n, d, sd, df, c'),
         ('S_INT_EX','f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui'),
         ('S_FLOAT_EX','f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui'),
         ('S_ACTION_EX','T, n, sd, ok, rp, c')]
-UNDEFS = '\n'.join('#undef %s%s' % (b, s) for b, _ in SIGS for s in ('', '_NS'))
+UNDEFS = '\n'.join('#undef %s%s' % (b, s) for b, _ in SIGS for s in ('', '_NS', '_H', '_NS_H'))
 def defs(mk):
     L = []
     for base, sig in SIGS:
