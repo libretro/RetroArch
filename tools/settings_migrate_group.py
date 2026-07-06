@@ -213,7 +213,7 @@ cfg_guards = {}
 for k, f, T, a in rows:
     _mac = {'STRING': 'ARRAY', 'DIR': 'PATH'}.get(k, k.replace('_EX', ''))
     m = re.search(r' *SETTING_%s\(\s*%s, *&?settings->\w+\.%s,[^;]*;\n' % (_mac, re.escape(names[T]), f), cfg)
-    if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX'):
+    if k in ('DIR', 'PATH', 'PATH_DS', 'STRING', 'STRING_P', 'ACTION', 'ACTION_EX'):
         m = None  # dirs keep literal config rows: default-enable varies per row 
     if m:
         cfg_guards[T] = tuple(g for g in guard_at(cfg, m.start()) if g not in table_guard)
