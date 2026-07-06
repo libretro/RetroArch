@@ -1163,3 +1163,4 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
 
 #endif /* MSG_HASH_LBL_STR_H__ */
+#define MENU_ENUM_LABEL_XMB_CURRENT_MENU_ICON_STR "xmb_current_menu_icon"
