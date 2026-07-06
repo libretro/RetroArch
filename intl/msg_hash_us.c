@@ -549,6 +549,7 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_ACTION_NS(T, n, us) n,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_menu_main_actions_1.h"
 #include "../settings/settings_def_user_identity.h"
 #include "../settings/settings_def_netplay_passwords.h"
 #include "../settings/settings_def_netplay_server.h"
@@ -686,6 +687,7 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_ACTION_NS(T, n, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #include "../settings/settings_def_video_fullscreen.h"
 #include "../settings/settings_def_video_sync.h"
+#include "../settings/settings_def_menu_main_actions_1.h"
 #include "../settings/settings_def_user_identity.h"
 #include "../settings/settings_def_netplay_passwords.h"
 #include "../settings/settings_def_netplay_server.h"

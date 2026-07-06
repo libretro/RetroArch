@@ -192,7 +192,6 @@
 #define MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS_STR "core_input_remapping_options"
 #define MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON_STR "input_split_joycon"
 #define MENU_ENUM_LABEL_CORE_LIST_STR "load_core"
-#define MENU_ENUM_LABEL_CORE_LIST_UNLOAD_STR "unload_core"
 #define MENU_ENUM_LABEL_SIDELOAD_CORE_LIST_STR "sideload_core"
 #define MENU_ENUM_LABEL_SAVESTATE_LIST_STR "savestate_list"
 #define MENU_ENUM_LABEL_STATE_SLOT_RUN_STR "state_slot_run"
