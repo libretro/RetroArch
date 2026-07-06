@@ -443,7 +443,7 @@ for _fl in _gflags:
     # (systemd_service_toggle static initializer); the base LAKKA lane
     # already tolerates it with ('0','4'), so match that here rather than
     # abort a legitimate migration that happens to gate a row on LAKKA.
-    _mok = ('0', '4') if _fl == 'HAVE_LAKKA' else ('0',)
+    _mok = ('0', '4') if 'HAVE_LAKKA' in _fl else ('0',)
     _iso += [('menu/menu_setting.c', CF + _d, _mok),
              ('intl/msg_hash_us.c', CF + ' -DHAVE_LANGEXTRA' + _d, ('0',)),
              ('configuration.c', CF + _lakka(_d), ('0',))]
