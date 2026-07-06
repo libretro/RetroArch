@@ -4023,6 +4023,14 @@ bool command_event(enum event_command cmd, void *data)
             }
          }
 #endif
+#ifdef HAVE_MENU
+         /* Toggling notifications/widgets can change which dependent entries
+          * are shown, so rebuild the current menu list. The old full reinit
+          * did this implicitly via menu_driver_init(); set the flag after the
+          * widget work so it survives into the next menu iteration. */
+         menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                         |  MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
          break;
       case CMD_EVENT_REINIT_FROM_TOGGLE:
          video_st->flags &= ~VIDEO_FLAG_FORCE_FULLSCREEN;
