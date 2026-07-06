@@ -1274,3 +1274,5 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
 
 #endif /* MSG_HASH_LBL_STR_H__ */
+#define MENU_ENUM_LABEL_XMB_ENTRY_ICONS_STR "xmb_entry_icons"
+#define MENU_ENUM_LABEL_XMB_SWITCH_ICONS_STR "xmb_switch_icons"
