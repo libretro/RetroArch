@@ -1886,502 +1886,64 @@ static INLINE float rmp3_mix_f32(float x, float y, float a)
     return x*(1-a) + y*a;
 }
 
-static void rmp3_blend_f32(float* pOut, float* pInA, float* pInB, float factor, uint32_t channels)
-{
-   uint32_t i;
-    for (i = 0; i < channels; ++i)
-        pOut[i] = rmp3_mix_f32(pInA[i], pInB[i], factor);
-}
+/* -----------------------------------------------------------------------
+ * Public API
+ *
+ * The decoder operates directly on the caller's memory buffer with a
+ * read cursor: no staging buffer, no refill callbacks and no internal
+ * sample-rate converter.  Output is the stream's native channel count
+ * and sample rate (discovered from the first frame); rate conversion is
+ * the caller's business - RetroArch already resamples decoded audio
+ * with its proper resampler, so converting here would only add a second,
+ * lower-quality pass.
+ * ----------------------------------------------------------------------- */
 
-void rmp3_src_cache_init(rmp3_src* pSRC, rmp3_src_cache* pCache)
-{
-    pCache->pSRC = pSRC;
-    pCache->cachedFrameCount = 0;
-    pCache->iNextFrame = 0;
-}
-
-uint64_t rmp3_src_cache_read_frames(rmp3_src_cache* pCache, uint64_t frameCount, float* pFramesOut)
-{
-   uint64_t totalFramesRead = 0;
-   uint32_t channels = pCache->pSRC->config.channels;
-
-   while (frameCount > 0)
-   {
-      uint32_t framesToReadFromClient;
-      /* If there's anything in memory go ahead and copy that over first. */
-      uint64_t framesRemainingInMemory = pCache->cachedFrameCount - pCache->iNextFrame;
-      uint64_t framesToReadFromMemory = frameCount;
-      if (framesToReadFromMemory > framesRemainingInMemory)
-         framesToReadFromMemory = framesRemainingInMemory;
-
-      memcpy(pFramesOut, pCache->pCachedFrames + pCache->iNextFrame*channels, (uint32_t)(framesToReadFromMemory * channels * sizeof(float)));
-      pCache->iNextFrame += (uint32_t)framesToReadFromMemory;
-
-      totalFramesRead += framesToReadFromMemory;
-      frameCount -= framesToReadFromMemory;
-      if (frameCount == 0)
-         break;
-
-
-      /* At this point there are still more frames to read from the client, so we'll need to reload the cache with fresh data. */
-      pFramesOut += framesToReadFromMemory * channels;
-
-      pCache->iNextFrame = 0;
-      pCache->cachedFrameCount = 0;
-
-      framesToReadFromClient = rmp3_countof(pCache->pCachedFrames) / pCache->pSRC->config.channels;
-      if (framesToReadFromClient > pCache->pSRC->config.cacheSizeInFrames)
-         framesToReadFromClient = pCache->pSRC->config.cacheSizeInFrames;
-
-      pCache->cachedFrameCount = (uint32_t)pCache->pSRC->onRead(pCache->pSRC, framesToReadFromClient, pCache->pCachedFrames, pCache->pSRC->pUserData);
-
-
-      /* Get out of this loop if nothing was able to be retrieved. */
-      if (pCache->cachedFrameCount == 0)
-         break;
-   }
-
-   return totalFramesRead;
-}
-
-
-uint64_t rmp3_src_read_frames_passthrough(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut, uint32_t flush);
-uint64_t rmp3_src_read_frames_linear(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut, uint32_t flush);
-
-uint32_t rmp3_src_init(const rmp3_src_config* pConfig, rmp3_src_read_proc onRead, void* pUserData, rmp3_src* pSRC)
-{
-    if (!pSRC)
-       return 0;
-    memset((pSRC), 0, sizeof(*(pSRC)));
-
-    if (!pConfig || !onRead)
-       return 0;
-    if (pConfig->channels == 0 || pConfig->channels > 2)
-       return 0;
-
-    pSRC->config    = *pConfig;
-    pSRC->onRead    = onRead;
-    pSRC->pUserData = pUserData;
-
-    if (   pSRC->config.cacheSizeInFrames > RMP3_SRC_CACHE_SIZE_IN_FRAMES 
-        || pSRC->config.cacheSizeInFrames == 0)
-        pSRC->config.cacheSizeInFrames = RMP3_SRC_CACHE_SIZE_IN_FRAMES;
-
-    rmp3_src_cache_init(pSRC, &pSRC->cache);
-    return 1;
-}
-
-uint32_t rmp3_src_set_input_sample_rate(rmp3_src* pSRC, uint32_t sampleRateIn)
-{
-    if (!pSRC)
-       return 0;
-
-    /* Must have a sample rate of > 0. */
-    if (sampleRateIn == 0)
-        return 0;
-
-    pSRC->config.sampleRateIn = sampleRateIn;
-    return 1;
-}
-
-uint32_t rmp3_src_set_output_sample_rate(rmp3_src* pSRC, uint32_t sampleRateOut)
-{
-    if (!pSRC)
-       return 0;
-
-    /* Must have a sample rate of > 0. */
-    if (sampleRateOut == 0)
-        return 0;
-
-    pSRC->config.sampleRateOut = sampleRateOut;
-    return 1;
-}
-
-uint64_t rmp3_src_read_frames_ex(rmp3_src* pSRC,
-      uint64_t frameCount, void* pFramesOut, uint32_t flush)
-{
-   rmp3_src_algorithm algorithm;
-   if (!pSRC || frameCount == 0 || !pFramesOut)
-      return 0;
-
-   algorithm = pSRC->config.algorithm;
-
-   /* Always use passthrough if the sample rates are the same. */
-   if (pSRC->config.sampleRateIn == pSRC->config.sampleRateOut)
-      algorithm = rmp3_src_algorithm_none;
-
-   /* Could just use a function pointer instead of a switch for this... */
-   switch (algorithm)
-   {
-      case rmp3_src_algorithm_none:   return rmp3_src_read_frames_passthrough(pSRC, frameCount, pFramesOut, flush);
-      case rmp3_src_algorithm_linear: return rmp3_src_read_frames_linear(pSRC, frameCount, pFramesOut, flush);
-      default: return 0;
-   }
-}
-
-uint64_t rmp3_src_read_frames(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut)
-{
-    return rmp3_src_read_frames_ex(pSRC, frameCount, pFramesOut, 0);
-}
-
-uint64_t rmp3_src_read_frames_passthrough(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut, uint32_t flush)
-{
-    return pSRC->onRead(pSRC, frameCount, pFramesOut, pSRC->pUserData);
-}
-
-uint64_t rmp3_src_read_frames_linear(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut, uint32_t flush)
-{
-   float factor;
-   uint64_t totalFramesRead = 0;
-
-   /* For linear SRC, the bin is only 2 frames: 1 prior, 1 future. */
-
-   /* Load the bin if necessary. */
-   if (!pSRC->algo.linear.isPrevFramesLoaded)
-   {
-      uint64_t framesRead = rmp3_src_cache_read_frames(&pSRC->cache, 1, pSRC->bin);
-      if (framesRead == 0)
-         return 0;
-      pSRC->algo.linear.isPrevFramesLoaded = 1;
-   }
-   if (!pSRC->algo.linear.isNextFramesLoaded)
-   {
-      uint64_t framesRead = rmp3_src_cache_read_frames(&pSRC->cache, 1, pSRC->bin + pSRC->config.channels);
-      if (framesRead == 0)
-         return 0;
-      pSRC->algo.linear.isNextFramesLoaded = 1;
-   }
-
-   factor = (float)pSRC->config.sampleRateIn / pSRC->config.sampleRateOut;
-
-   while (frameCount > 0)
-   {
-      uint32_t i;
-      uint32_t framesToReadFromClient;
-      /* The bin is where the previous and next frames are located. */
-      float* pPrevFrame = pSRC->bin;
-      float* pNextFrame = pSRC->bin + pSRC->config.channels;
-
-      rmp3_blend_f32((float*)pFramesOut, pPrevFrame, pNextFrame, pSRC->algo.linear.alpha, pSRC->config.channels);
-
-      pSRC->algo.linear.alpha += factor;
-
-      /* The new alpha value is how we determine whether or not we need to read fresh frames. */
-      framesToReadFromClient = (uint32_t)pSRC->algo.linear.alpha;
-      pSRC->algo.linear.alpha = pSRC->algo.linear.alpha - framesToReadFromClient;
-
-      for (i = 0; i < framesToReadFromClient; ++i)
-      {
-         uint32_t j;
-         uint64_t framesRead;
-         for (j = 0; j < pSRC->config.channels; ++j)
-            pPrevFrame[j] = pNextFrame[j];
-
-         framesRead = rmp3_src_cache_read_frames(&pSRC->cache, 1, pNextFrame);
-         if (framesRead == 0)
-         {
-            uint32_t j;
-            for (j = 0; j < pSRC->config.channels; ++j)
-               pNextFrame[j] = 0;
-
-            if (pSRC->algo.linear.isNextFramesLoaded)
-               pSRC->algo.linear.isNextFramesLoaded = 0;
-            else
-            {
-               if (flush)
-                  pSRC->algo.linear.isPrevFramesLoaded = 0;
-            }
-
-            break;
-         }
-      }
-
-      pFramesOut  = (uint8_t*)pFramesOut + (1 * pSRC->config.channels * sizeof(float));
-      frameCount -= 1;
-      totalFramesRead += 1;
-
-      /* If there's no frames available we need to get out of this loop. */
-      if (!pSRC->algo.linear.isNextFramesLoaded && (!flush || !pSRC->algo.linear.isPrevFramesLoaded))
-         break;
-   }
-
-   return totalFramesRead;
-}
-
-
-
+/* Decode the next MP3 frame at the read cursor into pMP3->frames.
+ * Skips any junk (ID3 tags, garbage) the decoder identifies.  Returns 1
+ * when a frame was decoded, 0 at end of stream. */
 static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
 {
-    if (pMP3->atEnd && pMP3->dataSize == 0)
-        return 0;
-
-    do
-    {
-       rmp3dec_frame_info info;
-       uint32_t samplesRead;
-
-       /* minimp3 recommends doing data submission in 16K chunks. If we don't have at least 16K bytes available, get more. */
-       if (pMP3->dataSize < RMP3_DATA_CHUNK_SIZE && !pMP3->atEnd)
-       {
-          size_t bytesRead;
-
-          if (pMP3->dataCapacity < RMP3_DATA_CHUNK_SIZE)
-          {
-             uint8_t* pNewData  = NULL;
-             pMP3->dataCapacity = RMP3_DATA_CHUNK_SIZE;
-
-             pNewData           = (uint8_t*)realloc(pMP3->pData,
-                   pMP3->dataCapacity);
-             if (!pNewData)
-                return 0; /* Out of memory. */
-
-             pMP3->pData = pNewData;
-          }
-
-          bytesRead = pMP3->onRead(pMP3->pUserData, pMP3->pData + pMP3->dataSize, (pMP3->dataCapacity - pMP3->dataSize));
-          if (bytesRead == 0)
-          {
-             /* The source is exhausted, but the buffer may still hold
-              * complete undecoded frames - up to a whole refill chunk.
-              * Only give up when the buffer is empty too; otherwise
-              * fall through and let the decoder drain what remains. */
-             if (pMP3->dataSize == 0)
-             {
-                pMP3->atEnd = 1;
-                return 0; /* No data. */
-             }
-             pMP3->atEnd = 1;
-          }
-          else
-             pMP3->dataSize += bytesRead;
-       }
-
-       if (pMP3->dataSize > INT_MAX)
-       {
-          pMP3->atEnd = 1;
-          return 0; /* File too big. */
-       }
-
-       samplesRead = rmp3dec_decode_frame(&pMP3->decoder, pMP3->pData, (int)pMP3->dataSize, pMP3->frames, &info);    /* <-- Safe size_t -> int conversion thanks to the check above. */
-       if (samplesRead != 0)
-       {
-          size_t i;
-          size_t leftoverDataSize = (pMP3->dataSize - (size_t)info.frame_bytes);
-          for (i = 0; i < leftoverDataSize; ++i)
-             pMP3->pData[i] = pMP3->pData[i + (size_t)info.frame_bytes];
-
-          pMP3->dataSize = leftoverDataSize;
-          pMP3->framesConsumed = 0;
-          pMP3->framesRemaining = samplesRead;
-          pMP3->frameChannels = info.channels;
-          pMP3->frameSampleRate = info.hz;
-          rmp3_src_set_input_sample_rate(&pMP3->src, pMP3->frameSampleRate);
-          break;
-       }
-       else
-       {
-          size_t bytesRead;
-          /* Need more data. minimp3 recommends doing data submission in 16K chunks. */
-          if (pMP3->dataCapacity == pMP3->dataSize)
-          {
-             uint8_t *pNewData   = NULL;
-             /* No room. Expand. */
-             pMP3->dataCapacity += RMP3_DATA_CHUNK_SIZE;
-
-             pNewData            = (uint8_t*)realloc(
-                   pMP3->pData, pMP3->dataCapacity);
-             if (!pNewData)
-                return 0; /* Out of memory. */
-
-             pMP3->pData = pNewData;
-          }
-
-          /* Fill in a chunk. If the source is exhausted here, the
-           * decoder has already rejected everything in the buffer
-           * (samplesRead == 0 with no more input possible), so this
-           * exit cannot drop decodable frames. */
-          bytesRead = pMP3->onRead(pMP3->pUserData, pMP3->pData + pMP3->dataSize, (pMP3->dataCapacity - pMP3->dataSize));
-          if (bytesRead == 0)
-          {
-             pMP3->atEnd = 1;
-             return 0; /* Error reading more data. */
-          }
-
-          pMP3->dataSize += bytesRead;
-       }
-    } while (1);
-
-    return 1;
-}
-
-static uint64_t rmp3_read_src(rmp3_src* pSRC, uint64_t frameCount, void* pFramesOut, void* pUserData)
-{
-   uint32_t totalFramesRead = 0;
-   rmp3 *pMP3         = (rmp3*)pUserData;
-   float *pFramesOutF = (float*)pFramesOut;
-
-   while (frameCount > 0)
+   while (pMP3->readPos < pMP3->dataSize)
    {
-      /* Read from the in-memory buffer first. */
-      while (pMP3->framesRemaining > 0 && frameCount > 0)
+      rmp3dec_frame_info info;
+      size_t avail = pMP3->dataSize - pMP3->readPos;
+      uint32_t samples;
+
+      if (avail > (size_t)INT_MAX)
+         avail = (size_t)INT_MAX;
+
+      samples = rmp3dec_decode_frame(&pMP3->decoder,
+            pMP3->pData + pMP3->readPos, (int)avail,
+            pMP3->frames, &info);
+
+      /* frame_bytes == 0 means the decoder found nothing decodable in
+       * the remaining bytes: end of stream. */
+      if (info.frame_bytes <= 0)
+         break;
+
+      pMP3->readPos += (size_t)info.frame_bytes;
+
+      if (samples != 0)
       {
-         if (pMP3->frameChannels == 1)
+         pMP3->framesConsumed  = 0;
+         pMP3->framesRemaining = samples;
+         pMP3->frameChannels   = (uint32_t)info.channels;
+         if (pMP3->sampleRate == 0)
          {
-            if (pMP3->channels == 1) /* Mono -> Mono. */
-               pFramesOutF[0] = pMP3->frames[pMP3->framesConsumed] / 32768.0f;
-            else
-            {
-               /* Mono -> Stereo. */
-               pFramesOutF[0] = pMP3->frames[pMP3->framesConsumed] / 32768.0f;
-               pFramesOutF[1] = pMP3->frames[pMP3->framesConsumed] / 32768.0f;
-            }
+            /* First frame: latch the stream format. */
+            pMP3->channels   = (uint32_t)info.channels;
+            pMP3->sampleRate = (uint32_t)info.hz;
          }
-         else
-         {
-            if (pMP3->channels == 1) /* Stereo -> Mono */
-            {
-               float sample   = pMP3->frames[(pMP3->framesConsumed*pMP3->frameChannels)+0] / 32768.0f;
-               sample        += pMP3->frames[(pMP3->framesConsumed*pMP3->frameChannels)+1] / 32768.0f;
-               pFramesOutF[0] = sample * 0.5f;
-            }
-            else
-            {
-               /* Stereo -> Stereo */
-               pFramesOutF[0] = pMP3->frames[(pMP3->framesConsumed*pMP3->frameChannels)+0] / 32768.0f;
-               pFramesOutF[1] = pMP3->frames[(pMP3->framesConsumed*pMP3->frameChannels)+1] / 32768.0f;
-            }
-         }
-
-         pMP3->framesConsumed  += 1;
-         pMP3->framesRemaining -= 1;
-         frameCount            -= 1;
-         totalFramesRead       += 1;
-         pFramesOutF           += pSRC->config.channels;
+         return 1;
       }
-
-      if (frameCount == 0)
-         break;
-
-      /* At this point we have exhausted our in-memory buffer, 
-       * so we need to re-fill. Note that the sample rate may have changed
-       * at this point which means we'll also need to update our sample rate 
-       * conversion pipeline. */
-      if (!rmp3_decode_next_frame(pMP3))
-         break;
+      /* samples == 0 with frame_bytes > 0: junk was skipped; continue. */
    }
 
-   return totalFramesRead;
+   pMP3->atEnd = 1;
+   return 0;
 }
 
-uint32_t rmp3_init_internal(rmp3* pMP3, rmp3_read_proc onRead,
-      rmp3_seek_proc onSeek, void* pUserData, const rmp3_config* pConfig)
-{
-   rmp3_config config;
-   rmp3_src_config srcConfig;
-
-   /* This function assumes the output object has already been 
-    * reset to 0. Do not do that here, otherwise things will break. */
-   pMP3->decoder.header[0] = 0;
-
-   /* The config can be null in which case we use defaults. */
-   if (pConfig)
-      config = *pConfig;
-   else
-      memset(&config, 0, sizeof(config));
-
-   pMP3->channels = config.outputChannels;
-   if (pMP3->channels == 0)
-      pMP3->channels = RMP3_DEFAULT_CHANNELS;
-
-   /* Cannot have more than 2 channels. */
-   if (pMP3->channels > 2)
-      pMP3->channels = 2;
-
-   pMP3->sampleRate = config.outputSampleRate;
-   if (pMP3->sampleRate == 0)
-      pMP3->sampleRate = RMP3_DEFAULT_SAMPLE_RATE;
-
-   pMP3->onRead = onRead;
-   pMP3->onSeek = onSeek;
-   pMP3->pUserData = pUserData;
-
-   /* We need a sample rate converter for converting the sample rate 
-    * from the MP3 frames to the requested output sample rate. */
-   memset(&srcConfig, 0, sizeof(srcConfig));
-   srcConfig.sampleRateIn  = RMP3_DEFAULT_SAMPLE_RATE;
-   srcConfig.sampleRateOut = pMP3->sampleRate;
-   srcConfig.channels      = pMP3->channels;
-   srcConfig.algorithm     = rmp3_src_algorithm_linear;
-   if (!rmp3_src_init(&srcConfig, rmp3_read_src, pMP3, &pMP3->src))
-      return 0;
-
-   /* Decode the first frame to confirm that it is indeed 
-    * a valid MP3 stream. */
-   if (!rmp3_decode_next_frame(pMP3))
-      return 0; /* Not a valid MP3 stream. */
-
-   return 1;
-}
-
-uint32_t rmp3_init(rmp3* pMP3, rmp3_read_proc onRead,
-   rmp3_seek_proc onSeek, void* pUserData, const rmp3_config* pConfig)
-{
-    if (!pMP3 || !onRead)
-        return 0;
-
-    memset(pMP3, 0, sizeof(*pMP3));
-    return rmp3_init_internal(pMP3, onRead, onSeek, pUserData, pConfig);
-}
-
-
-static size_t rmp3__on_read_memory(void* pUserData, void* pBufferOut, size_t bytesToRead)
-{
-   size_t bytesRemaining;
-    rmp3* pMP3 = (rmp3*)pUserData;
-
-    bytesRemaining = pMP3->memory.dataSize - pMP3->memory.currentReadPos;
-    if (bytesToRead > bytesRemaining)
-        bytesToRead = bytesRemaining;
-
-    if (bytesToRead > 0)
-    {
-        memcpy(pBufferOut, pMP3->memory.pData + pMP3->memory.currentReadPos, bytesToRead);
-        pMP3->memory.currentReadPos += bytesToRead;
-    }
-
-    return bytesToRead;
-}
-
-static uint32_t rmp3__on_seek_memory(void* pUserData, int byteOffset, rmp3_seek_origin origin)
-{
-    rmp3* pMP3 = (rmp3*)pUserData;
-
-    if (origin == rmp3_seek_origin_current)
-    {
-        if (byteOffset > 0)
-        {
-            if (pMP3->memory.currentReadPos + byteOffset > pMP3->memory.dataSize)
-                byteOffset = (int)(pMP3->memory.dataSize - pMP3->memory.currentReadPos);  /* Trying to seek too far forward. */
-        }
-        else
-        {
-            if (pMP3->memory.currentReadPos < (size_t)-byteOffset)
-                byteOffset = -(int)pMP3->memory.currentReadPos;  /* Trying to seek too far backwards. */
-        }
-
-        /* This will never underflow thanks to the clamps above. */
-        pMP3->memory.currentReadPos += byteOffset;
-    } else {
-        if ((uint32_t)byteOffset <= pMP3->memory.dataSize)
-            pMP3->memory.currentReadPos = byteOffset;
-        else
-            pMP3->memory.currentReadPos = pMP3->memory.dataSize;  /* Trying to seek too far forward. */
-    }
-
-    return 1;
-}
-
-uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize, const rmp3_config* pConfig)
+uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize)
 {
     if (!pMP3)
         return 0;
@@ -2391,113 +1953,93 @@ uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize, const 
     if (!pData || dataSize == 0)
         return 0;
 
-    pMP3->memory.pData = (const uint8_t*)pData;
-    pMP3->memory.dataSize = dataSize;
-    pMP3->memory.currentReadPos = 0;
+    pMP3->pData    = (const uint8_t*)pData;
+    pMP3->dataSize = dataSize;
 
-    return rmp3_init_internal(pMP3, rmp3__on_read_memory, rmp3__on_seek_memory, pMP3, pConfig);
+    /* Decode the first frame to validate the stream and discover its
+     * channel count and sample rate. */
+    if (!rmp3_decode_next_frame(pMP3))
+        return 0;
+
+    return 1;
 }
 
 void rmp3_uninit(rmp3* pMP3)
 {
-    if (!pMP3)
-       return;
-    rmp3_free(pMP3->pData);
+   /* The input buffer is borrowed from the caller; nothing is owned. */
+   (void)pMP3;
 }
 
 uint64_t rmp3_read_f32(rmp3* pMP3, uint64_t framesToRead, float* pBufferOut)
 {
-    uint64_t totalFramesRead = 0;
-    if (!pMP3 || !pMP3->onRead)
-       return 0;
+   uint64_t totalFramesRead = 0;
+   float *out = pBufferOut;
 
-    if (!pBufferOut)
-    {
-       float temp[4096];
-       while (framesToRead > 0)
-       {
-          uint64_t framesJustRead;
-          uint64_t framesToReadRightNow = sizeof(temp)/sizeof(temp[0]) / pMP3->channels;
-          if (framesToReadRightNow > framesToRead)
-             framesToReadRightNow = framesToRead;
+   if (!pMP3 || !pMP3->pData || pMP3->channels == 0)
+      return 0;
 
-          framesJustRead = rmp3_read_f32(pMP3, framesToReadRightNow, temp);
-          if (framesJustRead == 0)
-             break;
+   while (framesToRead > 0)
+   {
+      /* Drain the currently decoded frame. */
+      while (pMP3->framesRemaining > 0 && framesToRead > 0)
+      {
+         if (out)
+         {
+            /* Convert s16 -> f32 at the stream's channel count.  If a
+             * malformed stream changes channel count mid-way, adapt the
+             * frame to the stream layout (duplicate mono / average
+             * stereo) so the interleave stays consistent. */
+            const int16_t *src = pMP3->frames
+                  + (size_t)pMP3->framesConsumed * pMP3->frameChannels;
+            if (pMP3->frameChannels == pMP3->channels)
+            {
+               uint32_t c;
+               for (c = 0; c < pMP3->channels; c++)
+                  out[c] = src[c] * (1.0f / 32768.0f);
+            }
+            else if (pMP3->channels == 2)
+            {
+               out[0] = out[1] = src[0] * (1.0f / 32768.0f);
+            }
+            else
+            {
+               out[0] = (src[0] * (1.0f / 32768.0f)
+                       + src[1] * (1.0f / 32768.0f)) * 0.5f;
+            }
+            out += pMP3->channels;
+         }
 
-          framesToRead -= framesJustRead;
-          totalFramesRead += framesJustRead;
-       }
-    }
-    else
-        totalFramesRead = rmp3_src_read_frames_ex(&pMP3->src, framesToRead, pBufferOut, 1);
+         pMP3->framesConsumed  += 1;
+         pMP3->framesRemaining -= 1;
+         framesToRead          -= 1;
+         totalFramesRead       += 1;
+      }
 
-    return totalFramesRead;
+      if (framesToRead == 0)
+         break;
+
+      if (!rmp3_decode_next_frame(pMP3))
+         break;
+   }
+
+   return totalFramesRead;
 }
 
 uint32_t rmp3_seek_to_frame(rmp3* pMP3, uint64_t frameIndex)
 {
-   uint64_t framesRead;
-
-   if (!pMP3 || !pMP3->onSeek)
+   if (!pMP3 || !pMP3->pData)
       return 0;
 
-   /* Seek to the start of the stream to begin with. */
-   if (!pMP3->onSeek(pMP3->pUserData, 0, rmp3_seek_origin_start))
-      return 0;
-
-   /* Clear any cached data. */
-   pMP3->framesConsumed = 0;
+   /* Rewind to the start of the stream and decode-skip forward.  MP3
+    * frames depend on the bit reservoir of their predecessors, so
+    * decoding from the top is the only sample-accurate way in. */
+   pMP3->readPos         = 0;
+   pMP3->framesConsumed  = 0;
    pMP3->framesRemaining = 0;
-   pMP3->dataSize = 0;
-   pMP3->atEnd = 0;
+   pMP3->atEnd           = 0;
+   pMP3->decoder.header[0] = 0;
 
-   /* TODO: Optimize.
-    *
-    * This is inefficient. We simply read frames from the start of the stream. */
-   framesRead = rmp3_read_f32(pMP3, frameIndex, NULL);
-   if (framesRead != frameIndex)
-      return 0;
-   return 1;
+   if (frameIndex == 0)
+      return 1;
+   return rmp3_read_f32(pMP3, frameIndex, NULL) == frameIndex;
 }
-
-void rmp3_free(void* p)
-{
-    free(p);
-}
-
-
-
-/*
-This is free and unencumbered software released into the public domain.
-
-Anyone is free to copy, modify, publish, use, compile, sell, or
-distribute this software, either in source code form or as a compiled
-binary, for any purpose, commercial or non-commercial, and by any
-means.
-
-In jurisdictions that recognize copyright laws, the author or authors
-of this software dedicate any and all copyright interest in the
-software to the public domain. We make this dedication for the benefit
-of the public at large and to the detriment of our heirs and
-successors. We intend this dedication to be an overt act of
-relinquishment in perpetuity of all present and future rights to this
-software under copyright law.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
-
-For more information, please refer to <http://unlicense.org/>
-*/
-
-/*
-    https://github.com/lieff/minimp3
-    To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide.
-    This software is distributed without any warranty.
-    See <http://creativecommons.org/publicdomain/zero/1.0/>.
-*/

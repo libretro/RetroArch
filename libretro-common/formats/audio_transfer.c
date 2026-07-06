@@ -275,7 +275,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
          if (!m || !m->data)
             return false;
-         m->inited = (rmp3_init_memory(&m->handle, m->data, m->size, NULL) != 0);
+         m->inited = (rmp3_init_memory(&m->handle, m->data, m->size) != 0);
          return m->inited != 0;
       }
 #endif
