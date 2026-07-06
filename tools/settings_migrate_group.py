@@ -165,6 +165,11 @@ for k, f, T, a in rows:
     if m:
         cfg_spans.append((m.start(), m.end())); continue
     m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (r'\w+' if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P') else _mac, f), cfg)
+    if not m and k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P'):
+        # unpersisted setting: keep-literal kinds may lack a
+        # config row entirely; nothing to delete or emit
+        print('  note: %s has no config row - unpersisted, kept absent' % T)
+        continue
     assert m, (T, f, "no config row at all")
     cfg_keeps.append((T, m.group(1)))
     print("  note: %s config key %s differs from label %s - config row stays literal" % (T, m.group(1), names[T]))
