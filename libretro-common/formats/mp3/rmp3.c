@@ -1,7 +1,6 @@
 /* rmp3 - MP3 decoder implementation (minimp3-derived).
  * Declarations live in <formats/rmp3.h>; this file is the implementation. */
 #include <formats/rmp3.h>
-#include <features/features_cpu.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -44,30 +43,19 @@
 #define RMP3_MIN(a, b)           ((a) > (b) ? (b) : (a))
 #define RMP3_MAX(a, b)           ((a) < (b) ? (b) : (a))
 
-#if (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))) || ((defined(__i386__) || defined(__x86_64__)) && defined(__SSE2__))
+/* SIMD is selected purely at compile time: on every configuration that
+ * defines these macros the compiler is already free to emit the same
+ * instructions in ordinary code, so a runtime CPU check would guard
+ * nothing (and was being queried inside per-band decode loops). */
+#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
 #if defined(_MSC_VER)
 #include <intrin.h>
 #endif
 #include <immintrin.h>
 #define RMP3_HAVE_SSE 1
-static int rmp3_have_simd(void)
-{
-    /* Detect SSE2 via libretro-common's shared, cached CPU feature query
-     * rather than an in-tree cpuid. Memoised here so the SIMD dispatch in
-     * the decode loops stays a plain branch. */
-    static int g_have_simd; /* 0 = unknown, 1 = no SSE2, 2 = SSE2 */
-    if (!g_have_simd)
-        g_have_simd = (cpu_features_get() & RETRO_SIMD_SSE2) ? 2 : 1;
-    return g_have_simd - 1;
-}
 #elif defined(__ARM_NEON) || defined(__aarch64__) || defined(__ARM_NEON__) || defined(_M_ARM64)
 #include <arm_neon.h>
 #define RMP3_HAVE_NEON 1
-static int rmp3_have_simd(void)
-{
-    /* NEON is a baseline feature on every supported ARM target. */
-    return 1;
-}
 #endif
 
 typedef struct
@@ -711,7 +699,6 @@ static void rmp3_L3_midside_stereo(float *left, int n)
     int i = 0;
     float *right = left + 576;
 #if RMP3_HAVE_SSE
-    if (rmp3_have_simd())
     {
         for (; i < n - 3; i += 4)
         {
@@ -729,7 +716,6 @@ static void rmp3_L3_midside_stereo(float *left, int n)
 #endif
     }
 #elif RMP3_HAVE_NEON
-    if (rmp3_have_simd())
     {
         for (; i < n - 3; i += 4)
         {
@@ -873,7 +859,7 @@ static void rmp3_L3_antialias(float *grbuf, int nbands)
     {
         int i = 0;
 #if RMP3_HAVE_SSE
-        if (rmp3_have_simd()) for (; i < 8; i += 4)
+        for (; i < 8; i += 4)
         {
             __m128 vu = _mm_loadu_ps(grbuf + 18 + i);
             __m128 vd = _mm_loadu_ps(grbuf + 14 - i);
@@ -885,7 +871,7 @@ static void rmp3_L3_antialias(float *grbuf, int nbands)
             _mm_storeu_ps(grbuf + 14 - i, _mm_shuffle_ps(vd, vd, _MM_SHUFFLE(0, 1, 2, 3)));
         }
 #elif RMP3_HAVE_NEON
-        if (rmp3_have_simd()) for (; i < 8; i += 4)
+        for (; i < 8; i += 4)
         {
             float32x4_t vu = vld1q_f32(grbuf + 18 + i);
             float32x4_t vd = vld1q_f32(grbuf + 14 - i);
@@ -977,7 +963,7 @@ static void rmp3_L3_imdct36(float *grbuf, float *overlap, const float *window, i
         i = 0;
 
 #if RMP3_HAVE_SSE
-        if (rmp3_have_simd()) for (; i < 8; i += 4)
+        for (; i < 8; i += 4)
         {
             __m128 vovl = _mm_loadu_ps(overlap + i);
             __m128 vc = _mm_loadu_ps(co + i);
@@ -993,7 +979,7 @@ static void rmp3_L3_imdct36(float *grbuf, float *overlap, const float *window, i
             _mm_storeu_ps(grbuf + 14 - i, _mm_shuffle_ps(vsum, vsum, _MM_SHUFFLE(0, 1, 2, 3)));
         }
 #elif RMP3_HAVE_NEON
-        if (rmp3_have_simd()) for (; i < 8; i += 4)
+        for (; i < 8; i += 4)
         {
             float32x4_t vovl = vld1q_f32(overlap + i);
             float32x4_t vc = vld1q_f32(co + i);
@@ -1152,7 +1138,7 @@ static void rmp3d_DCT_II(float *grbuf, int n)
     };
     int i, k = 0;
 #if RMP3_HAVE_SSE
-    if (rmp3_have_simd()) for (; k < n; k += 4)
+    for (; k < n; k += 4)
     {
         __m128 t[4][8], *x;
         float *y = grbuf + k;
@@ -1228,9 +1214,9 @@ static void rmp3d_DCT_II(float *grbuf, int n)
             _mm_storeu_ps(&y[2*18], t[1][7]);
             _mm_storeu_ps(&y[3*18], t[3][7]);
         }
-    } else
+    }
 #elif RMP3_HAVE_NEON
-    if (rmp3_have_simd()) for (; k < n; k += 4)
+    for (; k < n; k += 4)
     {
         float32x4_t t[4][8], *x;
         float *y = grbuf + k;
@@ -1306,8 +1292,8 @@ static void rmp3d_DCT_II(float *grbuf, int n)
             vst1q_f32(&y[2*18], t[1][7]);
             vst1q_f32(&y[3*18], t[3][7]);
         }
-    } else
-#endif
+    }
+#else
     for (; k < n; k++)
     {
         float t[4][8], *x, *y = grbuf + k;
@@ -1366,6 +1352,7 @@ static void rmp3d_DCT_II(float *grbuf, int n)
         y[2*18] = t[1][7];
         y[3*18] = t[3][7];
     }
+#endif
 }
 
 static int16_t rmp3d_scale_pcm(float sample)
@@ -1450,7 +1437,7 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
     rmp3d_synth_pair(dstl + 32*nch, nch, lins + 4*15 + 64);
 
 #if RMP3_HAVE_SSE
-    if (rmp3_have_simd()) for (i = 14; i >= 0; i--)
+    for (i = 14; i >= 0; i--)
     {
         __m128 a, b;
         zlin[4*i]     = xl[18*(31 - i)];
@@ -1560,9 +1547,9 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
             dstl[(47 - i)*nch] = (short)_mm_extract_epi16(pcm8, 2);
             dstl[(49 + i)*nch] = (short)_mm_extract_epi16(pcm8, 6);
         }
-    } else
+    }
 #elif RMP3_HAVE_NEON
-    if (rmp3_have_simd()) for (i = 14; i >= 0; i--)
+    for (i = 14; i >= 0; i--)
     {
         float32x4_t a, b;
         zlin[4*i]     = xl[18*(31 - i)];
@@ -1672,8 +1659,8 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
             vst1_lane_s16(dstl + (47 - i)*nch, pcma, 2);
             vst1_lane_s16(dstl + (49 + i)*nch, pcmb, 2);
         }
-    } else
-#endif
+    }
+#else
     for (i = 14; i >= 0; i--)
     {
 #define RMP3_LOAD(k) float w0 = *w++; float w1 = *w++; float *vz = &zlin[4*i - k*64]; float *vy = &zlin[4*i - (15 - k)*64];
@@ -1702,6 +1689,7 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
         dstl[(47 - i)*nch] = rmp3d_scale_pcm(a[2]);
         dstl[(49 + i)*nch] = rmp3d_scale_pcm(b[2]);
     }
+#endif
 }
 
 static void rmp3d_synth_granule(float *qmf_state, float *grbuf, int nbands, int nch, short *pcm, float *lins)
