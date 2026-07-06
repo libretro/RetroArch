@@ -50,18 +50,6 @@
 #endif
 #include <immintrin.h>
 #define RMP3_HAVE_SSE 1
-#define RMP3_HAVE_SIMD 1
-#define RMP3_VSTORE _mm_storeu_ps
-#define RMP3_VLD _mm_loadu_ps
-#define RMP3_VSET _mm_set1_ps
-#define RMP3_VADD _mm_add_ps
-#define RMP3_VSUB _mm_sub_ps
-#define RMP3_VMUL _mm_mul_ps
-#define RMP3_VMAC(a, x, y) _mm_add_ps(a, _mm_mul_ps(x, y))
-#define RMP3_VMSB(a, x, y) _mm_sub_ps(a, _mm_mul_ps(x, y))
-#define RMP3_VMUL_S(x, s)  _mm_mul_ps(x, _mm_set1_ps(s))
-#define RMP3_VREV(x) _mm_shuffle_ps(x, x, _MM_SHUFFLE(0, 1, 2, 3))
-typedef __m128 rmp3_f4;
 static int rmp3_have_simd(void)
 {
     /* Detect SSE2 via libretro-common's shared, cached CPU feature query
@@ -74,24 +62,12 @@ static int rmp3_have_simd(void)
 }
 #elif defined(__ARM_NEON) || defined(__aarch64__) || defined(__ARM_NEON__) || defined(_M_ARM64)
 #include <arm_neon.h>
-#define RMP3_HAVE_SIMD 1
-#define RMP3_VSTORE vst1q_f32
-#define RMP3_VLD vld1q_f32
-#define RMP3_VSET vmovq_n_f32
-#define RMP3_VADD vaddq_f32
-#define RMP3_VSUB vsubq_f32
-#define RMP3_VMUL vmulq_f32
-#define RMP3_VMAC(a, x, y) vmlaq_f32(a, x, y)
-#define RMP3_VMSB(a, x, y) vmlsq_f32(a, x, y)
-#define RMP3_VMUL_S(x, s)  vmulq_f32(x, vmovq_n_f32(s))
-#define RMP3_VREV(x) vcombine_f32(vget_high_f32(vrev64q_f32(x)), vget_low_f32(vrev64q_f32(x)))
-typedef float32x4_t rmp3_f4;
+#define RMP3_HAVE_NEON 1
 static int rmp3_have_simd(void)
-{   /* TODO: detect neon */
+{
+    /* NEON is a baseline feature on every supported ARM target. */
     return 1;
 }
-#else
-#define RMP3_HAVE_SIMD 0
 #endif
 
 typedef struct
@@ -734,15 +710,33 @@ static void rmp3_L3_midside_stereo(float *left, int n)
 {
     int i = 0;
     float *right = left + 576;
-#if RMP3_HAVE_SIMD
+#if RMP3_HAVE_SSE
     if (rmp3_have_simd())
     {
         for (; i < n - 3; i += 4)
         {
-            rmp3_f4 vl = RMP3_VLD(left + i);
-            rmp3_f4 vr = RMP3_VLD(right + i);
-            RMP3_VSTORE(left + i, RMP3_VADD(vl, vr));
-            RMP3_VSTORE(right + i, RMP3_VSUB(vl, vr));
+            __m128 vl = _mm_loadu_ps(left + i);
+            __m128 vr = _mm_loadu_ps(right + i);
+            _mm_storeu_ps(left + i, _mm_add_ps(vl, vr));
+            _mm_storeu_ps(right + i, _mm_sub_ps(vl, vr));
+        }
+#ifdef __GNUC__
+        /* Workaround for spurious -Waggressive-loop-optimizations warning from gcc.
+         * For more info see: https://github.com/lieff/minimp3/issues/88
+         */
+        if (__builtin_constant_p(n % 4 == 0) && n % 4 == 0)
+            return;
+#endif
+    }
+#elif RMP3_HAVE_NEON
+    if (rmp3_have_simd())
+    {
+        for (; i < n - 3; i += 4)
+        {
+            float32x4_t vl = vld1q_f32(left + i);
+            float32x4_t vr = vld1q_f32(right + i);
+            vst1q_f32(left + i, vaddq_f32(vl, vr));
+            vst1q_f32(right + i, vsubq_f32(vl, vr));
         }
 #ifdef __GNUC__
         /* Workaround for spurious -Waggressive-loop-optimizations warning from gcc.
@@ -878,17 +872,29 @@ static void rmp3_L3_antialias(float *grbuf, int nbands)
     for (; nbands > 0; nbands--, grbuf += 18)
     {
         int i = 0;
-#if RMP3_HAVE_SIMD
+#if RMP3_HAVE_SSE
         if (rmp3_have_simd()) for (; i < 8; i += 4)
         {
-            rmp3_f4 vu = RMP3_VLD(grbuf + 18 + i);
-            rmp3_f4 vd = RMP3_VLD(grbuf + 14 - i);
-            rmp3_f4 vc0 = RMP3_VLD(g_aa[0] + i);
-            rmp3_f4 vc1 = RMP3_VLD(g_aa[1] + i);
-            vd = RMP3_VREV(vd);
-            RMP3_VSTORE(grbuf + 18 + i, RMP3_VSUB(RMP3_VMUL(vu, vc0), RMP3_VMUL(vd, vc1)));
-            vd = RMP3_VADD(RMP3_VMUL(vu, vc1), RMP3_VMUL(vd, vc0));
-            RMP3_VSTORE(grbuf + 14 - i, RMP3_VREV(vd));
+            __m128 vu = _mm_loadu_ps(grbuf + 18 + i);
+            __m128 vd = _mm_loadu_ps(grbuf + 14 - i);
+            __m128 vc0 = _mm_loadu_ps(g_aa[0] + i);
+            __m128 vc1 = _mm_loadu_ps(g_aa[1] + i);
+            vd = _mm_shuffle_ps(vd, vd, _MM_SHUFFLE(0, 1, 2, 3));
+            _mm_storeu_ps(grbuf + 18 + i, _mm_sub_ps(_mm_mul_ps(vu, vc0), _mm_mul_ps(vd, vc1)));
+            vd = _mm_add_ps(_mm_mul_ps(vu, vc1), _mm_mul_ps(vd, vc0));
+            _mm_storeu_ps(grbuf + 14 - i, _mm_shuffle_ps(vd, vd, _MM_SHUFFLE(0, 1, 2, 3)));
+        }
+#elif RMP3_HAVE_NEON
+        if (rmp3_have_simd()) for (; i < 8; i += 4)
+        {
+            float32x4_t vu = vld1q_f32(grbuf + 18 + i);
+            float32x4_t vd = vld1q_f32(grbuf + 14 - i);
+            float32x4_t vc0 = vld1q_f32(g_aa[0] + i);
+            float32x4_t vc1 = vld1q_f32(g_aa[1] + i);
+            vd = vcombine_f32(vget_high_f32(vrev64q_f32(vd)), vget_low_f32(vrev64q_f32(vd)));
+            vst1q_f32(grbuf + 18 + i, vsubq_f32(vmulq_f32(vu, vc0), vmulq_f32(vd, vc1)));
+            vd = vaddq_f32(vmulq_f32(vu, vc1), vmulq_f32(vd, vc0));
+            vst1q_f32(grbuf + 14 - i, vcombine_f32(vget_high_f32(vrev64q_f32(vd)), vget_low_f32(vrev64q_f32(vd))));
         }
 #endif
         for(; i < 8; i++)
@@ -970,21 +976,37 @@ static void rmp3_L3_imdct36(float *grbuf, float *overlap, const float *window, i
 
         i = 0;
 
-#if RMP3_HAVE_SIMD
+#if RMP3_HAVE_SSE
         if (rmp3_have_simd()) for (; i < 8; i += 4)
         {
-            rmp3_f4 vovl = RMP3_VLD(overlap + i);
-            rmp3_f4 vc = RMP3_VLD(co + i);
-            rmp3_f4 vs = RMP3_VLD(si + i);
-            rmp3_f4 vr0 = RMP3_VLD(g_twid9 + i);
-            rmp3_f4 vr1 = RMP3_VLD(g_twid9 + 9 + i);
-            rmp3_f4 vw0 = RMP3_VLD(window + i);
-            rmp3_f4 vw1 = RMP3_VLD(window + 9 + i);
-            rmp3_f4 vsum = RMP3_VADD(RMP3_VMUL(vc, vr1), RMP3_VMUL(vs, vr0));
-            RMP3_VSTORE(overlap + i, RMP3_VSUB(RMP3_VMUL(vc, vr0), RMP3_VMUL(vs, vr1)));
-            RMP3_VSTORE(grbuf + i, RMP3_VSUB(RMP3_VMUL(vovl, vw0), RMP3_VMUL(vsum, vw1)));
-            vsum = RMP3_VADD(RMP3_VMUL(vovl, vw1), RMP3_VMUL(vsum, vw0));
-            RMP3_VSTORE(grbuf + 14 - i, RMP3_VREV(vsum));
+            __m128 vovl = _mm_loadu_ps(overlap + i);
+            __m128 vc = _mm_loadu_ps(co + i);
+            __m128 vs = _mm_loadu_ps(si + i);
+            __m128 vr0 = _mm_loadu_ps(g_twid9 + i);
+            __m128 vr1 = _mm_loadu_ps(g_twid9 + 9 + i);
+            __m128 vw0 = _mm_loadu_ps(window + i);
+            __m128 vw1 = _mm_loadu_ps(window + 9 + i);
+            __m128 vsum = _mm_add_ps(_mm_mul_ps(vc, vr1), _mm_mul_ps(vs, vr0));
+            _mm_storeu_ps(overlap + i, _mm_sub_ps(_mm_mul_ps(vc, vr0), _mm_mul_ps(vs, vr1)));
+            _mm_storeu_ps(grbuf + i, _mm_sub_ps(_mm_mul_ps(vovl, vw0), _mm_mul_ps(vsum, vw1)));
+            vsum = _mm_add_ps(_mm_mul_ps(vovl, vw1), _mm_mul_ps(vsum, vw0));
+            _mm_storeu_ps(grbuf + 14 - i, _mm_shuffle_ps(vsum, vsum, _MM_SHUFFLE(0, 1, 2, 3)));
+        }
+#elif RMP3_HAVE_NEON
+        if (rmp3_have_simd()) for (; i < 8; i += 4)
+        {
+            float32x4_t vovl = vld1q_f32(overlap + i);
+            float32x4_t vc = vld1q_f32(co + i);
+            float32x4_t vs = vld1q_f32(si + i);
+            float32x4_t vr0 = vld1q_f32(g_twid9 + i);
+            float32x4_t vr1 = vld1q_f32(g_twid9 + 9 + i);
+            float32x4_t vw0 = vld1q_f32(window + i);
+            float32x4_t vw1 = vld1q_f32(window + 9 + i);
+            float32x4_t vsum = vaddq_f32(vmulq_f32(vc, vr1), vmulq_f32(vs, vr0));
+            vst1q_f32(overlap + i, vsubq_f32(vmulq_f32(vc, vr0), vmulq_f32(vs, vr1)));
+            vst1q_f32(grbuf + i, vsubq_f32(vmulq_f32(vovl, vw0), vmulq_f32(vsum, vw1)));
+            vsum = vaddq_f32(vmulq_f32(vovl, vw1), vmulq_f32(vsum, vw0));
+            vst1q_f32(grbuf + 14 - i, vcombine_f32(vget_high_f32(vrev64q_f32(vsum)), vget_low_f32(vrev64q_f32(vsum))));
         }
 #endif
         for (; i < 9; i++)
@@ -1129,88 +1151,160 @@ static void rmp3d_DCT_II(float *grbuf, int n)
         10.19000816f,0.50060302f,0.50241929f,3.40760851f,0.50547093f,0.52249861f,2.05778098f,0.51544732f,0.56694406f,1.48416460f,0.53104258f,0.64682180f,1.16943991f,0.55310392f,0.78815460f,0.97256821f,0.58293498f,1.06067765f,0.83934963f,0.62250412f,1.72244716f,0.74453628f,0.67480832f,5.10114861f
     };
     int i, k = 0;
-#if RMP3_HAVE_SIMD
+#if RMP3_HAVE_SSE
     if (rmp3_have_simd()) for (; k < n; k += 4)
     {
-        rmp3_f4 t[4][8], *x;
+        __m128 t[4][8], *x;
         float *y = grbuf + k;
 
         for (x = t[0], i = 0; i < 8; i++, x++)
         {
-            rmp3_f4 x0 = RMP3_VLD(&y[i*18]);
-            rmp3_f4 x1 = RMP3_VLD(&y[(15 - i)*18]);
-            rmp3_f4 x2 = RMP3_VLD(&y[(16 + i)*18]);
-            rmp3_f4 x3 = RMP3_VLD(&y[(31 - i)*18]);
-            rmp3_f4 t0 = RMP3_VADD(x0, x3);
-            rmp3_f4 t1 = RMP3_VADD(x1, x2);
-            rmp3_f4 t2 = RMP3_VMUL_S(RMP3_VSUB(x1, x2), g_sec[3*i + 0]);
-            rmp3_f4 t3 = RMP3_VMUL_S(RMP3_VSUB(x0, x3), g_sec[3*i + 1]);
-            x[0] = RMP3_VADD(t0, t1);
-            x[8] = RMP3_VMUL_S(RMP3_VSUB(t0, t1), g_sec[3*i + 2]);
-            x[16] = RMP3_VADD(t3, t2);
-            x[24] = RMP3_VMUL_S(RMP3_VSUB(t3, t2), g_sec[3*i + 2]);
+            __m128 x0 = _mm_loadu_ps(&y[i*18]);
+            __m128 x1 = _mm_loadu_ps(&y[(15 - i)*18]);
+            __m128 x2 = _mm_loadu_ps(&y[(16 + i)*18]);
+            __m128 x3 = _mm_loadu_ps(&y[(31 - i)*18]);
+            __m128 t0 = _mm_add_ps(x0, x3);
+            __m128 t1 = _mm_add_ps(x1, x2);
+            __m128 t2 = _mm_mul_ps(_mm_sub_ps(x1, x2), _mm_set1_ps(g_sec[3*i + 0]));
+            __m128 t3 = _mm_mul_ps(_mm_sub_ps(x0, x3), _mm_set1_ps(g_sec[3*i + 1]));
+            x[0] = _mm_add_ps(t0, t1);
+            x[8] = _mm_mul_ps(_mm_sub_ps(t0, t1), _mm_set1_ps(g_sec[3*i + 2]));
+            x[16] = _mm_add_ps(t3, t2);
+            x[24] = _mm_mul_ps(_mm_sub_ps(t3, t2), _mm_set1_ps(g_sec[3*i + 2]));
         }
         for (x = t[0], i = 0; i < 4; i++, x += 8)
         {
-            rmp3_f4 x0 = x[0], x1 = x[1], x2 = x[2], x3 = x[3], x4 = x[4], x5 = x[5], x6 = x[6], x7 = x[7], xt;
-            xt = RMP3_VSUB(x0, x7); x0 = RMP3_VADD(x0, x7);
-            x7 = RMP3_VSUB(x1, x6); x1 = RMP3_VADD(x1, x6);
-            x6 = RMP3_VSUB(x2, x5); x2 = RMP3_VADD(x2, x5);
-            x5 = RMP3_VSUB(x3, x4); x3 = RMP3_VADD(x3, x4);
-            x4 = RMP3_VSUB(x0, x3); x0 = RMP3_VADD(x0, x3);
-            x3 = RMP3_VSUB(x1, x2); x1 = RMP3_VADD(x1, x2);
-            x[0] = RMP3_VADD(x0, x1);
-            x[4] = RMP3_VMUL_S(RMP3_VSUB(x0, x1), 0.70710677f);
-            x5 = RMP3_VADD(x5, x6);
-            x6 = RMP3_VMUL_S(RMP3_VADD(x6, x7), 0.70710677f);
-            x7 = RMP3_VADD(x7, xt);
-            x3 = RMP3_VMUL_S(RMP3_VADD(x3, x4), 0.70710677f);
-            x5 = RMP3_VSUB(x5, RMP3_VMUL_S(x7, 0.198912367f)); /* rotate by PI/8 */
-            x7 = RMP3_VADD(x7, RMP3_VMUL_S(x5, 0.382683432f));
-            x5 = RMP3_VSUB(x5, RMP3_VMUL_S(x7, 0.198912367f));
-            x0 = RMP3_VSUB(xt, x6); xt = RMP3_VADD(xt, x6);
-            x[1] = RMP3_VMUL_S(RMP3_VADD(xt, x7), 0.50979561f);
-            x[2] = RMP3_VMUL_S(RMP3_VADD(x4, x3), 0.54119611f);
-            x[3] = RMP3_VMUL_S(RMP3_VSUB(x0, x5), 0.60134488f);
-            x[5] = RMP3_VMUL_S(RMP3_VADD(x0, x5), 0.89997619f);
-            x[6] = RMP3_VMUL_S(RMP3_VSUB(x4, x3), 1.30656302f);
-            x[7] = RMP3_VMUL_S(RMP3_VSUB(xt, x7), 2.56291556f);
+            __m128 x0 = x[0], x1 = x[1], x2 = x[2], x3 = x[3], x4 = x[4], x5 = x[5], x6 = x[6], x7 = x[7], xt;
+            xt = _mm_sub_ps(x0, x7); x0 = _mm_add_ps(x0, x7);
+            x7 = _mm_sub_ps(x1, x6); x1 = _mm_add_ps(x1, x6);
+            x6 = _mm_sub_ps(x2, x5); x2 = _mm_add_ps(x2, x5);
+            x5 = _mm_sub_ps(x3, x4); x3 = _mm_add_ps(x3, x4);
+            x4 = _mm_sub_ps(x0, x3); x0 = _mm_add_ps(x0, x3);
+            x3 = _mm_sub_ps(x1, x2); x1 = _mm_add_ps(x1, x2);
+            x[0] = _mm_add_ps(x0, x1);
+            x[4] = _mm_mul_ps(_mm_sub_ps(x0, x1), _mm_set1_ps(0.70710677f));
+            x5 = _mm_add_ps(x5, x6);
+            x6 = _mm_mul_ps(_mm_add_ps(x6, x7), _mm_set1_ps(0.70710677f));
+            x7 = _mm_add_ps(x7, xt);
+            x3 = _mm_mul_ps(_mm_add_ps(x3, x4), _mm_set1_ps(0.70710677f));
+            x5 = _mm_sub_ps(x5, _mm_mul_ps(x7, _mm_set1_ps(0.198912367f))); /* rotate by PI/8 */
+            x7 = _mm_add_ps(x7, _mm_mul_ps(x5, _mm_set1_ps(0.382683432f)));
+            x5 = _mm_sub_ps(x5, _mm_mul_ps(x7, _mm_set1_ps(0.198912367f)));
+            x0 = _mm_sub_ps(xt, x6); xt = _mm_add_ps(xt, x6);
+            x[1] = _mm_mul_ps(_mm_add_ps(xt, x7), _mm_set1_ps(0.50979561f));
+            x[2] = _mm_mul_ps(_mm_add_ps(x4, x3), _mm_set1_ps(0.54119611f));
+            x[3] = _mm_mul_ps(_mm_sub_ps(x0, x5), _mm_set1_ps(0.60134488f));
+            x[5] = _mm_mul_ps(_mm_add_ps(x0, x5), _mm_set1_ps(0.89997619f));
+            x[6] = _mm_mul_ps(_mm_sub_ps(x4, x3), _mm_set1_ps(1.30656302f));
+            x[7] = _mm_mul_ps(_mm_sub_ps(xt, x7), _mm_set1_ps(2.56291556f));
         }
 
         if (k > n - 3)
         {
-#if RMP3_HAVE_SSE
-#define RMP3_VSAVE2(i, v) _mm_storel_pi((__m64 *)(void*)&y[i*18], v)
-#else
-#define RMP3_VSAVE2(i, v) vst1_f32((float32_t *)&y[i*18],  vget_low_f32(v))
-#endif
             for (i = 0; i < 7; i++, y += 4*18)
             {
-                rmp3_f4 s = RMP3_VADD(t[3][i], t[3][i + 1]);
-                RMP3_VSAVE2(0, t[0][i]);
-                RMP3_VSAVE2(1, RMP3_VADD(t[2][i], s));
-                RMP3_VSAVE2(2, RMP3_VADD(t[1][i], t[1][i + 1]));
-                RMP3_VSAVE2(3, RMP3_VADD(t[2][1 + i], s));
+                __m128 s = _mm_add_ps(t[3][i], t[3][i + 1]);
+                _mm_storel_pi((__m64 *)(void*)&y[0*18], t[0][i]);
+                _mm_storel_pi((__m64 *)(void*)&y[1*18], _mm_add_ps(t[2][i], s));
+                _mm_storel_pi((__m64 *)(void*)&y[2*18], _mm_add_ps(t[1][i], t[1][i + 1]));
+                _mm_storel_pi((__m64 *)(void*)&y[3*18], _mm_add_ps(t[2][1 + i], s));
             }
-            RMP3_VSAVE2(0, t[0][7]);
-            RMP3_VSAVE2(1, RMP3_VADD(t[2][7], t[3][7]));
-            RMP3_VSAVE2(2, t[1][7]);
-            RMP3_VSAVE2(3, t[3][7]);
+            _mm_storel_pi((__m64 *)(void*)&y[0*18], t[0][7]);
+            _mm_storel_pi((__m64 *)(void*)&y[1*18], _mm_add_ps(t[2][7], t[3][7]));
+            _mm_storel_pi((__m64 *)(void*)&y[2*18], t[1][7]);
+            _mm_storel_pi((__m64 *)(void*)&y[3*18], t[3][7]);
         } else
         {
-#define RMP3_VSAVE4(i, v) RMP3_VSTORE(&y[i*18], v)
             for (i = 0; i < 7; i++, y += 4*18)
             {
-                rmp3_f4 s = RMP3_VADD(t[3][i], t[3][i + 1]);
-                RMP3_VSAVE4(0, t[0][i]);
-                RMP3_VSAVE4(1, RMP3_VADD(t[2][i], s));
-                RMP3_VSAVE4(2, RMP3_VADD(t[1][i], t[1][i + 1]));
-                RMP3_VSAVE4(3, RMP3_VADD(t[2][1 + i], s));
+                __m128 s = _mm_add_ps(t[3][i], t[3][i + 1]);
+                _mm_storeu_ps(&y[0*18], t[0][i]);
+                _mm_storeu_ps(&y[1*18], _mm_add_ps(t[2][i], s));
+                _mm_storeu_ps(&y[2*18], _mm_add_ps(t[1][i], t[1][i + 1]));
+                _mm_storeu_ps(&y[3*18], _mm_add_ps(t[2][1 + i], s));
             }
-            RMP3_VSAVE4(0, t[0][7]);
-            RMP3_VSAVE4(1, RMP3_VADD(t[2][7], t[3][7]));
-            RMP3_VSAVE4(2, t[1][7]);
-            RMP3_VSAVE4(3, t[3][7]);
+            _mm_storeu_ps(&y[0*18], t[0][7]);
+            _mm_storeu_ps(&y[1*18], _mm_add_ps(t[2][7], t[3][7]));
+            _mm_storeu_ps(&y[2*18], t[1][7]);
+            _mm_storeu_ps(&y[3*18], t[3][7]);
+        }
+    } else
+#elif RMP3_HAVE_NEON
+    if (rmp3_have_simd()) for (; k < n; k += 4)
+    {
+        float32x4_t t[4][8], *x;
+        float *y = grbuf + k;
+
+        for (x = t[0], i = 0; i < 8; i++, x++)
+        {
+            float32x4_t x0 = vld1q_f32(&y[i*18]);
+            float32x4_t x1 = vld1q_f32(&y[(15 - i)*18]);
+            float32x4_t x2 = vld1q_f32(&y[(16 + i)*18]);
+            float32x4_t x3 = vld1q_f32(&y[(31 - i)*18]);
+            float32x4_t t0 = vaddq_f32(x0, x3);
+            float32x4_t t1 = vaddq_f32(x1, x2);
+            float32x4_t t2 = vmulq_f32(vsubq_f32(x1, x2), vmovq_n_f32(g_sec[3*i + 0]));
+            float32x4_t t3 = vmulq_f32(vsubq_f32(x0, x3), vmovq_n_f32(g_sec[3*i + 1]));
+            x[0] = vaddq_f32(t0, t1);
+            x[8] = vmulq_f32(vsubq_f32(t0, t1), vmovq_n_f32(g_sec[3*i + 2]));
+            x[16] = vaddq_f32(t3, t2);
+            x[24] = vmulq_f32(vsubq_f32(t3, t2), vmovq_n_f32(g_sec[3*i + 2]));
+        }
+        for (x = t[0], i = 0; i < 4; i++, x += 8)
+        {
+            float32x4_t x0 = x[0], x1 = x[1], x2 = x[2], x3 = x[3], x4 = x[4], x5 = x[5], x6 = x[6], x7 = x[7], xt;
+            xt = vsubq_f32(x0, x7); x0 = vaddq_f32(x0, x7);
+            x7 = vsubq_f32(x1, x6); x1 = vaddq_f32(x1, x6);
+            x6 = vsubq_f32(x2, x5); x2 = vaddq_f32(x2, x5);
+            x5 = vsubq_f32(x3, x4); x3 = vaddq_f32(x3, x4);
+            x4 = vsubq_f32(x0, x3); x0 = vaddq_f32(x0, x3);
+            x3 = vsubq_f32(x1, x2); x1 = vaddq_f32(x1, x2);
+            x[0] = vaddq_f32(x0, x1);
+            x[4] = vmulq_f32(vsubq_f32(x0, x1), vmovq_n_f32(0.70710677f));
+            x5 = vaddq_f32(x5, x6);
+            x6 = vmulq_f32(vaddq_f32(x6, x7), vmovq_n_f32(0.70710677f));
+            x7 = vaddq_f32(x7, xt);
+            x3 = vmulq_f32(vaddq_f32(x3, x4), vmovq_n_f32(0.70710677f));
+            x5 = vsubq_f32(x5, vmulq_f32(x7, vmovq_n_f32(0.198912367f))); /* rotate by PI/8 */
+            x7 = vaddq_f32(x7, vmulq_f32(x5, vmovq_n_f32(0.382683432f)));
+            x5 = vsubq_f32(x5, vmulq_f32(x7, vmovq_n_f32(0.198912367f)));
+            x0 = vsubq_f32(xt, x6); xt = vaddq_f32(xt, x6);
+            x[1] = vmulq_f32(vaddq_f32(xt, x7), vmovq_n_f32(0.50979561f));
+            x[2] = vmulq_f32(vaddq_f32(x4, x3), vmovq_n_f32(0.54119611f));
+            x[3] = vmulq_f32(vsubq_f32(x0, x5), vmovq_n_f32(0.60134488f));
+            x[5] = vmulq_f32(vaddq_f32(x0, x5), vmovq_n_f32(0.89997619f));
+            x[6] = vmulq_f32(vsubq_f32(x4, x3), vmovq_n_f32(1.30656302f));
+            x[7] = vmulq_f32(vsubq_f32(xt, x7), vmovq_n_f32(2.56291556f));
+        }
+
+        if (k > n - 3)
+        {
+            for (i = 0; i < 7; i++, y += 4*18)
+            {
+                float32x4_t s = vaddq_f32(t[3][i], t[3][i + 1]);
+                vst1_f32((float32_t *)&y[0*18], vget_low_f32(t[0][i]));
+                vst1_f32((float32_t *)&y[1*18], vget_low_f32(vaddq_f32(t[2][i], s)));
+                vst1_f32((float32_t *)&y[2*18], vget_low_f32(vaddq_f32(t[1][i], t[1][i + 1])));
+                vst1_f32((float32_t *)&y[3*18], vget_low_f32(vaddq_f32(t[2][1 + i], s)));
+            }
+            vst1_f32((float32_t *)&y[0*18], vget_low_f32(t[0][7]));
+            vst1_f32((float32_t *)&y[1*18], vget_low_f32(vaddq_f32(t[2][7], t[3][7])));
+            vst1_f32((float32_t *)&y[2*18], vget_low_f32(t[1][7]));
+            vst1_f32((float32_t *)&y[3*18], vget_low_f32(t[3][7]));
+        } else
+        {
+            for (i = 0; i < 7; i++, y += 4*18)
+            {
+                float32x4_t s = vaddq_f32(t[3][i], t[3][i + 1]);
+                vst1q_f32(&y[0*18], t[0][i]);
+                vst1q_f32(&y[1*18], vaddq_f32(t[2][i], s));
+                vst1q_f32(&y[2*18], vaddq_f32(t[1][i], t[1][i + 1]));
+                vst1q_f32(&y[3*18], vaddq_f32(t[2][1 + i], s));
+            }
+            vst1q_f32(&y[0*18], t[0][7]);
+            vst1q_f32(&y[1*18], vaddq_f32(t[2][7], t[3][7]));
+            vst1q_f32(&y[2*18], t[1][7]);
+            vst1q_f32(&y[3*18], t[3][7]);
         }
     } else
 #endif
@@ -1355,14 +1449,10 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
     rmp3d_synth_pair(dstl, nch, lins + 4*15);
     rmp3d_synth_pair(dstl + 32*nch, nch, lins + 4*15 + 64);
 
-#if RMP3_HAVE_SIMD
+#if RMP3_HAVE_SSE
     if (rmp3_have_simd()) for (i = 14; i >= 0; i--)
     {
-#define RMP3_VLOAD(k) rmp3_f4 w0 = RMP3_VSET(*w++); rmp3_f4 w1 = RMP3_VSET(*w++); rmp3_f4 vz = RMP3_VLD(&zlin[4*i - 64*k]); rmp3_f4 vy = RMP3_VLD(&zlin[4*i - 64*(15 - k)]);
-#define RMP3_V0(k) { RMP3_VLOAD(k) b =               RMP3_VADD(RMP3_VMUL(vz, w1), RMP3_VMUL(vy, w0)) ; a =               RMP3_VSUB(RMP3_VMUL(vz, w0), RMP3_VMUL(vy, w1));  }
-#define RMP3_V1(k) { RMP3_VLOAD(k) b = RMP3_VADD(b, RMP3_VADD(RMP3_VMUL(vz, w1), RMP3_VMUL(vy, w0))); a = RMP3_VADD(a, RMP3_VSUB(RMP3_VMUL(vz, w0), RMP3_VMUL(vy, w1))); }
-#define RMP3_V2(k) { RMP3_VLOAD(k) b = RMP3_VADD(b, RMP3_VADD(RMP3_VMUL(vz, w1), RMP3_VMUL(vy, w0))); a = RMP3_VADD(a, RMP3_VSUB(RMP3_VMUL(vy, w1), RMP3_VMUL(vz, w0))); }
-        rmp3_f4 a, b;
+        __m128 a, b;
         zlin[4*i]     = xl[18*(31 - i)];
         zlin[4*i + 1] = xr[18*(31 - i)];
         zlin[4*i + 2] = xl[1 + 18*(31 - i)];
@@ -1372,12 +1462,93 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
         zlin[4*i - 64 + 2] = xl[18*(1 + i)];
         zlin[4*i - 64 + 3] = xr[18*(1 + i)];
 
-        RMP3_V0(0) RMP3_V2(1) RMP3_V1(2) RMP3_V2(3) RMP3_V1(4) RMP3_V2(5) RMP3_V1(6) RMP3_V2(7)
+        {
+            /* tap 0: window pair (w0, w1) against the sliding line at
+             * offsets -64*0 and -64*(15-0) */
+            __m128 w0 = _mm_set1_ps(*w++);
+            __m128 w1 = _mm_set1_ps(*w++);
+            __m128 vz = _mm_loadu_ps(&zlin[4*i - 64*0]);
+            __m128 vy = _mm_loadu_ps(&zlin[4*i - 64*(15 - 0)]);
+            b = _mm_add_ps(_mm_mul_ps(vz, w1), _mm_mul_ps(vy, w0));
+            a = _mm_sub_ps(_mm_mul_ps(vz, w0), _mm_mul_ps(vy, w1));
+        }
+        {
+            /* tap 1: window pair (w0, w1) against the sliding line at
+             * offsets -64*1 and -64*(15-1) */
+            __m128 w0 = _mm_set1_ps(*w++);
+            __m128 w1 = _mm_set1_ps(*w++);
+            __m128 vz = _mm_loadu_ps(&zlin[4*i - 64*1]);
+            __m128 vy = _mm_loadu_ps(&zlin[4*i - 64*(15 - 1)]);
+            b = _mm_add_ps(b, _mm_add_ps(_mm_mul_ps(vz, w1), _mm_mul_ps(vy, w0)));
+            a = _mm_add_ps(a, _mm_sub_ps(_mm_mul_ps(vy, w1), _mm_mul_ps(vz, w0)));
+        }
+        {
+            /* tap 2: window pair (w0, w1) against the sliding line at
+             * offsets -64*2 and -64*(15-2) */
+            __m128 w0 = _mm_set1_ps(*w++);
+            __m128 w1 = _mm_set1_ps(*w++);
+            __m128 vz = _mm_loadu_ps(&zlin[4*i - 64*2]);
+            __m128 vy = _mm_loadu_ps(&zlin[4*i - 64*(15 - 2)]);
+            b = _mm_add_ps(b, _mm_add_ps(_mm_mul_ps(vz, w1), _mm_mul_ps(vy, w0)));
+            a = _mm_add_ps(a, _mm_sub_ps(_mm_mul_ps(vz, w0), _mm_mul_ps(vy, w1)));
+        }
+        {
+            /* tap 3: window pair (w0, w1) against the sliding line at
+             * offsets -64*3 and -64*(15-3) */
+            __m128 w0 = _mm_set1_ps(*w++);
+            __m128 w1 = _mm_set1_ps(*w++);
+            __m128 vz = _mm_loadu_ps(&zlin[4*i - 64*3]);
+            __m128 vy = _mm_loadu_ps(&zlin[4*i - 64*(15 - 3)]);
+            b = _mm_add_ps(b, _mm_add_ps(_mm_mul_ps(vz, w1), _mm_mul_ps(vy, w0)));
+            a = _mm_add_ps(a, _mm_sub_ps(_mm_mul_ps(vy, w1), _mm_mul_ps(vz, w0)));
+        }
+        {
+            /* tap 4: window pair (w0, w1) against the sliding line at
+             * offsets -64*4 and -64*(15-4) */
+            __m128 w0 = _mm_set1_ps(*w++);
+            __m128 w1 = _mm_set1_ps(*w++);
+            __m128 vz = _mm_loadu_ps(&zlin[4*i - 64*4]);
+            __m128 vy = _mm_loadu_ps(&zlin[4*i - 64*(15 - 4)]);
+            b = _mm_add_ps(b, _mm_add_ps(_mm_mul_ps(vz, w1), _mm_mul_ps(vy, w0)));
+            a = _mm_add_ps(a, _mm_sub_ps(_mm_mul_ps(vz, w0), _mm_mul_ps(vy, w1)));
+        }
+        {
+            /* tap 5: window pair (w0, w1) against the sliding line at
+             * offsets -64*5 and -64*(15-5) */
+            __m128 w0 = _mm_set1_ps(*w++);
+            __m128 w1 = _mm_set1_ps(*w++);
+            __m128 vz = _mm_loadu_ps(&zlin[4*i - 64*5]);
+            __m128 vy = _mm_loadu_ps(&zlin[4*i - 64*(15 - 5)]);
+            b = _mm_add_ps(b, _mm_add_ps(_mm_mul_ps(vz, w1), _mm_mul_ps(vy, w0)));
+            a = _mm_add_ps(a, _mm_sub_ps(_mm_mul_ps(vy, w1), _mm_mul_ps(vz, w0)));
+        }
+        {
+            /* tap 6: window pair (w0, w1) against the sliding line at
+             * offsets -64*6 and -64*(15-6) */
+            __m128 w0 = _mm_set1_ps(*w++);
+            __m128 w1 = _mm_set1_ps(*w++);
+            __m128 vz = _mm_loadu_ps(&zlin[4*i - 64*6]);
+            __m128 vy = _mm_loadu_ps(&zlin[4*i - 64*(15 - 6)]);
+            b = _mm_add_ps(b, _mm_add_ps(_mm_mul_ps(vz, w1), _mm_mul_ps(vy, w0)));
+            a = _mm_add_ps(a, _mm_sub_ps(_mm_mul_ps(vz, w0), _mm_mul_ps(vy, w1)));
+        }
+        {
+            /* tap 7: window pair (w0, w1) against the sliding line at
+             * offsets -64*7 and -64*(15-7) */
+            __m128 w0 = _mm_set1_ps(*w++);
+            __m128 w1 = _mm_set1_ps(*w++);
+            __m128 vz = _mm_loadu_ps(&zlin[4*i - 64*7]);
+            __m128 vy = _mm_loadu_ps(&zlin[4*i - 64*(15 - 7)]);
+            b = _mm_add_ps(b, _mm_add_ps(_mm_mul_ps(vz, w1), _mm_mul_ps(vy, w0)));
+            a = _mm_add_ps(a, _mm_sub_ps(_mm_mul_ps(vy, w1), _mm_mul_ps(vz, w0)));
+        }
 
         {
-#if RMP3_HAVE_SSE
-            static const rmp3_f4 g_max = { 32767.0f, 32767.0f, 32767.0f, 32767.0f };
-            static const rmp3_f4 g_min = { -32768.0f, -32768.0f, -32768.0f, -32768.0f };
+            /* Round, clamp to s16 and scatter the four lanes:
+             * lanes of a hold (l,r) for output rows 15-i and 47-i,
+             * lanes of b hold (l,r) for rows 17+i and 49+i. */
+            static const __m128 g_max = { 32767.0f, 32767.0f, 32767.0f, 32767.0f };
+            static const __m128 g_min = { -32768.0f, -32768.0f, -32768.0f, -32768.0f };
             __m128i pcm8 = _mm_packs_epi32(_mm_cvtps_epi32(_mm_max_ps(_mm_min_ps(a, g_max), g_min)),
                                            _mm_cvtps_epi32(_mm_max_ps(_mm_min_ps(b, g_max), g_min)));
             dstr[(15 - i)*nch] = (short)_mm_extract_epi16(pcm8, 1);
@@ -1388,12 +1559,110 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
             dstr[(49 + i)*nch] = (short)_mm_extract_epi16(pcm8, 7);
             dstl[(47 - i)*nch] = (short)_mm_extract_epi16(pcm8, 2);
             dstl[(49 + i)*nch] = (short)_mm_extract_epi16(pcm8, 6);
-#else
+        }
+    } else
+#elif RMP3_HAVE_NEON
+    if (rmp3_have_simd()) for (i = 14; i >= 0; i--)
+    {
+        float32x4_t a, b;
+        zlin[4*i]     = xl[18*(31 - i)];
+        zlin[4*i + 1] = xr[18*(31 - i)];
+        zlin[4*i + 2] = xl[1 + 18*(31 - i)];
+        zlin[4*i + 3] = xr[1 + 18*(31 - i)];
+        zlin[4*i + 64] = xl[1 + 18*(1 + i)];
+        zlin[4*i + 64 + 1] = xr[1 + 18*(1 + i)];
+        zlin[4*i - 64 + 2] = xl[18*(1 + i)];
+        zlin[4*i - 64 + 3] = xr[18*(1 + i)];
+
+        {
+            /* tap 0: window pair (w0, w1) against the sliding line at
+             * offsets -64*0 and -64*(15-0) */
+            float32x4_t w0 = vmovq_n_f32(*w++);
+            float32x4_t w1 = vmovq_n_f32(*w++);
+            float32x4_t vz = vld1q_f32(&zlin[4*i - 64*0]);
+            float32x4_t vy = vld1q_f32(&zlin[4*i - 64*(15 - 0)]);
+            b = vaddq_f32(vmulq_f32(vz, w1), vmulq_f32(vy, w0));
+            a = vsubq_f32(vmulq_f32(vz, w0), vmulq_f32(vy, w1));
+        }
+        {
+            /* tap 1: window pair (w0, w1) against the sliding line at
+             * offsets -64*1 and -64*(15-1) */
+            float32x4_t w0 = vmovq_n_f32(*w++);
+            float32x4_t w1 = vmovq_n_f32(*w++);
+            float32x4_t vz = vld1q_f32(&zlin[4*i - 64*1]);
+            float32x4_t vy = vld1q_f32(&zlin[4*i - 64*(15 - 1)]);
+            b = vaddq_f32(b, vaddq_f32(vmulq_f32(vz, w1), vmulq_f32(vy, w0)));
+            a = vaddq_f32(a, vsubq_f32(vmulq_f32(vy, w1), vmulq_f32(vz, w0)));
+        }
+        {
+            /* tap 2: window pair (w0, w1) against the sliding line at
+             * offsets -64*2 and -64*(15-2) */
+            float32x4_t w0 = vmovq_n_f32(*w++);
+            float32x4_t w1 = vmovq_n_f32(*w++);
+            float32x4_t vz = vld1q_f32(&zlin[4*i - 64*2]);
+            float32x4_t vy = vld1q_f32(&zlin[4*i - 64*(15 - 2)]);
+            b = vaddq_f32(b, vaddq_f32(vmulq_f32(vz, w1), vmulq_f32(vy, w0)));
+            a = vaddq_f32(a, vsubq_f32(vmulq_f32(vz, w0), vmulq_f32(vy, w1)));
+        }
+        {
+            /* tap 3: window pair (w0, w1) against the sliding line at
+             * offsets -64*3 and -64*(15-3) */
+            float32x4_t w0 = vmovq_n_f32(*w++);
+            float32x4_t w1 = vmovq_n_f32(*w++);
+            float32x4_t vz = vld1q_f32(&zlin[4*i - 64*3]);
+            float32x4_t vy = vld1q_f32(&zlin[4*i - 64*(15 - 3)]);
+            b = vaddq_f32(b, vaddq_f32(vmulq_f32(vz, w1), vmulq_f32(vy, w0)));
+            a = vaddq_f32(a, vsubq_f32(vmulq_f32(vy, w1), vmulq_f32(vz, w0)));
+        }
+        {
+            /* tap 4: window pair (w0, w1) against the sliding line at
+             * offsets -64*4 and -64*(15-4) */
+            float32x4_t w0 = vmovq_n_f32(*w++);
+            float32x4_t w1 = vmovq_n_f32(*w++);
+            float32x4_t vz = vld1q_f32(&zlin[4*i - 64*4]);
+            float32x4_t vy = vld1q_f32(&zlin[4*i - 64*(15 - 4)]);
+            b = vaddq_f32(b, vaddq_f32(vmulq_f32(vz, w1), vmulq_f32(vy, w0)));
+            a = vaddq_f32(a, vsubq_f32(vmulq_f32(vz, w0), vmulq_f32(vy, w1)));
+        }
+        {
+            /* tap 5: window pair (w0, w1) against the sliding line at
+             * offsets -64*5 and -64*(15-5) */
+            float32x4_t w0 = vmovq_n_f32(*w++);
+            float32x4_t w1 = vmovq_n_f32(*w++);
+            float32x4_t vz = vld1q_f32(&zlin[4*i - 64*5]);
+            float32x4_t vy = vld1q_f32(&zlin[4*i - 64*(15 - 5)]);
+            b = vaddq_f32(b, vaddq_f32(vmulq_f32(vz, w1), vmulq_f32(vy, w0)));
+            a = vaddq_f32(a, vsubq_f32(vmulq_f32(vy, w1), vmulq_f32(vz, w0)));
+        }
+        {
+            /* tap 6: window pair (w0, w1) against the sliding line at
+             * offsets -64*6 and -64*(15-6) */
+            float32x4_t w0 = vmovq_n_f32(*w++);
+            float32x4_t w1 = vmovq_n_f32(*w++);
+            float32x4_t vz = vld1q_f32(&zlin[4*i - 64*6]);
+            float32x4_t vy = vld1q_f32(&zlin[4*i - 64*(15 - 6)]);
+            b = vaddq_f32(b, vaddq_f32(vmulq_f32(vz, w1), vmulq_f32(vy, w0)));
+            a = vaddq_f32(a, vsubq_f32(vmulq_f32(vz, w0), vmulq_f32(vy, w1)));
+        }
+        {
+            /* tap 7: window pair (w0, w1) against the sliding line at
+             * offsets -64*7 and -64*(15-7) */
+            float32x4_t w0 = vmovq_n_f32(*w++);
+            float32x4_t w1 = vmovq_n_f32(*w++);
+            float32x4_t vz = vld1q_f32(&zlin[4*i - 64*7]);
+            float32x4_t vy = vld1q_f32(&zlin[4*i - 64*(15 - 7)]);
+            b = vaddq_f32(b, vaddq_f32(vmulq_f32(vz, w1), vmulq_f32(vy, w0)));
+            a = vaddq_f32(a, vsubq_f32(vmulq_f32(vy, w1), vmulq_f32(vz, w0)));
+        }
+
+        {
+            /* Round to nearest (add 0.5, subtract 1 for negatives via the
+             * comparison mask), saturate to s16 and scatter the lanes. */
             int16x4_t pcma, pcmb;
-            a = RMP3_VADD(a, RMP3_VSET(0.5f));
-            b = RMP3_VADD(b, RMP3_VSET(0.5f));
-            pcma = vqmovn_s32(vqaddq_s32(vcvtq_s32_f32(a), vreinterpretq_s32_u32(vcltq_f32(a, RMP3_VSET(0)))));
-            pcmb = vqmovn_s32(vqaddq_s32(vcvtq_s32_f32(b), vreinterpretq_s32_u32(vcltq_f32(b, RMP3_VSET(0)))));
+            a = vaddq_f32(a, vmovq_n_f32(0.5f));
+            b = vaddq_f32(b, vmovq_n_f32(0.5f));
+            pcma = vqmovn_s32(vqaddq_s32(vcvtq_s32_f32(a), vreinterpretq_s32_u32(vcltq_f32(a, vmovq_n_f32(0)))));
+            pcmb = vqmovn_s32(vqaddq_s32(vcvtq_s32_f32(b), vreinterpretq_s32_u32(vcltq_f32(b, vmovq_n_f32(0)))));
             vst1_lane_s16(dstr + (15 - i)*nch, pcma, 1);
             vst1_lane_s16(dstr + (17 + i)*nch, pcmb, 1);
             vst1_lane_s16(dstl + (15 - i)*nch, pcma, 0);
@@ -1402,7 +1671,6 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
             vst1_lane_s16(dstr + (49 + i)*nch, pcmb, 3);
             vst1_lane_s16(dstl + (47 - i)*nch, pcma, 2);
             vst1_lane_s16(dstl + (49 + i)*nch, pcmb, 2);
-#endif
         }
     } else
 #endif
