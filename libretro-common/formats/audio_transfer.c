@@ -329,8 +329,8 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
             *channels     = (unsigned)info.channels;
          if (rate)
             *rate         = (unsigned)info.sample_rate;
-         if (total_frames) /* streaming; length not tracked here */
-            *total_frames = 0;
+         if (total_frames)
+            *total_frames = (uint64_t)rvorbis_stream_length_in_samples(v->handle);
          return true;
       }
 #endif

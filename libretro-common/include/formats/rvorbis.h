@@ -56,7 +56,8 @@ extern rvorbis * rvorbis_open_memory(const unsigned char *data, int len,
  * this must be the entire stream!). on failure, returns NULL and sets *error */
 
 extern int rvorbis_seek(rvorbis *f, unsigned int sample_number);
-
+/* Total number of samples per channel in the stream (0 if unknown). */
+extern unsigned int rvorbis_stream_length_in_samples(rvorbis *f);
 /* NOT WORKING YET
  * these functions seek in the Vorbis file to (approximately) 'sample_number'.
  * after calling seek_frame(), the next call to get_frame_*() will include

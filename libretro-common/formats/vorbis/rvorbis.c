@@ -4559,7 +4559,7 @@ static int rvorbis_get_frame_float(rvorbis *f, int *channels, float ***output)
 /* --- ported from current stb_vorbis: correct coarse+linear seek --- */
 
 void rvorbis_seek_start(rvorbis *f); /* forward decl (defined below) */
-static unsigned int rvorbis_stream_length_in_samples(rvorbis *f); /* forward decl */
+unsigned int rvorbis_stream_length_in_samples(rvorbis *f); /* forward decl */
 
 /* Read a page header at the current offset into z, then restore offset. */
 static int get_seek_page_info(rvorbis *f, ProbedPage *z)
@@ -4787,7 +4787,7 @@ error:
    return error(f, RVORBIS_seek_failed);
 }
 
-static unsigned int rvorbis_stream_length_in_samples(rvorbis *f)
+unsigned int rvorbis_stream_length_in_samples(rvorbis *f)
 {
    uint32_t end, last_page_loc;
    if (!f->total_samples)
