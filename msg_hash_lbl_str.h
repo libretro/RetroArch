@@ -1023,7 +1023,6 @@
 #define MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION_STR "video_force_resolution"
 #define MENU_ENUM_LABEL_WIFI_DRIVER_STR "wifi_driver"
 #define MENU_ENUM_LABEL_WIFI_SETTINGS_STR "wifi_settings"
-#define MENU_ENUM_LABEL_BLUETOOTH_SETTINGS_STR "bluetooth_settings"
 #define MENU_ENUM_LABEL_XMB_ALPHA_FACTOR_STR "xmb_alpha_factor"
 #define MENU_ENUM_LABEL_MENU_FONT_COLOR_RED_STR "menu_font_color_red"
 #define MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN_STR "menu_font_color_green"
