@@ -1977,6 +1977,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#if defined(DINGUX)
+#include "settings/settings_def_dingux_ipu.h"
+#endif
 #include "settings/settings_def_ai_service.h"
 #include "settings/settings_def_video_window_custom_size.h"
 #include "settings/settings_def_video_window_save_position.h"
@@ -2512,6 +2515,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#if defined(DINGUX)
+#include "settings/settings_def_dingux_ipu.h"
+#endif
 #include "settings/settings_def_ai_service.h"
 #include "settings/settings_def_video_window_custom_size.h"
 #include "settings/settings_def_video_window_save_position.h"
@@ -3016,6 +3022,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#if defined(DINGUX)
+#include "settings/settings_def_dingux_ipu.h"
+#endif
 #include "settings/settings_def_ai_service.h"
 #include "settings/settings_def_video_window_custom_size.h"
 #include "settings/settings_def_video_window_save_position.h"
@@ -3377,7 +3386,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_3ds_display_mode",        &settings->uints.video_3ds_display_mode, true, DEFAULT_VIDEO_3DS_DISPLAY_MODE, false);
 #endif
 #if defined(DINGUX)
-   SETTING_UINT("video_dingux_ipu_filter_type",  &settings->uints.video_dingux_ipu_filter_type, true, DEFAULT_DINGUX_IPU_FILTER_TYPE, false);
 #if defined(DINGUX_BETA)
    SETTING_UINT("video_dingux_refresh_rate",     &settings->uints.video_dingux_refresh_rate, true, DEFAULT_DINGUX_REFRESH_RATE, false);
 #endif
@@ -3496,6 +3504,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#if defined(DINGUX)
+#include "settings/settings_def_dingux_ipu.h"
+#endif
 #include "settings/settings_def_ai_service.h"
 #include "settings/settings_def_video_window_custom_size.h"
 #include "settings/settings_def_video_window_save_position.h"
@@ -3775,6 +3786,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#if defined(DINGUX)
+#include "settings/settings_def_dingux_ipu.h"
+#endif
 #include "settings/settings_def_ai_service.h"
 #include "settings/settings_def_video_window_custom_size.h"
 #include "settings/settings_def_video_window_save_position.h"
