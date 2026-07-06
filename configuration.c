@@ -1850,8 +1850,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("initial_disk_change_enable",    &settings->bools.initial_disk_change_enable, true, DEFAULT_INITIAL_DISK_CHANGE_ENABLE, false);
    SETTING_BOOL("global_core_options",           &settings->bools.global_core_options, true, DEFAULT_GLOBAL_CORE_OPTIONS, false);
    SETTING_BOOL("auto_shaders_enable",           &settings->bools.auto_shaders_enable, true, DEFAULT_AUTO_SHADERS_ENABLE, false);
-   SETTING_BOOL("scan_without_core_match",       &settings->bools.scan_without_core_match, true, DEFAULT_SCAN_WITHOUT_CORE_MATCH, false);
-   SETTING_BOOL("scan_serial_and_crc",           &settings->bools.scan_serial_and_crc, true, DEFAULT_SCAN_SERIAL_AND_CRC, false);
    SETTING_BOOL("sort_savefiles_enable",              &settings->bools.sort_savefiles_enable, true, DEFAULT_SORT_SAVEFILES_ENABLE, false);
    SETTING_BOOL("sort_savestates_enable",             &settings->bools.sort_savestates_enable, true, DEFAULT_SORT_SAVESTATES_ENABLE, false);
    SETTING_BOOL("sort_savefiles_by_content_enable",   &settings->bools.sort_savefiles_by_content_enable, true, DEFAULT_SORT_SAVEFILES_BY_CONTENT_ENABLE, false);
@@ -1963,6 +1961,13 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_playlist_display.h"
+#ifdef HAVE_CHEEVOS
+#include "settings/settings_def_cheevos_general.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_appearance.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_visibility.h"
 #endif
@@ -2355,9 +2360,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_disable_search_button",    &settings->bools.menu_disable_search_button, true, false, false);
    SETTING_BOOL("menu_disable_left_analog",      &settings->bools.menu_disable_left_analog, true, false, false);
    SETTING_BOOL("menu_disable_right_analog",     &settings->bools.menu_disable_right_analog, true, false, false);
-   SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
-   SETTING_BOOL("menu_savestate_resume",         &settings->bools.menu_savestate_resume, true, DEFAULT_MENU_SAVESTATE_RESUME, false);
-   SETTING_BOOL("menu_insert_disk_resume",       &settings->bools.menu_insert_disk_resume, true, DEFAULT_MENU_INSERT_DISK_RESUME, false);
    SETTING_BOOL("menu_timedate_enable",          &settings->bools.menu_timedate_enable, true, DEFAULT_MENU_TIMEDATE_ENABLE, false);
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
@@ -2432,15 +2434,8 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_CHEEVOS
    SETTING_BOOL("cheevos_enable",                &settings->bools.cheevos_enable, true, DEFAULT_CHEEVOS_ENABLE, false);
    SETTING_BOOL("cheevos_hardcore_mode_enable",  &settings->bools.cheevos_hardcore_mode_enable, true, true, false);
-   SETTING_BOOL("cheevos_challenge_indicators",  &settings->bools.cheevos_challenge_indicators, true, true, false);
    SETTING_BOOL("cheevos_appearance_padding_auto", &settings->bools.cheevos_appearance_padding_auto, true, DEFAULT_CHEEVOS_APPEARANCE_PADDING_AUTO, false);
-   SETTING_BOOL("cheevos_visibility_unlock",     &settings->bools.cheevos_visibility_unlock, true, DEFAULT_CHEEVOS_VISIBILITY_UNLOCK, false);
-   SETTING_BOOL("cheevos_visibility_mastery",    &settings->bools.cheevos_visibility_mastery, true, DEFAULT_CHEEVOS_VISIBILITY_MASTERY, false);
-   SETTING_BOOL("cheevos_visibility_lboard_start", &settings->bools.cheevos_visibility_lboard_start, true, DEFAULT_CHEEVOS_VISIBILITY_LBOARD_START, false);
-   SETTING_BOOL("cheevos_visibility_lboard_submit", &settings->bools.cheevos_visibility_lboard_submit, true, DEFAULT_CHEEVOS_VISIBILITY_LBOARD_SUBMIT, false);
-   SETTING_BOOL("cheevos_visibility_lboard_cancel", &settings->bools.cheevos_visibility_lboard_cancel, true, DEFAULT_CHEEVOS_VISIBILITY_LBOARD_CANCEL, false);
    SETTING_BOOL("cheevos_visibility_lboard_trackers", &settings->bools.cheevos_visibility_lboard_trackers, true, DEFAULT_CHEEVOS_VISIBILITY_LBOARD_TRACKERS, false);
-   SETTING_BOOL("cheevos_visibility_progress_tracker", &settings->bools.cheevos_visibility_progress_tracker, true, DEFAULT_CHEEVOS_VISIBILITY_PROGRESS_TRACKER, false);
 #endif
 #ifdef HAVE_OVERLAY
    SETTING_BOOL("input_overlay_enable",          &settings->bools.input_overlay_enable, true, config_overlay_enable_default(), false);
@@ -2491,10 +2486,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("playlist_compression",          &settings->bools.playlist_compression, true, DEFAULT_PLAYLIST_COMPRESSION, false);
    SETTING_BOOL("playlist_show_sublabels",       &settings->bools.playlist_show_sublabels, true, DEFAULT_PLAYLIST_SHOW_SUBLABELS, false);
    SETTING_BOOL("playlist_sort_alphabetical",    &settings->bools.playlist_sort_alphabetical, true, DEFAULT_PLAYLIST_SORT_ALPHABETICAL, false);
-   SETTING_BOOL("playlist_fuzzy_archive_match",  &settings->bools.playlist_fuzzy_archive_match, true, DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH, false);
-   SETTING_BOOL("playlist_portable_paths",       &settings->bools.playlist_portable_paths, true, DEFAULT_PLAYLIST_PORTABLE_PATHS, false);
-   SETTING_BOOL("playlist_use_filename",         &settings->bools.playlist_use_filename, true, DEFAULT_PLAYLIST_USE_FILENAME, false);
-   SETTING_BOOL("playlist_allow_non_png",        &settings->bools.playlist_allow_non_png, true, DEFAULT_PLAYLIST_ALLOW_NON_PNG, false);
 
 
 #ifdef HAVE_COMMAND
@@ -2602,6 +2593,13 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_playlist_display.h"
+#ifdef HAVE_CHEEVOS
+#include "settings/settings_def_cheevos_general.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_appearance.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_visibility.h"
 #endif
@@ -3065,10 +3063,6 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
    SETTING_UINT("content_history_size",          &settings->uints.content_history_size, true, DEFAULT_CONTENT_HISTORY_SIZE, false);
    SETTING_UINT("playlist_entry_remove_enable",        &settings->uints.playlist_entry_remove_enable, true, DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE, false);
-   SETTING_UINT("playlist_show_inline_core_name",      &settings->uints.playlist_show_inline_core_name, true, DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME, false);
-   SETTING_UINT("playlist_sublabel_runtime_type",      &settings->uints.playlist_sublabel_runtime_type, true, DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE, false);
-   SETTING_UINT("playlist_sublabel_last_played_style", &settings->uints.playlist_sublabel_last_played_style, true, DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE, false);
-   SETTING_UINT("quit_on_close_content",         &settings->uints.quit_on_close_content, true, DEFAULT_QUIT_ON_CLOSE_CONTENT, false);
    SETTING_UINT("menu_thumbnails",               &settings->uints.gfx_thumbnails, true, DEFAULT_GFX_THUMBNAILS_DEFAULT, false);
    SETTING_UINT("menu_left_thumbnails",          &settings->uints.menu_left_thumbnails, true, DEFAULT_MENU_LEFT_THUMBNAILS_DEFAULT, false);
    SETTING_UINT("menu_icon_thumbnails",          &settings->uints.menu_icon_thumbnails, true, DEFAULT_MENU_ICON_THUMBNAILS_DEFAULT, false);
@@ -3076,7 +3070,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_timedate_date_separator",  &settings->uints.menu_timedate_date_separator, true, DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR, false);
    SETTING_UINT("menu_ticker_type",              &settings->uints.menu_ticker_type, true, DEFAULT_MENU_TICKER_TYPE, false);
    SETTING_UINT("menu_scroll_delay",             &settings->uints.menu_scroll_delay, true, DEFAULT_MENU_SCROLL_DELAY, false);
-   SETTING_UINT("menu_screensaver_timeout",      &settings->uints.menu_screensaver_timeout, true, DEFAULT_MENU_SCREENSAVER_TIMEOUT, false);
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
    SETTING_UINT("menu_screensaver_animation",    &settings->uints.menu_screensaver_animation, true, DEFAULT_MENU_SCREENSAVER_ANIMATION, false);
 #endif
@@ -3183,6 +3176,13 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_playlist_display.h"
+#ifdef HAVE_CHEEVOS
+#include "settings/settings_def_cheevos_general.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_appearance.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_visibility.h"
 #endif
@@ -3621,7 +3621,6 @@ static struct config_uint_setting *populate_settings_uint(
 
 #ifdef HAVE_CHEEVOS
    SETTING_UINT("cheevos_appearance_anchor",     &settings->uints.cheevos_appearance_anchor, true, DEFAULT_CHEEVOS_APPEARANCE_ANCHOR, false);
-   SETTING_UINT("cheevos_visibility_summary",    &settings->uints.cheevos_visibility_summary, true, DEFAULT_CHEEVOS_VISIBILITY_SUMMARY, false);
 #endif
    SETTING_UINT("accessibility_narrator_speech_speed", &settings->uints.accessibility_narrator_speech_speed, true, DEFAULT_ACCESSIBILITY_NARRATOR_SPEECH_SPEED, false);
    SETTING_UINT("accessibility_narrator_engine", &settings->uints.accessibility_narrator_engine, true, DEFAULT_ACCESSIBILITY_NARRATOR_ENGINE, false);
@@ -3736,6 +3735,13 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_playlist_display.h"
+#ifdef HAVE_CHEEVOS
+#include "settings/settings_def_cheevos_general.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_appearance.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_visibility.h"
 #endif
@@ -4127,6 +4133,13 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_playlist_display.h"
+#ifdef HAVE_CHEEVOS
+#include "settings/settings_def_cheevos_general.h"
+#endif
+#ifdef HAVE_MENU
+#include "settings/settings_def_menu_appearance.h"
+#endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_visibility.h"
 #endif
