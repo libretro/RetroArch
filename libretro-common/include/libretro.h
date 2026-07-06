@@ -1684,20 +1684,18 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE (43 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
- * Notifies the frontend of any quirks associated with serialization.
+ * The frontend will try to use a "shared" context when setting up a hardware context.
+ * Mostly applicable to OpenGL.
  *
- * Should be set in either \c retro_init or \c retro_load_game, but not both.
- * @param[in, out] data <tt>uint64_t *</tt>.
- * Pointer to the core's serialization quirks.
- * The frontend will set the flags of the quirks it supports
- * and clear the flags of those it doesn't.
- * Behavior is undefined if \c NULL.
- * @return \c true if this environment call is supported.
- * @see retro_serialize
- * @see retro_unserialize
- * @see RETRO_SERIALIZATION_QUIRK
+ * In order for this to have any effect,
+ * the core must call \c RETRO_ENVIRONMENT_SET_HW_RENDER at some point
+ * if it hasn't already.
+ *
+ * @param data Ignored.
+ * @returns \c true if the environment call is available
+ * and the frontend supports shared hardware contexts.
  */
-#define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
+#define RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (44 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
  * Returns an interface that the core can use to access the file system.
@@ -2702,18 +2700,20 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_MEMORY_STATUS (86 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
- * The frontend will try to use a "shared" context when setting up a hardware context.
- * Mostly applicable to OpenGL.
+ * Notifies the frontend of any quirks associated with serialization.
  *
- * In order for this to have any effect,
- * the core must call \c RETRO_ENVIRONMENT_SET_HW_RENDER at some point
- * if it hasn't already.
- *
- * @param data Ignored.
- * @returns \c true if the environment call is available
- * and the frontend supports shared hardware contexts.
+ * Should be set in either \c retro_init or \c retro_load_game, but not both.
+ * @param[in, out] data <tt>uint64_t *</tt>.
+ * Pointer to the core's serialization quirks.
+ * The frontend will set the flags of the quirks it supports
+ * and clear the flags of those it doesn't.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is supported.
+ * @see retro_serialize
+ * @see retro_unserialize
+ * @see RETRO_SERIALIZATION_QUIRK
  */
-#define RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (87 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 87
 
 /**
  * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
