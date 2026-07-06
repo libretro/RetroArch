@@ -745,11 +745,6 @@
 #define MENU_ENUM_LABEL_THUMBNAILS_STR "thumbnails"
 #define MENU_ENUM_LABEL_LEFT_THUMBNAILS_STR "left thumbnails"
 #define MENU_ENUM_LABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR_STR "menu_xmb_thumbnail_scale_factor"
-#define MENU_ENUM_LABEL_MENU_XMB_VERTICAL_FADE_FACTOR_STR "menu_xmb_vertical_fade_factor"
-#define MENU_ENUM_LABEL_MENU_XMB_SHOW_HORIZONTAL_LIST_STR "menu_xmb_show_horizontal_list"
-#define MENU_ENUM_LABEL_MENU_XMB_SHOW_TITLE_HEADER_STR "menu_xmb_show_title_header"
-#define MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN_STR "menu_xmb_title_margin"
-#define MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET_STR "menu_xmb_title_margin_horizontal_offset"
 #define MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST_STR "pl_thumbnails_updater_list"
 #define MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_ENTRY_STR "pl_thumbnails_updater_entry"
 #define MENU_ENUM_LABEL_TIMEDATE_ENABLE_STR "menu_timedate_enable"
@@ -860,7 +855,6 @@
 #define MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y_STR "video_viewport_custom_y"
 #define MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION_STR "video_force_resolution"
 #define MENU_ENUM_LABEL_WIFI_DRIVER_STR "wifi_driver"
-#define MENU_ENUM_LABEL_XMB_ALPHA_FACTOR_STR "xmb_alpha_factor"
 #define MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS_STR "xmb_main_menu_enable_settings"
 #define MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT_STR "bringing_up_command_interface_at_port"
 #define MSG_CONNECT_DEVICE_FROM_A_VALID_PORT_STR "connect_device_from_a_valid_port"
@@ -1163,4 +1157,3 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
 
 #endif /* MSG_HASH_LBL_STR_H__ */
-#define MENU_ENUM_LABEL_XMB_CURRENT_MENU_ICON_STR "xmb_current_menu_icon"

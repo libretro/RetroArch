@@ -1935,6 +1935,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
@@ -2458,10 +2459,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("rgui_switch_icons",                       &settings->bools.menu_rgui_switch_icons, true, DEFAULT_RGUI_SWITCH_ICONS, false);
    SETTING_BOOL("rgui_particle_effect_screensaver",        &settings->bools.menu_rgui_particle_effect_screensaver, true, DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER, false);
 #endif
-#ifdef HAVE_XMB
-   SETTING_BOOL("menu_xmb_show_horizontal_list", &settings->bools.menu_xmb_show_horizontal_list, true, DEFAULT_XMB_SHOW_HORIZONTAL_LIST, false);
-   SETTING_BOOL("menu_xmb_show_title_header",    &settings->bools.menu_xmb_show_title_header, true, DEFAULT_XMB_SHOW_TITLE_HEADER, false);
-#endif
 #ifdef HAVE_OZONE
    SETTING_BOOL("ozone_scroll_content_metadata", &settings->bools.ozone_scroll_content_metadata, true, DEFAULT_OZONE_SCROLL_CONTENT_METADATA, false);
 #endif
@@ -2612,6 +2609,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
@@ -3158,9 +3156,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_xmb_animation_horizontal_highlight", &settings->uints.menu_xmb_animation_horizontal_highlight, true, DEFAULT_XMB_ANIMATION, false);
    SETTING_UINT("menu_xmb_animation_move_up_down",         &settings->uints.menu_xmb_animation_move_up_down, true, DEFAULT_XMB_ANIMATION, false);
    SETTING_UINT("menu_xmb_thumbnail_scale_factor",         &settings->uints.menu_xmb_thumbnail_scale_factor, true, DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR, false);
-   SETTING_UINT("menu_xmb_vertical_fade_factor",           &settings->uints.menu_xmb_vertical_fade_factor, true, DEFAULT_XMB_VERTICAL_FADE_FACTOR, false);
-   SETTING_UINT("xmb_alpha_factor",              &settings->uints.menu_xmb_alpha_factor, true, DEFAULT_XMB_ALPHA_FACTOR, false);
-   SETTING_UINT("xmb_current_menu_icon",         &settings->uints.menu_xmb_current_menu_icon, true, DEFAULT_XMB_CURRENT_MENU_ICON, false);
    SETTING_UINT("menu_shader_pipeline",          &settings->uints.menu_xmb_shader_pipeline, true, DEFAULT_MENU_SHADER_PIPELINE, false);
 #endif
 #ifdef HAVE_MATERIALUI
@@ -3241,6 +3236,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
@@ -3828,10 +3824,6 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT("state_slot",                     &settings->ints.state_slot, false, 0, false);
    SETTING_INT("replay_slot",                    &settings->ints.replay_slot, false, 0, false);
 
-#ifdef HAVE_XMB
-   SETTING_INT("menu_xmb_title_margin",                   &settings->ints.menu_xmb_title_margin, true, DEFAULT_XMB_TITLE_MARGIN, false);
-   SETTING_INT("menu_xmb_title_margin_horizontal_offset", &settings->ints.menu_xmb_title_margin_horizontal_offset, true, DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET, false);
-#endif
 
    SETTING_INT("crt_switch_center_adjust",       &settings->ints.crt_switch_center_adjust, false, DEFAULT_CRT_SWITCH_CENTER_ADJUST, false);
    SETTING_INT("crt_switch_porch_adjust",        &settings->ints.crt_switch_porch_adjust, false, DEFAULT_CRT_SWITCH_PORCH_ADJUST, false);
@@ -3874,6 +3866,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
@@ -4359,6 +4352,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
