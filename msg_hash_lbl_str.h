@@ -662,7 +662,6 @@
 #define MENU_ENUM_LABEL_POINTER_ENABLE_STR "menu_pointer_enable"
 #define MENU_ENUM_LABEL_PRIVACY_SETTINGS_STR "privacy_settings"
 #define MENU_ENUM_LABEL_MIDI_SETTINGS_STR "midi_settings"
-#define MENU_ENUM_LABEL_QUIT_RETROARCH_STR "quit_retroarch"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW_STR "cloud_sync_sync_now"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL_STR "cloud_sync_resolve_keep_local"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER_STR "cloud_sync_resolve_keep_server"
