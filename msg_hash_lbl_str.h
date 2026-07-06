@@ -1104,3 +1104,5 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
 
 #endif /* MSG_HASH_LBL_STR_H__ */
+#define MENU_ENUM_LABEL_CHEAT_DETAILS_SETTINGS_STR "cheat_details_settings"
+#define MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS_STR "cheat_search_settings"
