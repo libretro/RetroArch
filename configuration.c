@@ -1935,6 +1935,16 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_mouse.h"
+#endif
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_lightgun.h"
+#endif
+#include "settings/settings_def_input_turbo_fire.h"
+#ifdef _3DS
+#include "settings/settings_def_ui_appearance.h"
+#endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
 #include "settings/settings_def_audio_state.h"
@@ -2480,10 +2490,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_overlay_auto_rotate",     &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
    SETTING_BOOL("input_osk_overlay_auto_scale",  &settings->bools.input_osk_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
    SETTING_BOOL("input_overlay_pointer_enable",  &settings->bools.input_overlay_pointer_enable, true, DEFAULT_INPUT_OVERLAY_POINTER_ENABLE, false);
-   SETTING_BOOL("input_overlay_lightgun_trigger_on_touch", &settings->bools.input_overlay_lightgun_trigger_on_touch, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH, false);
-   SETTING_BOOL("input_overlay_lightgun_allow_offscreen",  &settings->bools.input_overlay_lightgun_allow_offscreen, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN, false);
-   SETTING_BOOL("input_overlay_mouse_hold_to_drag", &settings->bools.input_overlay_mouse_hold_to_drag, true, DEFAULT_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG, false);
-   SETTING_BOOL("input_overlay_mouse_dtap_to_drag", &settings->bools.input_overlay_mouse_dtap_to_drag, true, DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG, false);
 #endif
 #if defined(VITA)
    SETTING_BOOL("input_backtouch_enable",        &settings->bools.input_backtouch_enable, false, DEFAULT_INPUT_BACKTOUCH_ENABLE, false);
@@ -2493,8 +2499,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("small_keyboard_enable",         &settings->bools.input_small_keyboard_enable, true, false, false);
 #endif
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE, false);
-   SETTING_BOOL("input_turbo_enable",            &settings->bools.input_turbo_enable, true, DEFAULT_TURBO_ENABLE, false);
-   SETTING_BOOL("input_turbo_allow_dpad",        &settings->bools.input_turbo_allow_dpad, true, DEFAULT_TURBO_ALLOW_DPAD, false);
 #ifdef HAVE_MENU
    SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS, false);
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
@@ -2544,7 +2548,6 @@ static struct config_bool_setting *populate_settings_bool(
 
 #ifdef _3DS
    SETTING_BOOL("new3ds_speedup_enable",         &settings->bools.new3ds_speedup_enable, true, DEFAULT_NEW_3DS_SPEEDUP_ENABLE,      false);
-   SETTING_BOOL("bottom_font_enable",            &settings->bools.bottom_font_enable,    true, DEFAULT_BOTTOM_FONT_ENABLE, false);
 #endif
 
 
@@ -2609,6 +2612,16 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_mouse.h"
+#endif
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_lightgun.h"
+#endif
+#include "settings/settings_def_input_turbo_fire.h"
+#ifdef _3DS
+#include "settings/settings_def_ui_appearance.h"
+#endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
 #include "settings/settings_def_audio_state.h"
@@ -3108,13 +3121,8 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("input_overlay_y_separation_portrait",   &settings->floats.input_overlay_y_separation_portrait, true, DEFAULT_INPUT_OVERLAY_Y_SEPARATION_PORTRAIT, false);
    SETTING_FLOAT("input_overlay_x_offset_portrait",       &settings->floats.input_overlay_x_offset_portrait, true, DEFAULT_INPUT_OVERLAY_X_OFFSET_PORTRAIT, false);
    SETTING_FLOAT("input_overlay_y_offset_portrait",       &settings->floats.input_overlay_y_offset_portrait, true, DEFAULT_INPUT_OVERLAY_Y_OFFSET_PORTRAIT, false);
-   SETTING_FLOAT("input_overlay_mouse_speed",             &settings->floats.input_overlay_mouse_speed, true, DEFAULT_INPUT_OVERLAY_MOUSE_SPEED, false);
-   SETTING_FLOAT("input_overlay_mouse_swipe_threshold",   &settings->floats.input_overlay_mouse_swipe_threshold, true, DEFAULT_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD, false);
 #endif
 
-#ifdef _3DS
-   SETTING_FLOAT("bottom_font_scale",            &settings->floats.bottom_font_scale, true, DEFAULT_BOTTOM_FONT_SCALE, false);
-#endif
 
    *size = count;
 
@@ -3236,6 +3244,16 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_mouse.h"
+#endif
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_lightgun.h"
+#endif
+#include "settings/settings_def_input_turbo_fire.h"
+#ifdef _3DS
+#include "settings/settings_def_ui_appearance.h"
+#endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
 #include "settings/settings_def_audio_state.h"
@@ -3700,10 +3718,6 @@ static struct config_uint_setting *populate_settings_uint(
 
    SETTING_UINT("input_bind_timeout",            &settings->uints.input_bind_timeout,     true, DEFAULT_INPUT_BIND_TIMEOUT, false);
    SETTING_UINT("input_bind_hold",               &settings->uints.input_bind_hold,        true, DEFAULT_INPUT_BIND_HOLD, false);
-   SETTING_UINT("input_turbo_period",            &settings->uints.input_turbo_period,     true, DEFAULT_TURBO_PERIOD, false);
-   SETTING_UINT("input_turbo_duty_cycle",        &settings->uints.input_turbo_duty_cycle, true, DEFAULT_TURBO_DUTY_CYCLE, false);
-   SETTING_UINT("input_turbo_mode",              &settings->uints.input_turbo_mode,       true, DEFAULT_TURBO_MODE, false);
-   SETTING_UINT("input_turbo_button",            &settings->uints.input_turbo_button,     true, DEFAULT_TURBO_BUTTON, false);
 #ifdef ANDROID
    SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 0, false);
 #else
@@ -3779,15 +3793,6 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 
 
-#ifdef HAVE_OVERLAY
-   SETTING_UINT("input_overlay_lightgun_trigger_delay",     &settings->uints.input_overlay_lightgun_trigger_delay, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY, false);
-   SETTING_UINT("input_overlay_lightgun_two_touch_input",   &settings->uints.input_overlay_lightgun_two_touch_input, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT, false);
-   SETTING_UINT("input_overlay_lightgun_three_touch_input", &settings->uints.input_overlay_lightgun_three_touch_input, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT, false);
-   SETTING_UINT("input_overlay_lightgun_four_touch_input",  &settings->uints.input_overlay_lightgun_four_touch_input, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT, false);
-   SETTING_UINT("input_overlay_mouse_hold_msec",            &settings->uints.input_overlay_mouse_hold_msec, true, DEFAULT_INPUT_OVERLAY_MOUSE_HOLD_MSEC, false);
-   SETTING_UINT("input_overlay_mouse_dtap_msec",            &settings->uints.input_overlay_mouse_dtap_msec, true, DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_MSEC, false);
-   SETTING_UINT("input_overlay_mouse_alt_two_touch_input",  &settings->uints.input_overlay_mouse_alt_two_touch_input, true, DEFAULT_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT, false);
-#endif
 
 
    *size = count;
@@ -3866,6 +3871,16 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_mouse.h"
+#endif
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_lightgun.h"
+#endif
+#include "settings/settings_def_input_turbo_fire.h"
+#ifdef _3DS
+#include "settings/settings_def_ui_appearance.h"
+#endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
 #include "settings/settings_def_audio_state.h"
@@ -4352,6 +4367,16 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_mouse.h"
+#endif
+#ifdef HAVE_OVERLAY
+#include "settings/settings_def_overlay_lightgun.h"
+#endif
+#include "settings/settings_def_input_turbo_fire.h"
+#ifdef _3DS
+#include "settings/settings_def_ui_appearance.h"
+#endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
 #include "settings/settings_def_audio_state.h"
@@ -4823,17 +4848,7 @@ static struct config_int_setting *populate_settings_int(
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
 #endif
 
-#ifdef _3DS
-   SETTING_INT("bottom_font_color_red",          &settings->ints.bottom_font_color_red,     true, DEFAULT_BOTTOM_FONT_COLOR, false);
-   SETTING_INT("bottom_font_color_green",        &settings->ints.bottom_font_color_green,   true, DEFAULT_BOTTOM_FONT_COLOR, false);
-   SETTING_INT("bottom_font_color_blue",         &settings->ints.bottom_font_color_blue,    true, DEFAULT_BOTTOM_FONT_COLOR, false);
-   SETTING_INT("bottom_font_color_opacity",      &settings->ints.bottom_font_color_opacity, true, DEFAULT_BOTTOM_FONT_COLOR, false);
-#endif
 
-#ifdef HAVE_OVERLAY
-   SETTING_INT("input_overlay_lightgun_port",    &settings->ints.input_overlay_lightgun_port, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_PORT, false);
-#endif
-   SETTING_INT("input_turbo_bind",               &settings->ints.input_turbo_bind, true, DEFAULT_TURBO_BIND, false);
 
    *size = count;
 
