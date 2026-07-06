@@ -56,7 +56,7 @@ def parse_def_rows(text, messages):
             else:
                 args[-1] += ch
             j += 1
-        token = args[1].strip()
+        token = (args[0] if m.group(1) == 'ACTION' else args[1]).strip()
         if m.group(2):  # _NS row: last argument is the VALUE string
             pairs = (('MENU_ENUM_LABEL_VALUE_', args[-1]),)
         else:

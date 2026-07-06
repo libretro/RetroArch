@@ -112,7 +112,7 @@ def expand_def_includes(text, base_dir):
                 else:
                     args[-1] += ch
                 jx += 1
-            token = args[1].strip()
+            token = (args[0] if m.group(1) == 'ACTION' else args[1]).strip()
             if m.group(2):
                 pairs = (('MENU_ENUM_LABEL_VALUE_', args[-1]),)
             else:

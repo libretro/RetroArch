@@ -12096,7 +12096,7 @@ static void materialui_list_insert(void *userdata,
             }
             else if (string_is_equal(label, MENU_ENUM_LABEL_DISK_TRAY_EJECT_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_DISK_TRAY_INSERT_STR)
-                  || string_is_equal(label, MENU_ENUM_LABEL_CORE_LIST_UNLOAD_STR)
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST_UNLOAD))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_EJECT;
