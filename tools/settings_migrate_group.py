@@ -409,7 +409,8 @@ def table_tokens(src_path, extra=""):
         fe = re.search(r"fatal error: ([\w./-]+\.h): No such file", r.stdout + r.stderr)
         if not fe:
             break
-        stub = os.path.join('/tmp/settings_mig_stubs', os.path.basename(fe.group(1)))
+        stub = os.path.join('/tmp/settings_mig_stubs', fe.group(1))
+        os.makedirs(os.path.dirname(stub) or '/tmp/settings_mig_stubs', exist_ok=True)
         assert not os.path.exists(stub), ("stub loop", fe.group(1))
         open(stub, 'w').write('/* empty stub for the token gate */\n')
         print("  note: stubbed external header %s for the token gate" % fe.group(1))
