@@ -152,9 +152,9 @@ for ln in body.split('\n'):
         if rm and gstack:
             guards[rm.group(1)] = tuple(gstack)
 _ordered = [(m.start(), (m.group(1) + (m.group(2) or ''), m.group(3), m.group(4), re.sub(r'\s+',' ',m.group(5)).strip()))
-        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT|STRING|DIR|PATH)_ROW(_P|_DS|_EX)?\(\s*(\w+),\s*(\w+),((?:[^()]|\([^()]*\))*)\)', body)]
+        for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT|STRING|DIR|PATH)_ROW(_P|_DS|_EX)?\(\s*(\w+),\s*(\w+),((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', body)]
 _ordered += [(m.start(), ('ACTION', '', m.group(1), '')) for m in re.finditer(r'SDESC_ACTION_ROW\(\s*(\w+)\s*\)', body)]
-_ordered += [(m.start(), ('ACTION_EX', '', m.group(1), re.sub(r'\s+',' ',m.group(2)).strip())) for m in re.finditer(r'SDESC_ACTION_ROW_EX\(\s*(\w+),((?:[^()]|\([^()]*\))*)\)', body)]
+_ordered += [(m.start(), ('ACTION_EX', '', m.group(1), re.sub(r'\s+',' ',m.group(2)).strip())) for m in re.finditer(r'SDESC_ACTION_ROW_EX\(\s*(\w+),((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', body)]
 rows = [r for _, r in sorted(_ordered)]
 all_invocations = re.findall(r'SDESC_\w+?_ROW(?:_\w+)?\(', body)
 assert len(rows) == len(all_invocations), (
@@ -187,7 +187,7 @@ if ref_tokens:
     _tail = [r for r in rows if r[2] in ref_tokens]
     _ref_literals = {}
     for _k3, _f3, _t3, _a3 in _tail:
-        _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX)?\(\s*%s,\s*%s,(?:[^()]|\([^()]*\))*\),?' % (_f3, _t3), body)
+        _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX)?\(\s*%s,\s*%s,(?:[^()]|\((?:[^()]|\([^()]*\))*\))*\),?' % (_f3, _t3), body)
         assert _rm3, _t3
         _rl3 = _rm3.group(0).strip()
         for _g3 in reversed(guards.get(_f3 or _t3, ())):
