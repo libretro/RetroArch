@@ -36,10 +36,23 @@
 #ifdef HAVE_RMP3
 #include <formats/rmp3.h>
 #endif
+#include <formats/rwav.h>
 
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
  * same switch-dispatch pattern formats/image_transfer.c uses. */
+
+/* WAV is decoded whole by rwav_load() at start(); the context then holds the
+ * decoded interleaved 16-bit PCM and a per-frame read cursor so read_s16 /
+ * read_f32 can pull it out in bounded chunks like the other codecs. */
+struct audio_transfer_wav
+{
+   const void *data;    /* encoded bytes from set_buffer_ptr (caller-owned) */
+   size_t      size;
+   rwav_t      wav;     /* decoded PCM + format, valid after start()         */
+   int         opened;  /* rwav_load succeeded                               */
+   size_t      cursor;  /* next frame to hand out                            */
+};
 
 #ifdef HAVE_RFLAC
 struct audio_transfer_flac
@@ -106,6 +119,7 @@ void *audio_transfer_new(enum audio_type_enum type)
          return calloc(1, sizeof(struct audio_transfer_mp3));
 #endif
       case AUDIO_TYPE_WAV:
+         return calloc(1, sizeof(struct audio_transfer_wav));
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -155,6 +169,15 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
       }
 #endif
       case AUDIO_TYPE_WAV:
+      {
+         struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+         if (w)
+         {
+            w->data = ptr;
+            w->size = len;
+         }
+         break;
+      }
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -201,6 +224,23 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       }
 #endif
       case AUDIO_TYPE_WAV:
+      {
+         struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+         if (!w || !w->data)
+            return false;
+         /* rwav only handles 8- and 16-bit PCM; decode the whole buffer up
+          * front (WAV has no incremental decode - it is raw PCM already). */
+         if (rwav_load(&w->wav, w->data, w->size) != RWAV_ITERATE_DONE)
+            return false;
+         if (w->wav.bitspersample != 16 && w->wav.bitspersample != 8)
+         {
+            rwav_free(&w->wav);
+            return false;
+         }
+         w->opened = 1;
+         w->cursor = 0;
+         return true;
+      }
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -234,6 +274,10 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
       }
 #endif
       case AUDIO_TYPE_WAV:
+      {
+         struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+         return w && w->opened;
+      }
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -294,6 +338,18 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
       }
 #endif
       case AUDIO_TYPE_WAV:
+      {
+         struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+         if (!w || !w->opened)
+            return false;
+         if (channels)
+            *channels     = w->wav.numchannels;
+         if (rate)
+            *rate         = w->wav.samplerate;
+         if (total_frames) /* WAV is fully decoded, so length is known */
+            *total_frames = (uint64_t)w->wav.numsamples;
+         return true;
+      }
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -341,6 +397,29 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
       }
 #endif
       case AUDIO_TYPE_WAV:
+      {
+         struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+         size_t avail, want, ch, i;
+         if (!w || !w->opened)
+            return AUDIO_PROCESS_ERROR;
+         ch    = (size_t)w->wav.numchannels;
+         avail = w->wav.numsamples - w->cursor;
+         want  = (frames < avail) ? frames : avail;
+         if (w->wav.bitspersample == 16)
+         {
+            const int16_t *src = (const int16_t*)w->wav.samples;
+            memcpy(out, src + w->cursor * ch, want * ch * sizeof(int16_t));
+         }
+         else /* 8-bit unsigned PCM -> signed 16-bit */
+         {
+            const uint8_t *src = (const uint8_t*)w->wav.samples;
+            for (i = 0; i < want * ch; i++)
+               out[i] = (int16_t)(((int)src[w->cursor * ch + i] - 128) << 8);
+         }
+         w->cursor += want;
+         produced   = want;
+         break;
+      }
       case AUDIO_TYPE_NONE:
       default:
          return AUDIO_PROCESS_ERROR;
@@ -393,6 +472,30 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
       }
 #endif
       case AUDIO_TYPE_WAV:
+      {
+         struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+         size_t avail, want, ch, i;
+         if (!w || !w->opened)
+            return AUDIO_PROCESS_ERROR;
+         ch    = (size_t)w->wav.numchannels;
+         avail = w->wav.numsamples - w->cursor;
+         want  = (frames < avail) ? frames : avail;
+         if (w->wav.bitspersample == 16)
+         {
+            const int16_t *src = (const int16_t*)w->wav.samples + w->cursor * ch;
+            for (i = 0; i < want * ch; i++)
+               out[i] = (float)src[i] * (1.0f / 32768.0f);
+         }
+         else /* 8-bit unsigned PCM */
+         {
+            const uint8_t *src = (const uint8_t*)w->wav.samples + w->cursor * ch;
+            for (i = 0; i < want * ch; i++)
+               out[i] = ((float)src[i] - 128.0f) * (1.0f / 128.0f);
+         }
+         w->cursor += want;
+         produced   = want;
+         break;
+      }
       case AUDIO_TYPE_NONE:
       default:
          return AUDIO_PROCESS_ERROR;
@@ -442,6 +545,13 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
       }
 #endif
       case AUDIO_TYPE_WAV:
+      {
+         struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+         if (!w || !w->opened || frame > (uint64_t)w->wav.numsamples)
+            return false;
+         w->cursor = (size_t)frame;
+         return true;
+      }
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -484,6 +594,12 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
       }
 #endif
       case AUDIO_TYPE_WAV:
+      {
+         struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+         if (w && w->opened)
+            rwav_free(&w->wav);
+         break;
+      }
       case AUDIO_TYPE_NONE:
       default:
          break;
