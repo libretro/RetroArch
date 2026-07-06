@@ -1832,13 +1832,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("kiosk_mode_enable",             &settings->bools.kiosk_mode_enable, true, DEFAULT_KIOSK_MODE_ENABLE, false);
 #endif
    SETTING_BOOL("block_sram_overwrite",          &settings->bools.block_sram_overwrite, true, DEFAULT_BLOCK_SRAM_OVERWRITE, false);
-   SETTING_BOOL("replay_auto_index",             &settings->bools.replay_auto_index, true, DEFAULT_REPLAY_AUTO_INDEX, false);
-   SETTING_BOOL("savestate_auto_index",          &settings->bools.savestate_auto_index, true, DEFAULT_SAVESTATE_AUTO_INDEX, false);
    SETTING_BOOL("savestate_auto_save",           &settings->bools.savestate_auto_save, true, DEFAULT_SAVESTATE_AUTO_SAVE, false);
    SETTING_BOOL("savestate_auto_load",           &settings->bools.savestate_auto_load, true, DEFAULT_SAVESTATE_AUTO_LOAD, false);
    SETTING_BOOL("savestate_thumbnail_enable",    &settings->bools.savestate_thumbnail_enable, true, DEFAULT_SAVESTATE_THUMBNAIL_ENABLE, false);
-   SETTING_BOOL("save_file_compression",         &settings->bools.save_file_compression, true, DEFAULT_SAVE_FILE_COMPRESSION, false);
-   SETTING_BOOL("savestate_file_compression",    &settings->bools.savestate_file_compression, true, DEFAULT_SAVESTATE_FILE_COMPRESSION, false);
    SETTING_BOOL("game_specific_options",         &settings->bools.game_specific_options, true, DEFAULT_GAME_SPECIFIC_OPTIONS, false);
    SETTING_BOOL("auto_overrides_enable",         &settings->bools.auto_overrides_enable, true, DEFAULT_AUTO_OVERRIDES_ENABLE, false);
    SETTING_BOOL("auto_remaps_enable",            &settings->bools.auto_remaps_enable, true, DEFAULT_AUTO_REMAPS_ENABLE, false);
@@ -1936,6 +1932,8 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_saving.h"
+#include "settings/settings_def_notification_positions.h"
 #include "settings/settings_def_menu_main_lists_4.h"
 #include "settings/settings_def_menu_main_lists_3.h"
 #ifdef HAVE_MENU
@@ -2408,7 +2406,6 @@ static struct config_bool_setting *populate_settings_bool(
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
    SETTING_BOOL("video_use_metal_arg_buffers",   &settings->bools.video_use_metal_arg_buffers, true, config_metal_arg_buffers_default(), false);
 #endif
-   SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, DEFAULT_MESSAGE_BGCOLOR_ENABLE, false);
    SETTING_BOOL("video_window_save_positions",   &settings->bools.video_window_save_positions, true, DEFAULT_WINDOW_SAVE_POSITIONS, false);
 
    SETTING_BOOL("menu_enable_widgets",           &settings->bools.menu_enable_widgets, true, DEFAULT_MENU_ENABLE_WIDGETS, false);
@@ -2504,8 +2501,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
 #endif
 
-   SETTING_BOOL("content_runtime_log",           &settings->bools.content_runtime_log, true, DEFAULT_CONTENT_RUNTIME_LOG, false);
-   SETTING_BOOL("content_runtime_log_aggregate", &settings->bools.content_runtime_log_aggregate, true, DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE, false);
    SETTING_BOOL("playlist_entry_rename",         &settings->bools.playlist_entry_rename, true, DEFAULT_PLAYLIST_ENTRY_RENAME, false);
    SETTING_BOOL("playlist_use_old_format",       &settings->bools.playlist_use_old_format, true, DEFAULT_PLAYLIST_USE_OLD_FORMAT, false);
    SETTING_BOOL("playlist_compression",          &settings->bools.playlist_compression, true, DEFAULT_PLAYLIST_COMPRESSION, false);
@@ -2540,9 +2535,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("netplay_request_device_p15",    &settings->bools.netplay_request_devices[14], true, false, false);
    SETTING_BOOL("netplay_request_device_p16",    &settings->bools.netplay_request_devices[15], true, false, false);
    SETTING_BOOL("netplay_ping_show",             &settings->bools.netplay_ping_show, true, DEFAULT_NETPLAY_PING_SHOW, false);
-#endif
-#ifdef HAVE_BSV_MOVIE
-   SETTING_BOOL("replay_checkpoint_deserialize", &settings->bools.replay_checkpoint_deserialize,  true, DEFAULT_REPLAY_CHECKPOINT_DESERIALIZE, false);
 #endif
 
 
@@ -2612,6 +2604,8 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_saving.h"
+#include "settings/settings_def_notification_positions.h"
 #include "settings/settings_def_menu_main_lists_4.h"
 #include "settings/settings_def_menu_main_lists_3.h"
 #ifdef HAVE_MENU
@@ -3108,10 +3102,6 @@ static struct config_float_setting *populate_settings_float(
 
    SETTING_FLOAT("video_aspect_ratio",           &settings->floats.video_aspect_ratio, true, DEFAULT_ASPECT_RATIO, false);
    SETTING_FLOAT("crt_video_refresh_rate",       &settings->floats.crt_video_refresh_rate, true, DEFAULT_CRT_REFRESH_RATE, false);
-   SETTING_FLOAT("video_message_pos_x",          &settings->floats.video_msg_pos_x, true, DEFAULT_MESSAGE_POS_OFFSET_X, false);
-   SETTING_FLOAT("video_message_pos_y",          &settings->floats.video_msg_pos_y, true, DEFAULT_MESSAGE_POS_OFFSET_Y, false);
-   SETTING_FLOAT("video_font_size",              &settings->floats.video_font_size, true, DEFAULT_FONT_SIZE, false);
-   SETTING_FLOAT("video_msg_bgcolor_opacity",    &settings->floats.video_msg_bgcolor_opacity, true, DEFAULT_MESSAGE_BGCOLOR_OPACITY, false);
 
    SETTING_FLOAT("input_sensor_accelerometer_sensitivity",&settings->floats.input_sensor_accelerometer_sensitivity, true, DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY, false);
    SETTING_FLOAT("input_sensor_gyroscope_sensitivity",    &settings->floats.input_sensor_gyroscope_sensitivity, true, DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY, false);
@@ -3151,12 +3141,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("memory_update_interval",        &settings->uints.memory_update_interval, true, DEFAULT_MEMORY_UPDATE_INTERVAL, false);
    SETTING_UINT("time_show",                     &settings->uints.video_time_show, true, DEFAULT_TIME_SHOW, false);
    SETTING_UINT("core_updater_auto_backup_history_size", &settings->uints.core_updater_auto_backup_history_size, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, false);
-   SETTING_UINT("autosave_interval",             &settings->uints.autosave_interval,  true, DEFAULT_AUTOSAVE_INTERVAL, false);
-   SETTING_UINT("savestate_automatic_interval",  &settings->uints.savestate_automatic_interval, true, DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL, false);
    SETTING_UINT("run_ahead_frames",              &settings->uints.run_ahead_frames, true, DEFAULT_RUN_AHEAD_FRAMES,  false);
-   SETTING_UINT("replay_max_keep",               &settings->uints.replay_max_keep, true, DEFAULT_REPLAY_MAX_KEEP, false);
-   SETTING_UINT("replay_checkpoint_interval",    &settings->uints.replay_checkpoint_interval,  true, DEFAULT_REPLAY_CHECKPOINT_INTERVAL, false);
-   SETTING_UINT("savestate_max_keep",            &settings->uints.savestate_max_keep, true, DEFAULT_SAVESTATE_MAX_KEEP, false);
 #ifdef HAVE_MENU
    SETTING_UINT("playlist_entry_remove_enable",        &settings->uints.playlist_entry_remove_enable, true, DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE, false);
    SETTING_UINT("menu_thumbnails",               &settings->uints.gfx_thumbnails, true, DEFAULT_GFX_THUMBNAILS_DEFAULT, false);
@@ -3245,6 +3230,8 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_saving.h"
+#include "settings/settings_def_notification_positions.h"
 #include "settings/settings_def_menu_main_lists_4.h"
 #include "settings/settings_def_menu_main_lists_3.h"
 #ifdef HAVE_MENU
@@ -3712,9 +3699,6 @@ static struct config_uint_setting *populate_settings_uint(
 #undef S_ACTION_EX_NS
 #undef S_ACTION_EX_H
 #undef S_ACTION_EX_NS_H
-   SETTING_UINT("video_msg_bgcolor_red",         &settings->uints.video_msg_bgcolor_red, true, DEFAULT_MESSAGE_BGCOLOR_RED, false);
-   SETTING_UINT("video_msg_bgcolor_green",       &settings->uints.video_msg_bgcolor_green, true, DEFAULT_MESSAGE_BGCOLOR_GREEN, false);
-   SETTING_UINT("video_msg_bgcolor_blue",        &settings->uints.video_msg_bgcolor_blue, true, DEFAULT_MESSAGE_BGCOLOR_BLUE, false);
 
    SETTING_UINT("video_stream_port",             &settings->uints.video_stream_port, true, RARCH_STREAM_DEFAULT_PORT, false);
    SETTING_UINT("video_record_scale_factor",     &settings->uints.video_record_scale_factor, true, 1, false);
@@ -3880,6 +3864,8 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_saving.h"
+#include "settings/settings_def_notification_positions.h"
 #include "settings/settings_def_menu_main_lists_4.h"
 #include "settings/settings_def_menu_main_lists_3.h"
 #ifdef HAVE_MENU
@@ -4384,6 +4370,8 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_saving.h"
+#include "settings/settings_def_notification_positions.h"
 #include "settings/settings_def_menu_main_lists_4.h"
 #include "settings/settings_def_menu_main_lists_3.h"
 #ifdef HAVE_MENU
