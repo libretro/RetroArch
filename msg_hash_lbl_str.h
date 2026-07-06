@@ -523,7 +523,6 @@
 #define MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL_STR "libretro_log_level"
 #define MENU_ENUM_LABEL_LOAD_ARCHIVE_STR "load_archive"
 #define MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE_STR "load_archive_detect_core"
-#define MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR "load_recent"
 #define MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL_STR "load_special"
 #define MENU_ENUM_LABEL_LOAD_STATE_STR "load_state"
 #define MENU_ENUM_LABEL_LOCATION_DRIVER_STR "location_driver"
