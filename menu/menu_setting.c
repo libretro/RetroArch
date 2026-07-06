@@ -19061,6 +19061,7 @@ static bool setting_append_list(
                   &group_info, &subgroup_info, parent_group);
          }
 
+         {
             input_driver_state_t *st = input_state_get_ptr();
             input_driver_t *current_input = st->current_driver;
             if (string_is_equal(current_input->ident, "android"))
@@ -19079,6 +19080,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_android_physical_keyboard;
                (*list)[list_info->index - 1].default_value.string      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
             }
+         }
 #endif
 
          {
