@@ -13676,36 +13676,6 @@ static void settings_build_rewind(
    }
 }
 
-static void settings_build_cheats(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-       
-         START_GROUP(list, list_info, &group_info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS),
-               parent_group);
-
-         parent_group = MENU_ENUM_LABEL_CHEAT_SETTINGS_STR;
-
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-      {
-         settings_list_add_desc(list, list_info, settings,
-               cheats_desc_0, ARRAY_SIZE(cheats_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
-   }
-}
 
 static void settings_build_cheat_details(
       settings_t *settings, global_t *global,
@@ -15985,71 +15955,7 @@ static void settings_build_osk_overlay(
    }
 }
 
-static void settings_build_overlay_lightgun(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-#ifdef HAVE_OVERLAY
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS),
-            parent_group);
 
-      parent_group = MENU_ENUM_LABEL_OVERLAY_SETTINGS_STR;
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-      {
-         settings_list_add_desc(list, list_info, settings,
-               overlay_lightg_desc_0, ARRAY_SIZE(overlay_lightg_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-
-      END_SUB_GROUP(list, list_info, parent_group);
-
-      END_GROUP(list, list_info, parent_group);
-#endif
-   }
-}
-
-static void settings_build_overlay_mouse(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-#ifdef HAVE_OVERLAY
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS),
-            parent_group);
-
-      parent_group = MENU_ENUM_LABEL_OVERLAY_SETTINGS_STR;
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-      {
-         settings_list_add_desc(list, list_info, settings,
-               overlay_mouse_desc_0, ARRAY_SIZE(overlay_mouse_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-
-      END_SUB_GROUP(list, list_info, parent_group);
-
-      END_GROUP(list, list_info, parent_group);
-#endif
-   }
-}
 
 static void settings_build_menu(
       settings_t *settings, global_t *global,
@@ -18068,37 +17974,6 @@ static void settings_build_user_accounts_kick(
    }
 }
 
-static void settings_build_user_accounts_cheevos(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-#ifdef HAVE_CHEEVOS
-      {
-         settings_list_add_desc(list, list_info, settings,
-               cheevos_acct_desc, ARRAY_SIZE(cheevos_acct_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
-#endif
-
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
-   }
-}
 
 static void settings_build_directory(
       settings_t *settings, global_t *global,
@@ -18679,6 +18554,38 @@ typedef struct settings_build_entry
    enum msg_hash_enums parent_label;  /* parent group, 0 keeps   */
 } settings_build_entry_t;
 
+static void settings_build_user_accounts_cheevos(
+      settings_t *settings, global_t *global,
+      rarch_setting_t **list, rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   group_info.name    = NULL;
+   subgroup_info.name = NULL;
+   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   {
+      START_GROUP(list, list_info, &group_info,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS),
+            parent_group);
+
+      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+
+      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+#ifdef HAVE_CHEEVOS
+      {
+         settings_list_add_desc(list, list_info, settings,
+               cheevos_acct_desc, ARRAY_SIZE(cheevos_acct_desc),
+               &group_info, &subgroup_info, parent_group);
+      }
+#endif
+
+      END_SUB_GROUP(list, list_info, parent_group);
+      END_GROUP(list, list_info, parent_group);
+   }
+}
+
 static void settings_build_desc_group(
       const settings_build_entry_t *e,
       settings_t *settings, global_t *global,
@@ -18713,7 +18620,11 @@ static const settings_build_entry_t settings_build_registry[] = {
    { SETTINGS_LIST_CLOUD_SYNC, settings_build_cloud_sync, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_FRAME_TIME_COUNTER, settings_build_frame_time_counter, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_REWIND, settings_build_rewind, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
-   { SETTINGS_LIST_CHEATS, settings_build_cheats, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CHEATS, NULL,
+     cheats_desc_0, (unsigned)ARRAY_SIZE(cheats_desc_0),
+     MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_CHEAT_SETTINGS },
    { SETTINGS_LIST_CHEAT_DETAILS, settings_build_cheat_details, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_CHEAT_SEARCH, settings_build_cheat_search, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_VIDEO, settings_build_video, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
@@ -18743,8 +18654,20 @@ static const settings_build_entry_t settings_build_registry[] = {
    { SETTINGS_LIST_ONSCREEN_NOTIFICATIONS, settings_build_onscreen_notifications, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_OVERLAY, settings_build_overlay, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_OSK_OVERLAY, settings_build_osk_overlay, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
-   { SETTINGS_LIST_OVERLAY_LIGHTGUN, settings_build_overlay_lightgun, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
-   { SETTINGS_LIST_OVERLAY_MOUSE, settings_build_overlay_mouse, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   #ifdef HAVE_OVERLAY
+   { SETTINGS_LIST_OVERLAY_LIGHTGUN, NULL,
+     overlay_lightg_desc_0, (unsigned)ARRAY_SIZE(overlay_lightg_desc_0),
+     MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_OVERLAY_SETTINGS },
+#endif
+   #ifdef HAVE_OVERLAY
+   { SETTINGS_LIST_OVERLAY_MOUSE, NULL,
+     overlay_mouse_desc_0, (unsigned)ARRAY_SIZE(overlay_mouse_desc_0),
+     MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_OVERLAY_SETTINGS },
+#endif
    { SETTINGS_LIST_MENU, settings_build_menu, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_MENU_FILE_BROWSER, NULL,
      menu_file_brow_desc_0, (unsigned)ARRAY_SIZE(menu_file_brow_desc_0),
