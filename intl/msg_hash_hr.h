@@ -23,8 +23,11 @@ static const struct
    char s_bcddf275[12];
    char s_99eb425d[10];
    char s_7632d987[15];
+   char s_d21c686b[23];
+   char s_d7fc4c9c[27];
    char s_36265c93[14];
    char s_544da5c1[43];
+   char s_193e1462[49];
    char s_d7f2cfac[15];
    char s_35f2309a[37];
    char s_e3d18a3d[17];
@@ -33,36 +36,39 @@ static const struct
    char s_2f5a9518[89];
    char s_6ebb6a00[13];
    char s_ccbacaee[78];
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    char s_e65393d5[12];
    char s_043f1283[40];
+#endif
 #endif
    char s_b3cc8a43[23];
    char s_d34eb231[72];
    char s_061657e6[15];
    char s_243da114[63];
+   char s_6155456e[25];
+   char s_4a3d27dc[47];
+   char s_ce5f3353[22];
+   char s_de265901[66];
+   char s_1938dce6[25];
+   char s_1f084654[64];
+   char s_2f9a064c[7];
+   char s_8d99673a[46];
    char s_ed013a05[37];
    char s_4b009af3[50];
-   char s_193e1462[49];
+   char s_198c91d3[41];
    char s_e2c6c781[24];
    char s_f28ded2f[53];
-   char s_198c91d3[41];
    char s_4aaeeb99[9];
    char s_e8aee6c7[22];
    char s_d81bf7a9[12];
    char s_9eb26572[32];
-   char s_6155456e[25];
-   char s_4a3d27dc[47];
-   char s_2f9a064c[7];
-   char s_8d99673a[46];
    char s_59980356[10];
    char s_95cf0994[6];
    char s_d31f6d88[15];
    char s_f2a19576[60];
    char s_01a73130[28];
    char s_46c57dde[55];
-   char s_d21c686b[23];
-   char s_d7fc4c9c[27];
    char s_941e50fb[14];
    char s_10342503[12];
    char s_164566fb[14];
@@ -139,26 +145,26 @@ static const struct
    char s_0e740679[12];
    char s_d3a2aa7d[12];
    char s_f8883f70[14];
-   char s_ce5f3353[22];
-   char s_de265901[66];
-   char s_1938dce6[25];
-   char s_1f084654[64];
    char s_14ec7b7e[8];
    char s_005cc6dc[12];
    char s_00614813[6];
    char s_3674ba44[22];
+   char s_57665cff[6];
    char s_49b0b12a[5];
+   char s_c82d0aee[7];
    char s_84d3d068[10];
    char s_734d2a61[7];
    char s_e4e54370[14];
    char s_e7a63560[10];
+   char s_8cb3b95f[15];
    char s_6322a8fa[16];
    char s_7d00b7ed[8];
-   char s_8cb3b95f[15];
-   char s_3a0a3fef[20];
+   char s_260261d6[14];
+   char s_302fdd56[9];
    char s_7277e127[21];
    char s_4ad41e20[15];
    char s_56e21ee1[33];
+   char s_3a0a3fef[20];
    char s_62144cdf[12];
    char s_87d88aa2[7];
    char s_8d94cfea[23];
@@ -179,7 +185,6 @@ static const struct
    char s_31b177ec[9];
    char s_8d3a8b68[9];
    char s_721e7bb2[9];
-   char s_57665cff[6];
    char s_730df420[15];
 #if defined(DINGUX)
    char s_bfd4c6ef[11];
@@ -198,12 +203,15 @@ static const struct
    char s_d04ab10c[9];
 #endif
    char s_30acd6fb[15];
-   char s_c82d0aee[7];
    char s_dcf2e800[5];
    char s_da068369[8];
 #ifdef HAVE_MICROPHONE
    char s_d3e78762[9];
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
    char s_d0fb22cb[8];
+#endif
 #endif
    char s_ad7c73f6[15];
    char s_1757647b[6];
@@ -217,8 +225,6 @@ static const struct
    char s_eb4eab83[7];
    char s_d9a51d02[17];
    char s_f7cc6630[30];
-   char s_260261d6[14];
-   char s_302fdd56[9];
    char s_9da5609f[16];
    char s_565cbabb[12];
    char s_96ee0cfb[9];
@@ -292,8 +298,11 @@ static const struct
    "Videozapisi",
    "Pretra\305\276i",
    "Uvezi sadr\305\276aj",
+   "Pokreni video procesor",
+   "Pokreni daljinski RetroPad",
    "Brzi izbornik",
    "Brzo pristupi svim bitnim postavkama igre.",
+   "Prika\305\276i sve postavke povezane s konfiguracijom.",
    "U\304\215itaj jezgru",
    "Odaberi jezgru koju \304\207e\305\241 koristiti.",
    "U\304\215itaj sadr\305\276aj",
@@ -303,36 +312,39 @@ static const struct
    "\241tenje s diskom.",
    "Umno\305\276i disk",
    "Umno\305\276i fizi\304\215ki disk u unutanju pohranu. Bit \304\207e spremljeno kao slika diska.",
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    "Izbaci disk",
    "Izbaci disk iz fizi\304\215kog CD/DVD pogona.",
+#endif
 #endif
    "Popisi za reprodukciju",
    "Ovdje \304\207e se pojaviti pretra\305\276eni sadr\305\276aj koji odgovara bazi podataka.",
    "Uvezi sadr\305\276aj",
    "Izradi i a\305\276uriraj popise za reprodukcije pretragom sadr\305\276aja.",
+   "Konfiguracijska datoteka",
+   "Upravljaj i izra\304\221uj konfiguracijske datoteke.",
+   "U\304\215itaj konfiguraciju",
+   "U\304\215itaj postoje\304\207u konfiguraciju i zamijeni trenutne vrijednosti.",
+   "Vrati na zadane postavke",
+   "Ponovno postaviti trenutnu konfiguraciju na zadane vrijednosti.",
+   "Pomo\304\207",
+   "Saznaj vi\305\241e o tome kako program funkcionira.",
    "Prika\305\276i izbornik za radnu povr\305\241inu",
    "Otvori tradicionalni izbornik za radnu povr\305\241inu.",
-   "Prika\305\276i sve postavke povezane s konfiguracijom.",
+   "Pridru\305\276i se ili pokreni netplay sesiju.",
    "Internetsko a\305\276uriranje",
    "Preuzmi dodatke, komponente i sadr\305\276aj za RetroArch.",
-   "Pridru\305\276i se ili pokreni netplay sesiju.",
    "Postavke",
    "Konfiguriraj program.",
    "Informacije",
    "Prika\305\276i informacije o sustavu.",
-   "Konfiguracijska datoteka",
-   "Upravljaj i izra\304\221uj konfiguracijske datoteke.",
-   "Pomo\304\207",
-   "Saznaj vi\305\241e o tome kako program funkcionira.",
    "Resetiraj",
    "Izlaz",
    "Preuzmi jezgru",
    "Preuzmi i instaliraj jezgru putem internetskog a\305\276uriranja.",
    "Instaliraj ili vrati jezgru",
    "Instaliraj ili vrati jezgru iz mape \342\200\236Preuzimanja\342\200\235.",
-   "Pokreni video procesor",
-   "Pokreni daljinski RetroPad",
    "Po\304\215etna mapa",
    "Preuzimanja",
    "Otvori arhivu",
@@ -410,26 +422,26 @@ static const struct
    "PEGI Ocjena",
    "CERO Ocjena",
    "Serijski broj",
-   "U\304\215itaj konfiguraciju",
-   "U\304\215itaj postoje\304\207u konfiguraciju i zamijeni trenutne vrijednosti.",
-   "Vrati na zadane postavke",
-   "Ponovno postaviti trenutnu konfiguraciju na zadane vrijednosti.",
    "Potvrdi",
    "Informacije",
    "Izlaz",
    "Upravlja\304\215ki programi",
+   "Izlaz",
    "Zvuk",
+   "Mikser",
    "Latencija",
    "Jezgra",
    "Konfiguracija",
    "Spremanje",
+   "Izvje\305\241tavanje",
    "Korisni\304\215ko ime",
    "Lozinka",
-   "Izvje\305\241tavanje",
-   "Preglednik datoteka",
+   "Brzi izbornik",
+   "Postavke",
    "Korisni\304\215ko su\304\215elje",
    "Pristupa\304\215nost",
    "Upravljanje potro\305\241njom energije",
+   "Preglednik datoteka",
    "Postignu\304\207a",
    "Mre\305\276a",
    "Popisi za reprodukciju",
@@ -450,7 +462,6 @@ static const struct
    "Lokacija",
    "Izbornik",
    "Snimanje",
-   "Izlaz",
    "Sinkronizacija",
 #if defined(DINGUX)
    "Bikubi\304\215no",
@@ -469,12 +480,15 @@ static const struct
    "Mikrofon",
 #endif
    "Sinkronizacija",
-   "Mikser",
    "Zvuk",
    "Ure\304\221aj",
 #ifdef HAVE_MICROPHONE
    "Mikrofon",
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
    "Ure\304\221aj",
+#endif
 #endif
    "Sinkronizacija",
    "Izlaz",
@@ -488,8 +502,6 @@ static const struct
    "Visoka",
    "Ikona aplikacije",
    "Promijenite ikonu aplikacije.",
-   "Brzi izbornik",
-   "Postavke",
    "Glavni izbornik",
    "Postignu\304\207a",
    "Povijest",
@@ -560,9 +572,11 @@ static const struct
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
       (sizeof(msg_hash_hr_blob) == (4177u
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
        + 40u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
        + 9u
@@ -574,7 +588,11 @@ typedef char msg_hash_hr_blob_check[
 #ifdef HAVE_MICROPHONE
        + 9u
        + 9u
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
        + 8u
+#endif
 #endif
 #ifdef HAVE_MIST
        + 9u
@@ -600,8 +618,11 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -610,36 +631,39 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
@@ -716,26 +740,26 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -756,7 +780,6 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
@@ -775,12 +798,15 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
 #ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -794,8 +820,6 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,

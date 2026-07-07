@@ -23,8 +23,10 @@ static const struct
    char s_bcddf275[8];
    char s_99eb425d[8];
    char s_7632d987[17];
+   char s_d21c686b[21];
    char s_36265c93[12];
    char s_544da5c1[63];
+   char s_193e1462[49];
    char s_d7f2cfac[14];
    char s_35f2309a[29];
    char s_e3d18a3d[16];
@@ -37,25 +39,27 @@ static const struct
    char s_d34eb231[58];
    char s_061657e6[17];
    char s_243da114[53];
+   char s_6155456e[18];
+   char s_4a3d27dc[39];
+   char s_ce5f3353[22];
+   char s_87ee250e[25];
+   char s_a11934f5[21];
+   char s_1938dce6[34];
+   char s_2f9a064c[7];
+   char s_8d99673a[41];
    char s_ed013a05[21];
    char s_4b009af3[41];
-   char s_193e1462[49];
+   char s_198c91d3[50];
    char s_e2c6c781[15];
    char s_f28ded2f[57];
-   char s_198c91d3[50];
    char s_4aaeeb99[14];
    char s_e8aee6c7[20];
    char s_9eb26572[23];
-   char s_6155456e[18];
-   char s_4a3d27dc[39];
-   char s_2f9a064c[7];
-   char s_8d99673a[41];
    char s_95cf0994[4];
    char s_d31f6d88[14];
    char s_f2a19576[60];
    char s_01a73130[32];
    char s_46c57dde[57];
-   char s_d21c686b[21];
    char s_941e50fb[12];
    char s_164566fb[15];
    char s_6107eb09[14];
@@ -134,10 +138,6 @@ static const struct
    char s_8356c98c[14];
    char s_36109f2c[14];
    char s_046d0e21[20];
-   char s_ce5f3353[22];
-   char s_87ee250e[25];
-   char s_a11934f5[21];
-   char s_1938dce6[34];
    char s_7fc52043[7];
    char s_8584f1d6[8];
    char s_14ec7b7e[9];
@@ -147,6 +147,8 @@ static const struct
    char s_3674ba44[8];
    char s_3f2095b2[39];
    char s_67d549fd[37];
+   char s_79b8ce4a[64];
+   char s_19d092ed[37];
    char s_49b0b12a[4];
    char s_a7d61696[49];
    char s_84d3d068[10];
@@ -159,11 +161,10 @@ static const struct
    char s_f05210ce[26];
    char s_8cb3b95f[8];
    char s_aadb028d[32];
-   char s_3a0a3fef[15];
    char s_aa39aae6[72];
-   char s_1b8a5cb5[8];
-   char s_60a8a963[31];
    char s_5dc056f8[92];
+   char s_260261d6[12];
+   char s_302fdd56[14];
    char s_7277e127[19];
    char s_78474a95[44];
    char s_2e5078b2[12];
@@ -172,8 +173,11 @@ static const struct
    char s_5a8511ce[54];
    char s_56e21ee1[14];
    char s_0e319bcf[39];
+   char s_3a0a3fef[15];
    char s_62144cdf[14];
    char s_2b36bd4d[39];
+   char s_1b8a5cb5[8];
+   char s_60a8a963[31];
    char s_87d88aa2[9];
    char s_a5ffd3d0[40];
    char s_8d94cfea[12];
@@ -187,8 +191,6 @@ static const struct
    char s_502f623c[7];
    char s_31b177ec[10];
    char s_721e7bb2[6];
-   char s_79b8ce4a[64];
-   char s_19d092ed[37];
    char s_020e2bc5[20];
    char s_0d96ed73[45];
    char s_ebf10493[16];
@@ -196,8 +198,6 @@ static const struct
    char s_dcf2e800[4];
    char s_87071f08[4];
    char s_735c53f7[12];
-   char s_260261d6[12];
-   char s_302fdd56[14];
    char s_9da5609f[10];
    char s_565cbabb[14];
    char s_96ee0cfb[9];
@@ -234,8 +234,10 @@ static const struct
    "Videoer",
    "Udforsk",
    "Importer indhold",
+   "Start Videoprocessor",
    "Hurtig Menu",
    "F\303\245 hurtigt adgang til alle relevante indstillinger i spillet.",
+   "Vis alle konfigurationsrelaterede indstillinger.",
    "Indl\303\246s kerne",
    "V\303\246lg kerne der skal bruges.",
    "Indl\303\246s indhold",
@@ -249,25 +251,27 @@ static const struct
    "Scannet indhold der matcher databasen vil blive vist her.",
    "Importer indhold",
    "Opret og opdater spillelister ved at scanne indhold.",
+   "Konfigurationsfil",
+   "H\303\245ndter og opret konfigurationsfiler.",
+   "Indl\303\246s konfiguration",
+   "Gem aktuel konfiguration",
+   "Gem ny konfiguration",
+   "Nulstil til standardindstillinger",
+   "Hj\303\246lp",
+   "L\303\246s mere om, hvordan programmet virker.",
    "Vis skrivebords menu",
    "\303\205bn den traditionelle skrivebords menu.",
-   "Vis alle konfigurationsrelaterede indstillinger.",
+   "Deltag i eller v\303\246r v\303\246rt for en netplay session.",
    "Opdater online",
    "Hent tilf\303\270jelser, komponenter og indhold til RetroArch.",
-   "Deltag i eller v\303\246r v\303\246rt for en netplay session.",
    "Indstillinger",
    "Indstil programmet.",
    "Vis systemoplysninger.",
-   "Konfigurationsfil",
-   "H\303\245ndter og opret konfigurationsfiler.",
-   "Hj\303\246lp",
-   "L\303\246s mere om, hvordan programmet virker.",
    "Luk",
    "Hent en kerne",
    "Hent og installer en kerne fra onlineopdateringsprogrammet.",
    "Installer eller gendan en kerne",
    "Install\303\251r eller gendan en kerne fra mappen 'Downloads'.",
-   "Start Videoprocessor",
    "Start Mappe",
    "Gennemse Arkiv",
    "Indl\303\246s Arkiv",
@@ -347,10 +351,6 @@ static const struct
    "Sk\303\246rmens DPI",
    "Pr\303\246stationer",
    "Co-op Underst\303\270ttet",
-   "Indl\303\246s konfiguration",
-   "Gem aktuel konfiguration",
-   "Gem ny konfiguration",
-   "Nulstil til standardindstillinger",
    "Rul Op",
    "Rul Ned",
    "Bekr\303\246ft",
@@ -359,6 +359,8 @@ static const struct
    "Sl\303\245 Tastatur Til/Fra",
    "Drivere",
    "Skift drivere, der bruges af systemet.",
+   "Skift indstillinger for videooutput.",
+   "Output native, lavopl\303\270sningssignaler til brug med CRT-sk\303\246rme.",
    "Skift indstillinger for videooutput.",
    "Lyd",
    "Skift controller, tastatur og mus indstillinger.",
@@ -372,12 +374,11 @@ static const struct
    "Skift gemmeindstillinger.",
    "Logning",
    "Skift logf\303\270ringsindstillinger.",
-   "Filh\303\245ndtering",
    "Skift indstillingerne for spoling tilbage, spoling frem og slow motion.",
-   "Optager",
-   "Skift optagelsesindstillinger.",
    "\303\206ndre sk\303\246rmoverlejring og tastaturoverlejring og notifikationsindstillinger p\303"
    "\245 sk\303\246rmen.",
+   "Hurtig Menu",
+   "Indstillinger",
    "Brugergr\303\246nseflade",
    "Skift indstillinger for brugergr\303\246nseflade.",
    "AI Tjeneste",
@@ -386,8 +387,11 @@ static const struct
    "Skift indstillinger for tilg\303\246ngelighedsfort\303\246lleren.",
    "Str\303\270mstyring",
    "Skift indstillinger for str\303\270mstyring.",
+   "Filh\303\245ndtering",
    "Pr\303\246stationer",
    "Skift indstillinger for pr\303\246stationer.",
+   "Optager",
+   "Skift optagelsesindstillinger.",
    "Netv\303\246rk",
    "Skift server og netv\303\246rksindstillinger.",
    "Spilleliste",
@@ -401,8 +405,6 @@ static const struct
    "Kamera",
    "Placering",
    "Optag",
-   "Output native, lavopl\303\270sningssignaler til brug med CRT-sk\303\246rme.",
-   "Skift indstillinger for videooutput.",
    "Fuldsk\303\246rmstilstand",
    "Skift indstillinger for fuldsk\303\246rmstilstand.",
    "Vinduestilstand",
@@ -410,8 +412,6 @@ static const struct
    "Lyd",
    "Luk",
    "AI Tjeneste",
-   "Hurtig Menu",
-   "Indstillinger",
    "Hovedmenu",
    "Pr\303\246stationer",
    "Historik",
@@ -464,8 +464,10 @@ static const uint32_t msg_hash_da_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -478,25 +480,27 @@ static const uint32_t msg_hash_da_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
@@ -575,10 +579,6 @@ static const uint32_t msg_hash_da_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
@@ -588,6 +588,8 @@ static const uint32_t msg_hash_da_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -600,11 +602,10 @@ static const uint32_t msg_hash_da_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
@@ -613,8 +614,11 @@ static const uint32_t msg_hash_da_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -628,8 +632,6 @@ static const uint32_t msg_hash_da_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
@@ -637,8 +639,6 @@ static const uint32_t msg_hash_da_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,

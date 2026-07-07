@@ -24,8 +24,20 @@ static const struct
    char s_99eb425d[10];
    char s_ec59110b[20];
    char s_7632d987[20];
+   char s_f465878a[42];
+   char s_12510638[78];
+   char s_ef4c4376[22];
+   char s_caa797e4[78];
+   char s_7d65b67e[19];
+   char s_9b51352c[33];
+   char s_d21c686b[31];
+   char s_d7fc4c9c[38];
    char s_36265c93[12];
    char s_544da5c1[59];
+   char s_3e3caa7d[27];
+   char s_d9bcee6b[68];
+   char s_136eaaf4[28];
+   char s_193e1462[55];
    char s_d7f2cfac[17];
    char s_35f2309a[36];
    char s_87e07c0e[20];
@@ -33,53 +45,77 @@ static const struct
    char s_70c7c198[411];
    char s_e3d18a3d[19];
    char s_c6e1f92b[39];
+   char s_7fec5ca7[15];
+   char s_c50aa955[64];
    char s_99bfa829[412];
    char s_d15b342a[18];
    char s_2f5a9518[113];
    char s_6ebb6a00[19];
    char s_ccbacaee[113];
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    char s_e65393d5[19];
    char s_043f1283[49];
+#endif
 #endif
    char s_b3cc8a43[18];
    char s_d34eb231[74];
    char s_061657e6[20];
    char s_243da114[72];
-   char s_ed013a05[31];
-   char s_4b009af3[45];
-   char s_136eaaf4[28];
-   char s_193e1462[55];
-   char s_e2c6c781[22];
-   char s_f28ded2f[89];
-   char s_62564465[15];
-   char s_198c91d3[54];
-   char s_4aaeeb99[10];
-   char s_e8aee6c7[25];
-   char s_d81bf7a9[13];
-   char s_9eb26572[38];
-   char s_6155456e[26];
-   char s_4a3d27dc[48];
-   char s_2f9a064c[5];
-   char s_8d99673a[51];
-   char s_59980356[12];
-   char s_3ca87244[37];
-   char s_95cf0994[8];
-   char s_a5962f42[96];
-   char s_0c7750cd[100];
-   char s_24e40f00[327];
    char s_6c74f3ea[24];
    char s_555cd658[59];
    char s_7bd7aa88[45];
    char s_1757ee76[76];
    char s_0674b554[48];
    char s_11fd7702[104];
+   char s_6155456e[26];
+   char s_4a3d27dc[48];
+   char s_ce5f3353[26];
+   char s_de265901[71];
+   char s_87ee250e[38];
+   char s_70d6077c[45];
+   char s_a11934f5[39];
+   char s_a9c51063[64];
+   char s_1938dce6[39];
+   char s_1f084654[66];
+   char s_04681a15[59];
+   char s_2d24a503[166];
+   char s_91e11405[61];
+   char s_31124733[198];
+   char s_046a0f66[57];
+   char s_2d269a54[154];
+   char s_ac55f414[52];
+   char s_f660f282[111];
+   char s_9033d924[65];
+   char s_c07e8fd2[146];
+   char s_ac57e965[50];
+   char s_f662e7d3[94];
+   char s_2f9a064c[5];
+   char s_8d99673a[51];
+   char s_ed013a05[31];
+   char s_4b009af3[45];
+   char s_62564465[15];
+   char s_198c91d3[54];
+   char s_e2c6c781[22];
+   char s_f28ded2f[89];
+#ifdef HAVE_MIST
+   char s_c3f0e1ff[18];
+   char s_c9c04b6d[61];
+#endif
+   char s_4aaeeb99[10];
+   char s_e8aee6c7[25];
+   char s_d81bf7a9[13];
+   char s_9eb26572[38];
+   char s_59980356[12];
+   char s_3ca87244[37];
+   char s_95cf0994[8];
+   char s_a5962f42[96];
+   char s_0c7750cd[100];
+   char s_24e40f00[327];
    char s_d31f6d88[23];
    char s_f2a19576[69];
    char s_01a73130[32];
    char s_46c57dde[72];
-   char s_d21c686b[31];
-   char s_d7fc4c9c[38];
    char s_941e50fb[22];
    char s_10342503[18];
    char s_164566fb[20];
@@ -218,18 +254,10 @@ static const struct
    char s_cf24fcc2[26];
    char s_f751c497[26];
    char s_046d0e21[27];
-   char s_ce5f3353[26];
-   char s_de265901[71];
-   char s_87ee250e[38];
-   char s_70d6077c[45];
-   char s_a11934f5[39];
-   char s_a9c51063[64];
    char s_dff02a9f[34];
    char s_efb7504d[86];
    char s_6f02b5b0[40];
    char s_8d29fede[76];
-   char s_1938dce6[39];
-   char s_1f084654[66];
    char s_7fc52043[28];
    char s_8584f1d6[27];
    char s_14ec7b7e[10];
@@ -237,12 +265,26 @@ static const struct
    char s_c7a999e6[25];
    char s_00614813[8];
    char s_9509d1c2[28];
+#ifdef HAVE_LIBNX
+   char s_09902e71[26];
+   char s_4eae7b1f[40];
+#endif
+   char s_80a2b273[12];
+   char s_33f012e4[10];
    char s_3674ba44[8];
    char s_3f2095b2[48];
    char s_580e244f[7];
    char s_67d549fd[41];
+   char s_6a07da9c[38];
+   char s_79b8ce4a[113];
+   char s_57665cff[14];
+   char s_19d092ed[41];
    char s_49b0b12a[7];
    char s_5977d6d8[50];
+   char s_c82d0aee[20];
+   char s_ce113b1c[40];
+   char s_b00815b8[13];
+   char s_8b636a26[39];
    char s_980ef0e8[9];
    char s_a7d61696[55];
    char s_84d3d068[8];
@@ -252,20 +294,30 @@ static const struct
    char s_f496371e[71];
    char s_e7a63560[11];
    char s_f05210ce[38];
+   char s_8cb3b95f[15];
+   char s_aadb028d[42];
+   char s_a46a4178[20];
+   char s_aa39aae6[75];
+   char s_749f0441[12];
+   char s_7d4adfaf[39];
+   char s_1c0f54f0[29];
+   char s_e531c55e[175];
+   char s_f6f3a242[20];
+   char s_23fb75d2[45];
    char s_780eb7cb[30];
    char s_60f69a39[57];
    char s_152cd261[41];
    char s_f83d414f[120];
    char s_0a05438c[42];
-   char s_5dd46898[56];
-   char s_7505029f[44];
-   char s_1b34e389[36];
-   char s_1a1260db[36];
-   char s_203e9e86[113];
-   char s_7ad46c0d[101];
-   char s_2ae5d737[271];
-   char s_29c35489[184];
    char s_19b6373a[138];
+   char s_5dd46898[56];
+   char s_203e9e86[113];
+   char s_7505029f[44];
+   char s_7ad46c0d[101];
+   char s_1b34e389[36];
+   char s_2ae5d737[271];
+   char s_1a1260db[36];
+   char s_29c35489[184];
    char s_fb12e29b[24];
    char s_00f712c9[207];
    char s_96114701[12];
@@ -284,10 +336,50 @@ static const struct
    char s_6fc5fb8e[63];
    char s_d4c7eb99[23];
    char s_c23869c7[66];
-   char s_8cb3b95f[15];
-   char s_aadb028d[42];
+   char s_a670da0a[22];
+   char s_5dc056f8[115];
+   char s_d894f9b6[27];
+   char s_8fe476a4[55];
+   char s_7895cc5b[26];
+   char s_2fe54949[64];
+   char s_e46faa42[24];
+   char s_f4209df0[156];
+   char s_a03291c6[25];
+   char s_a616c1f4[54];
+   char s_ee71e86e[26];
+   char s_6b12dfdc[38];
+   char s_46f50d5b[28];
+   char s_3fb95f49[50];
+   char s_ceb820ad[10];
+   char s_ee3a489b[56];
+#ifdef _3DS
+   char s_fcde5521[37];
+   char s_02c2854f[57];
+#endif
+   char s_729a38da[35];
+   char s_5b821b48[56];
+   char s_260261d6[12];
+   char s_dd51dec4[56];
+   char s_302fdd56[10];
+   char s_35ff46c4[63];
+   char s_7277e127[22];
+   char s_78474a95[51];
+   char s_2e5078b2[11];
+   char s_17385b20[62];
+   char s_4ad41e20[15];
+   char s_5a8511ce[54];
+   char s_56e21ee1[26];
+   char s_0e319bcf[53];
    char s_3a0a3fef[23];
    char s_db495a9d[50];
+   char s_62144cdf[8];
+   char s_2b36bd4d[36];
+   char s_00641f14[10];
+   char s_c9868f82[81];
+   char s_176b2dac[12];
+   char s_e08d9e1a[103];
+   char s_a685766d[26];
+   char s_c4acbf9b[50];
    char s_513ae2ac[26];
    char s_1d921fac[30];
    char s_f319134a[43];
@@ -308,22 +400,8 @@ static const struct
    char s_952ec37c[64];
    char s_11786a7f[85];
    char s_17671a2b[50];
-   char s_a46a4178[20];
-   char s_aa39aae6[75];
    char s_1b8a5cb5[15];
    char s_60a8a963[41];
-   char s_a670da0a[22];
-   char s_5dc056f8[115];
-   char s_7277e127[22];
-   char s_78474a95[51];
-   char s_2e5078b2[11];
-   char s_17385b20[62];
-   char s_4ad41e20[15];
-   char s_5a8511ce[54];
-   char s_56e21ee1[26];
-   char s_0e319bcf[53];
-   char s_62144cdf[8];
-   char s_2b36bd4d[36];
    char s_87d88aa2[8];
    char s_a5ffd3d0[49];
    char s_8d94cfea[18];
@@ -429,19 +507,15 @@ static const struct
    char s_91a0a3a0[59];
    char s_fd726b56[6];
    char s_d8cdbfc4[47];
-   char s_6a07da9c[38];
-   char s_79b8ce4a[113];
-   char s_57665cff[14];
-   char s_19d092ed[41];
    char s_020e2bc5[18];
    char s_0d96ed73[45];
    char s_ebf10493[15];
    char s_d96182c1[42];
+   char s_730df420[23];
+   char s_7e96b5ce[50];
    char s_69b801ef[19];
    char s_7968f59d[53];
    char s_82fab47a[45];
-   char s_730df420[23];
-   char s_7e96b5ce[50];
    char s_e92f8e07[52];
    char s_ef13be35[97];
    char s_752ce8b2[44];
@@ -456,10 +530,10 @@ static const struct
    char s_b495662b[157];
    char s_4bceefff[26];
    char s_14f1606d[312];
-   char s_353c64eb_0[500];
-   char s_353c64eb_1[270];
    char s_4577a14d[41];
    char s_07e1d73b[379];
+   char s_353c64eb_0[500];
+   char s_353c64eb_1[270];
    char s_5fdad539[311];
    char s_6c52dfb1[35];
    char s_47ae341f[118];
@@ -520,10 +594,10 @@ static const struct
    char s_282f7955[100];
    char s_e97bb565[18];
    char s_8abad013[78];
-   char s_df3def90[35];
-   char s_a1a8257e[123];
    char s_4bcbcc14[47];
    char s_74022c02[121];
+   char s_df3def90[35];
+   char s_a1a8257e[123];
    char s_61213f1d[21];
    char s_4a09218b[36];
    char s_4b0e8809[201];
@@ -553,11 +627,11 @@ static const struct
    char s_d9c2db25[70];
    char s_71ebd242[62];
    char s_0d6c1630[102];
+   char s_133cc3d1[79];
+   char s_1ec5857f[67];
    char s_0ef856cb[41];
    char s_22ee45f4[42];
    char s_9a90acec[28];
-   char s_133cc3d1[79];
-   char s_1ec5857f[67];
 #if defined(DINGUX) && defined(DINGUX_BETA)
    char s_f98e1e26[41];
    char s_b0dd9b14[107];
@@ -665,14 +739,18 @@ static const struct
    char s_8cee3615[211];
    char s_6083fff7[17];
    char s_43946ee5[75];
-   char s_16721de3[254];
    char s_44e1c38f[28];
    char s_5492b73d[50];
+   char s_16721de3[254];
    char s_abab74fb[187];
    char s_6665b7fc[64];
    char s_01e5fbea[345];
    char s_57047267[9];
    char s_c0a60ee2[298];
+   char s_a779dce9[31];
+   char s_8a8a4bd7[241];
+   char s_e645f7ac[35];
+   char s_a8b02d9a[158];
    char s_25a21976[67];
    char s_6ac06624[185];
    char s_9953f4e2[264];
@@ -684,10 +762,6 @@ static const struct
    char s_30acd6fb[22];
    char s_3c3598a9[49];
    char s_4be9dc09[29];
-   char s_c82d0aee[20];
-   char s_ce113b1c[40];
-   char s_b00815b8[13];
-   char s_8b636a26[39];
    char s_ad791974[5];
    char s_cb649822[15];
    char s_76e73138[24];
@@ -702,25 +776,27 @@ static const struct
    char s_8c6b0fea[50];
    char s_04b30c51[20];
    char s_4b78ee7f[88];
-   char s_61afc6bd[181];
    char s_e2062515[30];
    char s_272471c3[97];
+   char s_61afc6bd[181];
    char s_48c208ee[12];
    char s_66e9521c[77];
    char s_a38cafbb[22];
    char s_a95c1929[39];
    char s_e5aeacf9[21];
    char s_aed11d67[133];
-   char s_24976a5b[35];
-   char s_dbe6e749[98];
    char s_5209cc72[46];
    char s_ed8a1060[113];
+   char s_24976a5b[35];
+   char s_dbe6e749[98];
    char s_98760b94[40];
    char s_5832a2c2[132];
    char s_dcf2e800[4];
    char s_23b8ca2e[25];
    char s_da068369[16];
    char s_20cc6597[108];
+   char s_b271ae95[27];
+   char s_95821d83[50];
    char s_37033dd5[108];
    char s_534835b5[65];
    char s_5f9d9369[83];
@@ -730,21 +806,31 @@ static const struct
    char s_98b02857[197];
 #ifdef HAVE_MICROPHONE
    char s_b6f7f650[122];
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
    char s_d0fb22cb[16];
    char s_b40b91b9[119];
-   char s_86e940b7[108];
-   char s_ca9a92ae[33];
-   char s_b80b10dc[210];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    char s_b4868136[38];
    char s_76f0b724[113];
+   char s_ca9a92ae[33];
+   char s_b80b10dc[210];
+   char s_86e940b7[108];
    char s_4eb68c0b[30];
    char s_93d4d8b9[133];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
    char s_e501ec1b[21];
    char s_f5c1d149[223];
    char s_5a6c78fd[35];
    char s_65f53aab[113];
    char s_73295c14[46];
    char s_b37744c2[113];
+#endif
 #endif
    char s_affd948c[33];
    char s_b5ccfdfa[210];
@@ -754,12 +840,11 @@ static const struct
    char s_734f5242[40];
    char s_330be970_0[500];
    char s_330be970_1[109];
-   char s_b271ae95[27];
-   char s_95821d83[50];
    char s_ad7c73f6[16];
    char s_cb67f2a4[35];
    char s_a9d2227f[36];
    char s_6c3c586d[222];
+   char s_af6007a1[17];
    char s_c435566b[366];
    char s_3943c7ae[37];
    char s_f9005edc[181];
@@ -797,9 +882,49 @@ static const struct
    char s_d3213ff3[34];
    char s_7c68a1ee[31];
    char s_85147d5c[82];
+   char s_dedb2642[28];
+   char s_a7fd96b0[75];
+   char s_0d5e69d1[37];
+   char s_c4ade6bf[41];
+   char s_54e5819b[35];
+   char s_1e07f209[49];
+   char s_998970f0[52];
+   char s_c245fbde[61];
+   char s_3518bec3[51];
+   char s_7566a771[143];
+   char s_8b47a498[27];
+   char s_d20d86c6[71];
+   char s_f33a0acb[34];
+   char s_12bc32b9[81];
+   char s_f445b2f8[37];
+   char s_13c7dae6[89];
+   char s_e8636306[33];
+   char s_40a4eb2b[72];
+   char s_8c49943c[27];
+   char s_6f5a032a[52];
    char s_38cf005e[49];
    char s_f88b978c[175];
    char s_78cabcca[485];
+   char s_7febe11e[47];
+   char s_0b56ad4c[68];
+   char s_88226df7[30];
+   char s_47df0525[61];
+   char s_aded1e43[59];
+   char s_6da9b571[282];
+   char s_0b32f489[62];
+   char s_c2827177[162];
+   char s_1c82054d[29];
+   char s_09f2837b[311];
+   char s_989836e4[35];
+   char s_4fe7b3d2[158];
+   char s_03ce40b4[36];
+   char s_137f3462[126];
+   char s_6f199f35[42];
+   char s_5c8a1d63[120];
+   char s_0d7d9688[29];
+   char s_aebcb136[183];
+   char s_25464734[39];
+   char s_2b2a7762[90];
    char s_9c702ee1[46];
    char s_5c2cc60f[103];
    char s_efa8d516[33];
@@ -815,46 +940,58 @@ static const struct
    char s_e8eeac31[74];
    char s_2bd047ef[373];
 #endif
+   char s_926f9e93[28];
+   char s_5b920f01[133];
+   char s_b1e1d992[21];
+   char s_744c0f80[83];
+   char s_6ae6f953[25];
+   char s_2aa39081[48];
    char s_dad749ea[41];
    char s_e0bb7a18[253];
    char s_df1031f3[33];
    char s_a17a67e1[74];
    char s_0b2a8528[54];
    char s_cd94bb16[227];
+   char s_12b25a4b[58];
+   char s_fb9a3cb9[84];
    char s_f9ee4a82[12];
    char s_7beff2c4[8];
    char s_ea5757a0[10];
-   char s_12b25a4b[58];
-   char s_fb9a3cb9[84];
-   char s_926f9e93[28];
-   char s_5b920f01[133];
-   char s_b1e1d992[21];
-   char s_744c0f80[83];
-   char s_6ae6f953[25];
    char s_90402655[35];
-   char s_956c0935[26];
-   char s_2aa39081[48];
    char s_a18eb603[46];
-   char s_eae8c57c[25];
-   char s_aaa55caa[111];
+   char s_956c0935[26];
    char s_d5b9f1e3[37];
    char s_8b9af73a[27];
    char s_d0b943e8[84];
    char s_9d0bdbfa[38];
    char s_a5b7b768[76];
+   char s_a7da7dc1[34];
+   char s_6a44b3af[81];
+   char s_22c19b64[26];
+   char s_2e4a5d12[62];
+   char s_da2acf5c[21];
+   char s_c312b1ca[44];
+   char s_eae8c57c[25];
+   char s_aaa55caa[111];
    char s_265dbfa3[64];
    char s_b0e45a57[24];
    char s_543fcabd[17];
    char s_46f6a65d[10];
    char s_e59fc3c9[10];
    char s_2abe1077[57];
+   char s_f07a5367[11];
+   char s_0ea19c95[55];
+   char s_f07432ff[18];
+   char s_0e9b7c2d[100];
+   char s_df29ad9e[13];
+   char s_2447fa4c[44];
+   char s_a60a77f9[57];
+   char s_b5bb6ba7[143];
    char s_feaf16c5[30];
    char s_43cd6373[72];
    char s_3f190ff7[27];
    char s_4eca03a5[207];
    char s_47d26662[14];
-   char s_f07a5367[11];
-   char s_0ea19c95[55];
    char s_0ca3b319[10];
    char s_8c15b43a[32];
    char s_c8370855[36];
@@ -863,24 +1000,12 @@ static const struct
    char s_cb88fe26[336];
    char s_0836e741[268];
    char s_101e8527[394];
-   char s_f07432ff[18];
-   char s_0e9b7c2d[100];
-   char s_df29ad9e[13];
-   char s_2447fa4c[44];
-   char s_a60a77f9[57];
-   char s_b5bb6ba7[143];
-   char s_7dcf9e78[10];
-   char s_351f1b66[37];
-   char s_22c19b64[26];
-   char s_2e4a5d12[62];
-   char s_a7da7dc1[34];
-   char s_6a44b3af[81];
-   char s_da2acf5c[21];
-   char s_c312b1ca[44];
    char s_cde2111a[11];
    char s_13005dc8[125];
    char s_d7c1d887[29];
    char s_dda608b5[384];
+   char s_7dcf9e78[10];
+   char s_351f1b66[37];
    char s_ff583ef3_0[500];
    char s_ff583ef3_1[159];
    char s_ff1b8ce5[19];
@@ -888,55 +1013,19 @@ static const struct
    char s_eaa7274b[53];
    char s_4e447c6c[41];
    char s_984f7ada[116];
-   char s_8b47a498[27];
-   char s_d20d86c6[71];
-   char s_f33a0acb[34];
-   char s_12bc32b9[81];
-   char s_f445b2f8[37];
-   char s_13c7dae6[89];
-   char s_e8636306[33];
-   char s_40a4eb2b[72];
-   char s_8c49943c[27];
-   char s_6f5a032a[52];
-   char s_dedb2642[28];
-   char s_a7fd96b0[75];
-   char s_989836e4[35];
-   char s_4fe7b3d2[158];
-   char s_03ce40b4[36];
-   char s_137f3462[126];
-   char s_6f199f35[42];
-   char s_5c8a1d63[120];
-   char s_0d7d9688[29];
-   char s_aebcb136[183];
-   char s_25464734[39];
-   char s_2b2a7762[90];
    char s_5b3c8098[30];
    char s_7963c9c6[77];
    char s_c2aa7439[22];
    char s_a5bae327[81];
-   char s_0d5e69d1[37];
-   char s_c4ade6bf[41];
-   char s_54e5819b[35];
-   char s_1e07f209[49];
-   char s_998970f0[52];
-   char s_c245fbde[61];
-   char s_3518bec3[51];
-   char s_7566a771[143];
+   char s_a4d3948f[20];
+   char s_7f75b005[43];
+   char s_7ca0c97c[42];
+   char s_c7e66e0a[43];
    char s_63fbe677[20];
    char s_23b87da5[447];
    char s_1aa5e88e[409];
-   char s_aded1e43[59];
-   char s_6da9b571[282];
-   char s_0b32f489[62];
-   char s_c2827177[162];
-   char s_1c82054d[29];
-   char s_09f2837b[311];
-   char s_7febe11e[47];
-   char s_0b56ad4c[68];
    char s_00ea00d3[24];
    char s_109af481[56];
-   char s_88226df7[30];
-   char s_47df0525[61];
    char s_87071f08[8];
    char s_6fef0176[120];
    char s_f8b9e275[18];
@@ -1151,8 +1240,6 @@ static const struct
    char s_e567aa86[18];
    char s_c8781974[163];
 #ifdef HAVE_MIST
-   char s_c3f0e1ff[18];
-   char s_c9c04b6d[61];
    char s_3e0f9900[19];
    char s_67b3c923[23];
    char s_53788998[29];
@@ -1192,34 +1279,38 @@ static const struct
    char s_9b87fbf9[139];
    char s_9f1f3534[81];
    char s_822fa422[100];
-   char s_550d5320[220];
    char s_827ceb62[49];
    char s_6fed6990[122];
-   char s_9998fdce[357];
-   char s_1ece29a0[44];
-   char s_c00d444e[118];
-   char s_4caab10c[239];
-   char s_b464a65a[100];
-   char s_18e4626c[51];
-   char s_1382c258[259];
    char s_b191aa47[63];
    char s_b775da75[207];
-   char s_008141e4[46];
-   char s_e391b0d2[183];
    char s_53b632e1[76];
    char s_98d47f8f[404];
+   char s_008141e4[46];
+   char s_e391b0d2[183];
    char s_b7b13f3e[59];
    char s_c05d1aac[327];
+   char s_1ece29a0[44];
+   char s_c00d444e[118];
+   char s_18e4626c[51];
+   char s_b464a65a[100];
+   char s_7d19b727[51];
+   char s_66019995[98];
+   char s_be87312d[49];
+   char s_5a07751b[121];
+   char s_18fce787[39];
+   char s_db671d75[301];
+   char s_fe3e1d48[38];
+   char s_9f7d37f6[192];
+   char s_550d5320[220];
+   char s_9998fdce[357];
+   char s_4caab10c[239];
+   char s_1382c258[259];
    char s_7201eede[49];
    char s_5ae9d14c[189];
    char s_71fe510f[49];
    char s_5ae6337d[62];
    char s_f246e141[37];
    char s_9385fbef[59];
-   char s_18fce787[39];
-   char s_db671d75[301];
-   char s_fe3e1d48[38];
-   char s_9f7d37f6[192];
    char s_8dec52be[62];
    char s_0a8d4a2c[60];
    char s_7614d29f[61];
@@ -1230,25 +1321,21 @@ static const struct
    char s_76ebe1a8[103];
    char s_b03e11ed[54];
    char s_d8fa9cdb[66];
-   char s_7d19b727[51];
-   char s_66019995[98];
-   char s_be87312d[49];
-   char s_5a07751b[121];
    char s_a624fe50[32];
    char s_c5a7263e[65];
    char s_998d1a40[49];
    char s_deab66ee[179];
    char s_9f6b2d03[36];
    char s_e48979b1[153];
+   char s_074440cb[28];
+   char s_e29f9539[159];
+   char s_bfe3f81e[38];
+   char s_824e2e0c[209];
    char s_131d086f[322];
    char s_ea2e0a76[15];
    char s_5c70e4fb[9];
    char s_dc362405[18];
    char s_ea478739[11];
-   char s_074440cb[28];
-   char s_e29f9539[159];
-   char s_bfe3f81e[38];
-   char s_824e2e0c[209];
    char s_97379d00[25];
    char s_a6fec2ae[181];
    char s_62458ec6[42];
@@ -1265,15 +1352,7 @@ static const struct
    char s_62584165[96];
    char s_a158a19e[44];
    char s_611538cc[97];
-   char s_749f0441[12];
-   char s_7d4adfaf[39];
-   char s_1c0f54f0[29];
-   char s_e531c55e[175];
-   char s_a779dce9[31];
-   char s_8a8a4bd7[241];
    char s_5d67fad5[339];
-   char s_e645f7ac[35];
-   char s_a8b02d9a[158];
    char s_608ac5a1[32];
    char s_7eb20ecf[69];
    char s_f02f73fc[34];
@@ -1298,6 +1377,7 @@ static const struct
    char s_18089aa6[12];
    char s_bdd10920[20];
    char s_6f9583dc[47];
+   char s_b24d8753[23];
    char s_3ea80887[39];
    char s_6cdf4f07[53];
    char s_2c9be635[145];
@@ -1311,17 +1391,10 @@ static const struct
    char s_7e8c6399[8];
    char s_eb4eab83[9];
    char s_d748f469[43];
-   char s_b24d8753[23];
    char s_52e94a24[21];
    char s_eea0ed20[20];
-   char s_d894f9b6[27];
-   char s_8fe476a4[55];
    char s_27b523c8[25];
    char s_333de576[38];
-   char s_ee71e86e[26];
-   char s_6b12dfdc[38];
-   char s_46f50d5b[28];
-   char s_3fb95f49[50];
    char s_b662d01f[26];
    char s_bc47004d[84];
    char s_0c353c96[44];
@@ -1382,14 +1455,8 @@ static const struct
    char s_b16d53a9[213];
    char s_8cf7b8bc[44];
    char s_444735aa[206];
-   char s_a03291c6[25];
-   char s_a616c1f4[54];
    char s_d73ce37f[57];
    char s_c4ad61ad[159];
-   char s_7895cc5b[26];
-   char s_2fe54949[64];
-   char s_e46faa42[24];
-   char s_f4209df0[156];
    char s_e2ff8b88[41];
    char s_281dd836[79];
    char s_267cef24[59];
@@ -1398,7 +1465,6 @@ static const struct
    char s_d9e33a3c[85];
    char s_c4a9bd3e[17];
    char s_8dcc2dac[94];
-   char s_51d76325[5];
    char s_b6192beb[23];
    char s_f139b159[62];
    char s_4d00e91b[34];
@@ -1411,6 +1477,7 @@ static const struct
    char s_791ba074[174];
    char s_8dc6f512[29];
    char s_9f1584c0[104];
+   char s_51d76325[5];
    char s_9dd66391[21];
    char s_5525e07f[47];
    char s_2be118c6[30];
@@ -1422,9 +1489,9 @@ static const struct
    char s_68207d70[26];
    char s_03a0c15e[84];
    char s_bb673df4[20];
+   char s_05723c62[157];
    char s_f52bfd6b[33];
    char s_304c82d9[91];
-   char s_05723c62[157];
    char s_49f9815b[26];
    char s_2d09f049[34];
    char s_9b2a97d9[19];
@@ -1439,28 +1506,28 @@ static const struct
    char s_368efbdf[38];
    char s_cb7ae477[52];
    char s_b462c6e5[77];
-   char s_5333adbc[30];
-   char s_5bdf892a[43];
-   char s_a35a9e13[26];
-   char s_ac067981[50];
    char s_d86adca1[38];
    char s_b3c6310f[71];
    char s_a17f6a67[66];
    char s_b1305e15[95];
    char s_89cbf597[17];
    char s_e7cb5685[52];
+   char s_a35a9e13[26];
+   char s_ac067981[50];
+   char s_5333adbc[30];
+   char s_5bdf892a[43];
    char s_69e645f2[35];
    char s_4cf6b4e0[57];
    char s_df92f5b5[38];
    char s_f052dae3[72];
    char s_e53de5dd[87];
+   char s_d2ae640b[97];
    char s_4e0dc3eb[80];
+   char s_8e5bac99[102];
    char s_17e361a4[24];
    char s_28a346d2[76];
    char s_92e516dc[24];
    char s_0f860e4a[87];
-   char s_d2ae640b[97];
-   char s_8e5bac99[102];
    char s_5621f902[54];
    char s_43927730[90];
    char s_883e5f82[62];
@@ -1477,20 +1544,20 @@ static const struct
    char s_14fd9cfa[61];
    char s_ba69b8b1[52];
    char s_b32e0a9f[63];
-   char s_c161ab59[8];
-   char s_7cfc693e[7];
-   char s_37226be3[13];
-   char s_6a74add1[13];
    char s_6a8b9b19[44];
    char s_aad983c7[77];
-   char s_fb0fc8c1[17];
-   char s_8a340ca6[16];
    char s_3bc50248[54];
    char s_474dc3f6[88];
    char s_686b74ae[49];
    char s_e50c6c1c[68];
    char s_fa3fe57f[38];
    char s_85aab1ad[66];
+   char s_c161ab59[8];
+   char s_7cfc693e[7];
+   char s_37226be3[13];
+   char s_6a74add1[13];
+   char s_fb0fc8c1[17];
+   char s_8a340ca6[16];
    char s_ddc4f021[26];
    char s_e670cb8f[60];
    char s_ddc6b80f[26];
@@ -1515,22 +1582,20 @@ static const struct
    char s_c0f9a2df[128];
    char s_f8c85dc2[44];
    char s_9448a1b0[125];
-   char s_ceb820ad[10];
-   char s_ee3a489b[56];
-   char s_729a38da[35];
-   char s_5b821b48[56];
    char s_705eee28[53];
    char s_802613d6[46];
-   char s_62af62ac[60];
-   char s_6b5b3e1a[72];
-   char s_f4341e25[37];
-   char s_ab839b13[150];
-   char s_3e2bdc96[40];
-   char s_00961284[147];
    char s_f89e1cbc[71];
    char s_bb0852aa[220];
    char s_ba248c4b[53];
    char s_bff3f5b9[117];
+   char s_3e2bdc96[40];
+   char s_00961284[147];
+   char s_7f5c6d63[55];
+   char s_3f190491[110];
+   char s_62af62ac[60];
+   char s_6b5b3e1a[72];
+   char s_f4341e25[37];
+   char s_ab839b13[150];
    char s_e829b8da[36];
    char s_aa93eec8[105];
    char s_c561b96e[32];
@@ -1539,36 +1604,26 @@ static const struct
    char s_788364f5[84];
    char s_2696c793[59];
    char s_e6535ec1[238];
+   char s_35c29e50[58];
+   char s_3b9207be[163];
+   char s_ac60056b[19];
+   char s_8f707459[37];
    char s_9f2cc577[29];
    char s_e5f2a7a5[48];
    char s_77155e0f[27];
    char s_86dc83bd[55];
    char s_68664e16[40];
    char s_55d6cc44[55];
-   char s_7f5c6d63[55];
-   char s_3f190491[110];
    char s_9dfc61bc[45];
    char s_3f3b7c6a[122];
-   char s_bd50c8e2[6];
-   char s_73897039[14];
    char s_676ad14c[55];
    char s_782ab67a[78];
+   char s_bd50c8e2[6];
+   char s_73897039[14];
    char s_33a76811[92];
-   char s_a4d3948f[20];
-   char s_7f75b005[43];
    char s_ad523771[60];
-   char s_7ca0c97c[42];
-   char s_c7e66e0a[43];
-#ifdef _3DS
-   char s_fcde5521[37];
-   char s_02c2854f[57];
-#endif
    char s_d9a51d02[18];
    char s_f7cc6630[35];
-   char s_260261d6[12];
-   char s_dd51dec4[56];
-   char s_302fdd56[10];
-   char s_35ff46c4[63];
    char s_dcbf8b04[28];
    char s_c5a76d72[61];
    char s_645ae416[30];
@@ -1617,14 +1672,12 @@ static const struct
    char s_78b01731[28];
    char s_342dd239[18];
    char s_794c1ee7[28];
-   char s_86ec481f[26];
-   char s_8cd0784d[85];
    char s_c253a614[22];
    char s_c837d642[42];
+   char s_86ec481f[26];
+   char s_8cd0784d[85];
    char s_6f6d3a5c[31];
    char s_7f1e2e0a[90];
-   char s_9da5609f[15];
-   char s_269e5dff[27];
    char s_b054c007[29];
    char s_c005b3b5[157];
    char s_4e3bbebd[41];
@@ -1633,6 +1686,8 @@ static const struct
    char s_040bd4cf[47];
    char s_5ac8bccf[31];
    char s_66517e7d[236];
+   char s_9da5609f[15];
+   char s_269e5dff[27];
    char s_6262776d[5];
    char s_93bae0e3[13];
    char s_25f1508f[14];
@@ -1770,13 +1825,9 @@ static const struct
    char s_41702fdc[73];
    char s_2a273dd7[34];
    char s_6f458a85[120];
-   char s_35c29e50[58];
-   char s_3b9207be[163];
    char s_8b835c60[9];
    char s_202067d4[38];
    char s_6f947f94[51];
-   char s_ac60056b[19];
-   char s_8f707459[37];
    char s_67924166[22];
    char s_703e1cd4[188];
    char s_cab81c29[23];
@@ -1814,8 +1865,6 @@ static const struct
    char s_05186758[79];
    char s_9b90e4dd[14];
    char s_a175150b[99];
-   char s_00641f14[10];
-   char s_c9868f82[81];
    char s_0339e08c[102];
    char s_470f1e1b[18];
    char s_32550f71[18];
@@ -1829,12 +1878,8 @@ static const struct
    char s_f6e584ef[99];
    char s_097506cf[30];
    char s_f6e584fd[108];
-   char s_176b2dac[12];
-   char s_e08d9e1a[103];
    char s_c86e4ca9[23];
    char s_69ad6757[191];
-   char s_b9de718e[26];
-   char s_17d978b1[18];
    char s_76d92467[29];
    char s_2e28a155[59];
    char s_cc5a2e40[27];
@@ -1849,12 +1894,17 @@ static const struct
    char s_81c5d370[118];
    char s_4a4fe394[53];
    char s_5b0fc8c2[83];
+   char s_b9de718e[26];
+   char s_17d978b1[18];
    char s_cc846b8d[34];
    char s_0cd2543b[93];
    char s_2897f730[21];
    char s_3848eade[65];
    char s_3425a408[22];
    char s_d564beb6[87];
+   char s_8dfe6a83[31];
+   char s_11c0c1c0[33];
+   char s_14ca78c0[25];
    char s_d48223f9[40];
    char s_da518d67[195];
    char s_8594979d[27];
@@ -1863,13 +1913,13 @@ static const struct
    char s_19a250ff[142];
    char s_1cfe55cb[43];
    char s_be3d7079[93];
+   char s_5c487242[20];
+   char s_a166bef0[40];
    char s_216de9d9[43];
    char s_216de9da[19];
    char s_216de9db[36];
    char s_216de9dc[16];
    char s_b9e4eae3[14];
-   char s_5c487242[20];
-   char s_a166bef0[40];
    char s_fc6e3a57[28];
    char s_02526a85[64];
    char s_4327ffcc[34];
@@ -1882,7 +1932,6 @@ static const struct
    char s_bc33055d[91];
    char s_1d4d1099[34];
    char s_be8c2b47[47];
-   char s_4b299805[197];
    char s_7481bc33[14];
    char s_57922b21[47];
    char s_6c4b8962[25];
@@ -1897,6 +1946,7 @@ static const struct
    char s_126432dc[142];
    char s_388ef77f[50];
    char s_3e7327ad[109];
+   char s_4b299805[197];
    char s_60255deb_0[500];
    char s_60255deb_1[21];
    char s_6124fb03[29];
@@ -1908,6 +1958,7 @@ static const struct
    char s_4037367a[41];
    char s_02a16c68[165];
    char s_fe173d74[34];
+   char s_7567faa8[34];
    char s_b80a2fc4[30];
    char s_77c6c6f2[59];
    char s_c4ab544b[18];
@@ -1919,8 +1970,6 @@ static const struct
    char s_82d064b1[30];
    char s_9e49780c[43];
    char s_8bb9f63a[142];
-   char s_a685766d[26];
-   char s_c4acbf9b[50];
    char s_eb66d46b[40];
    char s_a2b65159[71];
    char s_bbb615a1[44];
@@ -1949,12 +1998,30 @@ static const struct
    char s_7ff41c9a[129];
    char s_99eec88b[34];
    char s_9fd2f8b9[296];
-   char s_bcc17320[57];
-   char s_c84a34ce[228];
    char s_ce39f356[58];
    char s_d4095cc4[211];
+   char s_f51dc087[62];
+   char s_00a68235[213];
+   char s_9d544d44[59];
+   char s_e75f4bb2[217];
+   char s_bcc17320[57];
+   char s_c84a34ce[228];
+   char s_e9b3e6ae[47];
+   char s_d72464dc[243];
+   char s_5d4e7834[45];
+   char s_631de1a2[120];
+   char s_1532af95[55];
+   char s_fe1a9203[326];
+   char s_db555f31[28];
+   char s_e124c89f[470];
+   char s_20d15d46[69];
+   char s_e33b9334[141];
+   char s_d10cfac6[64];
+   char s_e0bdee74[199];
    char s_0f49d986[78];
    char s_d86c49f4[150];
+   char s_72f86f8f[53];
+   char s_78c7d8fd[152];
    char s_5bbcf84b[8];
    char s_aaccb3e6[15];
    char s_62c35c34[31];
@@ -1972,26 +2039,8 @@ static const struct
    char s_e1c715da[3];
    char s_db01e988[4];
    char s_6bcbf80c[15];
-   char s_72f86f8f[53];
-   char s_78c7d8fd[152];
-   char s_f51dc087[62];
-   char s_00a68235[213];
-   char s_9d544d44[59];
-   char s_e75f4bb2[217];
-   char s_e9b3e6ae[47];
-   char s_d72464dc[243];
-   char s_5d4e7834[45];
-   char s_631de1a2[120];
-   char s_1532af95[55];
-   char s_fe1a9203[326];
    char s_7ea8ec8f[29];
    char s_4113227d[63];
-   char s_db555f31[28];
-   char s_e124c89f[470];
-   char s_20d15d46[69];
-   char s_e33b9334[141];
-   char s_d10cfac6[64];
-   char s_e0bdee74[199];
    char s_74b6dd31[7];
    char s_1078c6c0[18];
    char s_abf90aae[140];
@@ -2013,6 +2062,7 @@ static const struct
    char s_579b5e71[45];
    char s_9528d92a[8];
    char s_b3502258[93];
+   char s_b819d3cc[21];
    char s_8203db0a[8];
    char s_a18602f8[47];
    char s_7e97e2f6[355];
@@ -2122,9 +2172,6 @@ static const struct
    char s_b9e684ee[45];
    char s_ff04d19c[53];
    char s_21e6be74[17];
-   char s_8dfe6a83[31];
-   char s_11c0c1c0[33];
-   char s_14ca78c0[25];
    char s_0b9c6082[50];
    char s_ce069670[38];
    char s_28adc26d[47];
@@ -2264,8 +2311,6 @@ static const struct
    char s_40e095c6[78];
    char s_9c6ed9ca[18];
    char s_a51ab538[32];
-   char s_f465878a[42];
-   char s_12510638[78];
    char s_69b36417[24];
    char s_879ee2c5[84];
    char s_1d269383[231];
@@ -2276,8 +2321,6 @@ static const struct
    char s_a1c071eb[102];
    char s_04f1138c[35];
    char s_0d9ceefa[109];
-   char s_ef4c4376[22];
-   char s_caa797e4[78];
    char s_2010df6a[16];
    char s_fb6c33d8[82];
    char s_91df2193[22];
@@ -2402,7 +2445,6 @@ static const struct
    char s_c61255f9[50];
    char s_5b522dec[30];
    char s_b87e5f63[28];
-   char s_f6f3a242[20];
    char s_cd5f01df[33];
    char s_c689058d[8];
    char s_12b09c0a[13];
@@ -2502,18 +2544,6 @@ static const struct
    char s_ffde1694[48];
    char s_a0c2e468[52];
    char s_632d1a56[97];
-   char s_04681a15[59];
-   char s_2d24a503[166];
-   char s_ac55f414[52];
-   char s_f660f282[111];
-   char s_91e11405[61];
-   char s_31124733[198];
-   char s_9033d924[65];
-   char s_c07e8fd2[146];
-   char s_046a0f66[57];
-   char s_2d269a54[154];
-   char s_ac57e965[50];
-   char s_f662e7d3[94];
    char s_662eb10a[44];
    char s_6eda8c78[73];
    char s_6c78e4f7[26];
@@ -2578,7 +2608,6 @@ static const struct
    char s_fc6b5794[9];
    char s_89d6704c[7];
    char s_c4a36191[6];
-   char s_7567faa8[34];
    char s_88ea76ed[8];
    char s_ea0de502[8];
    char s_51f16286[16];
@@ -2769,6 +2798,10 @@ static const struct
    char s_b5f676b0[73];
    char s_e0747272[47];
    char s_d938c460[112];
+   char s_6dbc522b[35];
+   char s_2d78e959[180];
+   char s_13bce77f[15];
+   char s_236ddb2d[124];
    char s_60864187[51];
    char s_29a8b1f5[279];
    char s_d05c8ee3[25];
@@ -2781,10 +2814,6 @@ static const struct
    char s_32728f95[116];
    char s_1b2ee6c4[42];
    char s_d27e63b2[249];
-   char s_6dbc522b[35];
-   char s_2d78e959[180];
-   char s_13bce77f[15];
-   char s_236ddb2d[124];
    char s_3f9035ee[24];
    char s_404e69aa[12];
    char s_19347691[21];
@@ -2844,6 +2873,8 @@ static const struct
    char s_394e4cd7[42];
    char s_74eeda27[17];
    char s_7d9ab595[70];
+   char s_f4b6d13e[43];
+   char s_fa863aac[76];
    char s_f4116974[24];
    char s_d721d862[72];
    char s_400523e5[22];
@@ -2856,8 +2887,18 @@ static const struct
    char s_0ca85937[61];
    char s_4eecff92[40];
    char s_6d1448c0[57];
+   char s_b66840e9[26];
+   char s_51e884d7[80];
    char s_0ca1128d[22];
    char s_cf0b487b[101];
+   char s_87f05947[30];
+   char s_23709d35[70];
+   char s_a771be4c[29];
+   char s_48b0d8fa[55];
+   char s_5e8d5121[15];
+   char s_20f7870f[70];
+   char s_b201bb70[42];
+   char s_ed2240de[56];
    char s_65e6ea7c[7];
    char s_7b4dd5b5[8];
    char s_232d9d6e[6];
@@ -2880,22 +2921,8 @@ static const struct
    char s_9bb1a0de[214];
    char s_8d5d41b3[19];
    char s_934171e1[63];
-   char s_f4b6d13e[43];
-   char s_fa863aac[76];
    char s_204201cb[46];
    char s_9ce2f939[88];
-   char s_b66840e9[26];
-   char s_51e884d7[80];
-   char s_87f05947[30];
-   char s_23709d35[70];
-   char s_a771be4c[29];
-   char s_48b0d8fa[55];
-   char s_5e8d5121[15];
-   char s_20f7870f[70];
-   char s_b201bb70[42];
-   char s_ed2240de[56];
-   char s_3e3caa7d[27];
-   char s_d9bcee6b[68];
    char s_3baa942f[6];
    char s_e4fd75b4[19];
    char s_3c518be3[13];
@@ -2934,8 +2961,6 @@ static const struct
    char s_dac68b37[74];
    char s_857c70d0[22];
    char s_a3a3b9fe[198];
-   char s_00a1f0c0[8];
-   char s_ab6bb0e4[19];
    char s_8d64f69e[41];
    char s_98edb84c[85];
    char s_3b80240f[53];
@@ -2950,16 +2975,6 @@ static const struct
    char s_d0364fca[115];
    char s_8b46649c[60];
    char s_96cf264a[173];
-   char s_d6198fde[28];
-   char s_e5ca838c[42];
-   char s_1cdff4ac[28];
-   char s_61fe415a[82];
-   char s_a747cdc9[60];
-   char s_94b84bf7[110];
-   char s_9c6cf201[78];
-   char s_d78d776f[125];
-   char s_8cf87433[21];
-   char s_4f62aa21[74];
    char s_6799135b[67];
    char s_03195749[356];
    char s_012938fb[46];
@@ -2970,14 +2985,26 @@ static const struct
    char s_7a3b4611[116];
    char s_1225f32b[23];
    char s_21d6e6d9[73];
+   char s_00a1f0c0[8];
+   char s_ab6bb0e4[19];
+   char s_69a447f7[19];
+   char s_79553ba5[47];
+   char s_1cdff4ac[28];
+   char s_61fe415a[82];
+   char s_d6198fde[28];
+   char s_e5ca838c[42];
+   char s_a747cdc9[60];
+   char s_94b84bf7[110];
+   char s_9c6cf201[78];
+   char s_d78d776f[125];
+   char s_8cf87433[21];
+   char s_4f62aa21[74];
    char s_7f10fcd2[16];
    char s_853efa07[10];
    char s_609cb392[12];
    char s_7206ddda[16];
    char s_0f381893[8];
    char s_89034b68[8];
-   char s_69a447f7[19];
-   char s_79553ba5[47];
    char s_9fd6f744[14];
    char s_9e5d0200[13];
    char s_a51249d0[15];
@@ -2996,16 +3023,16 @@ static const struct
    char s_bcca484f[124];
    char s_74b12047[51];
    char s_85710575[74];
+   char s_16ff0a79[19];
+   char s_e0217ae7[63];
+   char s_f2ae4c72[24];
+   char s_7e1918a0[101];
    char s_5c160fe2[43];
    char s_fb474310[132];
    char s_bc514c4d[32];
    char s_c220b5bb[185];
    char s_c42c1d33[47];
    char s_cfb4dee1[147];
-   char s_16ff0a79[19];
-   char s_e0217ae7[63];
-   char s_f2ae4c72[24];
-   char s_7e1918a0[101];
    char s_3dd406ba[28];
    char s_78f48c28[133];
    char s_e1a10790[27];
@@ -3201,8 +3228,6 @@ static const struct
    char s_bbfb5541[74];
    char s_ddad8b7f[388];
    char s_026e5a83[12];
-   char s_7fec5ca7[15];
-   char s_c50aa955[64];
    char s_9f006f5c[20];
    char s_78ccdecc[39];
    char s_ed43994d[40];
@@ -3213,11 +3238,8 @@ static const struct
    char s_393985fc[35];
    char s_3936fe87[112];
    char s_d2a031dd[21];
-   char s_23fb75d2[45];
    char s_3c44f8dd[33];
    char s_e2055017[9];
-   char s_7d65b67e[19];
-   char s_9b51352c[33];
    char s_9374b989[18];
    char s_2fa1d6ef[30];
    char s_e2f9cd07[12];
@@ -3228,7 +3250,6 @@ static const struct
    char s_49757b91[25];
    char s_aa0659db[25];
    char s_c2f41987[16];
-   char s_b819d3cc[21];
    char s_25babaa7[10];
    char s_d3b03946[12];
    char s_2950bbb6[35];
@@ -3750,11 +3771,11 @@ static const struct
    char s_79a4338e[21];
    char s_2c296537[29];
    char s_6959ce80[18];
-   char s_80a2b273[12];
    char s_da16c634[19];
    char s_0c1e1a65[51];
    char s_cbdab193[381];
    char s_2afa843b[24];
+   char s_0e0af329[56];
    char s_9d27d322[38];
    char s_b8078f78[32];
    char s_fec3d03c[37];
@@ -3764,8 +3785,6 @@ static const struct
    char s_a51503d6[35];
    char s_bff4c02c[29];
    char s_778b9d70[34];
-   char s_0e0af329[56];
-   char s_33f012e4[10];
    char s_3eb95fb2[41];
    char s_6775eaa0[70];
    char s_201dd59e[104];
@@ -3778,8 +3797,8 @@ static const struct
    char s_7059a595[57];
    char s_e0609921[17];
    char s_f6a0db44[24];
-   char s_b3c7fa93[24];
    char s_7f2380a0[13];
+   char s_b3c7fa93[24];
    char s_6a9b757c[35];
    char s_ad14307a[32];
    char s_93ac5ec8[33];
@@ -3815,7 +3834,6 @@ static const struct
    char s_2f169651[23];
    char s_ec502f2a[22];
    char s_fc0122d8[148];
-   char s_af6007a1[17];
    char s_d042d680[8];
    char s_ce89e465[28];
    char s_0e85a0d1[59];
@@ -3835,10 +3853,6 @@ static const struct
    char s_d6c12228[43];
    char s_efe3b3e1[24];
    char s_3502008f[50];
-#ifdef HAVE_LIBNX
-   char s_09902e71[26];
-   char s_4eae7b1f[40];
-#endif
 #ifdef HAVE_LAKKA
    char s_2bab34b2[34];
    char s_96ceb12a[58];
@@ -4002,8 +4016,20 @@ static const struct
    "Parcourir",
    "C\305\223urs sans contenu",
    "Importer du contenu",
+   "Emplacement de la sauvegarde instantan\303\251e",
+   "Modifier l'emplacement de sauvegarde instantan\303\251e actuellement s\303\251lectionn\303\251.",
+   "Emplacement de replay",
+   "Modifier l'emplacement de sauvegarde instantan\303\251e actuellement s\303\251lectionn\303\251.",
+   "D\303\251marrer le c\305\223ur",
+   "D\303\251marrer le c\305\223ur sans contenu.",
+   "D\303\251marrer le processeur vid\303\251o",
+   "D\303\251marrer la RetroManette \303\240 distance",
    "Menu rapide",
    "Acc\303\251der rapidement \303\240 tous les r\303\251glages relatifs au jeu.",
+   "Activer l'onglet R\303\251glages",
+   "Afficher l'onglet R\303\251glages contenant les param\303\250tres du programme.",
+   "D\303\251sactiver le mode kiosque",
+   "Afficher tous les r\303\251glages li\303\251s \303\240 la configuration.",
    "Charger un c\305\223ur",
    "S\303\251lectionner le c\305\223ur \303\240 utiliser.",
    "D\303\251charger le c\305\223ur",
@@ -4016,6 +4042,8 @@ static const struct
    "chier.",
    "Charger du contenu",
    "S\303\251lectionner le contenu \303\240 d\303\251marrer.",
+   "Sous-syst\303\250mes",
+   "Acc\303\251der aux r\303\251glages du sous-syst\303\250me pour le contenu actuel.",
    "Parcourir le contenu. Pour charger du contenu, vous avez besoin d'un 'C\305\223ur' et d'un fichi"
    "er de contenu.\nPour choisir o\303\271 le menu d\303\251marre le navigateur de contenu, d\303"
    "\251finir le dossier 'Navigateur de fichiers'. Si non d\303\251fini, il d\303\251marrera \303"
@@ -4028,32 +4056,69 @@ static const struct
    "Importer le disque",
    "Importer le disque m\303\251dia physique vers le stockage interne. Il sera sauvegard\303\251 ver"
    "s un fichier d'image disque.",
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    "\303\211jecter le disque",
    "\303\211jecte le disque du lecteur de CD/DVD physique.",
+#endif
 #endif
    "Listes de lecture",
    "Le contenu analys\303\251 correspondant \303\240 la base de donn\303\251es appara\303\256tra ici"
    ".",
    "Importer du contenu",
    "Cr\303\251er et mettre \303\240 jour les listes de lecture en analysant le contenu.",
+   "Synchroniser maintenant",
+   "D\303\251clencher manuellement la synchronisation avec le cloud.",
+   "R\303\251soudre les conflits : Garder copie locale",
+   "R\303\251soudre tous les conflits en envoyant les fichiers locaux sur le serveur.",
+   "R\303\251soudre les conflits : Utiliser copie serveur",
+   "R\303\251soudre tous les conflits en t\303\251l\303\251chargeant les fichiers du serveur, rempla"
+   "\303\247ant les copies locales.",
+   "Fichiers de configuration",
+   "G\303\251rer et cr\303\251er les fichiers de configuration.",
+   "Charger une configuration",
+   "Charger la configuration existante et remplacer les valeurs actuelles.",
+   "Enregistrer la configuration actuelle",
+   "\303\211craser le fichier de configuration actuel.",
+   "Enregistrer une nouvelle configuration",
+   "Enregistrer la configuration actuelle dans un fichier s\303\251par\303\251.",
+   "R\303\251initialiser aux valeurs par d\303\251faut",
+   "R\303\251initialiser la configuration actuelle aux valeurs par d\303\251faut.",
+   "Enregistrer la configuration de substitution pour le c\305\223ur",
+   "Enregistrer un fichier de configuration de substitution qui s'appliquera \303\240 tout le conten"
+   "u charg\303\251 avec ce c\305\223ur. Aura la priorit\303\251 sur la configuration principale.",
+   "Enregistrer la configuration de substitution pour le dossier",
+   "Enregistrer un fichier de configuration de substitution qui s'appliquera \303\240 tout le conten"
+   "u charg\303\251 depuis le m\303\252me dossier que le fichier actuel. Aura la priorit\303\251 sur"
+   " la configuration principale.",
+   "Enregistrer la configuration de substitution pour le jeu",
+   "Enregistrer un fichier de configuration de substitution qui s'appliquera uniquement au contenu a"
+   "ctuel. Aura la priorit\303\251 sur la configuration principale.",
+   "Supprimer la configuration de substitution du c\305\223ur",
+   "Supprimer le fichier de configuration de substitution qui s'applique \303\240 tout le contenu ch"
+   "arg\303\251 avec ce c\305\223ur.",
+   "Supprimer la configuration de substitution du dossier de contenu",
+   "Supprimer le fichier de configuration de substitution qui s'applique \303\240 tout le contenu ch"
+   "arg\303\251 \303\240 partir du m\303\252me dossier que le fichier actuel.",
+   "Supprimer la configuration de substitution du jeu",
+   "Supprimer le fichier de configuration de substitution qui ne s'applique qu'au contenu actuel.",
+   "Aide",
+   "En savoir plus sur le fonctionnement du programme.",
    "Afficher l'interface de bureau",
    "Ouvrir l'interface de bureau traditionnelle.",
-   "D\303\251sactiver le mode kiosque",
-   "Afficher tous les r\303\251glages li\303\251s \303\240 la configuration.",
+   "Jeu en r\303\251seau",
+   "Rejoindre ou h\303\251berger une session de jeu en r\303\251seau.",
    "Mise \303\240 jour en ligne",
    "T\303\251l\303\251charger des modules compl\303\251mentaires, des composants et du contenu pour "
    "RetroArch.",
-   "Jeu en r\303\251seau",
-   "Rejoindre ou h\303\251berger une session de jeu en r\303\251seau.",
+#ifdef HAVE_MIST
+   "G\303\251rer les c\305\223urs",
+   "Installer ou d\303\251sinstaller les c\305\223urs distribu\303\251s par Steam.",
+#endif
    "R\303\251glages",
    "Configure l'application.",
    "Informations",
    "Affiche les informations du syst\303\250me.",
-   "Fichiers de configuration",
-   "G\303\251rer et cr\303\251er les fichiers de configuration.",
-   "Aide",
-   "En savoir plus sur le fonctionnement du programme.",
    "Red\303\251marrer",
    "Red\303\251marrer l'application RetroArch.",
    "Quitter",
@@ -4065,19 +4130,10 @@ static const struct
    "\251rielles (SIGKILL, etc.) mettra fin au processus de RetroArch sans enregistrer la configurati"
    "on dans tous les cas. Sur les variantes d'Unix, SIGINT/SIGTERM permet une d\303\251sinitialisati"
    "on propre incluant la sauvegarde de la configuration si activ\303\251e.",
-   "Synchroniser maintenant",
-   "D\303\251clencher manuellement la synchronisation avec le cloud.",
-   "R\303\251soudre les conflits : Garder copie locale",
-   "R\303\251soudre tous les conflits en envoyant les fichiers locaux sur le serveur.",
-   "R\303\251soudre les conflits : Utiliser copie serveur",
-   "R\303\251soudre tous les conflits en t\303\251l\303\251chargeant les fichiers du serveur, rempla"
-   "\303\247ant les copies locales.",
    "T\303\251l\303\251charger un c\305\223ur",
    "T\303\251l\303\251charger et installer un c\305\223ur depuis la mise \303\240 jour en ligne.",
    "Installer ou restaurer un c\305\223ur",
    "Installer ou restaurer un c\305\223ur depuis le dossier de t\303\251l\303\251chargements.",
-   "D\303\251marrer le processeur vid\303\251o",
-   "D\303\251marrer la RetroManette \303\240 distance",
    "Dossier de d\303\251marrage",
    "T\303\251l\303\251chargements",
    "Parcourir l'archive",
@@ -4228,18 +4284,10 @@ static const struct
    "Analogique pris en charge",
    "Vibration prise en charge",
    "Coop\303\251ratif pris en charge",
-   "Charger une configuration",
-   "Charger la configuration existante et remplacer les valeurs actuelles.",
-   "Enregistrer la configuration actuelle",
-   "\303\211craser le fichier de configuration actuel.",
-   "Enregistrer une nouvelle configuration",
-   "Enregistrer la configuration actuelle dans un fichier s\303\251par\303\251.",
    "Enregistrer la configuration sous",
    "Enregistrer la configuration actuelle dans un fichier de configuration personnalis\303\251.",
    "Enregistrer la configuration principale",
    "Enregistrer la configuration actuelle en tant que configuration principale.",
-   "R\303\251initialiser aux valeurs par d\303\251faut",
-   "R\303\251initialiser la configuration actuelle aux valeurs par d\303\251faut.",
    "Faire d\303\251filer vers le haut",
    "Faire d\303\251filer vers le bas",
    "Confirmer",
@@ -4247,12 +4295,27 @@ static const struct
    "Afficher/masquer le menu",
    "Quitter",
    "Afficher/masquer le clavier",
+#ifdef HAVE_LIBNX
+   "Overclocker le processeur",
+   "Overclocker le processeur de la Switch.",
+#endif
+   "Red\303\251marrer",
+   "\303\211teindre",
    "Pilotes",
    "Modifier les pilotes utilis\303\251s par ce syst\303\250me.",
    "Vid\303\251o",
    "Modifier les r\303\251glages de sortie vid\303\251o.",
+   "R\303\251solution adapt\303\251e aux \303\251crans CRT ",
+   "Produit des signaux natifs de faible r\303\251solution pour une utilisation avec les \303\251cra"
+   "ns \303\240 tube cathodique (CRT).",
+   "Sortie vid\303\251o",
+   "Modifier les r\303\251glages de sortie vid\303\251o.",
    "Audio ",
    "Modifier les r\303\251glages de l'entr\303\251e/sortie audio.",
+   "R\303\251glages du mixeur",
+   "Modifier les r\303\251glages du mixeur audio.",
+   "Sons du menu",
+   "Modifier les r\303\251glages de son du menu.",
    "Entr\303\251es",
    "Modifier les r\303\251glages de manettes, clavier et souris.",
    "Latence",
@@ -4263,29 +4326,41 @@ static const struct
    "Modifier les r\303\251glages par d\303\251faut pour les fichiers de configuration.",
    "Sauvegarde",
    "Modifier les r\303\251glages de sauvegarde.",
+   "Journalisation",
+   "Modifier les r\303\251glages de journalisation.",
+   "Limiteur d'images/s",
+   "Modifier les r\303\251glages pour le rembobinage, l'avance rapide et le ralenti.",
+   "Rembobinage",
+   "Modifier les r\303\251glages de rembobinage.",
+   "Compteur de temps par images",
+   "Modifier les r\303\251glages qui influent sur le compteur de temps par image. Cette option est a"
+   "ctive uniquement lorsque la vid\303\251o sur plusieurs fils d'ex\303\251cution est d\303\251sact"
+   "iv\303\251e.",
+   "D\303\251tails des cheats",
+   "D\303\251marrer ou reprendre la recherche de cheat",
    "Synchronisation avec le Cloud",
    "Modifier les r\303\251glages de synchronisation avec le Cloud.",
    "Activer la synchronisation avec le Cloud",
    "Tente de synchroniser les configurations, SRAM et sauvegardes instantan\303\251es \303\240 un fo"
    "urnisseur de stockage sur le Cloud.",
    "Synchronisation destructive avec le Cloud",
+   "Lorsque cette option est d\303\251sactiv\303\251e, les fichiers sont d\303\251plac\303\251s vers"
+   " un dossier de sauvegarde avant d'\303\252tre remplac\303\251s ou supprim\303\251s.",
    "Synchronisation : Sauvegardes/Sauvegardes instantan\303\251es",
-   "Synchronisation : Fichiers de configuration",
-   "Synchronisation : Images miniatures",
-   "Synchronisation : Fichiers syst\303\250me",
    "Lorsque cette option est activ\303\251e, les sauvegardes/sauvegardes instantan\303\251es seront "
    "synchronis\303\251s avec le cloud.",
+   "Synchronisation : Fichiers de configuration",
    "Lorsque cette option est activ\303\251e, les fichiers de configuration seront synchronis\303\251"
    "s avec le cloud.",
+   "Synchronisation : Images miniatures",
    "Lorsque cette option est activ\303\251e, les images miniatures seront synchronis\303\251es sur l"
    "e cloud. Non recommand\303\251 g\303\251n\303\251ralement \303\240 l'exception des grandes colle"
    "ctions d'images miniatures personnalis\303\251es, sinon l'outil de t\303\251l\303\251chargement "
    "de miniatures est un meilleur choix.",
+   "Synchronisation : Fichiers syst\303\250me",
    "Lorsque cette option est activ\303\251e, les fichiers syst\303\250me seront synchronis\303\251s "
    "sur le cloud. Cela peut augmenter consid\303\251rablement le temps de synchronisation ; utiliser"
    " avec prudence.",
-   "Lorsque cette option est d\303\251sactiv\303\251e, les fichiers sont d\303\251plac\303\251s vers"
-   " un dossier de sauvegarde avant d'\303\252tre remplac\303\251s ou supprim\303\251s.",
    "Mode de synchronisation",
    "Automatique : Synchronisation au d\303\251marrage de RetroArch et lorsque les c\305\223urs sont "
    "d\303\251charg\303\251s. Manuel : Synchronisation uniquement lorsque le bouton 'Synchroniser mai"
@@ -4306,10 +4381,54 @@ static const struct
    "Votre ID de cl\303\251 d'acc\303\250s pour votre compte de stockage Cloud.",
    "Cl\303\251 d'acc\303\250s secr\303\250te",
    "Votre cl\303\251 d'acc\303\250s secr\303\250te pour votre compte de stockage Cloud.",
-   "Journalisation",
-   "Modifier les r\303\251glages de journalisation.",
+   "Affichage \303\240 l'\303\251cran",
+   "Modifier les r\303\251glages de surimpression \303\240 l'\303\251cran, de surimpression de clavi"
+   "er, et de notifications \303\240 l'\303\251cran.",
+   "Surimpressions \303\240 l'\303\251cran",
+   "Ajuste les cadres d'images et les touches \303\240 l'\303\251cran.",
+   "Pistolet en surimpression",
+   "Configurer l'entr\303\251e pistolet envoy\303\251e depuis la surimpression.",
+   "Souris en surimpression",
+   "Configurer l'entr\303\251e de la souris envoy\303\251e depuis la surimpression. Remarque : les t"
+   "apes avec 1, 2, et 3 doigts envoient des clics gauche, droit et milieu.",
+   "Clavier en surimpression",
+   "S\303\251lectionner et ajuster le clavier en surimpression.",
+   "Notifications \303\240 l'\303\251cran",
+   "Ajuste les notifications \303\240 l'\303\251cran.",
+   "Affichage des notifications",
+   "Afficher/masquer certains types de notifications.",
+   "Apparence",
+   "Modifier les r\303\251glages d'apparence de l'\303\251cran du menu.",
+#ifdef _3DS
+   "Apparence de l'\303\251cran inf\303\251rieur 3DS",
+   "Modifier les param\303\250tres d'apparence de l'\303\251cran du bas.",
+#endif
+   "Visibilit\303\251 des \303\251l\303\251ments du menu",
+   "Afficher/masquer des \303\251l\303\251ments du menu dans RetroArch.",
+   "Menu rapide",
+   "Afficher ou masquer des \303\251l\303\251ments dans le menu rapide.",
+   "R\303\251glages",
+   "Afficher ou masquer des \303\251l\303\251ments dans le menu des r\303\251glages.",
+   "Interface utilisateur",
+   "Modifier les r\303\251glages de l'interface utilisateur.",
+   "Service IA",
+   "Modifier les r\303\251glages du service IA (Traduction/TTS/autres).",
+   "Accessibilit\303\251",
+   "Modifier les r\303\251glages du narrateur d'accessibilit\303\251.",
+   "Gestion de l'alimentation",
+   "Modifier les r\303\251glages de gestion de l'alimentation.",
    "Navigateur de fichiers",
    "Modifier les r\303\251glages du navigateur de fichiers.",
+   "Succ\303\250s",
+   "Modifier les r\303\251glages des succ\303\250s.",
+   "Apparence",
+   "Modifier la position et les d\303\251calages des notifications de succ\303\250s \303\240 l'\303"
+   "\251cran.",
+   "Visibilit\303\251",
+   "Modifier les messages et les \303\251l\303\251ments affich\303\251s \303\240 l'\303\251cran. Ne "
+   "d\303\251sactive pas les fonctionnalit\303\251s.",
+   "R\303\251glages de mise \303\240 jour",
+   "Acc\303\251der aux r\303\251glages de mise \303\240 jour des c\305\223urs",
    "Fichier de configuration.",
    "Fichier d'archive compress\303\251.",
    "Fichier de configuration d'enregistrement.",
@@ -4331,23 +4450,8 @@ static const struct
    "C\305\223ur Libretro. S\303\251lectionnez ce fichier pour que RetroArch puisse charger ce c\305"
    "\223ur.",
    "Dossier. S\303\251lectionnez-le pour ouvrir ce dossier.",
-   "Limiteur d'images/s",
-   "Modifier les r\303\251glages pour le rembobinage, l'avance rapide et le ralenti.",
    "Enregistrement",
    "Modifier les r\303\251glages d'enregistrement.",
-   "Affichage \303\240 l'\303\251cran",
-   "Modifier les r\303\251glages de surimpression \303\240 l'\303\251cran, de surimpression de clavi"
-   "er, et de notifications \303\240 l'\303\251cran.",
-   "Interface utilisateur",
-   "Modifier les r\303\251glages de l'interface utilisateur.",
-   "Service IA",
-   "Modifier les r\303\251glages du service IA (Traduction/TTS/autres).",
-   "Accessibilit\303\251",
-   "Modifier les r\303\251glages du narrateur d'accessibilit\303\251.",
-   "Gestion de l'alimentation",
-   "Modifier les r\303\251glages de gestion de l'alimentation.",
-   "Succ\303\250s",
-   "Modifier les r\303\251glages des succ\303\250s.",
    "R\303\251seau",
    "Modifier les r\303\251glages de serveur et de r\303\251seau.",
    "Listes de lecture",
@@ -4497,20 +4601,15 @@ static const struct
    "Pilote d'enregistrement \303\240 utiliser. (Red\303\251marrage requis)",
    "MIDI ",
    "Pilote MIDI \303\240 utiliser. (Red\303\251marrage requis)",
-   "R\303\251solution adapt\303\251e aux \303\251crans CRT ",
-   "Produit des signaux natifs de faible r\303\251solution pour une utilisation avec les \303\251cra"
-   "ns \303\240 tube cathodique (CRT).",
-   "Sortie vid\303\251o",
-   "Modifier les r\303\251glages de sortie vid\303\251o.",
    "Mode plein \303\251cran",
    "Modifier les r\303\251glages du mode plein \303\251cran.",
    "Mode fen\303\252tr\303\251",
    "Modifier les r\303\251glages du mode fen\303\252tr\303\251.",
+   "Synchronisation vid\303\251o",
+   "Modifier les r\303\251glages de synchronisation vid\303\251o.",
    "Mise \303\240 l'\303\251chelle",
    "Modifier les r\303\251glages de mise \303\240 l'\303\251chelle vid\303\251o.",
    "Modifier les r\303\251glages de sortie vid\303\251o HDR.",
-   "Synchronisation vid\303\251o",
-   "Modifier les r\303\251glages de synchronisation vid\303\251o.",
    "Capture d'\303\251cran : utiliser le processeur graphique",
    "Les captures d'\303\251cran capturent les shaders produits par le processeur graphique si dispon"
    "ibles.",
@@ -4534,6 +4633,12 @@ static const struct
    "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Ins\303\251rer des images "
    "noires entre les images. Permet de r\303\251duire consid\303\251rablement le flou de mouvement e"
    "n \303\251mulant le balayage CRT, mais au d\303\251triment de la luminosit\303\251.",
+   "Insertion d'images noir - Images sombres",
+   "Ajuster le nombre d'images noires dans la s\303\251quence de balayage BFI. Plus \303\251quivaut "
+   "\303\240 une plus grande clart\303\251 de mouvement, moins \303\251quivaut \303\240 une plus gra"
+   "nde luminosit\303\251. Non applicable \303\240 120 Hz car il n'y a qu'1 image BFI pour fonctionn"
+   "er au total. Les r\303\251glages plus \303\251lev\303\251s que possible vous limiteront au maxim"
+   "um possible pour la fr\303\251quence de rafra\303\256chissement choisie.",
    "Ins\303\251rer une ou plusieurs images noires entre les images pour une plus grande clart\303"
    "\251 de mouvement. Utilisez uniquement l'option d\303\251sign\303\251e pour votre fr\303\251quen"
    "ce de rafra\303\256chissement actuelle. Ne pas utiliser \303\240 des fr\303\251quences de rafra"
@@ -4545,12 +4650,6 @@ static const struct
    "i vous remarquez -quelque- r\303\251tention d'image temporaire, vous devriez la d\303\251sactive"
    "r pour 120 Hz, et pour une fr\303\251quence sup\303\251rieure, ajustez le r\303\251glage des ima"
    "ges sombres ci-dessous.",
-   "Insertion d'images noir - Images sombres",
-   "Ajuster le nombre d'images noires dans la s\303\251quence de balayage BFI. Plus \303\251quivaut "
-   "\303\240 une plus grande clart\303\251 de mouvement, moins \303\251quivaut \303\240 une plus gra"
-   "nde luminosit\303\251. Non applicable \303\240 120 Hz car il n'y a qu'1 image BFI pour fonctionn"
-   "er au total. Les r\303\251glages plus \303\251lev\303\251s que possible vous limiteront au maxim"
-   "um possible pour la fr\303\251quence de rafra\303\256chissement choisie.",
    "Ajuste le nombre d'images affich\303\251es dans la s\303\251quence BFI qui sont noires. Plus d'i"
    "mages noires augmente la clart\303\251 de mouvement mais r\303\251duit la luminosit\303\251. Non"
    " applicable \303\240 120 Hz car il n'y a qu'une seule image de 60 Hz suppl\303\251mentaire, elle"
@@ -4662,12 +4761,12 @@ static const struct
    " l'image.",
    "Centrage vertical",
    "Parcourez ces options si l'image n'est pas centr\303\251e correctement \303\240 l'\303\251cran.",
-   "Utiliser le menu haute r\303\251solution",
-   "Passer \303\240 une \"modeline\" haute r\303\251solution pour utiliser des menus en haute r\303"
-   "\251solution quand aucun contenu n'est charg\303\251.",
    "Fr\303\251quence de rafra\303\256chissement personnalis\303\251e",
    "Utiliser une fr\303\251quence de rafra\303\256chissement personnalis\303\251e sp\303\251cifi\303"
    "\251e dans le fichier de configuration si n\303\251cessaire.",
+   "Utiliser le menu haute r\303\251solution",
+   "Passer \303\240 une \"modeline\" haute r\303\251solution pour utiliser des menus en haute r\303"
+   "\251solution quand aucun contenu n'est charg\303\251.",
    "Num\303\251ro du moniteur ",
    "S\303\251lectionner l'\303\251cran \303\240 utiliser.",
    "Quel moniteur pr\303\251f\303\250rer. 0 (par d\303\251faut) signifie qu'aucun moniteur particuli"
@@ -4714,11 +4813,11 @@ static const struct
    "Permutation automatique de la fr\303\251quence de rafra\303\256chissement",
    "Changer automatiquement la fr\303\251quence du rafra\303\256chissement de l'\303\251cran en fonc"
    "tion du contenu actuel.",
+   "Seuil de d\303\251tection du PAL pour la fr\303\251quence de rafra\303\256chissement automatique",
+   "Fr\303\251quence de rafra\303\256chissement maximale \303\240 consid\303\251rer comme PAL.",
    "Uniquement en mode plein \303\251cran exclusif",
    "Uniquement en mode plein \303\251cran fen\303\252tr\303\251",
    "Tous les modes plein \303\251cran",
-   "Seuil de d\303\251tection du PAL pour la fr\303\251quence de rafra\303\256chissement automatique",
-   "Fr\303\251quence de rafra\303\256chissement maximale \303\240 consid\303\251rer comme PAL.",
 #if defined(DINGUX) && defined(DINGUX_BETA)
    "Fr\303\251quence de rafra\303\256chissement vertical",
    "D\303\251finir la fr\303\251quence de rafra\303\256chissement vertical de l'\303\251cran. '50 Hz"
@@ -4883,12 +4982,12 @@ static const struct
    "ronisation verticale (V-Sync) doit \303\252tre d\303\251sactiv\303\251e.",
    "Retard d'images ",
    "R\303\251duit la latence au prix d'un risque plus \303\251lev\303\251 de saccades visuelles.",
+   "Retard d'images automatique",
+   "Ajuster le 'Retard d'images' de fa\303\247on dynamique.",
    "D\303\251finit le nombre de millisecondes de veille avant d'ex\303\251cuter le c\305\223ur apr"
    "\303\250s pr\303\251sentation vid\303\251o. R\303\251duit la latence au prix d'un risque plus "
    "\303\251lev\303\251 de saccades.\nLes valeurs 20 et sup\303\251rieures sont trait\303\251es comm"
    "e des pourcentages de temps d'image.",
-   "Retard d'images automatique",
-   "Ajuster le 'Retard d'images' de fa\303\247on dynamique.",
    "Tente de maintenir la cible du 'Retard d'images' d\303\251sir\303\251e et de minimiser les saute"
    "s d'images. Le point de d\303\251part est de 3/4 du temps d'image lorsque 'Retard d'images' est "
    "de 0 (Auto).",
@@ -4903,6 +5002,13 @@ static const struct
    "option 'Synchronisation mat\303\251rielle du processeur graphique'. La valeur maximum est 3.\n0 "
    ": Se synchronise imm\303\251diatement sur le processeur graphique.\n1 : Se synchronise avec l'im"
    "age pr\303\251c\303\251dente.\n2 : Etc ...",
+   "Vitesse d'ex\303\251cution maximale ",
+   "Vitesse d'ex\303\251cution maximale du contenu lors de l'avance rapide (par exemple, 5,0x pour u"
+   "n contenu \303\240 60 images/s = une limitation \303\240 300 images/s) Si d\303\251finie \303"
+   "\240 0,0x, la vitesse en avance rapide est illimit\303\251e (pas de limite d'images/s).",
+   "Saut d'images pour l'avance rapide",
+   "Sauter des images en fonction de la vitesse d'avance rapide. Cela permet d'\303\251conomiser de "
+   "l'\303\251nergie et d'utiliser des limitateurs d'images de tierce partie.",
    "Synchroniser \303\240 la fr\303\251quence exacte du contenu (G-Sync, FreeSync)",
    "\303\211limine les d\303\251viations par rapport au timing requis par le c\305\223ur. Utilisez c"
    "ette option pour les \303\251crans \303\240 fr\303\251quence de rafra\303\256chissement variable"
@@ -4919,10 +5025,6 @@ static const struct
    "Synchronisation audio",
    "Modifier les r\303\251glages de synchronisation audio.",
    "Modifier les r\303\251glages MIDI.",
-   "R\303\251glages du mixeur",
-   "Modifier les r\303\251glages du mixeur audio.",
-   "Sons du menu",
-   "Modifier les r\303\251glages de son du menu.",
    "Muet",
    "Couper le son.",
    "Couper le son du mixeur",
@@ -4938,12 +5040,12 @@ static const struct
    "Coupe automatiquement le son lors du rembobinage.",
    "Gain de volume (dB)",
    "Volume sonore (en dB). 0 dB correspond au volume normal, et aucun gain n'est appliqu\303\251.",
-   "Volume audio, exprim\303\251 en dB. 0 dB est le volume normal, o\303\271 aucun gain n'est appliq"
-   "u\303\251. Le gain peut \303\252tre contr\303\264l\303\251 en cours d\342\200\231ex\303\251cutio"
-   "n avec les touches Volume + / Volume -.",
    "Gain de volume du mixeur (dB)",
    "Volume du mixeur audio global (en dB). 0 dB est le volume normal, et aucun gain n'est appliqu"
    "\303\251.",
+   "Volume audio, exprim\303\251 en dB. 0 dB est le volume normal, o\303\271 aucun gain n'est appliq"
+   "u\303\251. Le gain peut \303\252tre contr\303\264l\303\251 en cours d\342\200\231ex\303\251cutio"
+   "n avec les touches Volume + / Volume -.",
    "Module DSP ",
    "Filtre audio DSP utilis\303\251 pour traiter l'audio avant de l'envoyer au pilote.",
    "Retirer le module DSP",
@@ -4951,12 +5053,12 @@ static const struct
    "Mode exclusif WASAPI",
    "Autoriser le pilote WASAPI \303\240 prendre le contr\303\264le exclusif du p\303\251riph\303\251"
    "rique audio. Si d\303\251sactiv\303\251, le mode partag\303\251 sera utilis\303\251.",
-   "Format de virgule flottante WASAPI",
-   "Utiliser le format float pour le pilote WASAPI, si pris en charge par votre p\303\251riph\303"
-   "\251rique audio.",
    "Taille de la m\303\251moire tampon partag\303\251e WASAPI",
    "Taille de la m\303\251moire tampon interm\303\251diaire (en images) lors de l'utilisation du pil"
    "ote WASAPI en mode partag\303\251.",
+   "Format de virgule flottante WASAPI",
+   "Utiliser le format float pour le pilote WASAPI, si pris en charge par votre p\303\251riph\303"
+   "\251rique audio.",
    "Ouvrir le panneau de configuration ASIO",
    "Ouvrir le panneau de configuration du pilote ASIO pour configurer les r\303\251glages de routage"
    " et de m\303\251moire tampon du p\303\251riph\303\251rique.",
@@ -4965,6 +5067,8 @@ static const struct
    "P\303\251riph\303\251rique ",
    "Remplacer le p\303\251riph\303\251rique audio utilis\303\251 par d\303\251faut par le pilote aud"
    "io. Cette option d\303\251pend du pilote.",
+   "Fr\303\251quence de sortie (Hz) ",
+   "Fr\303\251quence d'\303\251chantillonnage de la sortie audio.",
    "Remplacer le p\303\251riph\303\251rique audio utilis\303\251 par d\303\251faut par le pilote aud"
    "io. Cette option d\303\251pend du pilote.",
    "Valeur de p\303\251riph\303\251rique PCM personnalis\303\251e pour le pilote ALSA.",
@@ -4979,21 +5083,30 @@ static const struct
 #ifdef HAVE_MICROPHONE
    "Active l'entr\303\251e audio dans les c\305\223urs pris en charge. N'ajoute aucune surcharge si "
    "le c\305\223ur n'utilise pas de microphone.",
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
    "P\303\251riph\303\251rique ",
    "Remplace le p\303\251riph\303\251rique d'entr\303\251e utilis\303\251 par d\303\251faut par le p"
    "ilote de microphone. Cette option d\303\251pend du pilote.",
-   "Remplacer le p\303\251riph\303\251rique audio utilis\303\251 par d\303\251faut par le pilote aud"
-   "io. Cette option d\303\251pend du pilote.",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   "Fr\303\251quence d'entr\303\251e par d\303\251faut (Hz)",
+   "Fr\303\251quence d'\303\251chantillonnage d'entr\303\251e audio, utilis\303\251e si le c\305\223"
+   "ur ne requiert pas une fr\303\251quence sp\303\251cifique.",
    "Qualit\303\251 du r\303\251\303\251chantillonnage ",
    "R\303\251duire cette valeur pour favoriser les performances/r\303\251duire la latence plut\303"
    "\264t que la qualit\303\251 audio, l'augmenter permet une meilleure qualit\303\251 audio aux d"
    "\303\251pens de la performance/d'une latence inf\303\251rieure.",
-   "Fr\303\251quence d'entr\303\251e par d\303\251faut (Hz)",
-   "Fr\303\251quence d'\303\251chantillonnage d'entr\303\251e audio, utilis\303\251e si le c\305\223"
-   "ur ne requiert pas une fr\303\251quence sp\303\251cifique.",
+   "Remplacer le p\303\251riph\303\251rique audio utilis\303\251 par d\303\251faut par le pilote aud"
+   "io. Cette option d\303\251pend du pilote.",
    "Latence d'entr\303\251e audio (ms) ",
    "Latence d'entr\303\251e audio d\303\251sir\303\251e en millisecondes. Peut \303\252tre ignor\303"
    "\251e si le pilote de microphone ne peut fournir une telle valeur.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
    "Mode exclusif WASAPI",
    "Permet \303\240 RetroArch de prendre le contr\303\264le exclusif du p\303\251riph\303\251rique d"
    "e microphone lorsque vous utilisez le pilote de microphone WASAPI. Si cette option est d\303\251"
@@ -5004,6 +5117,7 @@ static const struct
    "Taille de la m\303\251moire tampon partag\303\251e WASAPI",
    "Taille de la m\303\251moire tampon interm\303\251diaire (en images) lors de l'utilisation du pil"
    "ote WASAPI en mode partag\303\251.",
+#endif
 #endif
    "Qualit\303\251 du r\303\251\303\251chantillonnage ",
    "R\303\251duire cette valeur pour favoriser les performances/r\303\251duire la latence plut\303"
@@ -5028,14 +5142,13 @@ static const struct
    "\303\240 la requ\303\252te 'R\303\251\303\251chan",
    "tillonner \303\240 l'entier fixe' afin de garantir que l'ensemble du flux audio reste dans le do"
    "maine des entiers.",
-   "Fr\303\251quence de sortie (Hz) ",
-   "Fr\303\251quence d'\303\251chantillonnage de la sortie audio.",
    "Synchronisation",
    "Synchroniser l'audio. Recommand\303\251.",
    "Limite de synchronisation maximale ",
    "Variation maximale du d\303\251bit audio. Augmenter cette valeur permet des changements tr\303"
    "\250s importants dans le timing en \303\251change d'un pitch audio inexact (lors de l'ex\303\251"
    "cution de c\305\223urs PAL sur des \303\251crans NTSC par exemple).",
+   "Taille des blocs",
    "Variation maximale du d\303\251bit audio.\nD\303\251finit le changement maximal du d\303\251bit "
    "audio. Augmenter cette valeur permet des changements tr\303\250s importants dans le timing, lors"
    " de l'ex\303\251cution de c\305\223urs PAL sur des \303\251crans NTSC par exemple, en \303\251ch"
@@ -5097,6 +5210,28 @@ static const struct
    "Activer les sons 'de d\303\251filement'",
    "Nombre maximum d'utilisateurs ",
    "Nombre maximum d'utilisateurs pris en charge par RetroArch. (Red\303\251marrage requis)",
+   "Contr\303\264les du menu unifi\303\251s",
+   "Utilisez les m\303\252mes touches pour le menu et le jeu. S'applique au clavier.",
+   "D\303\251sactiver la touche d'informations",
+   "Emp\303\252cher la fonction info dans le menu.",
+   "D\303\251sactiver la touche de recherche",
+   "Emp\303\252cher la fonction de recherche dans le menu.",
+   "D\303\251sactiver le stick analogique gauche dans le menu",
+   "Emp\303\252cher l'entr\303\251e du stick analogique gauche dans le menu.",
+   "D\303\251sactiver le stick analogique droit dans le menu",
+   "Emp\303\252cher l'entr\303\251e du stick analogique droit dans le menu. Le stick analogique droi"
+   "t fait d\303\251filer les miniatures dans les listes de lecture.",
+   "Confirmer avant de quitter",
+   "N\303\251cessite que la touche de raccourci Quitter soit press\303\251e deux fois.",
+   "Confirmer la fermeture du contenu",
+   "N\303\251cessite que la touche de raccourci Fermer le contenu soit press\303\251e deux fois.",
+   "Confirmer le red\303\251marrage du contenu",
+   "N\303\251cessite que la touche de raccourci R\303\251initialiser le contenu soit press\303\251e "
+   "deux fois.",
+   "Vibrer \303\240 chaque touche press\303\251e",
+   "Activer la vibration du p\303\251riph\303\251rique (pour les c\305\223urs pris en charge)",
+   "Intensit\303\251 de la vibration",
+   "Sp\303\251cifier l'ampleur des effets de retour haptique.",
    "Comportement de d\303\251tection (Red\303\251marrage requis)",
    "Influence la fa\303\247on dont les touches press\303\251es sont d\303\251tect\303\251es dans Ret"
    "roArch. Utiliser 'Pr\303\251coce' ou 'Tardive' peut diminuer la latence, en fonction de votre co"
@@ -5108,6 +5243,39 @@ static const struct
    "requ\303\252te d'entr\303\251es par image.\nLa r\303\251gler sur 'Pr\303\251coce' ou 'Tardive' p"
    "eut entra\303\256ner une r\303\251duction de la latence, en fonction de votre configuration. Ser"
    "a ignor\303\251e lors du jeu en r\303\251seau.",
+   "Afficher/masquer le menu (combinaison manette)",
+   "Combinaison de touches de la manette pour afficher/masquer le menu.",
+   "Quitter (combinaison manette)",
+   "Combinaison de touches de la manette pour quitter RetroArch.",
+   "D\303\251lai d'activation de la touche de raccourcis (en images)",
+   "Ajouter un d\303\251lai en images avant que l'entr\303\251e normale ne soit bloqu\303\251e apr"
+   "\303\250s avoir appuy\303\251 sur la touche 'Raccourcis activ\303\251s' assign\303\251e. Permet "
+   "l'entr\303\251e normale de la touche 'Raccourcis activ\303\251s' lorsqu'elle est mapp\303\251e "
+   "\303\240 une autre action (RetroManette 'Select' par exemple).",
+   "Fusion du type de p\303\251riph\303\251rique pour la touche de raccourcis",
+   "Bloquer toutes les touches de raccourcis des types de p\303\251riph\303\251riques clavier et man"
+   "ette si l'un ou l'autre des types \303\240 l'option 'Raccourcis activ\303\251s' activ\303\251e.",
+   "Raccourcis li\303\251s au joueur 1",
+   "Les touches de raccourcis sont li\303\251es au port 1 du c\305\223ur, m\303\252me si le port 1 d"
+   "u c\305\223ur est remapp\303\251 vers un autre utilisateur. Remarque : les touches de raccourcis"
+   " clavier ne fonctionneront pas si le port 1 du c\305\223ur est remapp\303\251 \303\240 n'importe"
+   " quel utilisateur > 1 (la saisie clavier provient de l'utilisateur 1).",
+   "Inverser les touches OK et Annuler",
+   "\303\211changer les touches pour Confirmer/Annuler. D\303\251sactiv\303\251 correspond \303\240 "
+   "l'orientation japonaise des touches, activ\303\251 correspond \303\240 l'orientation occidentale"
+   ".",
+   "Inverser les touches de d\303\251filement",
+   "Permute les touches pour le d\303\251filement. D\303\251sactiv\303\251 d\303\251file de 10 \303"
+   "\251l\303\251ments avec L/R et par ordre alphab\303\251tique avec L2/R2.",
+   "Tous les utilisateurs contr\303\264lent le menu",
+   "Permettre \303\240 tous les utilisateurs de contr\303\264ler le menu. Si d\303\251sactiv\303\251"
+   ", seul l'utilisateur 1 peut contr\303\264ler le menu.",
+   "Listes de lecture en un clic",
+   "Ignorer le menu 'Lancer' lors de l'activation d'entr\303\251es dans la liste de lecture. Appuyez"
+   " sur la croix directionnelle tout en maintenant la touche OK pour acc\303\251der au menu 'Lancer"
+   "'.",
+   "Autoriser le retour depuis les onglets",
+   "Retourner au menu principal depuis les onglets/la barre lat\303\251rale en appuyant sur Retour.",
    "Remapper les assignations d'entr\303\251es du c\305\223ur",
    "Remplacer les assignations des touches par les assignations remapp\303\251es d\303\251finies pou"
    "r le c\305\223ur actuel.",
@@ -5129,6 +5297,13 @@ static const struct
    "ez d'\303\251muler un ordinateur sur un appareil Android TV et que vous poss\303\251dez \303\251"
    "galement un clavier physique qui peut \303\252tre connect\303\251 \303\240 la box.",
 #endif
+   "Seuil de l'axe des touches ",
+   "Jusqu'o\303\271 un axe doit \303\252tre inclin\303\251 pour r\303\251sulter en un appui sur la t"
+   "ouche lors de l'utilisation de 'Analogique vers num\303\251rique'.",
+   "Deadzone analogique ",
+   "Ignorer les mouvements des sticks analogiques en dessous de la valeur de deadzone.",
+   "Sensibilit\303\251 analogique ",
+   "R\303\251gler la sensibilit\303\251 des sticks analogiques.",
    "Entr\303\251es depuis les capteurs auxiliaires",
    "Permettre les entr\303\251es depuis l'acc\303\251l\303\251rom\303\250tre, le gyroscope et les ca"
    "pteurs photom\303\251triques, si pris en charge par le mat\303\251riel actuel. Peut avoir un imp"
@@ -5140,35 +5315,45 @@ static const struct
    "Toujours activer le mode 'Jeu au premier plan' lors du lancement et de la reprise du contenu. Lo"
    "rsque r\303\251gl\303\251 sur 'D\303\251tecter', l'option sera activ\303\251e si le c\305\223ur "
    "actuel impl\303\251mente le rappel du clavier de l'interface frontale.",
+   "Mettre en pause le contenu \303\240 la d\303\251connection de manette",
+   "Met en pause le contenu lorsqu'une manette est d\303\251connect\303\251e. Reprendre avec start.",
    "D\303\251sactiv\303\251",
    "Activ\303\251",
    "D\303\251tecter",
-   "Mettre en pause le contenu \303\240 la d\303\251connection de manette",
-   "Met en pause le contenu lorsqu'une manette est d\303\251connect\303\251e. Reprendre avec start.",
-   "Seuil de l'axe des touches ",
-   "Jusqu'o\303\271 un axe doit \303\252tre inclin\303\251 pour r\303\251sulter en un appui sur la t"
-   "ouche lors de l'utilisation de 'Analogique vers num\303\251rique'.",
-   "Deadzone analogique ",
-   "Ignorer les mouvements des sticks analogiques en dessous de la valeur de deadzone.",
-   "Sensibilit\303\251 analogique ",
    "Sensibilit\303\251 de l'acc\303\251l\303\251rom\303\250tre",
-   "Sensibilit\303\251 du gyroscope",
-   "R\303\251gler la sensibilit\303\251 des sticks analogiques.",
    "Ajuste la sensibilit\303\251 de l'acc\303\251l\303\251rom\303\250tre.",
-   "Orientation des capteurs",
-   "Faire pivoter les axes de l'acc\303\251l\303\251rom\303\250tre et du gyroscope pour correspondre"
-   " \303\240 l'orientation de l'appareil.",
+   "Sensibilit\303\251 du gyroscope",
    "Ajuste la sensibilit\303\251 du gyroscope.",
    "D\303\251lai pour l'assignation ",
    "Nombre de secondes \303\240 attendre avant de passer \303\240 l'assignation de touche suivante.",
    "Temps de maintien pour l'assignation ",
    "Nombre de secondes \303\240 maintenir une touche avant qu'elle ne soit assign\303\251e.",
+   "D\303\251tecteurs de mouvement/lumi\303\250re",
+   "Modifier les r\303\251glages de l'acc\303\251l\303\251rom\303\250tre, du gyroscope et de l'\303"
+   "\251clairement.",
+   "Retour haptique/vibration",
+   "Modifier les r\303\251glages du retour haptique et de la vibration.",
+   "Touches pour le menu",
+   "Modifier les r\303\251glages des touches du menu.",
+   "Orientation des capteurs",
+   "Faire pivoter les axes de l'acc\303\251l\303\251rom\303\250tre et du gyroscope pour correspondre"
+   " \303\240 l'orientation de l'appareil.",
    "Appuyer sur la touche du clavier, de la souris ou de la manette",
    "Rel\303\242cher les touches !",
    "D\303\251lai d\303\251pass\303\251",
    "Maintenir",
    "Tir turbo",
    "D\303\251sactiv\303\251 arr\303\252te toutes les op\303\251rations de tir turbo.",
+   "Mode turbo",
+   "S\303\251lectionner le comportement g\303\251n\303\251ral du mode turbo.",
+   "Affectation turbo",
+   "Affectation RetroManette activant le Turbo. Laisser vide utilise l'affectation sp\303\251cifique"
+   " au port.",
+   "Touche Turbo",
+   "Touche turbo cible en mode 'Touche unique'.",
+   "Turbo autorise les directions de la croix directionnelle",
+   "Si activ\303\251, les entr\303\251es num\303\251riques directionnelles (aussi connues sous le no"
+   "m de croix ou 'pav\303\251 directionnel') peuvent \303\252tre en mode turbo.",
    "D\303\251lai d'activation du turbo ",
    "Dur\303\251e en images apr\303\250s laquelle une touche en mode turbo est press\303\251e.",
    "Rapport cyclique du turbo ",
@@ -5176,8 +5361,6 @@ static const struct
    "\251es. Si ce nombre est \303\251gal ou sup\303\251rieur au d\303\251lai d'activation du turbo, "
    "les touches ne seront jamais rel\303\242ch\303\251es.",
    "Demi-p\303\251riode",
-   "Mode turbo",
-   "S\303\251lectionner le comportement g\303\251n\303\251ral du mode turbo.",
    "Classique",
    "Classique (activer/d\303\251sactiver)",
    "Touche simple (activer/d\303\251sactiver)",
@@ -5199,23 +5382,6 @@ static const struct
    "\nPour \303\251muler la fonction tir automatique de l'\303\250re des ordinateurs de famille, d"
    "\303\251finissez l'affectation et la touche sur la m\303\252me touche que celle du tir de la man"
    "ette.",
-   "Affectation turbo",
-   "Affectation RetroManette activant le Turbo. Laisser vide utilise l'affectation sp\303\251cifique"
-   " au port.",
-   "Touche Turbo",
-   "Touche turbo cible en mode 'Touche unique'.",
-   "Turbo autorise les directions de la croix directionnelle",
-   "Si activ\303\251, les entr\303\251es num\303\251riques directionnelles (aussi connues sous le no"
-   "m de croix ou 'pav\303\251 directionnel') peuvent \303\252tre en mode turbo.",
-   "Tir turbo",
-   "Modifier les r\303\251glages de tir turbo.",
-   "Retour haptique/vibration",
-   "Modifier les r\303\251glages du retour haptique et de la vibration.",
-   "D\303\251tecteurs de mouvement/lumi\303\250re",
-   "Modifier les r\303\251glages de l'acc\303\251l\303\251rom\303\250tre, du gyroscope et de l'\303"
-   "\251clairement.",
-   "Touches pour le menu",
-   "Modifier les r\303\251glages des touches du menu.",
    "Raccourcis",
    "Modifie les param\303\250tres et affectations des touches de raccourci, comme afficher/masquer l"
    "e menu pendant le jeu par exemple.",
@@ -5225,6 +5391,8 @@ static const struct
    "connu et configur\303\251 correctement automatiquement, les utilisateurs n'ont probablement pas "
    "besoin d'utiliser ce menu.\nRemarque : pour les changements d'entr\303\251es sp\303\251cifiques "
    "au c\305\223urs, utilisez le sous-menu 'Commandes' du menu rapide \303\240 la place.",
+   "Tir turbo",
+   "Modifier les r\303\251glages de tir turbo.",
    "Libretro utilise une abstraction de manette virtuelle connue sous le nom de 'RetroManette' pour "
    "communiquer depuis des interfaces frontales (comme RetroArch) \303\240 des c\305\223urs et vice "
    "versa. Ce menu d\303\251termine comment la RetroManette virtuelle est mapp\303\251e aux p\303"
@@ -5241,48 +5409,14 @@ static const struct
    "Solution \303\240 la d\303\251connexion pour Android",
    "Solution pour les manettes qui se d\303\251connectent et se reconnectent. Emp\303\252che 2 joueu"
    "rs d'avoir les m\303\252mes manettes.",
-   "Confirmer avant de quitter",
-   "N\303\251cessite que la touche de raccourci Quitter soit press\303\251e deux fois.",
-   "Confirmer la fermeture du contenu",
-   "N\303\251cessite que la touche de raccourci Fermer le contenu soit press\303\251e deux fois.",
-   "Confirmer le red\303\251marrage du contenu",
-   "N\303\251cessite que la touche de raccourci R\303\251initialiser le contenu soit press\303\251e "
-   "deux fois.",
-   "Vibrer \303\240 chaque touche press\303\251e",
-   "Activer la vibration du p\303\251riph\303\251rique (pour les c\305\223urs pris en charge)",
-   "Intensit\303\251 de la vibration",
-   "Sp\303\251cifier l'ampleur des effets de retour haptique.",
-   "Contr\303\264les du menu unifi\303\251s",
-   "Utilisez les m\303\252mes touches pour le menu et le jeu. S'applique au clavier.",
-   "Inverser les touches OK et Annuler",
-   "\303\211changer les touches pour Confirmer/Annuler. D\303\251sactiv\303\251 correspond \303\240 "
-   "l'orientation japonaise des touches, activ\303\251 correspond \303\240 l'orientation occidentale"
-   ".",
-   "Inverser les touches de d\303\251filement",
-   "Permute les touches pour le d\303\251filement. D\303\251sactiv\303\251 d\303\251file de 10 \303"
-   "\251l\303\251ments avec L/R et par ordre alphab\303\251tique avec L2/R2.",
-   "Tous les utilisateurs contr\303\264lent le menu",
-   "Permettre \303\240 tous les utilisateurs de contr\303\264ler le menu. Si d\303\251sactiv\303\251"
-   ", seul l'utilisateur 1 peut contr\303\264ler le menu.",
-   "Listes de lecture en un clic",
-   "Ignorer le menu 'Lancer' lors de l'activation d'entr\303\251es dans la liste de lecture. Appuyez"
-   " sur la croix directionnelle tout en maintenant la touche OK pour acc\303\251der au menu 'Lancer"
-   "'.",
-   "Autoriser le retour depuis les onglets",
-   "Retourner au menu principal depuis les onglets/la barre lat\303\251rale en appuyant sur Retour.",
    "Acc\303\251l\303\251ration au d\303\251filement",
    "Vitesse de d\303\251placement maximale du curseur lors d'un d\303\251filement prolong\303\251.",
    "D\303\251lai de d\303\251filement",
    "D\303\251lai initial en millisecondes lors du maintien d'une direction de d\303\251filement.",
-   "D\303\251sactiver la touche d'informations",
-   "Emp\303\252cher la fonction info dans le menu.",
-   "D\303\251sactiver la touche de recherche",
-   "Emp\303\252cher la fonction de recherche dans le menu.",
-   "D\303\251sactiver le stick analogique gauche dans le menu",
-   "Emp\303\252cher l'entr\303\251e du stick analogique gauche dans le menu.",
-   "D\303\251sactiver le stick analogique droit dans le menu",
-   "Emp\303\252cher l'entr\303\251e du stick analogique droit dans le menu. Le stick analogique droi"
-   "t fait d\303\251filer les miniatures dans les listes de lecture.",
+   "Interface de bureau",
+   "Lancer l'interface de bureau au d\303\251marrage",
+   "Interface de bureau (Red\303\251marrage requis)",
+   "Ouvrir l'interface de bureau au d\303\251marrage",
    "Raccourcis activ\303\251s",
    "Lorsqu'elle est assign\303\251e, la touche 'Raccourcis activ\303\251s' doit \303\252tre maintenu"
    "e avant que d'autres raccourcis clavier ne soient reconnus. Permet aux touches de la manette d'"
@@ -5296,25 +5430,8 @@ static const struct
    " est utile pour les impl\303\251mentations centr\303\251es RETRO_KEYBOARD qui utilisent une gran"
    "de zone du clavier, o\303\271 il n\342\200\231est pas souhaitable que les raccourcis clavier pui"
    "ssent g\303\252ner.",
-   "D\303\251lai d'activation de la touche de raccourcis (en images)",
-   "Ajouter un d\303\251lai en images avant que l'entr\303\251e normale ne soit bloqu\303\251e apr"
-   "\303\250s avoir appuy\303\251 sur la touche 'Raccourcis activ\303\251s' assign\303\251e. Permet "
-   "l'entr\303\251e normale de la touche 'Raccourcis activ\303\251s' lorsqu'elle est mapp\303\251e "
-   "\303\240 une autre action (RetroManette 'Select' par exemple).",
-   "Fusion du type de p\303\251riph\303\251rique pour la touche de raccourcis",
-   "Bloquer toutes les touches de raccourcis des types de p\303\251riph\303\251riques clavier et man"
-   "ette si l'un ou l'autre des types \303\240 l'option 'Raccourcis activ\303\251s' activ\303\251e.",
-   "Raccourcis li\303\251s au joueur 1",
-   "Les touches de raccourcis sont li\303\251es au port 1 du c\305\223ur, m\303\252me si le port 1 d"
-   "u c\305\223ur est remapp\303\251 vers un autre utilisateur. Remarque : les touches de raccourcis"
-   " clavier ne fonctionneront pas si le port 1 du c\305\223ur est remapp\303\251 \303\240 n'importe"
-   " quel utilisateur > 1 (la saisie clavier provient de l'utilisateur 1).",
-   "Afficher/masquer le menu (combinaison manette)",
-   "Combinaison de touches de la manette pour afficher/masquer le menu.",
    "Menu (afficher/masquer)",
    "Bascule l'affichage actuel entre le menu et le contenu.",
-   "Quitter (combinaison manette)",
-   "Combinaison de touches de la manette pour quitter RetroArch.",
    "Quitter",
    "Ferme RetroArch, en s'assurant que tous les fichiers de sauvegarde et de configuration sont enre"
    "gistr\303\251s sur le disque.",
@@ -5598,8 +5715,6 @@ static const struct
    "Effectue des t\303\242ches de maintenance hors-ligne sur les c\305\223urs install\303\251s (sauv"
    "egarde, restauration, suppression, etc.) et affiche des informations sur les c\305\223urs.",
 #ifdef HAVE_MIST
-   "G\303\251rer les c\305\223urs",
-   "Installer ou d\303\251sinstaller les c\305\223urs distribu\303\251s par Steam.",
    "Installer le c\305\223ur",
    "D\303\251sinstaller le c\305\223ur",
    "Afficher 'G\303\251rer les c\305\223urs'",
@@ -5654,39 +5769,13 @@ static const struct
    "Fichier de la sauvegarde : intervalle d'enregistrement automatique de la SaveRAM",
    "Sauvegarder automatiquement la m\303\251moire SRAM non volatile \303\240 un intervalle r\303\251"
    "gulier (en secondes).",
-   "Sauvegarde automatiquement la m\303\251moire SRAM non volatile \303\240 un intervalle r\303\251g"
-   "ulier. Cette option est d\303\251sactiv\303\251e par d\303\251faut. L'intervalle est mesur\303"
-   "\251 en secondes. Une valeur de 0 d\303\251sactive la sauvegarde automatique.",
    "Sauvegarde instantan\303\251e : intervalle automatique",
    "Faire automatiquement une sauvegarde instantan\303\251e \303\240 un intervalle r\303\251gulier ("
    "en secondes). Mettre \303\240 0 pour d\303\251sactiver.",
-   "Fait automatiquement une sauvegarde instantan\303\251e \303\240 intervalle r\303\251gulier, mesu"
-   "r\303\251 en secondes. Cette option est utile pour cr\303\251er des sauvegardes p\303\251riodiqu"
-   "es de votre progression dans le jeu, en particulier sur des appareils qui peuvent fermer inopin"
-   "\303\251ment en raison de la batterie ou d'autres probl\303\250mes. Une valeur de 0 d\303\251sac"
-   "tive cette fonctionnalit\303\251.",
-   "Replay : intervalle des points de contr\303\264le",
-   "Marquer automatiquement l'\303\251tat du jeu \303\240 un intervalle r\303\251gulier pendant l'en"
-   "registrement d'un replay (en secondes).",
-   "Sauvegarde automatiquement l'\303\251tat du jeu \303\240 un intervalle r\303\251gulier pendant l"
-   "'enregistrement d'un replay. Cette option est d\303\251sactiv\303\251e par d\303\251faut. L'inte"
-   "rvalle est mesur\303\251 en secondes. Une valeur de 0 d\303\251sactive la sauvegarde d'\303\251t"
-   "ats.",
-   "D\303\251s\303\251rialiser ou non les points de contr\303\264le stock\303\251s dans les replays "
-   "pendant la lecture normale.",
-   "Replay : d\303\251s\303\251rialisation des points de contr\303\264le",
-   "D\303\251s\303\251rialiser ou non les points de contr\303\264le stock\303\251s dans les replays "
-   "pendant la lecture normale. Cette option doit \303\252tre activ\303\251e pour la plupart des c"
-   "\305\223urs, mais certains peuvent avoir un comportement d\303\251sordonn\303\251 lors de la d"
-   "\303\251s\303\251rialisation du contenu.",
    "Sauvegarde instantan\303\251e : incr\303\251menter automatiquement l'index",
    "Avant la cr\303\251ation d'une sauvegarde instantan\303\251e, le num\303\251ro de la sauvegarde "
    "instantan\303\251e est automatiquement incr\303\251ment\303\251. Lors du chargement de contenu, "
    "le num\303\251ro sera r\303\251gl\303\251 sur le plus haut existant.",
-   "Replay : incr\303\251menter automatiquement l'index",
-   "Avant la cr\303\251ation d'un replay, le num\303\251ro d'emplacement du replay est automatiqueme"
-   "nt incr\303\251ment\303\251. Lors du chargement de contenu, le num\303\251ro sera r\303\251gl"
-   "\303\251 sur le plus haut existant.",
    "Sauvegarde instantan\303\251e : incr\303\251mentation automatique maximale \303\240 conserver",
    "Limiter le nombre de sauvegardes instantan\303\251es qui seront cr\303\251\303\251es lorsque l'o"
    "ption 'Incr\303\251menter automatiquement l'index' est activ\303\251e. Si la limite est d\303"
@@ -5694,19 +5783,27 @@ static const struct
    "egarde instantan\303\251e existante avec l'index le plus bas sera supprim\303\251e. Une valeur d"
    "e '0' signifie que des sauvegardes instantan\303\251es illimit\303\251es seront enregistr\303"
    "\251es.",
+   "Replay : incr\303\251menter automatiquement l'index",
+   "Avant la cr\303\251ation d'un replay, le num\303\251ro d'emplacement du replay est automatiqueme"
+   "nt incr\303\251ment\303\251. Lors du chargement de contenu, le num\303\251ro sera r\303\251gl"
+   "\303\251 sur le plus haut existant.",
    "Replay : incr\303\251mentation automatique maximale \303\240 conserver",
    "Limiter le nombre de replays qui seront cr\303\251\303\251s lorsque l'option 'Incr\303\251menter"
    " automatiquement l'index' est activ\303\251e. Si la limite est d\303\251pass\303\251e lors de l'"
    "enregistrement d'un nouveau replay, le replay existant avec l'index le plus bas sera supprim\303"
    "\251. Une valeur de '0' signifie que des replays illimit\303\251s seront enregistr\303\251s.",
-   "Sauvegarde instantan\303\251e : sauvegarde automatique",
-   "Faire automatiquement une sauvegarde instantan\303\251e lorsque le contenu est ferm\303\251. Cet"
-   "te sauvegarde instantan\303\251e est charg\303\251e au d\303\251marrage si l'option 'Chargement "
-   "automatique' est activ\303\251e.",
-   "Sauvegarde instantan\303\251e : chargement automatique",
-   "Charger la sauvegarde instantan\303\251e automatique au d\303\251marrage.",
-   "Sauvegarde instantan\303\251e : miniatures",
-   "Affiche des miniatures pour les sauvegardes instantan\303\251es.",
+   "Replay : intervalle des points de contr\303\264le",
+   "Marquer automatiquement l'\303\251tat du jeu \303\240 un intervalle r\303\251gulier pendant l'en"
+   "registrement d'un replay (en secondes).",
+   "Replay : d\303\251s\303\251rialisation des points de contr\303\264le",
+   "D\303\251s\303\251rialiser ou non les points de contr\303\264le stock\303\251s dans les replays "
+   "pendant la lecture normale.",
+   "Enregistrer le journal du temps de jeu (par c\305\223ur)",
+   "Garder la trace de la dur\303\251e d'ex\303\251cution de chaque \303\251l\303\251ment de contenu"
+   ", s\303\251par\303\251ment par c\305\223ur.",
+   "Enregistrer le journal du temps de jeu (cumul\303\251)",
+   "Garder la trace de la dur\303\251e d'ex\303\251cution de chaque \303\251l\303\251ment de contenu"
+   ", en tant que total cumul\303\251 sur tous les c\305\223urs.",
    "Fichier de la sauvegarde : compression",
    "Enregistrer la m\303\251moire SRAM non volatile sous un format archiv\303\251. R\303\251duit con"
    "sid\303\251rablement la taille du fichier au d\303\251triment de l'augmentation (n\303\251gligea"
@@ -5716,6 +5813,30 @@ static const struct
    "Enregistrer les fichiers de sauvegarde instantan\303\251e sous un format archiv\303\251. R\303"
    "\251duit consid\303\251rablement la taille du fichier au d\303\251triment de l'augmentation des "
    "temps de sauvegarde/chargement.",
+   "Sauvegarde automatiquement la m\303\251moire SRAM non volatile \303\240 un intervalle r\303\251g"
+   "ulier. Cette option est d\303\251sactiv\303\251e par d\303\251faut. L'intervalle est mesur\303"
+   "\251 en secondes. Une valeur de 0 d\303\251sactive la sauvegarde automatique.",
+   "Fait automatiquement une sauvegarde instantan\303\251e \303\240 intervalle r\303\251gulier, mesu"
+   "r\303\251 en secondes. Cette option est utile pour cr\303\251er des sauvegardes p\303\251riodiqu"
+   "es de votre progression dans le jeu, en particulier sur des appareils qui peuvent fermer inopin"
+   "\303\251ment en raison de la batterie ou d'autres probl\303\250mes. Une valeur de 0 d\303\251sac"
+   "tive cette fonctionnalit\303\251.",
+   "Sauvegarde automatiquement l'\303\251tat du jeu \303\240 un intervalle r\303\251gulier pendant l"
+   "'enregistrement d'un replay. Cette option est d\303\251sactiv\303\251e par d\303\251faut. L'inte"
+   "rvalle est mesur\303\251 en secondes. Une valeur de 0 d\303\251sactive la sauvegarde d'\303\251t"
+   "ats.",
+   "D\303\251s\303\251rialiser ou non les points de contr\303\264le stock\303\251s dans les replays "
+   "pendant la lecture normale. Cette option doit \303\252tre activ\303\251e pour la plupart des c"
+   "\305\223urs, mais certains peuvent avoir un comportement d\303\251sordonn\303\251 lors de la d"
+   "\303\251s\303\251rialisation du contenu.",
+   "Sauvegarde instantan\303\251e : sauvegarde automatique",
+   "Faire automatiquement une sauvegarde instantan\303\251e lorsque le contenu est ferm\303\251. Cet"
+   "te sauvegarde instantan\303\251e est charg\303\251e au d\303\251marrage si l'option 'Chargement "
+   "automatique' est activ\303\251e.",
+   "Sauvegarde instantan\303\251e : chargement automatique",
+   "Charger la sauvegarde instantan\303\251e automatique au d\303\251marrage.",
+   "Sauvegarde instantan\303\251e : miniatures",
+   "Affiche des miniatures pour les sauvegardes instantan\303\251es.",
    "Fichier de la sauvegarde : \303\251crire dans le dossier du contenu",
    "Utiliser le dossier du contenu comme dossier de sauvegarde.",
    "Sauvegarde instantan\303\251e : \303\251crire dans le dossier du contenu",
@@ -5727,12 +5848,6 @@ static const struct
    "\271 le contenu est situ\303\251.",
    "Capture d'\303\251cran : \303\251crire dans le dossier du contenu",
    "Utiliser le dossier du contenu comme dossier de capture d'\303\251cran.",
-   "Enregistrer le journal du temps de jeu (par c\305\223ur)",
-   "Garder la trace de la dur\303\251e d'ex\303\251cution de chaque \303\251l\303\251ment de contenu"
-   ", s\303\251par\303\251ment par c\305\223ur.",
-   "Enregistrer le journal du temps de jeu (cumul\303\251)",
-   "Garder la trace de la dur\303\251e d'ex\303\251cution de chaque \303\251l\303\251ment de contenu"
-   ", en tant que total cumul\303\251 sur tous les c\305\223urs.",
    "Verbosit\303\251 de la journalisation",
    "Journaliser les \303\251v\303\251nements sur un terminal ou dans un fichier.",
    "Niveau de journalisation de l'interface frontale",
@@ -5743,6 +5858,13 @@ static const struct
    "D\303\251finir le niveau de journalisation pour les c\305\223urs. Si un niveau de journalisation"
    " \303\251mis par un c\305\223ur est inf\303\251rieur \303\240 cette valeur, il sera ignor\303"
    "\251.",
+   "Journaliser vers un fichier",
+   "Rediriger les messages de la journalisation des \303\251v\303\250nements syst\303\250me vers un "
+   "fichier. Requiert l'activation du r\303\251glage de 'Verbosit\303\251 de la journalisation'.",
+   "Fichiers de journalisation horodat\303\251s",
+   "Lors de la journalisation vers un fichier, rediriger la sortie de chaque session RetroArch vers "
+   "un nouveau fichier horodat\303\251. Si d\303\251sactiv\303\251, le journal est \303\251cras\303"
+   "\251 chaque fois que RetroArch est red\303\251marr\303\251.",
    "D\303\251finit le niveau de journalisation pour les c\305\223urs libretro (GET_LOG_INTERFACE). S"
    "i un niveau de journal \303\251mis par un c\305\223ur libretro est inf\303\251rieur au niveau li"
    "bretro_log, il sera ignor\303\251. Les journaux DEBUG seront toujours ignor\303\251s sauf si le "
@@ -5751,13 +5873,6 @@ static const struct
    "1 (info)",
    "2 (avertissement)",
    "3 (erreur)",
-   "Journaliser vers un fichier",
-   "Rediriger les messages de la journalisation des \303\251v\303\250nements syst\303\250me vers un "
-   "fichier. Requiert l'activation du r\303\251glage de 'Verbosit\303\251 de la journalisation'.",
-   "Fichiers de journalisation horodat\303\251s",
-   "Lors de la journalisation vers un fichier, rediriger la sortie de chaque session RetroArch vers "
-   "un nouveau fichier horodat\303\251. Si d\303\251sactiv\303\251, le journal est \303\251cras\303"
-   "\251 chaque fois que RetroArch est red\303\251marr\303\251.",
    "Compteurs de performance",
    "Compteurs de performance pour RetroArch et les c\305\223urs. Les donn\303\251es de compteur peuv"
    "ent aider \303\240 d\303\251terminer les goulots d'\303\251tranglement du syst\303\250me et \303"
@@ -5781,24 +5896,11 @@ static const struct
    "iers.",
    "Utiliser la visionneuse d'images int\303\251gr\303\251e",
    "Afficher les fichiers pris en charge par la visionneuse d'images dans le navigateur de fichiers.",
-   "Rembobinage",
-   "Modifier les r\303\251glages de rembobinage.",
-   "Compteur de temps par images",
-   "Modifier les r\303\251glages qui influent sur le compteur de temps par image. Cette option est a"
-   "ctive uniquement lorsque la vid\303\251o sur plusieurs fils d'ex\303\251cution est d\303\251sact"
-   "iv\303\251e.",
-   "Vitesse d'ex\303\251cution maximale ",
-   "Vitesse d'ex\303\251cution maximale du contenu lors de l'avance rapide (par exemple, 5,0x pour u"
-   "n contenu \303\240 60 images/s = une limitation \303\240 300 images/s) Si d\303\251finie \303"
-   "\240 0,0x, la vitesse en avance rapide est illimit\303\251e (pas de limite d'images/s).",
    "Fr\303\251quence maximum \303\240 laquelle le contenu sera ex\303\251cut\303\251 lors de l'utili"
    "sation de l'avance rapide. (Par exemple, 5,0 pour un contenu \303\240 60 images/s => un plafond "
    "\303\240 300 images/s).\nRetroArch se ralentira pour veiller \303\240 ce que la fr\303\251quence"
    " maximale ne soit pas d\303\251pass\303\251e. Ne comptez pas sur ce plafonnage pour \303\252tre "
    "parfaitement pr\303\251cis.",
-   "Saut d'images pour l'avance rapide",
-   "Sauter des images en fonction de la vitesse d'avance rapide. Cela permet d'\303\251conomiser de "
-   "l'\303\251nergie et d'utiliser des limitateurs d'images de tierce partie.",
    "Taux de ralentissement maximal ",
    "Taux de ralentissement auquel le contenu sera jou\303\251 en mode ralenti.",
    "Limiter les images/s dans le menu",
@@ -5834,6 +5936,7 @@ static const struct
    "WebM rapide",
    "WebM haute qualit\303\251",
    "Configuration d'enregistrement personnalis\303\251e ",
+   "Titre de la diffusion ",
    "Fils d'ex\303\251cution de l'enregistrement ",
    "Utiliser les filtres vid\303\251o lors de l'enregistrement",
    "Capture l'image apr\303\250s l'application des filtres (mais pas des shaders). La vid\303\251o s"
@@ -5848,17 +5951,10 @@ static const struct
    "Moyenne",
    "\303\211lev\303\251e",
    "Configuration de diffusion personnalis\303\251e ",
-   "Titre de la diffusion ",
    "URL de la diffusion ",
    "Port de stream UDP ",
-   "Surimpressions \303\240 l'\303\251cran",
-   "Ajuste les cadres d'images et les touches \303\240 l'\303\251cran.",
    "Dispositions d'affichage",
    "Ajuste la disposition de l'affichage.",
-   "Notifications \303\240 l'\303\251cran",
-   "Ajuste les notifications \303\240 l'\303\251cran.",
-   "Affichage des notifications",
-   "Afficher/masquer certains types de notifications.",
    "Surimpression \303\240 l'\303\251cran",
    "Les surimpressions sont utilis\303\251es pour les bordures et les contr\303\264les \303\240 l'"
    "\303\251cran.",
@@ -5966,17 +6062,10 @@ static const struct
    "D\303\251calage vertical de la surimpression lors de l'utilisation d'une orientation d'\303\251c"
    "ran en mode portrait. Les valeurs positives d\303\251placent la surimpression vers le haut; les "
    "valeurs n\303\251gatives vers le bas.",
-   "Clavier en surimpression",
-   "S\303\251lectionner et ajuster le clavier en surimpression.",
    "Activer le pistolet, souris et pointeur en surimpression",
    "Utiliser n'importe quelle entr\303\251e tactile n'appuyant pas sur les commandes en surimpressio"
    "n pour cr\303\251er l'entr\303\251e du p\303\251riph\303\251rique de pointage pour le c\305\223u"
    "r.",
-   "Pistolet en surimpression",
-   "Configurer l'entr\303\251e pistolet envoy\303\251e depuis la surimpression.",
-   "Souris en surimpression",
-   "Configurer l'entr\303\251e de la souris envoy\303\251e depuis la surimpression. Remarque : les t"
-   "apes avec 1, 2, et 3 doigts envoient des clics gauche, droit et milieu.",
    "Pr\303\251r\303\251glage du clavier en surimpression",
    "S\303\251lectionner un clavier en surimpression \303\240 partir du navigateur de fichiers.",
    "Mise \303\240 l'\303\251chelle automatique du clavier en surimpression",
@@ -5988,7 +6077,6 @@ static const struct
    "Port du pistolet",
    "D\303\251finir le port sur lequel le c\305\223ur doit recevoir les entr\303\251es du pistolet en"
    " surimpression.",
-   "Tous",
    "D\303\251clencher au toucher",
    "Envoyer l'entr\303\251e de la g\303\242chette avec l'entr\303\251e du pointeur.",
    "D\303\251lai de d\303\251clenchement (images)",
@@ -6010,6 +6098,7 @@ static const struct
    "Autoriser le tir hors \303\251cran",
    "Autoriser la vis\303\251e hors limites. D\303\251sactiver pour serrer la vis\303\251e hors \303"
    "\251cran sur le bord int\303\251rieur.",
+   "Tous",
    "Vitesse de la souris",
    "Ajuster la vitesse de d\303\251placement du curseur.",
    "Appui long pour faire glisser",
@@ -6022,10 +6111,10 @@ static const struct
    "Seuil de double-tape (ms)",
    "Ajuster le temps autoris\303\251 entre les tapes lors de la d\303\251tection d'une double-tape.",
    "Seuil de glissement",
-   "Entr\303\251e \303\240 2 touches alternative",
-   "Utiliser un second toucher en tant que bouton de la souris tout en contr\303\264lant le curseur.",
    "Ajuster la plage de d\303\251rive permise lors de la d\303\251tection d'un appui long ou d'une t"
    "ape. Exprim\303\251 en pourcentage de la dimension de l'\303\251cran la plus petite.",
+   "Entr\303\251e \303\240 2 touches alternative",
+   "Utiliser un second toucher en tant que bouton de la souris tout en contr\303\264lant le curseur.",
    "Notifications \303\240 l'\303\251cran",
    "Affiche les messages \303\240 l'\303\251cran.",
    "Widgets graphiques",
@@ -6051,10 +6140,6 @@ static const struct
    "Afficher le nombre d'images/s actuel.",
    "Intervalle de mise \303\240 jour des images/s (en images)",
    "L'affichage des images/s sera mis \303\240 jour \303\240 l'intervalle d\303\251fini en images.",
-   "Afficher le compteur d'images",
-   "Afficher le compteur d'images \303\240 l'\303\251cran.",
-   "Afficher les statistiques",
-   "Afficher des statistiques techniques \303\240 l'\303\251cran.",
    "Afficher l'utilisation de la m\303\251moire",
    "Afficher la quantit\303\251 de m\303\251moire utilis\303\251e et totale sur le syst\303\250me.",
    "Fr\303\251quence d'actualisation de l'utilisation m\303\251moire (en images) ",
@@ -6062,23 +6147,27 @@ static const struct
    "\303\251fini en images.",
    "Afficher l'heure",
    "Affiche l'heure courante dans le format pr\303\251f\303\251r\303\251.",
+   "Afficher les statistiques",
+   "Afficher des statistiques techniques \303\240 l'\303\251cran.",
+   "Afficher le compteur d'images",
+   "Afficher le compteur d'images \303\240 l'\303\251cran.",
    "Afficher le ping du jeu en r\303\251seau",
    "Afficher le ping de la salle de jeu en r\303\251seau actuelle.",
    "Notification au d\303\251marrage de contenu",
    "Afficher une br\303\250ve notification anim\303\251e lors du chargement de contenu.",
    "Notifications \303\240 la connexion de p\303\251riph\303\251riques d'entr\303\251e (configuratio"
    "n automatique)",
+   "Afficher un message \303\240 l'\303\251cran lors de la connexion/d\303\251connexion de p\303\251"
+   "riph\303\251riques d'entr\303\251es.",
    "Notifications d'\303\251chec de p\303\251riph\303\251riques d'entr\303\251e (configuration autom"
    "atique)",
+   "Afficher un message \303\240 l'\303\251cran lorsque des p\303\251riph\303\251riques d'entr\303"
+   "\251e n'ont pas pu \303\252tre configur\303\251s.",
    "Notifications de cheats",
    "Afficher un message \303\240 l'\303\251cran lorsque des codes de cheat sont appliqu\303\251s.",
    "Notifications de patchs",
    "Affiche un message \303\240 l'\303\251cran lors de l'application de patches logiciels sur des RO"
    "M.",
-   "Afficher un message \303\240 l'\303\251cran lors de la connexion/d\303\251connexion de p\303\251"
-   "riph\303\251riques d'entr\303\251es.",
-   "Afficher un message \303\240 l'\303\251cran lorsque des p\303\251riph\303\251riques d'entr\303"
-   "\251e n'ont pas pu \303\252tre configur\303\251s.",
    "Notifications au chargement de remappages des touches",
    "Afficher un message \303\240 l'\303\251cran lors du chargement des fichiers de remappage des tou"
    "ches.",
@@ -6102,14 +6191,8 @@ static const struct
    "Afficher un message \303\240 l'\303\251cran lors d'une capture d'\303\251cran.",
    "Persistence de la notification de capture d'\303\251cran ",
    "D\303\251finir la dur\303\251e d'affichage du message de capture d'\303\251cran.",
-   "Normale",
-   "Courte",
-   "Tr\303\250s courte",
-   "Instantan\303\251e",
    "Effet de flash lors de la capture d'\303\251cran ",
    "Afficher un effet de flash blanc \303\240 l'\303\251cran lors de la capture de l'\303\251cran.",
-   "Activ\303\251 (normal)",
-   "Activ\303\251 (court)",
    "Notifications pour la fr\303\251quence de rafra\303\256chissement",
    "Afficher un message \303\240 l'\303\251cran lors du r\303\251glage de la fr\303\251quence de raf"
    "ra\303\256chissement.",
@@ -6117,6 +6200,12 @@ static const struct
    "Afficher les messages non essentiels du jeu en r\303\251seau \303\240 l'\303\251cran.",
    "Notifications dans le menu uniquement",
    "Afficher les notifications uniquement lorsque le menu est ouvert.",
+   "Normale",
+   "Courte",
+   "Tr\303\250s courte",
+   "Instantan\303\251e",
+   "Activ\303\251 (normal)",
+   "Activ\303\251 (court)",
    "Police des notifications ",
    "S\303\251lectionner la police pour les notifications \303\240 l'\303\251cran.",
    "Taille des notifications ",
@@ -6151,20 +6240,8 @@ static const struct
    "Opacit\303\251 (Arri\303\250re-plan des notifications) ",
    "D\303\251finit l'opacit\303\251 de la couleur d'arri\303\250re-plan du texte \303\240 l'\303\251"
    "cran. Les valeurs valides sont comprises entre 0.0 et 1.0.",
-   "Apparence",
-   "Modifier les r\303\251glages d'apparence de l'\303\251cran du menu.",
-   "Visibilit\303\251 des \303\251l\303\251ments du menu",
-   "Afficher/masquer des \303\251l\303\251ments du menu dans RetroArch.",
    "Mettre en pause le contenu lorsque le menu est actif",
    "Met en pause le contenu si le menu est actif.",
-   "Mettre en pause le contenu lors de la mise en arri\303\250re-plan",
-   "Mettre le contenu en pause lorsque RetroArch n'est pas au premier plan.",
-   "D\303\251sactiver la composition de bureau",
-   "Le gestionnaire de fen\303\252tres utilise la composition pour appliquer des effets visuels et d"
-   "\303\251tecter les fen\303\252tres qui ne r\303\251pondent pas, entre autres.",
-   "Quitter lors de la fermeture de contenu",
-   "Quitter automatiquement RetroArch lors de la fermeture du contenu. 'CLI' quitte uniquement lorsq"
-   "ue le contenu est lanc\303\251 via la ligne de commande.",
    "Reprendre le contenu apr\303\250s l'utilisation de sauvegardes instantan\303\251es",
    "Ferme automatiquement le menu et reprends le contenu apr\303\250s la sauvegarde ou le chargement"
    " instantan\303\251. D\303\251sactiver cette option peut am\303\251liorer les performances de sau"
@@ -6172,6 +6249,17 @@ static const struct
    "Reprendre le contenu apr\303\250s le changement de disques",
    "Ferme automatiquement le menu et reprends le contenu actuel apr\303\250s l'insertion ou le charg"
    "ement d'un nouveau disque.",
+   "Quitter lors de la fermeture de contenu",
+   "Quitter automatiquement RetroArch lors de la fermeture du contenu. 'CLI' quitte uniquement lorsq"
+   "ue le contenu est lanc\303\251 via la ligne de commande.",
+   "D\303\251lai d'activation de l'\303\251conomiseur d'\303\251cran du menu",
+   "Lorsque le menu est actif, un \303\251conomiseur d'\303\251cran s'affichera apr\303\250s la p"
+   "\303\251riode d'inactivit\303\251 sp\303\251cifi\303\251e.",
+   "Mettre en pause le contenu lors de la mise en arri\303\250re-plan",
+   "Mettre le contenu en pause lorsque RetroArch n'est pas au premier plan.",
+   "D\303\251sactiver la composition de bureau",
+   "Le gestionnaire de fen\303\252tres utilise la composition pour appliquer des effets visuels et d"
+   "\303\251tecter les fen\303\252tres qui ne r\303\251pondent pas, entre autres.",
    "Navigation en boucle dans les menus",
    "Retour au d\303\251but et/ou \303\240 la fin si la limite de la liste est atteinte horizontaleme"
    "nt ou verticalement.",
@@ -6184,39 +6272,29 @@ static const struct
    "La saisie d'un mot de passe lors de l'activation du mode kiosque permet de le d\303\251sactiver "
    "ult\303\251rieurement \303\240 partir du menu, en allant dans le menu principal, en s\303\251lec"
    "tionnant 'D\303\251sactiver le mode kiosque' et en entrant le mot de passe.",
+   "Se rappeler de la s\303\251lection lors du changement d'onglets",
+   "Se rappeler de la position pr\303\251c\303\251dente du curseur dans les onglets. RGUI n'a pas d'"
+   "onglets, mais les listes de lecture et les r\303\251glages se comportent comme tels.",
+   "Page de d\303\251marrage",
+   "Page de menu initiale au d\303\251marrage.",
    "Prise en charge de la souris",
    "Permettre le contr\303\264le du menu avec une souris.",
    "Prise en charge du tactile",
    "Permettre le contr\303\264le du menu avec un \303\251cran tactile.",
    "T\303\242ches sur plusieurs fils d'ex\303\251cution",
    "Effectue des t\303\242ches sur un fil d'ex\303\251cution distinct.",
-   "D\303\251lai d'activation de l'\303\251conomiseur d'\303\251cran du menu",
-   "Lorsque le menu est actif, un \303\251conomiseur d'\303\251cran s'affichera apr\303\250s la p"
-   "\303\251riode d'inactivit\303\251 sp\303\251cifi\303\251e.",
    "Animation de l'\303\251conomiseur d'\303\251cran du menu",
    "Activer un effet d'animation lorsque l'\303\251conomiseur d'\303\251cran du menu est actif. A un"
    " impact modeste sur les performances.",
-   "Neige",
-   "Ciel \303\251toil\303\251",
    "Vitesse d'animation de l'\303\251conomiseur d'\303\251cran de menu",
    "Ajuster la vitesse de l'effet d'animation de l'\303\251conomiseur d'\303\251cran du menu.",
+   "Neige",
+   "Ciel \303\251toil\303\251",
    "D\303\251sactiver de force la composition. Valide uniquement pour Windows Vista/7 pour le moment"
    ".",
-   "Interface de bureau",
-   "Lancer l'interface de bureau au d\303\251marrage",
    "Lancer l'interface de bureau au d\303\251marrage (si disponible).",
-   "Interface de bureau (Red\303\251marrage requis)",
-   "Ouvrir l'interface de bureau au d\303\251marrage",
-#ifdef _3DS
-   "Apparence de l'\303\251cran inf\303\251rieur 3DS",
-   "Modifier les param\303\250tres d'apparence de l'\303\251cran du bas.",
-#endif
    "Ic\303\264ne de l\342\200\231app",
    "Changer l'ic\303\264ne de l'application.",
-   "Menu rapide",
-   "Afficher ou masquer des \303\251l\303\251ments dans le menu rapide.",
-   "R\303\251glages",
-   "Afficher ou masquer des \303\251l\303\251ments dans le menu des r\303\251glages.",
    "Afficher 'Charger un c\305\223ur'",
    "Afficher l'option 'Charger un c\305\223ur' dans le menu principal.",
    "Afficher 'Charger du contenu'",
@@ -6268,14 +6346,12 @@ static const struct
    "Afficher le menu 'Musique'.",
    "Afficher 'Vid\303\251o'",
    "Afficher le menu 'Vid\303\251os'.",
-   "Afficher 'Jeu en r\303\251seau'",
-   "Afficher l'entr\303\251e 'Jeu en r\303\251seau' dans le menu principal ou les listes de lecture.",
    "Afficher 'Historique'",
    "Afficher le menu de l'historique r\303\251cent.",
+   "Afficher 'Jeu en r\303\251seau'",
+   "Afficher l'entr\303\251e 'Jeu en r\303\251seau' dans le menu principal ou les listes de lecture.",
    "Afficher 'Importer du contenu'",
    "Afficher l'entr\303\251e 'Importer du contenu' dans le menu principal ou les listes de lecture.",
-   "Menu principal",
-   "Menu des listes de lecture",
    "Afficher 'Listes de lecture'",
    "Afficher les listes de lecture dans le menu principal. Option ignor\303\251e dans GLUI si les on"
    "glets de liste de lecture et la barre de navigation sont activ\303\251s.",
@@ -6289,6 +6365,8 @@ static const struct
    " menu 'C\305\223urs sans contenu'. Lorsque r\303\251gl\303\251 sur 'Personnalis\303\251', la vis"
    "ibilit\303\251 des c\305\223urs individuels peut \303\252tre activ\303\251e/d\303\251sactiv\303"
    "\251e via le menu 'G\303\251rer les c\305\223urs'.",
+   "Menu principal",
+   "Menu des listes de lecture",
    "Tous",
    "Usage unique",
    "Personnalis\303\251",
@@ -6450,14 +6528,9 @@ static const struct
    "Animation du d\303\251filement de texte",
    "Utiliser une animation lisse pour l'affichage de texte trop long dans le menu. A un faible impac"
    "t sur les performances.",
-   "Se rappeler de la s\303\251lection lors du changement d'onglets",
-   "Se rappeler de la position pr\303\251c\303\251dente du curseur dans les onglets. RGUI n'a pas d'"
-   "onglets, mais les listes de lecture et les r\303\251glages se comportent comme tels.",
    "Toujours",
    "Uniquement pour les listes de lecture",
    "Uniquement pour le menu principal et les r\303\251glages",
-   "Page de d\303\251marrage",
-   "Page de menu initiale au d\303\251marrage.",
    "Sortie du service IA ",
    "Afficher la traduction en tant que superposition de texte (Mode image), lecture Text-To-Speech ("
    "Mode traduction vocale), ou en utilisant un narrateur syst\303\250me comme NVDA (Mode narrateur)"
@@ -6510,9 +6583,6 @@ static const struct
    "Mode \"encore\"",
    "D\303\251marrer la session avec tous les succ\303\250s actifs (les succ\303\250s pr\303\251c\303"
    "\251demment d\303\251bloqu\303\251s inclus).",
-   "Apparence",
-   "Modifier la position et les d\303\251calages des notifications de succ\303\250s \303\240 l'\303"
-   "\251cran.",
    "D\303\251finir le coin/bord de l'\303\251cran \303\240 partir duquel les notifications d'accompl"
    "issement appara\303\256tront.",
    "En haut \303\240 gauche",
@@ -6531,15 +6601,10 @@ static const struct
    "Remplissage horizontal manuel",
    "Distance entre le bord sup\303\251rieur et inf\303\251rieur de l'\303\251cran, qui peut compense"
    "r le surbalayage de l'\303\251cran.",
-   "Visibilit\303\251",
-   "Modifier les messages et les \303\251l\303\251ments affich\303\251s \303\240 l'\303\251cran. Ne "
-   "d\303\251sactive pas les fonctionnalit\303\251s.",
    "R\303\251sum\303\251 du d\303\251marrage",
    "Affiche des informations sur le jeu en cours de chargement et la progression actuelle de l'utili"
    "sateur. 'Tous les jeux identifi\303\251s' affichera un r\303\251sum\303\251 pour les jeux sans s"
    "ucc\303\250s publi\303\251s.",
-   "Tous les jeux identifi\303\251s",
-   "Jeux avec succ\303\250s",
    "Notifications de d\303\251bloquage",
    "Affiche une notification lorsqu'un succ\303\250s est d\303\251bloqu\303\251.",
    "Notifications de ma\303\256trise",
@@ -6557,6 +6622,8 @@ static const struct
    "tative est termin\303\251e.",
    "Messages d'\303\251chec d'entr\303\251e au tableau de classement",
    "Affiche un message quand une tentative d'entr\303\251e au tableau de classement \303\251choue.",
+   "Tous les jeux identifi\303\251s",
+   "Jeux avec succ\303\250s",
    "Trackers du tableau de classement",
    "Affiche les trackers sur l'\303\251cran avec la valeur actuelle des tableaux de classement actif"
    "s.",
@@ -6565,6 +6632,9 @@ static const struct
    "Messages de connexion",
    "Affiche les messages li\303\251s \303\240 la connexion au compte RetroSucc\303\250s (RetroAchiev"
    "ements).",
+   "Salles connectables uniquement",
+   "Uniquement les c\305\223urs install\303\251s",
+   "Salles avec mot de passe",
    "Annoncer le jeu en r\303\251seau publiquement",
    "D\303\251termine s'il faut annoncer les sessions de jeu en r\303\251seau publiquement. Si cette "
    "option est d\303\251sactiv\303\251e, les clients doivent se connecter manuellement plut\303\264t"
@@ -6578,13 +6648,13 @@ static const struct
    "Adresse du serveur de relais personnalis\303\251",
    "Entrer l'adresse de votre serveur de relais personnalis\303\251. Format : adresse ou adresse|por"
    "t.",
+   "Adresse du serveur ",
+   "Adresse de l'h\303\264te auquel se connecter.",
    "Am\303\251rique du Nord (c\303\264te est, \303\211tats-Unis)",
    "Europe occidentale",
    "Am\303\251rique du Sud (sud-est, Br\303\251sil)",
    "Asie du Sud-Est",
    "Personnalis\303\251",
-   "Adresse du serveur ",
-   "Adresse de l'h\303\264te auquel se connecter.",
    "Port TCP du jeu en r\303\251seau ",
    "Port de l'adresse IP de l'h\303\264te. Peut \303\252tre un port TCP ou UDP.",
    "Connexions simultan\303\251es maximales",
@@ -6600,9 +6670,6 @@ static const struct
    " spectateur.",
    "Mode spectateur de jeu en r\303\251seau",
    "D\303\251marre le jeu en r\303\251seau en mode spectateur.",
-   "D\303\251marrer le jeu en r\303\251seau en mode spectateur ou non. Si cette option est activ\303"
-   "\251e, le jeu en r\303\251seau sera en mode spectateur au d\303\251marrage. Il est toujours poss"
-   "ible de changer de mode plus tard.",
    "Chat en fondu",
    "Estomper les messages du chat au fil du temps.",
    "Couleur du chat (pseudo)",
@@ -6621,6 +6688,9 @@ static const struct
    "V\303\251rifier la latence par image du jeu en r\303\251seau ",
    "Fr\303\251quence (en images) \303\240 laquelle le jeu en r\303\251seau v\303\251rifiera que l'h"
    "\303\264te et le client sont synchronis\303\251s.",
+   "D\303\251marrer le jeu en r\303\251seau en mode spectateur ou non. Si cette option est activ\303"
+   "\251e, le jeu en r\303\251seau sera en mode spectateur au d\303\251marrage. Il est toujours poss"
+   "ible de changer de mode plus tard.",
    "Fr\303\251quence en images avec laquelle le jeu en r\303\251seau v\303\251rifiera que l'h\303"
    "\264te et le client sont synchronis\303\251s. Avec la plupart des c\305\223urs, cela n'aura aucu"
    "n effet visible et peut \303\252tre ignor\303\251. Avec les c\305\223urs non d\303\251terministe"
@@ -6655,6 +6725,7 @@ static const struct
    "Lors de l'h\303\251bergement, tenter d'intercepter des connexions depuis l'internet public, en u"
    "tilisant UPnP ou des technologies similaires pour sortir du r\303\251seau local.",
    "Partage des entr\303\251es num\303\251riques ",
+   "Partage des entr\303\251es analogiques ",
    "Demander le p\303\251riph\303\251rique %u",
    "Demander \303\240 jouer avec le p\303\251riph\303\251rique d'entr\303\251e donn\303\251.",
    "Commandes r\303\251seau",
@@ -6667,8 +6738,6 @@ static const struct
    "T\303\251l\303\251charger les miniatures \303\240 la demande",
    "T\303\251l\303\251charge automatiquement les miniatures manquantes lors de la navigation dans le"
    "s listes de lecture. Affecte grandement les performances.",
-   "R\303\251glages de mise \303\240 jour",
-   "Acc\303\251der aux r\303\251glages de mise \303\240 jour des c\305\223urs",
    "Adresse URL des c\305\223urs sur le buildbot ",
    "URL du dossier de mise \303\240 jour des c\305\223urs sur le buildbot de libretro.",
    "Adresse URL des ressources sur le buildbot ",
@@ -6717,17 +6786,54 @@ static const struct
    "t la taille du fichier et les temps de sauvegarde/chargement au d\303\251triment de l'augmentati"
    "on (n\303\251gligeable) de l'utilisation du processeur. Peut \303\252tre utilis\303\251 avec l'a"
    "ncien et le nouveau format des listes de lecture.",
-   "Afficher les c\305\223urs associ\303\251s dans les listes de lecture",
-   "Indique quand marquer les entr\303\251es de la liste de lecture avec leur c\305\223ur actuelleme"
-   "nt associ\303\251 (le cas \303\251ch\303\251ant). Ce r\303\251glage est ignor\303\251 lorsque le"
-   "s sous-descriptions des \303\251l\303\251ments dans les listes de lecture sont activ\303\251es.",
    "Afficher les sous-descriptions dans les listes de lecture",
    "Afficher des informations additionnelles pour chaque entr\303\251e dans les listes de lecture, t"
    "elles que l'association au c\305\223ur actuelle et le temps de jeu (si disponible). A un impact "
    "variable sur les performances.",
+   "Temps de jeu dans les sous-descriptions des listes de lecture",
+   "S\303\251lectionner le type d'enregistrement du temps de jeu \303\240 afficher dans les sous-des"
+   "criptions des listes de lecture. Le journal du temps de jeu correspondant doit \303\252tre activ"
+   "\303\251 via le menu d'options 'Sauvegarde'.",
+   "Format du temps de jeu pour 'Jou\303\251 pour la derni\303\250re fois'",
+   "R\303\251gler le style de la date et l'heure affich\303\251es pour les informations d'horodatage"
+   " dans 'Jou\303\251 pour la derni\303\250re fois'. Les options '(AM/PM)' auront un faible impact "
+   "sur les performances pour certaines plateformes.",
+   "Afficher les c\305\223urs associ\303\251s dans les listes de lecture",
+   "Indique quand marquer les entr\303\251es de la liste de lecture avec leur c\305\223ur actuelleme"
+   "nt associ\303\251 (le cas \303\251ch\303\251ant). Ce r\303\251glage est ignor\303\251 lorsque le"
+   "s sous-descriptions des \303\251l\303\251ments dans les listes de lecture sont activ\303\251es.",
+   "Correspondance approximative pour les archives",
+   "Lors de la recherche de fichiers compress\303\251s dans les listes de lecture, faire correspondr"
+   "e le nom de l'archive uniquement et non [nom]+[contenu]. Activez cette option pour \303\251viter"
+   " les doublons dans l'historique lors du chargement d'archives.",
+   "Analyser du contenu sans c\305\223ur correspondant",
+   "Autoriser du contenu \303\240 \303\252tre analys\303\251 et ajout\303\251 \303\240 une liste de "
+   "lecture sans c\305\223ur install\303\251 qui le prenne en charge.",
+   "L'analyse v\303\251rifie le CRC en cas de doublons possibles",
+   "Parfois, les ISO dupliquent le num\303\251ro de s\303\251rie, en particulier avec les titres PSP"
+   "/PSN. En se basant uniquement sur le num\303\251ro de s\303\251rie, l'analyse peut parfois mettr"
+   "e du contenu dans le mauvais syst\303\250me. Ce r\303\251glage ajoute une v\303\251rification CR"
+   "C, qui ralentit consid\303\251rablement l'analyse, mais peut la rendre plus pr\303\251cise.",
+   "Listes de lecture portables",
+   "Lorsque cette option est activ\303\251e et que le dossier par d\303\251faut du 'Navigateur de fi"
+   "chiers' est \303\251galement d\303\251fini, cet emplacement est enregistr\303\251 dans la liste "
+   "de lecture. Lorsque la liste de lecture est charg\303\251e sur un autre syst\303\250me o\303\271"
+   " cette m\303\252me option est activ\303\251e, la valeur du dossier d\303\251fini par d\303\251fa"
+   "ut est compar\303\251e \303\240 la valeur dans la liste de lecture; si celle-ci diff\303\250re, "
+   "l'emplacement des entr\303\251es de la liste de lecture est automatiquement corrig\303\251.",
+   "Utiliser les noms de fichiers pour faire correspondre les miniatures",
+   "Lorsque cette option est activ\303\251e, les miniatures sont recherch\303\251es \303\240 partir "
+   "du nom de fichier de l'entr\303\251e, plut\303\264t que de sa description.",
+   "Autoriser tous les types d'image support\303\251s pour les miniatures",
+   "Lorsque cette option est activ\303\251e, les miniatures locales peuvent \303\252tre ajout\303"
+   "\251es dans tous les types d'image support\303\251s par RetroArch (comme jpeg). Peut avoir un im"
+   "pact mineur sur les performances.",
    "Afficher les ic\303\264nes sp\303\251cifiques au contenu dans l'historique et les favoris",
    "Afficher des ic\303\264nes sp\303\251cifiques pour chaque \303\251l\303\251ment des listes de le"
    "cture d'historique et des favoris. A un impact variable sur les performances.",
+   "Afficher l'index des entr\303\251es de la liste de lecture",
+   "Afficher les num\303\251ros d'entr\303\251es lors de l'affichage des listes de lecture. Le forma"
+   "t d'affichage d\303\251pend du pilote de menu actuellement s\303\251lectionn\303\251.",
    "C\305\223ur :",
    "Temps de jeu :",
    "Jou\303\251 pour la derni\303\250re fois :",
@@ -6745,45 +6851,8 @@ static const struct
    "an",
    "ans",
    "dans le pass\303\251",
-   "Afficher l'index des entr\303\251es de la liste de lecture",
-   "Afficher les num\303\251ros d'entr\303\251es lors de l'affichage des listes de lecture. Le forma"
-   "t d'affichage d\303\251pend du pilote de menu actuellement s\303\251lectionn\303\251.",
-   "Temps de jeu dans les sous-descriptions des listes de lecture",
-   "S\303\251lectionner le type d'enregistrement du temps de jeu \303\240 afficher dans les sous-des"
-   "criptions des listes de lecture. Le journal du temps de jeu correspondant doit \303\252tre activ"
-   "\303\251 via le menu d'options 'Sauvegarde'.",
-   "Format du temps de jeu pour 'Jou\303\251 pour la derni\303\250re fois'",
-   "R\303\251gler le style de la date et l'heure affich\303\251es pour les informations d'horodatage"
-   " dans 'Jou\303\251 pour la derni\303\250re fois'. Les options '(AM/PM)' auront un faible impact "
-   "sur les performances pour certaines plateformes.",
-   "Correspondance approximative pour les archives",
-   "Lors de la recherche de fichiers compress\303\251s dans les listes de lecture, faire correspondr"
-   "e le nom de l'archive uniquement et non [nom]+[contenu]. Activez cette option pour \303\251viter"
-   " les doublons dans l'historique lors du chargement d'archives.",
-   "Analyser du contenu sans c\305\223ur correspondant",
-   "Autoriser du contenu \303\240 \303\252tre analys\303\251 et ajout\303\251 \303\240 une liste de "
-   "lecture sans c\305\223ur install\303\251 qui le prenne en charge.",
-   "L'analyse v\303\251rifie le CRC en cas de doublons possibles",
-   "Parfois, les ISO dupliquent le num\303\251ro de s\303\251rie, en particulier avec les titres PSP"
-   "/PSN. En se basant uniquement sur le num\303\251ro de s\303\251rie, l'analyse peut parfois mettr"
-   "e du contenu dans le mauvais syst\303\250me. Ce r\303\251glage ajoute une v\303\251rification CR"
-   "C, qui ralentit consid\303\251rablement l'analyse, mais peut la rendre plus pr\303\251cise.",
    "G\303\251rer les listes de lecture",
    "Effectue des t\303\242ches de maintenance sur les listes de lecture.",
-   "Listes de lecture portables",
-   "Lorsque cette option est activ\303\251e et que le dossier par d\303\251faut du 'Navigateur de fi"
-   "chiers' est \303\251galement d\303\251fini, cet emplacement est enregistr\303\251 dans la liste "
-   "de lecture. Lorsque la liste de lecture est charg\303\251e sur un autre syst\303\250me o\303\271"
-   " cette m\303\252me option est activ\303\251e, la valeur du dossier d\303\251fini par d\303\251fa"
-   "ut est compar\303\251e \303\240 la valeur dans la liste de lecture; si celle-ci diff\303\250re, "
-   "l'emplacement des entr\303\251es de la liste de lecture est automatiquement corrig\303\251.",
-   "Utiliser les noms de fichiers pour faire correspondre les miniatures",
-   "Lorsque cette option est activ\303\251e, les miniatures sont recherch\303\251es \303\240 partir "
-   "du nom de fichier de l'entr\303\251e, plut\303\264t que de sa description.",
-   "Autoriser tous les types d'image support\303\251s pour les miniatures",
-   "Lorsque cette option est activ\303\251e, les miniatures locales peuvent \303\252tre ajout\303"
-   "\251es dans tous les types d'image support\303\251s par RetroArch (comme jpeg). Peut avoir un im"
-   "pact mineur sur les performances.",
    "G\303\251rer",
    "C\305\223ur par d\303\251faut",
    "Sp\303\251cifie le c\305\223ur \303\240 utiliser lors du lancement de contenu via une entr\303"
@@ -6812,6 +6881,7 @@ static const struct
    "Pseudo ",
    "Entrez votre pseudo ici. Il sera utilis\303\251 pour les sessions de jeu en r\303\251seau, entre"
    " autres.",
+   "Emplacement de l'URL",
    "Langue ",
    "D\303\251finir la langue de l'interface utilisateur.",
    "Localise le menu et tous les messages \303\240 l'\303\251cran en fonction de la langue que vous "
@@ -6942,9 +7012,6 @@ static const struct
    "Se d\303\251connecter de l'h\303\264te de jeu en r\303\251seau",
    "D\303\251connecter une connexion de jeu en r\303\251seau active.",
    "Filtres du salon",
-   "Salles connectables uniquement",
-   "Uniquement les c\305\223urs install\303\251s",
-   "Salles avec mot de passe",
    "Rafra\303\256chir la liste des h\303\264tes de jeu en r\303\251seau",
    "Recherche d'h\303\264tes de jeu en r\303\251seau.",
    "Rafra\303\256chir la liste des LAN de jeu en r\303\251seau",
@@ -7116,8 +7183,6 @@ static const struct
    "Fermer le contenu. Toute modification non enregistr\303\251e pourrait \303\252tre perdue.",
    "Capturer l'\303\251cran",
    "Capturer une image de l'\303\251cran.",
-   "Emplacement de la sauvegarde instantan\303\251e",
-   "Modifier l'emplacement de sauvegarde instantan\303\251e actuellement s\303\251lectionn\303\251.",
    "Sauvegarde instantan\303\251e",
    "Effectue une sauvegarde instantan\303\251e dans l'emplacement actuellement s\303\251lectionn\303"
    "\251.",
@@ -7136,8 +7201,6 @@ static const struct
    "Annuler la sauvegarde instantan\303\251e",
    "Si une sauvegarde instantan\303\251e a \303\251t\303\251 \303\251cras\303\251e, elle sera restau"
    "r\303\251e \303\240 l'\303\251tat de sauvegarde pr\303\251c\303\251dent.",
-   "Emplacement de replay",
-   "Modifier l'emplacement de sauvegarde instantan\303\251e actuellement s\303\251lectionn\303\251.",
    "Jouer le replay",
    "Jouer le fichier de replay \303\240 partir de l'emplacement actuellement s\303\251lectionn\303"
    "\251.",
@@ -7273,7 +7336,6 @@ static const struct
    "Adresse de la correspondance : %08X Masque : %02X",
    "Fichier de cheats (Remplacer)",
    "Fichier de cheats (Ajouter)",
-   "D\303\251tails des cheats",
    "Position du cheat dans la liste.",
    "Activ\303\251",
    "Gestionnaire",
@@ -7424,24 +7486,6 @@ static const struct
    "Charger et remplacer la configuration actuelle.",
    "Enregistrer les remplacements de configuration sous",
    "Enregistrer la configuration actuelle comme un nouveau fichier de remplacement de configuration.",
-   "Enregistrer la configuration de substitution pour le c\305\223ur",
-   "Enregistrer un fichier de configuration de substitution qui s'appliquera \303\240 tout le conten"
-   "u charg\303\251 avec ce c\305\223ur. Aura la priorit\303\251 sur la configuration principale.",
-   "Supprimer la configuration de substitution du c\305\223ur",
-   "Supprimer le fichier de configuration de substitution qui s'applique \303\240 tout le contenu ch"
-   "arg\303\251 avec ce c\305\223ur.",
-   "Enregistrer la configuration de substitution pour le dossier",
-   "Enregistrer un fichier de configuration de substitution qui s'appliquera \303\240 tout le conten"
-   "u charg\303\251 depuis le m\303\252me dossier que le fichier actuel. Aura la priorit\303\251 sur"
-   " la configuration principale.",
-   "Supprimer la configuration de substitution du dossier de contenu",
-   "Supprimer le fichier de configuration de substitution qui s'applique \303\240 tout le contenu ch"
-   "arg\303\251 \303\240 partir du m\303\252me dossier que le fichier actuel.",
-   "Enregistrer la configuration de substitution pour le jeu",
-   "Enregistrer un fichier de configuration de substitution qui s'appliquera uniquement au contenu a"
-   "ctuel. Aura la priorit\303\251 sur la configuration principale.",
-   "Supprimer la configuration de substitution du jeu",
-   "Supprimer le fichier de configuration de substitution qui ne s'applique qu'au contenu actuel.",
    "D\303\251charger la configuration de substitution",
    "R\303\251initialiser toutes les options aux valeurs de configuration globales.",
    "Aucun succ\303\250s \303\240 afficher",
@@ -7514,7 +7558,6 @@ static const struct
    "Partager",
    "Saisir",
    "Voter",
-   "Partage des entr\303\251es analogiques ",
    "Maximum",
    "Moyenne",
    "Ne pas partager",
@@ -7720,6 +7763,13 @@ static const struct
    "Animation de fond pour l'\303\251conomiseur d'\303\251cran",
    "Afficher un effet d'animation de particules en arri\303\250re-plan lorsque l'\303\251conomiseur "
    "d'\303\251cran du menu est actif.",
+   "Prise en charge de l'ASCII \303\251tendu",
+   "Activer l'affichage des caract\303\250res ASCII non standard. Requis pour la compatibilit\303"
+   "\251 avec certaines langues occidentales non anglaises. A un impact mod\303\251r\303\251 sur les"
+   " performances.",
+   "Ic\303\264nes ON/OFF",
+   "Utiliser des boutons ON/OFF au lieu du texte Activ\303\251/D\303\251sactiv\303\251 pour repr\303"
+   "\251senter l'activation des r\303\251glages dans le menu.",
    "Afficher les miniatures dans les listes de lecture",
    "Activer l'affichage des miniatures r\303\251duites int\303\251gr\303\251es lors de l'affichage d"
    "e listes de lecture. Activable/d\303\251sactivable avec RetroManette Select. Lorsque cette optio"
@@ -7742,13 +7792,6 @@ static const struct
    "ure et le chargement de sa miniature associ\303\251e. R\303\251gler sur une valeur d'au moins 25"
    "6 ms permet la navigation rapide sans \303\240-coups m\303\252me sur les appareils les plus lent"
    "s.",
-   "Prise en charge de l'ASCII \303\251tendu",
-   "Activer l'affichage des caract\303\250res ASCII non standard. Requis pour la compatibilit\303"
-   "\251 avec certaines langues occidentales non anglaises. A un impact mod\303\251r\303\251 sur les"
-   " performances.",
-   "Ic\303\264nes ON/OFF",
-   "Utiliser des boutons ON/OFF au lieu du texte Activ\303\251/D\303\251sactiv\303\251 pour repr\303"
-   "\251senter l'activation des r\303\251glages dans le menu.",
    "Au plus proche (Rapide)",
    "Bilin\303\251aire",
    "Sinc/Lanczos3 (Lent)",
@@ -7808,6 +7851,8 @@ static const struct
    "Type de miniatures \303\240 afficher \303\240 gauche.",
    "Miniature ic\303\264ne",
    "Type de miniature pour l'ic\303\264ne dans la liste de lecture \303\240 afficher.",
+   "Disposition des miniatures \303\240 la verticale",
+   "Affiche la miniature de gauche sous celle de droite, \303\240 droite de l'\303\251cran.",
    "Arri\303\250re-plan dynamique",
    "Charger dynamiquement un nouveau fond d'\303\251cran en fonction du contexte.",
    "Animation horizontale",
@@ -7820,9 +7865,20 @@ static const struct
    "L'animation qui se lance lors de l'ouverture d'un sous-menu.",
    "Facteur d'opacit\303\251 du th\303\250me de couleur",
    "Modifier le pourcentage d'opacit\303\251 du th\303\250me de couleur.",
+   "Facteur de fondu vertical",
+   "Ajuster le niveau de fondu des \303\251l\303\251ments visibles pr\303\250s des bords de l'\303"
+   "\251cran.",
    "Ic\303\264ne du menu actuel",
    "L'ic\303\264ne du menu actuel peut \303\252tre masqu\303\251e, sous le menu horizontal ou dans l"
    "e titre de l'en-t\303\252te.",
+   "Afficher la liste horizontale",
+   "Activer la liste d'onglets horizontaux principale pour la navigation.",
+   "Afficher l'en-t\303\252te du titre",
+   "Afficher l'emplacement actuel du menu dans l'en-t\303\252te.",
+   "Marge de titre",
+   "Ajuster la distance entre l'en-t\303\252te du titre et le bord de l'\303\251cran.",
+   "D\303\251calage horizontal de la marge du titre",
+   "Ajuster la distance horizontale de l'en-t\303\252te du titre.",
    "Aucune",
    "Normale",
    "Titre",
@@ -7849,24 +7905,9 @@ static const struct
    "\303\251sactiver ou revenir \303\240 un effet plus simple.",
    "Th\303\250me de couleurs",
    "S\303\251lectionner un th\303\250me de couleur d'arri\303\250re-plan diff\303\251rent.",
-   "Disposition des miniatures \303\240 la verticale",
-   "Affiche la miniature de gauche sous celle de droite, \303\240 droite de l'\303\251cran.",
    "Facteur de mise \303\240 l'\303\251chelle des miniatures ",
    "R\303\251duit la taille d'affichage des miniatures en ajustant la largeur maximum autoris\303"
    "\251e.",
-   "Facteur de fondu vertical",
-   "Ajuster le niveau de fondu des \303\251l\303\251ments visibles pr\303\250s des bords de l'\303"
-   "\251cran.",
-   "Afficher la liste horizontale",
-   "Activer la liste d'onglets horizontaux principale pour la navigation.",
-   "Afficher l'en-t\303\252te du titre",
-   "Afficher l'emplacement actuel du menu dans l'en-t\303\252te.",
-   "Marge de titre",
-   "Ajuster la distance entre l'en-t\303\252te du titre et le bord de l'\303\251cran.",
-   "D\303\251calage horizontal de la marge du titre",
-   "Ajuster la distance horizontale de l'en-t\303\252te du titre.",
-   "Activer l'onglet R\303\251glages",
-   "Afficher l'onglet R\303\251glages contenant les param\303\250tres du programme.",
    "Ruban",
    "Ruban (simplifi\303\251)",
    "Neige simple",
@@ -7907,8 +7948,6 @@ static const struct
    "D\303\251finir si la taille de police dans le menu doit avoir sa propre mise \303\240 l'\303\251"
    "chelle, et si elle doit \303\252tre mise \303\240 l'\303\251chelle globalement ou avec des valeu"
    "rs distinctes pour chaque partie du menu.",
-   "Globale",
-   "Valeurs distinctes",
    "Facteur de mise \303\240 l'\303\251chelle de police ",
    "Mettre \303\240 l'\303\251chelle la taille de la police de mani\303\250re lin\303\251aire dans t"
    "out le menu.",
@@ -7932,18 +7971,6 @@ static const struct
    "Mettre \303\240 l'\303\251chelle la taille de police pour le texte du pied de page du menu. Cela"
    " affecte \303\251galement la taille du texte dans la barre lat\303\251rale des miniatures de dro"
    "ite.",
-   "R\303\251duire la barre lat\303\251rale",
-   "Barre lat\303\251rale gauche toujours r\303\251duite.",
-   "Afficher la barre lat\303\251rale",
-   "Autoriser la navigation et les listes de lecture dans une barre lat\303\251rale gauche.",
-   "Tronquer le nom des listes de lecture (Red\303\251marrage requis)",
-   "Retirer le nom du fabricant des listes de lecture. Par exemple, 'Sony - PlayStation' deviendra '"
-   "PlayStation'.",
-   "Trier les listes de lecture apr\303\250s la troncature du nom (Red\303\251marrage requis)",
-   "Les listes de lecture seront re-tri\303\251es par ordre alphab\303\251tique apr\303\250s avoir s"
-   "upprim\303\251 le composant fabricant de leurs noms.",
-   "Miniature secondaire",
-   "Remplace le panneau des m\303\251tadonn\303\251es du contenu par une autre miniature.",
    "Utiliser le d\303\251filement de texte pour les m\303\251tadonn\303\251es du contenu",
    "Si activ\303\251e, cette option affichera chaque \303\251l\303\251ment de m\303\251tadonn\303"
    "\251es du contenu sur la barre lat\303\251rale droite des listes de lectures (c\305\223ur associ"
@@ -7959,14 +7986,28 @@ static const struct
    "\303\251termin\303\251 sur l'envahisseur classique.",
    "S\303\251parateur d'en-t\303\252te",
    "Largeur alternative pour les s\303\251parateurs d'en-t\303\252te et de pied de page.",
+   "Globale",
+   "Valeurs distinctes",
+   "Th\303\250me de couleurs",
+   "S\303\251lectionner un th\303\250me de couleur diff\303\251rent.",
+   "Afficher la barre lat\303\251rale",
+   "Autoriser la navigation et les listes de lecture dans une barre lat\303\251rale gauche.",
+   "R\303\251duire la barre lat\303\251rale",
+   "Barre lat\303\251rale gauche toujours r\303\251duite.",
+   "Tronquer le nom des listes de lecture (Red\303\251marrage requis)",
+   "Retirer le nom du fabricant des listes de lecture. Par exemple, 'Sony - PlayStation' deviendra '"
+   "PlayStation'.",
+   "Trier les listes de lecture apr\303\250s la troncature du nom (Red\303\251marrage requis)",
+   "Les listes de lecture seront re-tri\303\251es par ordre alphab\303\251tique apr\303\250s avoir s"
+   "upprim\303\251 le composant fabricant de leurs noms.",
+   "Miniature secondaire",
+   "Remplace le panneau des m\303\251tadonn\303\251es du contenu par une autre miniature.",
    "Ne pas partager",
    "Dynamique",
    "D\303\251termin\303\251",
    "Ne pas partager",
    "Normale",
    "Maximal",
-   "Th\303\250me de couleurs",
-   "S\303\251lectionner un th\303\250me de couleur diff\303\251rent.",
    "Blanc basique",
    "Noir basique",
    "Gruvbox sombre",
@@ -7986,6 +8027,11 @@ static const struct
    "\251senter l'activation des r\303\251glages dans le menu.",
    "Ic\303\264nes de listes de lecture (Red\303\251marrage requis)",
    "Afficher des ic\303\264nes sp\303\251cifiques au syst\303\250me dans les listes de lecture.",
+   "Th\303\250me de couleurs",
+   "S\303\251lectionner un th\303\250me de couleur d'arri\303\250re-plan diff\303\251rent.",
+   "Animation de transition",
+   "Active des effets d'animation de transition lors de la navigation entre diff\303\251rents niveau"
+   "x du menu.",
    "Optimiser pour l'affichage en mode paysage",
    "Ajuste automatiquement la disposition du menu pour \303\252tre mieux adapt\303\251 \303\240 l'ut"
    "ilisation d'une orientation d'\303\251cran en mode paysage.",
@@ -7996,11 +8042,6 @@ static const struct
    "Rotation automatique de la barre de navigation",
    "D\303\251place automatiquement la barre de navigation vers le c\303\264t\303\251 droit de l'\303"
    "\251cran lors de l'utilisation d'une orientation d'\303\251cran en mode paysage.",
-   "Th\303\250me de couleurs",
-   "S\303\251lectionner un th\303\250me de couleur d'arri\303\250re-plan diff\303\251rent.",
-   "Animation de transition",
-   "Active des effets d'animation de transition lors de la navigation entre diff\303\251rents niveau"
-   "x du menu.",
    "Miniatures en mode portrait",
    "Sp\303\251cifie le mode d'affichage des miniatures dans les listes de lecture lors de l'utilisat"
    "ion d'un \303\251cran orient\303\251 en mode portrait.",
@@ -8212,8 +8253,6 @@ static const struct
    "guration n'a \303\251t\303\251 charg\303\251 au d\303\251marrage, l'historique ne sera ni sauveg"
    "ard\303\251 ni charg\303\251 et n'existera pas dans le menu principal.",
    "Multim\303\251dia",
-   "Sous-syst\303\250mes",
-   "Acc\303\251der aux r\303\251glages du sous-syst\303\250me pour le contenu actuel.",
    "Contenu actuel : %s",
    "Aucun h\303\264te de jeu en r\303\251seau trouv\303\251.",
    "Aucun client de jeu en r\303\251seau trouv\303\251.",
@@ -8225,11 +8264,8 @@ static const struct
    "Nom d'affichage de l'appareil : %s\nNom de la configuration de l'appareil : %s\nVID/PID du p\303"
    "\251riph\303\251rique : %d/%d",
    "R\303\251glages des cheats",
-   "D\303\251marrer ou reprendre la recherche de cheat",
    "Lire dans le lecteur multim\303\251dia",
    "secondes",
-   "D\303\251marrer le c\305\223ur",
-   "D\303\251marrer le c\305\223ur sans contenu.",
    "C\305\223urs sugg\303\251r\303\251s",
    "Impossible de lire l'archive.",
    "Utilisateur",
@@ -8244,7 +8280,6 @@ static const struct
    "Pr\303\251r\303\251glages de shaders",
    "Pr\303\251r\303\251glages de shaders",
    "Parcourir l'URL",
-   "Emplacement de l'URL",
    "D\303\251marrer",
    "Pseudo : %s",
    "Recherche de contenu compatible...",
@@ -8822,7 +8857,6 @@ static const struct
    "Mettre \303\240 jour Lakka",
    "Nom de l'interface frontale ",
    "Version de Lakka ",
-   "Red\303\251marrer",
    "Joy-Con d\303\251tach\303\251s",
    "Remplacement de l'\303\251chelle des widgets graphiques ",
    "Appliquer une valeur manuelle de remplacement du facteur d'\303\251chelle pour l'affichage des w"
@@ -8831,6 +8865,7 @@ static const struct
    " \303\252tre utile pour augmenter ou r\303\251duire la taille des notifications am\303\251lior"
    "\303\251es, indicateurs et commandes ind\303\251pendamment du menu lui-m\303\252me.",
    "R\303\251solution de l'\303\251cran",
+   "S\303\251lectionner le mode d'affichage (Red\303\251marrage requis)",
    "R\303\251solution de l'\303\251cran : Par d\303\251faut",
    "R\303\251solution de l'\303\251cran : %dx%d",
    "R\303\251solution de l'\303\251cran : %dx%d - %s",
@@ -8840,8 +8875,6 @@ static const struct
    "R\303\251initialisation \303\240 : Par d\303\251faut",
    "R\303\251initialisation \303\240 : %dx%d",
    "R\303\251initialisation \303\240 : %dx%d - %s",
-   "S\303\251lectionner le mode d'affichage (Red\303\251marrage requis)",
-   "\303\211teindre",
    "Autoriser l'acc\303\250s aux fichiers externes",
    "Ouvrir les r\303\251glages d'autorisations d'acc\303\250s aux fichiers de Windows",
    "Ouvrez les param\303\250tres de permissions de Windows pour activer la fonctionnalit\303\251 bro"
@@ -8855,8 +8888,8 @@ static const struct
    "Analyser les r\303\251seaux sans fil et \303\251tablir la connexion.",
    "Activer le Wi-Fi",
    "Se connecter au r\303\251seau",
-   "Se connecter au r\303\251seau",
    "D\303\251connecter",
+   "Se connecter au r\303\251seau",
    "D\303\251finir la largeur d'\303\251cran de VI",
    "\303\211limination des scintillements",
    "Correction du surbalayage (Haut)",
@@ -8912,7 +8945,6 @@ static const struct
    "Red\303\251marrer RetroArch",
    "Quitter puis red\303\251marrer RetroArch. Requis pour l'activation de certains param\303\250tres"
    " du menu (lors d'un changement du pilote de menu, par exemple).",
-   "Taille des blocs",
    "Tactile",
    "Pr\303\251f\303\251rer le tactile avant",
    "Utilisez le tactile avant plut\303\264t que le tactile arri\303\250re.",
@@ -8934,10 +8966,6 @@ static const struct
    "Statut du stockage interne : lecture seule",
    "Luminosit\303\251 de l'\303\251cran",
    "Augmenter ou diminuer la luminosit\303\251 de l'\303\251cran.",
-#ifdef HAVE_LIBNX
-   "Overclocker le processeur",
-   "Overclocker le processeur de la Switch.",
-#endif
 #ifdef HAVE_LAKKA
    "D\303\251terminer l'\303\251tat de Bluetooth.",
    "G\303\251rer les services au niveau du syst\303\250me d'exploitation.",
@@ -9123,9 +9151,23 @@ static const struct
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
       (sizeof(msg_hash_fr_blob) == (212818u
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 19u
        + 49u
+#endif
+#endif
+#ifdef HAVE_MIST
+       + 18u
+       + 61u
+#endif
+#ifdef HAVE_LIBNX
+       + 26u
+       + 40u
+#endif
+#ifdef _3DS
+       + 37u
+       + 57u
 #endif
 #ifdef HAVE_MIST
        + 39u
@@ -9180,21 +9222,31 @@ typedef char msg_hash_fr_blob_check[
 #ifdef HAVE_MICROPHONE
        + 43u
        + 122u
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
        + 16u
        + 119u
-       + 108u
-       + 33u
-       + 210u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
        + 38u
        + 113u
+       + 33u
+       + 210u
+       + 108u
        + 30u
        + 133u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
        + 21u
        + 223u
        + 35u
        + 113u
        + 46u
        + 113u
+#endif
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 65u
@@ -9213,8 +9265,6 @@ typedef char msg_hash_fr_blob_check[
        + 198u
 #endif
 #ifdef HAVE_MIST
-       + 18u
-       + 61u
        + 19u
        + 23u
        + 29u
@@ -9225,10 +9275,6 @@ typedef char msg_hash_fr_blob_check[
 #endif
 #if defined(ANDROID)
        + 172u
-#endif
-#ifdef _3DS
-       + 37u
-       + 57u
 #endif
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
@@ -9247,10 +9293,6 @@ typedef char msg_hash_fr_blob_check[
        + 26u
        + 23u
        + 41u
-#endif
-#ifdef HAVE_LIBNX
-       + 26u
-       + 40u
 #endif
 #ifdef HAVE_LAKKA
        + 34u
@@ -9409,8 +9451,20 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
@@ -9418,53 +9472,77 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
@@ -9603,18 +9681,10 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
@@ -9622,12 +9692,26 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+#ifdef HAVE_LIBNX
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -9637,20 +9721,30 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
@@ -9669,10 +9763,50 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
@@ -9693,22 +9827,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -9814,19 +9934,15 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_RECORD_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
@@ -9841,9 +9957,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
@@ -9903,10 +10019,10 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
@@ -9935,11 +10051,11 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
 #if defined(DINGUX) && defined(DINGUX_BETA)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
@@ -10047,14 +10163,18 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
@@ -10066,10 +10186,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -10084,25 +10200,27 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
@@ -10112,15 +10230,24 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
 #ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
@@ -10128,18 +10255,18 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
 #endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
@@ -10177,9 +10304,49 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
@@ -10195,46 +10362,58 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
    (uint32_t)MSG_INPUT_BIND_PRESS,
    (uint32_t)MSG_INPUT_BIND_RELEASE,
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_BIND_HOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
@@ -10243,79 +10422,31 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_RESET,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
    (uint32_t)MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
@@ -10530,8 +10661,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
 #ifdef HAVE_MIST
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
@@ -10571,34 +10700,38 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
    (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -10609,25 +10742,21 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
    (uint32_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
    (uint32_t)MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
    (uint32_t)MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
@@ -10644,15 +10773,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
-   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    (uint32_t)MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
-   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -10676,6 +10797,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
@@ -10689,17 +10811,10 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
@@ -10760,14 +10875,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
@@ -10776,7 +10885,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
@@ -10789,6 +10897,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
@@ -10800,9 +10909,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
@@ -10817,28 +10926,28 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_FPS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
-   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
@@ -10855,20 +10964,20 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -10893,22 +11002,20 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
@@ -10917,36 +11024,26 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
    (uint32_t)MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
-#ifdef _3DS
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
@@ -10995,14 +11092,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
@@ -11011,6 +11106,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
@@ -11148,13 +11245,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
@@ -11192,8 +11285,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
@@ -11207,12 +11298,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
@@ -11227,12 +11314,17 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -11241,13 +11333,13 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
@@ -11260,7 +11352,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
@@ -11275,6 +11366,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -11285,6 +11377,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
@@ -11296,8 +11389,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
@@ -11326,12 +11417,30 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
@@ -11349,26 +11458,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
@@ -11390,6 +11481,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
    (uint32_t)MENU_ENUM_SUBLABEL_USER_LANGUAGE,
    (uint32_t)MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
@@ -11499,9 +11591,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
@@ -11641,8 +11730,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_STATE,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVE_STATE,
@@ -11653,8 +11740,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_SLOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAY_REPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
@@ -11779,7 +11864,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_IDX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
@@ -11877,18 +11961,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
    (uint32_t)MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
@@ -11953,7 +12025,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
@@ -12144,6 +12215,10 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
@@ -12156,10 +12231,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
@@ -12219,6 +12290,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -12231,8 +12304,18 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
@@ -12255,22 +12338,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   (uint32_t)MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
@@ -12309,8 +12378,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
@@ -12325,16 +12392,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
@@ -12345,14 +12402,26 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NORMAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_MAXIMUM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
@@ -12371,16 +12440,16 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
@@ -12576,8 +12645,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
@@ -12588,11 +12655,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SECONDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
@@ -12603,7 +12667,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
@@ -13125,11 +13188,11 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
    (uint32_t)MSG_SCREEN_RESOLUTION_DEFAULT,
    (uint32_t)MSG_SCREEN_RESOLUTION_NO_DESC,
    (uint32_t)MSG_SCREEN_RESOLUTION_DESC,
@@ -13139,8 +13202,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
    (uint32_t)MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
    (uint32_t)MSG_SCREEN_RESOLUTION_RESETTING_DESC,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
@@ -13153,8 +13214,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
@@ -13190,7 +13251,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
@@ -13210,10 +13270,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_READ_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    (uint32_t)MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
-#ifdef HAVE_LIBNX
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-#endif
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,

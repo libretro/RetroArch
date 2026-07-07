@@ -25,8 +25,20 @@ static const struct
    char s_99eb425d[8];
    char s_ec59110b[18];
    char s_7632d987[16];
+   char s_f465878a[12];
+   char s_12510638[44];
+   char s_ef4c4376[14];
+   char s_caa797e4[44];
+   char s_7d65b67e[16];
+   char s_9b51352c[29];
+   char s_d21c686b[24];
+   char s_d7fc4c9c[23];
    char s_36265c93[13];
    char s_544da5c1[49];
+   char s_3e3caa7d[23];
+   char s_d9bcee6b[60];
+   char s_136eaaf4[29];
+   char s_193e1462[47];
    char s_d7f2cfac[14];
    char s_35f2309a[22];
    char s_87e07c0e[17];
@@ -34,53 +46,77 @@ static const struct
    char s_70c7c198[338];
    char s_e3d18a3d[15];
    char s_c6e1f92b[26];
+   char s_7fec5ca7[12];
+   char s_c50aa955[51];
    char s_99bfa829[366];
    char s_d15b342a[14];
    char s_2f5a9518[91];
    char s_6ebb6a00[13];
    char s_ccbacaee[93];
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    char s_e65393d5[15];
    char s_043f1283[46];
+#endif
 #endif
    char s_b3cc8a43[10];
    char s_d34eb231[63];
    char s_061657e6[16];
    char s_243da114[50];
-   char s_ed013a05[26];
-   char s_4b009af3[42];
-   char s_136eaaf4[29];
-   char s_193e1462[47];
-   char s_e2c6c781[18];
-   char s_f28ded2f[61];
-   char s_62564465[10];
-   char s_198c91d3[41];
-   char s_4aaeeb99[8];
-   char s_e8aee6c7[24];
-   char s_d81bf7a9[9];
-   char s_9eb26572[28];
-   char s_6155456e[16];
-   char s_4a3d27dc[39];
-   char s_2f9a064c[6];
-   char s_8d99673a[41];
-   char s_59980356[11];
-   char s_3ca87244[33];
-   char s_95cf0994[8];
-   char s_a5962f42[79];
-   char s_0c7750cd[82];
-   char s_24e40f00[253];
    char s_6c74f3ea[15];
    char s_555cd658[34];
    char s_7bd7aa88[40];
    char s_1757ee76[71];
    char s_0674b554[41];
    char s_11fd7702[91];
+   char s_6155456e[16];
+   char s_4a3d27dc[39];
+   char s_ce5f3353[18];
+   char s_de265901[67];
+   char s_87ee250e[29];
+   char s_70d6077c[40];
+   char s_a11934f5[26];
+   char s_a9c51063[48];
+   char s_1938dce6[31];
+   char s_1f084654[56];
+   char s_04681a15[29];
+   char s_2d24a503[142];
+   char s_91e11405[39];
+   char s_31124733[169];
+   char s_046a0f66[28];
+   char s_2d269a54[125];
+   char s_ac55f414[27];
+   char s_f660f282[1];
+   char s_9033d924[37];
+   char s_c07e8fd2[125];
+   char s_ac57e965[26];
+   char s_f662e7d3[81];
+   char s_2f9a064c[6];
+   char s_8d99673a[41];
+   char s_ed013a05[26];
+   char s_4b009af3[42];
+   char s_62564465[10];
+   char s_198c91d3[41];
+   char s_e2c6c781[18];
+   char s_f28ded2f[61];
+#ifdef HAVE_MIST
+   char s_c3f0e1ff[19];
+   char s_c9c04b6d[55];
+#endif
+   char s_4aaeeb99[8];
+   char s_e8aee6c7[24];
+   char s_d81bf7a9[9];
+   char s_9eb26572[28];
+   char s_59980356[11];
+   char s_3ca87244[33];
+   char s_95cf0994[8];
+   char s_a5962f42[79];
+   char s_0c7750cd[82];
+   char s_24e40f00[253];
    char s_d31f6d88[15];
    char s_f2a19576[52];
    char s_01a73130[29];
    char s_46c57dde[60];
-   char s_d21c686b[24];
-   char s_d7fc4c9c[23];
    char s_941e50fb[18];
    char s_10342503[12];
    char s_164566fb[17];
@@ -224,18 +260,10 @@ static const struct
    char s_cf24fcc2[26];
    char s_f751c497[1];
    char s_046d0e21[25];
-   char s_ce5f3353[18];
-   char s_de265901[67];
-   char s_87ee250e[29];
-   char s_70d6077c[40];
-   char s_a11934f5[26];
-   char s_a9c51063[48];
    char s_dff02a9f[25];
    char s_efb7504d[58];
    char s_6f02b5b0[27];
    char s_8d29fede[49];
-   char s_1938dce6[31];
-   char s_1f084654[56];
    char s_7fc52043[14];
    char s_8584f1d6[17];
    char s_14ec7b7e[9];
@@ -244,11 +272,25 @@ static const struct
    char s_c7a999e6[17];
    char s_00614813[8];
    char s_9509d1c2[19];
+#ifdef HAVE_LIBNX
+   char s_09902e71[26];
+   char s_4eae7b1f[41];
+#endif
+   char s_80a2b273[12];
+   char s_33f012e4[10];
    char s_3674ba44[8];
    char s_3f2095b2[40];
    char s_67d549fd[37];
+   char s_6a07da9c[18];
+   char s_79b8ce4a[64];
+   char s_57665cff[6];
+   char s_19d092ed[34];
    char s_49b0b12a[5];
    char s_5977d6d8[46];
+   char s_c82d0aee[11];
+   char s_ce113b1c[36];
+   char s_b00815b8[13];
+   char s_8b636a26[38];
    char s_980ef0e8[6];
    char s_a7d61696[50];
    char s_84d3d068[14];
@@ -259,20 +301,30 @@ static const struct
    char s_f496371e[57];
    char s_e7a63560[11];
    char s_f05210ce[36];
+   char s_8cb3b95f[12];
+   char s_aadb028d[34];
+   char s_a46a4178[24];
+   char s_aa39aae6[62];
+   char s_749f0441[8];
+   char s_7d4adfaf[32];
+   char s_1c0f54f0[31];
+   char s_e531c55e[116];
+   char s_f6f3a242[19];
+   char s_23fb75d2[45];
    char s_780eb7cb[23];
    char s_60f69a39[45];
    char s_152cd261[21];
    char s_f83d414f[81];
    char s_0a05438c[21];
-   char s_5dd46898[34];
-   char s_7505029f[30];
-   char s_1b34e389[22];
-   char s_1a1260db[30];
-   char s_203e9e86[71];
-   char s_7ad46c0d[64];
-   char s_2ae5d737[182];
-   char s_29c35489[141];
    char s_19b6373a[112];
+   char s_5dd46898[34];
+   char s_203e9e86[71];
+   char s_7505029f[30];
+   char s_7ad46c0d[64];
+   char s_1b34e389[22];
+   char s_2ae5d737[182];
+   char s_1a1260db[30];
+   char s_29c35489[141];
    char s_fb12e29b[19];
    char s_00f712c9[166];
    char s_96114701[10];
@@ -291,10 +343,50 @@ static const struct
    char s_6fc5fb8e[60];
    char s_d4c7eb99[18];
    char s_c23869c7[51];
-   char s_8cb3b95f[12];
-   char s_aadb028d[34];
+   char s_a670da0a[14];
+   char s_5dc056f8[78];
+   char s_d894f9b6[21];
+   char s_8fe476a4[53];
+   char s_7895cc5b[25];
+   char s_2fe54949[57];
+   char s_e46faa42[16];
+   char s_f4209df0[140];
+   char s_a03291c6[19];
+   char s_a616c1f4[44];
+   char s_ee71e86e[19];
+   char s_6b12dfdc[30];
+   char s_46f50d5b[21];
+   char s_3fb95f49[56];
+   char s_ceb820ad[8];
+   char s_ee3a489b[52];
+#ifdef _3DS
+   char s_fcde5521[37];
+   char s_02c2854f[53];
+#endif
+   char s_729a38da[25];
+   char s_5b821b48[50];
+   char s_260261d6[13];
+   char s_dd51dec4[56];
+   char s_302fdd56[8];
+   char s_35ff46c4[60];
+   char s_7277e127[15];
+   char s_78474a95[32];
+   char s_2e5078b2[9];
+   char s_17385b20[60];
+   char s_4ad41e20[11];
+   char s_5a8511ce[44];
+   char s_56e21ee1[18];
+   char s_0e319bcf[40];
    char s_3a0a3fef[16];
    char s_db495a9d[41];
+   char s_62144cdf[7];
+   char s_2b36bd4d[29];
+   char s_00641f14[8];
+   char s_c9868f82[68];
+   char s_176b2dac[10];
+   char s_e08d9e1a[92];
+   char s_a685766d[22];
+   char s_c4acbf9b[35];
    char s_513ae2ac[17];
    char s_1d921fac[27];
    char s_f319134a[32];
@@ -315,22 +407,8 @@ static const struct
    char s_952ec37c[69];
    char s_11786a7f[83];
    char s_17671a2b[57];
-   char s_a46a4178[24];
-   char s_aa39aae6[62];
    char s_1b8a5cb5[11];
    char s_60a8a963[33];
-   char s_a670da0a[14];
-   char s_5dc056f8[78];
-   char s_7277e127[15];
-   char s_78474a95[32];
-   char s_2e5078b2[9];
-   char s_17385b20[60];
-   char s_4ad41e20[11];
-   char s_5a8511ce[44];
-   char s_56e21ee1[18];
-   char s_0e319bcf[40];
-   char s_62144cdf[7];
-   char s_2b36bd4d[29];
    char s_87d88aa2[5];
    char s_a5ffd3d0[39];
    char s_8d94cfea[10];
@@ -436,19 +514,15 @@ static const struct
    char s_721e7bb2[11];
    char s_91a0a3a0[46];
    char s_d8cdbfc4[43];
-   char s_6a07da9c[18];
-   char s_79b8ce4a[64];
-   char s_57665cff[6];
-   char s_19d092ed[34];
    char s_020e2bc5[19];
    char s_0d96ed73[43];
    char s_ebf10493[19];
    char s_d96182c1[44];
+   char s_730df420[11];
+   char s_7e96b5ce[39];
    char s_69b801ef[8];
    char s_7968f59d[36];
    char s_82fab47a[46];
-   char s_730df420[11];
-   char s_7e96b5ce[39];
    char s_e92f8e07[37];
    char s_ef13be35[71];
    char s_752ce8b2[42];
@@ -463,10 +537,10 @@ static const struct
    char s_b495662b[134];
    char s_4bceefff[26];
    char s_14f1606d[268];
-   char s_353c64eb_0[500];
-   char s_353c64eb_1[75];
    char s_4577a14d[46];
    char s_07e1d73b[332];
+   char s_353c64eb_0[500];
+   char s_353c64eb_1[75];
    char s_5fdad539[332];
    char s_6c52dfb1[21];
    char s_47ae341f[104];
@@ -527,10 +601,10 @@ static const struct
    char s_282f7955[96];
    char s_e97bb565[19];
    char s_8abad013[77];
-   char s_df3def90[26];
-   char s_a1a8257e[118];
    char s_4bcbcc14[27];
    char s_74022c02[78];
+   char s_df3def90[26];
+   char s_a1a8257e[118];
    char s_61213f1d[15];
    char s_4a09218b[35];
    char s_4b0e8809[167];
@@ -560,11 +634,11 @@ static const struct
    char s_d9c2db25[59];
    char s_71ebd242[39];
    char s_0d6c1630[73];
+   char s_133cc3d1[46];
+   char s_1ec5857f[52];
    char s_0ef856cb[37];
    char s_22ee45f4[37];
    char s_9a90acec[27];
-   char s_133cc3d1[46];
-   char s_1ec5857f[52];
 #if defined(DINGUX) && defined(DINGUX_BETA)
    char s_f98e1e26[30];
    char s_b0dd9b14[111];
@@ -669,15 +743,19 @@ static const struct
    char s_8cee3615[179];
    char s_6083fff7[18];
    char s_43946ee5[75];
-   char s_16721de3[240];
    char s_44e1c38f[28];
    char s_5492b73d[50];
+   char s_16721de3[240];
    char s_abab74fb[180];
    char s_6665b7fc[49];
    char s_01e5fbea[284];
    char s_aa9bc75d[10];
    char s_57047267[9];
    char s_c0a60ee2[210];
+   char s_a779dce9[19];
+   char s_8a8a4bd7[185];
+   char s_e645f7ac[35];
+   char s_a8b02d9a[134];
    char s_25a21976[61];
    char s_6ac06624[141];
    char s_9953f4e2[236];
@@ -690,10 +768,6 @@ static const struct
    char s_30acd6fb[11];
    char s_3c3598a9[38];
    char s_4be9dc09[27];
-   char s_c82d0aee[11];
-   char s_ce113b1c[36];
-   char s_b00815b8[13];
-   char s_8b636a26[38];
    char s_ad791974[10];
    char s_cb649822[18];
    char s_76e73138[22];
@@ -708,25 +782,27 @@ static const struct
    char s_8c6b0fea[52];
    char s_04b30c51[23];
    char s_4b78ee7f[58];
-   char s_61afc6bd[172];
    char s_e2062515[34];
    char s_272471c3[80];
+   char s_61afc6bd[172];
    char s_48c208ee[16];
    char s_66e9521c[85];
    char s_a38cafbb[24];
    char s_a95c1929[48];
    char s_e5aeacf9[30];
    char s_aed11d67[122];
-   char s_24976a5b[29];
-   char s_dbe6e749[85];
    char s_5209cc72[41];
    char s_ed8a1060[98];
+   char s_24976a5b[29];
+   char s_dbe6e749[85];
    char s_98760b94[29];
    char s_5832a2c2[98];
    char s_dcf2e800[5];
    char s_23b8ca2e[18];
    char s_da068369[8];
    char s_20cc6597[92];
+   char s_b271ae95[21];
+   char s_95821d83[27];
    char s_37033dd5[92];
    char s_534835b5[52];
    char s_5f9d9369[64];
@@ -737,21 +813,31 @@ static const struct
 #ifdef HAVE_MICROPHONE
    char s_d3e78762[10];
    char s_b6f7f650[109];
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
    char s_d0fb22cb[8];
    char s_b40b91b9[100];
-   char s_86e940b7[100];
-   char s_ca9a92ae[20];
-   char s_b80b10dc[189];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    char s_b4868136[31];
    char s_76f0b724[75];
+   char s_ca9a92ae[20];
+   char s_b80b10dc[189];
+   char s_86e940b7[100];
    char s_4eb68c0b[33];
    char s_93d4d8b9[138];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
    char s_e501ec1b[30];
    char s_f5c1d149[170];
    char s_5a6c78fd[29];
    char s_65f53aab[79];
    char s_73295c14[41];
    char s_b37744c2[95];
+#endif
 #endif
    char s_affd948c[20];
    char s_b5ccfdfa[184];
@@ -760,12 +846,11 @@ static const struct
    char s_734f5242[31];
    char s_330be970[449];
    char s_55404857[9];
-   char s_b271ae95[21];
-   char s_95821d83[27];
    char s_ad7c73f6[11];
    char s_cb67f2a4[32];
    char s_a9d2227f[29];
    char s_6c3c586d[182];
+   char s_af6007a1[17];
    char s_c435566b[338];
    char s_3943c7ae[31];
    char s_f9005edc[154];
@@ -805,9 +890,49 @@ static const struct
    char s_d3213ff3[28];
    char s_7c68a1ee[1];
    char s_85147d5c[74];
+   char s_dedb2642[25];
+   char s_a7fd96b0[79];
+   char s_0d5e69d1[26];
+   char s_c4ade6bf[43];
+   char s_54e5819b[25];
+   char s_1e07f209[40];
+   char s_998970f0[45];
+   char s_c245fbde[61];
+   char s_3518bec3[42];
+   char s_7566a771[116];
+   char s_8b47a498[18];
+   char s_d20d86c6[55];
+   char s_f33a0acb[23];
+   char s_12bc32b9[61];
+   char s_f445b2f8[29];
+   char s_13c7dae6[67];
+   char s_e8636306[23];
+   char s_40a4eb2b[51];
+   char s_8c49943c[17];
+   char s_6f5a032a[52];
    char s_38cf005e[38];
    char s_f88b978c[162];
    char s_78cabcca[435];
+   char s_7febe11e[40];
+   char s_0b56ad4c[48];
+   char s_88226df7[28];
+   char s_47df0525[49];
+   char s_aded1e43[45];
+   char s_6da9b571[259];
+   char s_0b32f489[39];
+   char s_c2827177[98];
+   char s_1c82054d[38];
+   char s_09f2837b[244];
+   char s_989836e4[39];
+   char s_4fe7b3d2[128];
+   char s_03ce40b4[29];
+   char s_137f3462[95];
+   char s_6f199f35[27];
+   char s_5c8a1d63[92];
+   char s_0d7d9688[30];
+   char s_aebcb136[130];
+   char s_25464734[27];
+   char s_2b2a7762[70];
    char s_9c702ee1[36];
    char s_5c2cc60f[94];
    char s_efa8d516[35];
@@ -823,47 +948,59 @@ static const struct
    char s_e8eeac31[65];
    char s_2bd047ef[312];
 #endif
+   char s_926f9e93[32];
+   char s_5b920f01[98];
+   char s_b1e1d992[26];
+   char s_744c0f80[60];
+   char s_6ae6f953[21];
+   char s_2aa39081[41];
    char s_dad749ea[23];
    char s_e0bb7a18[190];
    char s_df1031f3[22];
    char s_a17a67e1[56];
    char s_0b2a8528[49];
    char s_cd94bb16[208];
+   char s_12b25a4b[40];
+   char s_fb9a3cb9[78];
    char s_f9ee4a82[12];
    char s_7beff2c4[9];
    char s_ea5757a0[8];
-   char s_12b25a4b[40];
-   char s_fb9a3cb9[78];
-   char s_926f9e93[32];
-   char s_5b920f01[98];
-   char s_b1e1d992[26];
-   char s_744c0f80[60];
-   char s_6ae6f953[21];
    char s_90402655[28];
-   char s_956c0935[23];
-   char s_2aa39081[41];
    char s_a18eb603[51];
-   char s_eae8c57c[18];
-   char s_aaa55caa[105];
-   char s_fcc3aec5[10];
+   char s_956c0935[23];
    char s_d5b9f1e3[42];
    char s_8b9af73a[32];
    char s_d0b943e8[69];
    char s_9d0bdbfa[17];
    char s_a5b7b768[48];
+   char s_a7da7dc1[19];
+   char s_6a44b3af[70];
+   char s_22c19b64[26];
+   char s_2e4a5d12[52];
+   char s_da2acf5c[15];
+   char s_c312b1ca[40];
+   char s_eae8c57c[18];
+   char s_aaa55caa[105];
+   char s_fcc3aec5[10];
    char s_265dbfa3[34];
    char s_b0e45a57[30];
    char s_543fcabd[12];
    char s_46f6a65d[5];
    char s_e59fc3c9[13];
    char s_2abe1077[56];
+   char s_f07a5367[24];
+   char s_0ea19c95[60];
+   char s_f07432ff[20];
+   char s_0e9b7c2d[121];
+   char s_df29ad9e[15];
+   char s_2447fa4c[49];
+   char s_a60a77f9[48];
+   char s_b5bb6ba7[67];
    char s_feaf16c5[24];
    char s_43cd6373[69];
    char s_3f190ff7[37];
    char s_4eca03a5[194];
    char s_47d26662[15];
-   char s_f07a5367[24];
-   char s_0ea19c95[60];
    char s_0ca3b319[8];
    char s_8c15b43a[20];
    char s_c8370855[27];
@@ -872,24 +1009,12 @@ static const struct
    char s_cb88fe26[324];
    char s_0836e741[278];
    char s_101e8527[369];
-   char s_f07432ff[20];
-   char s_0e9b7c2d[121];
-   char s_df29ad9e[15];
-   char s_2447fa4c[49];
-   char s_a60a77f9[48];
-   char s_b5bb6ba7[67];
-   char s_7dcf9e78[13];
-   char s_351f1b66[35];
-   char s_22c19b64[26];
-   char s_2e4a5d12[52];
-   char s_a7da7dc1[19];
-   char s_6a44b3af[70];
-   char s_da2acf5c[15];
-   char s_c312b1ca[40];
    char s_cde2111a[12];
    char s_13005dc8[95];
    char s_d7c1d887[20];
    char s_dda608b5[290];
+   char s_7dcf9e78[13];
+   char s_351f1b66[35];
    char s_ff583ef3_0[500];
    char s_ff583ef3_1[33];
    char s_ff1b8ce5[24];
@@ -897,55 +1022,19 @@ static const struct
    char s_eaa7274b[44];
    char s_4e447c6c[41];
    char s_984f7ada[101];
-   char s_8b47a498[18];
-   char s_d20d86c6[55];
-   char s_f33a0acb[23];
-   char s_12bc32b9[61];
-   char s_f445b2f8[29];
-   char s_13c7dae6[67];
-   char s_e8636306[23];
-   char s_40a4eb2b[51];
-   char s_8c49943c[17];
-   char s_6f5a032a[52];
-   char s_dedb2642[25];
-   char s_a7fd96b0[79];
-   char s_989836e4[39];
-   char s_4fe7b3d2[128];
-   char s_03ce40b4[29];
-   char s_137f3462[95];
-   char s_6f199f35[27];
-   char s_5c8a1d63[92];
-   char s_0d7d9688[30];
-   char s_aebcb136[130];
-   char s_25464734[27];
-   char s_2b2a7762[70];
    char s_5b3c8098[24];
    char s_7963c9c6[65];
    char s_c2aa7439[17];
    char s_a5bae327[68];
-   char s_0d5e69d1[26];
-   char s_c4ade6bf[43];
-   char s_54e5819b[25];
-   char s_1e07f209[40];
-   char s_998970f0[45];
-   char s_c245fbde[61];
-   char s_3518bec3[42];
-   char s_7566a771[116];
+   char s_a4d3948f[23];
+   char s_7f75b005[44];
+   char s_7ca0c97c[39];
+   char s_c7e66e0a[42];
    char s_63fbe677[26];
    char s_23b87da5[352];
    char s_1aa5e88e[357];
-   char s_aded1e43[45];
-   char s_6da9b571[259];
-   char s_0b32f489[39];
-   char s_c2827177[98];
-   char s_1c82054d[38];
-   char s_09f2837b[244];
-   char s_7febe11e[40];
-   char s_0b56ad4c[48];
    char s_00ea00d3[16];
    char s_109af481[58];
-   char s_88226df7[28];
-   char s_47df0525[49];
    char s_87071f08[8];
    char s_6fef0176[90];
    char s_f8b9e275[14];
@@ -1160,8 +1249,6 @@ static const struct
    char s_e567aa86[19];
    char s_c8781974[134];
 #ifdef HAVE_MIST
-   char s_c3f0e1ff[19];
-   char s_c9c04b6d[55];
    char s_3e0f9900[15];
    char s_67b3c923[18];
    char s_53788998[28];
@@ -1201,34 +1288,38 @@ static const struct
    char s_9b87fbf9[103];
    char s_9f1f3534[57];
    char s_822fa422[87];
-   char s_550d5320[214];
    char s_827ceb62[36];
    char s_6fed6990[93];
-   char s_9998fdce[196];
-   char s_1ece29a0[39];
-   char s_c00d444e[96];
-   char s_4caab10c[212];
-   char s_b464a65a[79];
-   char s_18e4626c[40];
-   char s_1382c258[226];
    char s_b191aa47[41];
    char s_b775da75[170];
-   char s_008141e4[37];
-   char s_e391b0d2[154];
    char s_53b632e1[55];
    char s_98d47f8f[298];
+   char s_008141e4[37];
+   char s_e391b0d2[154];
    char s_b7b13f3e[50];
    char s_c05d1aac[304];
+   char s_1ece29a0[39];
+   char s_c00d444e[96];
+   char s_18e4626c[40];
+   char s_b464a65a[79];
+   char s_7d19b727[46];
+   char s_66019995[92];
+   char s_be87312d[45];
+   char s_5a07751b[110];
+   char s_18fce787[24];
+   char s_db671d75[270];
+   char s_fe3e1d48[23];
+   char s_9f7d37f6[144];
+   char s_550d5320[214];
+   char s_9998fdce[196];
+   char s_4caab10c[212];
+   char s_1382c258[226];
    char s_7201eede[35];
    char s_5ae9d14c[152];
    char s_71fe510f[33];
    char s_5ae6337d[60];
    char s_f246e141[24];
    char s_9385fbef[36];
-   char s_18fce787[24];
-   char s_db671d75[270];
-   char s_fe3e1d48[23];
-   char s_9f7d37f6[144];
    char s_8dec52be[46];
    char s_0a8d4a2c[57];
    char s_7614d29f[45];
@@ -1239,25 +1330,21 @@ static const struct
    char s_76ebe1a8[94];
    char s_b03e11ed[42];
    char s_d8fa9cdb[50];
-   char s_7d19b727[46];
-   char s_66019995[92];
-   char s_be87312d[45];
-   char s_5a07751b[110];
    char s_a624fe50[23];
    char s_c5a7263e[47];
    char s_998d1a40[27];
    char s_deab66ee[130];
    char s_9f6b2d03[26];
    char s_e48979b1[123];
+   char s_074440cb[23];
+   char s_e29f9539[111];
+   char s_bfe3f81e[34];
+   char s_824e2e0c[191];
    char s_131d086f[306];
    char s_ea2e0a76[17];
    char s_5c70e4fb[13];
    char s_dc362405[12];
    char s_ea478739[11];
-   char s_074440cb[23];
-   char s_e29f9539[111];
-   char s_bfe3f81e[34];
-   char s_824e2e0c[191];
    char s_97379d00[22];
    char s_a6fec2ae[135];
    char s_62458ec6[44];
@@ -1274,15 +1361,7 @@ static const struct
    char s_62584165[72];
    char s_a158a19e[29];
    char s_611538cc[68];
-   char s_749f0441[8];
-   char s_7d4adfaf[32];
-   char s_1c0f54f0[31];
-   char s_e531c55e[116];
-   char s_a779dce9[19];
-   char s_8a8a4bd7[185];
    char s_5d67fad5[257];
-   char s_e645f7ac[35];
-   char s_a8b02d9a[134];
    char s_608ac5a1[22];
    char s_7eb20ecf[67];
    char s_f02f73fc[35];
@@ -1306,6 +1385,7 @@ static const struct
    char s_18089aa6[14];
    char s_bdd10920[18];
    char s_6f9583dc[28];
+   char s_b24d8753[18];
    char s_3ea80887[20];
    char s_6cdf4f07[24];
    char s_2c9be635[135];
@@ -1320,17 +1400,10 @@ static const struct
    char s_7e8c6399[8];
    char s_eb4eab83[5];
    char s_d748f469[28];
-   char s_b24d8753[18];
    char s_52e94a24[15];
    char s_eea0ed20[32];
-   char s_d894f9b6[21];
-   char s_8fe476a4[53];
    char s_27b523c8[14];
    char s_333de576[28];
-   char s_ee71e86e[19];
-   char s_6b12dfdc[30];
-   char s_46f50d5b[21];
-   char s_3fb95f49[56];
    char s_b662d01f[19];
    char s_bc47004d[61];
    char s_0c353c96[1];
@@ -1391,14 +1464,8 @@ static const struct
    char s_b16d53a9[158];
    char s_8cf7b8bc[36];
    char s_444735aa[152];
-   char s_a03291c6[19];
-   char s_a616c1f4[44];
    char s_d73ce37f[53];
    char s_c4ad61ad[105];
-   char s_7895cc5b[25];
-   char s_2fe54949[57];
-   char s_e46faa42[16];
-   char s_f4209df0[140];
    char s_e2ff8b88[35];
    char s_281dd836[48];
    char s_267cef24[37];
@@ -1407,7 +1474,6 @@ static const struct
    char s_d9e33a3c[74];
    char s_c4a9bd3e[24];
    char s_8dcc2dac[81];
-   char s_51d76325[5];
    char s_b6192beb[26];
    char s_f139b159[40];
    char s_4d00e91b[31];
@@ -1420,6 +1486,7 @@ static const struct
    char s_791ba074[129];
    char s_8dc6f512[26];
    char s_9f1584c0[94];
+   char s_51d76325[5];
    char s_9dd66391[10];
    char s_5525e07f[43];
    char s_2be118c6[23];
@@ -1431,9 +1498,9 @@ static const struct
    char s_68207d70[30];
    char s_03a0c15e[82];
    char s_bb673df4[14];
+   char s_05723c62[147];
    char s_f52bfd6b[26];
    char s_304c82d9[61];
-   char s_05723c62[147];
    char s_49f9815b[19];
    char s_2d09f049[29];
    char s_9b2a97d9[22];
@@ -1448,28 +1515,28 @@ static const struct
    char s_368efbdf[43];
    char s_cb7ae477[50];
    char s_b462c6e5[74];
-   char s_5333adbc[21];
-   char s_5bdf892a[44];
-   char s_a35a9e13[20];
-   char s_ac067981[44];
    char s_d86adca1[19];
    char s_b3c6310f[63];
    char s_a17f6a67[47];
    char s_b1305e15[71];
    char s_89cbf597[14];
    char s_e7cb5685[53];
+   char s_a35a9e13[20];
+   char s_ac067981[44];
+   char s_5333adbc[21];
+   char s_5bdf892a[44];
    char s_69e645f2[31];
    char s_4cf6b4e0[50];
    char s_df92f5b5[30];
    char s_f052dae3[65];
    char s_e53de5dd[49];
+   char s_d2ae640b[1];
    char s_4e0dc3eb[47];
+   char s_8e5bac99[68];
    char s_17e361a4[19];
    char s_28a346d2[60];
    char s_92e516dc[18];
    char s_0f860e4a[57];
-   char s_d2ae640b[1];
-   char s_8e5bac99[68];
    char s_5621f902[40];
    char s_43927730[69];
    char s_883e5f82[45];
@@ -1486,20 +1553,20 @@ static const struct
    char s_14fd9cfa[54];
    char s_ba69b8b1[32];
    char s_b32e0a9f[57];
-   char s_c161ab59[8];
-   char s_7cfc693e[7];
-   char s_37226be3[11];
-   char s_6a74add1[5];
    char s_6a8b9b19[30];
    char s_aad983c7[93];
-   char s_fb0fc8c1[14];
-   char s_8a340ca6[13];
    char s_3bc50248[32];
    char s_474dc3f6[66];
    char s_686b74ae[25];
    char s_e50c6c1c[51];
    char s_fa3fe57f[21];
    char s_85aab1ad[52];
+   char s_c161ab59[8];
+   char s_7cfc693e[7];
+   char s_37226be3[11];
+   char s_6a74add1[5];
+   char s_fb0fc8c1[14];
+   char s_8a340ca6[13];
    char s_ddc4f021[14];
    char s_e670cb8f[42];
    char s_ddc6b80f[14];
@@ -1524,22 +1591,20 @@ static const struct
    char s_c0f9a2df[101];
    char s_f8c85dc2[28];
    char s_9448a1b0[101];
-   char s_ceb820ad[8];
-   char s_ee3a489b[52];
-   char s_729a38da[25];
-   char s_5b821b48[50];
    char s_705eee28[39];
    char s_802613d6[44];
-   char s_62af62ac[30];
-   char s_6b5b3e1a[59];
-   char s_f4341e25[31];
-   char s_ab839b13[116];
-   char s_3e2bdc96[28];
-   char s_00961284[122];
    char s_f89e1cbc[47];
    char s_bb0852aa[177];
    char s_ba248c4b[42];
    char s_bff3f5b9[89];
+   char s_3e2bdc96[28];
+   char s_00961284[122];
+   char s_7f5c6d63[37];
+   char s_3f190491[93];
+   char s_62af62ac[30];
+   char s_6b5b3e1a[59];
+   char s_f4341e25[31];
+   char s_ab839b13[116];
    char s_e829b8da[15];
    char s_aa93eec8[85];
    char s_c561b96e[28];
@@ -1548,37 +1613,27 @@ static const struct
    char s_788364f5[75];
    char s_2696c793[49];
    char s_e6535ec1[195];
+   char s_35c29e50[45];
+   char s_3b9207be[115];
+   char s_ac60056b[13];
+   char s_8f707459[32];
    char s_9f2cc577[14];
    char s_e5f2a7a5[39];
    char s_77155e0f[14];
    char s_86dc83bd[45];
    char s_68664e16[19];
    char s_55d6cc44[34];
-   char s_7f5c6d63[37];
-   char s_3f190491[93];
    char s_9dfc61bc[34];
    char s_3f3b7c6a[95];
+   char s_676ad14c[36];
+   char s_782ab67a[70];
    char s_bd50c8e2[6];
    char s_73897039[7];
    char s_5bb9bd63[8];
-   char s_676ad14c[36];
-   char s_782ab67a[70];
    char s_33a76811[82];
-   char s_a4d3948f[23];
-   char s_7f75b005[44];
    char s_ad523771[64];
-   char s_7ca0c97c[39];
-   char s_c7e66e0a[42];
-#ifdef _3DS
-   char s_fcde5521[37];
-   char s_02c2854f[53];
-#endif
    char s_d9a51d02[21];
    char s_f7cc6630[39];
-   char s_260261d6[13];
-   char s_dd51dec4[56];
-   char s_302fdd56[8];
-   char s_35ff46c4[60];
    char s_dcbf8b04[23];
    char s_c5a76d72[52];
    char s_645ae416[24];
@@ -1627,14 +1682,12 @@ static const struct
    char s_78b01731[27];
    char s_342dd239[19];
    char s_794c1ee7[31];
-   char s_86ec481f[19];
-   char s_8cd0784d[61];
    char s_c253a614[18];
    char s_c837d642[36];
+   char s_86ec481f[19];
+   char s_8cd0784d[61];
    char s_6f6d3a5c[25];
    char s_7f1e2e0a[66];
-   char s_9da5609f[12];
-   char s_269e5dff[19];
    char s_b054c007[19];
    char s_c005b3b5[112];
    char s_4e3bbebd[28];
@@ -1643,6 +1696,8 @@ static const struct
    char s_040bd4cf[35];
    char s_5ac8bccf[27];
    char s_66517e7d[192];
+   char s_9da5609f[12];
+   char s_269e5dff[19];
    char s_6262776d[6];
    char s_93bae0e3[8];
    char s_25f1508f[7];
@@ -1780,13 +1835,9 @@ static const struct
    char s_41702fdc[57];
    char s_2a273dd7[20];
    char s_6f458a85[113];
-   char s_35c29e50[45];
-   char s_3b9207be[115];
    char s_8b835c60[6];
    char s_202067d4[18];
    char s_6f947f94[32];
-   char s_ac60056b[13];
-   char s_8f707459[32];
    char s_67924166[18];
    char s_703e1cd4[141];
    char s_cab81c29[23];
@@ -1824,8 +1875,6 @@ static const struct
    char s_05186758[54];
    char s_9b90e4dd[13];
    char s_a175150b[82];
-   char s_00641f14[8];
-   char s_c9868f82[68];
    char s_4bea639e[8];
    char s_0339e08c[73];
    char s_470f1e1b[17];
@@ -1840,12 +1889,8 @@ static const struct
    char s_f6e584ef[99];
    char s_097506cf[27];
    char s_f6e584fd[97];
-   char s_176b2dac[10];
-   char s_e08d9e1a[92];
    char s_c86e4ca9[14];
    char s_69ad6757[153];
-   char s_b9de718e[24];
-   char s_17d978b1[17];
    char s_76d92467[19];
    char s_2e28a155[45];
    char s_cc5a2e40[18];
@@ -1860,12 +1905,17 @@ static const struct
    char s_81c5d370[79];
    char s_4a4fe394[34];
    char s_5b0fc8c2[53];
+   char s_b9de718e[24];
+   char s_17d978b1[17];
    char s_cc846b8d[22];
    char s_0cd2543b[80];
    char s_2897f730[21];
    char s_3848eade[50];
    char s_3425a408[19];
    char s_d564beb6[68];
+   char s_8dfe6a83[25];
+   char s_11c0c1c0[22];
+   char s_14ca78c0[19];
    char s_d48223f9[26];
    char s_da518d67[137];
    char s_8594979d[22];
@@ -1874,13 +1924,13 @@ static const struct
    char s_19a250ff[111];
    char s_1cfe55cb[34];
    char s_be3d7079[95];
+   char s_5c487242[15];
+   char s_a166bef0[43];
    char s_216de9d9[38];
    char s_216de9da[18];
    char s_216de9db[33];
    char s_216de9dc[16];
    char s_b9e4eae3[1];
-   char s_5c487242[15];
-   char s_a166bef0[43];
    char s_fc6e3a57[34];
    char s_02526a85[85];
    char s_4327ffcc[30];
@@ -1893,7 +1943,6 @@ static const struct
    char s_bc33055d[74];
    char s_1d4d1099[23];
    char s_be8c2b47[36];
-   char s_4b299805[158];
    char s_7481bc33[21];
    char s_57922b21[44];
    char s_6c4b8962[27];
@@ -1908,6 +1957,7 @@ static const struct
    char s_126432dc[113];
    char s_388ef77f[28];
    char s_3e7327ad[104];
+   char s_4b299805[158];
    char s_60255deb_0[500];
    char s_60255deb_1[23];
    char s_6124fb03[30];
@@ -1919,6 +1969,7 @@ static const struct
    char s_4037367a[19];
    char s_02a16c68[125];
    char s_fe173d74[23];
+   char s_7567faa8[22];
    char s_b80a2fc4[20];
    char s_77c6c6f2[41];
    char s_c4ab544b[15];
@@ -1930,8 +1981,6 @@ static const struct
    char s_82d064b1[29];
    char s_9e49780c[27];
    char s_8bb9f63a[99];
-   char s_a685766d[22];
-   char s_c4acbf9b[35];
    char s_eb66d46b[28];
    char s_a2b65159[67];
    char s_bbb615a1[30];
@@ -1960,12 +2009,30 @@ static const struct
    char s_7ff41c9a[115];
    char s_99eec88b[19];
    char s_9fd2f8b9[212];
-   char s_bcc17320[41];
-   char s_c84a34ce[156];
    char s_ce39f356[31];
    char s_d4095cc4[146];
+   char s_f51dc087[32];
+   char s_00a68235[158];
+   char s_9d544d44[40];
+   char s_e75f4bb2[176];
+   char s_bcc17320[41];
+   char s_c84a34ce[156];
+   char s_e9b3e6ae[29];
+   char s_d72464dc[231];
+   char s_5d4e7834[24];
+   char s_631de1a2[93];
+   char s_1532af95[43];
+   char s_fe1a9203[274];
+   char s_db555f31[20];
+   char s_e124c89f[403];
+   char s_20d15d46[40];
+   char s_e33b9334[91];
+   char s_d10cfac6[53];
+   char s_e0bdee74[155];
    char s_0f49d986[67];
    char s_d86c49f4[120];
+   char s_72f86f8f[32];
+   char s_78c7d8fd[107];
    char s_5bbcf84b[7];
    char s_aaccb3e6[10];
    char s_62c35c34[14];
@@ -1985,26 +2052,8 @@ static const struct
    char s_e1c715da[5];
    char s_db01e988[6];
    char s_6bcbf80c[8];
-   char s_72f86f8f[32];
-   char s_78c7d8fd[107];
-   char s_f51dc087[32];
-   char s_00a68235[158];
-   char s_9d544d44[40];
-   char s_e75f4bb2[176];
-   char s_e9b3e6ae[29];
-   char s_d72464dc[231];
-   char s_5d4e7834[24];
-   char s_631de1a2[93];
-   char s_1532af95[43];
-   char s_fe1a9203[274];
    char s_7ea8ec8f[22];
    char s_4113227d[43];
-   char s_db555f31[20];
-   char s_e124c89f[403];
-   char s_20d15d46[40];
-   char s_e33b9334[91];
-   char s_d10cfac6[53];
-   char s_e0bdee74[155];
    char s_74b6dd31[11];
    char s_1078c6c0[16];
    char s_abf90aae[106];
@@ -2026,6 +2075,7 @@ static const struct
    char s_579b5e71[42];
    char s_9528d92a[10];
    char s_b3502258[88];
+   char s_b819d3cc[11];
    char s_8203db0a[7];
    char s_a18602f8[40];
    char s_7e97e2f6[268];
@@ -2133,9 +2183,6 @@ static const struct
    char s_b9e684ee[36];
    char s_ff04d19c[41];
    char s_21e6be74[27];
-   char s_8dfe6a83[25];
-   char s_11c0c1c0[22];
-   char s_14ca78c0[19];
    char s_0b9c6082[42];
    char s_ce069670[32];
    char s_28adc26d[39];
@@ -2276,8 +2323,6 @@ static const struct
    char s_40e095c6[67];
    char s_9c6ed9ca[17];
    char s_a51ab538[27];
-   char s_f465878a[12];
-   char s_12510638[44];
    char s_69b36417[16];
    char s_879ee2c5[48];
    char s_1d269383[152];
@@ -2288,8 +2333,6 @@ static const struct
    char s_a1c071eb[69];
    char s_04f1138c[27];
    char s_0d9ceefa[81];
-   char s_ef4c4376[14];
-   char s_caa797e4[44];
    char s_2010df6a[13];
    char s_fb6c33d8[52];
    char s_91df2193[19];
@@ -2417,7 +2460,6 @@ static const struct
    char s_c61255f9[37];
    char s_5b522dec[28];
    char s_b87e5f63[26];
-   char s_f6f3a242[19];
    char s_6f5fa0f1[8];
    char s_cd5f01df[28];
    char s_c689058d[9];
@@ -2520,18 +2562,6 @@ static const struct
    char s_ffde1694[45];
    char s_a0c2e468[26];
    char s_632d1a56[59];
-   char s_04681a15[29];
-   char s_2d24a503[142];
-   char s_ac55f414[27];
-   char s_f660f282[1];
-   char s_91e11405[39];
-   char s_31124733[169];
-   char s_9033d924[37];
-   char s_c07e8fd2[125];
-   char s_046a0f66[28];
-   char s_2d269a54[125];
-   char s_ac57e965[26];
-   char s_f662e7d3[81];
    char s_662eb10a[21];
    char s_6eda8c78[60];
    char s_6c78e4f7[24];
@@ -2597,7 +2627,6 @@ static const struct
    char s_fc6b5794[10];
    char s_89d6704c[12];
    char s_c4a36191[9];
-   char s_7567faa8[22];
    char s_88ea76ed[11];
    char s_ea0de502[9];
    char s_51f16286[7];
@@ -2790,6 +2819,10 @@ static const struct
    char s_b5f676b0[58];
    char s_e0747272[27];
    char s_d938c460[68];
+   char s_6dbc522b[26];
+   char s_2d78e959[133];
+   char s_13bce77f[20];
+   char s_236ddb2d[99];
    char s_60864187[28];
    char s_29a8b1f5[64];
    char s_d05c8ee3[23];
@@ -2802,10 +2835,6 @@ static const struct
    char s_32728f95[86];
    char s_1b2ee6c4[23];
    char s_d27e63b2[221];
-   char s_6dbc522b[26];
-   char s_2d78e959[133];
-   char s_13bce77f[20];
-   char s_236ddb2d[99];
    char s_3f9035ee[31];
    char s_404e69aa[10];
    char s_19347691[26];
@@ -2862,6 +2891,8 @@ static const struct
    char s_394e4cd7[37];
    char s_74eeda27[19];
    char s_7d9ab595[50];
+   char s_f4b6d13e[26];
+   char s_fa863aac[83];
    char s_f4116974[14];
    char s_d721d862[50];
    char s_400523e5[21];
@@ -2874,8 +2905,18 @@ static const struct
    char s_0ca85937[51];
    char s_4eecff92[38];
    char s_6d1448c0[53];
+   char s_b66840e9[29];
+   char s_51e884d7[80];
    char s_0ca1128d[25];
    char s_cf0b487b[97];
+   char s_87f05947[27];
+   char s_23709d35[56];
+   char s_a771be4c[26];
+   char s_48b0d8fa[49];
+   char s_5e8d5121[16];
+   char s_20f7870f[67];
+   char s_b201bb70[39];
+   char s_ed2240de[61];
    char s_65e6ea7c[6];
    char s_7b4dd5b5[8];
    char s_232d9d6e[7];
@@ -2898,22 +2939,8 @@ static const struct
    char s_9bb1a0de[160];
    char s_8d5d41b3[13];
    char s_934171e1[34];
-   char s_f4b6d13e[26];
-   char s_fa863aac[83];
    char s_204201cb[21];
    char s_9ce2f939[76];
-   char s_b66840e9[29];
-   char s_51e884d7[80];
-   char s_87f05947[27];
-   char s_23709d35[56];
-   char s_a771be4c[26];
-   char s_48b0d8fa[49];
-   char s_5e8d5121[16];
-   char s_20f7870f[67];
-   char s_b201bb70[39];
-   char s_ed2240de[61];
-   char s_3e3caa7d[23];
-   char s_d9bcee6b[60];
    char s_3baa942f[8];
    char s_e4fd75b4[21];
    char s_3c518be3[13];
@@ -2952,8 +2979,6 @@ static const struct
    char s_dac68b37[50];
    char s_857c70d0[13];
    char s_a3a3b9fe[159];
-   char s_00a1f0c0[6];
-   char s_ab6bb0e4[16];
    char s_8d64f69e[20];
    char s_98edb84c[45];
    char s_3b80240f[30];
@@ -2968,16 +2993,6 @@ static const struct
    char s_d0364fca[99];
    char s_8b46649c[34];
    char s_96cf264a[1];
-   char s_d6198fde[26];
-   char s_e5ca838c[48];
-   char s_1cdff4ac[23];
-   char s_61fe415a[60];
-   char s_a747cdc9[51];
-   char s_94b84bf7[107];
-   char s_9c6cf201[59];
-   char s_d78d776f[1];
-   char s_8cf87433[17];
-   char s_4f62aa21[69];
    char s_6799135b[42];
    char s_03195749[314];
    char s_012938fb[21];
@@ -2988,14 +3003,26 @@ static const struct
    char s_7a3b4611[128];
    char s_1225f32b[21];
    char s_21d6e6d9[61];
+   char s_00a1f0c0[6];
+   char s_ab6bb0e4[16];
+   char s_69a447f7[13];
+   char s_79553ba5[31];
+   char s_1cdff4ac[23];
+   char s_61fe415a[60];
+   char s_d6198fde[26];
+   char s_e5ca838c[48];
+   char s_a747cdc9[51];
+   char s_94b84bf7[107];
+   char s_9c6cf201[59];
+   char s_d78d776f[1];
+   char s_8cf87433[17];
+   char s_4f62aa21[69];
    char s_7f10fcd2[6];
    char s_853efa07[9];
    char s_609cb392[8];
    char s_7206ddda[6];
    char s_0f381893[8];
    char s_89034b68[10];
-   char s_69a447f7[13];
-   char s_79553ba5[31];
    char s_9fd6f744[12];
    char s_9e5d0200[11];
    char s_625a7355[6];
@@ -3014,16 +3041,16 @@ static const struct
    char s_bcca484f[99];
    char s_74b12047[44];
    char s_85710575[54];
+   char s_16ff0a79[13];
+   char s_e0217ae7[35];
+   char s_f2ae4c72[18];
+   char s_7e1918a0[87];
    char s_5c160fe2[33];
    char s_fb474310[120];
    char s_bc514c4d[25];
    char s_c220b5bb[142];
    char s_c42c1d33[34];
    char s_cfb4dee1[110];
-   char s_16ff0a79[13];
-   char s_e0217ae7[35];
-   char s_f2ae4c72[18];
-   char s_7e1918a0[87];
    char s_3dd406ba[30];
    char s_78f48c28[86];
    char s_e1a10790[32];
@@ -3224,8 +3251,6 @@ static const struct
    char s_bbfb5541[43];
    char s_ddad8b7f[1];
    char s_026e5a83[12];
-   char s_7fec5ca7[12];
-   char s_c50aa955[51];
    char s_9f006f5c[19];
    char s_78ccdecc[38];
    char s_ed43994d[35];
@@ -3237,11 +3262,8 @@ static const struct
    char s_393985fc[30];
    char s_3936fe87[76];
    char s_d2a031dd[19];
-   char s_23fb75d2[45];
    char s_3c44f8dd[28];
    char s_e2055017[9];
-   char s_7d65b67e[16];
-   char s_9b51352c[29];
    char s_9374b989[18];
    char s_2fa1d6ef[33];
    char s_e2f9cd07[7];
@@ -3252,7 +3274,6 @@ static const struct
    char s_49757b91[23];
    char s_aa0659db[23];
    char s_c2f41987[11];
-   char s_b819d3cc[11];
    char s_25babaa7[9];
    char s_d3b03946[13];
    char s_2950bbb6[33];
@@ -3777,11 +3798,11 @@ static const struct
    char s_79a4338e[17];
    char s_2c296537[12];
    char s_6959ce80[16];
-   char s_80a2b273[12];
    char s_da16c634[19];
    char s_0c1e1a65[42];
    char s_cbdab193[297];
    char s_2afa843b[18];
+   char s_0e0af329[46];
    char s_9d27d322[29];
    char s_b8078f78[25];
    char s_fec3d03c[30];
@@ -3791,8 +3812,6 @@ static const struct
    char s_a51503d6[29];
    char s_bff4c02c[25];
    char s_778b9d70[30];
-   char s_0e0af329[46];
-   char s_33f012e4[10];
    char s_3eb95fb2[35];
    char s_6775eaa0[59];
    char s_201dd59e[88];
@@ -3805,8 +3824,8 @@ static const struct
    char s_7059a595[48];
    char s_e0609921[13];
    char s_f6a0db44[19];
-   char s_b3c7fa93[19];
    char s_7f2380a0[14];
+   char s_b3c7fa93[19];
    char s_6a9b757c[1];
    char s_ad14307a[12];
    char s_93ac5ec8[29];
@@ -3841,7 +3860,6 @@ static const struct
    char s_2f169651[19];
    char s_ec502f2a[21];
    char s_fc0122d8[128];
-   char s_af6007a1[17];
    char s_d042d680[6];
    char s_ce89e465[23];
    char s_0e85a0d1[39];
@@ -3863,10 +3881,6 @@ static const struct
    char s_d6c12228[38];
    char s_efe3b3e1[15];
    char s_3502008f[47];
-#ifdef HAVE_LIBNX
-   char s_09902e71[26];
-   char s_4eae7b1f[41];
-#endif
 #ifdef HAVE_LAKKA
    char s_2bab34b2[34];
    char s_c64d260f[7];
@@ -4034,8 +4048,20 @@ static const struct
    "Esplori",
    "Senenhavaj kernoj",
    "Importi enhavon",
+   "Stata spaco",
+   "\305\234an\304\235i la kurante elektitan statan spacon.",
+   "Reludi spacon",
+   "\305\234an\304\235i la kurante elektitan statan spacon.",
+   "Startigi kernon",
+   "Startigi kernon sen enhavon.",
+   "Komencigi videtraktilon",
+   "Komenci foran RetroPad",
    "Rapida menuo",
    "Rapide aliri \304\211iujn rilatajn en-ludajn agordojn.",
+   "Ebligi sekcion Agordoj",
+   "Montri la sekcion Agordoj, kiu enhavas programajn agordojn.",
+   "Malebligi envicigan re\304\235imon",
+   "Montri \304\211iujn agordojn rilatajn kun konfiguro.",
    "\305\234argi kernon",
    "Elekti kernon uzotan.",
    "Mal\305\235argi kernon",
@@ -4046,6 +4072,8 @@ static const struct
    "plena dosierindiko, \304\235i komenci\304\235os en la dosierujo, kie la dosiero estas.",
    "\305\234argi enhavon",
    "Elekti enhavon lan\304\211otan.",
+   "Subsistemoj",
+   "Aliri subsistemajn agordojn por la kuranta enhavo.",
    "Foliumi por enhavo. Por \305\235argi enhavon, oni bezonas \"Kernon\" uzota, kaj enhavdosieron. "
    "\nPor regi, kie la menuo ekfoliumas por enhavoj, elektu \"Dosieresplorilan dosierujon\". Se \304"
    "\235i ne estas agordita, \304\235i komenci\304\235os en radiko.\nLa foliumilo filtros kontra\305"
@@ -4057,30 +4085,66 @@ static const struct
    "\305\234uti diskon",
    "\305\234uti la fizikan enhavan diskon al interna stokado. \304\234i estos konservita kiel bilda "
    "dosiero.",
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    "El\304\265eti diskon",
    "El\304\265eti la diskon el la fizika CD/DVD ludilo.",
+#endif
 #endif
    "Ludlistoj",
    "Skanita enhavo, kiu kongruos kun la datumbazo, aperos \304\211i tie.",
    "Importi enhavon",
    "Krei kaj \304\235isdatigi ludlistojn skanante enhavojn.",
+   "Sinkronigi nun",
+   "Permane lan\304\211i nuban sinkronigon.",
+   "Solvi konfliktojn: konservi lokala\304\265ojn",
+   "Solvi \304\211iujn konfliktojn al\305\235utante lokalajn dosierojn en la servilon.",
+   "Solvi konfliktojn: konservi servila\304\265ojn",
+   "Solvi \304\211iujn konfliktojn el\305\235utante servilajn dosierojn, anstata\305\255igante lokal"
+   "ajn kopiojn.",
+   "Konfigurdosiero",
+   "Administri kaj krei konfigurdosierojn.",
+   "\305\234argi konfiguron",
+   "\305\234argi ekzistantan konfiguron kaj anstata\305\255igi kurantajn valorojn.",
+   "Konservi kurantan konfiguron",
+   "Anstata\305\255igi kurantan konfigurdosieron.",
+   "Konservi novan konfiguron",
+   "Konservi kurantan konfiguron en aparta dosiero.",
+   "Restarigi defa\305\255ltajn valorojn",
+   "Restarigi kurantan konfiguron kun defa\305\255ltajn valorojn.",
+   "Konservi kernajn transpasojn",
+   "Konservi transpasan konfigurdosieron, kiu apliki\304\235os por \304\211iu enhavo \305\235argata "
+   "per \304\211i tiu kerno. Havos precedencon anta\305\255 la \304\211efa konfiguro.",
+   "Konservi enhav-dosierujajn transpasojn",
+   "Konservi transpasan konfigurdosieron, kiu apliki\304\235os por \304\211iu enhavo \305\235argita "
+   "de la sama dosierujo kiel la kuranta dosiero. Havos precedencon anta\305\255 la \304\211efa konf"
+   "iguro.",
+   "Konservi ludajn transpasojn",
+   "Konservi transpasan konfigurdosieron, kiu apliki\304\235os nur por la kuranta enhavo. Havos prec"
+   "edencon anta\305\255 la \304\211efa konfiguro.",
+   "Forigi kernajn transpasojn",
+   "",
+   "Forigi enhav-dosierujajn transpasojn",
+   "Forigi la transpasan konfigurdosieron, kiu apliki\304\235os por \304\211iu enhavo \305\235argita"
+   " de la sama dosierujo kiel la kuranta dosiero.",
+   "Forigi ludajn transpasojn",
+   "Forigi la transpasan konfigurdosieron, kiu apliki\304\235os nur por la kuranta enhavo.",
+   "Helpo",
+   "Lerni pli pri kiel la programo funkcias.",
    "Montri labortablan menuon",
    "Malfermi la tradician labortablan menuon.",
-   "Malebligi envicigan re\304\235imon",
-   "Montri \304\211iujn agordojn rilatajn kun konfiguro.",
-   "Reta \304\235isdatigilo",
-   "El\305\235uti kroma\304\265ojn, komponantojn kaj enhavojn por RetroArch.",
    "Retludado",
    "Ali\304\235i al retluda sesio a\305\255 gastigi iun.",
+   "Reta \304\235isdatigilo",
+   "El\305\235uti kroma\304\265ojn, komponantojn kaj enhavojn por RetroArch.",
+#ifdef HAVE_MIST
+   "Administri kernojn",
+   "Instali a\305\255 malinstali kernojn distribuitaj per Steam.",
+#endif
    "Agordoj",
    "Konfiguri la programon.",
    "Informoj",
    "Montri sistemajn informojn.",
-   "Konfigurdosiero",
-   "Administri kaj krei konfigurdosierojn.",
-   "Helpo",
-   "Lerni pli pri kiel la programo funkcias.",
    "Restartigi",
    "Restartigi aplika\304\265on RetroArch.",
    "Forlasi",
@@ -4089,19 +4153,10 @@ static const struct
    "Forlasi RetroArch. \304\210esigi la programon per ajna severa maniero (SIGKILL, kc) \304\211esig"
    "os RetroArch sen konservi la konfigura\304\265on ajnakaze. En Uniks-similaj sistemoj, SIGINT/SIG"
    "TERM permesas puran forlason, kio inkluzivas konfiguran konservon se ebligita.",
-   "Sinkronigi nun",
-   "Permane lan\304\211i nuban sinkronigon.",
-   "Solvi konfliktojn: konservi lokala\304\265ojn",
-   "Solvi \304\211iujn konfliktojn al\305\235utante lokalajn dosierojn en la servilon.",
-   "Solvi konfliktojn: konservi servila\304\265ojn",
-   "Solvi \304\211iujn konfliktojn el\305\235utante servilajn dosierojn, anstata\305\255igante lokal"
-   "ajn kopiojn.",
    "El\305\235uti kernon",
    "El\305\235uti kaj instali kernon el la reta \304\235isdatigilo.",
    "Instali a\305\255 resta\305\255ri kernon",
    "Instali a\305\255 resta\305\255ri kernon el la dosierujo \"El\305\235uta\304\265oj\".",
-   "Komencigi videtraktilon",
-   "Komenci foran RetroPad",
    "Komenca dosierujo",
    "El\305\235uta\304\265oj",
    "Foliumi ar\304\245ivon",
@@ -4249,18 +4304,10 @@ static const struct
    "Subteno de analoga regilo",
    "",
    "Subteno de kunhelpa ludo",
-   "\305\234argi konfiguron",
-   "\305\234argi ekzistantan konfiguron kaj anstata\305\255igi kurantajn valorojn.",
-   "Konservi kurantan konfiguron",
-   "Anstata\305\255igi kurantan konfigurdosieron.",
-   "Konservi novan konfiguron",
-   "Konservi kurantan konfiguron en aparta dosiero.",
    "Konservi konfiguron kiel",
    "Konservi kurantan konfiguron kiel propra konfigurdosiero.",
    "Konservi \304\211efan konfiguron",
    "Konservi \304\211efan konfiguron kiel \304\211efa konfiguro.",
-   "Restarigi defa\305\255ltajn valorojn",
-   "Restarigi kurantan konfiguron kun defa\305\255ltajn valorojn.",
    "Rulumi supren",
    "Rulumi malsupren",
    "Konfirmi",
@@ -4269,11 +4316,25 @@ static const struct
    "Baskuligi menuon",
    "Forlasi",
    "Baskuligi klavaron",
+#ifdef HAVE_LIBNX
+   "\304\210efprocesora trarapidigo",
+   "Trarapidigi la \304\211efprocesoron de Switch.",
+#endif
+   "Rekomencigi",
+   "Mal\305\235alti",
    "Peliloj",
    "\305\234an\304\235i pelilojn uzatajn de la sistemo.",
    "\305\234an\304\235i la agordojn pri videa eligo.",
+   "SwitchRes por CRT",
+   "Generas malaltdistingivaj videajn signalojn por ekranoj de CRT.",
+   "Eligo",
+   "\305\234an\304\235i agordojn pri videa eligo.",
    "Sono",
    "\305\234an\304\235i la agordojn pri sona enigo kaj eligo.",
+   "Sonmiksilo",
+   "\305\234an\304\235i agordojn pri la sonmiksilo.",
+   "Menuaj sonoj",
+   "\305\234an\304\235i agordojn pri la menuaj sonoj.",
    "Enigo",
    "\305\234an\304\235i la agordojn pri regilo, klavaro kaj muso.",
    "Respondotempo",
@@ -4284,24 +4345,35 @@ static const struct
    "\305\234an\304\235i la defa\305\255ltajn agordojn por la konfigurdosieroj.",
    "Konservado",
    "\305\234an\304\235i la agordojn pri konservado.",
+   "Protokolado",
+   "\305\234an\304\235i agordojn pri protokolado.",
+   "Limigo de filmertrafiko",
+   "\305\234an\304\235i agordojn pri revolvi, rapidpluigi kaj malrapidpluigi.",
+   "Revolvi",
+   "\305\234an\304\235i agordojn pri revolvado.",
+   "Nombrilo de da\305\255ro de filmeroj",
+   "\305\234an\304\235i agordojn influantajn la nombrilo de da\305\255ro de filmeroj. Nur aktiva kia"
+   "m fadenigita video estas malebligita.",
+   "Detajloj de trompo",
+   "Komencigi a\305\255 da\305\255rigi ser\304\211on de trompkodoj",
    "Sinkronigo kun la nubo",
    "\305\234an\304\235i agordojn pri sinkronigo kun la nubo.",
    "Ebligi nubsinkronigo",
    "Provi sinkronigi konfigurojn, SRAM kaj statojn al provizanto de nuba konservejo.",
    "Detrua nubsinkronigo",
+   "Kiam malebligita, dosieroj estas movitaj al resta\305\255rkopia dosiero anta\305\255 ol esti ans"
+   "tata\305\255igitaj a\305\255 forigitaj.",
    "Sinkronigi: konserva\304\265ojn/statojn",
-   "Sinkronigi: konfigurdosierojn",
-   "Sinkronigi: bildetojn",
-   "Sinkronigi: sistemaj dosieroj",
    "Kiam ebligita, konserva\304\265oj kaj statoj estos sinkronigitaj al la nubo.",
+   "Sinkronigi: konfigurdosierojn",
    "Kiam ebligita, konfigurdosieroj estos sinkronigitaj al la nubo.",
+   "Sinkronigi: bildetojn",
    "Kiam ebligita, bildetoj estos sinkronigitaj al la nubo. \304\234enerale, ne rekomendata krom por"
    " grandaj kolektoj el propraj bildetoj; alikaze, la bildeta el\305\235utilo estas pli bona elekto"
    ".",
+   "Sinkronigi: sistemaj dosieroj",
    "Kiam ebligita, sistemaj dosieroj estos sinkronigitaj al la nubo. \304\210i tio povas grave pliig"
    "i la tempon bezonata por sinkronigi; uzu singarde.",
-   "Kiam malebligita, dosieroj estas movitaj al resta\305\255rkopia dosiero anta\305\255 ol esti ans"
-   "tata\305\255igitaj a\305\255 forigitaj.",
    "Sinkroniga re\304\235imo",
    "A\305\255tomata: sinkronigi \304\211e komenci\304\235o de RetroArch kaj kiam kernoj estas mal"
    "\305\235argitaj.Permana: nur sinkronigi kiam la butono \"Sinkronigi nun\" estas permane ekagigit"
@@ -4322,10 +4394,52 @@ static const struct
    "La identigilo de via alirklavo por via nubkonserveja konto.",
    "Sekreta alirklavo",
    "Via sekreta alirklavo por via nubkonserveja konto.",
-   "Protokolado",
-   "\305\234an\304\235i agordojn pri protokolado.",
+   "Surekrana\304\265oj",
+   "\305\234an\304\235i agordojn pri surmeta\304\265oj bildaj kaj klavaraj, kaj surekranaj sciigoj.",
+   "Surekrana surmeta\304\265o",
+   "Al\304\235ustigi nigrajn randojn kaj surekranajn regilojn.",
+   "Surmeta\304\265o de \"lightgun\"",
+   "Konfiguri enigon de \"lightgun\" sendita de la surmeta\304\265o.",
+   "Musa surmeta\304\265o",
+   "Konfiguri musenigon senditan de la surmeta\304\265o. Noto: 1-, 2- kaj 3-fingraj tu\305\235etoj s"
+   "endas maldekstran, dekstran kaj mezan butonajn klakojn.",
+   "Klavara surmeta\304\265o",
+   "Elekti kaj al\304\235ustigi klavaran surmeta\304\265on.",
+   "Surekranaj sciigoj",
+   "Al\304\235ustigi surekranaj sciigoj",
+   "Videbleco de sciigoj",
+   "Baskuligi la videblecojn de specifaj specoj de sciigoj.",
+   "Aspekto",
+   "\305\234an\304\235i agordojn pri la aspekto de la menua ekrano.",
+#ifdef _3DS
+   "Aspekto de la malsupra ekrano de 3DS",
+   "\305\234an\304\235i la aspektajn agordojn de la malsupra ekrano.",
+#endif
+   "Videbleco de menuaj eroj",
+   "\305\234alti la videblecon de menuaj eroj en RetroArch.",
+   "Rapida menuo",
+   "\305\234alti la videblecon de menuaj eroj en la Rapida menuo.",
+   "Agordoj",
+   "\305\234alti la videblecon de menuaj eroj en la menuo de Agordoj.",
+   "Uzantinterfaco",
+   "\305\234an\304\235i agordojn pri la fasado.",
+   "AI-servo",
+   "\305\234an\304\235i agordojn pri la AI-servo (traduko/parolsintezo/ks).",
+   "Alirebleco",
+   "\305\234an\304\235i agordojn pri la alirebla rakontilo.",
+   "Kurentomastrumado",
+   "\305\234an\304\235i agordojn pri kurentomastrumado.",
    "Dosieresplorilo",
    "\305\234an\304\235i agordojn pri la dosieresplorilo.",
+   "Akiroj",
+   "\305\234an\304\235i agordojn pri akiroj.",
+   "Aspekto",
+   "\305\234an\304\235i la pozicion kaj de\305\235ovojn de surekranaj sciigoj pri akiroj.",
+   "Videbleco",
+   "\305\234an\304\235i kiujn mesa\304\235ojn kaj surekranaj elementoj estas montritaj. Ne malebliga"
+   "s funkciaron.",
+   "\304\234isdatigilaj agordoj",
+   "Aliri kern\304\235isdatigilajn agordojn.",
    "Konfigurdosiero.",
    "Densigita ar\304\245iva dosiero.",
    "Konfigurdosiero por surbendigo.",
@@ -4346,22 +4460,8 @@ static const struct
    "Kerno de Libretro. Elekti \304\211i tion ligos \304\211i tiun kernon al la ludo.",
    "Kerno de Libretro. Elektu \304\211i tiun dosieron por farigi RetroArch \305\235argi la kernon.",
    "Dosierujo. Elektu \304\235in por malfermi \304\211i tiun dosierujon.",
-   "Limigo de filmertrafiko",
-   "\305\234an\304\235i agordojn pri revolvi, rapidpluigi kaj malrapidpluigi.",
    "Surbendigo",
    "\305\234an\304\235i agordojn pri surbendigo.",
-   "Surekrana\304\265oj",
-   "\305\234an\304\235i agordojn pri surmeta\304\265oj bildaj kaj klavaraj, kaj surekranaj sciigoj.",
-   "Uzantinterfaco",
-   "\305\234an\304\235i agordojn pri la fasado.",
-   "AI-servo",
-   "\305\234an\304\235i agordojn pri la AI-servo (traduko/parolsintezo/ks).",
-   "Alirebleco",
-   "\305\234an\304\235i agordojn pri la alirebla rakontilo.",
-   "Kurentomastrumado",
-   "\305\234an\304\235i agordojn pri kurentomastrumado.",
-   "Akiroj",
-   "\305\234an\304\235i agordojn pri akiroj.",
    "Reto",
    "\305\234an\304\235i agordojn pri servilo kaj reto.",
    "Ludlistoj",
@@ -4498,19 +4598,15 @@ static const struct
    "Surbendigi",
    "Surbendiga pelilo uzota. Bezonas restartigon.",
    "Pelilo de MIDI uzota. Bezonas restartigon.",
-   "SwitchRes por CRT",
-   "Generas malaltdistingivaj videajn signalojn por ekranoj de CRT.",
-   "Eligo",
-   "\305\234an\304\235i agordojn pri videa eligo.",
    "Plenekrana re\304\235imo",
    "\305\234an\304\235i agordojn pri la plenekrana re\304\235imo",
    "Enfenestra re\304\235imo",
    "\305\234an\304\235i agordojn pri la enfenestra re\304\235imo.",
+   "Sinkronigo",
+   "\305\234an\304\235i agordojn pri videa sinkronigo.",
    "Skalado",
    "\305\234an\304\235i agordojn pri videa skalado.",
    "\305\234an\304\235i agordojn pri video rilatantaj al HDR.",
-   "Sinkronigo",
-   "\305\234an\304\235i agordojn pri videa sinkronigo.",
    "Ekrankopioj: uzi grafikan procesoron",
    "Ekrankopioj kaptas materialon ombrigita per grafika procesoro se eble.",
    "Stuci superskanadon (bezonas restartigon)",
@@ -4531,6 +4627,11 @@ static const struct
    "ekranoj. Uzu \304\235in je via propra risko. // Enmeti nigrajn filmerojn inter filmeroj. Povas e"
    "ge redukti malklarajn movojn (\"motion blur\") imitante la \"scan out\" de CRT, sed kontra\305"
    "\255 brilo.",
+   "Enmego de nigraj filmeroj - malhelaj filmeroj",
+   "Al\304\235ustigas la nombron de nigraj filmeroj enmetotaj en la totala sinsekvo de \"scan-out\"."
+   " Ju pli alta valoro, des pli movklareco; ju malpli alta valoro, des pli brileco. Ne aplikebla je"
+   " 120Hz, \304\211ar nur ekzistas 1 nigra filmero enmetota. Agordoj pli alta ol ebla limigos vin a"
+   "l la maksimume ebla por via elektita ofteco de aktualigo.",
    "Enmetas nigrajn filmerojn inter filmeroj por plibonigita mov-klareco. Uzu nur la opcion designit"
    "an por la kuranta ofteco de aktualigo de via ekrano. Ne uzota por oftecoj de aktualigo, kiuj ne "
    "estas obloj de 60Hz, kiel 144Hz, 165Hz, kc. Ne kombinu \304\235in kun permut-intervalo > 1, subf"
@@ -4538,11 +4639,6 @@ static const struct
    "ne lasante la VRR de sistemo, sed ne eblas uzi tiun agordon. Se vi rimarkas AJNAN tempan konserv"
    "on de bildo, vi devus malebligi je 120",
    "Hz, kaj por pli alta Hz, al\304\235ustigu la agordon pri malhelaj filmeroj sube.",
-   "Enmego de nigraj filmeroj - malhelaj filmeroj",
-   "Al\304\235ustigas la nombron de nigraj filmeroj enmetotaj en la totala sinsekvo de \"scan-out\"."
-   " Ju pli alta valoro, des pli movklareco; ju malpli alta valoro, des pli brileco. Ne aplikebla je"
-   " 120Hz, \304\211ar nur ekzistas 1 nigra filmero enmetota. Agordoj pli alta ol ebla limigos vin a"
-   "l la maksimume ebla por via elektita ofteco de aktualigo.",
    "Al\304\235ustigas la nombron de tute nigraj filmeroj montrotaj en la sinsekvo de enmeto de nigra"
    "j filmeroj. Ju pli da nigraj filmeroj, des pli da movklareco sed malpli da brileco. NE aplikebla"
    " je 120Hz \304\211ar nur ekzistas unu totala aldona filmero de 60Hz, do \304\235i devos esti nig"
@@ -4641,11 +4737,11 @@ static const struct
    "Vertikala centrigo",
    "\305\234an\304\235u \304\211i tiun opcion se la bildo ne estas \304\235uste centrigita en la ekr"
    "ano.",
+   "Propra ofteco de aktualigo",
+   "Uzi propran oftecon de aktualigo specifitan en la konfigudosiero se bezonata.",
    "Uzi altdistingivan menuon",
    "\305\234an\304\235i al altdistingiva re\304\235imlinio (\"modeline\") por uzi kun altdistingivaj"
    " menuoj kiam nenia enhavo estas \305\235argita.",
-   "Propra ofteco de aktualigo",
-   "Uzi propran oftecon de aktualigo specifitan en la konfigudosiero se bezonata.",
    "Ekrana indekso",
    "Elekti la ekranan indekson uzotan.",
    "Kiun ekranon preferi. 0 (defa\305\255lte) signifas nenian apartan ekranon estas preferata, 1 kaj"
@@ -4686,11 +4782,11 @@ static const struct
    "La ofteco de aktualigo la\305\255 raportite de la ekrana pelilo.",
    "A\305\255tomate \305\235an\304\235i oftecon de aktualigo",
    "A\305\255tomate inter\305\235an\304\235i ekranan oftecon de aktualigo la\305\255 kuranta enhavo.",
+   "Sojlo de a\305\255tomata ofteco de aktualigo al PAL",
+   "Maksimuma ofteco de aktualigo konsiderata kiel PAL.",
    "Nur en ekskluzive plenekrana re\304\235imo",
    "Nur en enfenestre plenekrana re\304\235imo",
    "\304\210iuj plenekranaj re\304\235imoj",
-   "Sojlo de a\305\255tomata ofteco de aktualigo al PAL",
-   "Maksimuma ofteco de aktualigo konsiderata kiel PAL.",
 #if defined(DINGUX) && defined(DINGUX_BETA)
    "Vertikala ofteco de aktualigo",
    "Agordi vertikalan oftecon de aktualigo de la ekrano. \"50Hz\" ebligos glatan videon kiam rulante"
@@ -4835,11 +4931,11 @@ static const struct
    "\305\255 pli da risko de bilda sekcii\304\235o. Oni bezonas malebligi la vertikalan sinkronigon.",
    "Filmera prokrasto",
    "Malpliigas respondotempon kontra\305\255 pli da risko de videa \"mikrobalbutado\".",
+   "A\305\255tomata filmera prokrasto",
+   "Al\304\235ustigi efikan \"Filmeran prokraston\" dinamike.",
    "Agordas la tempon je milisekundoj inter la lan\304\211o de la kerno kaj la prezento de la bildo."
    " Malpliigas respondotempon kontra\305\255 pli da risko de \"mikrobalbutado\".\nValoroj 20 kaj pl"
    "iaj estos konsiderataj kiel procento de la da\305\255ro je filmeroj.",
-   "A\305\255tomata filmera prokrasto",
-   "Al\304\235ustigi efikan \"Filmeran prokraston\" dinamike.",
    "Provi teni la deziratan celon por \"Filmera prokrasto\" kaj minimumigi perdon de filmeroj. Komen"
    "ca punkto estas 3/4 el la filmera tempo kiam \"Filmera prokrasto\" estas 0 (a\305\255tomate).",
    "Specimenigi filmeran tempon nur en stabila stato",
@@ -4852,6 +4948,13 @@ static const struct
    "Agordi kiom da filmeroj la CPU povas uzi anta\305\255tempe de la GPU kiam uzante \"Rigida sinkro"
    "nigo de GPU\". La maksimuma valoro estas 3.\n 0: tuj sinkronigi kun la GPU.\n 1: Sinkronigi kun "
    "la anta\305\255a filmero.\n 2: kc.",
+   "Rapidpluiga rapido",
+   "La maksimuma rapido, je kiu enhavo estos rulita kiam uzante rapidpluigon (ekz. 5.0\303\227 por e"
+   "nhavo je 60 fps = limo de 300 fps). Se agordite je 0.0\303\227, la rapidpluiga rapido estas senl"
+   "ima.",
+   "Rapidpluiga preterpaso de filmeroj",
+   "Preterpasi filmeroj la\305\255 la rapidpluiga rapido. \304\210i tio konservas energion kaj perme"
+   "sas la uzon de filmerlimigo de ekstera liveranto.",
    "Sinkronigi al \304\235usta enhava filmer-ofteco (G-Sync, FreeSync)",
    "Nenia deklini\304\235o de la intervalo postulata de la kerno. Uzi kun ekranoj kun varii\304\235e"
    "ma ofteco de aktualigo (G-Sync, FreeSync, HDMI 2.1 VRR).",
@@ -4867,10 +4970,6 @@ static const struct
    "Sinkronigo",
    "\305\234an\304\235i agordojn pri sona sinkronigo.",
    "\305\234an\304\235i agordojn pri MIDI.",
-   "Sonmiksilo",
-   "\305\234an\304\235i agordojn pri la sonmiksilo.",
-   "Menuaj sonoj",
-   "\305\234an\304\235i agordojn pri la menuaj sonoj.",
    "Silentigi",
    "Silentigi sonojn.",
    "Silentigi sonmiksilon",
@@ -4886,12 +4985,12 @@ static const struct
    "A\305\255tomate silentigi sonon kiam revolvante la ludon.",
    "Gajno de la\305\255teco (dB)",
    "La\305\255teco (en dB). 0 dB estas normala la\305\255teco, sen gajno.",
-   "La\305\255teco, esprimita en dB. 0 dB estas normala la\305\255teco, kie nenia gajno estas apliki"
-   "ta. Gajno povas esti al\304\235ustigita rulante per Eniga plila\305\255tigo / Eniga malplila\305"
-   "\255tigo.",
    "Sonmiksila gajno de la\305\255teco (dB)",
    "\304\210iea sonmiksila la\305\255teco (en dB). 0 dB estas normala la\305\255teco, sen ajna gajno"
    ".",
+   "La\305\255teco, esprimita en dB. 0 dB estas normala la\305\255teco, kie nenia gajno estas apliki"
+   "ta. Gajno povas esti al\304\235ustigita rulante per Eniga plila\305\255tigo / Eniga malplila\305"
+   "\255tigo.",
    "Kroma\304\265o de DSP",
    "Kroma\304\265o de sona DSP, kiu prilaboras sonon anta\305\255 ol \304\235i estos sendita al la p"
    "elilo.",
@@ -4900,11 +4999,11 @@ static const struct
    "Re\304\235imo ekskluzivo por WASAPI",
    "Permesi al la pelilo de WASAPI preni ekskluzivan regon de la sonaparato. Se malebligite, \304"
    "\235i uzos la kunhavigita re\304\235imo.",
-   "Glitpunkta formato de WASAPI",
-   "Uzi la glitpunktan formaton por la pelilo de WASAPI, se subtenata de via sonaparato.",
    "Grando de la kunhavigita bufro de WASAPI",
    "La intera bufra grando (je filmeroj) kiam uzante la kunhavigitan re\304\235imon de la pelilo de "
    "WASAPI.",
+   "Glitpunkta formato de WASAPI",
+   "Uzi la glitpunktan formaton por la pelilo de WASAPI, se subtenata de via sonaparato.",
    "Malfermi stirpanelon de ASIO",
    "Malfermi la stirpanelon de la pelilo ASIO por konfiguri aparatan enkursigon kaj bufrajn agordojn"
    ".",
@@ -4913,6 +5012,8 @@ static const struct
    "Aparato",
    "Transpasi la defa\305\255ltan sonaparaton, kiun la sonpelilo uzas. \304\210i tio dependas de la "
    "pelilo.",
+   "Ofteco de eligo (Hz)",
+   "Ofteco de sonpeciga eligo.",
    "Transpasi la defa\305\255ltan sonaparaton, kiun la sonpelilo uzas. \304\210i tio dependas de la "
    "pelilo.",
    "Propra valoro de la aparato PCM por la pelilo ALSA.",
@@ -4927,20 +5028,29 @@ static const struct
    "Mikrofono",
    "Ebligi enigon de sono en subtenataj kernoj. Se la kerno ne uzas mikrofonon, ne pluigos la \305"
    "\235argon de la CPU.",
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
    "Aparato",
    "Transpasi la defa\305\255ltan enigaparaton, kiun la mikrofona pelilo uzas. \304\210i tio dependa"
    "s de la pelilo.",
-   "Transpasi la defa\305\255ltan enigaparaton, kiun la mikrofona pelilo uzas. \304\210i tio dependa"
-   "s de la pelilo.",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   "Defa\305\255lta ofteco de enigo (Hz)",
+   "Ofteco de sonpecigo de enigo, uzata se kerno ne postulas specifan nombron.",
    "Resonpeciga kvalito",
    "Malpliigu \304\211i tiun valoron por pli da rendimento kaj malpli da respondotempo kontra\305"
    "\255 sona kvalito; pliigu \304\235in por pli da sona kvalito kontra\305\255 rendimento kaj malpl"
    "iigo de respondotempo. ",
-   "Defa\305\255lta ofteco de enigo (Hz)",
-   "Ofteco de sonpecigo de enigo, uzata se kerno ne postulas specifan nombron.",
+   "Transpasi la defa\305\255ltan enigaparaton, kiun la mikrofona pelilo uzas. \304\210i tio dependa"
+   "s de la pelilo.",
    "Respondotempo de sona enigo (ms)",
    "Dezirata respondotempo de sona enigo je milisekundoj. Povus ne esti respektata se la mikrofona p"
    "elilo ne povas provizi la respondotempon.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
    "Re\304\235imo ekskluzivo por WASAPI",
    "Permesi al RetroArch ekskluzive regi la mikrofonan aparaton kiam uzante la mikrofonan pelilon WA"
    "SAPI. Se malebligite, RetroArch uzos la kunhavigatan re\304\235imon anstata\305\255e.",
@@ -4949,6 +5059,7 @@ static const struct
    "Grando de la kunhavigita bufro de WASAPI",
    "La intera bufra grando (je filmeroj) kiam uzante la kunhavigitan re\304\235imon de la pelilo WAS"
    "API.",
+#endif
 #endif
    "Resonpeciga kvalito",
    "Malpliigu \304\211i tiun valoron por favori rendimenton kaj malpli respondotempon pli ol sona kv"
@@ -4967,14 +5078,13 @@ static const struct
    " Nur aludon: pelilo retropa\305\235as se la aparato malakceptas la postulatan formaton. \"Int16"
    "\" okazu kun \"Resonpecigi al fiksita entjero\" por konservi la tutan sonvojon en entjeroj.",
    "Glita\304\265o",
-   "Ofteco de eligo (Hz)",
-   "Ofteco de sonpeciga eligo.",
    "Sinkronigo",
    "Sinkronigi sonojn. Rekomendata.",
    "Maksimuma sinkroniga varieco",
    "La maksimuma \305\235an\304\235o en ofteco de sona enigo. Pliigi \304\211i tion ebligas tre gran"
    "dajn \305\235an\304\235ojn sinkronigante kontra\305\255 malprecizaj sontonoj (ekz. rulante kerno"
    "jn PAL sur ekranoj NTSC).",
+   "Baritaj filmeroj",
    "Maksimuma sinkroniga varieco de sono.\nDifinas la maksimuman \305\235an\304\235on en ofteco de e"
    "nigo. Vi eble volos pliigi \304\211i tion por ebligi grandajn \305\235an\304\235ojn sinkronigant"
    "e, ekzemple rulante kernojn PAL sur ekranojn NTSC, kontra\305\255 malprecizaj sontonoj.\nOfteco "
@@ -5030,6 +5140,27 @@ static const struct
    "Ebligi sonojn de \"Rulumado\"",
    "",
    "Maksimuma kvanto da uzantoj subtenataj de RetroArch. Bezonas restartigon.",
+   "Unuigitaj menuaj regiloj",
+   "Uzi la samajn regilojn por kaj la menuo kaj la ludo. Apliki\304\235as al la klavaro.",
+   "Malebligi butonon Informo",
+   "Malhelpi la funkciadon de menuaj informoj.",
+   "Malebligi butonon ser\304\211i",
+   "Malhelpi la funkciadon de menua ser\304\211o.",
+   "Malebligi maldekstran analogstangon en menuo",
+   "Malhelpi la enigon de la maldekstra analogstango en la menuo",
+   "Malebligi dekstran analogstangon en menuo",
+   "Malhelpi la enigon de la dekstra analogstango en la menuo. Dekstra analogstango \305\235an\304"
+   "\235as la bildetojn en ludlistoj.",
+   "Konfirmi forlason",
+   "Postuli, ke la fulmoklavo Forlasi estu premata dufoje.",
+   "Konfirmi fermi enhavon",
+   "Postuli, ke la fulmoklavo Fermi enhavon estu premata dufoje.",
+   "Konfirmi rekomencigi enhavon",
+   "Postuli, ke la fulmoklavo Rekomencigi enhavon estu premata dufoje.",
+   "Vibri \304\211e premi klavon",
+   "Ebligi vibradon de aparato (por subtenataj kernoj)",
+   "Forto de vibrado",
+   "Specifi la magnitudon de tu\305\235-retrokupladaj efikoj.",
    "Sondada konduto (bezonas restartigon)",
    "Influas kiel enigsondado estas farata en RetroArch. Agordante \304\235in al \"Frua\" a\305\255 "
    "\"Malfrua\" povas rezulti en malpli da respondotempo, dependante de via konfiguro.",
@@ -5038,6 +5169,35 @@ static const struct
    "do estas postulita.\nMalfrua - Enigsondado estas plenumigita \304\211e la unua postulo de stato "
    "per filmero.\nAgordante \304\235in je \"Frua\" a\305\255 \"Malfrua\" povas rezulti en malpli da "
    "respondotempo, dependante de via konfiguro. \304\234i estos ignorata kiam uzante retludon.",
+   "Baskuligi menuon (kombina\304\265o de regilo)",
+   "Butonkombina\304\265o de regilo por baskuligi menuon.",
+   "Forlasi (regila kombina\304\265o)",
+   "Butonkombina\304\265o de regilo por forlasi RetroArch.",
+   "Prokrasto por Ebligi fulmoklavojn (filmeroj)",
+   "Aldoni prokraston je filmeroj anta\305\255 ol normala enigo estu barita post premi la asignitan "
+   "klavon \"Ebligi fulmoklavojn\". Permesas, ke normala enigo de la klavo \"Ebligi fulmoklavojn\" e"
+   "stu kaptita kiam \304\235i estas asignita al alia ago (ekz. \"Select\" de RetroPad).",
+   "Kunfandi specojn de fulmoklava aparato",
+   "Bari \304\211iujn fulmoklavojn de kaj klavaroj kaj regiloj, se iu havas agordita \"Ebligi fulmok"
+   "lavojn\".",
+   "Agnoski nur fulmoklavojn de ludanto 1",
+   "Fulmoklavoj estas asignitaj al kerna konektejo 1, e\304\211 se kerna konektejo 1 estas reasignit"
+   "a al malsama uzanto. Notu: klavaraj fulmoklavoj ne funkcios se kerna konektejo 1 estas reasignit"
+   "a al ia ajn uzanto ol 1 (klavara enigo estas de uzanto 1)",
+   "Inter\305\235an\304\235i butonojn Bone kaj Rezigni",
+   "Inter\305\235an\304\235i la butonojn Bone kaj Rezigni. Malebligita estas la butona orientigo jap"
+   "ana; ebligita estas la orientigo okcidenta.",
+   "Inter\305\235an\304\235i butonojn rulumi",
+   "Inter\305\235an\304\235i butonojn por rulumi. Malebligita rulumas 10 erojn per L/R kaj alfabete "
+   "per L2/R2.",
+   "\304\210iuj uzantoj regas menuon",
+   "Permesi al \304\211iuj uzantoj regi la menuon. Se malebligita, nur Uzanto 1 povas regi la menuon"
+   ".",
+   "Ludlistoj per ununura alklako",
+   "Preterlasi la menuon \"Lan\304\211i\" kiam lan\304\211ante ludlisterojn. Premu la direktokrucon "
+   "dum tenante Bone por atingi la menuon \"Lan\304\211i\".",
+   "Permesi reeniri el sekcioj",
+   "Reeniri al \304\211efa menuo el sekcioj a\305\255 flankpanelo kiam premante Reen.",
    "Reasigni regilojn por \304\211i tiu kerno",
    "Transpasi la enigajn klavasignadojn kontra\305\255 la reasignitaj klavasignoj por la kuranta ker"
    "no.",
@@ -5057,6 +5217,13 @@ static const struct
    "a se vi provas imiti komputilon en ia aparato Android TV kaj anka\305\255 posedas fizikan klavar"
    "on, kiu povas esti alligita al la aparato.",
 #endif
+   "Sojlo de enigo de butonaj aksoj",
+   "Kiel malproksime akso devas esti inklinita por rezulti en premo de butono kiam uzante \"Bitigilo"
+   "\".",
+   "Analogstanga malviva zono",
+   "Ignori analogstangajn movojn sub la valoro de malviva zono.",
+   "Analogstanga sentemo",
+   "Al\304\235ustigi la sentemon de analogstangoj.",
    "Akcesora sentila enigo",
    "Ebligi enigon el plirapidiga mezurilo, \"gyroscope\" kaj lumiga sentiloj, se subtenate de via ku"
    "ranta aparataro. Povus influi la rendimenton, kaj/a\305\255 pliigi kurentuzadon en kelkaj platfo"
@@ -5067,36 +5234,44 @@ static const struct
    "\304\210iam ebligi re\304\235imon \"Koncentri\304\235i en ludo\" kiam lan\304\211ante kaj da\305"
    "\255rigante enhavon. Kiam agordite je \"Detekti\", \304\211i tiu opcio estos ebligita se la kura"
    "nta kerno realigas funkciaron de fasada klavara revoko.",
+   "Pa\305\255zi enhavon pro malkonekto de regilo",
+   "Pa\305\255zi enhavon kiam ajna regilo estas malkonektita. Uzu \"Start\" por da\305\255rigi.",
    "Mal\305\235altita",
    "\305\234altita",
    "Detekti",
-   "Pa\305\255zi enhavon pro malkonekto de regilo",
-   "Pa\305\255zi enhavon kiam ajna regilo estas malkonektita. Uzu \"Start\" por da\305\255rigi.",
-   "Sojlo de enigo de butonaj aksoj",
-   "Kiel malproksime akso devas esti inklinita por rezulti en premo de butono kiam uzante \"Bitigilo"
-   "\".",
-   "Analogstanga malviva zono",
-   "Ignori analogstangajn movojn sub la valoro de malviva zono.",
-   "Analogstanga sentemo",
    "Plirapidig-mezurila sentemo",
-   "Sentemo de \"Gyroscope\"",
-   "Al\304\235ustigi la sentemon de analogstangoj.",
    "Al\304\235ustigi la sentemon de la plirapidiga mezurilo.",
-   "Sentila orientigo",
-   "Rotacii la aksojn de la plirapidiga mezurilo kaj la \"gyroscope\" por kongrui la orientigon de l"
-   "a aparato.",
-   "A\305\255tomate",
+   "Sentemo de \"Gyroscope\"",
    "Al\304\235ustigi la sentemon de la \"Gyroscope\".",
    "Atendotempo por la klavasignado",
    "Kiomo da sekundoj atendi anta\305\255 ol procedi al la sekva klavasignado.",
    "Teno de asignado",
    "Kvanto da sekundoj teni enigon por asigni \304\235in.",
+   "Mov-/lum- sentiloj",
+   "\305\234an\304\235i agordojn pri la plirapidiga mezurilo, \"gyroscope\" kaj lumigo.",
+   "Tu\305\235-retrokuplado/vibrado",
+   "\305\234an\304\235i agordojn pri tu\305\235-retrokuplado kaj vibrado.",
+   "Menuaj regiloj",
+   "\305\234an\304\235i agordojn pri la menuaj regiloj.",
+   "Sentila orientigo",
+   "Rotacii la aksojn de la plirapidiga mezurilo kaj la \"gyroscope\" por kongrui la orientigon de l"
+   "a aparato.",
+   "A\305\255tomate",
    "Premu klavaron, muson a\305\255 regilon",
    "Maltenu klavojn kaj butonojn!",
    "Atendotempo",
    "Teni",
    "Ada aktivigo",
    "Malebligite haltigas \304\211ian operaciojn pri ada aktivigo.",
+   "Re\304\235imo de ada aktivigo",
+   "Elekti la \304\235eneralan konduton de la re\304\235imo de ada aktivigo",
+   "Asignado de \"Turbo\"",
+   "La asigno, kiu aktivigos la adan aktivigon en la RetroPad. Se lasite vakua, \304\235i uzos la as"
+   "ignon specifa de la konektejo.",
+   "Butono \"Turbo\"",
+   "Cela butono \"Turbo\" en re\304\235imo \"Ununura butono\".",
+   "Permesi direktojn de la direktkruco por \"Turbo\"",
+   "Se ebligite, ciferecaj direktaj enigoj povas esti ade aktivigataj.",
    "Periodo de ada aktivigo",
    "La periodo je filmeroj kiam butonoj kun ada aktivigo estas premataj.",
    "Ciklo de laborado de la ada aktivigo",
@@ -5104,8 +5279,6 @@ static const struct
    "\211i tiu nombro estas egala a\305\255 pli ol la Periodo de ada aktivigo, la butonoj neniam esto"
    "s maltenitaj.",
    "Duono da ciklo",
-   "Re\304\235imo de ada aktivigo",
-   "Elekti la \304\235eneralan konduton de la re\304\235imo de ada aktivigo",
    "Klasika",
    "Klasika (baskuligi)",
    "Ununura butono (baskuligi)",
@@ -5126,21 +5299,6 @@ static const struct
    "j/Eniga pelilo/Retroregilaj asignoj/Regiloj de konektejo X.\nPor imiti la funkcion de ada aktivi"
    "go de la erao de hejma komputilo, agordu la Asignadon kaj la Butonon al la sama butono de la sti"
    "rstango.",
-   "Asignado de \"Turbo\"",
-   "La asigno, kiu aktivigos la adan aktivigon en la RetroPad. Se lasite vakua, \304\235i uzos la as"
-   "ignon specifa de la konektejo.",
-   "Butono \"Turbo\"",
-   "Cela butono \"Turbo\" en re\304\235imo \"Ununura butono\".",
-   "Permesi direktojn de la direktkruco por \"Turbo\"",
-   "Se ebligite, ciferecaj direktaj enigoj povas esti ade aktivigataj.",
-   "Ada aktivigo",
-   "\305\234an\304\235i agordojn pri ada aktivigo.",
-   "Tu\305\235-retrokuplado/vibrado",
-   "\305\234an\304\235i agordojn pri tu\305\235-retrokuplado kaj vibrado.",
-   "Mov-/lum- sentiloj",
-   "\305\234an\304\235i agordojn pri la plirapidiga mezurilo, \"gyroscope\" kaj lumigo.",
-   "Menuaj regiloj",
-   "\305\234an\304\235i agordojn pri la menuaj regiloj.",
    "Fulmoklavoj",
    "\305\234an\304\235i agordojn kaj asignadoj por fulmoklavoj. Ekzemple, kiel baskuligi la menuon d"
    "um ludado.",
@@ -5149,6 +5307,8 @@ static const struct
    "to estas agnoskita kaj a\305\255tomate konfigurita \304\235uste, uzantoj eble ne bezonos uzi "
    "\304\211i tiun menuon.\nNote: por \305\235an\304\235oj de enigo specifaj de la kerno, anstata"
    "\305\255e uzu la submenuon \"Regiloj\" de la Rapida menuo.",
+   "Ada aktivigo",
+   "\305\234an\304\235i agordojn pri ada aktivigo.",
    "Libretro uzas abstrakta\304\265on de virtuala ludregilo, konata kiel la \"RetroPad\", por komuni"
    "ki inter fasadoj (kiel RetroArch) kaj kernoj. \304\210i tiu menuo determinas kiel la virtuala Re"
    "troPad estas asignita al la fizikaj enigaparatoj, kaj tiujn virtualajn enigajn konektejojn, kiuj"
@@ -5163,45 +5323,14 @@ static const struct
    "Provizora solvo de malkonekto de Android",
    "Provizora solvo por regiloj malkonektante kaj rekonektante. Malhelpas 2 ludantojn kun samaj regi"
    "loj.",
-   "Konfirmi forlason",
-   "Postuli, ke la fulmoklavo Forlasi estu premata dufoje.",
-   "Konfirmi fermi enhavon",
-   "Postuli, ke la fulmoklavo Fermi enhavon estu premata dufoje.",
-   "Konfirmi rekomencigi enhavon",
-   "Postuli, ke la fulmoklavo Rekomencigi enhavon estu premata dufoje.",
-   "Vibri \304\211e premi klavon",
-   "Ebligi vibradon de aparato (por subtenataj kernoj)",
-   "Forto de vibrado",
-   "Specifi la magnitudon de tu\305\235-retrokupladaj efikoj.",
-   "Unuigitaj menuaj regiloj",
-   "Uzi la samajn regilojn por kaj la menuo kaj la ludo. Apliki\304\235as al la klavaro.",
-   "Inter\305\235an\304\235i butonojn Bone kaj Rezigni",
-   "Inter\305\235an\304\235i la butonojn Bone kaj Rezigni. Malebligita estas la butona orientigo jap"
-   "ana; ebligita estas la orientigo okcidenta.",
-   "Inter\305\235an\304\235i butonojn rulumi",
-   "Inter\305\235an\304\235i butonojn por rulumi. Malebligita rulumas 10 erojn per L/R kaj alfabete "
-   "per L2/R2.",
-   "\304\210iuj uzantoj regas menuon",
-   "Permesi al \304\211iuj uzantoj regi la menuon. Se malebligita, nur Uzanto 1 povas regi la menuon"
-   ".",
-   "Ludlistoj per ununura alklako",
-   "Preterlasi la menuon \"Lan\304\211i\" kiam lan\304\211ante ludlisterojn. Premu la direktokrucon "
-   "dum tenante Bone por atingi la menuon \"Lan\304\211i\".",
-   "Permesi reeniri el sekcioj",
-   "Reeniri al \304\211efa menuo el sekcioj a\305\255 flankpanelo kiam premante Reen.",
    "Plirapidigo de rulumado",
    "Maksimuma rapido de la kursoro kiam tenante direkton por rulumi.",
    "Ruluma prokrasto",
    "Komenca prokrasto je milisekundoj kiam tenante direkton por rulumi.",
-   "Malebligi butonon Informo",
-   "Malhelpi la funkciadon de menuaj informoj.",
-   "Malebligi butonon ser\304\211i",
-   "Malhelpi la funkciadon de menua ser\304\211o.",
-   "Malebligi maldekstran analogstangon en menuo",
-   "Malhelpi la enigon de la maldekstra analogstango en la menuo",
-   "Malebligi dekstran analogstangon en menuo",
-   "Malhelpi la enigon de la dekstra analogstango en la menuo. Dekstra analogstango \305\235an\304"
-   "\235as la bildetojn en ludlistoj.",
+   "Akcesora uzaninterfaco",
+   "Komenci akcesoran uzantinterfacon lan\304\211inte",
+   "Labortabla menuo (bezonas restartigon)",
+   "Malfermi labortablan menuon \304\211e startigo.",
    "Klavo Ebligi fulmoklavojn",
    "Kiam asignita, la klavo \"Ebligi fulmoklavojn\" devas esti tenata anta\305\255 ol ajnaj aliaj fu"
    "lmoklavoj estu agnoskitaj. Permesas al regilaj butonoj esti asignitaj al fulmoklavaj funkcioj se"
@@ -5212,23 +5341,8 @@ static const struct
    "stas tenata samtempe.\n\304\210i tio estas utila por realigoj centritaj en RETRO_KEYBOARD, kiuj "
    "bezonas grandan areon de la klavaro, kaj kie oni ne deziras, ke fulmoklavoj \304\235enu la norma"
    "lan funkciadon.",
-   "Prokrasto por Ebligi fulmoklavojn (filmeroj)",
-   "Aldoni prokraston je filmeroj anta\305\255 ol normala enigo estu barita post premi la asignitan "
-   "klavon \"Ebligi fulmoklavojn\". Permesas, ke normala enigo de la klavo \"Ebligi fulmoklavojn\" e"
-   "stu kaptita kiam \304\235i estas asignita al alia ago (ekz. \"Select\" de RetroPad).",
-   "Kunfandi specojn de fulmoklava aparato",
-   "Bari \304\211iujn fulmoklavojn de kaj klavaroj kaj regiloj, se iu havas agordita \"Ebligi fulmok"
-   "lavojn\".",
-   "Agnoski nur fulmoklavojn de ludanto 1",
-   "Fulmoklavoj estas asignitaj al kerna konektejo 1, e\304\211 se kerna konektejo 1 estas reasignit"
-   "a al malsama uzanto. Notu: klavaraj fulmoklavoj ne funkcios se kerna konektejo 1 estas reasignit"
-   "a al ia ajn uzanto ol 1 (klavara enigo estas de uzanto 1)",
-   "Baskuligi menuon (kombina\304\265o de regilo)",
-   "Butonkombina\304\265o de regilo por baskuligi menuon.",
    "Baskuligi mebuo",
    "Inter\305\235an\304\235as la kurantan ekranon inter menuo kaj enhavo.",
-   "Forlasi (regila kombina\304\265o)",
-   "Butonkombina\304\265o de regilo por forlasi RetroArch.",
    "Forlasi",
    "Fermas RetroArch, konservante \304\211iujn konservan datumon kaj konfigurdosierojn en la disko.",
    "Fermi enhavon",
@@ -5491,8 +5605,6 @@ static const struct
    "Realigi eksterretajn funkcitenadajn taskojn sur instalitaj kernoj (resta\305\255rkopii, restarig"
    "i, forigi, kc.) kaj vidi kernajn informojn.",
 #ifdef HAVE_MIST
-   "Administri kernojn",
-   "Instali a\305\255 malinstali kernojn distribuitaj per Steam.",
    "Instali kernon",
    "Malinstali kernon",
    "Montri \"Administri kernojn\"",
@@ -5542,49 +5654,36 @@ static const struct
    "Konservdosieroj: intervalo de a\305\255tomate konservi SaveRAM",
    "A\305\255tomate konservi la energi-nedependa SaveRAM \304\211e regularaj intervaloj (je sekundoj"
    ").",
-   "A\305\255tomate konservi la energi-nedependa SRAM \304\211e regularaj intervaloj. \304\210i tio "
-   "estas malebligita defa\305\255lte krom agordite alikaze. La intervalo estas mezurita je sekundoj"
-   ". Valoro 0 malebligas a\305\255tomatan konservadon.",
    "Konservostatoj: a\305\255tomata intervalo",
    "A\305\255tomate konservi staton \304\211e regularaj intervaloj (je sekundoj). Agordu al 0 por ma"
    "lebligi.",
-   "A\305\255tomate konservi staton \304\211e regularaj intervaloj. \304\210i tio estas malebligita "
-   "defa\305\255lte krom agordite alikaze. La intervalo estas mezurita je sekundoj. Valoro 0 malebli"
-   "gas a\305\255tomatan konservadon.",
-   "Reludadoj: intervalo de kontrolpunktoj",
-   "A\305\255tomate marki la ludstaton dum surbendigo de reludado \304\211e regularaj intervaloj (je"
-   " sekundoj).",
-   "A\305\255tomate konservas la ludstaton dum surbendigo de reludado. \304\210i tio estas malebligi"
-   "ta defa\305\255lte krom agordite alikaze. La intervalo estas mezurita je sekundoj. Valoro 0 male"
-   "bligas surbendigon de kontrolpunktoj.",
-   "\304\210u malseriigi kontrolpunktojn enmemorigitaj en reludadoj dum regulara ludado.",
-   "Reludadoj: malseriigo de kontrolpunktoj",
-   "Indikas \304\211u malseriigi kontrolpunktojn enmemorigitaj en reludadoj dum regulara reludado. D"
-   "evus esti agordita kiel vera por la plej multo el la kernoj, sed kelkaj povus prezenti nekonstan"
-   "tan konduton dum malseriigante enhavon.",
    "Konservstatoj: pliigi indekson a\305\255tomate",
    "Anta\305\255 ol konservante staton, la indekso de konservostato estas a\305\255tomate pliigita. "
    "Kiam \305\235argante enhavon, la indekso estos agordita je la plej alta ekzistanta indekso.",
-   "Reludadoj: pliigi indekson a\305\255tomate",
-   "Anta\305\255 ol farante reludadon, la indekso de reludadoj estas a\305\255tomate pliigita. Kiam "
-   "\305\235argante enhavon, la indekso estos agordita al la plej alta indekso.",
    "Konservostatoj: maksimuma a\305\255tomata pliigon konservota",
    "Limigi la nombron da konservostatoj, kiuj estos kreitaj kiam la opcio \"A\305\255tomate pliigi i"
    "ndekson\" estu ebligita. Se la limo estus superita kiam konservante novan staton, la ekzistanta "
    "stato kun la plej malalta indekso estu forigita. Valoro 0 signifas, ke la surbendigo de statoj n"
    "e estos limigita.",
+   "Reludadoj: pliigi indekson a\305\255tomate",
+   "Anta\305\255 ol farante reludadon, la indekso de reludadoj estas a\305\255tomate pliigita. Kiam "
+   "\305\235argante enhavon, la indekso estos agordita al la plej alta indekso.",
    "Reludadoj\313\220 maksimuma a\305\255tomata pliigo konservota",
    "Limigi la nombron da reludadoj, kiuj estos kreitaj kiam la opcio \"A\305\255tomate pliigi indeks"
    "on\" estu ebligita. Se la limo estus superita kiam surbendigante novan reludadon, la ekzistanta "
    "reludado kun la plej malalta indekso estu forigita. Valoro 0 signifas, ke la surbendigo de relud"
    "adoj ne estos limigita.",
-   "Konservostatoj: a\305\255tomate konservi",
-   "A\305\255tomate krei novan konservostaton kiam enhavon estas fermata. \304\210i tiu konservostat"
-   "o estas \305\235argata \304\211e startigo se \"a\305\255tomate \305\235argi\" estas ebligita.",
-   "Konservostatoj: a\305\255tomate \305\235argi",
-   "A\305\255tomate \305\235argi la a\305\255tomatan konservostaton \304\211e startigo.",
-   "Konservostato: bildetoj",
-   "Montri bildetojn de konservostatoj.",
+   "Reludadoj: intervalo de kontrolpunktoj",
+   "A\305\255tomate marki la ludstaton dum surbendigo de reludado \304\211e regularaj intervaloj (je"
+   " sekundoj).",
+   "Reludadoj: malseriigo de kontrolpunktoj",
+   "\304\210u malseriigi kontrolpunktojn enmemorigitaj en reludadoj dum regulara ludado.",
+   "Konservi plenumtempan protokolon (la\305\255 kerno)",
+   "Registri kiom longe \304\211iu ero de enhavo estas ruliginta, kun registroj separitaj la\305\255"
+   " kerno.",
+   "Konservi plenumtempan protokolon (kolektite)",
+   "Registri kiom longe \304\211iu ero de enhavo estas ruliginta, registritaj kiel la kolektita tota"
+   "lo de \304\211iuj kernoj.",
    "Konservdosiero: densigo",
    "Skribi energi-nedependajn dosierojn de SaveRAM en ar\304\245ivita formato. Draste malpliigas la "
    "dosiergrandon kontra\305\255 (neglektinde) pliigitaj tempoj de konservado kaj \305\235argado.\nN"
@@ -5593,6 +5692,25 @@ static const struct
    "Konservostato: densigo",
    "Skribi konservostatajn dosierojn en ar\304\245ivita formato. Draste malpliigas la dosiergrandon "
    "kontra\305\255 pliigitaj tempoj de konservado kaj \305\235argado.",
+   "A\305\255tomate konservi la energi-nedependa SRAM \304\211e regularaj intervaloj. \304\210i tio "
+   "estas malebligita defa\305\255lte krom agordite alikaze. La intervalo estas mezurita je sekundoj"
+   ". Valoro 0 malebligas a\305\255tomatan konservadon.",
+   "A\305\255tomate konservi staton \304\211e regularaj intervaloj. \304\210i tio estas malebligita "
+   "defa\305\255lte krom agordite alikaze. La intervalo estas mezurita je sekundoj. Valoro 0 malebli"
+   "gas a\305\255tomatan konservadon.",
+   "A\305\255tomate konservas la ludstaton dum surbendigo de reludado. \304\210i tio estas malebligi"
+   "ta defa\305\255lte krom agordite alikaze. La intervalo estas mezurita je sekundoj. Valoro 0 male"
+   "bligas surbendigon de kontrolpunktoj.",
+   "Indikas \304\211u malseriigi kontrolpunktojn enmemorigitaj en reludadoj dum regulara reludado. D"
+   "evus esti agordita kiel vera por la plej multo el la kernoj, sed kelkaj povus prezenti nekonstan"
+   "tan konduton dum malseriigante enhavon.",
+   "Konservostatoj: a\305\255tomate konservi",
+   "A\305\255tomate krei novan konservostaton kiam enhavon estas fermata. \304\210i tiu konservostat"
+   "o estas \305\235argata \304\211e startigo se \"a\305\255tomate \305\235argi\" estas ebligita.",
+   "Konservostatoj: a\305\255tomate \305\235argi",
+   "A\305\255tomate \305\235argi la a\305\255tomatan konservostaton \304\211e startigo.",
+   "Konservostato: bildetoj",
+   "Montri bildetojn de konservostatoj.",
    "Konservdosieroj: skribi en enhavan dosierujon",
    "Uzi la enhavan dosierujon kiel konservdosiera dosierujo.",
    "Konservostatoj: skribi en enhavan dosierujon",
@@ -5604,12 +5722,6 @@ static const struct
    "ta.",
    "Ekrankopioj: skribi en enhavan dosierujon",
    "Uzi enhavan dosierujon kiel ekrankopia dosierujo.",
-   "Konservi plenumtempan protokolon (la\305\255 kerno)",
-   "Registri kiom longe \304\211iu ero de enhavo estas ruliginta, kun registroj separitaj la\305\255"
-   " kerno.",
-   "Konservi plenumtempan protokolon (kolektite)",
-   "Registri kiom longe \304\211iu ero de enhavo estas ruliginta, registritaj kiel la kolektita tota"
-   "lo de \304\211iuj kernoj.",
    "Protokola malkoncizeco",
    "Protokoli eventojn en terminalon a\305\255 dosieron.",
    "Protokola nivelo de fasado",
@@ -5618,6 +5730,13 @@ static const struct
    "Protokola nivelo de kerno",
    "Agordi protokolan nivelon por kernoj. Se protokola nivelo postulita de kerno estas sub \304\211i"
    " tiu valoro, \304\235i estas ignorita.",
+   "Protokoli sur dosieron",
+   "Redirekti sistemeventajn protokolajn mesa\304\235ojn al dosiero. Bezonas, ke \"Protokola malkonc"
+   "izeco\" estu ebligita.",
+   "Tempindiki protokolajn dosierojn.",
+   "Kiam protokolante dosieron, redirekti eligon de \304\211iu sesio de RetroArch al nova tempindiki"
+   "ta dosiero. Se malebligite, protokolo estas superskribita \304\211iufoje, kiam RetroArch estas s"
+   "tartigita.",
    "Agordi protokolan nivelon por kernoj de libretro (GET_LOG_INTERFACE). Se protokola nivelo postul"
    "ita de kerno de libretro estas sub nivelo libretro_log, \304\235i estas ignorita. Protokoloj de "
    "DEBUG \304\211iam estas ignoritaj krom re\304\235imo malkonciza estas aktivigita (--verbose).\nD"
@@ -5626,13 +5745,6 @@ static const struct
    "1 (informoj)",
    "2 (avertoj)",
    "3 (eraroj)",
-   "Protokoli sur dosieron",
-   "Redirekti sistemeventajn protokolajn mesa\304\235ojn al dosiero. Bezonas, ke \"Protokola malkonc"
-   "izeco\" estu ebligita.",
-   "Tempindiki protokolajn dosierojn.",
-   "Kiam protokolante dosieron, redirekti eligon de \304\211iu sesio de RetroArch al nova tempindiki"
-   "ta dosiero. Se malebligite, protokolo estas superskribita \304\211iufoje, kiam RetroArch estas s"
-   "tartigita.",
    "Rendimentaj nombriloj",
    "Rendimentaj nombriloj por RetroArch kaj kernoj. Nombrilaj datumoj povas helpi determini sistemaj"
    "n \305\235topi\304\235ojn kaj fajnigi rendimenton.",
@@ -5651,21 +5763,9 @@ static const struct
    "Montri dosierojn subtenatajn de la a\305\255dvidludilo en la dosieresplorilo.",
    "Uzi integritan bildmontrilon",
    "Montri dosierojn subtenatajn de la bildmontrilo en dosieresplorilo.",
-   "Revolvi",
-   "\305\234an\304\235i agordojn pri revolvado.",
-   "Nombrilo de da\305\255ro de filmeroj",
-   "\305\234an\304\235i agordojn influantajn la nombrilo de da\305\255ro de filmeroj. Nur aktiva kia"
-   "m fadenigita video estas malebligita.",
-   "Rapidpluiga rapido",
-   "La maksimuma rapido, je kiu enhavo estos rulita kiam uzante rapidpluigon (ekz. 5.0\303\227 por e"
-   "nhavo je 60 fps = limo de 300 fps). Se agordite je 0.0\303\227, la rapidpluiga rapido estas senl"
-   "ima.",
    "La maksimuma rapido, je kiu enhavo estos rulita kiam uzante rapidpluigon. Ekz. 5.0\303\227 por e"
    "nhavo je 60 fps = limo de 300 fps. RetroArch haltetos por certigi, ke la maksimuma rapido ne est"
    "os superita. Ne dependu de tio, ke \304\211i tiu limo estu perfekte preciza.",
-   "Rapidpluiga preterpaso de filmeroj",
-   "Preterpasi filmeroj la\305\255 la rapidpluiga rapido. \304\210i tio konservas energion kaj perme"
-   "sas la uzon de filmerlimigo de ekstera liveranto.",
    "Malrapidpluiga rapido",
    "La rapido, je kiu enhavo estos ludata kiam uzante malrapidpluigon.",
    "Trafik-limigi menuan filmerrapidon",
@@ -5697,6 +5797,7 @@ static const struct
    "WebM (rapida)",
    "WebM (altkvalita)",
    "Propra surbendiga konfiguro",
+   "Elsenda\304\265a titolo",
    "Surbendigaj fadenoj",
    "Surbendigi post filtroj",
    "Kapti la bildon post filtriloj (sed ne ombrigiloj) estas aplikitaj. La videa\304\265o aspektos "
@@ -5712,17 +5813,10 @@ static const struct
    "Mezalta",
    "Alta",
    "Tajlorita elsenda konfiguro",
-   "Elsenda\304\265a titolo",
    "Elsenda\304\265a URL",
    "Konektejo UDP por la elsenda\304\265o",
-   "Surekrana surmeta\304\265o",
-   "Al\304\235ustigi nigrajn randojn kaj surekranajn regilojn.",
    "Videa aran\304\235o",
    "Al\304\235ustigi videan aran\304\235on.",
-   "Surekranaj sciigoj",
-   "Al\304\235ustigi surekranaj sciigoj",
-   "Videbleco de sciigoj",
-   "Baskuligi la videblecojn de specifaj specoj de sciigoj.",
    "Montri surmeta\304\265on",
    "Surmeta\304\265ojn estas uzataj por randoj kaj surekranaj regiloj.",
    "",
@@ -5817,16 +5911,9 @@ static const struct
    "De\305\235ovo Y de surmeta\304\265o (vertikala)",
    "Vertikala de\305\235ovo de surmeta\304\265o kiam uzante vertikalajn ekranajn orientigojn. Poziti"
    "vaj valoroj movas surmeta\304\265on supren; negativaj valoroj, malsupren.",
-   "Klavara surmeta\304\265o",
-   "Elekti kaj al\304\235ustigi klavaran surmeta\304\265on.",
    "Ebligi surmeta\304\265ojn de \"lightgun\", muso kaj montrilo",
    "Uzi ajnajn tu\305\235enigojn ne premantajn surmeta\304\265ajn regilojn por krei montrilaparatan "
    "enigon por la kerno.",
-   "Surmeta\304\265o de \"lightgun\"",
-   "Konfiguri enigon de \"lightgun\" sendita de la surmeta\304\265o.",
-   "Musa surmeta\304\265o",
-   "Konfiguri musenigon senditan de la surmeta\304\265o. Noto: 1-, 2- kaj 3-fingraj tu\305\235etoj s"
-   "endas maldekstran, dekstran kaj mezan butonajn klakojn.",
    "Anta\305\255agordo de klavara surmeta\304\265o",
    "Elekti klavaran surmeta\304\265on de dosieresplorilo.",
    "A\305\255tomate skali klavaran surmeta\304\265on",
@@ -5836,7 +5923,6 @@ static const struct
    "Maldiafaneco de \304\211iuj uzantinterfacaj elementoj de la klavara surmeta\304\265o.",
    "Konektejo de \"lightgun\"",
    "Agordi la kernan konektejon por ricevi enigon de la \"lightgun\" de la surmeta\304\265o.",
-   "Ajna",
    "Premi la \304\211anon \304\211e tu\305\235o",
    "Sendi \304\211anan enigon per montrila enigo.",
    "\304\210anprema prokrasto (filmeroj)",
@@ -5854,6 +5940,7 @@ static const struct
    "Permesi celi eksterekrane",
    "Permesi celi eksterlime. Malebligi por al\304\235ustigi eksterekranajn celadojn al la enlima ran"
    "do.",
+   "Ajna",
    "Musrapido",
    "Al\304\235ustigi la movi\304\235rapido de la montrilo.",
    "Da\305\255re premi por treni",
@@ -5867,10 +5954,10 @@ static const struct
    "Al\304\235ustigi la disponeblan tempon inter tu\305\235etoj kiam detektante duoblan tu\305\235et"
    "on.",
    "Sojlo \305\235ovumi",
-   "Alternativa 2-tu\305\235a enigo",
-   "Uzi duan tu\305\235on kvaza\305\255 musbutono kiam regante la montrilon.",
    "Al\304\235ustigi la permesatan movrangon kiam detektante da\305\255ran premon a\305\255 tu\305"
    "\235eton. Esprimita kiel procento de la pli malgranda dimensio de la ekrano.",
+   "Alternativa 2-tu\305\235a enigo",
+   "Uzi duan tu\305\235on kvaza\305\255 musbutono kiam regante la montrilon.",
    "Surekranaj sciigoj",
    "Montri surekranajn sciigojn.",
    "Grafikaj fenestra\304\265oj",
@@ -5892,28 +5979,28 @@ static const struct
    "Montri la kurantajn filmerojn per sekundo.",
    "Intervalo \304\235isdatigi filmer-rapidon (je filmeroj)",
    "La filmer-rapida nombrilo estos \304\235isdatigita je la intervalo je filmeroj.",
-   "Montri filmer-konton",
-   "Montri la kurantan filmer-konton surekrane.",
-   "Montri statistikojn",
-   "Montri surekranajn te\304\245nikajn statistikojn.",
    "Montri memoruzadon",
    "Montri la uzatan kaj totalan kvantojn de memoro en la sistemo.",
    "Intervalo \304\235isdatigi memoruzadon (je filmeroj)",
    "La memoruzada nombrilo estos \304\235isdatigita je la intervalo je filmeroj.",
    "Montri tempon",
    "Montri la kurantan tempon la\305\255 la preferata formato.",
+   "Montri statistikojn",
+   "Montri surekranajn te\304\245nikajn statistikojn.",
+   "Montri filmer-konton",
+   "Montri la kurantan filmer-konton surekrane.",
    "Montri retludan respondotempon",
    "Montri la respondotempon de la kuranta retludejo.",
    "Sciigo kiam \305\235argante enhavon",
    "Montri malda\305\255ran animacio por indiki, ke enhavo estas \305\235argata.",
    "Sciigoj de enigaj konektoj (a\305\255tomata konfiguro)",
+   "",
    "Sciigoj de enigaj eraroj (a\305\255tomata konfiguro)",
+   "Montri surekranan mesa\304\235on kiam oni eraras konfiguri enigaparatojn.",
    "Trompkodaj sciigoj",
    "Montri surekranan mesa\304\235on kiam trompkodoj estas aplikataj.",
    "Flika\304\265aj sciigoj",
    "Montri surekranan mesa\304\235on kiam \"soft-patching\" ROM-ojn.",
-   "",
-   "Montri surekranan mesa\304\235on kiam oni eraras konfiguri enigaparatojn.",
    "Scriigoj pri \305\235argo de eniga reasignado",
    "Montri surekranan mesa\304\235on kiam \305\235argante enig-reasignajn dosierojn.",
    "Sciigoj pri \305\235argo de konfigura\304\265a transpaso",
@@ -5932,21 +6019,21 @@ static const struct
    "Montri surekranan mesa\304\235on kiam farante ekrankopiojn.",
    "Da\305\255ro de sciigo pri ekrankopio",
    "Difini la da\305\255ro de la surekrana mesa\304\235o pri ekrankopio.",
-   "Normala",
-   "Rapida",
-   "Tre rapida",
-   "Tuja",
    "Fulmoluma efiko de ekrankopio",
    "Montri efikon de blanka fulmolumo surekrane kun la dezirata da\305\255ro kiam farante ekrankopio"
    "n.",
-   "Jes (normala)",
-   "Jes (rapida)",
    "Sciigoj pri ofteco de aktualigo",
    "Montri surekranan mesa\304\235on kiam agordante la ofteco de aktualigo.",
    "Aldonaj retludaj sciigoj",
    "Montri malneprajn retludajn surekranajn mesa\304\235ojn.",
    "Sciigoj nur en menuo",
    "Montri sciigojn nur kiam la menuo estas malfermita.",
+   "Normala",
+   "Rapida",
+   "Tre rapida",
+   "Tuja",
+   "Jes (normala)",
+   "Jes (rapida)",
    "Sciiga tiparo",
    "Elekti la tiparon por surekranaj sciigoj.",
    "Sciiga grando",
@@ -5979,20 +6066,8 @@ static const struct
    "Maldiafaneco de sciiga fono",
    "Agordi la maldiafanecon de la fona koloro de surekrana\304\265oj. Validaj valoroj estas inter 0."
    "0 kaj 1.0.",
-   "Aspekto",
-   "\305\234an\304\235i agordojn pri la aspekto de la menua ekrano.",
-   "Videbleco de menuaj eroj",
-   "\305\234alti la videblecon de menuaj eroj en RetroArch.",
    "Pa\305\255zi enhavon kiam menuo estas aktiva",
    "Pa\305\255zi la enhavon se la menuo estas aktiva.",
-   "Pa\305\255zi enhavon kiam ne aktiva",
-   "Pa\305\255zi enhavon kiam RetroArch ne estas la aktiva fenestro.",
-   "Malebligi labortablan kunmeton",
-   "Fenestraj administriloj uzas kunmeton por apliki vidajn efektojn, detekti nereagajn fenestrojn, "
-   "inter aliaj aferoj.",
-   "Forlasi \304\211e fermo de enhavo",
-   "A\305\255tomate forlasi RetroArch kiam fermante enhavon. Opcio \"CLI\" forlasas nur kiam enhavo "
-   "estas lan\304\211ita per komanda linio.",
    "Da\305\255rigi enhavon post uzado de konservostatojn",
    "A\305\255tomate fermi la menuon kaj da\305\255rigi enhavon post konservado a\305\255 \305\235arg"
    "ado de stato. Malebligi \304\211i tion povas plibonigi konservostatan rendimenton sur tre malrap"
@@ -6000,6 +6075,16 @@ static const struct
    "Da\305\255rigi enhavon post \305\235an\304\235ado de diskoj",
    "A\305\255tomate fermi la menuon kaj da\305\255rigi enhavon post enmetado a\305\255 \305\235argad"
    "o de nova disko.",
+   "Forlasi \304\211e fermo de enhavo",
+   "A\305\255tomate forlasi RetroArch kiam fermante enhavon. Opcio \"CLI\" forlasas nur kiam enhavo "
+   "estas lan\304\211ita per komanda linio.",
+   "Atendotempo de la menua ekrankurteno",
+   "Dum menuo estas aktiva, ekrankurteno estos montrata post la specifita periodo de neaktiveco.",
+   "Pa\305\255zi enhavon kiam ne aktiva",
+   "Pa\305\255zi enhavon kiam RetroArch ne estas la aktiva fenestro.",
+   "Malebligi labortablan kunmeton",
+   "Fenestraj administriloj uzas kunmeton por apliki vidajn efektojn, detekti nereagajn fenestrojn, "
+   "inter aliaj aferoj.",
    "Bukla navigado",
    "Trafinte la finon, premi malsupren/dekstren irigos la uzanton komencen, kaj inverse.",
    "Montri altnivelajn agordojn",
@@ -6010,37 +6095,28 @@ static const struct
    "Provizi pasvorton kiam ebligante publikan re\304\235imon ebligas, ke oni poste povu malebligi "
    "\304\235in el la menuo, irante al \304\210efa menuo, elektante Malebligi publikan re\304\235imon"
    ", kaj enigante la pasvorton.",
+   "Memori elekton kiam \305\235an\304\235ante inter sekcioj",
+   "Memori anta\305\255an musmontrilan pozicion en sekcioj. RGUI ne havas sekciojn, sed ludlistoj ka"
+   "j agordoj kondutas tiel.",
+   "Starta pa\304\235o",
+   "Komenca menua pa\304\235o \304\211e starto.",
    "Subteni muson",
    "Permesi al menuo esti regata per muso.",
    "Ebligi tu\305\235on",
    "Permesi al menuo esti regata per tu\305\235ekrano.",
    "Fadenigitaj taskoj",
    "Plenumi taskojn en aparta fadeno.",
-   "Atendotempo de la menua ekrankurteno",
-   "Dum menuo estas aktiva, ekrankurteno estos montrata post la specifita periodo de neaktiveco.",
    "Animacio de la menua ekrankurteno",
    "Ebligi animacian efekton dum la menua ekrankurteno estas aktiva. Milde influas la rendimenton.",
+   "Rapido de menuekrankurtena animacio",
+   "Al\304\235ustigi la rapidon de la animacia efekto de la menua ekrankurteno.",
    "Ne\304\235o",
    "Steloj",
    "Vortico",
-   "Rapido de menuekrankurtena animacio",
-   "Al\304\235ustigi la rapidon de la animacia efekto de la menua ekrankurteno.",
    "Devigi malebligon de kunmeton. Malebligi nun nur estas valida en Windows Vista/7.",
-   "Akcesora uzaninterfaco",
-   "Komenci akcesoran uzantinterfacon lan\304\211inte",
    "Komenci pelilon de akcesora uzantinterfaco lan\304\211inte (se eble).",
-   "Labortabla menuo (bezonas restartigon)",
-   "Malfermi labortablan menuon \304\211e startigo.",
-#ifdef _3DS
-   "Aspekto de la malsupra ekrano de 3DS",
-   "\305\234an\304\235i la aspektajn agordojn de la malsupra ekrano.",
-#endif
    "Aplika\304\265a piktogramo",
    "\305\234an\304\235i la piktogramon de la aplika\304\265o",
-   "Rapida menuo",
-   "\305\234alti la videblecon de menuaj eroj en la Rapida menuo.",
-   "Agordoj",
-   "\305\234alti la videblecon de menuaj eroj en la menuo de Agordoj.",
    "Montri \"\305\234argi kernon\"",
    "Montri la opcion \"\305\234argi kernon\" en la \304\210efa menuo.",
    "Montri \"\305\234argi enhavon\"",
@@ -6092,14 +6168,12 @@ static const struct
    "Montri la menuon \"Muziko\".",
    "Montri \"Videa\304\265oj\"",
    "Montri la menuon \"Videa\304\265ojn\".",
-   "Montri \"Retludado\"",
-   "Montri la eron \"Retludadon\" en la \304\210efa menuo a\305\255 ludlistoj.",
    "Montri \"Historio\"",
    "Montri la menuon de \304\265usa historio.",
+   "Montri \"Retludado\"",
+   "Montri la eron \"Retludadon\" en la \304\210efa menuo a\305\255 ludlistoj.",
    "Montri \"Importi enhavon\"",
    "Montri la eron \"Importi enhavon\" en la \304\210efa menuo a\305\255 ludlistoj.",
-   "\304\210efa menuo",
-   "Menuo de ludlistoj",
    "Montri \"Ludlistoj\"",
    "Montri la ludlistojn en \304\210efa menuo. Ignorata en GLUI se ludlistaj sekcioj kaj navigacia b"
    "reto estas ebligitaj.",
@@ -6111,6 +6185,8 @@ static const struct
    "Specifi la specon de kerno (se ajna) montrota en la menuo \"Senenhavaj kernoj\". Kiam agordite a"
    "l \"Propra\", videbleco de individuaj kernoj povas esti \305\235altita per la menuo \"Administri"
    " kernojn\".",
+   "\304\210efa menuo",
+   "Menuo de ludlistoj",
    "\304\210iuj",
    "Unu uzo",
    "Propra",
@@ -6258,14 +6334,9 @@ static const struct
    "Glata tekstrulumilo",
    "Uzi glatan rulumilan animacion kiam montrante longan menuan tekston. Havas malgrandan influon su"
    "r la rendimento.",
-   "Memori elekton kiam \305\235an\304\235ante inter sekcioj",
-   "Memori anta\305\255an musmontrilan pozicion en sekcioj. RGUI ne havas sekciojn, sed ludlistoj ka"
-   "j agordoj kondutas tiel.",
    "\304\210iam",
    "Nur por ludlistoj",
    "Nur por \304\211efa menuo kaj agordoj",
-   "Starta pa\304\235o",
-   "Komenca menua pa\304\235o \304\211e starto.",
    "Eligo de AI-servo",
    "Montri tradukon kiel teksta surmeta\304\265o (Bilda re\304\235imo), ludi kiel parolsintezo (Paro"
    "lo) a\305\255 uzi sisteman rakontiston kiel NVDA (Rakontisto).",
@@ -6312,8 +6383,6 @@ static const struct
    "Bisa re\304\235imo",
    "Komenci la sesion kun \304\211iuj el la akiroj aktivaj (e\304\211 tiuj anta\305\255e mal\305\235"
    "lositaj).",
-   "Aspekto",
-   "\305\234an\304\235i la pozicion kaj de\305\235ovojn de surekranaj sciigoj pri akiroj.",
    "Pozicio",
    "Agordi la angulon a\305\255 randon de la ekrano, el kiu akiraj sciigoj aperos.",
    "Supre maldekstre",
@@ -6331,14 +6400,9 @@ static const struct
    "Permana vertikala \305\235topado",
    "Distanco de la (mal)supra ekrana rando, kiu povas kompensi por ekrana superskanado (\"overscan\""
    ").",
-   "Videbleco",
-   "\305\234an\304\235i kiujn mesa\304\235ojn kaj surekranaj elementoj estas montritaj. Ne malebliga"
-   "s funkciaron.",
    "Starta rezumo",
    "Montras informon pri la ludo \305\235argata kaj la kuranta progreso de la uzanto. \"\304\210iuj "
    "identigitaj ludoj\" montros rezumon por ludoj sen publikigitaj akiroj.",
-   "\304\210iuj identigitaj ludoj",
-   "Ludoj kun akiroj",
    "Mal\305\235losaj sciigoj",
    "Montri sciigon kiam akiro estas mal\305\235losita.",
    "Majstriga sciigoj",
@@ -6353,12 +6417,17 @@ static const struct
    "Montras mesa\304\235on kun la valoro sendata kiam \304\211ampioneja provo estas plenumita.",
    "\304\210ampionejaj malsukcesaj mesa\304\235oj",
    "Montras mesa\304\235on kiam \304\211ampioneja provo malsukcesas.",
+   "\304\210iuj identigitaj ludoj",
+   "Ludoj kun akiroj",
    "\304\210ampionejaj spuriloj",
    "Montras spurilojn sur la ekrano, kun la kuranta valoro de aktivaj \304\211ampionejoj.",
    "Malkoncizaj mesa\304\235oj",
    "Montri aldonajn diagnozajn kaj erarajn mesa\304\235ojn.",
    "Ensalutaj mesa\304\235oj",
    "Montri mesa\304\235ojn rilataj al ensaluto al konto de RetroAchievements.",
+   "Nur konekteblaj \304\211ambroj",
+   "Nur instalitaj kernoj",
+   "Pasvortaj \304\211ambroj",
    "Publike anonci retludadon",
    "\304\210u anonci retludajn ludojn publike, \304\211u ne. Se malebligite, klientoj devas permane "
    "konekti anstata\305\255 ol uzi la publikan anta\305\255\304\211ambron.",
@@ -6371,13 +6440,13 @@ static const struct
    "Propra adreso de relajsa servilo.",
    "Enigu la adreson de via propra relajsa servilo \304\211i tien. Formato: adreso a\305\255 adreso|"
    "konektejo.",
+   "Servila adreso",
+   "La adreso de la gastiganto al kiu konekti.",
    "Nordameriko (Orienta marbordo, Usono)",
    "Okcidenta E\305\255ropo",
    "Sudameriko (Sudoriento, Brazilo)",
    "Sudorienta Azio",
    "",
-   "Servila adreso",
-   "La adreso de la gastiganto al kiu konekti.",
    "TCP/UDP-a konektejo de la retludo",
    "La konektejo de la adreso IP de la gastiganto. Povas esti TCP-a a\305\255 UDP-a konektejo.",
    "Maksimumaj samtempaj konektoj",
@@ -6391,9 +6460,6 @@ static const struct
    "La pasvorto uzata de klientoj konektante al la gastiganto kiel spektanto.",
    "Retluda spekta re\304\235imo",
    "Komenci retludon en spekta re\304\235imo.",
-   "\304\210u komenci retludon en spekta re\304\235imo, \304\211u ne. Se agordite je \"vera\", retlu"
-   "do estos en spekta re\304\235imo \304\211e starto. Oni \304\211iam povas \305\235an\304\235i la "
-   "re\304\235imon poste.",
    "Malaperigi babilejon",
    "Malaperigi babilejajn mesa\304\235ojn post tempo.",
    "Babileja koloro (kromnomo)",
@@ -6411,6 +6477,9 @@ static const struct
    "Retludaj kontrolaj filmeroj",
    "La ofteco (je filmeroj), per kiu retludado kontrolos, ke la gastiganto kaj kliento estsa sinkron"
    "igitaj.",
+   "\304\210u komenci retludon en spekta re\304\235imo, \304\211u ne. Se agordite je \"vera\", retlu"
+   "do estos en spekta re\304\235imo \304\211e starto. Oni \304\211iam povas \305\235an\304\235i la "
+   "re\304\235imon poste.",
    "La ofteco je filmeroj, per kiu retludado kontrolos, ke la gastiganto kaj kliento estsa sinkronig"
    "itaj. Kun la plej multo el kernoj, \304\211i tiu valoro havas nenian videblan efikon kaj povas e"
    "sti ignorata. Kun nedeterminismaj kernoj, \304\211i tiu valoro determinas kiel ofte la retludaj "
@@ -6439,6 +6508,7 @@ static const struct
    "Kiam gastigante, provi a\305\255skulti konektojn de la publika interreto, uzante UPnP a\305\255 "
    "similaj te\304\245nologioj por eskapi LAN-ojn.",
    "Cifereceniga kunhavigo",
+   "Analogeniga kunhavigo",
    "Postuli aparaton %u",
    "Postuli ludi kun la donata enigaparaton.",
    "Retaj komandoj",
@@ -6451,8 +6521,6 @@ static const struct
    "La\305\255pete el\305\235uti bildetojn",
    "A\305\255tomate el\305\235uti mankantajn bildetojn superflugante ludlistojn. Havas gravan rendim"
    "entan influon.",
-   "\304\234isdatigilaj agordoj",
-   "Aliri kern\304\235isdatigilajn agordojn.",
    "URL de kernoj de \"buildbot\"",
    "URL al kerna \304\235isdatigila dosierujo sur la \"buildbot\" de libretro.",
    "URL de hava\304\265oj de \"buildbot\"",
@@ -6494,15 +6562,48 @@ static const struct
    "Ar\304\245ivi ludlistajn datumojn kiam skribante al disko. Malpliigas dosiergrandon kaj \305\235"
    "argotempojn kontra\305\255 (neglektinda) pliigo de procesora uzo. Povas esti uzata kun ludlistoj"
    " la\305\255 la nova a\305\255 la malnova formato.",
-   "Montri asociigitajn kernojn en ludlistoj",
-   "Specifi kiam etikedi ludlistajn erojn kun la kurante asociigitan kerno (se ajna). \304\210i tiu "
-   "agordo estas ignorata kiam ludlistaj subetikedoj estas ebligitaj.",
    "Montri ludlistajn subetikedojn",
    "Montri aldonajn informojn por \304\211iu ludlista ero, kiel la kuranta kerna asociigo kaj rultem"
    "po (se disponebla). Havas varieman rendimentan influon.",
+   "Rultempo de ludlista subetikedo",
+   "Elekti kian rultempan protokolon montri sur ludlistaj subetikedoj. La kongruanta rultempa protok"
+   "olo devas esti ebligita per la menuo pri opcioj \"Konservado\".",
+   "Data kaj tempa stilo por \"Laste ludita\"",
+   "Agordi la stilon de la dato kaj tempo montrataj por la tempindikan informon de \"Laste ludita\"."
+   " Opcioj \"(A.M./P.M.)\" havos malgrandan rendimentan influon sur kelkaj platformoj.",
+   "Montri asociigitajn kernojn en ludlistoj",
+   "Specifi kiam etikedi ludlistajn erojn kun la kurante asociigitan kerno (se ajna). \304\210i tiu "
+   "agordo estas ignorata kiam ludlistaj subetikedoj estas ebligitaj.",
+   "Proksimuma ar\304\245iva kongruado",
+   "Kiam ser\304\211ante ludlistojn por eroj asociigitaj kun densigitaj dosieroj, kongruu nur la ar"
+   "\304\245iva nomo anstata\305\255 [dosiernnomo]+[enhavo]. Ebligu \304\211i tion por eviti duoblig"
+   "i eroj de enhava historio kiam \305\235argante densigitajn dosierojn.",
+   "Skani sen kerna kongruo",
+   "Permesi al enhavo esti skanata kaj aldonita al ludlisto sen kerno instalita subtenanta \304\235i"
+   "n.",
+   "Skanado kontrolas CRC sur eblaj duobla\304\265oj",
+   "Kelkfoje ISO-j duobligas serinumeroj, aparte kun titoloj PSP/PSN. Dependante sole de la serinume"
+   "ro kelkfoje povas ka\305\255zi, ke la skanilo metu enhavon en la mal\304\235usta sistemo. \304"
+   "\210i tio aldonas kontrolon CRC, kio plimalrapidigas skanadon nemalmulte, sed povas esti pli pre"
+   "ciza.",
+   "Porteblaj ludlistoj",
+   "Kiam ebligite, kaj la dosierujo \"Dosieresplorilo\" anka\305\255 estas elektita, la kuranta valo"
+   "ro de parametro \"Dosieresplorilo\" estas konservata en la ludlisto. Kiam la ludlisto estas \305"
+   "\235argata en alia sistemo, kie la sama opcio estas ebligita, la valoro de la parametro \"Dosier"
+   "esplorilo\" estas komparita kun la ludlista valoro; se malsama, la dosierindikoj de la ludlistaj"
+   " eroj estas a\305\255tomate al\304\235ustigitaj.",
+   "Uzi dosiernomojn por bildetaj kongruado",
+   "Kiam ebligita, \304\235i ser\304\211os bildetojn la\305\255 la dosiernomo de la ero, anstata\305"
+   "\255 \304\235ia etikedo.",
+   "Permesi \304\211iujn subtenatajn bildospecojn por bildetoj",
+   "Kiam ebligita, povas esti aldonitaj lokaj bildetoj de \304\211iuj bildospecoj subtenataj de Retr"
+   "oArch (kiel jpeg). Povus havi malpli gravan rendimentan influon.",
    "Montri piktogramojn specifajn al enhavo en Historio kaj Preferataj",
    "Montri specifajn piktogramojn por \304\211iu ero de la ludlistoj Historio kaj Preferataj. Havas "
    "varieman rendimentan influon.",
+   "Montri indekson de ludlista ero",
+   "Montri erajn numerojn kiam vidante ludlistojn. Montroformato dependas de la kurante elektita men"
+   "ua pelilo.",
    "Kerno:",
    "Rultempo:",
    "Laste ludita:",
@@ -6522,41 +6623,8 @@ static const struct
    "jaro",
    "jaroj",
    "anta\305\255e",
-   "Montri indekson de ludlista ero",
-   "Montri erajn numerojn kiam vidante ludlistojn. Montroformato dependas de la kurante elektita men"
-   "ua pelilo.",
-   "Rultempo de ludlista subetikedo",
-   "Elekti kian rultempan protokolon montri sur ludlistaj subetikedoj. La kongruanta rultempa protok"
-   "olo devas esti ebligita per la menuo pri opcioj \"Konservado\".",
-   "Data kaj tempa stilo por \"Laste ludita\"",
-   "Agordi la stilon de la dato kaj tempo montrataj por la tempindikan informon de \"Laste ludita\"."
-   " Opcioj \"(A.M./P.M.)\" havos malgrandan rendimentan influon sur kelkaj platformoj.",
-   "Proksimuma ar\304\245iva kongruado",
-   "Kiam ser\304\211ante ludlistojn por eroj asociigitaj kun densigitaj dosieroj, kongruu nur la ar"
-   "\304\245iva nomo anstata\305\255 [dosiernnomo]+[enhavo]. Ebligu \304\211i tion por eviti duoblig"
-   "i eroj de enhava historio kiam \305\235argante densigitajn dosierojn.",
-   "Skani sen kerna kongruo",
-   "Permesi al enhavo esti skanata kaj aldonita al ludlisto sen kerno instalita subtenanta \304\235i"
-   "n.",
-   "Skanado kontrolas CRC sur eblaj duobla\304\265oj",
-   "Kelkfoje ISO-j duobligas serinumeroj, aparte kun titoloj PSP/PSN. Dependante sole de la serinume"
-   "ro kelkfoje povas ka\305\255zi, ke la skanilo metu enhavon en la mal\304\235usta sistemo. \304"
-   "\210i tio aldonas kontrolon CRC, kio plimalrapidigas skanadon nemalmulte, sed povas esti pli pre"
-   "ciza.",
    "Administri ludlistojn",
    "Plenumi bontenadajn taskojn sur ludlistoj.",
-   "Porteblaj ludlistoj",
-   "Kiam ebligite, kaj la dosierujo \"Dosieresplorilo\" anka\305\255 estas elektita, la kuranta valo"
-   "ro de parametro \"Dosieresplorilo\" estas konservata en la ludlisto. Kiam la ludlisto estas \305"
-   "\235argata en alia sistemo, kie la sama opcio estas ebligita, la valoro de la parametro \"Dosier"
-   "esplorilo\" estas komparita kun la ludlista valoro; se malsama, la dosierindikoj de la ludlistaj"
-   " eroj estas a\305\255tomate al\304\235ustigitaj.",
-   "Uzi dosiernomojn por bildetaj kongruado",
-   "Kiam ebligita, \304\235i ser\304\211os bildetojn la\305\255 la dosiernomo de la ero, anstata\305"
-   "\255 \304\235ia etikedo.",
-   "Permesi \304\211iujn subtenatajn bildospecojn por bildetoj",
-   "Kiam ebligita, povas esti aldonitaj lokaj bildetoj de \304\211iuj bildospecoj subtenataj de Retr"
-   "oArch (kiel jpeg). Povus havi malpli gravan rendimentan influon.",
    "Administri",
    "Defa\305\255lta kerno",
    "Specifi kernon uzotan kiam lan\304\211ante enhavon per ludlista ero, al kiu mankas asocio kun ek"
@@ -6581,6 +6649,7 @@ static const struct
    "Uzantnomo",
    "Enigu vian uzantomon \304\211i tie. \304\210i tio estos uzata por retludaj sesioj kaj aliaj afer"
    "oj.",
+   "Adreso URL",
    "Lingvo",
    "Agordi la lingvon de la uzantinterfaco.",
    "Tradukas la menuon kaj \304\211iujn surekranajn mesa\304\235ojn la\305\255 la lingvo, kiun vi el"
@@ -6705,9 +6774,6 @@ static const struct
    "Malkonekti\304\235i de retluda gastiganto",
    "Malkonekti\304\235i aktivan retludan konekton.",
    "Anta\305\255\304\211ambrajn filtrilojn",
-   "Nur konekteblaj \304\211ambroj",
-   "Nur instalitaj kernoj",
-   "Pasvortaj \304\211ambroj",
    "Refre\305\235igi liston de retludaj gastigantoj",
    "Skani por retludaj gastigantoj.",
    "Refre\305\235igi liston de retluda loka reto",
@@ -6867,8 +6933,6 @@ static const struct
    "Fermi la enhavon. Ajna nekonservitaj \305\235an\304\235oj povas esti perditaj.",
    "Krei ekrankopion",
    "Kapti bildon de la ekrano.",
-   "Stata spaco",
-   "\305\234an\304\235i la kurante elektitan statan spacon.",
    "Konservi staton",
    "Konservi staton en la kurante elektitan spacon.",
    "Konservi staton en la kurante elektitan spacon. Noto: konservostatoj kutime ne estas porteblaj k"
@@ -6882,8 +6946,6 @@ static const struct
    "Malfari konservon de stato",
    "Se stato estis anstata\305\255igita, \304\235i malfaros tion kaj reiros al la anta\305\255a stat"
    "o.",
-   "Reludi spacon",
-   "\305\234an\304\235i la kurante elektitan statan spacon.",
    "Ludi reludon",
    "Ludi reludan dosieron de la kurante elektita spaco.",
    "Surbendigi reludon",
@@ -7018,7 +7080,6 @@ static const struct
    "Adreson de kongruo: %08X Masko: %02X",
    "Trompdosiero (anstata\305\255igi)",
    "Trompdosiero (postaldoni)",
-   "Detajloj de trompo",
    "Indekso",
    "Pozicio de trompo en listo.",
    "Ebligita",
@@ -7157,23 +7218,6 @@ static const struct
    "\305\234argi kaj anstata\305\255igi kurantan konfiguron.",
    "Konservi transpasojn kiel",
    "Konservi la kurantan konfiguron kiel nova transpasdosiero.",
-   "Konservi kernajn transpasojn",
-   "Konservi transpasan konfigurdosieron, kiu apliki\304\235os por \304\211iu enhavo \305\235argata "
-   "per \304\211i tiu kerno. Havos precedencon anta\305\255 la \304\211efa konfiguro.",
-   "Forigi kernajn transpasojn",
-   "",
-   "Konservi enhav-dosierujajn transpasojn",
-   "Konservi transpasan konfigurdosieron, kiu apliki\304\235os por \304\211iu enhavo \305\235argita "
-   "de la sama dosierujo kiel la kuranta dosiero. Havos precedencon anta\305\255 la \304\211efa konf"
-   "iguro.",
-   "Forigi enhav-dosierujajn transpasojn",
-   "Forigi la transpasan konfigurdosieron, kiu apliki\304\235os por \304\211iu enhavo \305\235argita"
-   " de la sama dosierujo kiel la kuranta dosiero.",
-   "Konservi ludajn transpasojn",
-   "Konservi transpasan konfigurdosieron, kiu apliki\304\235os nur por la kuranta enhavo. Havos prec"
-   "edencon anta\305\255 la \304\211efa konfiguro.",
-   "Forigi ludajn transpasojn",
-   "Forigi la transpasan konfigurdosieron, kiu apliki\304\235os nur por la kuranta enhavo.",
    "Mal\305\235argi transpason",
    "Rekomencigi \304\211iujn opciojn al \304\211ieajn konfigurajn valorojn.",
    "Neniuj akiroj montrotaj",
@@ -7244,7 +7288,6 @@ static const struct
    "Kunhavigi",
    "Ekzluzivigi",
    "Vo\304\211doni",
-   "Analogeniga kunhavigo",
    "Maksiumuma",
    "Avera\304\235a",
    "Neniom",
@@ -7446,6 +7489,12 @@ static const struct
    "Al\304\235ustigi la rapidon de la fona efiko de ereta animacio.",
    "Ekrankurtena fona animacio",
    "Montri fona efiko de ereta animacio dum menua ekrankurteno aktivas.",
+   "Subteno de etendita askio",
+   "Ebligi montron de nenormaj askiaj signoj. Bezonita por kongrui kun certaj neanglaj okcidentaj li"
+   "ngvoj. Milde influas la rendimenton.",
+   "\305\234altaj piktogramoj",
+   "Uzi piktogramojn anstata\305\255 teksto (\"(Mal)\305\235altita\") por reprezenti \305\235altebla"
+   "jn menuagordajn erojn.",
    "Montri ludlistajn bildetojn",
    "Montri entekstajn malgrandigitajn bildetojn vidante ludlistoj. ",
    "Inter\305\235an\304\235i bildetojn",
@@ -7462,12 +7511,6 @@ static const struct
    "Aplikas tempan prokraston inter elektante ludlistan eron kaj \305\235argante ties asociitajn bil"
    "detojn. Agordi \304\211i tion al valoro de almena\305\255 256 ms ebligas rapidan rulumadon sen a"
    "tendotempo e\304\211 en la plej malrapidaj aparatoj.",
-   "Subteno de etendita askio",
-   "Ebligi montron de nenormaj askiaj signoj. Bezonita por kongrui kun certaj neanglaj okcidentaj li"
-   "ngvoj. Milde influas la rendimenton.",
-   "\305\234altaj piktogramoj",
-   "Uzi piktogramojn anstata\305\255 teksto (\"(Mal)\305\235altita\") por reprezenti \305\235altebla"
-   "jn menuagordajn erojn.",
    "Plej proksima najbaro (rapida)",
    "Dulineara",
    "Sinc/Lanczos3 (malrapida)",
@@ -7524,6 +7567,8 @@ static const struct
    "Speco de bildeto montri maldekstren.",
    "Piktograma bildeto",
    "Speco de bildeto de ludlista piktogramo montrota.",
+   "Bildeta vertikala aran\304\235o",
+   "Montri la maldekstran bildeton sub la dekstra, sur la dekstra flanko de la ekrano.",
    "Dinamika fono",
    "Dinamike \305\235argi novan fonon depende de kunteksto.",
    "Horizontala animacio",
@@ -7536,9 +7581,19 @@ static const struct
    "La animacio okazanta kiam oni malfermas submenuon.",
    "Faktoro de maldiafano de kolora etoso",
    "Modifi la procento de maldiafano de la kolora etoso.",
+   "Vertikala malaperiga faktoro",
+   "Al\304\235ustigi la malaperigan nivelon de videblaj eroj proksimaj al ekranaj randoj.",
    "Kuranta menua piktogramo",
    "Kuranta menua piktogramo povas esti ka\305\235ita, sub la horizontala menuo a\305\255 apud pa"
    "\304\235okapa titolo.",
+   "Montri horizontalan liston",
+   "Ebligi la \304\211efan horizontalan sekciliston por navigado.",
+   "Montri titolan pa\304\235okapon",
+   "Montri la kurantan menuan lokon en la pa\304\235okapo.",
+   "Titola mar\304\235eno",
+   "Al\304\235ustigi la distancon de la titola pa\304\235okapo de la ekrana rando.",
+   "Horizontala de\305\235ovo de titola mar\304\235eno",
+   "Al\304\235ustigi la horizontalan distancon de la titola pa\304\235okapo.",
    "Neniu",
    "Normala",
    "Titolo",
@@ -7564,22 +7619,8 @@ static const struct
    "ro. Se rendimento estas nesatiga, \304\211u mal\305\235altu \304\211i tion, \304\211u r",
    "Kolora etoso",
    "Elekti malsaman fonan koloretoson",
-   "Bildeta vertikala aran\304\235o",
-   "Montri la maldekstran bildeton sub la dekstra, sur la dekstra flanko de la ekrano.",
    "Bildeta skal-faktoro",
    "Malpliigi bildetan montrograndon skalante la maksimuman permesatan lar\304\235on.",
-   "Vertikala malaperiga faktoro",
-   "Al\304\235ustigi la malaperigan nivelon de videblaj eroj proksimaj al ekranaj randoj.",
-   "Montri horizontalan liston",
-   "Ebligi la \304\211efan horizontalan sekciliston por navigado.",
-   "Montri titolan pa\304\235okapon",
-   "Montri la kurantan menuan lokon en la pa\304\235okapo.",
-   "Titola mar\304\235eno",
-   "Al\304\235ustigi la distancon de la titola pa\304\235okapo de la ekrana rando.",
-   "Horizontala de\305\235ovo de titola mar\304\235eno",
-   "Al\304\235ustigi la horizontalan distancon de la titola pa\304\235okapo.",
-   "Ebligi sekcion Agordoj",
-   "Montri la sekcion Agordoj, kiu enhavas programajn agordojn.",
    "Rubando",
    "Rubando (simpligita)",
    "Simpla ne\304\235o",
@@ -7620,8 +7661,6 @@ static const struct
    "Difini \304\211u la fontogrando en la menuo devus havi sian propran skalon, kaj \304\211u \304"
    "\235i devus esti skalita \304\211iee a\305\255 per apartaj valoroj por \304\211iu parto de la me"
    "nuo.",
-   "\304\210iea",
-   "Apartaj valoroj",
    "Tipara skal-faktoro",
    "Skali la fontograndon linearee tra la menuo.",
    "Tipara skal-faktoro de titolo",
@@ -7638,17 +7677,6 @@ static const struct
    "a menuo.",
    "Tipara skal-faktoro de pa\304\235opiedo",
    "",
-   "Maletendi la flankpanelon",
-   "Teni la maldekstran flankpanelon maletendigita.",
-   "Montri la flankpanelon",
-   "Ebligi navigacion kaj ludlistojn per maldekstra flankpanelo",
-   "Distran\304\211i ludlsitajn nomojn (bezonas restartigon)",
-   "Forigi la nomojn de la fabrikantoj de la ludlistoj. Ekzemple, \"Sony - PlayStation\" fari\304"
-   "\235as \"PlayStation\".",
-   "Ordigi ludlistojn post nomdistran\304\211o (bezonas restartigon)",
-   "",
-   "Akcesora bildeto",
-   "Anstata\305\255igi la panelon de enhava metadatumoj kontra\305\255 alia bildeto.",
    "Uzi tekstrulumilon por enhava metadatumoj",
    "Kiam ebligita, \304\211iu enhava metadatumo montrata \304\211e la dekstra flankpanelo de ludlist"
    "oj (asociita kerno, ludtempo...) okupos ununuran linion; \304\211enoj superantaj la flankpanelan"
@@ -7663,14 +7691,27 @@ static const struct
    "ksita kiel la klasika rolulo de \"Space Invaders\".",
    "Pa\304\235okapa apartigilo",
    "Alternativa lar\304\235o por pa\304\235okapa kaj pa\304\235opieda apartigiloj.",
+   "\304\210iea",
+   "Apartaj valoroj",
+   "Kolora etoso",
+   "Elekti malsaman koloran etoson",
+   "Montri la flankpanelon",
+   "Ebligi navigacion kaj ludlistojn per maldekstra flankpanelo",
+   "Maletendi la flankpanelon",
+   "Teni la maldekstran flankpanelon maletendigita.",
+   "Distran\304\211i ludlsitajn nomojn (bezonas restartigon)",
+   "Forigi la nomojn de la fabrikantoj de la ludlistoj. Ekzemple, \"Sony - PlayStation\" fari\304"
+   "\235as \"PlayStation\".",
+   "Ordigi ludlistojn post nomdistran\304\211o (bezonas restartigon)",
+   "",
+   "Akcesora bildeto",
+   "Anstata\305\255igi la panelon de enhava metadatumoj kontra\305\255 alia bildeto.",
    "Neniu",
    "Dinamika",
    "Fiksita",
    "Nenia",
    "Normala",
    "Maksimuma",
-   "Kolora etoso",
-   "Elekti malsaman koloran etoson",
    "Baza blanko",
    "Baza nigro",
    "Norda",
@@ -7690,6 +7731,10 @@ static const struct
    "jn menuagordajn erojn.",
    "Ludlistaj piktogramoj (bezonas restartigon)",
    "Montri sistem-specifajn piktogramojn en la ludlistoj.",
+   "Kolora etoso",
+   "Elekti malsaman fonan koloretoson.",
+   "Transira animacio",
+   "Ebligi glatajn animaciajn efikojn kiam navigante inter malsamajn nivelojn de la menuo.",
    "Optimumigi horizontalan aran\304\235on",
    "A\305\255tomate al\304\235ustigi menuan aran\304\235on por ke \304\235i pli bone adapti\304\235u"
    " al la ekrano kiam uzante horizontalajn orienti\304\235ojn.",
@@ -7699,10 +7744,6 @@ static const struct
    "A\305\255tomate turni navigacian breton",
    "A\305\255tomate movi la navigacian breton al la dekstra flanko de la ekrano kiam uzante horizont"
    "alajn orienti\304\235ojn.",
-   "Kolora etoso",
-   "Elekti malsaman fonan koloretoson.",
-   "Transira animacio",
-   "Ebligi glatajn animaciajn efikojn kiam navigante inter malsamajn nivelojn de la menuo.",
    "Bildetoj je vertikala re\304\235imo",
    "Specifi la vidre\304\235imon de la ludlistaj bildetoj kiam uzante vertikalajn orienti\304\235ojn"
    ".",
@@ -7910,8 +7951,6 @@ static const struct
    "Elekti enhavon de listo de \304\265usa historio.",
    "",
    "Komunikiloj",
-   "Subsistemoj",
-   "Aliri subsistemajn agordojn por la kuranta enhavo.",
    "Kuranta enhavo: %s",
    "Neniuj retludaj gastigantoj trovitaj.",
    "Neniuj retludaj klientoj trovitaj.",
@@ -7923,11 +7962,8 @@ static const struct
    "Konektejo %d Aparata nomo: %s",
    "Montrata aparata nomo: %s\nKonfigura aparata nomo: %s\nAparata VID/PID: %d/%d",
    "Agordoj de trompoj",
-   "Komencigi a\305\255 da\305\255rigi ser\304\211on de trompkodoj",
    "Ludi en a\305\255dvida\304\265a ludanto",
    "sekundoj",
-   "Startigi kernon",
-   "Startigi kernon sen enhavon.",
    "Sugestitaj kernoj",
    "Neeble legi densigitan dosieron.",
    "Uzanto",
@@ -7940,7 +7976,6 @@ static const struct
    "Ombrigila anta\305\255agordo",
    "Ombrigila anta\305\255agordo",
    "Retumi URL",
-   "Adreso URL",
    "Startigi",
    "Kromnomo: %s",
    "Ser\304\211ante kongruantan enhavon...",
@@ -8483,7 +8518,6 @@ static const struct
    "\304\234isdatigi Lakka",
    "Fasada nomo",
    "Versio de Lakka",
-   "Rekomencigi",
    "Apartigita Joy-Con",
    "Transpasi skalon de grafikaj fenestra\304\265oj",
    "Apliki permanan skal-faktoron, kiu transpasos kiam bildigante montrajn fenestra\304\265ojn. Nur "
@@ -8491,6 +8525,7 @@ static const struct
    "ebligita. Povas esti uzata por pliigi a\305\255 malpliigi la grandon de ornamitaj sciigoj, indik"
    "iloj kaj regiloj sendepende de la menuo.",
    "Ekrana distingivo",
+   "Elekti montran re\304\235imon (bezonas restartigon)",
    "Ekrana distingivo: defa\305\255lta",
    "Ekrana distingivo: %dx%d",
    "Ekrana distingivo: %dx%d - %s",
@@ -8500,8 +8535,6 @@ static const struct
    "Rekomencigante al: defa\305\255lta",
    "Rekomencigante al: %dx%d",
    "Rekomencigante al: %dx%d - %s",
-   "Elekti montran re\304\235imon (bezonas restartigon)",
-   "Mal\305\235alti",
    "Ebligi aliron al eksteraj dosieroj",
    "Malfermi agordojn pri permesoj de dosiera aliro de Windows",
    "Malfermi agordojn pri permesoj de Windows por ebligi la kapablon broadFileSystemAccess.",
@@ -8514,8 +8547,8 @@ static const struct
    "Ser\304\211i sendratajn aparatojn kaj konekti al ili.",
    "Ebligi Wi-Fi",
    "Konekti\304\235i al reto",
-   "Konekti\304\235i al reto",
    "Malkonekti\304\235i",
+   "Konekti\304\235i al reto",
    "",
    "Malflagrilo",
    "Superskanada korekto (supro)",
@@ -8564,7 +8597,6 @@ static const struct
    "Restartigi RetroArch",
    "Eliri, tiam restartigi RetroArch. Bezonata por la aktivigo de certaj menuaj agordoj (ekzemple, k"
    "iam \305\235an\304\235ante la menupelilon).",
-   "Baritaj filmeroj",
    "Tu\305\235o",
    "Preferi frontan tu\305\235on",
    "Uzi frontan anstata\305\255 anta\305\255an tu\305\235on.",
@@ -8587,10 +8619,6 @@ static const struct
    "Stato de interna konservejo: nur legi",
    "Ekrana brileco",
    "Pliigi a\305\255 malpliigi la brilecon de la ekrano.",
-#ifdef HAVE_LIBNX
-   "\304\210efprocesora trarapidigo",
-   "Trarapidigi la \304\211efprocesoron de Switch.",
-#endif
 #ifdef HAVE_LAKKA
    "Determini la staton de Bluetooth.",
    "Servoj",
@@ -8771,9 +8799,23 @@ static const struct
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
       (sizeof(msg_hash_eo_blob) == (172220u
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 15u
        + 46u
+#endif
+#endif
+#ifdef HAVE_MIST
+       + 19u
+       + 55u
+#endif
+#ifdef HAVE_LIBNX
+       + 26u
+       + 41u
+#endif
+#ifdef _3DS
+       + 37u
+       + 53u
 #endif
 #ifdef HAVE_MIST
        + 1u
@@ -8832,21 +8874,31 @@ typedef char msg_hash_eo_blob_check[
        + 33u
        + 10u
        + 109u
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
        + 8u
        + 100u
-       + 100u
-       + 20u
-       + 189u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
        + 31u
        + 75u
+       + 20u
+       + 189u
+       + 100u
        + 33u
        + 138u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
        + 30u
        + 170u
        + 29u
        + 79u
        + 41u
        + 95u
+#endif
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 56u
@@ -8865,8 +8917,6 @@ typedef char msg_hash_eo_blob_check[
        + 173u
 #endif
 #ifdef HAVE_MIST
-       + 19u
-       + 55u
        + 15u
        + 18u
        + 28u
@@ -8877,10 +8927,6 @@ typedef char msg_hash_eo_blob_check[
 #endif
 #if defined(ANDROID)
        + 146u
-#endif
-#ifdef _3DS
-       + 37u
-       + 53u
 #endif
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
@@ -8898,10 +8944,6 @@ typedef char msg_hash_eo_blob_check[
        + 1u
        + 25u
        + 23u
-       + 41u
-#endif
-#ifdef HAVE_LIBNX
-       + 26u
        + 41u
 #endif
 #ifdef HAVE_LAKKA
@@ -9065,8 +9107,20 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
@@ -9074,53 +9128,77 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+#ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
@@ -9264,18 +9342,10 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
@@ -9284,11 +9354,25 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+#ifdef HAVE_LIBNX
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -9299,20 +9383,30 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
@@ -9331,10 +9425,50 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
@@ -9355,22 +9489,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -9476,19 +9596,15 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_RECORD_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
@@ -9503,9 +9619,9 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
@@ -9565,10 +9681,10 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
@@ -9597,11 +9713,11 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
 #if defined(DINGUX) && defined(DINGUX_BETA)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
@@ -9706,15 +9822,19 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
@@ -9727,10 +9847,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -9745,25 +9861,27 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
@@ -9774,21 +9892,31 @@ static const uint32_t msg_hash_eo_ids[] =
 #ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
@@ -9797,12 +9925,11 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
@@ -9842,9 +9969,49 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
@@ -9860,47 +10027,59 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
    (uint32_t)MSG_INPUT_BIND_PRESS,
    (uint32_t)MSG_INPUT_BIND_RELEASE,
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_BIND_HOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
@@ -9909,79 +10088,31 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_RESET,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
    (uint32_t)MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
@@ -10196,8 +10327,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
 #ifdef HAVE_MIST
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
@@ -10237,34 +10366,38 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
    (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -10275,25 +10408,21 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
    (uint32_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
    (uint32_t)MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
    (uint32_t)MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
@@ -10310,15 +10439,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
-   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    (uint32_t)MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
-   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -10342,6 +10463,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
@@ -10356,17 +10478,10 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
@@ -10427,14 +10542,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
    (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
@@ -10443,7 +10552,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
@@ -10456,6 +10564,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
@@ -10467,9 +10576,9 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
@@ -10484,28 +10593,28 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_FPS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
-   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
@@ -10522,20 +10631,20 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -10560,22 +10669,20 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
@@ -10584,37 +10691,27 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
    (uint32_t)MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
-#ifdef _3DS
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
@@ -10663,14 +10760,12 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
@@ -10679,6 +10774,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
@@ -10816,13 +10913,9 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
@@ -10860,8 +10953,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
@@ -10876,12 +10967,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
@@ -10896,12 +10983,17 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -10910,13 +11002,13 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
@@ -10929,7 +11021,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
@@ -10944,6 +11035,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -10954,6 +11046,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
@@ -10965,8 +11058,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
@@ -10995,12 +11086,30 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
@@ -11020,26 +11129,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
@@ -11061,6 +11152,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
    (uint32_t)MENU_ENUM_SUBLABEL_USER_LANGUAGE,
    (uint32_t)MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
@@ -11168,9 +11260,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
@@ -11311,8 +11400,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_STATE,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVE_STATE,
@@ -11323,8 +11410,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_SLOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAY_REPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
@@ -11452,7 +11537,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_IDX,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_IDX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
@@ -11555,18 +11639,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
    (uint32_t)MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
@@ -11632,7 +11704,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
@@ -11825,6 +11896,10 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
@@ -11837,10 +11912,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
@@ -11897,6 +11968,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -11909,8 +11982,18 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
@@ -11933,22 +12016,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   (uint32_t)MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
@@ -11987,8 +12056,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
@@ -12003,16 +12070,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
@@ -12023,14 +12080,26 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
    (uint32_t)MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NORMAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_MAXIMUM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD,
@@ -12049,16 +12118,16 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
@@ -12259,8 +12328,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
@@ -12272,11 +12339,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SECONDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
@@ -12287,7 +12351,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
@@ -12812,11 +12875,11 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
    (uint32_t)MSG_SCREEN_RESOLUTION_DEFAULT,
    (uint32_t)MSG_SCREEN_RESOLUTION_NO_DESC,
    (uint32_t)MSG_SCREEN_RESOLUTION_DESC,
@@ -12826,8 +12889,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
    (uint32_t)MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
    (uint32_t)MSG_SCREEN_RESOLUTION_RESETTING_DESC,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
@@ -12840,8 +12901,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
@@ -12876,7 +12937,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
@@ -12898,10 +12958,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MSG_READ_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    (uint32_t)MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
-#ifdef HAVE_LIBNX
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-#endif
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,

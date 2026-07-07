@@ -16,10 +16,10 @@ static const struct
 {
    char s_2cb9dc71[11];
    char s_733174db[9];
+   char s_555cd658[40];
    char s_62564465[9];
    char s_198c91d3[33];
    char s_24e40f00[247];
-   char s_555cd658[40];
    char s_550b1e93[11];
    char s_64d24441[48];
    char s_44040aad[78];
@@ -32,6 +32,10 @@ static const struct
    char s_519cd5f8[13];
    char s_8d13ec48[10];
    char s_cf24fcc2[19];
+#ifdef HAVE_LIBNX
+   char s_09902e71[15];
+   char s_4eae7b1f[27];
+#endif
    char s_5b2d8d2f[17];
    char s_6ade80dd[32];
    char s_020e2bc5[17];
@@ -102,6 +106,7 @@ static const struct
    char s_82c9e376[139];
 #endif
    char s_d6fb8efe[16];
+   char s_e645f7ac[24];
    char s_25a21976[52];
    char s_6ac06624[114];
    char s_30acd6fb[16];
@@ -123,24 +128,25 @@ static const struct
    char s_f9005edc[159];
    char s_a83d6467[175];
    char s_d264a13e[20];
+   char s_998970f0[30];
+   char s_c245fbde[40];
+   char s_3518bec3[31];
+   char s_7566a771[94];
    char s_38cf005e[37];
+   char s_6da9b571[230];
+   char s_4fe7b3d2[156];
    char s_9c702ee1[33];
    char s_e28bc72f[18];
-   char s_cd94bb16[184];
    char s_5b920f01[93];
    char s_b1e1d992[19];
    char s_744c0f80[55];
    char s_6ae6f953[21];
    char s_2aa39081[43];
+   char s_cd94bb16[184];
    char s_0ea19c95[44];
    char s_ff583ef3[495];
-   char s_4fe7b3d2[156];
-   char s_998970f0[30];
-   char s_c245fbde[40];
-   char s_3518bec3[31];
-   char s_7566a771[94];
+   char s_c7e66e0a[30];
    char s_23b87da5[326];
-   char s_6da9b571[230];
    char s_79381041[146];
    char s_a11a7d85[155];
    char s_4f7fa8b9[21];
@@ -179,12 +185,11 @@ static const struct
    char s_a8d552a7[43];
    char s_6112ec7c[38];
    char s_693db7da[212];
+   char s_db671d75[237];
    char s_550d5320[175];
    char s_5ae6337d[52];
-   char s_db671d75[237];
    char s_998d1a40[24];
    char s_deab66ee[108];
-   char s_e645f7ac[24];
    char s_f02f73fc[25];
    char s_dd9ff22a[59];
    char s_7785c81e[35];
@@ -225,7 +230,6 @@ static const struct
    char s_c0f9a2df[86];
    char s_9448a1b0[85];
    char s_00961284[114];
-   char s_c7e66e0a[30];
    char s_36442b35[18];
    char s_45f51ee3[28];
    char s_b3fd357c[22];
@@ -255,18 +259,19 @@ static const struct
    char s_4327ffcc[33];
    char s_1d4d1099[24];
    char s_be8c2b47[34];
-   char s_4b299805[149];
    char s_6c4b8962[23];
    char s_e4405788[22];
    char s_59508007[40];
    char s_388ef77f[22];
    char s_3e7327ad[90];
+   char s_4b299805[149];
    char s_60255deb[447];
    char s_71e4e031[177];
    char s_f39c636f[319];
    char s_7ef3d15a[176];
    char s_4c991c18[330];
    char s_4037367a[23];
+   char s_7567faa8[23];
    char s_eb66d46b[20];
    char s_a2b65159[57];
    char s_bbb615a1[21];
@@ -320,7 +325,6 @@ static const struct
    char s_b6cd2ff0[48];
    char s_821edb57[24];
    char s_ed31b08a[5];
-   char s_7567faa8[23];
    char s_88ea76ed[8];
    char s_5e511971[21];
    char s_313105c8[21];
@@ -363,10 +367,10 @@ static const struct
    char s_20f9b0a6[16];
    char s_a2bb0576[10];
    char s_fab0ac6c[11];
-   char s_5c160fe2[26];
-   char s_cfb4dee1[118];
    char s_16ff0a79[13];
    char s_e0217ae7[44];
+   char s_5c160fe2[26];
+   char s_cfb4dee1[118];
    char s_911d0106[15];
    char s_a72ca64c[10];
    char s_8d566802[11];
@@ -454,10 +458,6 @@ static const struct
    char s_1d92d9e0[141];
    char s_c6e32f19[132];
    char s_3817de39[328];
-#ifdef HAVE_LIBNX
-   char s_09902e71[15];
-   char s_4eae7b1f[27];
-#endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
    char s_addc7f89[77];
@@ -496,12 +496,12 @@ static const struct
 {
    "Favourites",
    "Net-play",
+   "Manually trigger cloud synchronisation.",
    "Net-play",
    "Join or host a net-play session.",
    "Quit RetroArch. Killing the program in any hard way (SIGKILL, etc.) will terminate RetroArch wit"
    "hout saving the configuration in any case. On Unix-likes, SIGINT/SIGTERM allows a clean deinitia"
    "lisation which includes configuration save if enabled.",
-   "Manually trigger cloud synchronisation.",
    "Favourites",
    "Content added to 'Favourites' will appear here.",
    "Browse all content matching the database with a categorised search interface.",
@@ -514,6 +514,10 @@ static const struct
    "Front-End OS",
    "Art Style",
    "Analogue Supported",
+#ifdef HAVE_LIBNX
+   "CPU Over-clock",
+   "Over-clock the Switch CPU.",
+#endif
    "Audio Re-sampler",
    "Audio re-sampler driver to use.",
    "Full-Screen Mode",
@@ -614,6 +618,7 @@ static const struct
    "tre, 1.0 is bottom. (Portrait Orientation)",
 #endif
    "Adaptive V-Sync",
+   "Fast-Forward Frame-Skip",
    "Sync to Exact Content Frame Rate (G-Sync, FreeSync)",
    "No deviation from core requested timing. Use for Variable Refresh Rate screens (G-Sync, Free-Syn"
    "c, HDMI 2.1 VRR).",
@@ -642,16 +647,25 @@ static const struct
    "Will start playback of the audio stream. Once finished, it will jump to the next audio stream in"
    " sequential order and repeat this behaviour. Useful as an album playback mode.",
    "Enable 'Okay' Sound",
+   "Disable Left Analogue in Menu",
+   "Prevent menu left analogue stick input.",
+   "Disable Right Analogue in Menu",
+   "Prevent menu right analogue stick input. Right analogue stick cycles thumbnails in playlists.",
    "Polling Behaviour (Restart required)",
+   "Add a delay in frames before normal input is blocked after pressing the assigned 'Hot-key Enable"
+   "' key. Allows normal input from the 'Hot-key Enable' key to be captured when it is mapped to ano"
+   "ther action (e.g. RetroPad 'Select').",
+   "Swap buttons for Okay/Cancel. When disabled, the Japanese button orientation is on by default, w"
+   "hen this is enabled, it is the western orientation instead.",
    "Remap the Controls for This Core",
    "Autoconfiguration",
-   "Always enable 'Game Focus' mode when launching and resuming content. When set to 'Detect', optio"
-   "n will be enabled if current core implements front-end keyboard callback functionality.",
    "How far an axis must be tilted to result in a button press when using 'Analogue to Digital'.",
    "Analogue Dead Zone",
    "Ignore analogue stick movements below dead zone value.",
    "Analogue Sensitivity",
    "Adjust the sensitivity of analogue sticks.",
+   "Always enable 'Game Focus' mode when launching and resuming content. When set to 'Detect', optio"
+   "n will be enabled if current core implements front-end keyboard callback functionality.",
    "Select the general behaviour of turbo mode.",
    "Libretro uses a virtual gamepad abstraction known as the 'RetroPad' to communicate from front-en"
    "ds (like RetroArch) to cores and vice versa. This menu determines how the virtual RetroPad is ma"
@@ -659,19 +673,11 @@ static const struct
    "sical input device is recognised and autoconfigured correctly, users probably do not need to use"
    " this menu at all, and for core-specific input changes, should use the Quick Menu's 'Controls' s"
    "ubmenu instead.",
-   "Swap buttons for Okay/Cancel. When disabled, the Japanese button orientation is on by default, w"
-   "hen this is enabled, it is the western orientation instead.",
-   "Disable Left Analogue in Menu",
-   "Prevent menu left analogue stick input.",
-   "Disable Right Analogue in Menu",
-   "Prevent menu right analogue stick input. Right analogue stick cycles thumbnails in playlists.",
+   "Open Desktop Menu on Start-up",
    "When assigned, the 'Hotkey Enable' key must be held before any other hotkeys are recognised. All"
    "ows controller buttons to be mapped to hotkey functions without affecting normal input. Assignin"
    "g the modifier to controller only will not require it for keyboard hotkeys, and vice versa, but "
    "both modifiers work for both devices.",
-   "Add a delay in frames before normal input is blocked after pressing the assigned 'Hot-key Enable"
-   "' key. Allows normal input from the 'Hot-key Enable' key to be captured when it is mapped to ano"
-   "ther action (e.g. RetroPad 'Select').",
    "If virtual disc tray is closed, this opens it and removes the loaded disc. Otherwise, it inserts"
    " the currently selected disc and closes the tray.",
    "Switches 'Game Focus' mode on/off. When content has focus, hot-keys are disabled (full keyboard "
@@ -719,16 +725,15 @@ static const struct
    "Save all core options to a common settings file (retroarch-core-options.cfg). When disabled, opt"
    "ions for each core will be saved to a separate core-specific folder/file in RetroArch's 'Configu"
    "rations' directory.",
-   "Autosaves the non-volatile SRAM at a regular interval. This is disabled by default unless set ot"
-   "herwise. The interval is measured in seconds. A value of 0 disables autosaves.",
-   "Automatically load the auto save state on start-up.",
    "Write non-volatile SaveRAM files in an archived format. Dramatically reduces file size at the ex"
    "pense of (negligibly) increased saving/loading times.\nOnly applies to cores that enable saving "
    "with the standard libretro SaveRAM interface.",
+   "Autosaves the non-volatile SRAM at a regular interval. This is disabled by default unless set ot"
+   "herwise. The interval is measured in seconds. A value of 0 disables autosaves.",
+   "Automatically load the auto save state on start-up.",
    "Front-End Logging Level",
    "Set log level for the front-end. If a log level issued by the front-end is below this value, it "
    "is ignored.",
-   "Fast-Forward Frame-Skip",
    "Throttle Menu Frame Rate",
    "Makes sure the frame rate is capped while inside the menu.",
    "Show the Mouse Cursor With Overlay",
@@ -780,7 +785,6 @@ static const struct
    "Sets the opacity of the OSD background colour. Valid values are between 0.0 and 1.0.",
    "Automatically quit RetroArch when closing content. 'CLI' quits only when content is launched wit"
    "h a command line.",
-   "Open Desktop Menu on Start-up",
    "Show 'Favourites'",
    "Show the 'Favourites' menu.",
    "Show Favourites First",
@@ -815,13 +819,13 @@ static const struct
    "Maximum Simultaneous Connections",
    "Net-play Spectator Mode",
    "Start net-play in spectator mode.",
-   "Whether to start net-play in spectator mode. If set to true, net-play will be in spectator mode "
-   "on start. It's always possible to change mode later.",
    "Chat Colour (Nickname)",
    "Chat Colour (Message)",
    "Allow players to pause during net-play.",
    "Net-play Check Frames",
    "The frequency (in frames) that net-play will verify that the host and client are in sync.",
+   "Whether to start net-play in spectator mode. If set to true, net-play will be in spectator mode "
+   "on start. It's always possible to change mode later.",
    "The frequency in frames with which net-play will verify that the host and client are in sync. Wi"
    "th most cores, this value will have no visible effect and can be ignored. With nondeterminstic c"
    "ores, this value determines how often the net-play peers will be brought into sync. With buggy c"
@@ -840,6 +844,7 @@ static const struct
    "input latency and network latency. This reduces jitter and makes net-play less CPU-intensive, bu"
    "t at the price of unpredictable input lag.",
    "Net-play NAT Traversal",
+   "Analogue Input Sharing",
    "Build-bot Cores URL",
    "URL to core updater directory on the libretro build-bot.",
    "Build-bot Assets URL",
@@ -913,7 +918,6 @@ static const struct
    "Achievements cannot be activated with this core",
    "No Favourites Available",
    "Okay",
-   "Analogue Input Sharing",
    "Maximum",
    "History & Favourites",
    "History & Favourites",
@@ -963,11 +967,11 @@ static const struct
    "Solarised Light",
    "Grey Dark",
    "Grey Light",
+   "Colour Theme",
+   "Select a different background colour theme.",
    "Optimise Landscape Layout",
    "Automatically move the navigation bar to the right-hand side of the screen when using landscape "
    "display orientations.",
-   "Colour Theme",
-   "Select a different background colour theme.",
    "Solarised Dark",
    "Grey Dark",
    "Grey Light",
@@ -1068,10 +1072,6 @@ static const struct
    "formance by automatically configuring your CPU and GPU for best performance.\nThe GameMode softw"
    "are needs to be installed for this to work. See https://github.com/FeralInteractive/gamemode for"
    " information on how to install GameMode.",
-#ifdef HAVE_LIBNX
-   "CPU Over-clock",
-   "Over-clock the Switch CPU.",
-#endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
    "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
@@ -1121,6 +1121,10 @@ static const struct
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
       (sizeof(msg_hash_en_blob) == (26756u
+#ifdef HAVE_LIBNX
+       + 15u
+       + 27u
+#endif
 #if defined(DINGUX)
        + 195u
        + 9u
@@ -1148,10 +1152,6 @@ typedef char msg_hash_en_blob_check[
        + 19u
        + 152u
        + 121u
-#endif
-#ifdef HAVE_LIBNX
-       + 15u
-       + 27u
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
@@ -1192,10 +1192,10 @@ static const uint32_t msg_hash_en_ids[] =
 {
    (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
    (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
@@ -1208,6 +1208,10 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+#ifdef HAVE_LIBNX
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
@@ -1277,6 +1281,7 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
@@ -1298,24 +1303,25 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -1354,12 +1360,11 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
    (uint32_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -1400,7 +1405,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
@@ -1430,18 +1434,19 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
@@ -1495,7 +1500,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
@@ -1538,10 +1542,10 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
@@ -1629,10 +1633,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
    (uint32_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
-#ifdef HAVE_LIBNX
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-#endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,

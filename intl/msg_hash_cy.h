@@ -23,8 +23,11 @@ static const struct
    char s_bcddf275[6];
    char s_99eb425d[10];
    char s_7632d987[18];
+   char s_d21c686b[24];
+   char s_d7fc4c9c[22];
    char s_36265c93[16];
    char s_544da5c1[58];
+   char s_193e1462[62];
    char s_d7f2cfac[15];
    char s_35f2309a[35];
    char s_e3d18a3d[16];
@@ -37,28 +40,25 @@ static const struct
    char s_d34eb231[79];
    char s_061657e6[18];
    char s_243da114[54];
-   char s_ed013a05[29];
-   char s_4b009af3[43];
-   char s_193e1462[62];
-   char s_e2c6c781[13];
-   char s_f28ded2f[67];
-   char s_62564465[12];
-   char s_198c91d3[35];
-   char s_4aaeeb99[11];
-   char s_e8aee6c7[24];
-   char s_d81bf7a9[11];
-   char s_9eb26572[26];
    char s_6155456e[19];
    char s_4a3d27dc[36];
    char s_2f9a064c[8];
    char s_8d99673a[44];
+   char s_ed013a05[29];
+   char s_4b009af3[43];
+   char s_62564465[12];
+   char s_198c91d3[35];
+   char s_e2c6c781[13];
+   char s_f28ded2f[67];
+   char s_4aaeeb99[11];
+   char s_e8aee6c7[24];
+   char s_d81bf7a9[11];
+   char s_9eb26572[26];
    char s_95cf0994[4];
    char s_d31f6d88[26];
    char s_f2a19576[51];
    char s_01a73130[23];
    char s_46c57dde[52];
-   char s_d21c686b[24];
-   char s_d7fc4c9c[22];
    char s_941e50fb[23];
    char s_10342503[15];
    char s_164566fb[17];
@@ -159,14 +159,15 @@ static const struct
    char s_046d0e21[22];
    char s_005cc6dc[11];
    char s_00614813[4];
+   char s_33f012e4[9];
    char s_980ef0e8[8];
    char s_734d2a61[7];
    char s_e7a63560[6];
    char s_f05210ce[24];
    char s_8cb3b95f[6];
    char s_aadb028d[24];
-   char s_1b8a5cb5[9];
-   char s_60a8a963[27];
+   char s_260261d6[16];
+   char s_302fdd56[11];
    char s_7277e127[22];
    char s_78474a95[40];
    char s_2e5078b2[14];
@@ -177,6 +178,8 @@ static const struct
    char s_0e319bcf[33];
    char s_62144cdf[13];
    char s_2b36bd4d[31];
+   char s_1b8a5cb5[9];
+   char s_60a8a963[27];
    char s_87d88aa2[11];
    char s_a5ffd3d0[40];
    char s_8d94cfea[16];
@@ -195,8 +198,6 @@ static const struct
    char s_87071f08[4];
    char s_735c53f7[14];
    char s_21d7a1f6[6];
-   char s_260261d6[16];
-   char s_302fdd56[11];
    char s_9da5609f[15];
    char s_6262776d[7];
    char s_565cbabb[13];
@@ -264,12 +265,11 @@ static const struct
    char s_76086c40[26];
    char s_a9f3b2c3[14];
    char s_026b7f11[14];
-   char s_33f012e4[9];
    char s_ea741899[8];
    char s_e0609921[15];
    char s_f6a0db44[21];
-   char s_b3c7fa93[21];
    char s_7f2380a0[12];
+   char s_b3c7fa93[21];
    char s_ec502f2a[21];
    char s_d042d680[9];
    char s_440540f4[10];
@@ -291,8 +291,11 @@ static const struct
    "Fideo",
    "Archwilio",
    "Mewnforio Cynnwys",
+   "Cychwyn Prosesydd Fideo",
+   "Dechrau RetroPad Pell",
    "Dewislen Gyflym",
    "Cyrchiad gyflym i'r holl gosodiadau mewn-g\303\252m berthnasol.",
+   "Dangoswch yr holl gosodiadau sy'n gysylltiedig \303\242 chyfluniad.",
    "Llwytho Craidd",
    "Dewiswch pa graidd i'w ddefnyddio.",
    "Llwytho Cynnwys",
@@ -307,28 +310,25 @@ static const struct
    "Bydd cnnywys wedi sganio yn cyfwerth/hafal i\342\200\231r cronfa ddata yn ddigwydd yma.",
    "Mewnforio Cynnwys",
    "Creu a diweddaru rhestri chwarae trwy sganio cynnwys.",
-   "Dangos Dewislen Bwrdd Gwaith",
-   "Agor y dewislen bwrdd gwaith traddodiadol.",
-   "Dangoswch yr holl gosodiadau sy'n gysylltiedig \303\242 chyfluniad.",
-   "Ddiweddarydd",
-   "Dadlwythwch ychwanegion, cydrannau, a chynnwys ar gyfer RetroArch.",
-   "Rhwychwarae",
-   "Ymunwch neu gynnal sesiwn netplay.",
-   "Gosodiadau",
-   "Ffurfweddwch y rhaglen.",
-   "Gwybodaeth",
-   "Dangos gwybodaeth system.",
    "Ffeil Ffurfweddiad",
    "Rheoli a greu ffeilau ffurfweddiad.",
    "Cymorth",
    "Dysgu mwy am sut mae'r rhaglen yn gweithio.",
+   "Dangos Dewislen Bwrdd Gwaith",
+   "Agor y dewislen bwrdd gwaith traddodiadol.",
+   "Rhwychwarae",
+   "Ymunwch neu gynnal sesiwn netplay.",
+   "Ddiweddarydd",
+   "Dadlwythwch ychwanegion, cydrannau, a chynnwys ar gyfer RetroArch.",
+   "Gosodiadau",
+   "Ffurfweddwch y rhaglen.",
+   "Gwybodaeth",
+   "Dangos gwybodaeth system.",
    "Cau",
    "Llwytho \342\200\230Core\342\200\231 i Lawr",
    "Dadlwythwch a gosod craidd o'r diweddarwr ar-lein.",
    "Gosod neu Adfer Craidd",
    "Gosod neu adfer craidd o'r cyfeiriadur 'Downloads'.",
-   "Cychwyn Prosesydd Fideo",
-   "Dechrau RetroPad Pell",
    "Cyfeiriadur Cychwynnol",
    "Lawrlwythiadau",
    "Archwilio Archif",
@@ -431,14 +431,15 @@ static const struct
    "Co-op wedi ei chynnal",
    "Gwybodaeth",
    "Cau",
+   "Cau lawr",
    "Mewnbwn",
    "Craidd",
    "Arbed",
    "Newid gosodiadau arbed.",
    "Logio",
    "Newid gosodiadau logio.",
-   "Recordio",
-   "Newid gosodiadau recordio.",
+   "Dewislen Gyflym",
+   "Gosodiadau",
    "Rhyngwyneb Defnyddiwr",
    "Newid gosodiadau rhyngwyneb defnyddiwr.",
    "Gwasanaeth AI",
@@ -449,6 +450,8 @@ static const struct
    "Newid gosodiadau rheolaeth pwer.",
    "Llwyddiannau",
    "Newid gosodiadau llwyddiannau.",
+   "Recordio",
+   "Newid gosodiadau recordio.",
    "Rhwydwaith",
    "Newid gosodiadau gweinydd a rhwydwaith.",
    "Rhestri Chwarae",
@@ -467,8 +470,6 @@ static const struct
    "Cau",
    "Gwasanaeth AI",
    "Lleol",
-   "Dewislen Gyflym",
-   "Gosodiadau",
    "Prif Ddewislen",
    "Popeth",
    "Llwyddiannau",
@@ -536,12 +537,11 @@ static const struct
    "Yn datgysylltu'r Wi-Fi...",
    "Rho Gyfrinair",
    "Rho Gyfrinair",
-   "Cau lawr",
    "Agor...",
    "Galluogi Wi-Fi",
    "Cysylltu i Rwydwaith",
-   "Cysylltu i Rwydwaith",
    "Datgysylltu",
+   "Cysylltu i Rwydwaith",
    "Ailgychwyn RetroArch",
    "Cyffwrdd",
    "Rhyngrwyd",
@@ -579,8 +579,11 @@ static const uint32_t msg_hash_cy_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -593,28 +596,25 @@ static const uint32_t msg_hash_cy_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
@@ -715,14 +715,15 @@ static const uint32_t msg_hash_cy_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
@@ -733,6 +734,8 @@ static const uint32_t msg_hash_cy_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -751,8 +754,6 @@ static const uint32_t msg_hash_cy_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
@@ -820,12 +821,11 @@ static const uint32_t msg_hash_cy_ids[] =
    (uint32_t)MSG_DISCONNECTING_WIRELESS,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MSG_INTERNET,
