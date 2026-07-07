@@ -421,8 +421,14 @@ if _h_used:
     out.insert(1, '\n'.join(_pre))
 open(os.path.join('settings', DEF), 'w').write('\n'.join(out) + '\n')
 
-first = min(s for s, e in usspan)
-for s, e in sorted(usspan, reverse=True): us = us[:s] + us[e:]
+if usspan:
+    first = min(s for s, e in usspan)
+    for s, e in sorted(usspan, reverse=True): us = us[:s] + us[e:]
+else:
+    # nothing consumed from the base language (a pure-reference
+    # level-variant row without a sublabel): anchor the region at the
+    # end of the table, just before the file's closing newline run
+    first = len(us.rstrip()) + 1
 mk_us = lambda b, has_sub: ((' \\\nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)' if has_sub else '')
              if b.endswith('_LV') else ' \\\nMSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \\\nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)'
                             if has_sub else ' \\\nMSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)')
