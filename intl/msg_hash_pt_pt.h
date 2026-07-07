@@ -14,350 +14,48 @@
 
 static const struct
 {
-   char s_d9685b01[15];
-   char s_9932960f[13];
-   char s_2cb9dc71[10];
-   char s_ae50c550[11];
-   char s_b30d3e14[8];
-   char s_42b8ffbf[8];
-   char s_bcddf275[8];
-   char s_99eb425d[9];
-   char s_ec59110b[23];
-   char s_7632d987[19];
-   char s_f465878a[20];
-   char s_7d65b67e[16];
-   char s_d21c686b[30];
-   char s_d7fc4c9c[24];
-   char s_36265c93[13];
-   char s_544da5c1[62];
-   char s_193e1462[64];
-   char s_d7f2cfac[17];
-   char s_35f2309a[41];
-   char s_87e07c0e[20];
-   char s_a607c53c[27];
+   char s_37033dd5[109];
+   char s_d32da23d[20];
+   char s_551f3071[21];
+   char s_1f6e5f89[58];
+   char s_212963fd[77];
+   char s_5523ef09[47];
+   char s_38e226a5[40];
+   char s_239aa255[130];
+   char s_fa198259[128];
+   char s_55288d64[41];
+   char s_41d19ccb[47];
+   char s_d32da48f[15];
+   char s_d1558b35[49];
+   char s_4c378b95[106];
+   char s_793f841a[302];
+   char s_b4ed19c0[38];
+   char s_3a147fac[103];
+   char s_a4a373a7[32];
    char s_70c7c198[373];
-   char s_e3d18a3d[19];
-   char s_c6e1f92b[43];
-   char s_99bfa829[412];
-   char s_d15b342a[15];
-   char s_2f5a9518[115];
-   char s_6ebb6a00[18];
-   char s_ccbacaee[107];
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-   char s_e65393d5[13];
-   char s_043f1283[44];
-#endif
-#endif
-   char s_b3cc8a43[23];
-   char s_d34eb231[72];
-   char s_061657e6[19];
-   char s_243da114[60];
-   char s_6155456e[28];
-   char s_4a3d27dc[41];
-   char s_ce5f3353[24];
-   char s_de265901[66];
-   char s_87ee250e[29];
-   char s_70d6077c[46];
-   char s_a11934f5[28];
-   char s_a9c51063[51];
-   char s_1938dce6[25];
-   char s_1f084654[56];
-   char s_04681a15[35];
-   char s_046a0f66[32];
-   char s_2f9a064c[6];
-   char s_8d99673a[43];
-   char s_ed013a05[37];
-   char s_4b009af3[36];
-   char s_198c91d3[43];
-   char s_e2c6c781[19];
-   char s_f28ded2f[63];
-   char s_4aaeeb99[13];
-   char s_e8aee6c7[22];
-   char s_d81bf7a9[13];
-   char s_9eb26572[34];
-   char s_59980356[10];
-   char s_3ca87244[35];
-   char s_95cf0994[9];
-   char s_a5962f42[69];
-   char s_0c7750cd[88];
-   char s_24e40f00[283];
-   char s_d31f6d88[21];
-   char s_f2a19576[65];
-   char s_01a73130[31];
-   char s_46c57dde[70];
-   char s_941e50fb[14];
-   char s_10342503[16];
-   char s_164566fb[18];
-   char s_6107eb09[18];
-   char s_550b1e93[10];
-   char s_64d24441[57];
-   char s_c0d9bee1[8];
-   char s_dec53d8f[57];
-   char s_d2224db6[8];
-   char s_ad7da224[61];
-   char s_c175c697[8];
-   char s_df614545[56];
-   char s_fd3e287f[9];
-   char s_44040aad[115];
-   char s_c4842e2d[23];
-   char s_d43521db[82];
-   char s_145f5880[25];
-   char s_5eee10e5[30];
-   char s_6e9f0493[74];
-   char s_ea80654d[43];
-   char s_8bbf7ffb[115];
-   char s_64dd7209[53];
-   char s_061c8cb7[77];
-   char s_f03e9c42[26];
-   char s_b2a8d230[59];
-   char s_7088df5e[44];
-   char s_11c7fa0c[94];
-   char s_51cbf8f0[48];
-   char s_95cbebbd[19];
-   char s_6b80a1bc[29];
-   char s_99a77122[18];
-   char s_4a5b7672[24];
-   char s_eb3c8b7f[26];
-   char s_8fa79de5[23];
-   char s_eb0d7f1d[21];
-   char s_6ae93e68[24];
-   char s_881efe76[24];
-   char s_a64647a4[65];
-   char s_5d29b870[23];
-   char s_7b51019e[54];
-   char s_89920317[21];
-   char s_7279e585[54];
-   char s_bab74532[25];
-   char s_ffd591e0[47];
-   char s_f0ce97f7[24];
-   char s_0ef5e125[21];
-   char s_06f25fc0[17];
-   char s_16b9856e[26];
-   char s_78071664[16];
-   char s_78c58363[24];
-   char s_cc781d49[19];
-   char s_8f133960[16];
-   char s_38b82e6c[22];
-   char s_babee9c1[11];
-   char s_1e4264a1[10];
-   char s_04ecbe77[12];
-   char s_49c9bf91[12];
-   char s_8d30abf0[22];
-   char s_525068d3[29];
-   char s_78083010[17];
-   char s_33ed5ede[34];
-   char s_66ed0f42[15];
-   char s_18cc5aec[26];
-   char s_ba582576[42];
-   char s_b0b9ca3e[63];
-   char s_51844cc2[21];
-   char s_e1a8f707[20];
-   char s_66df5c89[21];
-   char s_f70406ce[20];
-   char s_d7f2e719[27];
-   char s_35f24807[300];
-   char s_a7a97316[41];
-   char s_48e88dc4[155];
-   char s_8cefb843[16];
-   char s_684b0cb1[30];
-   char s_97242f99[18];
-   char s_dc427c47[49];
-   char s_b95e3404[17];
-   char s_791acb32[86];
-   char s_177845b3[16];
-   char s_1d47af21[50];
-   char s_7d2035c4[21];
-   char s_da093426[21];
-   char s_43ac80a0[12];
-   char s_f7e279a6[11];
-   char s_f8fa3e2f[14];
-   char s_b3565d3d[32];
-   char s_9af4bf52[27];
-   char s_e5d096ab[13];
-   char s_bd07998f[16];
-   char s_314539a4[24];
-   char s_8fe41f79[34];
-   char s_519cd5f8[38];
-   char s_ebe994b4[17];
-   char s_d9b00fbd[29];
-   char s_cd916c68[22];
-   char s_5c7bbce1[21];
-   char s_8356c98c[13];
-   char s_0472da71[5];
-   char s_bdc1c274[12];
-   char s_9251b4c1[8];
-   char s_36109f2c[11];
-   char s_47f4eb8e[10];
-   char s_887214f4[7];
-   char s_f62d1074[8];
-   char s_3413595a[18];
-   char s_69f2e90c[24];
-   char s_9329c64c[12];
-   char s_92be1c10[7];
-   char s_70bac144[21];
-   char s_8d13ec48[15];
-   char s_e8ad0320[13];
-   char s_cbdfd37c[10];
-   char s_f1382b82[6];
-   char s_a986c4da[12];
-   char s_09ba892e[12];
-   char s_0a2aa953[9];
-   char s_4ceac87e[8];
-   char s_06650b16[14];
-   char s_f019e498[7];
-   char s_b2865f23[9];
-   char s_58b9d895[21];
-   char s_3af38d58[35];
-   char s_00dfe961[25];
-   char s_00966fb4[32];
-   char s_6c06b558[25];
-   char s_387a4176[20];
-   char s_28863bc1[19];
-   char s_b93afb41[21];
-   char s_17983560[21];
-   char s_2742a469[22];
-   char s_0e740679[21];
-   char s_a708b2f4[23];
-   char s_d3a2aa7d[21];
-   char s_f8883f70[7];
-   char s_cf24fcc2[21];
-   char s_f751c497[21];
-   char s_046d0e21[27];
-   char s_dff02a9f[29];
-   char s_efb7504d[80];
-   char s_6f02b5b0[34];
-   char s_8d29fede[63];
-   char s_7fc52043[19];
-   char s_8584f1d6[20];
-   char s_14ec7b7e[10];
-   char s_005cc6dc[14];
-   char s_0cadcd1e[8];
-   char s_c7a999e6[22];
-   char s_00614813[5];
-   char s_9509d1c2[25];
-   char s_80a2b273[14];
-   char s_33f012e4[9];
-   char s_3f2095b2[44];
-   char s_580e244f[7];
-   char s_67d549fd[45];
-   char s_6a07da9c[21];
-   char s_79b8ce4a[72];
-   char s_57665cff[7];
-   char s_19d092ed[45];
-   char s_49b0b12a[7];
-   char s_5977d6d8[44];
-   char s_c82d0aee[18];
-   char s_b00815b8[13];
-   char s_980ef0e8[8];
-   char s_a7d61696[56];
-   char s_84d3d068[10];
-   char s_a2fb1996[81];
-   char s_734d2a61[8];
-   char s_92cf524f[38];
-   char s_e4e54370[15];
-   char s_f496371e[68];
-   char s_e7a63560[11];
-   char s_f05210ce[41];
-   char s_8cb3b95f[8];
-   char s_aadb028d[38];
-   char s_a46a4178[27];
-   char s_aa39aae6[101];
-   char s_749f0441[36];
-   char s_780eb7cb[25];
-   char s_60f69a39[55];
-   char s_152cd261[32];
-   char s_f83d414f[101];
-   char s_0a05438c[30];
-   char s_19b6373a[113];
-   char s_5dd46898[32];
-   char s_203e9e86[66];
-   char s_7505029f[45];
-   char s_7ad46c0d[81];
-   char s_1b34e389[39];
-   char s_2ae5d737[237];
-   char s_1a1260db[37];
-   char s_29c35489[168];
-   char s_1324c306[33];
-   char s_f63531f4[57];
-   char s_18996eed[30];
-   char s_2860949b[78];
-   char s_6322a8fa[11];
-   char s_4c0a8b68[59];
-   char s_7d00b7ed[14];
-   char s_65e89a5b[46];
-   char s_a670da0a[24];
-   char s_5dc056f8[142];
-   char s_d894f9b6[18];
-   char s_7895cc5b[22];
-   char s_2fe54949[62];
-   char s_e46faa42[18];
-   char s_f4209df0[146];
-   char s_ee71e86e[24];
-   char s_ceb820ad[11];
-   char s_260261d6[13];
-   char s_302fdd56[13];
-   char s_7277e127[24];
-   char s_78474a95[57];
-   char s_2e5078b2[12];
-   char s_17385b20[67];
-   char s_4ad41e20[15];
-   char s_5a8511ce[55];
-   char s_56e21ee1[19];
-   char s_0e319bcf[47];
-   char s_3a0a3fef[24];
-   char s_db495a9d[49];
-   char s_62144cdf[11];
-   char s_2b36bd4d[41];
-   char s_00641f14[11];
-   char s_513ae2ac[29];
-   char s_1d921fac[20];
-   char s_f319134a[36];
-   char s_51a9df54[37];
-   char s_6a15d029[29];
-   char s_bdf1165f[40];
-   char s_7607974d[16];
-   char s_418f98ab[30];
    char s_4081ac3b[18];
-   char s_2409f1f8[20];
-   char s_3e97494e[27];
+   char s_1d921fac[20];
+   char s_513ae2ac[29];
+   char s_11786a7f[85];
+   char s_952ec37c[70];
+   char s_51a9df54[37];
+   char s_17671a2b[52];
    char s_117a0f2d[27];
-   char s_30330589[18];
-   char s_cdf5ba47[70];
-   char s_bf709068[71];
    char s_40f0ecd9[19];
    char s_95f7b8d6[70];
-   char s_952ec37c[70];
-   char s_11786a7f[85];
-   char s_17671a2b[52];
-   char s_1b8a5cb5[21];
-   char s_60a8a963[51];
-   char s_87d88aa2[5];
-   char s_a5ffd3d0[43];
-   char s_8d94cfea[39];
-   char s_70a53ed8[52];
-   char s_3a9d7557[11];
-   char s_5a1f9d45[70];
-   char s_b92166cd[6];
-   char s_fe3fb37b[66];
-   char s_8a9a3ae4[11];
-   char s_e22edcd8[7];
-   char s_0f1d488a[11];
-   char s_467f06c1[4];
-   char s_084af156[17];
-   char s_206b1acd[14];
-   char s_0a008a9d[8];
-   char s_9a981aa0[13];
-#ifdef HAVE_MIST
-   char s_32956bc0[47];
-#endif
-   char s_009a10e3[8];
-   char s_475ff311[138];
-   char s_91bc1342[291];
+   char s_cdf5ba47[70];
+   char s_bf709068[71];
+   char s_2409f1f8[20];
+   char s_30330589[18];
+   char s_3e97494e[27];
+   char s_f319134a[36];
+   char s_418f98ab[30];
+   char s_7607974d[16];
+   char s_bdf1165f[40];
+   char s_6a15d029[29];
    char s_b3e89428[260];
    char s_7af11c30[116];
-   char s_9e66791a[8];
-   char s_bde8a108[44];
+   char s_91bc1342[291];
    char s_285ad699[28];
    char s_a6f4e7fa[64];
    char s_0cd5a7bf[94];
@@ -365,655 +63,336 @@ static const struct
    char s_a6f51628[50];
    char s_8598f359[347];
    char s_5702032d[70];
-   char s_cc973e8a[7];
-   char s_5468d3f9[129];
-   char s_ad397ac8[268];
-   char s_479aa7f0[221];
-   char s_7354d146[199];
-   char s_e189c949[130];
-   char s_e189c94a[152];
-   char s_12571028[72];
-   char s_e1814648[41];
-   char s_246d2ab2[66];
-   char s_f4657d5b[58];
+   char s_99bfa829[412];
+   char s_54241480[208];
+   char s_ceafef5e[144];
+   char s_c073450a[191];
+   char s_e6cd4ada[163];
+   char s_3f5ab0a6[171];
+   char s_24e40f00[283];
+   char s_a7206ebc[109];
+   char s_5fdad539[314];
+   char s_353c64eb_0[500];
+   char s_353c64eb_1[150];
+   char s_e180f55d[103];
    char s_11aa0e91[63];
    char s_11aa0e92[63];
    char s_11aa0e93[69];
+   char s_e1814648[41];
+   char s_246d2ab2[66];
+   char s_f4657d5b[58];
    char s_74276879[130];
-   char s_e180f55d[103];
-   char s_4bea979b[176];
    char s_5468c818[133];
+   char s_4bea979b[176];
+   char s_5468d309[69];
+   char s_ad397ac8[268];
+   char s_5468d3f9[129];
+   char s_479aa7f0[221];
+   char s_12571028[72];
+   char s_64fa1377[24];
+   char s_e189c949[130];
+   char s_e189c94a[152];
    char s_12cc52ac[81];
-   char s_e18c0fd3[37];
    char s_6c7809c7[49];
    char s_ad397cb2[84];
-   char s_5468d309[69];
-   char s_64fa1377[24];
-   char s_daead8a5[7];
-   char s_41d19ccb[47];
-   char s_38e226a5[40];
-   char s_551f3071[21];
-   char s_1f6e5f89[58];
-   char s_d1558b35[49];
-   char s_55288d64[41];
-   char s_d32da23d[20];
-   char s_d32da48f[15];
-   char s_212963fd[77];
-   char s_4c378b95[106];
-   char s_fa198259[128];
-   char s_239aa255[130];
-   char s_5523ef09[47];
-#ifdef HAVE_MICROPHONE
-   char s_d1df7807[10];
-   char s_35324f11[26];
-   char s_fe54bf7f[53];
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
-   char s_f0db2883[36];
-#endif
-#endif
-   char s_5b2d8d2f[23];
-   char s_6ade80dd[46];
-   char s_a4a373a7[32];
-   char s_b4ed19c0[38];
-   char s_3a147fac[103];
-   char s_502f623c[8];
-   char s_31b177ec[14];
-   char s_6895dfd6[59];
-   char s_e6cd4ada[163];
-   char s_ceafef5e[144];
-   char s_c073450a[191];
-   char s_54241480[208];
-   char s_721e7bb2[21];
-   char s_020e2bc5[22];
-   char s_0d96ed73[50];
-   char s_ebf10493[12];
-   char s_d96182c1[40];
-   char s_730df420[16];
-   char s_7e96b5ce[54];
-   char s_69b801ef[16];
-   char s_7968f59d[54];
-   char s_82fab47a[38];
-   char s_ef13be35[60];
-   char s_7943e750[30];
-   char s_1a8301fe[57];
-   char s_a7206ebc[109];
-   char s_258060bf[18];
-   char s_3547866d[142];
-   char s_b495662b[130];
-   char s_4bceefff[26];
-   char s_4577a14d[48];
-   char s_07e1d73b[362];
-   char s_353c64eb_0[500];
-   char s_353c64eb_1[150];
-   char s_5fdad539[314];
-   char s_6c52dfb1[33];
-   char s_45816e1d[25];
-   char s_2e69508b[369];
-   char s_2cb6ab5c[30];
-   char s_88095324[105];
-   char s_48696c85[94];
-   char s_a776daeb[105];
-   char s_e9bca139[31];
-   char s_f2687ca7[94];
-   char s_59dc5d76[45];
+   char s_7354d146[199];
+   char s_e18c0fd3[37];
+   char s_2d9d0a50[265];
    char s_93805cc8_0[500];
    char s_93805cc8_1[99];
-   char s_ef3d53d8[19];
-#if defined(DINGUX)
-   char s_805730a0[25];
-   char s_6dc7aece[229];
-   char s_bfd4c6ef[10];
-   char s_52153570[22];
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   char s_c1e9447c[25];
-   char s_eaa5cf6a[164];
-   char s_fec3d9e4[22];
-#endif
-#endif
-   char s_f5911f43[22];
-   char s_3aaf6bf1[126];
-   char s_d0a04fe4[17];
-   char s_17663212[171];
-   char s_2d9d0a50[265];
-   char s_ed22c5f1[25];
-   char s_d60aa85f[49];
-   char s_d5231783[91];
-   char s_dd6afca3[22];
-   char s_a68d6d11[48];
-   char s_a39ca959[86];
-   char s_22600fe7[19];
-   char s_8abad013[86];
-   char s_4bcbcc14[36];
-   char s_74022c02[104];
-   char s_a1a8257e[121];
-   char s_61213f1d[19];
-   char s_4a09218b[26];
-   char s_6c40d14e[20];
-   char s_7c07f6fc[100];
-   char s_fd9cfe13[22];
-   char s_42bb4ac1[61];
-   char s_71747541[15];
-   char s_7a2050af[36];
-   char s_ea2674d3[35];
-   char s_ac90aac1[95];
-   char s_ea2674d4[33];
-   char s_ac90aac2[93];
-   char s_c0cdc638[22];
-   char s_afd69a70[40];
-   char s_b5a603de[49];
-   char s_22735e37[51];
-   char s_d9c2db25[65];
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   char s_f98e1e26[31];
-   char s_b0dd9b14[105];
-#endif
-   char s_3c70d08d[37];
-   char s_fc2d67bb[176];
-   char s_84c46931[32];
-   char s_3c13e61f[108];
-   char s_59f183c8[25];
-   char s_9f0fd076[157];
-   char s_59f183c9[24];
-   char s_9f0fd077[156];
-   char s_f5ab35c0[29];
-   char s_055c296e[117];
-   char s_6c1369c6[17];
-   char s_30140cb5[18];
-   char s_75325963[60];
-   char s_0f5266ce[17];
-   char s_f83a493c[59];
-   char s_83e8dc72[26];
-   char s_a64b3a0b[25];
-   char s_2d8cb7ce[25];
-   char s_b9e24170[31];
-   char s_68190518[38];
-   char s_09581fc6[307];
-   char s_7cf985f0[37];
-   char s_f99a7d5e[235];
-   char s_4d7e9b13[28];
-   char s_c79d5013[21];
-   char s_ad5ff591[11];
-   char s_adcf82d6[13];
-#if defined(DINGUX)
-   char s_d374d67d[31];
-   char s_c0e554ab[164];
-#endif
-   char s_8f37930f[50];
-   char s_8f379310[50];
-   char s_b7ef9e17[46];
-   char s_81120e85[135];
-   char s_92a02470[45];
-   char s_8010a29e[134];
-   char s_c017f975[12];
-   char s_aa9bc75d[12];
-   char s_8a8a4bd7[292];
-   char s_25a21976[86];
+   char s_b495662b[130];
    char s_9953f4e2[266];
-   char s_fb84857a[7];
-   char s_bdeebb68[44];
-#ifdef HAVE_MICROPHONE
-   char s_d04ab10c[10];
-#endif
-   char s_30acd6fb[16];
-   char s_ad791974[14];
-   char s_76e73138[28];
-   char s_04b30c51[29];
-   char s_4b78ee7f[82];
-   char s_e2062515[43];
-   char s_272471c3[90];
-   char s_48c208ee[18];
-   char s_66e9521c[78];
-   char s_dcf2e800[11];
-   char s_da068369[19];
-   char s_20cc6597[109];
-   char s_b271ae95[27];
-   char s_95821d83[37];
-   char s_37033dd5[109];
-   char s_792e0069[22];
-#ifdef HAVE_MICROPHONE
-   char s_d3e78762[10];
-#endif
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-   char s_d0fb22cb[19];
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-   char s_ca9a92ae[33];
-#endif
-   char s_affd948c[33];
-   char s_ad7c73f6[16];
-   char s_cb67f2a4[32];
-   char s_a9d2227f[37];
-   char s_af6007a1[20];
-   char s_3943c7ae[37];
-   char s_f9005edc[199];
-   char s_793f841a[302];
-   char s_8be7813a[8];
-   char s_a9d2ffe8[46];
-   char s_3f5ab0a6[171];
-   char s_1757647b[7];
-   char s_0295f370[24];
    char s_de76d2dc[35];
-   char s_df610c7f[6];
-   char s_c2717b6d[134];
-   char s_3acb0241[25];
-   char s_40084357[8];
+   char s_929e8e7a[22];
+   char s_9b914f7f[41];
+   char s_4ad41e20[15];
+   char s_24c106e6[14];
+   char s_1fcf06c4[31];
+   char s_0ae2f7f3[19];
+   char s_38193683[6];
+   char s_773c07d9[23];
+   char s_3a45376e[17];
+   char s_314e7dec[20];
+   char s_061657e6[19];
+   char s_7632d987[19];
+   char s_0ebab8b7[24];
+   char s_b562e394[39];
+   char s_29398124[35];
+   char s_2e5078b2[12];
+   char s_12e77e8f[9];
+   char s_af6007a1[20];
+   char s_da068369[19];
+   char s_daead8a5[7];
+   char s_48c208ee[18];
+   char s_dcf2e800[11];
    char s_f7e668f4[18];
-   char s_daf6d7e2[30];
-   char s_7c68a1ee[32];
-   char s_dedb2642[29];
-   char s_a7fd96b0[71];
-   char s_0b32f489[47];
-   char s_c2827177[157];
-   char s_4fe7b3d2[145];
+   char s_792e0069[22];
+   char s_a9d2227f[37];
+   char s_76e73138[28];
+   char s_c82d0aee[18];
+   char s_e2062515[43];
+   char s_ad791974[14];
+   char s_b271ae95[27];
+   char s_fb84857a[7];
+   char s_3943c7ae[37];
+   char s_5b2d8d2f[23];
+   char s_affd948c[33];
+   char s_49b0b12a[7];
+   char s_ad7c73f6[16];
+   char s_30acd6fb[16];
+   char s_04b30c51[29];
+   char s_e66b1cb9[53];
+   char s_1bf49fce[52];
+   char s_11e34db0[36];
+   char s_0058b881[7];
+   char s_14ec7b7e[10];
+   char s_005cc6dc[14];
+   char s_00614813[5];
+   char s_8584f1d6[20];
+   char s_7fc52043[19];
+   char s_0cadcd1e[8];
+   char s_9509d1c2[25];
+   char s_c7a999e6[22];
+   char s_f0c9c4c0[27];
+   char s_e290a5ae[17];
+   char s_25babaa7[8];
+   char s_b819d3cc[15];
+   char s_c2f41987[17];
+   char s_bbb615a1[29];
+   char s_314539a4[24];
+   char s_213c44cf[17];
+   char s_502f623c[8];
+   char s_40e7aacd[7];
+   char s_c64294aa[21];
+   char s_5b51050b[12];
+   char s_6419decb[28];
+   char s_0f520b2d[31];
+   char s_c689058d[8];
+   char s_00641f14[11];
+   char s_565cbabb[18];
+   char s_7fa7d966[28];
+   char s_d2a3ce97[10];
+   char s_c4da1ea5[17];
+   char s_a288f873[30];
+   char s_a0f40b5a[13];
+   char s_215e6dd8[17];
+   char s_0a05438c[30];
+   char s_1324c306[33];
+   char s_152cd261[32];
+   char s_7d00b7ed[14];
+   char s_780eb7cb[25];
+   char s_7505029f[45];
+   char s_5dd46898[32];
+   char s_1a1260db[37];
+   char s_1b34e389[39];
+   char s_18996eed[30];
+   char s_6322a8fa[11];
+   char s_ce5f3353[24];
+   char s_6155456e[28];
+   char s_e4e54370[15];
+   char s_2a7ec0c3[10];
+   char s_ec59110b[23];
+   char s_225da616[8];
+   char s_304c0542[14];
+   char s_0fd30a6d[5];
+   char s_36265c93[13];
+   char s_1e1c0557[16];
+   char s_feb1c160[7];
+   char s_b2e4b4c3[24];
+   char s_97242f99[18];
+   char s_8cefb843[16];
+   char s_177845b3[16];
+   char s_8fe1a777[24];
+   char s_881efe76[24];
+   char s_1e4264a1[10];
+   char s_babee9c1[11];
+   char s_78c58363[24];
+   char s_78071664[16];
+   char s_78083010[17];
+   char s_cc781d49[19];
+   char s_49c9bf91[12];
+   char s_04ecbe77[12];
+   char s_525068d3[29];
+   char s_18cc5aec[26];
+   char s_b0b9ca3e[63];
+   char s_66ed0f42[15];
+   char s_ba582576[42];
+   char s_33ed5ede[34];
+   char s_8d30abf0[22];
+   char s_38b82e6c[22];
+   char s_8f133960[16];
+   char s_9c5329ad[21];
+   char s_d7f2cfac[17];
+   char s_87e07c0e[20];
+   char s_d7f2e719[27];
+   char s_b95e3404[17];
+   char s_734d2a61[8];
+   char s_a7a97316[41];
+   char s_8b421107[35];
+   char s_9ada0438[47];
+   char s_eb66d46b[29];
+   char s_145f5880[25];
+   char s_9af4bf52[27];
+   char s_e5d096ab[13];
+   char s_f4875576[33];
+   char s_6a07da9c[21];
+   char s_22600fe7[19];
+   char s_dd6afca3[22];
+   char s_4bcbcc14[36];
+   char s_06f25fc0[17];
+   char s_f0ce97f7[24];
+   char s_704e200c[8];
+   char s_a82728ec[31];
+   char s_a234a577[21];
+   char s_d7406081[19];
+   char s_ed22e7ac[9];
+   char s_eae59928[23];
+   char s_b92166cd[6];
+   char s_a30b8bc0[11];
+   char s_b18effee[15];
+   char s_15f24ff4[8];
+   char s_5d29b870[23];
+   char s_d95824aa[17];
+   char s_639f529e[18];
+   char s_4927597c[13];
+   char s_77b74366[26];
+   char s_10342503[16];
+   char s_d31f6d88[21];
+   char s_f03e9c42[26];
+   char s_7088df5e[44];
+   char s_3e073ed3[52];
+   char s_6ebb6a00[18];
+   char s_f4116974[16];
+   char s_01d9ae7b[18];
+   char s_c12910d3[8];
+   char s_99eb425d[9];
+   char s_411a3db3[6];
+   char s_941e50fb[14];
+   char s_2cb9dc71[10];
+   char s_64f2bcae[7];
+   char s_2841f912[27];
+   char s_988f00b1[27];
+   char s_a46a4178[27];
+   char s_97c02a5a[31];
+   char s_ad8d5812[73];
+   char s_8055d56c[52];
+   char s_c4842e2d[23];
+   char s_fd3e287f[9];
+   char s_550b1e93[10];
+   char s_d2224db6[8];
+   char s_c0d9bee1[8];
+   char s_c175c697[8];
+   char s_e2f27171[6];
+   char s_2f9a064c[6];
+   char s_96ee0cfb[11];
+   char s_ae50c550[11];
+   char s_2e7dbc66[16];
+   char s_b30d3e14[8];
+   char s_99d3d4ae[13];
+   char s_d81bf7a9[13];
+   char s_af315ae7[66];
+   char s_87994f40[27];
    char s_6f199f35[40];
+   char s_798643f5[34];
+   char s_b61d0a2d[33];
+   char s_c68080b6[30];
+   char s_b87232ce[31];
+   char s_231308e8[33];
+   char s_27db7cc0[32];
+   char s_700d45a9[29];
+   char s_2a30a561[30];
    char s_e28bc72f[37];
    char s_f9ee4a82[10];
    char s_7beff2c4[7];
    char s_8b9af73a[41];
-   char s_d0b943e8[77];
-   char s_fcc3aec5[12];
-   char s_feaf16c5[18];
-   char s_cde2111a[23];
-   char s_a4d3948f[45];
-   char s_00ea00d3[22];
-   char s_87071f08[5];
-   char s_f8b9e275[17];
-   char s_c70e3826[36];
-   char s_50e34bc5[16];
-   char s_21c5b854[21];
-   char s_79381041[154];
-   char s_bd95eeb2[16];
-   char s_bd973c50[16];
-   char s_cbdeb67b[17];
-   char s_6b84e5e6[82];
-   char s_070529d4[85];
-   char s_735c53f7[12];
-   char s_e5a6dde5[16];
-   char s_f12f9f93[60];
-   char s_d9f6c8e8[20];
-   char s_87994f40[27];
+   char s_c6b760c9[50];
+   char s_1d5a27f5[46];
    char s_18029d7e[23];
+   char s_d9f6c8e8[20];
+   char s_009a10e3[8];
+   char s_cde2111a[23];
+   char s_0b32f489[47];
+   char s_56e1b31e[19];
    char s_56e1b31f[17];
-   char s_56e1b336[20];
+   char s_56e1b329[17];
+   char s_3318187b[20];
+   char s_3318187c[20];
+   char s_56e1b32f[17];
+   char s_33181941[20];
+   char s_33181942[20];
    char s_cbeca73d[14];
    char s_8a16fa6b[13];
-   char s_56e1b31e[19];
    char s_56e1b335[16];
-   char s_56e1b329[17];
-   char s_56e1b32f[17];
-   char s_3318187b[20];
-   char s_33181941[20];
-   char s_3318187c[20];
-   char s_33181942[20];
-   char s_b61d0a2d[33];
-   char s_798643f5[34];
-   char s_b87232ce[31];
-   char s_c68080b6[30];
-   char s_27db7cc0[32];
-   char s_231308e8[33];
-   char s_2a30a561[30];
-   char s_700d45a9[29];
-   char s_97eb860c[16];
-   char s_e7c0ed0f[19];
+   char s_56e1b336[20];
    char s_72765a06[19];
    char s_72765a07[19];
    char s_72765a08[19];
-   char s_73bb2346[17];
-   char s_ea15eb78[18];
-   char s_c30b67b5[36];
    char s_b37addc8[37];
    char s_b37f141b[40];
    char s_23d05f0e[39];
-   char s_552163d9[40];
-   char s_3e073ed3[52];
-   char s_8b421107[35];
-   char s_2f86932b[19];
-   char s_ad8d5812[73];
-   char s_6ff78e00[56];
-   char s_e66b1cb9[53];
-   char s_a8d552a7[62];
-   char s_1bf49fce[52];
-   char s_6112ec7c[55];
-   char s_af315ae7[66];
-   char s_50707595[74];
-   char s_11e34db0[36];
-   char s_8055d56c[52];
-   char s_4b99ff86[71];
-   char s_9b87fbf9[126];
-   char s_5ae6337d[89];
-   char s_be8e02b4[51];
-   char s_a624fe50[23];
-   char s_c5a7263e[40];
-   char s_9f6b2d03[28];
-   char s_97379d00[25];
-   char s_64702d9a[35];
-   char s_2841f912[27];
-   char s_1d39f4b7[40];
-   char s_f02f73fc[36];
-   char s_dd9ff22a[84];
-   char s_f5338957[43];
-   char s_b3d1e989[13];
-   char s_6cdf4f07[32];
-   char s_b45e4c28[27];
-   char s_48431da6[13];
-   char s_205caaf6[13];
-   char s_b662d01f[33];
-   char s_f6cc615c[45];
-   char s_980b7c0a[95];
-   char s_d5e9dd0a[17];
-   char s_ded83500[45];
-   char s_d654f042[21];
-   char s_df00cbb0[54];
-   char s_568de57c[22];
-   char s_d73ce37f[46];
-   char s_c4ad61ad[152];
-   char s_c4a9bd3e[18];
-   char s_8dcc2dac[71];
-   char s_b6192beb[16];
-   char s_f139b159[51];
-   char s_4d00e91b[31];
-   char s_d86bb549[150];
-   char s_51d76325[9];
-   char s_9dd66391[19];
-   char s_2be118c6[33];
-   char s_3ca0fdf4[67];
-   char s_cf8bcdce[30];
-   char s_49f9815b[31];
-   char s_2d09f049[28];
-   char s_988f00b1[27];
-   char s_e738b2b9[36];
-   char s_f2c17467[61];
-   char s_ddc4f021[42];
-   char s_ddc6b80f[36];
-   char s_4b582a0b[38];
-   char s_4b582a0c[38];
-   char s_f4341e25[47];
-   char s_e829b8da[33];
-   char s_aa93eec8[101];
-   char s_c561b96e[32];
-   char s_68d27147[23];
-   char s_788364f5[101];
-   char s_2696c793[57];
-   char s_e6535ec1[228];
-   char s_9f2cc577[16];
-   char s_77155e0f[21];
-   char s_68664e16[20];
-   char s_55d6cc44[43];
-   char s_bd50c8e2[5];
-   char s_7816d5d5[29];
-   char s_37d36d03[58];
-   char s_dfdbf027[118];
-   char s_9da5609f[15];
-   char s_25f1508f[13];
-   char s_49f54c1b[20];
-   char s_f0c9c4c0[27];
-   char s_8fe1a777[24];
-   char s_2c04084b[24];
-   char s_3bb4fbf9[116];
-   char s_ce327e00[25];
-   char s_9754ee6e[42];
-   char s_5c6a50d2[122];
-   char s_f2963d2d[34];
-   char s_929e8e7a[22];
-   char s_5508c468[72];
-   char s_9b914f7f[41];
-   char s_e59c4ded[51];
-   char s_565cbabb[18];
-   char s_7fa7d966[28];
-   char s_a288f873[30];
-   char s_a85861e1[88];
-   char s_d48223f9[37];
-   char s_da518d67[163];
-   char s_8594979d[36];
-   char s_8b64010b[181];
-   char s_5c487242[22];
-   char s_a166bef0[40];
-   char s_b9e4eae3[13];
-   char s_fc6e3a57[10];
-   char s_02526a85[71];
-   char s_2bc31697[26];
-   char s_04e3886f[42];
-   char s_388ef77f[40];
-   char s_6124fb03[36];
-   char s_71e4e031[256];
-   char s_3ea5e8ac[49];
-   char s_7ef3d15a[236];
-   char s_4037367a[16];
-   char s_02a16c68[169];
-   char s_c4ab544b[17];
-   char s_07058269[25];
-   char s_64a91b83[15];
-   char s_82d064b1[41];
-   char s_eb66d46b[29];
-   char s_bbb615a1[29];
-   char s_9ada0438[47];
-   char s_c3968f26[88];
-   char s_9198f1a0[224];
-   char s_165e564b[359];
-   char s_96ee0cfb[11];
-   char s_7fd5ef69[92];
-   char s_49a8967c[91];
-   char s_fd7bb9e2[34];
-   char s_fd7b6a38[33];
-   char s_bcc17320[55];
-   char s_5d4e7834[41];
-   char s_5bbcf84b[9];
-   char s_2369a893[9];
-   char s_1078c6c0[16];
-   char s_abf90aae[157];
-   char s_7772fc51[35];
-   char s_64e37a7f[96];
-   char s_a82728ec[31];
-   char s_ca981b76[12];
-   char s_38193683[6];
-   char s_9528d92a[11];
-   char s_b3502258[112];
-   char s_b819d3cc[15];
-   char s_8203db0a[7];
-   char s_213c44cf[17];
-   char s_b18effee[15];
-   char s_cafa647f[23];
-   char s_3a45376e[17];
-   char s_0ae2f7f3[19];
-   char s_24c106e6[14];
-   char s_6a739141[13];
-   char s_1e1c0557[16];
-   char s_12e77e8f[9];
-   char s_01d9ae7b[18];
-   char s_4674fab3[11];
-   char s_5f612db6[14];
-   char s_9f29f708[28];
-   char s_61942cf6[68];
-   char s_e4c4c0a2[24];
-   char s_bcf3997a[18];
-   char s_6090802e[32];
-   char s_d4c47f59[136];
-#ifdef HAVE_MIST
-   char s_6889b69d[10];
-   char s_cf0912eb[16];
-   char s_dba1ce27[16];
-#endif
-   char s_0ebab8b7[24];
-   char s_cd66ffc9[33];
-   char s_8fd135b7[37];
-   char s_b9e684ee[44];
-   char s_788f3ba8[41];
-   char s_38311095[28];
-   char s_68fc7d61[16];
-   char s_78c3a30f[48];
-   char s_4ad9adf8[23];
-   char s_0500fecc[19];
-   char s_63005fba[35];
-   char s_b562e394[39];
-   char s_3e39918c[16];
-   char s_d9b9d57a[84];
-   char s_25e87d9d[9];
-   char s_f865440b[22];
-   char s_ddf3c771[31];
-   char s_704e200c[8];
-   char s_b714023a[47];
-   char s_29398124[35];
-   char s_f4875576[33];
-   char s_99d3d4ae[13];
-   char s_0fd30a6d[5];
-   char s_225da616[8];
-   char s_304c0542[14];
-   char s_f1f74dd3[8];
-   char s_302ec787[18];
-   char s_215e6dd8[17];
-   char s_9c6ed9ca[17];
-   char s_69b36417[15];
-   char s_879ee2c5[55];
-   char s_fdd6e708[16];
-   char s_1bc265b6[65];
-   char s_9914967d[32];
-   char s_a1c071eb[84];
-   char s_04f1138c[30];
-   char s_0d9ceefa[76];
-   char s_9c5329ad[21];
-   char s_feb1c160[7];
-   char s_43d00e0e[31];
-   char s_639f529e[18];
-   char s_aa6534cc[29];
-   char s_3783f4ea[7];
-   char s_474b1a98[63];
-   char s_314e7dec[20];
-   char s_a90e173b[34];
-   char s_4f9b9b72[44];
-   char s_4f9d90c3[41];
-   char s_9335605c[18];
-   char s_6419decb[28];
-   char s_6cc5ba39[32];
-   char s_0f520b2d[31];
-   char s_c64294aa[21];
-   char s_af2a7718[63];
-   char s_40e7aacd[7];
-   char s_c689058d[8];
-   char s_5b51050b[12];
-   char s_d95824aa[17];
-   char s_4927597c[13];
-   char s_77b74366[26];
-   char s_ad8283d5[97];
-   char s_2630397c[21];
-   char s_2c1469aa[170];
-   char s_d5901b68[26];
-   char s_55f488d2[31];
-   char s_832d681f[13];
-   char s_64f2bcae[7];
-   char s_42066550[7];
-   char s_e84a3a16[87];
-   char s_8841e63d[36];
-   char s_8843db8e[33];
-   char s_23c41f7c[85];
-   char s_94d6c2ce[33];
-   char s_6c78e4f7[45];
-   char s_cf28bcf5[44];
-   char s_7ba664e0[36];
-   char s_d9d847b8[47];
-   char s_76d26f12[49];
-   char s_5f080876[28];
-   char s_d92341ca[35];
-   char s_b5896acf[48];
-   char s_1226e190[35];
-   char s_15345f7c[25];
-   char s_7a69d62d[39];
-   char s_82f759de[9];
-   char s_0058b881[7];
-   char s_73674a86[15];
-   char s_eae59928[23];
-   char s_c813b6c6[11];
-   char s_bb2de2c7[20];
-   char s_7675f215[24];
-   char s_51f16286[15];
-   char s_1aebff8d[10];
-   char s_1c62c301[10];
-   char s_a8bb35b6[11];
-   char s_6d353bd6[14];
-   char s_2b39eb60[22];
-   char s_a234a577[21];
-   char s_d7406081[19];
-   char s_ed22e7ac[9];
-   char s_e2f5e678[7];
-   char s_91887598[13];
-   char s_f632c879[7];
-   char s_7a911960[17];
-   char s_c3168f05[7];
-   char s_25e86ee3[10];
-   char s_25e89959[4];
-   char s_c3168ee5[5];
-   char s_e2f93e68[11];
-   char s_411a3db3[6];
-   char s_c12910d3[8];
-   char s_a30b8bc0[11];
-   char s_2037efd9[4];
-   char s_d2a3ce97[10];
-   char s_a0f40b5a[13];
-   char s_60ff701a[16];
-   char s_2a7ec0c3[10];
-   char s_e2d223cc[21];
-   char s_df763da7[13];
-   char s_d61d87cd[15];
-   char s_706c1104[20];
-   char s_085b8f97[19];
-   char s_e354f00a[7];
-   char s_4e61b8dd[7];
-   char s_0eed526e[7];
+   char s_c30b67b5[36];
+   char s_e7c0ed0f[19];
+   char s_ea15eb78[18];
+   char s_73bb2346[17];
+   char s_97eb860c[16];
+   char s_7c68a1ee[32];
+   char s_735c53f7[12];
+   char s_f8b9e275[17];
+   char s_50e34bc5[16];
+   char s_00ea00d3[22];
+   char s_e5a6dde5[16];
+   char s_87071f08[5];
+   char s_ec502f2a[20];
+   char s_c70e3826[36];
+   char s_21c5b854[21];
+   char s_cbdeb67b[17];
+   char s_bd95eeb2[16];
+   char s_bd973c50[16];
+   char s_6b84e5e6[82];
    char s_baff47af[7];
    char s_baff47b0[7];
+   char s_e354f00a[7];
+   char s_0eed526e[7];
+   char s_4e61b8dd[7];
+   char s_b662d01f[33];
+   char s_f6cc615c[45];
+   char s_c4a9bd3e[18];
+   char s_51d76325[9];
+   char s_4d00e91b[31];
+   char s_b6192beb[16];
+   char s_cf8bcdce[30];
+   char s_2be118c6[33];
+   char s_9dd66391[19];
+   char s_d73ce37f[46];
    char s_7e9108fa[10];
    char s_f455cf63[11];
-   char s_72898bf0[21];
-   char s_bd8bf83a[7];
-   char s_bd84f1a3[12];
-   char s_f8d42b14[12];
-   char s_728ca1d3[10];
-   char s_ccfe26d1[28];
-   char s_ec1c0efd[13];
-   char s_a1558f31[16];
-   char s_228e251b[12];
-   char s_dda9087d[16];
-   char s_f500027b[8];
-   char s_9bf2d834[15];
-   char s_22f52844[12];
-   char s_0dade48b[20];
-   char s_c587df67[10];
-   char s_b30b56ad[10];
-   char s_f4116974[16];
-   char s_d721d862[79];
-   char s_65e6ea7c[15];
-   char s_c4928773[67];
-   char s_57dccf4f[108];
-   char s_9bb1a0de[228];
-   char s_3baa942f[5];
-   char s_3c518be3[13];
-   char s_6bb9189a[5];
-   char s_490a6c83[13];
-   char s_4f5d2bcd[13];
-   char s_9ccb925f[15];
-   char s_92b879ff[25];
-   char s_650f496e[13];
-   char s_de3874f9[14];
-   char s_4af33e16[15];
-   char s_988f5574[12];
-   char s_b736ca94[7];
-   char s_9828524b[12];
-   char s_e0cd1164[15];
-   char s_680d31ab[8];
-   char s_28c6d661[16];
-   char s_228341ad[16];
-   char s_2c2fc2c9[10];
-   char s_368db7bb[20];
-   char s_dac68b37[67];
-   char s_03195749[390];
-   char s_7f10fcd2[15];
-   char s_853efa07[10];
-   char s_7206ddda[15];
+   char s_ce89e465[23];
+   char s_980ef0e8[8];
+   char s_fcf05466[23];
+   char s_d042d680[23];
+   char s_feaf16c5[18];
+   char s_dedb2642[29];
+   char s_bd07998f[16];
+   char s_9e66791a[8];
+   char s_84d3d068[10];
+   char s_706c1104[20];
+   char s_e4c4c0a2[24];
+   char s_9f6b2d03[28];
+   char s_6107eb09[18];
+   char s_b6172513[11];
+   char s_e3d18a3d[19];
+   char s_d15b342a[15];
+   char s_fdd6e708[16];
+   char s_cafa647f[23];
+   char s_31b177ec[14];
+   char s_8cb3b95f[8];
+   char s_a624fe50[23];
+   char s_d9685b01[15];
+   char s_3e39918c[16];
+   char s_e2d223cc[21];
+   char s_8a9a3ae4[11];
+   char s_c2f915b2[7];
+   char s_3a0abeb9[10];
    char s_c3121580[5];
    char s_ac1af256[16];
    char s_954d16c1[12];
@@ -1023,101 +402,697 @@ static const struct
    char s_0510a954[8];
    char s_f4c2f40f[12];
    char s_f4c9faa6[10];
-   char s_006dbffd[10];
    char s_906aff13[10];
-   char s_3a0abeb9[10];
-   char s_c2f915b2[7];
-   char s_6d059c18[14];
-   char s_6cc148e7[21];
-   char s_e475c03b[10];
-   char s_b6761774[26];
-   char s_cb75ab99[7];
-   char s_7ea47472[16];
-   char s_5f15f7a7[13];
-   char s_7534cfc9[7];
-   char s_2aeb5474[17];
-   char s_6d08238d[5];
-   char s_b71e6907[37];
-   char s_08785e85[24];
-   char s_4707850d[17];
-   char s_6d025795[8];
-   char s_3181d160[24];
-   char s_99d648f2[13];
-   char s_0d7321f6[5];
-   char s_11121f30[31];
-   char s_e8ae394f[6];
-   char s_e8a86d57[9];
-   char s_725702e3[15];
-   char s_d93c753a[8];
-   char s_0e57428f[18];
-   char s_1fcf06c4[31];
-   char s_773c07d9[23];
-   char s_c4da1ea5[17];
-   char s_b2e4b4c3[24];
-   char s_97c02a5a[31];
-   char s_2e7dbc66[16];
-   char s_c6b760c9[50];
-   char s_1d5a27f5[46];
-   char s_30bf38ba[17];
-   char s_b6172513[11];
+   char s_006dbffd[10];
+   char s_e22edcd8[7];
+   char s_9da5609f[15];
+   char s_68d27147[23];
+   char s_f02f73fc[36];
+   char s_3a0a3fef[24];
+   char s_2696c793[57];
+   char s_72898bf0[21];
+   char s_bd50c8e2[5];
+   char s_ceb820ad[11];
+   char s_df92f5b5[36];
+   char s_7816d5d5[29];
+   char s_b00815b8[13];
+   char s_8be7813a[8];
+   char s_1757647b[7];
+   char s_e1a8f707[20];
+   char s_51844cc2[21];
+   char s_df610c7f[6];
+   char s_3acb0241[25];
+   char s_40084357[8];
+   char s_9f2cc577[16];
    char s_026e5a83[12];
+   char s_42b8ffbf[8];
+   char s_64702d9a[35];
+   char s_e829b8da[33];
+   char s_60ff701a[16];
+   char s_388ef77f[40];
+   char s_52fbb99d[33];
+   char s_38311095[28];
+   char s_b9e684ee[44];
+   char s_cd66ffc9[33];
+   char s_788f3ba8[41];
+   char s_6124fb03[36];
+   char s_3ea5e8ac[49];
+   char s_5c487242[22];
+   char s_1adb7f60[111];
+   char s_b9e4eae3[13];
+   char s_4037367a[16];
+   char s_9528d92a[11];
+   char s_2bc31697[26];
+   char s_d48223f9[37];
+   char s_d3b03946[12];
+   char s_51f16286[15];
+   char s_04e3886f[42];
+   char s_c19bc96b[57];
+   char s_fc6e3a57[10];
+   char s_8594979d[36];
+   char s_c4ab544b[17];
+   char s_07058269[25];
+   char s_89920317[21];
+   char s_87d88aa2[5];
+   char s_c3168ee5[5];
+   char s_e2f5e678[7];
+   char s_e738b2b9[36];
+   char s_2037efd9[4];
+   char s_6c78e4f7[45];
+   char s_7a69d62d[39];
+   char s_7ba664e0[36];
+   char s_76d26f12[49];
+   char s_d9d847b8[47];
+   char s_cf28bcf5[44];
+   char s_5f080876[28];
+   char s_d92341ca[35];
+   char s_c813b6c6[11];
    char s_78ccdecc[41];
+   char s_15345f7c[25];
    char s_b78a0248[39];
    char s_3a15d6a9[37];
+   char s_b5896acf[48];
+   char s_1226e190[35];
+   char s_94d6c2ce[33];
+   char s_25e86ee3[10];
+   char s_c3168f05[7];
    char s_7a4b772d[8];
+   char s_e2c6c781[19];
+   char s_a670da0a[24];
+   char s_ee71e86e[24];
+   char s_d894f9b6[18];
+   char s_164566fb[18];
+   char s_d5e9dd0a[17];
+   char s_ded83500[45];
+   char s_7895cc5b[22];
+   char s_e46faa42[18];
+   char s_d654f042[21];
+   char s_568de57c[22];
+   char s_30bf38ba[17];
+   char s_853efa07[10];
+   char s_7f10fcd2[15];
+   char s_7206ddda[15];
+   char s_2f169651[16];
+   char s_73674a86[15];
+   char s_97379d00[25];
+   char s_0f1d488a[11];
+   char s_b3cc8a43[23];
+   char s_6090802e[32];
+   char s_fd7b6a38[33];
+   char s_1aebff8d[10];
+   char s_fd7bb9e2[34];
+   char s_1078c6c0[16];
+   char s_7772fc51[35];
+   char s_f632c879[7];
+   char s_8d94cfea[39];
+   char s_bcc17320[55];
+   char s_5bbcf84b[9];
+   char s_64dd7209[53];
+   char s_77155e0f[21];
    char s_e2f6ffcd[6];
+   char s_56e21ee1[19];
+   char s_f70406ce[20];
+   char s_66df5c89[21];
+   char s_ca981b76[12];
+   char s_3361e11d[51];
+   char s_9b3ca94b[47];
+   char s_6d025795[8];
+   char s_3181d160[24];
+   char s_11121f30[31];
+   char s_0d7321f6[5];
+   char s_6d059c18[14];
+   char s_99d648f2[13];
+   char s_2aeb5474[17];
+   char s_e475c03b[10];
+   char s_6cc148e7[21];
+   char s_7534cfc9[7];
+   char s_036acd54[34];
+   char s_a0a191ca[34];
+   char s_7ea47472[16];
+   char s_cb75ab99[7];
+   char s_5f15f7a7[13];
+   char s_b6761774[26];
+   char s_6d08238d[5];
+   char s_e8a86d57[9];
+   char s_725702e3[15];
+   char s_e8ae394f[6];
+   char s_d93c753a[8];
+   char s_0e57428f[18];
+   char s_08785e85[24];
+   char s_b71e6907[37];
+   char s_4707850d[17];
+   char s_260261d6[13];
+   char s_95cf0994[9];
+   char s_36109f2c[11];
+   char s_cf24fcc2[21];
+   char s_8d13ec48[15];
+   char s_b93afb41[21];
+   char s_47f4eb8e[10];
+   char s_d3a2aa7d[21];
+   char s_3413595a[18];
+   char s_70bac144[21];
+   char s_046d0e21[27];
+   char s_bdc1c274[12];
+   char s_06650b16[14];
+   char s_6c06b558[25];
+   char s_00966fb4[32];
+   char s_00dfe961[25];
+   char s_2742a469[22];
+   char s_a708b2f4[23];
+   char s_17983560[21];
+   char s_3af38d58[35];
+   char s_b2865f23[9];
+   char s_e8ad0320[13];
+   char s_9251b4c1[8];
+   char s_887214f4[7];
+   char s_92be1c10[7];
+   char s_0472da71[5];
+   char s_cbdfd37c[10];
+   char s_f019e498[7];
+   char s_f1382b82[6];
+   char s_0e740679[21];
+   char s_a986c4da[12];
+   char s_69f2e90c[24];
+   char s_4ceac87e[8];
+   char s_f62d1074[8];
+   char s_387a4176[20];
+   char s_28863bc1[19];
+   char s_f751c497[21];
+   char s_9329c64c[12];
+   char s_f8883f70[7];
+   char s_09ba892e[12];
+   char s_58b9d895[21];
+   char s_0a2aa953[9];
+   char s_80a2b273[14];
+   char s_1b8a5cb5[21];
+   char s_721e7bb2[21];
+   char s_9335605c[18];
+   char s_a90e173b[34];
+   char s_4f9b9b72[44];
+   char s_4f9d90c3[41];
+   char s_ddf3c771[31];
+   char s_1938dce6[25];
+   char s_302ec787[18];
+   char s_59980356[10];
+   char s_f1f74dd3[8];
+   char s_62144cdf[11];
+   char s_f5338957[43];
+   char s_749f0441[36];
+   char s_f8d42b14[12];
+   char s_ccfe26d1[28];
+   char s_728ca1d3[10];
+   char s_5f612db6[14];
+   char s_9f29f708[28];
+   char s_22f52844[12];
+   char s_ec1c0efd[13];
+   char s_228e251b[12];
+   char s_c587df67[10];
+   char s_9bf2d834[15];
+   char s_f500027b[8];
+   char s_a1558f31[16];
+   char s_dda9087d[16];
+   char s_0dade48b[20];
+   char s_b30b56ad[10];
+   char s_2c04084b[24];
+   char s_bd84f1a3[12];
+   char s_bd8bf83a[7];
+   char s_085b8f97[19];
+   char s_25e87d9d[9];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   char s_addc7f89[77];
+#endif
+#endif
+   char s_dff02a9f[29];
+   char s_87ee250e[29];
+   char s_04681a15[35];
+   char s_046a0f66[32];
+   char s_6f02b5b0[34];
+   char s_a11934f5[28];
+   char s_69b36417[15];
+   char s_e7a63560[11];
+   char s_42066550[7];
+   char s_68fc7d61[16];
+   char s_0500fecc[19];
+   char s_df763da7[13];
+   char s_4ad9adf8[23];
+   char s_d61d87cd[15];
+   char s_5d4e7834[41];
+   char s_bcf3997a[18];
+   char s_fd9cfe13[22];
+   char s_2afa843b[21];
+   char s_82f759de[9];
    char s_e2055017[9];
-   char s_9374b989[19];
-   char s_2fa1d6ef[46];
-   char s_e2f9cd07[11];
-   char s_812153e8[73];
-   char s_660eb9c4[27];
-   char s_49757b91[27];
-   char s_aa0659db[27];
-   char s_c2f41987[17];
-   char s_25babaa7[8];
-   char s_d3b03946[12];
-   char s_52fbb99d[33];
+   char s_bb2de2c7[20];
+   char s_fcc3aec5[12];
+   char s_4aaeeb99[13];
+   char s_ce327e00[25];
+   char s_9932960f[13];
+   char s_302fdd56[13];
+   char s_832d681f[13];
+   char s_2630397c[21];
+   char s_3783f4ea[7];
+   char s_3baa942f[5];
+   char s_3c518be3[13];
+   char s_6bb9189a[5];
+   char s_c561b96e[32];
+   char s_25f1508f[13];
+   char s_ed013a05[37];
+   char s_33f012e4[9];
+   char s_01a73130[31];
+   char s_467f06c1[4];
+   char s_084af156[17];
+   char s_7d65b67e[16];
+   char s_d7fc4c9c[24];
+   char s_d21c686b[30];
+   char s_f465878a[20];
    char s_8406d44c[7];
+   char s_64a91b83[15];
+   char s_206b1acd[14];
+   char s_9374b989[19];
+   char s_7943e750[30];
+   char s_ea80654d[43];
+   char s_be8e02b4[51];
    char s_002e83c8[19];
-   char s_e2f27171[6];
-   char s_15f24ff4[8];
-   char s_c19bc96b[57];
-   char s_1adb7f60[111];
-   char s_aaaaf898[35];
-   char s_4bc518be[38];
-   char s_b30573ed[123];
-   char s_843b6a7b[38];
-   char s_e9eb2822[67];
-   char s_12552dca[19];
-   char s_6933100b[40];
-   char s_a6abc697[39];
-   char s_5b678bc4[19];
-   char s_11d0d482[24];
-   char s_9cfca240[32];
-   char s_f9a13828[21];
-   char s_69a0990c[31];
-   char s_bff0b58f[46];
-   char s_1de3d99f[49];
-   char s_846c3994[14];
-   char s_49ef28fd[13];
-   char s_531b0e75[16];
-   char s_76c4c7ce[33];
-   char s_79eac1d9[17];
-   char s_0ca1ef5c[20];
+   char s_6a739141[13];
+   char s_bab74532[25];
+   char s_7d2035c4[21];
+   char s_b3565d3d[32];
+   char s_f8fa3e2f[14];
+   char s_8356c98c[13];
+   char s_5c7bbce1[21];
+   char s_cd916c68[22];
+   char s_8fe41f79[34];
+   char s_2c296537[25];
+   char s_519cd5f8[38];
+   char s_43ac80a0[12];
+   char s_ebe994b4[17];
+   char s_1c62c301[10];
+   char s_a8bb35b6[11];
+   char s_6d353bd6[14];
+   char s_da093426[21];
+   char s_d9b00fbd[29];
+   char s_0a008a9d[8];
+   char s_9c6ed9ca[17];
+   char s_68664e16[20];
+   char s_4674fab3[11];
+   char s_7a911960[17];
+   char s_49f54c1b[20];
+   char s_2369a893[9];
+   char s_9a981aa0[13];
+   char s_e2f93e68[11];
+   char s_a4d3948f[45];
+   char s_2fa1d6ef[46];
+   char s_9914967d[32];
+   char s_04f1138c[30];
+   char s_91887598[13];
+   char s_95cbebbd[19];
+   char s_6b80a1bc[29];
+   char s_eb0d7f1d[21];
+   char s_99a77122[18];
+   char s_51cbf8f0[48];
+   char s_4a5b7672[24];
+   char s_8fa79de5[23];
+   char s_5eee10e5[30];
+   char s_79a4338e[16];
+   char s_eb3c8b7f[26];
+   char s_6ae93e68[24];
+   char s_e2f9cd07[11];
+   char s_7277e127[24];
+   char s_8203db0a[7];
+   char s_3a9d7557[11];
+   char s_1d39f4b7[40];
+   char s_2b39eb60[22];
+   char s_2f86932b[19];
+   char s_ad5ff591[11];
+   char s_adcf82d6[13];
+   char s_c79d5013[21];
+   char s_4577a14d[48];
+   char s_4bceefff[26];
+   char s_f4341e25[47];
+   char s_cc973e8a[7];
+   char s_d0a04fe4[17];
+   char s_05c5a263[21];
+   char s_ed22c5f1[25];
+   char s_49f9815b[31];
+   char s_ddc4f021[42];
+   char s_ddc6b80f[36];
+   char s_f5ab35c0[29];
+   char s_3c70d08d[37];
+   char s_aa9bc75d[12];
+   char s_020e2bc5[22];
+   char s_59f183c8[25];
+   char s_59f183c9[24];
+   char s_6b395e21[15];
+   char s_71747541[15];
+   char s_b45e4c28[27];
+   char s_e9bca139[31];
+   char s_59dc5d76[45];
+   char s_4b582a0b[38];
+   char s_4b582a0c[38];
+   char s_61213f1d[19];
+   char s_57665cff[7];
+   char s_6cdf4f07[32];
+   char s_b3d1e989[13];
+   char s_205caaf6[13];
+   char s_c0cdc638[22];
+   char s_afd69a70[40];
+   char s_22735e37[51];
+   char s_6c40d14e[20];
+   char s_6c1369c6[17];
+   char s_4d7e9b13[28];
+   char s_69b801ef[16];
+   char s_580e244f[7];
+   char s_f5911f43[22];
+   char s_55f488d2[31];
+   char s_d5901b68[26];
+   char s_8841e63d[36];
+   char s_8843db8e[33];
+   char s_2cb6ab5c[30];
+   char s_552163d9[40];
+   char s_ef3d53d8[19];
+   char s_6dcc2f9f[20];
+   char s_48431da6[13];
+   char s_45816e1d[25];
+   char s_c017f975[12];
+   char s_730df420[16];
+   char s_bcddf275[8];
+   char s_258060bf[18];
+   char s_92a02470[45];
+   char s_b7ef9e17[46];
+   char s_8f37930f[50];
+   char s_8f379310[50];
+   char s_6a9b757c[28];
+   char s_6c52dfb1[33];
+   char s_84c46931[32];
+   char s_ebf10493[12];
+   char s_a64b3a0b[25];
+   char s_83e8dc72[26];
+   char s_7cf985f0[37];
+   char s_0f5266ce[17];
+   char s_ea2674d3[35];
+   char s_ea2674d4[33];
+   char s_2d8cb7ce[25];
+   char s_68190518[38];
+   char s_b9e24170[31];
+   char s_30140cb5[18];
+   char s_25a21976[86];
+   char s_50d77da7[15];
+   char s_65e6ea7c[15];
+   char s_490a6c83[13];
+   char s_4af33e16[15];
+   char s_4f5d2bcd[13];
+   char s_9ccb925f[15];
+   char s_92b879ff[25];
+   char s_de3874f9[14];
+   char s_650f496e[13];
+   char s_988f5574[12];
+   char s_b736ca94[7];
+   char s_9828524b[12];
+   char s_e0cd1164[15];
+   char s_680d31ab[8];
+   char s_28c6d661[16];
+   char s_228341ad[16];
+   char s_2c2fc2c9[10];
+   char s_368db7bb[20];
+   char s_25e89959[4];
+   char s_aa0659db[27];
+   char s_49757b91[27];
+   char s_660eb9c4[27];
+   char s_9ca4bbd7[22];
+   char s_9ca4bbd8[22];
+   char s_5508c468[72];
+   char s_e59c4ded[51];
+   char s_5a8511ce[55];
+   char s_243da114[60];
+   char s_17385b20[67];
+   char s_20cc6597[109];
+   char s_66e9521c[78];
+   char s_daf6d7e2[30];
+   char s_272471c3[90];
+   char s_95821d83[37];
+   char s_bdeebb68[44];
+   char s_f9005edc[199];
+   char s_6ade80dd[46];
+   char s_5977d6d8[44];
+   char s_cb67f2a4[32];
+   char s_4b78ee7f[82];
+   char s_a8d552a7[62];
+   char s_6112ec7c[55];
+   char s_9b87fbf9[126];
+   char s_af2a7718[63];
+   char s_6cc5ba39[32];
+   char s_a85861e1[88];
+   char s_19b6373a[113];
+   char s_f63531f4[57];
+   char s_f83d414f[101];
+   char s_65e89a5b[46];
+   char s_60f69a39[55];
+   char s_7ad46c0d[81];
+   char s_203e9e86[66];
+   char s_29c35489[168];
+   char s_2ae5d737[237];
+   char s_2860949b[78];
+   char s_4c0a8b68[59];
+   char s_de265901[66];
+   char s_4a3d27dc[41];
+   char s_f496371e[68];
+   char s_49a8967c[91];
+   char s_544da5c1[62];
+   char s_43d00e0e[31];
+   char s_dc427c47[49];
+   char s_684b0cb1[30];
+   char s_1d47af21[50];
+   char s_a64647a4[65];
+   char s_35f2309a[41];
+   char s_a607c53c[27];
+   char s_35f24807[300];
+   char s_791acb32[86];
+   char s_92cf524f[38];
+   char s_48e88dc4[155];
+   char s_9198f1a0[224];
+   char s_165e564b[359];
+   char s_c3968f26[88];
+   char s_79b8ce4a[72];
+   char s_a1a8257e[121];
+   char s_d5231783[91];
+   char s_a68d6d11[48];
+   char s_74022c02[104];
+   char s_8abad013[86];
+   char s_a39ca959[86];
+   char s_16b9856e[26];
+   char s_0ef5e125[21];
+   char s_b714023a[47];
+   char s_fe3fb37b[66];
+   char s_7b51019e[54];
+   char s_aa6534cc[29];
+   char s_f2a19576[65];
+   char s_b2a8d230[59];
+   char s_11c7fa0c[94];
+   char s_3f2095b2[44];
+   char s_ccbacaee[107];
+   char s_d721d862[79];
+   char s_8a8a4bd7[292];
+   char s_aa39aae6[101];
+   char s_6ff78e00[56];
+   char s_d43521db[82];
+   char s_44040aad[115];
+   char s_64d24441[57];
+   char s_ad7da224[61];
+   char s_dec53d8f[57];
+   char s_df614545[56];
+   char s_8d99673a[43];
+   char s_7fd5ef69[92];
+   char s_9eb26572[34];
+   char s_50707595[74];
+   char s_d0b943e8[77];
+   char s_475ff311[138];
+   char s_c2827177[157];
+   char s_79381041[154];
+   char s_f12f9f93[60];
+   char s_070529d4[85];
+   char s_980b7c0a[95];
+   char s_8dcc2dac[71];
+   char s_d86bb549[150];
+   char s_f139b159[51];
+   char s_3ca0fdf4[67];
+   char s_c4ad61ad[152];
+   char s_a7d61696[56];
+   char s_a7fd96b0[71];
+   char s_bde8a108[44];
+   char s_a2fb1996[81];
+   char s_c6e1f92b[43];
+   char s_2f5a9518[115];
+   char s_1bc265b6[65];
+   char s_aadb028d[38];
+   char s_c5a7263e[40];
+   char s_d9b9d57a[84];
+   char s_193e1462[64];
+   char s_6895dfd6[59];
+   char s_788364f5[101];
+   char s_dd9ff22a[84];
+   char s_db495a9d[49];
+   char s_4fe7b3d2[145];
+   char s_e6535ec1[228];
+   char s_dfdbf027[118];
+   char s_37d36d03[58];
+   char s_5c6a50d2[122];
+   char s_a9d2ffe8[46];
+   char s_0295f370[24];
+   char s_c2717b6d[134];
+   char s_aa93eec8[101];
+   char s_198c91d3[43];
+   char s_8fd135b7[37];
+   char s_71e4e031[256];
+   char s_7ef3d15a[236];
+   char s_a166bef0[40];
+   char s_02a16c68[169];
+   char s_b3502258[112];
+   char s_da518d67[163];
+   char s_02526a85[71];
+   char s_8b64010b[181];
+   char s_7279e585[54];
+   char s_a5ffd3d0[43];
+   char s_f2c17467[61];
+   char s_f28ded2f[63];
+   char s_5dc056f8[142];
+   char s_2fe54949[62];
+   char s_f4209df0[146];
+   char s_df00cbb0[54];
+   char s_dac68b37[67];
+   char s_03195749[390];
+   char s_d34eb231[72];
+   char s_abf90aae[157];
+   char s_64e37a7f[96];
+   char s_70a53ed8[52];
+   char s_061c8cb7[77];
+   char s_0e319bcf[47];
+   char s_a5962f42[69];
+   char s_0c7750cd[88];
+   char s_60a8a963[51];
+   char s_1f084654[56];
+   char s_3ca87244[35];
+   char s_2b36bd4d[41];
+   char s_61942cf6[68];
+   char s_3bb4fbf9[116];
+   char s_f865440b[22];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   char s_96c461f7[125];
+#endif
+#endif
+   char s_d4c47f59[136];
+   char s_5ae6337d[89];
+   char s_efb7504d[80];
+   char s_70d6077c[46];
+   char s_8d29fede[63];
+   char s_a9c51063[51];
+   char s_879ee2c5[55];
+   char s_f05210ce[41];
+   char s_78c3a30f[48];
+   char s_63005fba[35];
+   char s_42bb4ac1[61];
+   char s_e8aee6c7[22];
+   char s_9754ee6e[42];
+   char s_2c1469aa[170];
+   char s_474b1a98[63];
+   char s_4b009af3[36];
+   char s_46c57dde[70];
+   char s_4b99ff86[71];
+   char s_82d064b1[41];
+   char s_1a8301fe[57];
+   char s_8bbf7ffb[115];
+   char s_ffd591e0[47];
+   char s_55d6cc44[43];
+   char s_f2963d2d[34];
+   char s_a1c071eb[84];
+   char s_0d9ceefa[76];
+   char s_6e9f0493[74];
+   char s_78474a95[57];
+   char s_5a1f9d45[70];
+   char s_07e1d73b[362];
+   char s_17663212[171];
+   char s_d60aa85f[49];
+   char s_2d09f049[28];
+   char s_055c296e[117];
+   char s_fc2d67bb[176];
+   char s_0d96ed73[50];
+   char s_9f0fd076[157];
+   char s_9f0fd077[156];
+   char s_7a2050af[36];
+   char s_ef13be35[60];
+   char s_f2687ca7[94];
+   char s_82fab47a[38];
+   char s_a776daeb[105];
+   char s_88095324[105];
+   char s_4a09218b[26];
+   char s_19d092ed[45];
+   char s_b5a603de[49];
+   char s_d9c2db25[65];
+   char s_7c07f6fc[100];
+   char s_7968f59d[54];
+   char s_67d549fd[45];
+   char s_3aaf6bf1[126];
+   char s_ad8283d5[97];
+   char s_812153e8[73];
+   char s_e84a3a16[87];
+   char s_23c41f7c[85];
+   char s_2e69508b[369];
+   char s_7e96b5ce[54];
+   char s_3547866d[142];
+   char s_8010a29e[134];
+   char s_81120e85[135];
+   char s_48696c85[94];
+   char s_3c13e61f[108];
+   char s_d96182c1[40];
+   char s_f99a7d5e[235];
+   char s_f83a493c[59];
+   char s_ac90aac1[95];
+   char s_ac90aac2[93];
+   char s_09581fc6[307];
+   char s_75325963[60];
+   char s_c4928773[67];
+   char s_9bb1a0de[228];
+   char s_57dccf4f[108];
+   char s_007587a5[67];
+   char s_dd290e03[8];
+   char s_b8fa9776[14];
    char s_087fca9d[21];
    char s_25e53d33[37];
    char s_07dd4745[23];
+   char s_aaaaf898[35];
    char s_4173591b[21];
    char s_c2b63d3e[20];
+   char s_846c3994[14];
+   char s_2a9c73f3[34];
+   char s_49ef28fd[13];
+   char s_05e3f715[42];
+   char s_a9f7cc04[38];
+   char s_631c5635[45];
    char s_6c868497[53];
    char s_ac3c4c54[36];
+   char s_09a5996c[36];
    char s_19e809ad[41];
    char s_0256d7eb[78];
+   char s_531b0e75[16];
+   char s_44ce4afe[48];
+   char s_fa1942bb[51];
+   char s_5aeda955[38];
+   char s_839395b2[34];
+   char s_35b0efd4[31];
+   char s_321ebfd1[45];
+   char s_80d9fc3b[28];
+   char s_8db0184a[43];
+   char s_0d212ca9[104];
+   char s_db1e4390[38];
    char s_ff23bc4d[47];
    char s_3af3e017[21];
+   char s_f7e279a6[11];
    char s_12a68ed0[89];
    char s_89aa2160[12];
+   char s_76c4c7ce[33];
+   char s_79eac1d9[17];
+   char s_0ca1ef5c[20];
    char s_7f5044a4[74];
    char s_20296ebc[85];
    char s_a1aa860c[46];
@@ -1152,6 +1127,8 @@ static const struct
    char s_9589cc66[54];
    char s_135957cd[27];
    char s_731e9836[42];
+   char s_ffb4111b[31];
+   char s_a363d07a[34];
    char s_9e5bd759[24];
    char s_fc5e1d2c[52];
    char s_51b22327[37];
@@ -1160,10 +1137,12 @@ static const struct
    char s_ac935d4d[37];
    char s_1cf93e21[23];
    char s_7530ae6d[42];
+   char s_2814f14c[43];
    char s_e4a3fbd9[28];
    char s_c06e36e9[42];
    char s_112c5cc3[53];
    char s_c7f2d70f[49];
+   char s_8451049b[53];
    char s_f7a5b540[40];
    char s_53a0a0f2[24];
    char s_1ea66462[31];
@@ -1172,6 +1151,7 @@ static const struct
    char s_55479240[42];
    char s_db6ac45f[45];
    char s_d7c90346[46];
+   char s_e4f79c50[54];
    char s_8d677b5b[60];
    char s_e68913bc[41];
    char s_f878311b[31];
@@ -1179,46 +1159,84 @@ static const struct
    char s_08e69926[44];
    char s_74c31635[42];
    char s_94ba5ea0[30];
+   char s_7b7b7f6d[17];
    char s_89c4cc58[23];
+   char s_e9eb2822[67];
    char s_ed159cd6[25];
+   char s_fa458d88[49];
    char s_308c47e4[47];
    char s_525bf430[28];
    char s_6c57fef6[49];
    char s_e533ddbb[41];
    char s_b5ca089d[24];
    char s_f18caa49[11];
+   char s_45130077[26];
+   char s_856bdef7[31];
    char s_a3b849dc[34];
    char s_8d09bbaf[24];
    char s_b7b83070[101];
    char s_0a4aab6c[59];
    char s_59212b5f[18];
    char s_f26b6cff[27];
+   char s_a9f3b2c3[26];
+   char s_0e7aca8a[25];
+   char s_ab1afe7c[23];
+   char s_026b7f11[26];
+   char s_3b7c0dd8[25];
+   char s_b43a100a[23];
    char s_136098cd[31];
    char s_0408afc3[17];
    char s_5317d41c[22];
-   char s_8edd50dc[25];
    char s_d3ec8171[35];
    char s_5d7ba688[9];
-   char s_01a4c762[13];
    char s_f7c174e0[13];
+   char s_01a4c762[13];
    char s_00a5b29d[92];
    char s_2471a06d[23];
    char s_e9fb0749[11];
-   char s_fa458d88[49];
    char s_7d2afbe2[33];
    char s_e01973d9[34];
    char s_e8e6cf09[18];
+   char s_a602dd84[53];
+   char s_4ae9f9f9[88];
+   char s_3692d4a2[60];
+   char s_08f50667[46];
+   char s_eebc54d1[14];
    char s_00fc26e4[9];
+   char s_7c4c8dd7[72];
    char s_143f28c7[97];
    char s_dde3bd30[43];
    char s_1943a9c7[32];
+   char s_da69a32f[31];
+   char s_b1e9bfbf[20];
+   char s_1de3d99f[49];
+   char s_bff0b58f[46];
+   char s_69a0990c[31];
+   char s_28bbcc15[30];
+   char s_f9a13828[21];
+   char s_5b678bc4[19];
+   char s_a6abc697[39];
    char s_e3bb7f4c[28];
+   char s_d15060ee[27];
+   char s_a068841f[28];
+   char s_be840037[32];
+   char s_11d0d482[24];
+   char s_4d7ee7e2[20];
+   char s_9d7c6772[41];
+   char s_4bc518be[38];
+   char s_509dd374[25];
+   char s_9cfca240[32];
+   char s_bab020a4[22];
+   char s_6933100b[40];
+   char s_12552dca[19];
    char s_3589d4e0[43];
    char s_992592e3[57];
    char s_52d42c75[53];
+   char s_8ab54d62[113];
    char s_7b63412e[36];
    char s_e6ffd274[38];
    char s_07b7b10d[9];
+   char s_9bcb3d77[43];
    char s_49a2e6d9[35];
    char s_f1337004[51];
    char s_ada3890a[12];
@@ -1226,6 +1244,8 @@ static const struct
    char s_a4cc718b[43];
    char s_73cbad2c[41];
    char s_1dd03015[47];
+   char s_8edd50dc[25];
+   char s_bfe46ab9[42];
    char s_636a9fed[44];
    char s_d1d693ee[18];
    char s_676d783e[61];
@@ -1236,31 +1256,37 @@ static const struct
    char s_670757eb[125];
    char s_ca65c51c[105];
    char s_b2199155[68];
+   char s_f36c86cb[56];
+   char s_bc83f4e4[94];
    char s_06066784[24];
    char s_61df6113[23];
    char s_c49c2d33[19];
    char s_0425885c[12];
    char s_bdc78c0d[41];
+   char s_850e7bf8[44];
+   char s_710d99e5[33];
    char s_11a3a251[17];
+   char s_7f693288[44];
    char s_6adfd40f[67];
    char s_0f2a9f22[13];
    char s_75bc15aa[55];
-   char s_1055e4c5[15];
-   char s_7b7b7f6d[17];
-   char s_842b54ed[54];
    char s_50ebaaa1[34];
+   char s_1055e4c5[15];
+   char s_842b54ed[54];
+   char s_b30573ed[123];
    char s_914b3efd[26];
-   char s_09a5996c[36];
    char s_8f35069c[33];
    char s_6cc672f6[37];
    char s_1a5c7ca6[18];
    char s_1a5c880d[20];
    char s_7b23d9e6[25];
-   char s_8ab54d62[113];
    char s_c182bd2e[5];
    char s_0e625dbe[33];
    char s_9d2c8cfb[13];
+   char s_7675f215[24];
+   char s_843b6a7b[38];
    char s_4d7ff150[20];
+   char s_88494936[37];
    char s_a2250ebd[59];
    char s_cc5d39b1[67];
    char s_2bf9a406[41];
@@ -1268,481 +1294,72 @@ static const struct
    char s_2aaf8414[14];
    char s_28a4c280[24];
    char s_e0f3f7b7[144];
-   char s_a9f7cc04[38];
-   char s_2dbb6496[36];
-   char s_710d99e5[33];
-   char s_9d7c6772[41];
-   char s_9bcb3d77[43];
-   char s_a9f3b2c3[26];
-   char s_ab1afe7c[23];
-   char s_0e7aca8a[25];
-   char s_026b7f11[26];
-   char s_b43a100a[23];
-   char s_3b7c0dd8[25];
-   char s_850e7bf8[44];
-   char s_fa1942bb[51];
-   char s_44ce4afe[48];
-   char s_8db0184a[43];
-   char s_839395b2[34];
-   char s_5aeda955[38];
-   char s_321ebfd1[45];
-   char s_35b0efd4[31];
-   char s_80d9fc3b[28];
-   char s_bfe46ab9[42];
-   char s_8451049b[53];
-   char s_b8fa9776[14];
-   char s_7f693288[44];
-   char s_e4f79c50[54];
-   char s_ffb4111b[31];
-   char s_a363d07a[34];
-   char s_be840037[32];
-   char s_da69a32f[31];
-   char s_2814f14c[43];
-   char s_0d212ca9[104];
-   char s_7c4c8dd7[72];
-   char s_bc83f4e4[94];
-   char s_f36c86cb[56];
-   char s_a602dd84[53];
-   char s_4ae9f9f9[88];
-   char s_3692d4a2[60];
-   char s_08f50667[46];
-   char s_eebc54d1[14];
-   char s_b7248c5d[76];
    char s_5876788a[79];
-   char s_79a4338e[16];
-   char s_2c296537[25];
-   char s_2afa843b[21];
-   char s_05c5a263[21];
-   char s_6b395e21[15];
-   char s_6dcc2f9f[20];
-   char s_e290a5ae[17];
-   char s_50d77da7[15];
-   char s_6a9b757c[28];
-   char s_2f169651[16];
-   char s_ec502f2a[20];
-   char s_d042d680[23];
-   char s_ce89e465[23];
-   char s_fcf05466[23];
-#ifdef HAVE_LAKKA
-   char s_0d83eb84[17];
-   char s_c64d260f[10];
-   char s_96ceb12a[50];
-   char s_ec2fae92[13];
-   char s_32f590c0[45];
-   char s_4338da9c[11];
-   char s_6124594a[55];
-#endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_RETROFLAG
-   char s_addc7f89[77];
-   char s_96c461f7[125];
-#endif
-#endif
-#ifdef _3DS
-   char s_f069ce0e[18];
-   char s_3d02018d[10];
-   char s_5c75e18b[29];
-   char s_f099647c[32];
-#endif
-#ifdef HAVE_QT
-   char s_974d8c3a_0[500];
-   char s_974d8c3a_1[237];
-#endif
-   char s_007587a5[67];
-   char s_dd290e03[8];
+   char s_b7248c5d[76];
+   char s_2dbb6496[36];
 } msg_hash_pt_pt_blob =
 {
-   "Menu principal",
-   "Defini\303\247\303\265es",
-   "Favoritos",
-   "Hist\303\263rico",
-   "Imagens",
-   "M\303\272sica",
-   "V\303\255deos",
-   "Explorar",
-   "N\303\272cleos sem conte\303\272do",
-   "Importar conte\303\272do",
-   "Posi\303\247\303\243o de estado",
-   "Iniciar n\303\272cleo",
-   "Iniciar processador de v\303\255deo",
-   "Iniciar RetroPad remoto",
-   "Menu r\303\241pido",
-   "Aceda rapidamente a todas as defini\303\247\303\265es de jogo relevantes.",
-   "Mostrar todas as defini\303\247\303\265es relacionadas \303\240s configura\303\247\303\265es.",
-   "Carregar n\303\272cleo",
-   "Selecione o n\303\272cleo que deseja utilizar.",
-   "Descarregar n\303\272cleo",
-   "Desativar o n\303\272cleo ativo.",
+   "Subtitui o dispositivo de som pr\303\251-definido pelo controlador de som. Isto varia de acordo "
+   "com o controlador.",
+   "Controlador OpenAL.",
+   "Driver ALSA padr\303\243o.",
+   "Controlador ALSA com suporte para processamento paralelo.",
+   "Controlador DirectSound; usado principalmente pelo Windows 95 ao Windows XP.",
+   "Controlador do kit de conex\303\243o de \303\241udio Jack.",
+   "Driver de Sistema de Som Aberto Legado.",
+   "Controlador PipeWire. Se o sistema utiliza PipeWire, assegure-se de utilizar este controlador em"
+   " vez de, por exemplo, PulseAudio.",
+   "Controlador PulseAudio. Se o sistema utiliza PulseAudio, assegure-se de utilizar este controlado"
+   "r em vez de, por exemplo, ALSA.",
+   "Controlador do sistema de som RoarAudio.",
+   "Driver RSound para sistemas de \303\241udio em rede.",
+   "Driver OpenSL.",
+   "Controlador ALSA implementado sem depend\303\252ncias.",
+   "Controlador API de sess\303\243o de \303\241udio do Windows; usado principalmente no Windows 7 e"
+   " vers\303\265es superiores.",
+   "Definir este valor como 0 desativa o controlo da taxa de \303\241udio. Qualquer outro valor cont"
+   "rola o delta de controlo da taxa de \303\241udio.\nDefine a quantidade de taxa de entrada que po"
+   "de ser ajustada dinamicamente. A taxa de entrada \303\251 definida como:\ntaxa de entrada * (1,0"
+   " +/- (delta de controlo da taxa))",
+   "Implementa\303\247\303\243o do cosseno convoluto.",
+   "Implementa\303\247\303\243o de reamostragem mais pr\303\263xima. Este reamostrador ignora a conf"
+   "igura\303\247\303\243o de qualidade.",
+   "Implementa\303\247\303\243o Sinc em janela.",
    "Navegue at\303\251 um execut\303\241vel do n\303\272cleo libretro. Onde o navegador inicia depen"
    "de da sua configura\303\247\303\243o de Pasta de N\303\272cleos. Se a defini\303\247\303\243o es"
    "tiver em branco, come\303\247ar\303\241 na raiz do sistema de ficheiros.\nSe indicar uma pasta, "
    "o menu usar\303\241 essa pasta como a principal. No entanto, se a sua Pasta de N\303\272cleos "
    "\303\251 um caminho de ficheiro, ir\303\241 iniciar na pasta que o cont\303\251m.",
-   "Carregar conte\303\272do",
-   "Selecione o conte\303\272do que deseja executar.",
-   "Navegar pelo conte\303\272do. Para carregar um conte\303\272do, \303\251 necess\303\241rio um 'N"
-   "\303\272cleo' e um ficheiro de conte\303\272do.\nPara escolher onde o menu come\303\247a a naveg"
-   "ar, escolha a defini\303\247\303\243o 'Pasta do Navegador de Ficheiros'. Caso n\303\243o seja de"
-   "finida, ser\303\241 iniciada na raiz do sistema de ficheiros.\nO navegador filtrar\303\241 as ex"
-   "tens\303\265es para o \303\272ltimo n\303\272cleo definido em 'Carregar n\303\272cleo' e usar"
-   "\303\241 no carregamento do conte\303\272do.",
-   "Carregar Disco",
-   "Carregar um disco de media f\303\255sico. Primeiro selecione o n\303\272cleo (Carregar n\303\272"
-   "cleo) que pretende usar com o disco.",
-   "Descarregar disco",
-   "Copiar o disco de media f\303\255sico para o armazenamento interno. Este ser\303\241 salvo como "
-   "um ficheiro de imagem.",
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-   "Ejetar Disco",
-   "Ejeta o disco da unidade f\303\255sica de CD/DVD.",
-#endif
-#endif
-   "Listas de reprodu\303\247\303\243o",
-   "Conte\303\272do scaneado que corresponda com a base de dados aparecer\303\241 aqui.",
-   "Importar conte\303\272do",
-   "Crie e atualize listas de reprodu\303\247\303\243o scaneando conte\303\272do.",
-   "Ficheiro de configura\303\247\303\265es",
-   "Gire e crie ficheiros de configura\303\247\303\243o.",
-   "Carregar configura\303\247\303\243o",
-   "Carregar configura\303\247\303\243o existente e substituir os valores atuais.",
-   "Guardar configura\303\247\303\243o atual",
-   "Substituir o arquivo de configura\303\247\303\243o atual.",
-   "Guardar nova configura\303\247\303\243o",
-   "Salvar a configura\303\247\303\243o atual em arquivo separado.",
-   "Repor os valores padr\303\243o",
-   "Repor todas as configura\303\247\303\265es para os valores padr\303\243o.",
-   "Guardar sobreposi\303\247\303\265es de n\303\272cleo",
-   "Guardar sobreposi\303\247\303\265es de jogo",
-   "Ajuda",
-   "Saiba mais sobre como o programa funciona.",
-   "Mostrar Menu do Ambiente de trabalho",
-   "Abre o menu tradicional do desktop.",
-   "Juntar ou hospedar uma sess\303\243o de netplay.",
-   "Atualizador online",
-   "Transferir add-ons, componentes e conte\303\272dos para o RetroArch.",
-   "Defini\303\247\303\265es",
-   "Configure o programa.",
-   "Informa\303\247\303\243o",
-   "Mostrar informa\303\247\303\265es do sistema.",
-   "Reiniciar",
-   "Reiniciar a aplica\303\247\303\243o RetroArch.",
-   "Encerrar",
-   "Sair da aplica\303\247\303\243o RetroArch. A configura\303\247\303\243o \303\251 guardada ao sai"
-   "r.",
-   "Sair da aplica\303\247\303\243o RetroArch. A grava\303\247\303\243o da configura\303\247\303\243"
-   "o ao sair est\303\241 desativada.",
-   "Sair do RetroArch. Se encerrar o programa de forma for\303\247ada (SIGKILL, etc.) ir\303\241 enc"
-   "errar o RetroArch sem guardar a configura\303\247\303\243o em qualquer cen\303\241rio. Em sistem"
-   "as Unix, SIGINT/SIGTERM permite uma desinicializa\303\247\303\243o limpa que inclui a grava\303"
-   "\247\303\243o da configura\303\247\303\243o se estiver ativa.",
-   "Transfira um n\303\272cleo",
-   "Transferir e instalar um n\303\272cleo a partir do atualizador online.",
-   "Instale ou restaure um n\303\272cleo",
-   "Instalar ou restaurar um n\303\272cleo a partir da pasta \"Transfer\303\252ncias\".",
-   "Pasta inicial",
-   "Transfer\303\252ncias",
-   "Abrir um ficheiro",
-   "Carregar ficheiro",
-   "Favoritos",
-   "Conte\303\272do adicionado aos \"Favoritos\" ir\303\241 aparecer aqui.",
-   "M\303\272sica",
-   "M\303\272sicas reproduzidas anteriormente ir\303\243o aparecer aqui.",
-   "Imagens",
-   "Imagens pr\303\251-visualizadas anteriormente ir\303\243o aparecer aqui.",
-   "V\303\255deos",
-   "V\303\255deos reproduzidos anteriormente ir\303\243o aparecer aqui.",
-   "Explorar",
-   "Procurar todos os conte\303\272dos correspondentes ao banco de dados atrav\303\251s de uma inter"
-   "face de pesquisa categorizada.",
-   "N\303\272cleos sem conte\303\272do",
-   "N\303\272cleos instalados que n\303\243o precisam de conte\303\272do para iniciar aparecer\303"
-   "\243o aqui.",
-   "Transferidor de n\303\272cleos",
-   "Atualizar N\303\272cleos Instalados",
-   "Atualize todos os n\303\272cleos instalados para a \303\272ltima vers\303\243o dispon\303\255vel"
-   ".",
-   "Mudar n\303\272cleos para vers\303\265es da Play Store",
-   "Substitua todos os n\303\272cleos instalados manualmente pelas vers\303\265es mais recentes da P"
-   "lay Store, quando dispon\303\255vel.",
-   "Atualizador de miniaturas das listas de reprodu\303\247\303\243o",
-   "Transferir miniaturas para as entradas na lista de reprodu\303\247\303\243o selecionada.",
-   "Transferidor de conte\303\272do",
-   "Descarregue conte\303\272do gratuito para o n\303\272cleo selecionado.",
-   "Descarregar ficheiros de sistema do N\303\272cleo",
-   "Descarregar ficheiros auxiliares do sistema para a opera\303\247\303\243o correta e otimizada do"
-   " n\303\272cleo.",
-   "Atualizar ficheiros de informa\303\247\303\243o de n\303\272cleos",
-   "Atualizar recursos",
-   "Atualizar Perfis de Comandos",
-   "Atualizar batotas",
-   "Atualizar base de dados",
-   "Atualizar sobreposi\303\247\303\265es",
-   "Atualizar shaders GLSL",
-   "Atualizar shaders Cg",
-   "Atualizar Shaders Slang",
-   "Informa\303\247\303\243o do n\303\272cleo",
-   "Visualizar informa\303\247\303\265es pertinentes para a aplica\303\247\303\243o/n\303\272cleo.",
-   "Informa\303\247\303\265es do Disco",
-   "Exibir informa\303\247\303\265es sobre discos de media inseridos.",
-   "Informa\303\247\303\243o de rede",
-   "Veja interface(s) de rede e endere\303\247os IP associados.",
-   "Informa\303\247\303\265es do sistema",
-   "Ver informa\303\247\303\265es espec\303\255ficas do dispositivo.",
-   "Gestor de base de dados",
-   "Ver a base de dados.",
-   "Gestor do cursor",
-   "Ver pesquisas anteriores.",
-   "Nome do n\303\272cleo",
-   "Designa\303\247\303\243o do n\303\272cleo",
-   "Vers\303\243o do N\303\272cleo",
-   "Nome do sistema",
-   "Fabricante do sistema",
-   "Categorias",
-   "Autor(es)",
-   "Permiss\303\265es",
-   "Licen\303\247a(s)",
-   "Extens\303\265es suportadas",
-   "API de Gr\303\241ficos Necess\303\241ria",
-   "Caminho Completo",
-   "Posi\303\247\303\243o de grava\303\247\303\243o de estado",
-   "N\303\243o partilhar",
-   "B\303\241sico (Salvar/Carregar)",
-   "Serializado (Salvar/Carregar, Retroceder)",
-   "Determinante (Guardar/Carregar, Rebobinar, Run-Ahead, Netplay)",
-   "Em falta, Requerido:",
-   "Em falta, Opcional:",
-   "Presente, Requerido:",
-   "Presente, Opcional:",
-   "Bloquear n\303\272cleo instalado",
-   "Impedir a modifica\303\247\303\243o do n\303\272cleo atualmente instalado. Pode ser usado para e"
-   "vitar atualiza\303\247\303\265es indesejadas quando o conte\303\272do precisar de uma vers\303"
-   "\243o espec\303\255fica do n\303\272cleo (por exemplo, conjuntos de ROMs do jogo arcade) ou quan"
-   "do o formato para gravar o estado do pr\303\263prio n\303\272cleo for alterado.",
-   "Excluir do menu 'N\303\272cleos sem conte\303\272do'",
-   "Impede que este n\303\272cleo seja exibido na aba/menu 'N\303\272cleos sem conte\303\272do'. Apl"
-   "ica-se somente quando o modo de exibi\303\247\303\243o \303\251 definido como 'Personalizado'.",
-   "Remover n\303\272cleo",
-   "Remove este n\303\272cleo do disco.",
-   "Backup do N\303\272cleo",
-   "Criar um backup do n\303\272cleo atualmente instalado.",
-   "Restaurar Backup",
-   "Instalar uma vers\303\243o anterior do n\303\272cleo a partir de uma lista de backups arquivados"
-   ".",
-   "Eliminar Backup",
-   "Remova um arquivo da lista de backups arquivados.",
-   "Data de compila\303\247\303\243o",
-   "Vers\303\243o do RetroArch",
-   "Vers\303\243o Git",
-   "Compilador",
-   "Modelo de CPU",
-   "Caracter\303\255sticas do processador",
-   "Arquitetura do processador",
-   "N\303\272cleos CPU",
-   "JIT dispon\303\255vel",
-   "Identificador do pacote",
-   "Identificador da interface visual",
-   "Sistema operativo da interface visual",
-   "Fonte de energia",
-   "Driver de contexto de v\303\255deo",
-   "Largura do ecr\303\243 (mm)",
-   "Altura do ecr\303\243 (mm)",
-   "DPI do ecr\303\243",
-   "Nome",
-   "Descri\303\247\303\243o",
-   "G\303\251nero",
-   "Conquistas",
-   "Categoria",
-   "Idioma",
-   "Regi\303\243o",
-   "Exclusivo Consola",
-   "Exclusivo de Plataforma",
-   "Pontua\303\247\303\243o",
-   "M\303\255dia",
-   "Mapeamento de teclas",
-   "Estilo de arte",
-   "Jogabilidade",
-   "Narrativa",
-   "Ritmo",
-   "Perspectiva",
-   "Defini\303\247\303\243o",
-   "Veicular",
-   "Editora",
-   "Desenvolvedor",
-   "Origem",
-   "Franquia",
-   "Classifica\303\247\303\243o TGDB",
-   "Classifica\303\247\303\243o da revista Famitsu",
-   "Revis\303\243o da revista Edge",
-   "Classifica\303\247\303\243o da revista Edge",
-   "Edi\303\247\303\243o da revista Edge",
-   "M\303\252s de lan\303\247amento",
-   "Ano de lan\303\247amento",
-   "Classifica\303\247\303\243o BBFC",
-   "Classifica\303\247\303\243o ESRB",
-   "Classifica\303\247\303\243o ELSPA",
-   "Classifica\303\247\303\243o PEGI",
-   "Melhorias por Hardware",
-   "Classifica\303\247\303\243o CERO",
-   "S\303\251rie",
-   "Anal\303\263gico suportado",
-   "Suporte a vibra\303\247\303\243o",
-   "Modo cooperativo suportado",
-   "Gravar a configura\303\247\303\243o como",
-   "Gravar as defini\303\247\303\265es atuais como um ficheiro de configura\303\247\303\243o persona"
-   "lizado.",
-   "Gravar a configura\303\247\303\243o principal",
-   "Gravar as defini\303\247\303\265es atuais como a configura\303\247\303\243o principal.",
-   "Deslizar para cima",
-   "Deslizar para baixo",
-   "Confirmar",
-   "Informa\303\247\303\265es",
-   "Iniciar",
-   "Ativar/Desativar menu",
-   "Sair",
-   "Ativar/Desativar teclado",
-   "Reinicializar",
-   "Desligar",
-   "Alterar os drivers utilizados pelo sistema.",
-   "V\303\255deo",
-   "Alterar as defini\303\247\303\265es da sa\303\255da de v\303\255deo.",
-   "Interruptores de CRT",
-   "Sinais de sa\303\255da nativos e de baixa resolu\303\247\303\243o para uso com telas CRT.",
-   "Sa\303\255da",
-   "Alterar as defini\303\247\303\265es da sa\303\255da de v\303\255deo.",
-   "\303\201udio",
-   "Modificar as defini\303\247\303\265es de sa\303\255da de som.",
-   "Enable menu audio",
-   "Sons do Menu",
-   "Entrada",
-   "Alterar as defini\303\247\303\265es de um comando, teclado ou rato.",
-   "Lat\303\252ncia",
-   "Alterar as configura\303\247\303\265es relacionadas a lat\303\252ncia de v\303\255deo, \303\241u"
-   "dio e entrada.",
-   "N\303\272cleo",
-   "Modificar as defini\303\247\303\265es de n\303\272cleo.",
-   "Configura\303\247\303\243o",
-   "Modificar as pr\303\251-defini\303\247\303\265es para os ficheiros de configura\303\247\303\243o"
-   ".",
-   "Grava\303\247\303\243o",
-   "Modificar as defini\303\247\303\265es de grava\303\247\303\243o.",
-   "Registo",
-   "Modificar as defini\303\247\303\265es de registo.",
-   "Acelera\303\247\303\243o de fotogramas",
-   "Modificar as defini\303\247\303\265es das fun\303\247\303\265es de retrocedimento no tempo, avan"
-   "\303\247o-r\303\241pido e c\303\242mera-lenta.",
-   "Fun\303\247\303\243o de retrocedimento do tempo",
-   "Sincroniza\303\247\303\243o na Nuvem",
-   "Modificar as defini\303\247\303\265es de sincroniza\303\247\303\243o na Nuvem.",
-   "Ativar sincroniza\303\247\303\243o na Nuvem",
-   "Tentativa de sincronizar configura\303\247\303\265es, sram e estados para um provedor de armazen"
-   "amento na Nuvem.",
-   "Sincronia de Nuvem Destrutiva",
-   "Quando desativado, os arquivos s\303\243o movidos para uma pasta de backup antes de serem substi"
-   "tu\303\255dos ou exclu\303\255dos.",
-   "Sincroniza\303\247\303\243o: Salvas/Estados",
-   "Quando ativado, salvar/estados ser\303\243o sincronizados para a nuvem.",
-   "Sincroniza\303\247\303\243o: Ficheiros de configura\303\247\303\243o",
-   "Quando ativado, os arquivos de configura\303\247\303\243o ser\303\243o sincronizados para a nuve"
-   "m.",
-   "Sincroniza\303\247\303\243o: Imagens em Miniaturas",
-   "Quando ativado, as miniaturas ser\303\243o sincronizadas para a nuvem. N\303\243o \303\251 geral"
-   "mente recomendado, exceto para grandes cole\303\247\303\265es de imagens em miniatura personaliz"
-   "adas; caso contr\303\241rio, o transferidor de miniaturas \303\251 uma escolha melhor.",
-   "Sincroniza\303\247\303\243o: Arquivos do Sistema",
-   "Quando ativado, os arquivos do sistema ser\303\243o sincronizados para a nuvem. Isto pode aument"
-   "ar significativamente o tempo necess\303\241rio para sincronizar; usar com cuidado.",
-   "Sincroniza\303\247\303\243o da nuvem Backend",
-   "Qual protocolo de rede de armazenamento na nuvem a usar.",
-   "URL de armazenamento da Nuvem",
-   "A URL para a entrada de API aponta para o servi\303\247o de armazenamento em nuvem.",
-   "Utilizador",
-   "Nome de utilizador para a conta de armazenamento na nuvem.",
-   "Palavra-passe",
-   "Senha para a conta de armazenamento na nuvem.",
-   "Apresenta\303\247\303\243o no ecr\303\243",
-   "Modificar as defini\303\247\303\265es de apresenta\303\247\303\243o de sobreposi\303\247\303\243"
-   "o e sobreposi\303\247\303\243o de teclado, al\303\251m das defini\303\247\303\265es de notifica"
-   "\303\247\303\265es no ecr\303\243.",
-   "Overlays no ecr\303\243",
-   "Overlay para Lightgun",
-   "Configurar a entrada da lightgun enviada a partir do overlay.",
-   "Overlay para rato",
-   "Configurar a entrada do rato enviada a partir do overlay. Nota: os toques de 1, 2 e 3 dedos envi"
-   "am cliques no bot\303\243o esquerdo, direito e do meio.",
-   "Notifica\303\247\303\265es no ecr\303\243",
-   "Apar\303\252ncia",
-   "Menu r\303\241pido",
-   "Defini\303\247\303\265es",
-   "Interface de utilizador",
-   "Modificar as configura\303\247\303\265es da interface do utilizador.",
-   "Servi\303\247o IA",
-   "Alterar as configura\303\247\303\265es de Servi\303\247o IA (Tradu\303\247\303\243o/TTS/Outros).",
-   "Acessibilidade",
-   "Alterar as defini\303\247\303\265es do narrador de Acessibilidade.",
-   "Gest\303\243o de energia",
-   "Alterar as defini\303\247\303\265es de gest\303\243o de energia.",
-   "Explorador de ficheiros",
-   "Alterar defini\303\247\303\265es do explorador de ficheiros.",
-   "Conquistas",
-   "Modificar as defini\303\247\303\265es de conquistas.",
-   "Apar\303\252ncia",
-   "Ficheiros de configura\303\247\303\243o.",
-   "Arquivo comprimido.",
-   "A gravar arquivo de configura\303\247\303\243o.",
-   "Arquivo do cursor do banco de dados.",
-   "Ficheiros de configura\303\247\303\243o.",
-   "Arquivo de predefini\303\247\303\243o de sombreado.",
-   "Arquivo shader.",
-   "Remap do arquivo de controle.",
    "Arquivo de cheat.",
-   "Arquivo de Overlay.",
-   "Arquivo de banco de dados.",
+   "Arquivo comprimido.",
+   "Ficheiros de configura\303\247\303\243o.",
+   "N\303\272cleo Libretro. Selecione este arquivo para que o RetroArch carregue este n\303\272cleo.",
+   "N\303\272cleo Libretro. Selecionar isto ir\303\241 associar este n\303\272cleo ao jogo.",
+   "Arquivo do cursor do banco de dados.",
+   "Diret\303\263rio. Selecione-o para abrir este diret\303\263rio.",
    "Arquivo de fonte TrueType.",
-   "Ficheiro simples.",
-   "V\303\255deo. Selecione para abrir este arquivo com o reprodutor de v\303\255deo.",
-   "V\303\255deo. Selecione para abrir este arquivo com o reprodutor de m\303\272sica.",
    "Arquivo de imagem.",
    "Imagem. Selecione para abrir este arquivo com o reprodutor de imagem.",
-   "N\303\272cleo Libretro. Selecionar isto ir\303\241 associar este n\303\272cleo ao jogo.",
-   "N\303\272cleo Libretro. Selecione este arquivo para que o RetroArch carregue este n\303\272cleo.",
-   "Diret\303\263rio. Selecione-o para abrir este diret\303\263rio.",
-   "Grava\303\247\303\243o de v\303\255deo",
-   "Modificar as defini\303\247\303\265es de grava\303\247\303\243o de v\303\255deo.",
-   "Rede",
-   "Modificar servidor e defini\303\247\303\265es de rede.",
-   "Defini\303\247\303\265es de listas de reprodu\303\247\303\243o",
-   "Modificar as defini\303\247\303\265es de lista de reprodu\303\247\303\243o.",
-   "Utilizador",
-   "Modificar as defini\303\247\303\265es de privacidade, conta e nome de utilizador.",
-   "Pasta",
-   "Modificar as pastas padr\303\243o onde os ficheiros est\303\243o localizados.",
-   "Mapeamento",
-   "M\303\255dia",
-   "Desempenho",
-   "Som",
-   "Especifica\303\247\303\265es",
-   "Armazenamento",
-   "Sistema",
-   "Temporizador",
-#ifdef HAVE_MIST
-   "Alterar configura\303\247\303\265es relacionadas \303\240 Steam.",
-#endif
-   "Entrada",
-   "Controlador de entrada a utilizar. Alguns controladores de v\303\255deo for\303\247am um control"
-   "ador de entrada diferente. (\303\211 necess\303\241rio reiniciar)",
-   "O driver udev l\303\252 eventos evdev para suporte de teclado. Ele tamb\303\251m suporta callbac"
-   "k de teclado, ratos e touchpads.\nPor padr\303\243o na maioria das distribui\303\247\303\265es, "
-   "os n\303\263s /dev/input s\303\243o apenas para root (modo 600). Pode configurar uma regra udev "
-   "que os torna acess\303\255veis a quem n\303\243o \303\251 root.",
+   "V\303\255deo. Selecione para abrir este arquivo com o reprodutor de v\303\255deo.",
+   "V\303\255deo. Selecione para abrir este arquivo com o reprodutor de m\303\272sica.",
+   "Arquivo de Overlay.",
+   "Ficheiro simples.",
+   "Arquivo de banco de dados.",
+   "A gravar arquivo de configura\303\247\303\243o.",
+   "Remap do arquivo de controle.",
+   "Arquivo shader.",
+   "Arquivo de predefini\303\247\303\243o de sombreado.",
+   "Ficheiros de configura\303\247\303\243o.",
    "O driver de entrada linuxraw requer uma TTY. Os eventos do teclado s\303\243o lidos diretamente "
    "do TTY, o que o torna mais simples, mas n\303\243o t\303\243o flex\303\255vel quanto o udev. \"M"
    "ice, etc, n\303\243o \303\251 suportado. Este driver usa a API mais antiga do joystick (/dev/inp"
    "ut/js*).",
    "Controlador de entrada. Dependendo do controlador de v\303\255deo, pode for\303\247\303\241-lo a"
    " um controlador de entrada diferente.",
-   "Comando",
-   "Controlador para usar. (Requerer reiniciar)",
+   "O driver udev l\303\252 eventos evdev para suporte de teclado. Ele tamb\303\251m suporta callbac"
+   "k de teclado, ratos e touchpads.\nPor padr\303\243o na maioria das distribui\303\247\303\265es, "
+   "os n\303\263s /dev/input s\303\243o apenas para root (modo 600). Pode configurar uma regra udev "
+   "que os torna acess\303\255veis a quem n\303\243o \303\251 root.",
    "Controlador de DirectInput.",
    "Controlador de baixo n\303\255vel do dispositivo de interface humana.",
    "Driver Linux em bruto, utiliza a API de joystick antiga. Use udev em vez disso, se poss\303\255v"
@@ -1756,118 +1373,34 @@ static const struct
    "a root (modo 600). Pode configurar uma regra udev que os torna acess\303\255veis a quem n\303"
    "\243o \303\251 root.",
    "Driver do controlador XInput. Principalmente para controladores XBox.",
-   "V\303\255deo",
-   "Driver OpenGL 1.x. Vers\303\243o m\303\255nima necess\303\241ria: OpenGL 1.1. N\303\243o suporta"
-   " shaders. Use drivers OpenGL mais antigos, se poss\303\255vel.",
-   "Driver OpenGL 2.x. Este driver permite que n\303\272cleos de libretro GL sejam utilizados al\303"
-   "\251m de n\303\272cleos renderizados por software. Vers\303\243o m\303\255nima necess\303\241ria"
-   ": OpenGL 2.0 ou OpenGLES 2.0. Suporta o formato de shader GLSL. Use o driver glcore em vez disso"
-   ", se poss\303\255vel.",
-   "Driver OpenGL 3.x. Este driver permite que n\303\272cleos de libretro GL sejam utilizados al\303"
-   "\251m de n\303\272cleos renderizados por software. Vers\303\243o m\303\255nima necess\303\241ria"
-   ": OpenGL 3.2 ou OpenGLES 3.0. Suporta o formato de shader Slang.",
-   "Driver Vulkan. Este driver permite que n\303\272cleos de libretro Vulkan sejam utilizados al\303"
-   "\251m de n\303\272cleos renderizados por software. Vers\303\243o m\303\255nima necess\303\241ria"
-   ": Vulkan 1.0. Suporta HDR e shaders Slang.",
-   "Driver renderizado para o SDL 1.2. Desempenho \303\251 considerado como abaixo do ideal. Conside"
-   "re us\303\241-lo apenas como \303\272ltimo recurso.",
-   "Driver renderizado para o SDL 2. Performance para implementa\303\247\303\265es libretro core ren"
-   "derizado \303\251 dependente da implementa\303\247\303\243o de SDL da sua plataforma.",
-   "Driver Metal para plataformas Apple. Suporta o formato de shader Slang.",
-   "Driver Direct3D 8 sem suporte de shader.",
-   "Driver Direct3D 9 com suporte para o formato antigo de shader Cg.",
-   "Driver Direct3D 9 com suporte para o formato shader HLSL.",
-   "Driver Direct3D 10 com suporte para o formato de shader Slang.",
-   "Driver Direct3D 11 com suporte para o formato de shader Slang.",
-   "Driver Direct3D 12 com suporte para HDR e o formato de shader Slang.",
-   "Driver DispmanX. Usa a API DispmanX para o Videocore IV GPU no Raspberry Pi 0..3. N\303\243o h"
-   "\303\241 suporte para sobreposi\303\247\303\243o ou shader.",
-   "Driver LibCACA. Produz a sa\303\255da de caracteres em vez de gr\303\241ficos. N\303\243o recome"
-   "ndado para uso pr\303\241tico.",
-   "Um driver de v\303\255deo Exynos de baixo n\303\255vel que usa o bloco G2D em Samsung Exynos SoC"
-   " para opera\303\247\303\265es blit. O desempenho para n\303\272cleos renderizados de software de"
-   "ve ser ideal.",
-   "Driver de v\303\255deo DRM simples. Este \303\251 um driver de v\303\255deo de baixo n\303\255ve"
-   "l usando libdrm para escalar hardware usando camadas de GPU.",
-   "Um driver de v\303\255deo Sunxi de baixo n\303\255vel que usa o bloco G2D em Allwinner SoCs.",
-   "Driver Wii U. Suporta shaders Slang.",
-   "Driver Switch. Suporta o formato de shader GLSL.",
-   "Driver OpenVG. Usa API de gr\303\241ficos para vetores 2D acelerados por hardware OpenVG.",
-   "Driver GDI. Usa uma interface legada para Windows. N\303\243o recomendado.",
-   "Driver de v\303\255deo atual.",
-   "\303\201udio",
-   "Driver RSound para sistemas de \303\241udio em rede.",
-   "Driver de Sistema de Som Aberto Legado.",
-   "Driver ALSA padr\303\243o.",
-   "Controlador ALSA com suporte para processamento paralelo.",
-   "Controlador ALSA implementado sem depend\303\252ncias.",
-   "Controlador do sistema de som RoarAudio.",
-   "Controlador OpenAL.",
-   "Driver OpenSL.",
-   "Controlador DirectSound; usado principalmente pelo Windows 95 ao Windows XP.",
-   "Controlador API de sess\303\243o de \303\241udio do Windows; usado principalmente no Windows 7 e"
-   " vers\303\265es superiores.",
-   "Controlador PulseAudio. Se o sistema utiliza PulseAudio, assegure-se de utilizar este controlado"
-   "r em vez de, por exemplo, ALSA.",
-   "Controlador PipeWire. Se o sistema utiliza PipeWire, assegure-se de utilizar este controlador em"
-   " vez de, por exemplo, PulseAudio.",
-   "Controlador do kit de conex\303\243o de \303\241udio Jack.",
-#ifdef HAVE_MICROPHONE
-   "Microfone",
-   "Reamostrador de microfone",
-   "Controlador de reamostrador do microfone a utilizar.",
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
-   "Estruturas de bloqueio do microfone",
-#endif
-#endif
-   "Reamostragem de \303\241udio",
-   "Driver de reamostragem de \303\241udio a ser usado.",
-   "Implementa\303\247\303\243o Sinc em janela.",
-   "Implementa\303\247\303\243o do cosseno convoluto.",
-   "Implementa\303\247\303\243o de reamostragem mais pr\303\263xima. Este reamostrador ignora a conf"
-   "igura\303\247\303\243o de qualidade.",
-   "C\303\242mara",
-   "Localiza\303\247\303\243o",
-   "Controlador de menu a utilizar. (\303\211 necess\303\241rio reiniciar)",
-   "O XMB \303\251 uma interface gr\303\241fica do RetroArch que se parece com o menu de uma consola"
-   " de jogos da 7\302\252 gera\303\247\303\243o. Ele suporta as mesmas funcionalidades que o Ozone.",
+   "Navegar pelo conte\303\272do. Para carregar um conte\303\272do, \303\251 necess\303\241rio um 'N"
+   "\303\272cleo' e um ficheiro de conte\303\272do.\nPara escolher onde o menu come\303\247a a naveg"
+   "ar, escolha a defini\303\247\303\243o 'Pasta do Navegador de Ficheiros'. Caso n\303\243o seja de"
+   "finida, ser\303\241 iniciada na raiz do sistema de ficheiros.\nO navegador filtrar\303\241 as ex"
+   "tens\303\265es para o \303\272ltimo n\303\272cleo definido em 'Carregar n\303\272cleo' e usar"
+   "\303\241 no carregamento do conte\303\272do.",
+   "Em dispositivos m\303\263veis, RetroArch usa a \342\200\230interface\342\200\231 de usu\303\241r"
+   "io m\303\263vel, MaterialUI, por padr\303\243o. Essa interface \303\251 projetada em torno da te"
+   "la de toque e dispositivos do ponteiro como um mouse/trackball.",
    "O Ozone \303\251 a interface gr\303\241fica padr\303\243o do RetroArch na maioria das plataforma"
    "s. Ele \303\251 otimizado para navega\303\247\303\243o com um controlador de jogos.",
    "RGUI \303\251 uma interface gr\303\241fica simples integrada ao RetroArch. Tem os requisitos de "
    "desempenho mais baixos entre os controladores de menu e pode ser utilizado em ecr\303\243s de ba"
    "ixa resolu\303\247\303\243o.",
-   "Em dispositivos m\303\263veis, RetroArch usa a \342\200\230interface\342\200\231 de usu\303\241r"
-   "io m\303\263vel, MaterialUI, por padr\303\243o. Essa interface \303\251 projetada em torno da te"
-   "la de toque e dispositivos do ponteiro como um mouse/trackball.",
-   "Grava\303\247\303\243o de v\303\255deo",
-   "Modo de ecr\303\243 inteiro",
-   "Alterar configura\303\247\303\265es do modo de ecr\303\243 inteiro.",
-   "Modo Janela",
-   "Alterar configura\303\247\303\265es do modo Janela.",
-   "Sincroniza\303\247\303\243o",
-   "Alterar configura\303\247\303\265es de sincroniza\303\247\303\243o de v\303\255deo.",
-   "Dimensionamento",
-   "Alterar configura\303\247\303\265es de dimensionamento de v\303\255deo.",
-   "Modificar defini\303\247\303\265es de v\303\255deo HDR.",
-   "Capturas de ecr\303\243 capturam o uso de shaders se dispon\303\255vel.",
-   "Suspender prote\303\247\303\243o de ecr\303\243",
-   "Previne que prote\303\247\303\243o de ecr\303\243 do sistema seja ativada.",
+   "O XMB \303\251 uma interface gr\303\241fica do RetroArch que se parece com o menu de uma consola"
+   " de jogos da 7\302\252 gera\303\247\303\243o. Ele suporta as mesmas funcionalidades que o Ozone.",
+   "Define o dispositivo de entrada de \303\241udio (especifico do controlador). Quando desligado, a"
+   " entrada de MIDI fica desativada. Nome do dispositivo tamb\303\251m pode ser definido.",
+   "Sair do RetroArch. Se encerrar o programa de forma for\303\247ada (SIGKILL, etc.) ir\303\241 enc"
+   "errar o RetroArch sem guardar a configura\303\247\303\243o em qualquer cen\303\241rio. Em sistem"
+   "as Unix, SIGINT/SIGTERM permite uma desinicializa\303\247\303\243o limpa que inclui a grava\303"
+   "\247\303\243o da configura\303\247\303\243o se estiver ativa.",
    "Suspende o salvador de tela. \303\211 uma dica que n\303\243o precisa necessariamente ser honrad"
    "a pelo driver de v\303\255deo.",
-   "V\303\255deo segmentado",
-   "Aumenta performance a custo de lat\303\252ncia e mais stuttering de v\303\255deo. Use apenas se "
-   "velocidade m\303\241xima n\303\243o pode ser obtida de outra maneira.",
-   "Use um driver de v\303\255deo thread. Usar isto pode melhorar o desempenho a custo de lat\303"
-   "\252ncia poss\303\255vel e mais travamentos de v\303\255deo.",
-   "Inser\303\247\303\243o de frame preto",
-   "Inserir fotogramas a preto - Fotogramas escuros",
-   "Ajusta o n\303\272mero de fotogramas pretos na sequ\303\252ncia total de digitaliza\303\247\303"
-   "\243o BFI. Mais equivale a maior nitidez de movimento, menos equivale a maior brilho. N\303\243o"
-   " \303\251 aplic\303\241vel a 120 hz, uma vez que s\303\263 existe 1 fotograma BFI para trabalhar"
-   " no total. As defini\303\247\303\265es superiores ao poss\303\255vel limitam-no ao m\303\241ximo"
-   " poss\303\255vel para a taxa de atualiza\303\247\303\243o escolhida.",
+   "Ajusta o n\303\272mero de fotogramas apresentados na sequ\303\252ncia BFI que s\303\243o pretos."
+   " Mais fotogramas pretos aumentam a nitidez do movimento mas reduzem o brilho. N\303\243o \303"
+   "\251 aplic\303\241vel a 120 hz, uma vez que existe apenas um fotograma extra total a 60 hz, pelo"
+   " que tem de ser preto, caso contr\303\241rio a BFI n\303\243o estaria ativa.",
    "Insere fotograma(s) preto(s) entre os fotogramas para maior nitidez do movimento. Utilize apenas"
    " a op\303\247\303\243o designada para a taxa de atualiza\303\247\303\243o do seu ecr\303\243 atu"
    "al. N\303\243o deve ser utilizada em taxas de atualiza\303\247\303\243o que n\303\243o sejam m"
@@ -1877,28 +1410,48 @@ static const struct
    " esta defini\303\247\303\243o. Se ",
    "notar -qualquer- reten\303\247\303\243o tempor\303\241ria de imagem, deve desativar a 120 hz e, "
    "para hz superiores, ajustar a defini\303\247\303\243o de fotogramas escuros abaixo.",
-   "Ajusta o n\303\272mero de fotogramas apresentados na sequ\303\252ncia BFI que s\303\243o pretos."
-   " Mais fotogramas pretos aumentam a nitidez do movimento mas reduzem o brilho. N\303\243o \303"
-   "\251 aplic\303\241vel a 120 hz, uma vez que existe apenas um fotograma extra total a 60 hz, pelo"
-   " que tem de ser preto, caso contr\303\241rio a BFI n\303\243o estaria ativa.",
-   "Sincroniza\303\247\303\243o vertical (Vsync)",
-   "Intervalo de troca VSync",
-   "Utilize um intervalo de troca personalizado para o VSync. Reduz eficazmente a taxa de atualiza"
-   "\303\247\303\243o do monitor pelo fator especificado. 'Auto' define o fator com base na taxa de "
-   "fotogramas relatada pelo n\303\272cleo, proporcionando um ritmo de fotogramas melhorado ao execu"
-   "tar, por exemplo, conte\303\272do de 30 fps num ecr\303\243 de 60 Hz ou conte\303\272do de 60 fp"
-   "s num ecr\303\243 de 120 Hz.",
-   "Subfotogramas de sombreamento",
-   "Informar o controlador de v\303\255deo sobre a utiliza\303\247\303\243o expl\303\255cita de um m"
-   "odo de carregamento espec\303\255fico.",
-   "Sincroniza o hardware do processador e da GPU. Reduz a lat\303\252ncia, com um custo no desempen"
-   "ho.",
-   "Informar o controlador de v\303\255deo sobre a utiliza\303\247\303\243o expl\303\255cita de um m"
-   "odo de carregamento espec\303\255fico.",
-   "Sincroniza\303\247\303\243o s\303\263lida na GPU",
-   "Sincroniza o hardware do processador e da GPU. Reduz a lat\303\252ncia, com um custo no desempen"
-   "ho.",
-   "Sincroniza\303\247\303\243o s\303\263lida de fotogramas na GPU",
+   "Driver LibCACA. Produz a sa\303\255da de caracteres em vez de gr\303\241ficos. N\303\243o recome"
+   "ndado para uso pr\303\241tico.",
+   "Driver Direct3D 10 com suporte para o formato de shader Slang.",
+   "Driver Direct3D 11 com suporte para o formato de shader Slang.",
+   "Driver Direct3D 12 com suporte para HDR e o formato de shader Slang.",
+   "Driver Direct3D 8 sem suporte de shader.",
+   "Driver Direct3D 9 com suporte para o formato antigo de shader Cg.",
+   "Driver Direct3D 9 com suporte para o formato shader HLSL.",
+   "Driver DispmanX. Usa a API DispmanX para o Videocore IV GPU no Raspberry Pi 0..3. N\303\243o h"
+   "\303\241 suporte para sobreposi\303\247\303\243o ou shader.",
+   "Driver de v\303\255deo DRM simples. Este \303\251 um driver de v\303\255deo de baixo n\303\255ve"
+   "l usando libdrm para escalar hardware usando camadas de GPU.",
+   "Um driver de v\303\255deo Exynos de baixo n\303\255vel que usa o bloco G2D em Samsung Exynos SoC"
+   " para opera\303\247\303\265es blit. O desempenho para n\303\272cleos renderizados de software de"
+   "ve ser ideal.",
+   "Driver GDI. Usa uma interface legada para Windows. N\303\243o recomendado.",
+   "Driver OpenGL 2.x. Este driver permite que n\303\272cleos de libretro GL sejam utilizados al\303"
+   "\251m de n\303\272cleos renderizados por software. Vers\303\243o m\303\255nima necess\303\241ria"
+   ": OpenGL 2.0 ou OpenGLES 2.0. Suporta o formato de shader GLSL. Use o driver glcore em vez disso"
+   ", se poss\303\255vel.",
+   "Driver OpenGL 1.x. Vers\303\243o m\303\255nima necess\303\241ria: OpenGL 1.1. N\303\243o suporta"
+   " shaders. Use drivers OpenGL mais antigos, se poss\303\255vel.",
+   "Driver OpenGL 3.x. Este driver permite que n\303\272cleos de libretro GL sejam utilizados al\303"
+   "\251m de n\303\272cleos renderizados por software. Vers\303\243o m\303\255nima necess\303\241ria"
+   ": OpenGL 3.2 ou OpenGLES 3.0. Suporta o formato de shader Slang.",
+   "Driver Metal para plataformas Apple. Suporta o formato de shader Slang.",
+   "Driver de v\303\255deo atual.",
+   "Driver renderizado para o SDL 1.2. Desempenho \303\251 considerado como abaixo do ideal. Conside"
+   "re us\303\241-lo apenas como \303\272ltimo recurso.",
+   "Driver renderizado para o SDL 2. Performance para implementa\303\247\303\265es libretro core ren"
+   "derizado \303\251 dependente da implementa\303\247\303\243o de SDL da sua plataforma.",
+   "Um driver de v\303\255deo Sunxi de baixo n\303\255vel que usa o bloco G2D em Allwinner SoCs.",
+   "Driver Switch. Suporta o formato de shader GLSL.",
+   "Driver OpenVG. Usa API de gr\303\241ficos para vetores 2D acelerados por hardware OpenVG.",
+   "Driver Vulkan. Este driver permite que n\303\272cleos de libretro Vulkan sejam utilizados al\303"
+   "\251m de n\303\272cleos renderizados por software. Vers\303\243o m\303\255nima necess\303\241ria"
+   ": Vulkan 1.0. Suporta HDR e shaders Slang.",
+   "Driver Wii U. Suporta shaders Slang.",
+   "Aplica um filtro de v\303\255deo alimentado por CPU. Pode ter um alto custo de desempenho. Algun"
+   "s filtros de v\303\255deo podem funcionar apenas para n\303\272cleos que usam n\303\272cleos de "
+   "32 ou 16 bits. Podem ser selecionadas bibliotecas de filtros de v\303\255deo vinculadas dinamica"
+   "mente.",
    "Insere fotograma(s) de sombreador extra entre fotogramas para quaisquer efeitos de sombreador po"
    "ss\303\255veis que tenham sido concebidos para serem executados mais rapidamente do que a taxa d"
    "e conte\303\272do. Utilize apenas a op\303\247\303\243o designada para a taxa de atualiza\303"
@@ -1908,670 +1461,304 @@ static const struct
    "ncia de fotog",
    "ramas exata do conte\303\272do. Deixar o VRR do sistema ligado \303\251 aceit\303\241vel, mas n"
    "\303\243o esta defini\303\247\303\243o.",
-   "Filtragem bilinear",
-#if defined(DINGUX)
-   "Interpola\303\247\303\243o de imagem",
-   "Especifica o m\303\251todo de interpola\303\247\303\243o da imagem ao dimensionar o conte\303"
-   "\272do atrav\303\251s do IPU interno. \"Bic\303\272bico\" ou \"Bilinear\" \303\251 recomendado a"
-   "o usar filtros de v\303\255deo movidos a CPU. Esta op\303\247\303\243o n\303\243o tem impacto na"
-   " performance.",
-   "Bic\303\272bico",
-   "Vizinho mais pr\303\263ximo",
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   "Interpola\303\247\303\243o de imagem",
-   "Especifica o m\303\251todo de interpola\303\247\303\243o de imagem quando \"Escala em n\303\272m"
-   "eros inteiros\" est\303\241 desativado. \"Vizinho mais pr\303\263ximo\" tem o menor impacto na p"
-   "erformance.",
-   "Vizinho mais pr\303\263ximo",
-#endif
-#endif
-   "Atraso de Auto-Shader",
-   "Adia o auto-carregamento de shaders (em ms). Pode solucionar erros gr\303\241ficos quando \303"
-   "\251 usado software de grava\303\247\303\243o de ecr\303\243.",
-   "Filtro de v\303\255deo",
-   "Aplica um filtro de v\303\255deo movido a CPU. Pode vir a um alto custo de performance. Alguns f"
-   "iltros de v\303\255deo podem s\303\263 funcionar com n\303\272cleos que usam cor 32-bit ou 16-bi"
-   "t.",
-   "Aplica um filtro de v\303\255deo alimentado por CPU. Pode ter um alto custo de desempenho. Algun"
-   "s filtros de v\303\255deo podem funcionar apenas para n\303\272cleos que usam n\303\272cleos de "
-   "32 ou 16 bits. Podem ser selecionadas bibliotecas de filtros de v\303\255deo vinculadas dinamica"
-   "mente.",
-   "Remover filtro de v\303\255deo",
-   "Desative qualquer filtro de v\303\255deo movido a CPU.",
-   "S\303\263 para telas CRT. Tenta usar a resolu\303\247\303\243o e a taxa de atualiza\303\247\303"
-   "\243o n\303\272cleo/jogo exata.",
-   "Super Resolu\303\247\303\243o CRT",
-   "Alterne entre resolu\303\247\303\265es nativas e ultrawide.",
-   "Alterne entre estas op\303\247\303\265es se a imagem n\303\243o estiver centrada corretamente no"
-   " ecr\303\243.",
-   "Tamanho Horizontal",
-   "Alterne entre estas op\303\247\303\265es se a imagem n\303\243o estiver centrada corretamente no"
-   " ecr\303\243.",
-   "Taxa de Atualiza\303\247\303\243o Personalizada",
-   "Use uma taxa de atualiza\303\247\303\243o personalizada especificada no ficheiro de configura"
-   "\303\247\303\243o, se necess\303\241rio.",
-   "Alterne para o modo de alta resolu\303\247\303\243o para usar com menus de alta resolu\303\247"
-   "\303\243o quando nenhum conte\303\272do est\303\241 carregado.",
-   "\303\215ndice do monitor",
-   "Seleciona que ecr\303\243 usar.",
-   "Rota\303\247\303\243o de v\303\255deo",
-   "For\303\247a uma certa rota\303\247\303\243o do ecr\303\243. A rota\303\247\303\243o \303\251 ad"
-   "icionada \303\240s rota\303\247\303\265es que o n\303\272cleo define.",
-   "Orienta\303\247\303\243o do ecr\303\243",
-   "For\303\247a uma certa orienta\303\247\303\243o do ecr\303\243 do sistema operativo.",
-   "\303\215ndice da GPU",
-   "Selecione qual placa gr\303\241fica usar.",
-   "Desalinhamento horizontal do ecr\303\243",
-   "For\303\247a um certo desalinhamento horizontal ao v\303\255deo. O desalinhamento \303\251 aplic"
-   "ado globalmente.",
-   "Desalinhamento vertical do ecr\303\243",
-   "For\303\247a um certo desalinhamento vertical ao v\303\255deo. O desalinhamento \303\251 aplicad"
-   "o globalmente.",
-   "Taxa de atualiza\303\247\303\243o",
-   "Taxa de atualiza\303\247\303\243o estimada do ecr\303\243",
-   "A taxa de atualiza\303\247\303\243o do ecr\303\243 estimada em Hz.",
-   "Definir taxa de atualiza\303\247\303\243o reportada pelo ecr\303\243",
-   "A taxa de atualiza\303\247\303\243o como relatado pelo driver de exibi\303\247\303\243o.",
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   "Taxa de atualiza\303\247\303\243o vertical",
-   "Definir a taxa de atualiza\303\247\303\243o vertical do ecr\303\243. \"50 Hz\" permitir\303\241 "
-   "um v\303\255deo suave com conte\303\272do PAL.",
-#endif
-   "Desativar, for\303\247adamente, o sRGB FBO",
-   "Desativa for\303\247adamente suporte a sRGB FBO. Alguns drivers Intel OpenGL no Windows t\303"
-   "\252m problemas de v\303\255deo com sRGB FBOs. O problema pode ser contornado ativando esta op"
-   "\303\247\303\243o.",
-   "Modo de ecr\303\243 inteiro em janela",
-   "Se em ecr\303\243 inteiro, preferir usar uma janela em ecr\303\243 inteiro para prevenir o modo "
-   "de exibi\303\247\303\243o de mudar.",
-   "Largura do ecr\303\243 inteiro",
-   "Defina o tamanho da largura personalizada para o modo de ecr\303\243 inteiro sem janela. Se n"
-   "\303\243o estiver definido, a resolu\303\247\303\243o da \303\241rea de trabalho ser\303\241 usa"
-   "da.",
-   "Altura do ecr\303\243 inteiro",
-   "Defina o tamanho da altura personalizada para o modo de ecr\303\243 inteiro sem janela. Se n\303"
-   "\243o estiver definido, a resolu\303\247\303\243o da \303\241rea de trabalho ser\303\241 usada.",
-   "For\303\247ar resolu\303\247\303\243o para UWP",
-   "For\303\247ar a resolu\303\247\303\243o para o tamanho de ecr\303\243 inteiro. Se definido como "
-   "0, um valor fixo de 3840 x 2160 ser\303\241 usado.",
-   "Escala em janela",
-   "Largura da janela",
-   "Define a largura personalizada para a janela de exibi\303\247\303\243o.",
-   "Altura da janela",
-   "Define a altura personalizada para a janela de exibi\303\247\303\243o.",
-   "Largura m\303\241xima da janela",
-   "Altura m\303\241xima da janela",
-   "Transpar\303\252ncia da Janela",
-   "Mostrar Decora\303\247\303\265es da Janela",
-   "Lembrar posi\303\247\303\243o e tamanho da janela",
-   "Mostra todo o conte\303\272do numa janela de tamanho fixo com as dimens\303\265es especificadas "
-   "por 'Largura da Janela' e 'Altura da Janela', e guarda o tamanho e a posi\303\247\303\243o atual"
-   " da janela ao fechar o RetroArch. Quando desativado, o tamanho da janela ser\303\241 definido di"
-   "namicamente com base na 'Escala em modo janela'.",
-   "Usar Tamanho de Janela Personalizado",
-   "Mostra todo o conte\303\272do numa janela de tamanho fixo com as dimens\303\265es especificadas "
-   "por 'Largura da Janela' e 'Altura da Janela'. Quando desativado, o tamanho da janela ser\303\241"
-   " definido dinamicamente com base na 'Escala em modo janela'.",
-   "Escala em n\303\272meros inteiros",
-   "Propor\303\247\303\243o do ecr\303\243",
-   "Configurar",
-   "Personalizar",
-#if defined(DINGUX)
-   "Manter a Propor\303\247\303\243o da Imagem",
-   "Manter propor\303\247\303\265es de aspeto de 1:1 pixel ao dimensionar conte\303\272do atrav\303"
-   "\251s do IPU interno. Se desativado, as imagens ser\303\243o esticadas para preencher toda a tel"
-   "a.",
-#endif
-   "Propor\303\247\303\243o personalizada do ecr\303\243 na posi\303\247\303\243o X",
-   "Propor\303\247\303\243o personalizada do ecr\303\243 na posi\303\247\303\243o Y",
-   "Propor\303\247\303\243o personalizada da largura do ecr\303\243",
-   "Personalizar a largura da janela de exibi\303\247\303\243o que \303\251 usada se a op\303\247"
-   "\303\243o 'Propor\303\247\303\243o de ecr\303\243' estiver definida como 'Personalizado'.",
-   "Propor\303\247\303\243o personalizada da altura do ecr\303\243",
-   "Personalizar a altura da janela de exibi\303\247\303\243o que \303\251 usada se a op\303\247\303"
-   "\243o 'Propor\303\247\303\243o de ecr\303\243' estiver definida como 'Personalizado'.",
-   "Autom\303\241tico",
-   "Autom\303\241tico",
-   "A taxa m\303\241xima na qual o conte\303\272do ser\303\241 executado quando for utilizada a fun"
-   "\303\247\303\243o de avan\303\247o-r\303\241pido (ex: 5.0x para conte\303\272dos em 60fps, exist"
-   "ir um limite de 300 fotogramas p/ segundo). Se for definida como 0.0x, a taxa de avan\303\247o-r"
-   "\303\241pido \303\251 ilimitada (sem limite de fotogramas p/ segundo).",
-   "Sincroniza\303\247\303\243o com a frequ\303\252ncia de fotogramas exata do conte\303\272do (G-Sy"
-   "nc, FreeSync)",
+   "Use um driver de v\303\255deo thread. Usar isto pode melhorar o desempenho a custo de lat\303"
+   "\252ncia poss\303\255vel e mais travamentos de v\303\255deo.",
    "Sincroniza\303\247\303\243o com a frequ\303\252ncia de fotogramas exata do conte\303\272do. Esta"
    " op\303\247\303\243o \303\251 o equivalente a for\303\247ar a velocidade x1, permitindo ainda o "
    "avan\303\247o r\303\241pido. N\303\243o h\303\241 desvio da taxa de atualiza\303\247\303\243o so"
    "licitada pelo n\303\272cleo, nem controlo da taxa din\303\242mica de som.",
-   "Sa\303\255da",
-   "Modificar as defini\303\247\303\265es de sa\303\255da de som.",
-#ifdef HAVE_MICROPHONE
-   "Microfone",
-#endif
-   "Sincronizar som",
-   "Silenciar som",
-   "Silenciar misturador de som",
-   "N\303\255vel de volume de som (dB)",
-   "Volume de som (em dB). 0 dB representa o volume normal, sem aplica\303\247\303\243o de ganho.",
-   "N\303\255vel de volume do misturador de som (dB)",
-   "Volume global do misturador de som (em dB). O valor normal s\303\243o 0 dB, sem ganho aplicado.",
-   "Plugin de som DSP",
-   "Plugin de som DSP que processa o som antes de ser enviado para o controlador.",
-   "Ativar som",
-   "Dispositivo de som",
-   "Subtitui o dispositivo de som pr\303\251-definido pelo controlador de som. Isto varia de acordo "
-   "com o controlador.",
-   "Taxa de sa\303\255da de som (Hz)",
-   "Taxa de amostragem da sa\303\255da de som.",
-   "Subtitui o dispositivo de som pr\303\251-definido pelo controlador de som. Isto varia de acordo "
-   "com o controlador.",
-   "Lat\303\252ncia de som (ms)",
-#ifdef HAVE_MICROPHONE
-   "Microfone",
-#endif
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-   "Dispositivo de som",
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-   "Qualidade de reamostragem de som",
-#endif
-   "Qualidade de reamostragem de som",
-   "Sincronizar som",
-   "Sincronizar o som. Recomendado.",
-   "Otimiza\303\247\303\243o de tempo m\303\241ximo de som",
-   "Bloquear fotogramas",
-   "Controlo din\303\242mico da taxa de \303\241udio",
-   "Ajuda a suavizar as imperfei\303\247\303\265es no sincronismo entre som e v\303\255deo. Caso se "
-   "encontre desativada, esta op\303\247\303\243o far\303\241 com que a sincroniza\303\247\303\243o "
-   "adequada se torne quase imposs\303\255vel de se concretizar.",
-   "Definir este valor como 0 desativa o controlo da taxa de \303\241udio. Qualquer outro valor cont"
-   "rola o delta de controlo da taxa de \303\241udio.\nDefine a quantidade de taxa de entrada que po"
-   "de ser ajustada dinamicamente. A taxa de entrada \303\251 definida como:\ntaxa de entrada * (1,0"
-   " +/- (delta de controlo da taxa))",
-   "Entrada",
-   "Selecione o dispositivo de entrada de \303\241udio.",
-   "Define o dispositivo de entrada de \303\241udio (especifico do controlador). Quando desligado, a"
-   " entrada de MIDI fica desativada. Nome do dispositivo tamb\303\251m pode ser definido.",
-   "Sa\303\255da",
-   "Define a (%) de volume.",
    "Misturador da transmiss\303\243o #%d: %s",
-   "Jogar",
-   "Vai iniciar a reprodu\303\247\303\243o da transmiss\303\243o de \303\241udio. Uma vez terminado,"
-   " ele ir\303\241 remover a transmiss\303\243o de \303\241udio atual da mem\303\263ria.",
-   "Reproduzir (Repeti\303\247\303\243o)",
-   "Remover",
+   "Ativar Acessibilidade",
+   "Velocidade de convers\303\243o de texto em voz",
+   "Acessibilidade",
+   "Palavra-passe",
+   "Defini\303\247\303\265es de contas Cheevos",
+   "Nome de utilizador",
+   "Conta",
+   "N\303\263 da lista de contas",
+   "Conquistas Retro",
+   "Lista de conquistas",
+   "Importar conte\303\272do",
+   "Importar conte\303\272do",
+   "Adicionar ao misturador",
+   "Adicionar ao misturador e \303\240 cole\303\247\303\243o",
+   "Adicionar \303\240 lista de reprodu\303\247\303\243o",
+   "Servi\303\247o IA",
+   "Recursos",
+   "Bloquear fotogramas",
+   "Dispositivo de som",
+   "\303\201udio",
+   "Plugin de som DSP",
+   "Ativar som",
    "Enable menu audio",
-   "Enable or disable menu sound.",
-   "N\303\272mero m\303\241ximo de utilizadores",
-   "Controlos de menu unificados",
-   "Usar as mesmas teclas para o menu e para o jogo. Aplica-se ao teclado.",
-   "Unir tipos de dispositivos de teclas de atalho",
-   "Bloqueia todas as teclas de atalho dos tipos de dispositivo teclado e controlador se um dos tipo"
-   "s tiver a op\303\247\303\243o 'Ativa\303\247\303\243o de teclas de atalho' definida.",
-   "Muda os bot\303\265es para OK/Cancelar. Esta op\303\247\303\243o encontra-se desativada na orien"
-   "ta\303\247\303\243o de bot\303\243o em japon\303\252s e ativado na orienta\303\247\303\243o ocid"
-   "ental.",
+   "Lat\303\252ncia de som (ms)",
+   "Otimiza\303\247\303\243o de tempo m\303\241ximo de som",
+   "Silenciar misturador de som",
+   "Enable menu audio",
+   "N\303\255vel de volume do misturador de som (dB)",
+   "Silenciar som",
+   "Taxa de sa\303\255da de som (Hz)",
+   "Sa\303\255da",
+   "Controlo din\303\242mico da taxa de \303\241udio",
+   "Reamostragem de \303\241udio",
+   "Qualidade de reamostragem de som",
+   "\303\201udio",
+   "Sincronizar som",
+   "Sincronizar som",
+   "N\303\255vel de volume de som (dB)",
+   "Carregar ficheiros de substitui\303\247\303\243o automaticamente",
+   "Carregar os ficheiros de mapeamento automaticamente",
+   "Carregar os shaders automaticamente",
+   "Voltar",
+   "Confirmar",
+   "Informa\303\247\303\265es",
+   "Sair",
+   "Deslizar para baixo",
+   "Deslizar para cima",
+   "Iniciar",
+   "Ativar/Desativar teclado",
+   "Ativar/Desativar menu",
+   "Mostrado estado da bateria",
+   "Ativar Bluetooth",
+   "Iniciar",
+   "Caminho do URL",
+   "Navegar pelo URL",
+   "URL dos recursos do buildbot",
+   "Identificador do pacote",
+   "Permitir c\303\242mera",
+   "C\303\242mara",
+   "Batota",
+   "Aplicar altera\303\247\303\265es",
+   "Descri\303\247\303\243o",
+   "Carregar ficheiro de batota",
+   "Gravar ficheiro de batota como",
+   "Ativado",
+   "Apar\303\252ncia",
+   "Ativar conquistas",
+   "Conquistas no Modo Hardcore",
+   "Bloqueada",
+   "Conquistas Retro",
+   "Testar conquista n\303\243o oficial",
+   "Desbloqueada",
+   "Fechar conte\303\272do",
+   "Sincronia de Nuvem Destrutiva",
+   "Sincroniza\303\247\303\243o da nuvem Backend",
+   "Ativar sincroniza\303\247\303\243o na Nuvem",
+   "Palavra-passe",
+   "Sincroniza\303\247\303\243o na Nuvem",
+   "Sincroniza\303\247\303\243o: Ficheiros de configura\303\247\303\243o",
+   "Sincroniza\303\247\303\243o: Salvas/Estados",
+   "Sincroniza\303\247\303\243o: Arquivos do Sistema",
+   "Sincroniza\303\247\303\243o: Imagens em Miniaturas",
+   "URL de armazenamento da Nuvem",
+   "Utilizador",
+   "Carregar configura\303\247\303\243o",
+   "Ficheiro de configura\303\247\303\265es",
+   "Configura\303\247\303\243o",
+   "Conte\303\272do",
+   "N\303\272cleos sem conte\303\272do",
+   "N\303\272cleo",
+   "Base de dados",
+   "Nome",
+   "Menu r\303\241pido",
+   "Transfer\303\252ncias",
+   "Batota",
+   "Contadores dos n\303\272cleos",
+   "Backup do N\303\272cleo",
+   "Remover n\303\272cleo",
+   "Eliminar Backup",
+   "Mostrar nome do n\303\272cleo",
+   "Informa\303\247\303\243o do n\303\272cleo",
+   "Autor(es)",
+   "Categorias",
+   "Designa\303\247\303\243o do n\303\272cleo",
+   "Nome do n\303\272cleo",
+   "Caminho Completo",
+   "Vers\303\243o do N\303\272cleo",
+   "Licen\303\247a(s)",
+   "Permiss\303\265es",
+   "API de Gr\303\241ficos Necess\303\241ria",
+   "B\303\241sico (Salvar/Carregar)",
+   "Determinante (Guardar/Carregar, Rebobinar, Run-Ahead, Netplay)",
+   "N\303\243o partilhar",
+   "Serializado (Salvar/Carregar, Retroceder)",
+   "Posi\303\247\303\243o de grava\303\247\303\243o de estado",
+   "Extens\303\265es suportadas",
+   "Fabricante do sistema",
+   "Nome do sistema",
+   "Mapeamento de teclas",
+   "Carregar n\303\272cleo",
+   "Descarregar n\303\272cleo",
+   "Bloquear n\303\272cleo instalado",
+   "Restaurar Backup",
+   "N\303\272cleo",
+   "Excluir do menu 'N\303\272cleos sem conte\303\272do'",
+   "Iniciar um n\303\272cleo automaticamente",
+   "Extrair automaticamente o ficheiro transferido",
+   "URL dos n\303\272cleos do buildbot",
+   "Transferidor de n\303\272cleos",
+   "Arquitetura do processador",
+   "N\303\272cleos CPU",
+   "Criar nova lista de reprodu\303\247\303\243o",
+   "Interruptores de CRT",
+   "Tamanho Horizontal",
+   "Super Resolu\303\247\303\243o CRT",
+   "Taxa de Atualiza\303\247\303\243o Personalizada",
+   "Gestor do cursor",
+   "Gestor de base de dados",
+   "Remover",
+   "Apagar a lista de reprodu\303\247\303\243o",
+   "<Conte\303\272do da pasta>",
+   "<Pr\303\251-defini\303\247\303\243o>",
+   "<Nenhum>",
+   "Pasta n\303\243o encontrada.",
+   "Pasta",
+   "Desativado",
+   "Enable Discord",
+   "Pausado",
+   "Informa\303\247\303\265es do Disco",
+   "\303\215ndice do disco",
+   "Controlo de disco",
+   "Ejetar Disco",
+   "Adicionar imagem de disco",
+   "Transfer\303\252ncias",
+   "Transfira um n\303\272cleo",
+   "Transferidor de conte\303\272do",
+   "Descarregar ficheiros de sistema do N\303\272cleo",
+   "Carregar conte\303\272do vazio no encerramento do n\303\272cleo",
+   "Descarregar disco",
+   "Fundo din\303\242mico",
+   "Fundos din\303\242micos",
+   "Ativado",
+   "Explorar",
+   "Falso",
+   "Pasta inicial",
+   "Favoritos",
+   "Filtro",
+   "Filtrar pelo n\303\272cleo atual",
+   "Mostrar taxa de fotogramas",
+   "Acelera\303\247\303\243o de fotogramas",
+   "Contadores da interface visual",
+   "Carregar op\303\247\303\265es espec\303\255ficas de conte\303\272dos de n\303\272cleos automatic"
+   "amente",
+   "Utilizar ficheiro de par\303\242metros globais do n\303\272cleo",
+   "N\303\272cleos sem conte\303\272do",
+   "Explorar",
+   "Favoritos",
+   "Imagens",
+   "M\303\272sica",
+   "V\303\255deos",
+   "Ajuda",
+   "Ajuda",
+   "Hist\303\263rico",
+   "Hist\303\263rico",
+   "Menu horizontal",
+   "Imagens",
+   "Informa\303\247\303\243o",
+   "Informa\303\247\303\243o",
+   "Carregar automaticamente os ficheiros de \303\255ndice do disco inicial",
+   "Tipo anal\303\263gico p/ digital",
    "Menu de teclas de todos os utilizadores",
+   "Anal\303\263gico esquerdo X- (esquerda)",
+   "Anal\303\263gico esquerdo X+ (direita)",
+   "Anal\303\263gico esquerdo Y- (cima)",
+   "Anal\303\263gico esquerdo Y+ (baixo)",
+   "Anal\303\263gico direito X- (esquerda)",
+   "Anal\303\263gico direito X+ (direita)",
+   "Anal\303\263gico direito Y- (cima)",
+   "Anal\303\263gico direito Y+ (baixo)",
    "Ativar auto-configura\303\247\303\243o de teclas",
    "DESLIGADO",
    "LIGADO",
    "Tempo limite para associa\303\247\303\243o de teclas",
-   "Quantidade de segundos a aguardar at\303\251 que seja feita uma nova associa\303\247\303\243o.",
-   "Autom\303\241tico",
-   "Per\303\255odo do turbo",
-   "Ativar tecla de atalho",
-   "Ativar assistente de interface do utilizador",
-   "Mostrar/esconder menu",
-   "Sair",
-   "Fechar conte\303\272do",
-   "Fun\303\247\303\243o de retrocedimento de tempo",
-   "Carregar estado",
-   "Grava\303\247\303\243o de estado",
-   "Se o suporte do disco virtual estiver fechado, abra-o e retire o disco carregado. Caso contr\303"
-   "\241rio, insira o disco selecionado e feche o suporte do disco.",
-   "Shader seguinte",
-   "Shader anterior",
-   "Captura de ecr\303\243",
-   "Sincronizar com a velocidade de fotogramas exacta do conte\303\272do (ativar/desativar)",
-   "Ativa/desativa a sincroniza\303\247\303\243o com a frequ\303\252ncia de fotogramas exata do cont"
-   "e\303\272do.",
-   "Servi\303\247o IA",
-   "Chat do Netplay",
-   "Envia uma mensagem de chat para a sess\303\243o atual de netplay.",
-   "Tipo de dispositivo",
-   "Tipo anal\303\263gico p/ digital",
+   "Esconder descritores de n\303\272cleo n\303\243o consolidados",
+   "Mostrar designa\303\247\303\265es do descritor de entrada",
    "\303\215ndice do dispositivo",
+   "Tipo de dispositivo",
+   "Entrada",
+   "Ativar tecla de atalho",
+   "Unir tipos de dispositivos de teclas de atalho",
+   "Bot\303\243o A (direita)",
    "Bot\303\243o B (baixo)",
-   "Bot\303\243o Y (esquerda)",
+   "Bot\303\243o L (ombro)",
+   "Bot\303\243o L2 (gatilho)",
+   "Bot\303\243o L3 (polegar)",
+   "Bot\303\243o R (ombro)",
+   "Bot\303\243o R2 (gatilho)",
+   "Bot\303\243o R3 (polegar)",
    "Bot\303\243o Select",
    "Bot\303\243o Start",
-   "Bot\303\243o A (direita)",
    "Bot\303\243o X (topo)",
-   "Bot\303\243o L (ombro)",
-   "Bot\303\243o R (ombro)",
-   "Bot\303\243o L2 (gatilho)",
-   "Bot\303\243o R2 (gatilho)",
-   "Bot\303\243o L3 (polegar)",
-   "Bot\303\243o R3 (polegar)",
-   "Anal\303\263gico esquerdo X+ (direita)",
-   "Anal\303\263gico esquerdo X- (esquerda)",
-   "Anal\303\263gico esquerdo Y+ (baixo)",
-   "Anal\303\263gico esquerdo Y- (cima)",
-   "Anal\303\263gico direito X+ (direita)",
-   "Anal\303\263gico direito X- (esquerda)",
-   "Anal\303\263gico direito Y+ (baixo)",
-   "Anal\303\263gico direito Y- (cima)",
-   "Gatilho pistola",
-   "Recarregar pistola",
+   "Bot\303\243o Y (esquerda)",
    "Pistola Auxiliar A",
    "Pistola Auxiliar B",
    "Pistola Auxiliar C",
-   "Start da pistola",
-   "Select da pistola",
-   "Bot\303\243o direcional (cima) da pistola",
    "Bot\303\243o direcional (baixo) da pistola",
    "Bot\303\243o direcional (esquerda) da pistola",
    "Bot\303\243o direcional (direita) da pistola",
-   "Ativar contexto de partilha de hardware",
-   "Carregar conte\303\272do vazio no encerramento do n\303\272cleo",
-   "Iniciar um n\303\272cleo automaticamente",
-   "Permitir rota\303\247\303\243o",
-   "Carregar op\303\247\303\265es espec\303\255ficas de conte\303\272dos de n\303\272cleos automatic"
-   "amente",
-   "Ativar as op\303\247\303\265es espec\303\255ficas do n\303\272cleo no arranque.",
-   "Carregar ficheiros de substitui\303\247\303\243o automaticamente",
-   "Ativar configura\303\247\303\243o personalizada no arranque, por defeito.",
-   "Carregar os ficheiros de mapeamento automaticamente",
-   "Ativar teclas personalizadas no arranque, por defeito.",
-   "Carregar automaticamente os ficheiros de \303\255ndice do disco inicial",
-   "Mudar para o \303\272ltimo disco utilizado ao iniciar um conte\303\272do multi-disco.",
-   "Carregar os shaders automaticamente",
-   "Utilizar ficheiro de par\303\242metros globais do n\303\272cleo",
-   "Ordenar grava\303\247\303\243o de estados pelo nome da pasta do n\303\272cleo utilizado.",
-   "Impedir a sobreposi\303\247\303\243o da Save RAM durante o carregamento de estados de grava\303"
-   "\247\303\243o. Pode provocar perturba\303\247\303\265es nos jogos.",
-   "Carregar automaticamente o \303\272ltimo estado autom\303\241tico guardado no arranque do RetroA"
-   "rch.",
-   "Ficheiros do Sistema est\303\243o na Pasta de Conte\303\272dos",
-   "Verbosidade do registo",
-   "Ativar/desativar a entrada no terminal.",
-   "N\303\255vel de registo principal",
-   "Contadores de desempenhp",
-   "Extens\303\265es de filtro desconhecidas",
-   "Filtrar pelo n\303\272cleo atual",
-   "Usar o reprodutor multim\303\251dia integrado",
-   "Acelerar taxa de fotogramas do menu",
-   "Certifique-se de que a taxa de fotogramas atingida enquanto estiver dentro do menu.",
-   "Ativar fun\303\247\303\243o de retrocedimento do tempo",
-   "Personalizar",
-   "Utilizar grava\303\247\303\243o p\303\263s-filtro",
-   "Utilizar grava\303\247\303\243o na GPU",
-   "Personalizar",
-   "Personalizar",
-   "Ativar apresenta\303\247\303\243o de overlay",
-   "Esconder overlay quando o menu estiver ativo",
-   "Ocultar a sobreposi\303\247\303\243o quando o menu estiver aberto e mostrar novamente ao encerra"
-   "r o mesmo.",
-   "Pasta do overlay",
-   "Prefer\303\252ncia de auto-carregamento de overlay",
-   "Opacidade do overlay",
-   "Opacidade de todos os elementos da camada sobreposta.",
-   "Overlay pr\303\251-definido",
-   "Ativar overlay para Lightgun, rato e ponteiro",
-   "Utilize qualquer entrada de toque que n\303\243o esteja a pressionar os controlos de overlay par"
-   "a criar uma entrada de dispositivo que aponte para o n\303\272cleo.",
-   "Porta da Lightgun",
-   "Definir a porta principal para receber entrada do overlay da Lightgun.",
-   "Ativar ao toque",
-   "Enviar entrada de disparo com entrada de ponteiro.",
-   "Atraso de disparo (fotogramas)",
-   "Atraso na entrada de disparo para dar tempo ao cursor para se mover. Este atraso tamb\303\251m "
-   "\303\251 utilizado para aguardar a contagem correta do multitoque.",
-   "Qualquer",
-   "Velocidade do rato",
-   "Pressione e segure para arrastar",
-   "Prima e mantenha premido o ecr\303\243 para come\303\247ar a premir um bot\303\243o.",
-   "Limite de press\303\243o longa (ms)",
-   "Ativar notifica\303\247\303\265es no ecr\303\243",
-   "Mostrar mensagens no ecr\303\243.",
-   "Mostrar taxa de fotogramas",
-   "Notifica\303\247\303\265es de controlo de disco",
-   "Apresentar uma mensagem no ecr\303\243 ao inserir e ejetar discos.",
-   "Tipo de letra das notifica\303\247\303\265es no ecr\303\243",
-   "Tamanho das notifica\303\247\303\265es no ecr\303\243",
-   "Notifica\303\247\303\243o no ecr\303\243 da posi\303\247\303\243o X",
-   "Notifica\303\247\303\243o no ecr\303\243 da posi\303\247\303\243o Y",
-   "Desativar composi\303\247\303\243o do ambiente de trabalho",
-   "Envolver em torno da navega\303\247\303\243o",
-   "Envolver o in\303\255cio e/ou o final, caso o limite da lista seja alcan\303\247ado horizontal o"
-   "u verticalmente.",
-   "Mostrar defini\303\247\303\265es avan\303\247adas",
-   "Ativar 'Modo quiosque'",
-   "Protege o sistema atrav\303\251s da oculta\303\247\303\243o de todas as configura\303\247\303"
-   "\265es relacionadas com defini\303\247\303\265es.",
-   "Introduza a palavra-passe para desativar o modo quiosque",
-   "Fornecer uma palavra-passe durante a ativa\303\247\303\243o do modo Quiosque faz com que seja po"
-   "ss\303\255vel desativar esse modo a partir do menu, utilizando o Menu Principal, selecionando De"
-   "sativar modo quiosque e introduzindo a palavra-passe.",
-   "Suporte de rato",
-   "Suporte de ponteiros",
-   "Tarefas segmentadas",
-   "Executar tarefas numa thread independente.",
-   "Neve",
-   "Mostrar 'Atualizador online'",
-   "Mostrar a op\303\247\303\243o \"Atualizador online\" no menu principal.",
-   "Mostrar a capacidade de atualizar n\303\272cleos (e ficheiros de informa\303\247\303\243o de n"
-   "\303\272cleos) na op\303\247\303\243o \"Atualizador online\".",
-   "Menu principal",
-   "Personalizar",
-   "Mostrar data e hora",
-   "Mostrado estado da bateria",
-   "Mostrar nome do n\303\272cleo",
-   "Mostrar menu de in\303\255cio",
-   "Mostrar o ecr\303\243 inicial no menu. Esta op\303\247\303\243o \303\251 desativada automaticame"
-   "nte ap\303\263s o primeiro arranque do RetroArch.",
-   "Mostrar 'Acessibilidade'",
-   "Mostrar defini\303\247\303\265es de \"Acessibilidade\".",
-   "Selecione uma imagem para definir como fundo do menu. As imagens manuais e din\303\242micas subs"
-   "tituem a op\303\247\303\243o \"Tema de cor\".",
-   "Tipo de miniatura a ser mostrada.",
-   "Ativar Acessibilidade",
-   "Ativar a convers\303\243o de texto em voz para ajudar na navega\303\247\303\243o no menu.",
-   "Velocidade de convers\303\243o de texto em voz",
-   "A velocidade da voz de convers\303\243o de texto em voz.",
-   "Ativar conquistas",
-   "Conquistas no Modo Hardcore",
-   "Testar conquista n\303\243o oficial",
-   "Ativar/desativar conquistas n\303\243o oficiais e/ou caracter\303\255stas beta para fins de test"
-   "es.",
-   "Anunciar o Netplay de forma p\303\272blica",
-   "Anunciar os jogos de Netplay publicamente. Se n\303\243o estiver ativa esta op\303\247\303\243o,"
-   " os clientes dever\303\243o ligar-se manualmente, em vez de utilizar a rece\303\247\303\243o p"
-   "\303\272blica.",
-   "Utilizar servidor de retransmiss\303\243o",
-   "Retransmite as liga\303\247\303\265es de Netplay atrav\303\251s de um servidor homem-no-meio. "
-   "\303\232til se o anfitri\303\243o se encontrar atr\303\241s de uma Firewall ou tiver problemas c"
-   "om os protocolos NAT/UPnP.",
-   "Endere\303\247o do servidor",
-   "Endere\303\247o do anfitri\303\243o para liga\303\247\303\243o.",
-   "Personalizar",
-   "Porta TCP",
-   "Porta do endere\303\247o de IP do anfitri\303\243o. Pode ser uma porta TCP ou UDP.",
-   "Palavra-passe do servidor",
-   "Palavra-passe do servidor para espectador",
-   "Verifica\303\247\303\243o dos fotogramas de Netplay",
-   "Lat\303\252ncia de entrada dos fotogramas",
-   "O n\303\272mero de fotogramas de lat\303\252ncia de entrada para o Netplay utilizar para ocultar"
-   " a lat\303\252ncia da rede. Reduz a instabilidade e faz com que a funcionalidade de Netplay seja"
-   " menos exigente para o processador, com um custo percept\303\255vel de tempo de atraso.",
-   "Intervalo de lat\303\252ncia de entrada dos fotogramas",
-   "O intervalo de lat\303\252ncia entre fotogramas pode ser usado para ocultar a lat\303\252ncia da"
-   " rede. Reduz a instabilidade e faz com que a funcionalidade de Netplay seja menos exigente para "
-   "o processador, com um custo de lat\303\252ncia imprevis\303\255vel.",
-   "NAT transversal",
-   "Durante as sess\303\265es como anfitri\303\243o, tentar escutar por liga\303\247\303\265es de In"
-   "ternet p\303\272blica, recorrendo ao UPnP ou tecnologias semelhantes para ultrapassar as redes l"
-   "ocais.",
-   "Comandos do rede",
-   "Porta de comando de rede",
-   "Comandos stdin",
-   "Ativar interface de comandos pelo stdin.",
-   "URL dos n\303\272cleos do buildbot",
-   "URL dos recursos do buildbot",
-   "Extrair automaticamente o ficheiro transferido",
-   "Ap\303\263s a transfer\303\252ncia, extrair automaticamente o conte\303\272do dos ficheiros tran"
-   "sferidos.",
-   "Crie automaticamente uma c\303\263pia de seguran\303\247a de quaisquer n\303\272cleos instalados"
-   " ao efetuar uma atualiza\303\247\303\243o online. Permite a revers\303\243o f\303\241cil para um"
-   " n\303\272cleo em funcionamento se uma atualiza\303\247\303\243o introduzir uma regress\303\243o"
-   ".",
-   "Especifique o n\303\272mero de c\303\263pias de seguran\303\247a geradas automaticamente a mante"
-   "r para cada n\303\272cleo instalado. Quando este limite for atingido, a cria\303\247\303\243o de"
-   " uma nova c\303\263pia de seguran\303\247a atrav\303\251s de uma atualiza\303\247\303\243o onlin"
-   "e ir\303\241 eliminar a c\303\263pia de seguran\303\247a mais antiga. As c\303\263pias de segura"
-   "n\303\247a manuais do n\303\272cleo n\303\243o s\303\243o afetadas por esta defini\303\247\303"
-   "\243o.",
-   "Hist\303\263rico",
-   "Ativar ou desativar a lista de reprodu\303\247\303\243o recente para jogos, imagens, m\303\272si"
-   "ca e v\303\255deos.",
-   "Limite o n\303\272mero de acesso e lista de reprodu\303\247\303\243o para jogos, imagens, m\303"
-   "\272sica e v\303\255deos.",
-   "Permitir renomea\303\247\303\243o de entradas",
-   "Permitir a remo\303\247\303\243o de entradas",
-   "Mostrar n\303\272cleos associados nas listas de reprodu\303\247\303\243o",
-   "Analisar sem correspond\303\252ncia do n\303\272cleo",
-   "N\303\272cleo:",
-   "segundos",
-   "N\303\272cleo padr\303\243o",
-   "Especifica o n\303\272cleo a utilizar no in\303\255cio do conte\303\272do atrav\303\251s de uma "
-   "entrada de lista de reprodu\303\247\303\243o que n\303\243o tem uma associa\303\247\303\243o de "
-   "n\303\272cleo existente.",
-   "Redefinir associa\303\247\303\265es do n\303\272cleo",
-   "Remover as associa\303\247\303\265es do n\303\272cleo existentes para todas as entradas da lista"
-   " de reprodu\303\247\303\243o.",
-   "Apagar a lista de reprodu\303\247\303\243o",
-   "Privacidade",
-   "Conta",
-   "Utilizador",
-   "Introduza aqui o seu nome de utilizador. Esta informa\303\247\303\243o ser\303\241 usada, princi"
-   "palmente, em sess\303\265es do Netplay.",
-   "Caminho do URL",
-   "Idioma",
-   "Permitir c\303\242mera",
-   "Enable Discord",
-   "Permitir localiza\303\247\303\243o",
-   "Conquistas Retro",
-   "Nome de utilizador",
-   "Palavra-passe",
-   "Sistema/BIOS",
-   "Transfer\303\252ncias",
-   "Recursos",
-   "Fundos din\303\242micos",
-   "Miniaturas",
-   "Pasta inicial",
-   "Ficheiros de configura\303\247\303\243o",
-   "O ficheiro de configura\303\247\303\243o predefinido \303\251 armazenado nesta pasta.",
-   "Informa\303\247\303\243o do n\303\272cleo",
-   "Capturas do ecr\303\243",
-   "Pasta de listas de reprodu\303\247\303\243o",
-   "Guardar todos os ficheiros nesta pasta. Se n\303\243o for definida, ser\303\241 feita uma tentat"
-   "iva de grava\303\247\303\243o na pasta de trabalho do ficheiro.",
-#ifdef HAVE_MIST
-   "Conte\303\272do",
-   "Nome do n\303\272cleo",
-   "Nome do sistema",
-#endif
-   "Adicionar ao misturador",
-   "Ligar a um anfitri\303\243o de Netplay",
-   "Ativar o Netplay em modo de cliente.",
-   "Terminar liga\303\247\303\243o ao anfitri\303\243o de Netplay",
-   "Iniciar sess\303\243o de anfitri\303\243o de Netplay",
-   "Parar anfitri\303\243o de Netplay",
-   "Verificar pasta",
-   "Verificar uma pasta por ficheiros compat\303\255veis.",
-   "<Verificar esta pasta>",
-   "Verificar ficheiro",
-   "Verificar um ficheiro compat\303\255vel.",
-   "Adicionar ao misturador e \303\240 cole\303\247\303\243o",
-   "N\303\272cleo padr\303\243o",
-   "Selecionar um n\303\272cleo a ser utilizado por padr\303\243o ao iniciar o conte\303\272do anali"
-   "sado.",
-   "Executar",
-   "Executar o conte\303\272do.",
-   "Renomeia o t\303\255tulo da entrada.",
-   "Remover",
-   "Remover esta entrada da lista de reprodu\303\247\303\243o.",
-   "Adicionar \303\240 lista de reprodu\303\247\303\243o",
-   "Criar nova lista de reprodu\303\247\303\243o",
-   "Informa\303\247\303\243o",
-   "Nome",
-   "N\303\272cleo",
-   "Base de dados",
-   "Retomar",
-   "Reiniciar (reset)",
+   "Bot\303\243o direcional (cima) da pistola",
+   "Recarregar pistola",
+   "Select da pistola",
+   "Start da pistola",
+   "Gatilho pistola",
+   "N\303\272mero m\303\241ximo de utilizadores",
+   "Servi\303\247o IA",
    "Fechar conte\303\272do",
-   "Capturar o ecr\303\243",
-   "Guardar estado",
-   "Guardar um estado na posi\303\247\303\243o selecionada atualmente.",
    "Carregar estado",
-   "Carregar um estado guardado na posi\303\247\303\243o selecionada atualmente.",
-   "Desfazer carregamento de estado",
-   "Se o estado for carregado, o conte\303\272do voltar\303\241 ao estado anterior ao carregamento.",
-   "Desfazer grava\303\247\303\243o de estado",
-   "Se o estado foi sobrescrito, ele voltar\303\241 ao estado de grava\303\247\303\243o anterior.",
-   "Mapeamento de teclas",
-   "Batota",
-   "Configurar c\303\263digos de batota.",
-   "Controlo de disco",
-   "Gest\303\243o de imagens de disco.",
-   "Shader",
-   "Configurar sombreamento para aumentar a defini\303\247\303\243o da imagem.",
-   "Lista de conquistas",
-   "Carregar ficheiro de remapeamento",
-   "Guardar ficheiro de remapeamento de n\303\272cleo",
-   "Guardar ficheiro de remapeamento de jogo",
-   "Remapear ficheiro",
-   "Carregar ficheiro de batota",
-   "Carregar um ficheiro de batota.",
-   "Gravar ficheiro de batota como",
-   "Aplicar altera\303\247\303\265es",
-   "As altera\303\247\303\265es provocadas pela batota ter\303\243o efeito imediato.",
-   "Batota",
-   "Ativado",
-   "Descri\303\247\303\243o",
-   "\303\215ndice do disco",
-   "Ejetar Disco",
-   "Adicionar imagem de disco",
-   "Carregar uma pr\303\251-defini\303\247\303\243o de sombreamento. O canal do shader ser\303\241 d"
-   "efinido automaticamente.",
-   "Aplicar altera\303\247\303\265es",
-   "As altera\303\247\303\265es das configura\303\247\303\265es do shader t\303\252m efeito imediato"
-   ". Utilize isto caso tenha alterado a quantidade de passagens de sombreamento, filtros, escala FB"
-   "O, etc.",
-   "Ver par\303\242metros de shader",
-   "N\303\272mero de passagens de shader",
-   "Sombreamento",
-   "Filtro",
-   "Escala",
-   "Guardar as defini\303\247\303\265es de shader atuais como novas pr\303\251-defini\303\247\303"
-   "\265es de sombreamento.",
-   "Guardar pr\303\251-defini\303\247\303\243o de n\303\272cleo",
-   "Guardar pr\303\251-defini\303\247\303\243o de jogo",
-   "Guardar as defini\303\247\303\265es de shader atuais como defini\303\247\303\265es padr\303\243o"
-   " para o conte\303\272do.",
-   "N\303\243o h\303\241 par\303\242metros de shading.",
-   "N\303\243o existem conquistas para serem exibidas.",
-   "N\303\243o existem entradas para serem mostradas.",
-   "N\303\243o existem n\303\272cleos dispon\303\255veis.",
-   "N\303\243o existem op\303\247\303\265es de n\303\272cleo dispon\303\255veis.",
-   "N\303\243o existe informa\303\247\303\243o do n\303\272cleo dispon\303\255vel.",
-   "Sem hist\303\263rico dispon\303\255vel.",
-   "N\303\243o h\303\241 informa\303\247\303\243o dispon\303\255vel.",
-   "N\303\243o existem entradas na lista de reprodu\303\247\303\243o.",
-   "N\303\243o foram encontras defini\303\247\303\265es.",
-   "Nenhuma rede encontrada.",
-   "Nenhum n\303\272cleo se encontra selecionado",
-   "Procurar",
-   "Voltar",
-   "Diret\303\263rio pai",
-   "Pasta n\303\243o encontrada.",
-   "Sem itens.",
-   "Selecionar ficheiro",
-   "Compilador desconhecido",
-   "N\303\243o partilhar",
-   "DESLIGADO",
-   "Carregada",
-   "Carregando",
-   "Descarregando",
-   "<Utilizar esta pasta>",
-   "<Conte\303\272do da pasta>",
-   "<Pr\303\251-defini\303\247\303\243o>",
-   "<Nenhum>",
-   "Nenhum",
-   "Desconhecido",
-   "Nenhum",
+   "Mostrar/esconder menu",
+   "Chat do Netplay",
+   "Sair",
+   "Reiniciar RetroArch",
+   "Fun\303\247\303\243o de retrocedimento de tempo",
+   "Grava\303\247\303\243o de estado",
    "Captura de ecr\303\243",
-   "LIGADO",
-   "DESLIGADO",
-   "Sim",
-   "N\303\243o",
-   "Verdadeiro",
-   "Falso",
-   "Ativado",
-   "Desativado",
-   "N/D",
-   "Bloqueada",
-   "Desbloqueada",
-   "O mais pr\303\263ximo",
-   "Conte\303\272do",
-   "<Conte\303\272do da pasta>",
-   "Personalizar",
-   "N\303\243o partilhar",
-   "Anal\303\263gico esquerdo",
-   "Anal\303\263gico direito",
-   "Rato 1",
-   "Rato 2",
-   "Rato 3",
+   "Shader seguinte",
+   "Shader anterior",
+   "Sincronizar com a velocidade de fotogramas exacta do conte\303\272do (ativar/desativar)",
    "Rato 4",
    "Rato 5",
+   "Rato 1",
+   "Rato 3",
+   "Rato 2",
+   "Ativar apresenta\303\247\303\243o de overlay",
+   "Esconder overlay quando o menu estiver ativo",
+   "Porta da Lightgun",
+   "Qualquer",
+   "Atraso de disparo (fotogramas)",
+   "Ativar ao toque",
+   "Limite de press\303\243o longa (ms)",
+   "Pressione e segure para arrastar",
+   "Velocidade do rato",
+   "Ativar overlay para Lightgun, rato e ponteiro",
    "Mais cedo",
    "Mais tarde",
-   "Propor\303\247\303\243o do ecr\303\243",
-   "Nenhum",
-   "Autom\303\241tico",
-   "Autom\303\241tico",
+   "Preferir toque frontal",
+   "Entrada",
+   "Ativar teclado pequeno",
+   "Ativar fun\303\247\303\243o t\303\241til",
+   "Per\303\255odo do turbo",
+   "Controlos de menu unificados",
+   "JIT dispon\303\255vel",
+   "Comando",
+   "Lat\303\252ncia",
+   "Anal\303\263gico esquerdo",
+   "Informa\303\247\303\243o do n\303\272cleo",
+   "N\303\255vel de registo principal",
+   "Carregar ficheiro",
+   "Hist\303\263rico",
+   "Carregar conte\303\272do",
+   "Carregar Disco",
+   "Carregar estado",
+   "Permitir localiza\303\247\303\243o",
+   "Localiza\303\247\303\243o",
+   "Registo",
+   "Verbosidade do registo",
+   "Menu principal",
+   "N\303\272cleo padr\303\243o",
+   "<Conte\303\272do da pasta>",
+   "Mapeamento",
+   "LIGADO",
    "DESLIGADO",
-   "Escala em n\303\272meros inteiros",
-   "Personalizar",
-   "Vermelho antigo",
-   "Roxo escuro",
-   "Azul meia-noite",
-   "Dourado",
-   "Azul el\303\251trico",
-   "Ma\303\247a verde",
-   "Vermelho vulc\303\242nico",
-   "Din\303\242mico",
-   "DESLIGADO",
-   "Fundo din\303\242mico",
-   "Carrega, de forma din\303\242mica, uma nova imagem de fundo, dependendo do contexto.",
-   "N\303\243o partilhar",
-   "Selecionar uma fonte principal diferente para ser usada pelo menu.",
-   "Selecionar um tema diferente para este \303\255cone. As altera\303\247\303\265es ter\303\243o ef"
-   "eito ap\303\263s o rein\303\255cio do programa.",
-   "Selecionar um efeito de fundo animado. Isto poder\303\241 aumentar significativamente a utiliza"
-   "\303\247\303\243o do processador, de acordo com o efeito. Se o desempenho n\303\243o for satisfa"
-   "t\303\263rio, desative este efeito ou altere para um mais simples.",
-   "Fita",
-   "Neve simples",
-   "Neve",
-   "Personalizar",
-   "Cores planas",
-   "Monocrom\303\241tico",
-   "Monocrom\303\241tico invertido",
-   "Sistem\303\241tico",
-   "Sistema retro",
-   "Arte de pontos",
-   "Ma\303\247a verde",
-   "Escuro",
-   "Roxo escuro",
-   "Azul el\303\251trico",
-   "Dourado",
-   "Vermelho antigo",
-   "Azul meia-noite",
-   "Submarino",
-   "Vermelho vulc\303\242nico",
-   "Selecionar uma fonte principal diferente para ser usada pelo menu.",
-   "Quando ativado, cada item de metadados de conte\303\272do apresentado na barra lateral direita d"
-   "as listas de reprodu\303\247\303\243o (n\303\272cleo associado, tempo de reprodu\303\247\303\243"
-   "o) ocupar\303\241 uma \303\272nica linha, e as cadeias que excedam a largura dispon\303\255vel s"
-   "er\303\243o automaticamente deslocadas. Quando desativado, cada item de metadados ser\303\241 ex"
-   "ibido estaticamente, ocupando tantas linhas quantas forem necess\303\241rias.",
-   "N\303\243o partilhar",
-   "Din\303\242mico",
-   "N\303\243o partilhar",
    "Azul",
    "Azul acizentado",
    "Azul escuro",
@@ -2583,104 +1770,832 @@ static const struct
    "DESLIGADO",
    "DESLIGADO",
    "DESLIGADO",
-   "DESLIGADO",
-   "LIGADO",
-   "Informa\303\247\303\265es",
-   "&Carregar n\303\272cleo...",
-   "&Procurar",
-   "Ver par\303\242metros de shader",
-   "Escuro",
-   "Personalizar...",
-   "Defini\303\247\303\265es",
-   "&Ajuda",
-   "Carregar n\303\272cleo",
-   "Nome",
-   "Selecionar de Listas de Reprodu\303\247\303\243o",
+   "M\303\255dia",
+   "Menu principal",
+   "Ativar 'Modo quiosque'",
+   "Acelerar taxa de fotogramas do menu",
    "Explorador de ficheiros",
-   "Captura de ecr\303\243",
-   "N\303\272cleo",
-   "Informa\303\247\303\243o do n\303\272cleo",
-   "Informa\303\247\303\243o",
-   "Erro",
-   "Apagar a lista de reprodu\303\247\303\243o",
-   "Nome:",
-   "N\303\272cleo:",
-   "Base de dados:",
+   "Introduza a palavra-passe para desativar o modo quiosque",
+   "Propor\303\247\303\243o do ecr\303\243",
+   "Neve",
+   "Apar\303\252ncia",
+   "\"Load Content\" Startup Notification",
+   "Mostrar 'Atualizador online'",
+   "Sons do Menu",
+   "Entrada",
+   "Sa\303\255da",
+   "Em falta, Opcional:",
+   "Em falta, Requerido:",
+   "Jogar",
+   "Reproduzir (Repeti\303\247\303\243o)",
    "Remover",
-   "Reiniciar (reset)",
-   "Defini\303\247\303\265es de contas Cheevos",
-   "N\303\263 da lista de contas",
-   "Conquistas Retro",
-   "Contadores dos n\303\272cleos",
-   "Contadores da interface visual",
-   "Menu horizontal",
-   "Esconder descritores de n\303\272cleo n\303\243o consolidados",
-   "Mostrar designa\303\247\303\265es do descritor de entrada",
-   "Overlay em ecr\303\243",
-   "Hist\303\263rico",
+   "Suporte de rato",
    "Multim\303\251dia",
-   "Nenhum anfitri\303\243o de Netplay encontrado.",
-   "N\303\243o existem contadores de desempenho.",
-   "N\303\243o existem listas de reprodu\303\247\303\243o.",
-   "On-line",
-   "Porta",
-   "segundos",
-   "N\303\272cleos sugeridos",
-   "N\303\243o foi poss\303\255vel ler o ficheiro comprimido.",
-   "Utilizador",
-   "Modifica a pr\303\251-defini\303\247\303\243o de shader pr\303\263prio que \303\251 utilizado no"
-   " menu.",
-   "Pr\303\251-defini\303\247\303\243o de shader",
-   "Pr\303\251-defini\303\247\303\243o de shader",
-   "Pr\303\251-defini\303\247\303\243o de shader",
-   "Navegar pelo URL",
-   "Iniciar",
-   "Alcunha: %s",
+   "M\303\272sica",
+   "Extens\303\265es de filtro desconhecidas",
+   "Envolver em torno da navega\303\247\303\243o",
+   "O mais pr\303\263ximo",
+   "Verifica\303\247\303\243o dos fotogramas de Netplay",
    "Conte\303\272do compat\303\255vel encontrado",
-   "Estado",
-   "Ativar sistema BGM",
-   "Ajuda",
-   "Pausado",
-   "O Netplay ir\303\241 iniciar quando o conte\303\272do for carregado.",
+   "Parar anfitri\303\243o de Netplay",
+   "Terminar liga\303\247\303\243o ao anfitri\303\243o de Netplay",
+   "Ligar a um anfitri\303\243o de Netplay",
+   "Iniciar sess\303\243o de anfitri\303\243o de Netplay",
+   "Lat\303\252ncia de entrada dos fotogramas",
+   "Intervalo de lat\303\252ncia de entrada dos fotogramas",
+   "Endere\303\247o do servidor",
    "N\303\243o foi poss\303\255vel encontrar um n\303\272cleo adequado ou um ficheiro de conte\303"
    "\272do. Por favor, carregue manualmente.",
-   "Volume global do misturador de som",
-   "Procura de sess\303\265es Netplay completa.",
-   "Lamentamos, esta funcionalidade n\303\243o implementada: os n\303\272cleos que n\303\243o exigem"
-   " conte\303\272do n\303\243o podem participar no Netplay.",
-   "Recebido comando Netplay desconhecido",
-   "O ficheiro j\303\241 existe. A guardar no buffer de c\303\263pia de seguran\303\247a",
-   "Voc\303\252 saiu do jogo",
-   "Voc\303\252 juntou-se como o(a) jogador(a) %u",
-   "Introduza a palavra-passe do servidor:",
-   "Insira a mensagem:",
-   "Palavra-passe incorreta",
-   "O cliente Netplay foi desligado",
-   "Desligado do Netplay",
-   "N\303\243o tem permiss\303\243o para jogar",
-   "N\303\243o existem posi\303\247\303\265es livres para jogadores",
-   "N\303\243o \303\251 poss\303\255vel entrar no modo de reprodu\303\247\303\243o",
-   "Volume de som",
-   "Auto-detetar",
-   "Funcionalidades",
-   "Ligando ao anfitri\303\243o de Netplay",
-   "Ligando \303\240 porta",
-   "Vaga para liga\303\247\303\243o",
+   "Personalizar",
+   "NAT transversal",
+   "Utilizador",
+   "Palavra-passe do servidor",
+   "Anunciar o Netplay de forma p\303\272blica",
+   "Alcunha: %s",
+   "N\303\243o partilhar",
+   "Palavra-passe do servidor para espectador",
+   "O Netplay ir\303\241 iniciar quando o conte\303\272do for carregado.",
+   "Porta TCP",
+   "Utilizar servidor de retransmiss\303\243o",
+   "Comandos do rede",
+   "Porta de comando de rede",
+   "Informa\303\247\303\243o de rede",
+   "Rede",
+   "N\303\243o",
+   "Nenhum",
+   "Notifica\303\247\303\265es de controlo de disco",
+   "N/D",
+   "N\303\243o existem conquistas para serem exibidas.",
+   "Nenhum n\303\272cleo se encontra selecionado",
+   "N\303\243o existem n\303\272cleos dispon\303\255veis.",
+   "N\303\243o existe informa\303\247\303\243o do n\303\272cleo dispon\303\255vel.",
+   "N\303\243o existem op\303\247\303\265es de n\303\272cleo dispon\303\255veis.",
+   "N\303\243o existem entradas para serem mostradas.",
+   "Sem hist\303\263rico dispon\303\255vel.",
+   "N\303\243o h\303\241 informa\303\247\303\243o dispon\303\255vel.",
+   "Sem itens.",
+   "Nenhum anfitri\303\243o de Netplay encontrado.",
+   "Nenhuma rede encontrada.",
+   "N\303\243o existem contadores de desempenho.",
+   "N\303\243o existem listas de reprodu\303\247\303\243o.",
+   "N\303\243o existem entradas na lista de reprodu\303\247\303\243o.",
+   "N\303\243o foram encontras defini\303\247\303\265es.",
+   "N\303\243o h\303\241 par\303\242metros de shading.",
+   "DESLIGADO",
+   "LIGADO",
+   "On-line",
+   "Atualizador online",
+   "Apresenta\303\247\303\243o no ecr\303\243",
+   "Notifica\303\247\303\265es no ecr\303\243",
+   "Overlays no ecr\303\243",
+   "Abrir um ficheiro",
+   "Pasta do overlay",
+   "Prefer\303\252ncia de auto-carregamento de overlay",
+   "Overlay para Lightgun",
+   "Overlay para rato",
+   "Opacidade do overlay",
+   "Overlay pr\303\251-definido",
+   "Overlay em ecr\303\243",
+   "Din\303\242mico",
+   "N\303\243o partilhar",
+   "N\303\243o partilhar",
+   "Usar Modo PAL60",
+   "Diret\303\263rio pai",
+   "Contadores de desempenhp",
+   "Desempenho",
+   "Listas de reprodu\303\247\303\243o",
+   "Pasta de listas de reprodu\303\247\303\243o",
+   "Permitir a remo\303\247\303\243o de entradas",
+   "DESLIGADO",
+   "Permitir renomea\303\247\303\243o de entradas",
+   "N\303\272cleo padr\303\243o",
+   "Redefinir associa\303\247\303\265es do n\303\272cleo",
+   "Nenhum",
+   "Defini\303\247\303\265es de listas de reprodu\303\247\303\243o",
+   "Mostrar n\303\272cleos associados nas listas de reprodu\303\247\303\243o",
+   "N\303\272cleo:",
+   "Atualizador de miniaturas das listas de reprodu\303\247\303\243o",
+   "Suporte de ponteiros",
+   "Porta",
+   "Gest\303\243o de energia",
+   "Presente, Opcional:",
+   "Presente, Requerido:",
+   "Privacidade",
+   "Are you sure you want to delete the playlist \"%1\"?",
+   "Are you sure you want to delete the item \"%1\"?",
+   "N\303\272cleo",
+   "Informa\303\247\303\243o do n\303\272cleo",
+   "Apagar a lista de reprodu\303\247\303\243o",
+   "Erro",
+   "Informa\303\247\303\265es",
+   "Informa\303\247\303\243o",
+   "Carregar n\303\272cleo",
+   "&Procurar",
+   "&Carregar n\303\272cleo...",
+   "&Ajuda",
+   "\"All Playlists\" max grid entries:",
+   "\"All Playlists\" max list entries:",
+   "Personalizar...",
+   "Escuro",
+   "Defini\303\247\303\265es",
+   "Ver par\303\242metros de shader",
+   "Nome",
+   "N\303\272cleo:",
+   "Base de dados:",
+   "Nome:",
+   "Remover",
+   "Reiniciar (reset)",
+   "Explorador de ficheiros",
+   "Selecionar de Listas de Reprodu\303\247\303\243o",
+   "Captura de ecr\303\243",
+   "Menu r\303\241pido",
+   "Encerrar",
+   "Conquistas",
+   "Anal\303\263gico suportado",
+   "Estilo de arte",
+   "Classifica\303\247\303\243o BBFC",
+   "Categoria",
+   "Classifica\303\247\303\243o CERO",
+   "Exclusivo Consola",
+   "Mapeamento de teclas",
+   "Modo cooperativo suportado",
+   "Descri\303\247\303\243o",
+   "Desenvolvedor",
+   "Edi\303\247\303\243o da revista Edge",
+   "Classifica\303\247\303\243o da revista Edge",
+   "Revis\303\243o da revista Edge",
+   "Classifica\303\247\303\243o ELSPA",
+   "Melhorias por Hardware",
+   "Classifica\303\247\303\243o ESRB",
+   "Classifica\303\247\303\243o da revista Famitsu",
+   "Franquia",
+   "Jogabilidade",
+   "G\303\251nero",
+   "Idioma",
+   "M\303\255dia",
+   "Nome",
+   "Narrativa",
+   "Origem",
+   "Ritmo",
+   "Classifica\303\247\303\243o PEGI",
+   "Perspectiva",
+   "Exclusivo de Plataforma",
+   "Editora",
+   "Regi\303\243o",
+   "M\303\252s de lan\303\247amento",
+   "Ano de lan\303\247amento",
+   "Suporte a vibra\303\247\303\243o",
+   "Pontua\303\247\303\243o",
+   "S\303\251rie",
+   "Defini\303\247\303\243o",
+   "Classifica\303\247\303\243o TGDB",
+   "Veicular",
+   "Reinicializar",
+   "Grava\303\247\303\243o de v\303\255deo",
+   "Grava\303\247\303\243o de v\303\255deo",
+   "Remapear ficheiro",
+   "Carregar ficheiro de remapeamento",
+   "Guardar ficheiro de remapeamento de n\303\272cleo",
+   "Guardar ficheiro de remapeamento de jogo",
+   "Renomeia o t\303\255tulo da entrada.",
+   "Repor os valores padr\303\243o",
+   "Reiniciar (reset)",
+   "Reiniciar",
+   "Retomar",
+   "Conquistas",
+   "Ativar fun\303\247\303\243o de retrocedimento do tempo",
+   "Fun\303\247\303\243o de retrocedimento do tempo",
+   "Autom\303\241tico",
+   "Escala em n\303\272meros inteiros",
+   "DESLIGADO",
+   "Pasta inicial",
+   "Ficheiros de configura\303\247\303\243o",
+   "Ma\303\247a verde",
+   "Personalizar",
+   "Roxo escuro",
+   "Din\303\242mico",
+   "Azul el\303\251trico",
+   "Dourado",
+   "Vermelho antigo",
+   "Azul meia-noite",
+   "Vermelho vulc\303\242nico",
+   "DESLIGADO",
+   "Mostrar menu de in\303\255cio",
+   "Autom\303\241tico",
+   "Nenhum",
+   "Anal\303\263gico direito",
+   "Executar",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
+#endif
+#endif
+   "Gravar a configura\303\247\303\243o como",
+   "Guardar configura\303\247\303\243o atual",
+   "Guardar sobreposi\303\247\303\265es de n\303\272cleo",
+   "Guardar sobreposi\303\247\303\265es de jogo",
+   "Gravar a configura\303\247\303\243o principal",
+   "Guardar nova configura\303\247\303\243o",
+   "Guardar estado",
+   "Grava\303\247\303\243o",
+   "Escala",
+   "Verificar pasta",
+   "Verificar ficheiro",
+   "Personalizar",
+   "<Verificar esta pasta>",
+   "N\303\243o partilhar",
+   "Analisar sem correspond\303\252ncia do n\303\272cleo",
+   "Capturas do ecr\303\243",
+   "Orienta\303\247\303\243o do ecr\303\243",
+   "Resolu\303\247\303\243o de ecr\303\243",
+   "Procurar",
+   "segundos",
+   "Selecionar ficheiro",
+   "Autom\303\241tico",
+   "Defini\303\247\303\265es",
+   "Mostrar 'Acessibilidade'",
+   "Defini\303\247\303\265es",
+   "Defini\303\247\303\265es",
+   "Sombreamento",
+   "Aplicar altera\303\247\303\265es",
+   "Shader",
+   "Fita",
+   "Neve simples",
+   "Neve",
+   "Mostrar defini\303\247\303\265es avan\303\247adas",
+   "Personalizar",
+   "Mostrar Menu do Ambiente de trabalho",
+   "Desligar",
+   "Instale ou restaure um n\303\272cleo",
+   "Som",
+   "Especifica\303\247\303\265es",
+   "Iniciar n\303\272cleo",
+   "Iniciar RetroPad remoto",
+   "Iniciar processador de v\303\255deo",
+   "Posi\303\247\303\243o de estado",
+   "Estado",
+   "Comandos stdin",
+   "Armazenamento",
+   "N\303\272cleos sugeridos",
+   "Suspender prote\303\247\303\243o de ecr\303\243",
+   "Mudar n\303\272cleos para vers\303\265es da Play Store",
+   "Ficheiros do Sistema est\303\243o na Pasta de Conte\303\272dos",
+   "Ativar sistema BGM",
+   "Sistema/BIOS",
+   "Informa\303\247\303\265es do sistema",
+   "Data de compila\303\247\303\243o",
+   "Caracter\303\255sticas do processador",
+   "Modelo de CPU",
+   "DPI do ecr\303\243",
+   "Altura do ecr\303\243 (mm)",
+   "Largura do ecr\303\243 (mm)",
+   "Identificador da interface visual",
+   "Nome da interface visual",
+   "Sistema operativo da interface visual",
+   "Vers\303\243o Git",
+   "Fonte de energia",
+   "Carregada",
+   "Carregando",
+   "Descarregando",
+   "Vers\303\243o do RetroArch",
+   "Driver de contexto de v\303\255deo",
+   "Sistema",
+   "Capturar o ecr\303\243",
+   "Tarefas segmentadas",
+   "Miniaturas",
+   "Captura de ecr\303\243",
+   "Mostrar data e hora",
+   "segundos",
+   "Temporizador",
+   "Verdadeiro",
+   "Ativar assistente de interface do utilizador",
+   "N\303\243o foi poss\303\255vel ler o ficheiro comprimido.",
+   "Desfazer carregamento de estado",
+   "Desfazer grava\303\247\303\243o de estado",
+   "Desconhecido",
+   "Atualizar recursos",
+   "Atualizar Perfis de Comandos",
+   "Atualizar shaders Cg",
+   "Atualizar batotas",
+   "Atualizar ficheiros de informa\303\247\303\243o de n\303\272cleos",
+   "Atualizar base de dados",
+   "Atualizar shaders GLSL",
+   "Atualizar N\303\272cleos Instalados",
+   "Atualizar Lakka",
+   "Atualizar sobreposi\303\247\303\265es",
+   "Atualizar Shaders Slang",
+   "Utilizador",
+   "Interface de utilizador",
+   "Idioma",
+   "Utilizador",
+   "Usar o reprodutor multim\303\251dia integrado",
+   "<Utilizar esta pasta>",
+   "Permitir rota\303\247\303\243o",
+   "Configurar",
+   "Personalizar",
+   "Propor\303\247\303\243o do ecr\303\243",
+   "Inserir fotogramas a preto - Fotogramas escuros",
+   "Inser\303\247\303\243o de frame preto",
+   "Desativar composi\303\247\303\243o do ambiente de trabalho",
+   "V\303\255deo",
+   "Filtro de v\303\255deo",
+   "Filtrar tremula\303\247\303\243o",
+   "Remover filtro de v\303\255deo",
+   "Ativar notifica\303\247\303\265es no ecr\303\243",
+   "Tipo de letra das notifica\303\247\303\265es no ecr\303\243",
+   "Tamanho das notifica\303\247\303\265es no ecr\303\243",
+   "For\303\247ar resolu\303\247\303\243o para UWP",
+   "Desativar, for\303\247adamente, o sRGB FBO",
+   "Autom\303\241tico",
+   "Modo de ecr\303\243 inteiro",
+   "Largura do ecr\303\243 inteiro",
+   "Altura do ecr\303\243 inteiro",
+   "Gama de v\303\255deo",
+   "\303\215ndice da GPU",
+   "Utilizar grava\303\247\303\243o na GPU",
+   "Sincroniza\303\247\303\243o s\303\263lida na GPU",
+   "Sincroniza\303\247\303\243o s\303\263lida de fotogramas na GPU",
+   "Notifica\303\247\303\243o no ecr\303\243 da posi\303\247\303\243o X",
+   "Notifica\303\247\303\243o no ecr\303\243 da posi\303\247\303\243o Y",
+   "\303\215ndice do monitor",
+   "Sa\303\255da",
+   "Utilizar grava\303\247\303\243o p\303\263s-filtro",
+   "Personalizar",
+   "Personalizar",
+   "Taxa de atualiza\303\247\303\243o",
+   "Taxa de atualiza\303\247\303\243o estimada do ecr\303\243",
+   "Definir taxa de atualiza\303\247\303\243o reportada pelo ecr\303\243",
+   "Rota\303\247\303\243o de v\303\255deo",
+   "Escala em janela",
+   "Escala em n\303\272meros inteiros",
+   "Dimensionamento",
+   "V\303\255deo",
+   "Atraso de Auto-Shader",
+   "N\303\272mero de passagens de shader",
+   "Ver par\303\242metros de shader",
+   "Guardar pr\303\251-defini\303\247\303\243o de n\303\272cleo",
+   "Guardar pr\303\251-defini\303\247\303\243o de jogo",
+   "Subfotogramas de sombreamento",
+   "Ativar contexto de partilha de hardware",
+   "Filtragem bilinear",
+   "Ativar filtro suave",
+   "Personalizar",
+   "Intervalo de troca VSync",
+   "Autom\303\241tico",
+   "Sincroniza\303\247\303\243o",
+   "V\303\255deos",
+   "V\303\255deo segmentado",
+   "Propor\303\247\303\243o personalizada da altura do ecr\303\243",
+   "Propor\303\247\303\243o personalizada da largura do ecr\303\243",
+   "Propor\303\247\303\243o personalizada do ecr\303\243 na posi\303\247\303\243o X",
+   "Propor\303\247\303\243o personalizada do ecr\303\243 na posi\303\247\303\243o Y",
+   "Definir largura do ecr\303\243 VI",
+   "Sincroniza\303\247\303\243o vertical (Vsync)",
+   "Modo de ecr\303\243 inteiro em janela",
+   "Modo Janela",
+   "Altura m\303\241xima da janela",
+   "Largura m\303\241xima da janela",
+   "Usar Tamanho de Janela Personalizado",
+   "Altura da janela",
+   "Desalinhamento horizontal do ecr\303\243",
+   "Desalinhamento vertical do ecr\303\243",
+   "Transpar\303\252ncia da Janela",
+   "Lembrar posi\303\247\303\243o e tamanho da janela",
+   "Mostrar Decora\303\247\303\265es da Janela",
+   "Largura da janela",
+   "Sincroniza\303\247\303\243o com a frequ\303\252ncia de fotogramas exata do conte\303\272do (G-Sy"
+   "nc, FreeSync)",
+   "Redes sem fios",
+   "N\303\243o partilhar",
+   "Personalizar",
+   "Arte de pontos",
+   "Cores planas",
+   "Monocrom\303\241tico",
+   "Monocrom\303\241tico invertido",
+   "Sistema retro",
+   "Sistem\303\241tico",
+   "Ma\303\247a verde",
+   "Escuro",
+   "Roxo escuro",
+   "Azul el\303\251trico",
+   "Dourado",
+   "Vermelho antigo",
+   "Azul meia-noite",
+   "Submarino",
+   "Vermelho vulc\303\242nico",
+   "Sim",
+   "Pr\303\251-defini\303\247\303\243o de shader",
+   "Pr\303\251-defini\303\247\303\243o de shader",
+   "Pr\303\251-defini\303\247\303\243o de shader",
+   "video_viewport_bias_x",
+   "video_viewport_bias_y",
+   "Ativar a convers\303\243o de texto em voz para ajudar na navega\303\247\303\243o no menu.",
+   "A velocidade da voz de convers\303\243o de texto em voz.",
+   "Alterar as defini\303\247\303\265es do narrador de Acessibilidade.",
+   "Crie e atualize listas de reprodu\303\247\303\243o scaneando conte\303\272do.",
+   "Alterar as configura\303\247\303\265es de Servi\303\247o IA (Tradu\303\247\303\243o/TTS/Outros).",
+   "Subtitui o dispositivo de som pr\303\251-definido pelo controlador de som. Isto varia de acordo "
+   "com o controlador.",
+   "Plugin de som DSP que processa o som antes de ser enviado para o controlador.",
+   "Enable or disable menu sound.",
+   "Volume global do misturador de som (em dB). O valor normal s\303\243o 0 dB, sem ganho aplicado.",
+   "Taxa de amostragem da sa\303\255da de som.",
+   "Modificar as defini\303\247\303\265es de sa\303\255da de som.",
+   "Ajuda a suavizar as imperfei\303\247\303\265es no sincronismo entre som e v\303\255deo. Caso se "
+   "encontre desativada, esta op\303\247\303\243o far\303\241 com que a sincroniza\303\247\303\243o "
+   "adequada se torne quase imposs\303\255vel de se concretizar.",
+   "Driver de reamostragem de \303\241udio a ser usado.",
+   "Modificar as defini\303\247\303\265es de sa\303\255da de som.",
+   "Sincronizar o som. Recomendado.",
+   "Volume de som (em dB). 0 dB representa o volume normal, sem aplica\303\247\303\243o de ganho.",
+   "Ativar configura\303\247\303\243o personalizada no arranque, por defeito.",
+   "Ativar teclas personalizadas no arranque, por defeito.",
+   "Impedir a sobreposi\303\247\303\243o da Save RAM durante o carregamento de estados de grava\303"
+   "\247\303\243o. Pode provocar perturba\303\247\303\265es nos jogos.",
+   "As altera\303\247\303\265es provocadas pela batota ter\303\243o efeito imediato.",
+   "Carregar um ficheiro de batota.",
+   "Ativar/desativar conquistas n\303\243o oficiais e/ou caracter\303\255stas beta para fins de test"
+   "es.",
+   "Quando desativado, os arquivos s\303\243o movidos para uma pasta de backup antes de serem substi"
+   "tu\303\255dos ou exclu\303\255dos.",
+   "Qual protocolo de rede de armazenamento na nuvem a usar.",
+   "Tentativa de sincronizar configura\303\247\303\265es, sram e estados para um provedor de armazen"
+   "amento na Nuvem.",
+   "Senha para a conta de armazenamento na nuvem.",
+   "Modificar as defini\303\247\303\265es de sincroniza\303\247\303\243o na Nuvem.",
+   "Quando ativado, os arquivos de configura\303\247\303\243o ser\303\243o sincronizados para a nuve"
+   "m.",
+   "Quando ativado, salvar/estados ser\303\243o sincronizados para a nuvem.",
+   "Quando ativado, os arquivos do sistema ser\303\243o sincronizados para a nuvem. Isto pode aument"
+   "ar significativamente o tempo necess\303\241rio para sincronizar; usar com cuidado.",
+   "Quando ativado, as miniaturas ser\303\243o sincronizadas para a nuvem. N\303\243o \303\251 geral"
+   "mente recomendado, exceto para grandes cole\303\247\303\265es de imagens em miniatura personaliz"
+   "adas; caso contr\303\241rio, o transferidor de miniaturas \303\251 uma escolha melhor.",
+   "A URL para a entrada de API aponta para o servi\303\247o de armazenamento em nuvem.",
+   "Nome de utilizador para a conta de armazenamento na nuvem.",
+   "Carregar configura\303\247\303\243o existente e substituir os valores atuais.",
+   "Gire e crie ficheiros de configura\303\247\303\243o.",
+   "Modificar as pr\303\251-defini\303\247\303\265es para os ficheiros de configura\303\247\303\243o"
+   ".",
+   "Limite o n\303\272mero de acesso e lista de reprodu\303\247\303\243o para jogos, imagens, m\303"
+   "\272sica e v\303\255deos.",
+   "Aceda rapidamente a todas as defini\303\247\303\265es de jogo relevantes.",
+   "Configurar c\303\263digos de batota.",
+   "Criar um backup do n\303\272cleo atualmente instalado.",
+   "Remove este n\303\272cleo do disco.",
+   "Remova um arquivo da lista de backups arquivados.",
+   "Visualizar informa\303\247\303\265es pertinentes para a aplica\303\247\303\243o/n\303\272cleo.",
+   "Selecione o n\303\272cleo que deseja utilizar.",
+   "Desativar o n\303\272cleo ativo.",
+   "Impedir a modifica\303\247\303\243o do n\303\272cleo atualmente instalado. Pode ser usado para e"
+   "vitar atualiza\303\247\303\265es indesejadas quando o conte\303\272do precisar de uma vers\303"
+   "\243o espec\303\255fica do n\303\272cleo (por exemplo, conjuntos de ROMs do jogo arcade) ou quan"
+   "do o formato para gravar o estado do pr\303\263prio n\303\272cleo for alterado.",
+   "Instalar uma vers\303\243o anterior do n\303\272cleo a partir de uma lista de backups arquivados"
+   ".",
+   "Modificar as defini\303\247\303\265es de n\303\272cleo.",
+   "Impede que este n\303\272cleo seja exibido na aba/menu 'N\303\272cleos sem conte\303\272do'. Apl"
+   "ica-se somente quando o modo de exibi\303\247\303\243o \303\251 definido como 'Personalizado'.",
+   "Crie automaticamente uma c\303\263pia de seguran\303\247a de quaisquer n\303\272cleos instalados"
+   " ao efetuar uma atualiza\303\247\303\243o online. Permite a revers\303\243o f\303\241cil para um"
+   " n\303\272cleo em funcionamento se uma atualiza\303\247\303\243o introduzir uma regress\303\243o"
+   ".",
+   "Especifique o n\303\272mero de c\303\263pias de seguran\303\247a geradas automaticamente a mante"
+   "r para cada n\303\272cleo instalado. Quando este limite for atingido, a cria\303\247\303\243o de"
+   " uma nova c\303\263pia de seguran\303\247a atrav\303\251s de uma atualiza\303\247\303\243o onlin"
+   "e ir\303\241 eliminar a c\303\263pia de seguran\303\247a mais antiga. As c\303\263pias de segura"
+   "n\303\247a manuais do n\303\272cleo n\303\243o s\303\243o afetadas por esta defini\303\247\303"
+   "\243o.",
+   "Ap\303\263s a transfer\303\252ncia, extrair automaticamente o conte\303\272do dos ficheiros tran"
+   "sferidos.",
+   "Sinais de sa\303\255da nativos e de baixa resolu\303\247\303\243o para uso com telas CRT.",
+   "Alterne para o modo de alta resolu\303\247\303\243o para usar com menus de alta resolu\303\247"
+   "\303\243o quando nenhum conte\303\272do est\303\241 carregado.",
+   "S\303\263 para telas CRT. Tenta usar a resolu\303\247\303\243o e a taxa de atualiza\303\247\303"
+   "\243o n\303\272cleo/jogo exata.",
+   "Alterne entre resolu\303\247\303\265es nativas e ultrawide.",
+   "Use uma taxa de atualiza\303\247\303\243o personalizada especificada no ficheiro de configura"
+   "\303\247\303\243o, se necess\303\241rio.",
+   "Alterne entre estas op\303\247\303\265es se a imagem n\303\243o estiver centrada corretamente no"
+   " ecr\303\243.",
+   "Alterne entre estas op\303\247\303\265es se a imagem n\303\243o estiver centrada corretamente no"
+   " ecr\303\243.",
+   "Ver pesquisas anteriores.",
+   "Ver a base de dados.",
+   "Remover esta entrada da lista de reprodu\303\247\303\243o.",
+   "Modificar as pastas padr\303\243o onde os ficheiros est\303\243o localizados.",
+   "Exibir informa\303\247\303\265es sobre discos de media inseridos.",
+   "Gest\303\243o de imagens de disco.",
+   "Transferir e instalar um n\303\272cleo a partir do atualizador online.",
+   "Descarregue conte\303\272do gratuito para o n\303\272cleo selecionado.",
+   "Descarregar ficheiros auxiliares do sistema para a opera\303\247\303\243o correta e otimizada do"
+   " n\303\272cleo.",
+   "Alterar os drivers utilizados pelo sistema.",
+   "Copiar o disco de media f\303\255sico para o armazenamento interno. Este ser\303\241 salvo como "
+   "um ficheiro de imagem.",
+   "Carrega, de forma din\303\242mica, uma nova imagem de fundo, dependendo do contexto.",
+   "A taxa m\303\241xima na qual o conte\303\272do ser\303\241 executado quando for utilizada a fun"
+   "\303\247\303\243o de avan\303\247o-r\303\241pido (ex: 5.0x para conte\303\272dos em 60fps, exist"
+   "ir um limite de 300 fotogramas p/ segundo). Se for definida como 0.0x, a taxa de avan\303\247o-r"
+   "\303\241pido \303\251 ilimitada (sem limite de fotogramas p/ segundo).",
+   "Modificar as defini\303\247\303\265es das fun\303\247\303\265es de retrocedimento no tempo, avan"
+   "\303\247o-r\303\241pido e c\303\242mera-lenta.",
+   "Ativar as op\303\247\303\265es espec\303\255ficas do n\303\272cleo no arranque.",
+   "N\303\272cleos instalados que n\303\243o precisam de conte\303\272do para iniciar aparecer\303"
+   "\243o aqui.",
+   "Procurar todos os conte\303\272dos correspondentes ao banco de dados atrav\303\251s de uma inter"
+   "face de pesquisa categorizada.",
+   "Conte\303\272do adicionado aos \"Favoritos\" ir\303\241 aparecer aqui.",
+   "Imagens pr\303\251-visualizadas anteriormente ir\303\243o aparecer aqui.",
+   "M\303\272sicas reproduzidas anteriormente ir\303\243o aparecer aqui.",
+   "V\303\255deos reproduzidos anteriormente ir\303\243o aparecer aqui.",
+   "Saiba mais sobre como o programa funciona.",
+   "Ativar ou desativar a lista de reprodu\303\247\303\243o recente para jogos, imagens, m\303\272si"
+   "ca e v\303\255deos.",
+   "Mostrar informa\303\247\303\265es do sistema.",
+   "Mudar para o \303\272ltimo disco utilizado ao iniciar um conte\303\272do multi-disco.",
+   "Quantidade de segundos a aguardar at\303\251 que seja feita uma nova associa\303\247\303\243o.",
+   "Controlador de entrada a utilizar. Alguns controladores de v\303\255deo for\303\247am um control"
+   "ador de entrada diferente. (\303\211 necess\303\241rio reiniciar)",
+   "Bloqueia todas as teclas de atalho dos tipos de dispositivo teclado e controlador se um dos tipo"
+   "s tiver a op\303\247\303\243o 'Ativa\303\247\303\243o de teclas de atalho' definida.",
+   "Se o suporte do disco virtual estiver fechado, abra-o e retire o disco carregado. Caso contr\303"
+   "\241rio, insira o disco selecionado e feche o suporte do disco.",
+   "Envia uma mensagem de chat para a sess\303\243o atual de netplay.",
+   "Ativa/desativa a sincroniza\303\247\303\243o com a frequ\303\252ncia de fotogramas exata do cont"
+   "e\303\272do.",
+   "Ocultar a sobreposi\303\247\303\243o quando o menu estiver aberto e mostrar novamente ao encerra"
+   "r o mesmo.",
+   "Definir a porta principal para receber entrada do overlay da Lightgun.",
+   "Atraso na entrada de disparo para dar tempo ao cursor para se mover. Este atraso tamb\303\251m "
+   "\303\251 utilizado para aguardar a contagem correta do multitoque.",
+   "Enviar entrada de disparo com entrada de ponteiro.",
+   "Prima e mantenha premido o ecr\303\243 para come\303\247ar a premir um bot\303\243o.",
+   "Utilize qualquer entrada de toque que n\303\243o esteja a pressionar os controlos de overlay par"
+   "a criar uma entrada de dispositivo que aponte para o n\303\272cleo.",
+   "Alterar as defini\303\247\303\265es de um comando, teclado ou rato.",
+   "Usar as mesmas teclas para o menu e para o jogo. Aplica-se ao teclado.",
+   "Controlador para usar. (Requerer reiniciar)",
+   "Alterar as configura\303\247\303\265es relacionadas a lat\303\252ncia de v\303\255deo, \303\241u"
+   "dio e entrada.",
+   "Selecione o conte\303\272do que deseja executar.",
+   "Carregar um disco de media f\303\255sico. Primeiro selecione o n\303\272cleo (Carregar n\303\272"
+   "cleo) que pretende usar com o disco.",
+   "Carregar um estado guardado na posi\303\247\303\243o selecionada atualmente.",
+   "Modificar as defini\303\247\303\265es de registo.",
+   "Ativar/desativar a entrada no terminal.",
+   "Selecionar um n\303\272cleo a ser utilizado por padr\303\243o ao iniciar o conte\303\272do anali"
+   "sado.",
+   "Mostrar todas as defini\303\247\303\265es relacionadas \303\240s configura\303\247\303\265es.",
+   "Controlador de menu a utilizar. (\303\211 necess\303\241rio reiniciar)",
+   "Protege o sistema atrav\303\251s da oculta\303\247\303\243o de todas as configura\303\247\303"
+   "\265es relacionadas com defini\303\247\303\265es.",
+   "Certifique-se de que a taxa de fotogramas atingida enquanto estiver dentro do menu.",
+   "Alterar defini\303\247\303\265es do explorador de ficheiros.",
+   "Muda os bot\303\265es para OK/Cancelar. Esta op\303\247\303\243o encontra-se desativada na orien"
+   "ta\303\247\303\243o de bot\303\243o em japon\303\252s e ativado na orienta\303\247\303\243o ocid"
+   "ental.",
+   "Fornecer uma palavra-passe durante a ativa\303\247\303\243o do modo Quiosque faz com que seja po"
+   "ss\303\255vel desativar esse modo a partir do menu, utilizando o Menu Principal, selecionando De"
+   "sativar modo quiosque e introduzindo a palavra-passe.",
+   "Mostrar a capacidade de atualizar n\303\272cleos (e ficheiros de informa\303\247\303\243o de n"
+   "\303\272cleos) na op\303\247\303\243o \"Atualizador online\".",
+   "Mostrar a op\303\247\303\243o \"Atualizador online\" no menu principal.",
+   "Selecione uma imagem para definir como fundo do menu. As imagens manuais e din\303\242micas subs"
+   "tituem a op\303\247\303\243o \"Tema de cor\".",
+   "Selecione o dispositivo de entrada de \303\241udio.",
+   "Define a (%) de volume.",
+   "Vai iniciar a reprodu\303\247\303\243o da transmiss\303\243o de \303\241udio. Uma vez terminado,"
+   " ele ir\303\241 remover a transmiss\303\243o de \303\241udio atual da mem\303\263ria.",
+   "Envolver o in\303\255cio e/ou o final, caso o limite da lista seja alcan\303\247ado horizontal o"
+   "u verticalmente.",
+   "Juntar ou hospedar uma sess\303\243o de netplay.",
+   "Ativar o Netplay em modo de cliente.",
+   "O n\303\272mero de fotogramas de lat\303\252ncia de entrada para o Netplay utilizar para ocultar"
+   " a lat\303\252ncia da rede. Reduz a instabilidade e faz com que a funcionalidade de Netplay seja"
+   " menos exigente para o processador, com um custo percept\303\255vel de tempo de atraso.",
+   "O intervalo de lat\303\252ncia entre fotogramas pode ser usado para ocultar a lat\303\252ncia da"
+   " rede. Reduz a instabilidade e faz com que a funcionalidade de Netplay seja menos exigente para "
+   "o processador, com um custo de lat\303\252ncia imprevis\303\255vel.",
+   "Endere\303\247o do anfitri\303\243o para liga\303\247\303\243o.",
+   "Durante as sess\303\265es como anfitri\303\243o, tentar escutar por liga\303\247\303\265es de In"
+   "ternet p\303\272blica, recorrendo ao UPnP ou tecnologias semelhantes para ultrapassar as redes l"
+   "ocais.",
+   "Introduza aqui o seu nome de utilizador. Esta informa\303\247\303\243o ser\303\241 usada, princi"
+   "palmente, em sess\303\265es do Netplay.",
+   "Anunciar os jogos de Netplay publicamente. Se n\303\243o estiver ativa esta op\303\247\303\243o,"
+   " os clientes dever\303\243o ligar-se manualmente, em vez de utilizar a rece\303\247\303\243o p"
+   "\303\272blica.",
+   "Porta do endere\303\247o de IP do anfitri\303\243o. Pode ser uma porta TCP ou UDP.",
+   "Retransmite as liga\303\247\303\265es de Netplay atrav\303\251s de um servidor homem-no-meio. "
+   "\303\232til se o anfitri\303\243o se encontrar atr\303\241s de uma Firewall ou tiver problemas c"
+   "om os protocolos NAT/UPnP.",
+   "Veja interface(s) de rede e endere\303\247os IP associados.",
+   "Modificar servidor e defini\303\247\303\265es de rede.",
+   "Apresentar uma mensagem no ecr\303\243 ao inserir e ejetar discos.",
+   "Transferir add-ons, componentes e conte\303\272dos para o RetroArch.",
+   "Modificar as defini\303\247\303\265es de apresenta\303\247\303\243o de sobreposi\303\247\303\243"
+   "o e sobreposi\303\247\303\243o de teclado, al\303\251m das defini\303\247\303\265es de notifica"
+   "\303\247\303\265es no ecr\303\243.",
+   "Configurar a entrada da lightgun enviada a partir do overlay.",
+   "Configurar a entrada do rato enviada a partir do overlay. Nota: os toques de 1, 2 e 3 dedos envi"
+   "am cliques no bot\303\243o esquerdo, direito e do meio.",
+   "Opacidade de todos os elementos da camada sobreposta.",
+   "Selecionar uma fonte principal diferente para ser usada pelo menu.",
+   "Quando ativado, cada item de metadados de conte\303\272do apresentado na barra lateral direita d"
+   "as listas de reprodu\303\247\303\243o (n\303\272cleo associado, tempo de reprodu\303\247\303\243"
+   "o) ocupar\303\241 uma \303\272nica linha, e as cadeias que excedam a largura dispon\303\255vel s"
+   "er\303\243o automaticamente deslocadas. Quando desativado, cada item de metadados ser\303\241 ex"
+   "ibido estaticamente, ocupando tantas linhas quantas forem necess\303\241rias.",
+   "Conte\303\272do scaneado que corresponda com a base de dados aparecer\303\241 aqui.",
+   "Especifica o n\303\272cleo a utilizar no in\303\255cio do conte\303\272do atrav\303\251s de uma "
+   "entrada de lista de reprodu\303\247\303\243o que n\303\243o tem uma associa\303\247\303\243o de "
+   "n\303\272cleo existente.",
+   "Remover as associa\303\247\303\265es do n\303\272cleo existentes para todas as entradas da lista"
+   " de reprodu\303\247\303\243o.",
+   "Modificar as defini\303\247\303\265es de lista de reprodu\303\247\303\243o.",
+   "Transferir miniaturas para as entradas na lista de reprodu\303\247\303\243o selecionada.",
+   "Alterar as defini\303\247\303\265es de gest\303\243o de energia.",
+   "Sair da aplica\303\247\303\243o RetroArch. A configura\303\247\303\243o \303\251 guardada ao sai"
+   "r.",
+   "Sair da aplica\303\247\303\243o RetroArch. A grava\303\247\303\243o da configura\303\247\303\243"
+   "o ao sair est\303\241 desativada.",
+   "Modificar as defini\303\247\303\265es de grava\303\247\303\243o de v\303\255deo.",
+   "Repor todas as configura\303\247\303\265es para os valores padr\303\243o.",
+   "Reiniciar a aplica\303\247\303\243o RetroArch.",
+   "Modificar as defini\303\247\303\265es de conquistas.",
+   "O ficheiro de configura\303\247\303\243o predefinido \303\251 armazenado nesta pasta.",
+   "Mostrar o ecr\303\243 inicial no menu. Esta op\303\247\303\243o \303\251 desativada automaticame"
+   "nte ap\303\263s o primeiro arranque do RetroArch.",
+   "Executar o conte\303\272do.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
+   "eboot is required when changing.",
+#endif
+#endif
+   "Guardar todos os ficheiros nesta pasta. Se n\303\243o for definida, ser\303\241 feita uma tentat"
+   "iva de grava\303\247\303\243o na pasta de trabalho do ficheiro.",
+   "Carregar automaticamente o \303\272ltimo estado autom\303\241tico guardado no arranque do RetroA"
+   "rch.",
+   "Gravar as defini\303\247\303\265es atuais como um ficheiro de configura\303\247\303\243o persona"
+   "lizado.",
+   "Substituir o arquivo de configura\303\247\303\243o atual.",
+   "Gravar as defini\303\247\303\265es atuais como a configura\303\247\303\243o principal.",
+   "Salvar a configura\303\247\303\243o atual em arquivo separado.",
+   "Guardar um estado na posi\303\247\303\243o selecionada atualmente.",
+   "Modificar as defini\303\247\303\265es de grava\303\247\303\243o.",
+   "Verificar uma pasta por ficheiros compat\303\255veis.",
+   "Verificar um ficheiro compat\303\255vel.",
+   "For\303\247a uma certa orienta\303\247\303\243o do ecr\303\243 do sistema operativo.",
+   "Configure o programa.",
+   "Mostrar defini\303\247\303\265es de \"Acessibilidade\".",
+   "As altera\303\247\303\265es das configura\303\247\303\265es do shader t\303\252m efeito imediato"
+   ". Utilize isto caso tenha alterado a quantidade de passagens de sombreamento, filtros, escala FB"
+   "O, etc.",
+   "Configurar sombreamento para aumentar a defini\303\247\303\243o da imagem.",
+   "Abre o menu tradicional do desktop.",
+   "Instalar ou restaurar um n\303\272cleo a partir da pasta \"Transfer\303\252ncias\".",
+   "Ordenar grava\303\247\303\243o de estados pelo nome da pasta do n\303\272cleo utilizado.",
+   "Ativar interface de comandos pelo stdin.",
+   "Previne que prote\303\247\303\243o de ecr\303\243 do sistema seja ativada.",
+   "Substitua todos os n\303\272cleos instalados manualmente pelas vers\303\265es mais recentes da P"
+   "lay Store, quando dispon\303\255vel.",
+   "Ver informa\303\247\303\265es espec\303\255ficas do dispositivo.",
+   "Executar tarefas numa thread independente.",
+   "Tipo de miniatura a ser mostrada.",
+   "Se o estado for carregado, o conte\303\272do voltar\303\241 ao estado anterior ao carregamento.",
+   "Se o estado foi sobrescrito, ele voltar\303\241 ao estado de grava\303\247\303\243o anterior.",
+   "Atualize todos os n\303\272cleos instalados para a \303\272ltima vers\303\243o dispon\303\255vel"
+   ".",
+   "Modificar as configura\303\247\303\265es da interface do utilizador.",
+   "Modificar as defini\303\247\303\265es de privacidade, conta e nome de utilizador.",
+   "Ajusta o n\303\272mero de fotogramas pretos na sequ\303\252ncia total de digitaliza\303\247\303"
+   "\243o BFI. Mais equivale a maior nitidez de movimento, menos equivale a maior brilho. N\303\243o"
+   " \303\251 aplic\303\241vel a 120 hz, uma vez que s\303\263 existe 1 fotograma BFI para trabalhar"
+   " no total. As defini\303\247\303\265es superiores ao poss\303\255vel limitam-no ao m\303\241ximo"
+   " poss\303\255vel para a taxa de atualiza\303\247\303\243o escolhida.",
+   "Aplica um filtro de v\303\255deo movido a CPU. Pode vir a um alto custo de performance. Alguns f"
+   "iltros de v\303\255deo podem s\303\263 funcionar com n\303\272cleos que usam cor 32-bit ou 16-bi"
+   "t.",
+   "Desative qualquer filtro de v\303\255deo movido a CPU.",
+   "Mostrar mensagens no ecr\303\243.",
+   "For\303\247ar a resolu\303\247\303\243o para o tamanho de ecr\303\243 inteiro. Se definido como "
+   "0, um valor fixo de 3840 x 2160 ser\303\241 usado.",
+   "Desativa for\303\247adamente suporte a sRGB FBO. Alguns drivers Intel OpenGL no Windows t\303"
+   "\252m problemas de v\303\255deo com sRGB FBOs. O problema pode ser contornado ativando esta op"
+   "\303\247\303\243o.",
+   "Alterar configura\303\247\303\265es do modo de ecr\303\243 inteiro.",
+   "Defina o tamanho da largura personalizada para o modo de ecr\303\243 inteiro sem janela. Se n"
+   "\303\243o estiver definido, a resolu\303\247\303\243o da \303\241rea de trabalho ser\303\241 usa"
+   "da.",
+   "Defina o tamanho da altura personalizada para o modo de ecr\303\243 inteiro sem janela. Se n\303"
+   "\243o estiver definido, a resolu\303\247\303\243o da \303\241rea de trabalho ser\303\241 usada.",
+   "Selecione qual placa gr\303\241fica usar.",
+   "Capturas de ecr\303\243 capturam o uso de shaders se dispon\303\255vel.",
+   "Sincroniza o hardware do processador e da GPU. Reduz a lat\303\252ncia, com um custo no desempen"
+   "ho.",
+   "Modificar defini\303\247\303\265es de v\303\255deo HDR.",
+   "Informar o controlador de v\303\255deo sobre a utiliza\303\247\303\243o expl\303\255cita de um m"
+   "odo de carregamento espec\303\255fico.",
+   "Informar o controlador de v\303\255deo sobre a utiliza\303\247\303\243o expl\303\255cita de um m"
+   "odo de carregamento espec\303\255fico.",
+   "Seleciona que ecr\303\243 usar.",
+   "Alterar as defini\303\247\303\265es da sa\303\255da de v\303\255deo.",
+   "A taxa de atualiza\303\247\303\243o do ecr\303\243 estimada em Hz.",
+   "A taxa de atualiza\303\247\303\243o como relatado pelo driver de exibi\303\247\303\243o.",
+   "For\303\247a uma certa rota\303\247\303\243o do ecr\303\243. A rota\303\247\303\243o \303\251 ad"
+   "icionada \303\240s rota\303\247\303\265es que o n\303\272cleo define.",
+   "Alterar configura\303\247\303\265es de dimensionamento de v\303\255deo.",
+   "Alterar as defini\303\247\303\265es da sa\303\255da de v\303\255deo.",
+   "Adia o auto-carregamento de shaders (em ms). Pode solucionar erros gr\303\241ficos quando \303"
+   "\251 usado software de grava\303\247\303\243o de ecr\303\243.",
+   "Carregar uma pr\303\251-defini\303\247\303\243o de sombreamento. O canal do shader ser\303\241 d"
+   "efinido automaticamente.",
+   "Modifica a pr\303\251-defini\303\247\303\243o de shader pr\303\263prio que \303\251 utilizado no"
+   " menu.",
+   "Guardar as defini\303\247\303\265es de shader atuais como novas pr\303\251-defini\303\247\303"
+   "\265es de sombreamento.",
+   "Guardar as defini\303\247\303\265es de shader atuais como defini\303\247\303\265es padr\303\243o"
+   " para o conte\303\272do.",
+   "Utilize um intervalo de troca personalizado para o VSync. Reduz eficazmente a taxa de atualiza"
+   "\303\247\303\243o do monitor pelo fator especificado. 'Auto' define o fator com base na taxa de "
+   "fotogramas relatada pelo n\303\272cleo, proporcionando um ritmo de fotogramas melhorado ao execu"
+   "tar, por exemplo, conte\303\272do de 30 fps num ecr\303\243 de 60 Hz ou conte\303\272do de 60 fp"
+   "s num ecr\303\243 de 120 Hz.",
+   "Alterar configura\303\247\303\265es de sincroniza\303\247\303\243o de v\303\255deo.",
+   "Aumenta performance a custo de lat\303\252ncia e mais stuttering de v\303\255deo. Use apenas se "
+   "velocidade m\303\241xima n\303\243o pode ser obtida de outra maneira.",
+   "Personalizar a altura da janela de exibi\303\247\303\243o que \303\251 usada se a op\303\247\303"
+   "\243o 'Propor\303\247\303\243o de ecr\303\243' estiver definida como 'Personalizado'.",
+   "Personalizar a largura da janela de exibi\303\247\303\243o que \303\251 usada se a op\303\247"
+   "\303\243o 'Propor\303\247\303\243o de ecr\303\243' estiver definida como 'Personalizado'.",
+   "Sincroniza o hardware do processador e da GPU. Reduz a lat\303\252ncia, com um custo no desempen"
+   "ho.",
+   "Se em ecr\303\243 inteiro, preferir usar uma janela em ecr\303\243 inteiro para prevenir o modo "
+   "de exibi\303\247\303\243o de mudar.",
+   "Alterar configura\303\247\303\265es do modo Janela.",
+   "Mostra todo o conte\303\272do numa janela de tamanho fixo com as dimens\303\265es especificadas "
+   "por 'Largura da Janela' e 'Altura da Janela'. Quando desativado, o tamanho da janela ser\303\241"
+   " definido dinamicamente com base na 'Escala em modo janela'.",
+   "Define a altura personalizada para a janela de exibi\303\247\303\243o.",
+   "For\303\247a um certo desalinhamento horizontal ao v\303\255deo. O desalinhamento \303\251 aplic"
+   "ado globalmente.",
+   "For\303\247a um certo desalinhamento vertical ao v\303\255deo. O desalinhamento \303\251 aplicad"
+   "o globalmente.",
+   "Mostra todo o conte\303\272do numa janela de tamanho fixo com as dimens\303\265es especificadas "
+   "por 'Largura da Janela' e 'Altura da Janela', e guarda o tamanho e a posi\303\247\303\243o atual"
+   " da janela ao fechar o RetroArch. Quando desativado, o tamanho da janela ser\303\241 definido di"
+   "namicamente com base na 'Escala em modo janela'.",
+   "Define a largura personalizada para a janela de exibi\303\247\303\243o.",
+   "Selecionar uma fonte principal diferente para ser usada pelo menu.",
+   "Selecionar um efeito de fundo animado. Isto poder\303\241 aumentar significativamente a utiliza"
+   "\303\247\303\243o do processador, de acordo com o efeito. Se o desempenho n\303\243o for satisfa"
+   "t\303\263rio, desative este efeito ou altere para um mais simples.",
+   "Selecionar um tema diferente para este \303\255cone. As altera\303\247\303\265es ter\303\243o ef"
+   "eito ap\303\263s o rein\303\255cio do programa.",
+   "Acessibilidade RetroArch ativa.  Menu principal, Carregar n\303\272cleo.",
+   "parado.",
+   "Disco anexado",
    "Pasta da aplica\303\247\303\243o",
    "Aplicando as altera\303\247\303\265es de batota.",
    "Aplicando sombreamento",
+   "Volume global do misturador de som",
    "Silenciamento ativo.",
    "Removido sil\303\252ncio.",
+   "Volume de som",
+   "Controller profile saved as \"%s\".",
+   "Auto-detetar",
+   "Auto-loading save state from \"%s\" failed.",
+   "Auto-carregar estado da grava\303\247\303\243o de",
+   "Auto-loading save state from \"%s\" succeeded.",
    "N\303\243o foi poss\303\255vel iniciar a grava\303\247\303\243o autom\303\241tica.",
    "Grava\303\247\303\243o de estado autom\303\241tica em",
+   "Bloqueando a sobrescri\303\247\303\243o da SRAM",
    "Trazendo a interface de comando na porta",
    "N\303\243o \303\251 poss\303\255vel inferir o novo caminho de configura\303\247\303\243o. Use a "
    "hora atual.",
+   "Funcionalidades",
+   "Falha ao iniciar a pesquisa de batota (cheats).",
+   "Iniciou com sucesso a pesquisa de batota (cheats).",
+   "Falha ao adicionar correspond\303\252ncias.",
+   "Adicionadas %u correspond\303\252ncias.",
+   "Falha na cria\303\247\303\243o do c\303\263digo.",
+   "C\303\263digo criado a partir da correspond\303\252ncia.",
+   "Correspond\303\252ncia eliminada.",
+   "A pesquisa n\303\243o foi inicializada/iniciada.",
+   "Modo Hardcore ativado. A grava\303\247\303\243o de estado e fun\303\247\303\243o de retrocedimen"
+   "to no tempo est\303\243o desativadas.",
+   "RetroAchievements: Logged in as \"%s\".",
    "Comparando com n\303\272meros m\303\241gicos conhecidos...",
    "Compilado contra API",
+   "Compilador",
    "Configura\303\247\303\243o de pasta n\303\243o definida. N\303\243o foi poss\303\255vel guardar "
    "a nova configura\303\247\303\243o.",
    "Conectado a",
+   "Ligando ao anfitri\303\243o de Netplay",
+   "Ligando \303\240 porta",
+   "Vaga para liga\303\247\303\243o",
    "As somas CRC32 diferem entre si. N\303\243o \303\251 poss\303\255vel usar jogos diferentes.",
    "Carregamento de conte\303\272do ignorado. A implementa\303\247\303\243o carregar\303\241 por con"
    "ta pr\303\263pria.",
@@ -2720,6 +2635,8 @@ static const struct
    "Falha ao alocar mem\303\263ria para o conte\303\272do do patch...",
    "Falha ao aplicar o shader.",
    "Falha ao abrir a liga\303\247\303\243o para o socket.",
+   "Falha na liga\303\247\303\243o ao cliente.",
+   "Falha na liga\303\247\303\243o ao anfitri\303\243o.",
    "Falha ao criar a pasta.",
    "Falha ao extrair o conte\303\272do do ficheiro comprimido",
    "Falha ao obter a alcunha do cliente.",
@@ -2728,10 +2645,12 @@ static const struct
    "Falha ao abrir o n\303\272cleo do Libretro",
    "Falha na atualiza\303\247\303\243o",
    "Falha ao receber o cabe\303\247alho do cliente.",
+   "Falha ao obter o cabe\303\247alho do anfitri\303\243o.",
    "Falha ao receber a alcunha.",
    "Falha ao receber a alcunha do anfitri\303\243o.",
    "Falha ao receber o tamanho da alcunha do anfitri\303\243o.",
    "Falha ao receber os dados da SRAM do anfitri\303\243o.",
+   "Falha ao remover o disco da \303\241rea de notifica\303\247\303\265es.",
    "Falha ao remover o ficheiro tempor\303\241rio",
    "Falha ao guardar a SRAM",
    "Falha ao guardar o estado para",
@@ -2740,6 +2659,7 @@ static const struct
    "Falha ao enviar a alcunha para o cliente.",
    "Falha ao enviar a alcunha para o anfitri\303\243o.",
    "Falha ao enviar os dados SRAM para o cliente.",
+   "Ocorreu um erro ao definir o \303\272ltimo disco utilizado.",
    "Falha ao iniciar o controlador de som. Continuar\303\241 sem som.",
    "Falha ao iniciar a grava\303\247\303\243o do v\303\255deo.",
    "Falha ao iniciar a grava\303\247\303\243o.",
@@ -2747,14 +2667,19 @@ static const struct
    "Falha ao desfazer o carregamento de estado.",
    "Falha ao desfazer a grava\303\247\303\243o de estado.",
    "Falha ao remover o sil\303\252ncio.",
+   "Avan\303\247o-r\303\241pido.",
    "Erro fatal recebido em",
+   "O ficheiro j\303\241 existe. A guardar no buffer de c\303\263pia de seguran\303\247a",
    "Ficheiro n\303\243o encontrado",
+   "Um ou mais ficheiros de firmware est\303\243o perdidos",
    "Grava\303\247\303\243o de estado autom\303\241tica encontrado em",
    "R\303\263tulo de disco encontrado",
    "Encontrada a primeira pista de dados no ficheiro",
    "Encontrada a \303\272ltima posi\303\247\303\243o de estado",
    "Sombreamento encontrado",
    "Fotogramas",
+   "Got connection from: \"%s\"",
+   "Got connection from: \"%s (%s)\"",
    "H\303\241 um \303\255ndice de disco inv\303\241lido",
    "Capturar estado do rato",
    "O n\303\272cleo do Libretro \303\251 renderizadi por hardware. Deve ser usada a grava\303\247"
@@ -2762,34 +2687,70 @@ static const struct
    "A soma de verifica\303\247\303\243o inflada n\303\243o corresponde ao CRC32.",
    "Introduzir batota",
    "Nome do ficheiro de batota",
+   "Introduza a palavra-passe",
+   "Palavra-passe incorreta.",
+   "Palavra-passe correta.",
+   "Introduza a palavra-passe",
+   "Palavra-passe incorreta.",
+   "Palavra-passe correta.",
    "Nome de ficheiro pr\303\251-definido",
    "Renomear t\303\255tulo",
    "Armazenamento interno",
-   "Armazenamento remov\303\255vel",
    "O tamanho da alcunha \303\251 inv\303\241lido.",
    "em bytes",
-   "em megabytes",
    "em gigabytes",
+   "em megabytes",
    "\303\251 compilado contra uma vers\303\243o diferente do Libretro com esta implementa\303\247"
    "\303\243o do Libretro.",
    "Frontend para Libretro",
    "Carregando",
-   "Um ou mais ficheiros de firmware est\303\243o perdidos",
    "Carregando ficheiro de conte\303\272do",
    "Carregando ficheiro de hist\303\263rico",
    "Carregando estado",
+   "Foi selecionado um ficheiro DAT de arcada inv\303\241lido.",
+   "O ficheiro DAT da arcada selecionado \303\251 demasiado grande (mem\303\263ria livre insuficient"
+   "e).",
+   "As defini\303\247\303\265es de verifica\303\247\303\243o manual n\303\243o s\303\243o v\303\241l"
+   "idas.",
+   "N\303\243o foi detetado qualquer conte\303\272do v\303\241lido.",
+   "Verificando: ",
    "Mem\303\263ria",
+   "Aviso: Recursos em falta, utilize o Atualizador Online, se dispon\303\255vel.",
    "O formato do ficheiro parece ter uma vers\303\243o de serializador diferente. A tarefa poder\303"
    "\241 falhar.",
    "Lista de reprodu\303\247\303\243o de v\303\255deos terminou.",
    "Parando a grava\303\247\303\243o de v\303\255deo.",
+   "Est\303\241 banido deste anfitri\303\243o.",
+   "Client banned: \"%s\"",
+   "N\303\243o \303\251 poss\303\255vel entrar no modo de reprodu\303\247\303\243o",
+   "N\303\243o existem posi\303\247\303\265es livres para jogadores",
+   "N\303\243o tem permiss\303\243o para jogar",
+   "Your nickname changed to \"%s\"",
+   "Desligado do Netplay",
+   "Insira a mensagem:",
+   "Introduza a palavra-passe do servidor:",
    "Falha ao iniciar o Netplay.",
+   "Failed to ban client: \"%s\"",
+   "Failed to kick client: \"%s\"",
+   "Anfitri\303\243o do Netplay completo.",
+   "Palavra-passe incorreta",
+   "Client kicked: \"%s\"",
+   "Procurando por anfitri\303\265es de Netplay...",
+   "Procura de sess\303\265es Netplay completa.",
+   "Netplay peer \"%s\" paused",
+   "O cliente Netplay foi desligado",
+   "\"%s\" has disconnected",
+   "Voc\303\252 juntou-se como o(a) jogador(a) %u",
+   "Voc\303\252 saiu do jogo",
    "Sem conte\303\272do. Iniciando um n\303\272cleo vazio.",
    "N\303\243o existe um estado de grava\303\247\303\243o para ser substitudo.",
    "N\303\243o existem estados dispon\303\255veis para carregamento.",
+   "J\303\241 foram tentadas todas as transfer\303\252ncias de miniaturas poss\303\255veis para esta"
+   " entrada de lista de reprodu\303\247\303\243o.",
    "Erro ao guardar as substitui\303\247\303\265es.",
    "Substitui\303\247\303\265es gravadas com sucesso.",
    "Pausado.",
+   "Preparando a verifica\303\247\303\243o de conte\303\272do...",
    "Lendo a primeira pista de dados...",
    "A grava\303\247\303\243o terminou devido ao redimensionamento.",
    "Gravando em",
@@ -2797,6 +2758,8 @@ static const struct
    "Redirecionando o ficheiro de grava\303\247\303\243o em",
    "Redirecionando a grava\303\247\303\243o do estado em",
    "Remapeamento do ficheiro guardado com sucesso.",
+   "Armazenamento remov\303\255vel",
+   "Disco removido da \303\241rea de notifica\303\247\303\243o.",
    "Removendo conte\303\272do tempor\303\241rio do ficheiro",
    "Reiniciar (reset)",
    "Reiniciando a grava\303\247\303\243o devido ao rein\303\255cio do controlador.",
@@ -2809,32 +2772,39 @@ static const struct
    "Esta implementa\303\247\303\243o utiliza som encadeado. N\303\243o \303\251 poss\303\255vel usar"
    " o recurso de retrocedimento do tempo.",
    "Alcan\303\247ado o final do buffer do recurso de retrocedimento do tempo.",
+   "Aviso: Idioma n\303\243o suportado - utiliza\303\247\303\243o do ingl\303\252s.",
+   "Aviso: Faltam fontes para o idioma selecionado, utilize o Atualizador Online, se dispon\303\255v"
+   "el.",
    "Guardado com sucesso em",
    "Guarando o tipo de RAM",
    "Guardando o estado",
    "Verificando",
    "A verifica\303\247\303\243o da pasta foi conclu\303\255da.",
+   "A verifica\303\247\303\243o do ficheiro foi conclu\303\255da.",
+   "Procurando por redes sem fios...",
    "Enviando comando",
+   "Colocando o disco na \303\241rea de notifica\303\247\303\243o",
    "V\303\241rios ajustes foram definidos explicitamente. Ignorando todos...",
    "Sombreamento",
    "Pr\303\251-defini\303\247\303\243o de sombreamento guardada com sucesso.",
-   "C\303\242mera lenta.",
-   "Avan\303\247o-r\303\241pido.",
-   "Fun\303\247\303\243o de retrocedimento do tempo em c\303\242mera lenta.",
    "Ignorando o carregamento de SRAM.",
+   "C\303\242mera lenta.",
+   "Fun\303\247\303\243o de retrocedimento do tempo em c\303\242mera lenta.",
+   "Lamentamos, esta funcionalidade n\303\243o implementada: os n\303\272cleos que n\303\243o exigem"
+   " conte\303\272do n\303\243o podem participar no Netplay.",
    "SRAM n\303\243o ser\303\241 guardada.",
-   "Bloqueando a sobrescri\303\247\303\243o da SRAM",
    "Iniciando reprodu\303\247\303\243o de filme.",
    "Iniciando a grava\303\247\303\243o do filme para",
    "Tamanho do estado",
    "Posi\303\247\303\243o de estado",
    "Obtendo captura de ecr\303\243",
-   "J\303\241 foram tentadas todas as transfer\303\252ncias de miniaturas poss\303\255veis para esta"
-   " entrada de lista de reprodu\303\247\303\243o.",
    "para",
    "Desfez o carregamento do estado.",
    "Desconhecido",
+   "Compilador desconhecido",
+   "Recebido comando Netplay desconhecido",
    "Sem interrup\303\247\303\265es.",
+   "Unrecognized command \"%s\" received.\n",
    "Utilizando o nome do n\303\272cleo para uma nova configura\303\247\303\243o.",
    "Utilizando o n\303\272cleo fict\303\255cio do Libretro. Saltando a grava\303\247\303\243o.",
    "Ligue o dispositivo a uma porta v\303\241lida.",
@@ -2843,539 +2813,70 @@ static const struct
    "Vers\303\243o da API Libretro",
    "Falha no c\303\241lculo do tamanho da janela de visualiza\303\247\303\243o! Continuar\303\243o a"
    " serem utilizados dados em bruto. Provavelmente, ir\303\243o surgir erros ...",
-   "Auto-carregar estado da grava\303\247\303\243o de",
-   "Procura de redes sem fios completa.",
-   "Procurando por redes sem fios...",
-   "Procurando por anfitri\303\265es de Netplay...",
-   "Preparando a verifica\303\247\303\243o de conte\303\272do...",
-   "Introduza a palavra-passe",
-   "Palavra-passe correta.",
-   "Palavra-passe incorreta.",
-   "Introduza a palavra-passe",
-   "Palavra-passe correta.",
-   "Palavra-passe incorreta.",
-   "A verifica\303\247\303\243o do ficheiro foi conclu\303\255da.",
-   "Iniciou com sucesso a pesquisa de batota (cheats).",
-   "Falha ao iniciar a pesquisa de batota (cheats).",
-   "A pesquisa n\303\243o foi inicializada/iniciada.",
-   "Adicionadas %u correspond\303\252ncias.",
-   "Falha ao adicionar correspond\303\252ncias.",
-   "C\303\263digo criado a partir da correspond\303\252ncia.",
-   "Falha na cria\303\247\303\243o do c\303\263digo.",
-   "Correspond\303\252ncia eliminada.",
-   "Disco removido da \303\241rea de notifica\303\247\303\243o.",
-   "Falha ao remover o disco da \303\241rea de notifica\303\247\303\265es.",
-   "Disco anexado",
-   "Colocando o disco na \303\241rea de notifica\303\247\303\243o",
-   "Ocorreu um erro ao definir o \303\272ltimo disco utilizado.",
-   "Falha na liga\303\247\303\243o ao cliente.",
-   "Falha na liga\303\247\303\243o ao anfitri\303\243o.",
-   "Anfitri\303\243o do Netplay completo.",
-   "Est\303\241 banido deste anfitri\303\243o.",
-   "Falha ao obter o cabe\303\247alho do anfitri\303\243o.",
-   "Modo Hardcore ativado. A grava\303\247\303\243o de estado e fun\303\247\303\243o de retrocedimen"
-   "to no tempo est\303\243o desativadas.",
-   "Aviso: Recursos em falta, utilize o Atualizador Online, se dispon\303\255vel.",
-   "Aviso: Faltam fontes para o idioma selecionado, utilize o Atualizador Online, se dispon\303\255v"
-   "el.",
-   "Aviso: Idioma n\303\243o suportado - utiliza\303\247\303\243o do ingl\303\252s.",
-   "Foi selecionado um ficheiro DAT de arcada inv\303\241lido.",
-   "O ficheiro DAT da arcada selecionado \303\251 demasiado grande (mem\303\263ria livre insuficient"
-   "e).",
-   "As defini\303\247\303\265es de verifica\303\247\303\243o manual n\303\243o s\303\243o v\303\241l"
-   "idas.",
-   "N\303\243o foi detetado qualquer conte\303\272do v\303\241lido.",
-   "Verificando: ",
-   "Sincroniza\303\247\303\243o com a frequ\303\252ncia de fotogramas exata do conte\303\272do ativa"
-   "da.",
    "Sincroniza\303\247\303\243o com a frequ\303\252ncia de fotogramas exata do conte\303\272do desat"
    "ivada.",
-   "Atualizar Lakka",
-   "Nome da interface visual",
-   "Resolu\303\247\303\243o de ecr\303\243",
-   "Filtrar tremula\303\247\303\243o",
-   "Gama de v\303\255deo",
-   "Ativar filtro suave",
-   "Ativar Bluetooth",
-   "Redes sem fios",
-   "Definir largura do ecr\303\243 VI",
-   "Usar Modo PAL60",
-   "Reiniciar RetroArch",
-   "Ativar fun\303\247\303\243o t\303\241til",
-   "Preferir toque frontal",
-   "Ativar teclado pequeno",
-#ifdef HAVE_LAKKA
-   "Ativar Bluetooth",
-   "Servi\303\247os",
-   "Gerir o n\303\255vel de servi\303\247os do sistema operativo.",
-   "Ativar SAMBA",
-   "Ativar/desativar partilha de pastas na rede.",
-   "Ativar SSH",
-   "Ativar/desativar acesso remoto pela linha de comandos.",
-#endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_RETROFLAG
-   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
-   "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
-   "eboot is required when changing.",
-#endif
-#endif
-#ifdef _3DS
-   "Tela Inferior 3DS",
-   "Continuar",
-   "Criar ponto de\nrestaura\303\247\303\243o",
-   "Carregar ponto de\nrestaura\303\247\303\243o",
-#endif
-#ifdef HAVE_QT
-   "Verifica\303\247\303\243o conclu\303\255da.<br><br>\nPara que o conte\303\272do seja corretament"
-   "e verificado, \303\251 necess\303\241rio:\n<ul><li>ter um n\303\272cleo compat\303\255vel j\303"
-   "\241 transferido</li>\n<li>ter os \"Ficheiros de Informa\303\247\303\243o de N\303\272cleos\" at"
-   "ualizados atrav\303\251s da Atualiza\303\247\303\243o Online</li>\n<li>ter \"Bases de dados\" at"
-   "ualizadas atrav\303\251s do Atualizador Online</li>\n<li>reiniciar o RetroArch se alguma das a"
-   "\303\247\303\265es acima tiver sido realizada</li></ul>\nPor \303\272ltimo, o conte\303\272do de"
-   "ve corresponder \303\240s bases de dados existentes de <a href=",
-   "\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. Se ainda n\303"
-   "\243o estiver a funcionar, considere a possibilidade de <a href=\"https://www.github.com/libretr"
-   "o/RetroArch/issues\">enviar um relat\303\263rio de erro</a>.",
-#endif
-   "Acessibilidade RetroArch ativa.  Menu principal, Carregar n\303\272cleo.",
-   "parado.",
+   "Sincroniza\303\247\303\243o com a frequ\303\252ncia de fotogramas exata do conte\303\272do ativa"
+   "da.",
+   "Procura de redes sem fios completa.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (54998u
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-       + 13u
-       + 44u
-#endif
-#endif
-#ifdef HAVE_MIST
-       + 47u
-#endif
-#ifdef HAVE_MICROPHONE
-       + 10u
-       + 26u
-       + 53u
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
-       + 36u
-#endif
-#endif
-#if defined(DINGUX)
-       + 25u
-       + 229u
-       + 10u
-       + 22u
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-       + 25u
-       + 164u
-       + 22u
-#endif
-#endif
-#if defined(DINGUX) && defined(DINGUX_BETA)
-       + 31u
-       + 105u
-#endif
-#if defined(DINGUX)
-       + 31u
-       + 164u
-#endif
-#ifdef HAVE_MICROPHONE
-       + 10u
-       + 10u
-#endif
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-       + 19u
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-       + 33u
-#endif
-#ifdef HAVE_MIST
-       + 10u
-       + 16u
-       + 16u
-#endif
-#ifdef HAVE_LAKKA
-       + 17u
-       + 10u
-       + 50u
-       + 13u
-       + 45u
-       + 11u
-       + 55u
-#endif
+      (sizeof(msg_hash_pt_pt_blob) == (55669u
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
        + 125u
 #endif
 #endif
-#ifdef _3DS
-       + 18u
-       + 10u
-       + 29u
-       + 32u
-#endif
-#ifdef HAVE_QT
-       + 737u
-#endif
       )) ? 1 : -1];
 
 static const uint32_t msg_hash_pt_pt_ids[] =
 {
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
    (uint32_t)MENU_ENUM_LABEL_HELP_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LOCK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   (uint32_t)MSG_COMPILER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHUTDOWN,
-   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
-#ifdef HAVE_MIST
-   (uint32_t)MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
@@ -3383,653 +2884,334 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
-#ifdef HAVE_MICROPHONE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
-   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
-   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-#if defined(DINGUX)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
-#if defined(DINGUX)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
-   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-#ifdef HAVE_MICROPHONE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-#ifdef HAVE_MICROPHONE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-#endif
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   (uint32_t)MENU_ENUM_LABEL_HELP_MIDI_INPUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FALSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FPS_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
-   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
-   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-#ifdef HAVE_MIST
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_FILE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_FILE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN,
-   (uint32_t)MENU_ENUM_SUBLABEL_RUN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
-   (uint32_t)MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_STATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_STATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_DISK_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCALE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SEARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ITEMS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SELECT_FILE,
-   (uint32_t)MSG_UNKNOWN_COMPILER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UNKNOWN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OFF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TRUE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FALSE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NEAREST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
-   (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
-   (uint32_t)MENU_ENUM_SUBLABEL_XMB_FONT,
-   (uint32_t)MENU_ENUM_SUBLABEL_XMB_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
@@ -4039,101 +3221,697 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ERROR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_REMOVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESET,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NEAREST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ITEMS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ERROR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SEARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SECONDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SELECT_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHUTDOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
-   (uint32_t)MSG_AUDIO_MIXER_VOLUME,
-   (uint32_t)MSG_NETPLAY_LAN_SCAN_COMPLETE,
-   (uint32_t)MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   (uint32_t)MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   (uint32_t)MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-   (uint32_t)MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
-   (uint32_t)MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-   (uint32_t)MSG_NETPLAY_ENTER_PASSWORD,
-   (uint32_t)MSG_NETPLAY_ENTER_CHAT,
-   (uint32_t)MSG_NETPLAY_INCORRECT_PASSWORD,
-   (uint32_t)MSG_NETPLAY_SERVER_HANGUP,
-   (uint32_t)MSG_NETPLAY_CLIENT_HANGUP,
-   (uint32_t)MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
-   (uint32_t)MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
-   (uint32_t)MSG_NETPLAY_CANNOT_PLAY,
-   (uint32_t)MSG_AUDIO_VOLUME,
-   (uint32_t)MSG_AUTODETECT,
-   (uint32_t)MSG_CAPABILITIES,
-   (uint32_t)MSG_CONNECTING_TO_NETPLAY_HOST,
-   (uint32_t)MSG_CONNECTING_TO_PORT,
-   (uint32_t)MSG_CONNECTION_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TRUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UNKNOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LOCK,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DELETE_ENTRY,
+   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+   (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_RUN,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_FILE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_FONT,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_THEME,
+   (uint32_t)MSG_ACCESSIBILITY_STARTUP,
+   (uint32_t)MSG_AI_SERVICE_STOPPED,
+   (uint32_t)MSG_APPENDED_DISK,
    (uint32_t)MSG_APPLICATION_DIR,
    (uint32_t)MSG_APPLYING_CHEAT,
    (uint32_t)MSG_APPLYING_SHADER,
+   (uint32_t)MSG_AUDIO_MIXER_VOLUME,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,
+   (uint32_t)MSG_AUDIO_VOLUME,
+   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   (uint32_t)MSG_AUTODETECT,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FROM,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
    (uint32_t)MSG_AUTOSAVE_FAILED,
    (uint32_t)MSG_AUTO_SAVE_STATE_TO,
+   (uint32_t)MSG_BLOCKING_SRAM_OVERWRITE,
    (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    (uint32_t)MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+   (uint32_t)MSG_CAPABILITIES,
+   (uint32_t)MSG_CHEAT_INIT_FAIL,
+   (uint32_t)MSG_CHEAT_INIT_SUCCESS,
+   (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   (uint32_t)MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   (uint32_t)MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   (uint32_t)MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   (uint32_t)MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
    (uint32_t)MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    (uint32_t)MSG_COMPILED_AGAINST_API,
+   (uint32_t)MSG_COMPILER,
    (uint32_t)MSG_CONFIG_DIRECTORY_NOT_SET,
    (uint32_t)MSG_CONNECTED_TO,
+   (uint32_t)MSG_CONNECTING_TO_NETPLAY_HOST,
+   (uint32_t)MSG_CONNECTING_TO_PORT,
+   (uint32_t)MSG_CONNECTION_SLOT,
    (uint32_t)MSG_CONTENT_CRC32S_DIFFER,
    (uint32_t)MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
    (uint32_t)MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
@@ -4168,6 +3946,8 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER,
    (uint32_t)MSG_FAILED_TO_BIND_SOCKET,
+   (uint32_t)MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   (uint32_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (uint32_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (uint32_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (uint32_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
@@ -4176,10 +3956,12 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
    (uint32_t)MSG_FAILED_TO_PATCH,
    (uint32_t)MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
+   (uint32_t)MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
    (uint32_t)MSG_FAILED_TO_RECEIVE_NICKNAME,
    (uint32_t)MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
    (uint32_t)MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
    (uint32_t)MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
+   (uint32_t)MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
    (uint32_t)MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
    (uint32_t)MSG_FAILED_TO_SAVE_SRAM,
    (uint32_t)MSG_FAILED_TO_SAVE_STATE_TO,
@@ -4188,6 +3970,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
    (uint32_t)MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
    (uint32_t)MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
+   (uint32_t)MSG_FAILED_TO_SET_INITIAL_DISK,
    (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
    (uint32_t)MSG_FAILED_TO_START_MOVIE_RECORD,
    (uint32_t)MSG_FAILED_TO_START_RECORDING,
@@ -4195,46 +3978,84 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MSG_FAILED_TO_UNDO_LOAD_STATE,
    (uint32_t)MSG_FAILED_TO_UNDO_SAVE_STATE,
    (uint32_t)MSG_FAILED_TO_UNMUTE_AUDIO,
+   (uint32_t)MSG_FAST_FORWARD,
    (uint32_t)MSG_FATAL_ERROR_RECEIVED_IN,
+   (uint32_t)MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
    (uint32_t)MSG_FILE_NOT_FOUND,
+   (uint32_t)MSG_FIRMWARE,
    (uint32_t)MSG_FOUND_AUTO_SAVESTATE_IN,
    (uint32_t)MSG_FOUND_DISK_LABEL,
    (uint32_t)MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
    (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
    (uint32_t)MSG_FOUND_SHADER,
    (uint32_t)MSG_FRAMES,
+   (uint32_t)MSG_GOT_CONNECTION_FROM,
+   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
    (uint32_t)MSG_GOT_INVALID_DISK_INDEX,
    (uint32_t)MSG_GRAB_MOUSE_STATE,
    (uint32_t)MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
    (uint32_t)MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD,
+   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
+   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
    (uint32_t)MSG_INPUT_PRESET_FILENAME,
    (uint32_t)MSG_INPUT_RENAME_ENTRY,
    (uint32_t)MSG_INTERNAL_STORAGE,
-   (uint32_t)MSG_REMOVABLE_STORAGE,
    (uint32_t)MSG_INVALID_NICKNAME_SIZE,
    (uint32_t)MSG_IN_BYTES,
-   (uint32_t)MSG_IN_MEGABYTES,
    (uint32_t)MSG_IN_GIGABYTES,
+   (uint32_t)MSG_IN_MEGABYTES,
    (uint32_t)MSG_LIBRETRO_ABI_BREAK,
    (uint32_t)MSG_LIBRETRO_FRONTEND,
    (uint32_t)MSG_LOADING,
-   (uint32_t)MSG_FIRMWARE,
    (uint32_t)MSG_LOADING_CONTENT_FILE,
    (uint32_t)MSG_LOADING_HISTORY_FILE,
    (uint32_t)MSG_LOADING_STATE,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    (uint32_t)MSG_MEMORY,
+   (uint32_t)MSG_MISSING_ASSETS,
    (uint32_t)MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
    (uint32_t)MSG_MOVIE_PLAYBACK_ENDED,
    (uint32_t)MSG_MOVIE_RECORD_STOPPED,
+   (uint32_t)MSG_NETPLAY_BANNED,
+   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_CANNOT_PLAY,
+   (uint32_t)MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
+   (uint32_t)MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
+   (uint32_t)MSG_NETPLAY_CHANGED_NICK,
+   (uint32_t)MSG_NETPLAY_CLIENT_HANGUP,
+   (uint32_t)MSG_NETPLAY_ENTER_CHAT,
+   (uint32_t)MSG_NETPLAY_ENTER_PASSWORD,
    (uint32_t)MSG_NETPLAY_FAILED,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_HOST_FULL,
+   (uint32_t)MSG_NETPLAY_INCORRECT_PASSWORD,
+   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_LAN_SCANNING,
+   (uint32_t)MSG_NETPLAY_LAN_SCAN_COMPLETE,
+   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
+   (uint32_t)MSG_NETPLAY_SERVER_HANGUP,
+   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   (uint32_t)MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
+   (uint32_t)MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    (uint32_t)MSG_NO_CONTENT_STARTING_DUMMY_CORE,
    (uint32_t)MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
    (uint32_t)MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+   (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_OVERRIDES_ERROR_SAVING,
    (uint32_t)MSG_OVERRIDES_SAVED_SUCCESSFULLY,
    (uint32_t)MSG_PAUSED,
+   (uint32_t)MSG_PREPARING_FOR_CONTENT_SCAN,
    (uint32_t)MSG_READING_FIRST_DATA_TRACK,
    (uint32_t)MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    (uint32_t)MSG_RECORDING_TO,
@@ -4242,6 +4063,8 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MSG_REDIRECTING_SAVEFILE_TO,
    (uint32_t)MSG_REDIRECTING_SAVESTATE_TO,
    (uint32_t)MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
+   (uint32_t)MSG_REMOVABLE_STORAGE,
+   (uint32_t)MSG_REMOVED_DISK_FROM_TRAY,
    (uint32_t)MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    (uint32_t)MSG_RESET,
    (uint32_t)MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
@@ -4252,31 +4075,37 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MSG_REWIND_INIT_FAILED,
    (uint32_t)MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
    (uint32_t)MSG_REWIND_REACHED_END,
+   (uint32_t)MSG_RGUI_INVALID_LANGUAGE,
+   (uint32_t)MSG_RGUI_MISSING_FONTS,
    (uint32_t)MSG_SAVED_SUCCESSFULLY_TO,
    (uint32_t)MSG_SAVING_RAM_TYPE,
    (uint32_t)MSG_SAVING_STATE,
    (uint32_t)MSG_SCANNING,
    (uint32_t)MSG_SCANNING_OF_DIRECTORY_FINISHED,
+   (uint32_t)MSG_SCANNING_OF_FILE_FINISHED,
+   (uint32_t)MSG_SCANNING_WIRELESS_NETWORKS,
    (uint32_t)MSG_SENDING_COMMAND,
+   (uint32_t)MSG_SETTING_DISK_IN_TRAY,
    (uint32_t)MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
    (uint32_t)MSG_SHADER,
    (uint32_t)MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
-   (uint32_t)MSG_SLOW_MOTION,
-   (uint32_t)MSG_FAST_FORWARD,
-   (uint32_t)MSG_SLOW_MOTION_REWIND,
    (uint32_t)MSG_SKIPPING_SRAM_LOAD,
+   (uint32_t)MSG_SLOW_MOTION,
+   (uint32_t)MSG_SLOW_MOTION_REWIND,
+   (uint32_t)MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
    (uint32_t)MSG_SRAM_WILL_NOT_BE_SAVED,
-   (uint32_t)MSG_BLOCKING_SRAM_OVERWRITE,
    (uint32_t)MSG_STARTING_MOVIE_PLAYBACK,
    (uint32_t)MSG_STARTING_MOVIE_RECORD_TO,
    (uint32_t)MSG_STATE_SIZE,
    (uint32_t)MSG_STATE_SLOT,
    (uint32_t)MSG_TAKING_SCREENSHOT,
-   (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_TO,
    (uint32_t)MSG_UNDID_LOAD_STATE,
    (uint32_t)MSG_UNKNOWN,
+   (uint32_t)MSG_UNKNOWN_COMPILER,
+   (uint32_t)MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
    (uint32_t)MSG_UNPAUSED,
+   (uint32_t)MSG_UNRECOGNIZED_COMMAND,
    (uint32_t)MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    (uint32_t)MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
    (uint32_t)MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
@@ -4284,85 +4113,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MSG_VALUE_SHUTTING_DOWN,
    (uint32_t)MSG_VERSION_OF_LIBRETRO_API,
    (uint32_t)MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FROM,
-   (uint32_t)MSG_WIFI_SCAN_COMPLETE,
-   (uint32_t)MSG_SCANNING_WIRELESS_NETWORKS,
-   (uint32_t)MSG_NETPLAY_LAN_SCANNING,
-   (uint32_t)MSG_PREPARING_FOR_CONTENT_SCAN,
-   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
-   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
-   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
-   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD,
-   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
-   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
-   (uint32_t)MSG_SCANNING_OF_FILE_FINISHED,
-   (uint32_t)MSG_CHEAT_INIT_SUCCESS,
-   (uint32_t)MSG_CHEAT_INIT_FAIL,
-   (uint32_t)MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   (uint32_t)MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   (uint32_t)MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   (uint32_t)MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   (uint32_t)MSG_REMOVED_DISK_FROM_TRAY,
-   (uint32_t)MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   (uint32_t)MSG_APPENDED_DISK,
-   (uint32_t)MSG_SETTING_DISK_IN_TRAY,
-   (uint32_t)MSG_FAILED_TO_SET_INITIAL_DISK,
-   (uint32_t)MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   (uint32_t)MSG_FAILED_TO_CONNECT_TO_HOST,
-   (uint32_t)MSG_NETPLAY_HOST_FULL,
-   (uint32_t)MSG_NETPLAY_BANNED,
-   (uint32_t)MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   (uint32_t)MSG_MISSING_ASSETS,
-   (uint32_t)MSG_RGUI_MISSING_FONTS,
-   (uint32_t)MSG_RGUI_INVALID_LANGUAGE,
-   (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   (uint32_t)MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   (uint32_t)MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   (uint32_t)MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
-   (uint32_t)MSG_VRR_RUNLOOP_ENABLED,
    (uint32_t)MSG_VRR_RUNLOOP_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
-#ifdef HAVE_LAKKA
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
-   (uint32_t)MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SSH_ENABLE,
-#endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_RETROFLAG
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
-#endif
-#endif
-#ifdef _3DS
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
-   (uint32_t)MSG_3DS_BOTTOM_MENU_RESUME,
-   (uint32_t)MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   (uint32_t)MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-#endif
-#ifdef HAVE_QT
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-#endif
-   (uint32_t)MSG_ACCESSIBILITY_STARTUP,
-   (uint32_t)MSG_AI_SERVICE_STOPPED,
+   (uint32_t)MSG_VRR_RUNLOOP_ENABLED,
+   (uint32_t)MSG_WIFI_SCAN_COMPLETE,
 };

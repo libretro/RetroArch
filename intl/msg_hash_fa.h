@@ -14,1368 +14,780 @@
 
 static const struct
 {
-   char s_d9685b01[20];
-   char s_9932960f[15];
-   char s_2cb9dc71[22];
-   char s_ae50c550[15];
-   char s_b30d3e14[13];
-   char s_42b8ffbf[13];
-   char s_bcddf275[15];
-   char s_733174db[25];
-   char s_99eb425d[9];
-   char s_ec59110b[36];
-   char s_7632d987[29];
-   char s_f465878a[20];
-   char s_12510638[52];
-   char s_caa797e4[52];
-   char s_d21c686b[41];
-   char s_d7fc4c9c[33];
-   char s_36265c93[20];
-   char s_544da5c1[81];
-   char s_193e1462[69];
-   char s_d7f2cfac[26];
-   char s_35f2309a[49];
+   char s_87603f77[31];
+   char s_8630802e[44];
+   char s_baa6d7fc[37];
+   char s_58b116d3[41];
+   char s_69039805[7];
+   char s_aaea6e1b[19];
+   char s_b3841fa4[72];
+   char s_d7d5e8f7[25];
+   char s_d32da23d[28];
+   char s_d32da48f[28];
+   char s_b4ed19c0[41];
+   char s_a4a373a7[37];
    char s_70c7c198[2];
-   char s_e3d18a3d[28];
-   char s_c6e1f92b[60];
-   char s_d15b342a[26];
-   char s_2f5a9518[225];
-   char s_6ebb6a00[20];
-   char s_ccbacaee[150];
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-   char s_e65393d5[25];
-   char s_043f1283[64];
-#endif
-#endif
-   char s_b3cc8a43[27];
-   char s_d34eb231[116];
-   char s_061657e6[29];
-   char s_243da114[93];
-   char s_6155456e[24];
-   char s_4a3d27dc[56];
-   char s_ce5f3353[34];
-   char s_de265901[88];
-   char s_87ee250e[39];
-   char s_70d6077c[58];
-   char s_a11934f5[39];
-   char s_a9c51063[74];
-   char s_1938dce6[47];
-   char s_1f084654[75];
-   char s_2f9a064c[7];
-   char s_8d99673a[69];
-   char s_ed013a05[35];
-   char s_4b009af3[50];
-   char s_62564465[25];
-   char s_198c91d3[73];
-   char s_e2c6c781[31];
-   char s_f28ded2f[80];
-   char s_4aaeeb99[15];
-   char s_e8aee6c7[31];
-   char s_d81bf7a9[15];
-   char s_9eb26572[40];
-   char s_59980356[18];
-   char s_3ca87244[54];
-   char s_95cf0994[9];
-   char s_a5962f42[120];
-   char s_0c7750cd[126];
-   char s_d31f6d88[24];
-   char s_f2a19576[76];
-   char s_01a73130[41];
-   char s_46c57dde[93];
-   char s_941e50fb[18];
-   char s_10342503[22];
-   char s_164566fb[20];
-   char s_6107eb09[28];
-   char s_550b1e93[24];
-   char s_64d24441[113];
-   char s_c0d9bee1[13];
-   char s_dec53d8f[113];
-   char s_d2224db6[11];
-   char s_ad7da224[110];
-   char s_c175c697[11];
-   char s_df614545[112];
-   char s_fd3e287f[9];
-   char s_44040aad[150];
-   char s_c4842e2d[36];
-   char s_d43521db[158];
-   char s_145f5880[37];
-   char s_5eee10e5[53];
-   char s_6e9f0493[102];
-   char s_ea80654d[57];
-   char s_8bbf7ffb[168];
-   char s_64dd7209[70];
-   char s_061c8cb7[116];
-   char s_f03e9c42[41];
-   char s_b2a8d230[84];
-   char s_7088df5e[79];
-   char s_11c7fa0c[132];
-   char s_51cbf8f0[64];
-   char s_95cbebbd[41];
-   char s_6b80a1bc[60];
-   char s_99a77122[43];
-   char s_4a5b7672[54];
-   char s_eb3c8b7f[45];
-   char s_8fa79de5[43];
-   char s_eb0d7f1d[48];
-   char s_6ae93e68[51];
-   char s_881efe76[24];
-   char s_a64647a4[81];
-   char s_5d29b870[24];
-   char s_7b51019e[106];
-   char s_89920317[24];
-   char s_7279e585[87];
-   char s_bab74532[26];
-   char s_ffd591e0[72];
-   char s_f0ce97f7[37];
-   char s_0ef5e125[34];
-   char s_06f25fc0[22];
-   char s_16b9856e[40];
-   char s_78071664[16];
-   char s_78c58363[20];
-   char s_cc781d49[20];
-   char s_8f133960[18];
-   char s_38b82e6c[34];
-   char s_babee9c1[16];
-   char s_1e4264a1[15];
-   char s_04ecbe77[20];
-   char s_49c9bf91[19];
-   char s_8d30abf0[48];
-   char s_525068d3[37];
-   char s_33ed5ede[46];
-   char s_66ed0f42[15];
-   char s_18cc5aec[44];
-   char s_ba582576[61];
-   char s_b0b9ca3e[102];
-   char s_e3d18c38[20];
-   char s_51844cc2[27];
-   char s_e1a8f707[33];
-   char s_66df5c89[23];
-   char s_f70406ce[29];
-   char s_d7f2e719[43];
-   char s_a7a97316[74];
-   char s_48e88dc4[246];
-   char s_8cefb843[16];
-   char s_684b0cb1[38];
-   char s_97242f99[40];
-   char s_dc427c47[92];
-   char s_b95e3404[30];
-   char s_791acb32[101];
-   char s_177845b3[33];
-   char s_1d47af21[83];
-   char s_1b9fa21d[10];
-   char s_7d2035c4[20];
-   char s_da093426[26];
-   char s_43ac80a0[15];
-   char s_f7e279a6[15];
-   char s_f8fa3e2f[24];
-   char s_b3565d3d[37];
-   char s_9af4bf52[30];
-   char s_e5d096ab[35];
-   char s_bd07998f[20];
-   char s_8fe41f79[26];
-   char s_519cd5f8[33];
-   char s_ebe994b4[18];
-   char s_cd916c68[48];
-   char s_5c7bbce1[48];
-   char s_8356c98c[38];
-   char s_0472da71[7];
-   char s_bdc1c274[13];
-   char s_9251b4c1[9];
-   char s_36109f2c[19];
-   char s_47f4eb8e[9];
-   char s_887214f4[9];
-   char s_f62d1074[11];
-   char s_3413595a[25];
-   char s_69f2e90c[23];
-   char s_9329c64c[13];
-   char s_92be1c10[11];
-   char s_70bac144[18];
-   char s_8d13ec48[16];
-   char s_e8ad0320[16];
-   char s_cbdfd37c[15];
-   char s_a986c4da[19];
-   char s_09ba892e[17];
-   char s_ffd0dac4[13];
-   char s_4ceac87e[18];
-   char s_06650b16[13];
-   char s_f019e498[9];
-   char s_b2865f23[15];
-   char s_58b9d895[25];
-   char s_3af38d58[32];
-   char s_00dfe961[23];
-   char s_00966fb4[29];
-   char s_6c06b558[29];
-   char s_387a4176[20];
-   char s_28863bc1[20];
-   char s_b93afb41[25];
-   char s_17983560[25];
-   char s_2742a469[26];
-   char s_0e740679[23];
-   char s_d3a2aa7d[23];
-   char s_f8883f70[11];
-   char s_cf24fcc2[35];
-   char s_f751c497[31];
-   char s_7fc52043[27];
-   char s_8584f1d6[27];
-   char s_14ec7b7e[11];
-   char s_005cc6dc[15];
-   char s_0cadcd1e[9];
-   char s_c7a999e6[33];
-   char s_00614813[9];
-   char s_9509d1c2[42];
-   char s_3674ba44[17];
-   char s_3f2095b2[68];
-   char s_580e244f[11];
-   char s_67d549fd[63];
-   char s_79b8ce4a[140];
-   char s_57665cff[11];
-   char s_19d092ed[63];
-   char s_49b0b12a[7];
-   char s_5977d6d8[66];
-   char s_c82d0aee[24];
-   char s_ce113b1c[74];
-   char s_b00815b8[24];
-   char s_8b636a26[61];
-   char s_980ef0e8[11];
-   char s_a7d61696[88];
-   char s_84d3d068[11];
-   char s_a2fb1996[102];
-   char s_734d2a61[9];
-   char s_92cf524f[50];
-   char s_e4e54370[17];
-   char s_f496371e[101];
-   char s_e7a63560[20];
-   char s_f05210ce[61];
-   char s_8cb3b95f[25];
-   char s_aadb028d[59];
-   char s_aa39aae6[127];
-   char s_749f0441[19];
-   char s_780eb7cb[31];
-   char s_60f69a39[58];
-   char s_152cd261[51];
-   char s_0a05438c[44];
-   char s_05dabad8[9];
-   char s_f63531f4[88];
-   char s_18996eed[49];
-   char s_6322a8fa[20];
-   char s_4c0a8b68[55];
-   char s_7d00b7ed[15];
-   char s_65e89a5b[52];
-   char s_a670da0a[27];
-   char s_5dc056f8[132];
-   char s_46f50d5b[22];
-#ifdef _3DS
-   char s_fcde5521[43];
-   char s_02c2854f[80];
-#endif
-   char s_260261d6[20];
-   char s_302fdd56[17];
-   char s_7277e127[22];
-   char s_78474a95[63];
-   char s_2e5078b2[29];
-   char s_17385b20[146];
-   char s_4ad41e20[26];
-   char s_5a8511ce[78];
-   char s_56e21ee1[22];
-   char s_0e319bcf[63];
-   char s_3a0a3fef[22];
-   char s_db495a9d[36];
-   char s_62144cdf[19];
-   char s_2b36bd4d[76];
-   char s_513ae2ac[25];
-   char s_1d921fac[42];
-   char s_f319134a[32];
-   char s_6a15d029[25];
-   char s_7607974d[17];
    char s_4081ac3b[17];
-   char s_2409f1f8[26];
-   char s_3e97494e[30];
+   char s_1d921fac[42];
+   char s_513ae2ac[25];
+   char s_952ec37c[128];
    char s_117a0f2d[24];
-   char s_30330589[17];
-   char s_cdf5ba47[117];
-   char s_bf709068[121];
    char s_40f0ecd9[19];
    char s_95f7b8d6[117];
-   char s_952ec37c[128];
-   char s_1b8a5cb5[7];
-   char s_60a8a963[48];
-   char s_87d88aa2[9];
-   char s_a5ffd3d0[66];
-   char s_8d94cfea[27];
-   char s_70a53ed8[59];
-   char s_3a9d7557[11];
-   char s_b92166cd[9];
-   char s_fe3fb37b[100];
-   char s_9ef5d822[12];
-   char s_8a9a3ae4[11];
-   char s_e22edcd8[11];
-   char s_0f1d488a[13];
-   char s_467f06c1[7];
-   char s_084af156[13];
-   char s_206b1acd[18];
-   char s_0a008a9d[11];
-   char s_9a981aa0[20];
-#ifdef HAVE_MIST
-   char s_22ce4612[11];
-   char s_32956bc0[54];
-#endif
-   char s_009a10e3[11];
+   char s_cdf5ba47[117];
+   char s_bf709068[121];
+   char s_2409f1f8[26];
+   char s_30330589[17];
+   char s_3e97494e[30];
+   char s_f319134a[32];
+   char s_7607974d[17];
+   char s_6a15d029[25];
    char s_7af11c30[134];
-   char s_9e66791a[20];
-   char s_bde8a108[100];
    char s_285ad699[53];
    char s_a6f4e7fa[74];
    char s_0cd5a7bf[186];
    char s_bd0f864d[157];
    char s_a6f51628[89];
    char s_5702032d[120];
-   char s_cc973e8a[11];
-   char s_5468d3f9[238];
+   char s_ceafef5e[188];
    char s_e1814648[72];
    char s_246d2ab2[91];
+   char s_5468d3f9[238];
    char s_64fa1377[43];
+   char s_4ad41e20[26];
+   char s_24c106e6[15];
+   char s_0ae2f7f3[20];
+   char s_38193683[16];
+   char s_314e7dec[19];
+   char s_061657e6[29];
+   char s_7632d987[29];
+   char s_d6591125[42];
+   char s_dac26dd6[42];
+   char s_2e5078b2[29];
+   char s_12e77e8f[20];
+   char s_da068369[13];
    char s_daead8a5[7];
-   char s_d32da23d[28];
-   char s_d32da48f[28];
-#ifdef HAVE_MICROPHONE
-   char s_d1df7807[15];
-   char s_35324f11[41];
-   char s_fe54bf7f[86];
-#endif
-   char s_5b2d8d2f[33];
-   char s_6ade80dd[71];
-   char s_a4a373a7[37];
-   char s_b4ed19c0[41];
-   char s_502f623c[13];
-   char s_0b7bdc29[13];
-   char s_1c0a61e2[14];
-   char s_31b177ec[5];
-   char s_8d3a8b68[11];
-   char s_6895dfd6[90];
-   char s_ceafef5e[188];
-   char s_721e7bb2[7];
-   char s_020e2bc5[29];
-   char s_0d96ed73[70];
-   char s_ebf10493[27];
-   char s_d96182c1[68];
-   char s_730df420[22];
-   char s_7e96b5ce[74];
-   char s_69b801ef[11];
-   char s_7968f59d[63];
-   char s_82fab47a[58];
-   char s_7943e750[44];
-   char s_1a8301fe[104];
-   char s_4bceefff[25];
-   char s_6c52dfb1[41];
-   char s_47ae341f[154];
-   char s_ef3d53d8[26];
-#if defined(DINGUX)
-   char s_805730a0[28];
-   char s_6dc7aece[341];
-   char s_bfd4c6ef[15];
-   char s_ce997004[11];
-   char s_52153570[35];
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   char s_c1e9447c[28];
-   char s_fec3d9e4[35];
-   char s_5a03a511[16];
-#endif
-#endif
-   char s_d0a04fe4[26];
-   char s_ed22c5f1[33];
-   char s_d5231783[159];
-   char s_dd6afca3[34];
-   char s_4bcbcc14[40];
-   char s_74022c02[143];
-   char s_df3def90[54];
-   char s_61213f1d[26];
-   char s_4a09218b[78];
-   char s_6c40d14e[20];
-   char s_fd9cfe13[27];
-   char s_7a2050af[68];
-   char s_c0cdc638[38];
-   char s_afd69a70[53];
-   char s_b5a603de[94];
-   char s_22735e37[80];
-   char s_d9c2db25[97];
-   char s_71ebd242[51];
-   char s_133cc3d1[62];
-   char s_1ec5857f[82];
-   char s_0ef856cb[60];
-   char s_22ee45f4[63];
-   char s_9a90acec[47];
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   char s_f98e1e26[38];
-   char s_b0dd9b14[167];
-   char s_7c8a700d[14];
-   char s_7c89e3ac[14];
-#endif
-   char s_84c46931[47];
-   char s_3c13e61f[180];
-   char s_59f183c8[27];
-   char s_9f0fd076[206];
-   char s_59f183c9[33];
-   char s_9f0fd077[212];
-   char s_f5ab35c0[31];
-   char s_6c1369c6[29];
-   char s_30140cb5[24];
-   char s_0f5266ce[24];
-   char s_83e8dc72[35];
-   char s_a64b3a0b[37];
-   char s_2d8cb7ce[24];
-   char s_3370e7fc[55];
-   char s_b9e24170[37];
-   char s_5562855e[80];
-   char s_48da4695[31];
-   char s_2beab583[61];
-   char s_68190518[65];
-   char s_7cf985f0[68];
-   char s_4d7e9b13[20];
-   char s_c79d5013[20];
-   char s_8759e741[55];
-   char s_adcf82d6[13];
-#if defined(DINGUX)
-   char s_d374d67d[34];
-#endif
-   char s_8f379310[46];
-   char s_b7ef9e17[38];
-   char s_92a02470[44];
-   char s_c017f975[13];
-   char s_44e1c38f[33];
-   char s_aa9bc75d[13];
-   char s_57047267[9];
-   char s_fb84857a[11];
-   char s_bdeebb68[59];
-#ifdef HAVE_MICROPHONE
-   char s_d04ab10c[15];
-#endif
-   char s_30acd6fb[22];
-   char s_3c3598a9[70];
-   char s_4be9dc09[46];
-   char s_ad791974[9];
-   char s_cb649822[19];
-   char s_76e73138[42];
-   char s_950e7a66[57];
    char s_48c208ee[19];
    char s_a38cafbb[26];
    char s_dcf2e800[7];
-   char s_23b8ca2e[39];
-   char s_da068369[13];
+   char s_f7e668f4[24];
+   char s_76e73138[42];
+   char s_c82d0aee[24];
+   char s_ad791974[9];
    char s_b271ae95[29];
-   char s_95821d83[41];
-#ifdef HAVE_MICROPHONE
-   char s_d3e78762[15];
-#endif
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-   char s_d0fb22cb[13];
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-   char s_b4868136[45];
-   char s_ca9a92ae[37];
-#endif
+   char s_fb84857a[11];
+   char s_5b2d8d2f[33];
    char s_affd948c[37];
+   char s_49b0b12a[7];
    char s_ad7c73f6[22];
-   char s_cb67f2a4[51];
+   char s_30acd6fb[22];
+   char s_14ec7b7e[11];
+   char s_005cc6dc[15];
+   char s_00614813[9];
+   char s_8584f1d6[27];
+   char s_7fc52043[27];
+   char s_0cadcd1e[9];
+   char s_9509d1c2[42];
+   char s_c7a999e6[33];
+   char s_0b7bdc29[13];
+   char s_e290a5ae[13];
+   char s_25babaa7[9];
+   char s_502f623c[13];
+   char s_5b51050b[13];
+   char s_fd67817e[54];
+   char s_565cbabb[19];
+   char s_215e6dd8[20];
+   char s_0a05438c[44];
+   char s_152cd261[51];
+   char s_7d00b7ed[15];
+   char s_780eb7cb[31];
+   char s_05dabad8[9];
+   char s_18996eed[49];
+   char s_6322a8fa[20];
+   char s_ce5f3353[34];
+   char s_6155456e[24];
+   char s_e4e54370[17];
+   char s_ec59110b[36];
+   char s_d39fc80f[39];
+   char s_225da616[9];
+   char s_304c0542[22];
+   char s_0fd30a6d[7];
+   char s_f9d105bf[22];
+   char s_7c9bfdda[16];
+   char s_36265c93[20];
+   char s_36442b35[39];
+   char s_1e1c0557[22];
+   char s_1b9fa21d[10];
+   char s_feb1c160[16];
+   char s_97242f99[40];
+   char s_8cefb843[16];
+   char s_177845b3[33];
+   char s_881efe76[24];
+   char s_1e4264a1[15];
+   char s_babee9c1[16];
+   char s_78c58363[20];
+   char s_78071664[16];
+   char s_cc781d49[20];
+   char s_e3d18c38[20];
+   char s_49c9bf91[19];
+   char s_04ecbe77[20];
+   char s_525068d3[37];
+   char s_18cc5aec[44];
+   char s_b0b9ca3e[102];
+   char s_66ed0f42[15];
+   char s_ba582576[61];
+   char s_33ed5ede[46];
+   char s_8d30abf0[48];
+   char s_38b82e6c[34];
+   char s_8f133960[18];
+   char s_9c5329ad[18];
+   char s_d7f2cfac[26];
+   char s_d7f2e719[43];
+   char s_93e2fd9c[29];
+   char s_b95e3404[30];
+   char s_734d2a61[9];
+   char s_a7a97316[74];
+   char s_145f5880[37];
+   char s_9af4bf52[30];
+   char s_e5d096ab[35];
+   char s_0bf629fd[9];
+   char s_df3def90[54];
+   char s_dd6afca3[34];
+   char s_4bcbcc14[40];
+   char s_06f25fc0[22];
+   char s_f0ce97f7[37];
+   char s_704e200c[7];
+   char s_328dfd67[20];
+   char s_b92166cd[9];
+   char s_5d29b870[24];
+   char s_4927597c[25];
+   char s_10342503[22];
+   char s_d31f6d88[24];
+   char s_f03e9c42[41];
+   char s_7088df5e[79];
+   char s_3aff8242[47];
+   char s_3674ba44[17];
+   char s_6ebb6a00[20];
+   char s_40a4eb2b[95];
+   char s_92c32104[26];
+   char s_8089e40c[39];
+   char s_99eaf2ff[7];
+   char s_1906f1fc[31];
+   char s_5cb15718[28];
+   char s_1792565e[32];
+   char s_8cfdee2a[38];
+   char s_40582c14[28];
+   char s_c9afcfe6[36];
+   char s_b84a6df0[28];
+   char s_35da9191[30];
+   char s_580f7fc4[21];
+   char s_3646f8e0[23];
+   char s_8f2a984c[23];
+   char s_05dca252[21];
+   char s_6a95fdaa[32];
+   char s_e03017dc[36];
+   char s_db16b335[36];
+   char s_10358d4e[21];
+   char s_0ad18744[23];
+   char s_0b7c8e91[32];
+   char s_36b2a31c[25];
+   char s_b2edd9fe[27];
+   char s_721da345[32];
+   char s_d235c6fc[23];
+   char s_14755194[45];
+   char s_f910f918[24];
+   char s_1ad1dee7[11];
+   char s_2976d474[20];
+   char s_9eed897f[11];
+   char s_91f69bb0[12];
+   char s_52fded9c[23];
+   char s_a578b37f[18];
+   char s_99eb425d[9];
+   char s_941e50fb[18];
+   char s_2cb9dc71[22];
+   char s_c4842e2d[36];
+   char s_fd3e287f[9];
+   char s_550b1e93[24];
+   char s_d2224db6[11];
+   char s_c0d9bee1[13];
+   char s_c175c697[11];
+   char s_9ef5d822[12];
+   char s_e2f27171[13];
+   char s_2f9a064c[7];
+   char s_96ee0cfb[13];
+   char s_ae50c550[15];
+   char s_b30d3e14[13];
+   char s_99d3d4ae[15];
+   char s_d81bf7a9[15];
+   char s_798643f5[53];
+   char s_b61d0a2d[57];
+   char s_c68080b6[59];
+   char s_b87232ce[61];
+   char s_231308e8[57];
+   char s_27db7cc0[61];
+   char s_700d45a9[63];
+   char s_2a30a561[65];
+   char s_6ae6f953[26];
+   char s_e28bc72f[30];
+   char s_0b2a8528[64];
+   char s_ea5757a0[11];
+   char s_f9ee4a82[11];
+   char s_7beff2c4[9];
+   char s_df1031f3[44];
+   char s_0d5e69d1[50];
+   char s_54e5819b[48];
+   char s_009a10e3[11];
+   char s_58de51be[11];
+   char s_cde2111a[28];
+   char s_cbeca73d[20];
+   char s_8a16fa6b[18];
+   char s_e7c0ed0f[18];
+   char s_97eb860c[18];
+   char s_7c68a1ee[28];
+   char s_735c53f7[29];
+   char s_f8b9e275[20];
+   char s_4f7fa8b9[42];
+   char s_50e34bc5[26];
+   char s_87071f08[9];
+   char s_ec502f2a[33];
+   char s_c70e3826[19];
+   char s_21c5b854[24];
+   char s_cbdeb67b[22];
+   char s_bd250a0a[42];
+   char s_652788cc[23];
+   char s_b662d01f[22];
+   char s_4c8f0777[24];
+   char s_93d13126[14];
+   char s_8c49943c[18];
+   char s_dad749ea[35];
+   char s_980ef0e8[11];
+   char s_f07a5367[20];
+   char s_ff1b8ce5[34];
+   char s_bd07998f[20];
+   char s_9e66791a[20];
+   char s_84d3d068[11];
+   char s_6107eb09[28];
+   char s_b6172513[13];
+   char s_e3d18a3d[28];
+   char s_d15b342a[26];
+   char s_fdd6e708[26];
+   char s_31b177ec[5];
+   char s_8cb3b95f[25];
+   char s_d9685b01[20];
+   char s_8a9a3ae4[11];
+   char s_c2f915b2[9];
+   char s_3a0abeb9[11];
+   char s_f4c2f40f[13];
+   char s_f4c9faa6[11];
+   char s_906aff13[11];
+   char s_006dbffd[11];
+   char s_e22edcd8[11];
+   char s_9da5609f[20];
+   char s_8d3a8b68[11];
+   char s_3a0a3fef[22];
+   char s_72898bf0[20];
+   char s_11926382[30];
+   char s_df92f5b5[36];
+   char s_7816d5d5[46];
+   char s_b4c3612a[48];
+   char s_b00815b8[24];
    char s_8be7813a[11];
-   char s_a9d2ffe8[52];
    char s_1757647b[11];
-   char s_f2b2b8e9[52];
    char s_273a9f02[14];
-   char s_0295f370[58];
+   char s_e1a8f707[33];
+   char s_51844cc2[27];
    char s_df610c7f[7];
    char s_3acb0241[25];
    char s_bacce639[22];
-   char s_df62d56f[9];
    char s_40084357[7];
+   char s_df62d56f[9];
    char s_4a1166e1[14];
-   char s_f7e668f4[24];
-   char s_7c68a1ee[28];
-   char s_0d5e69d1[50];
-   char s_54e5819b[48];
-   char s_e8636306[40];
-   char s_40a4eb2b[95];
-   char s_8c49943c[18];
-   char s_6f5a032a[70];
-   char s_e28bc72f[30];
-#ifdef ANDROID
-   char s_e8eeac31[119];
-#endif
-   char s_6ae6f953[26];
-   char s_2aa39081[58];
-   char s_dad749ea[35];
-   char s_e0bb7a18[322];
-   char s_df1031f3[44];
-   char s_a17a67e1[85];
-   char s_0b2a8528[64];
-   char s_f9ee4a82[11];
-   char s_7beff2c4[9];
-   char s_ea5757a0[11];
-   char s_fcc3aec5[13];
-   char s_543fcabd[20];
-   char s_46f6a65d[11];
-   char s_f07a5367[20];
-   char s_0ea19c95[52];
-   char s_0ca3b319[13];
-   char s_8c15b43a[37];
-   char s_c8370855[38];
-   char s_f90272bb[34];
-   char s_cde2111a[28];
-   char s_ff1b8ce5[34];
-   char s_87071f08[9];
-   char s_f8b9e275[20];
-   char s_c70e3826[19];
-   char s_12adb1e7[60];
-   char s_652788cc[23];
-   char s_74d87c7a[56];
-   char s_50e34bc5[26];
-   char s_0832c8b3[83];
-   char s_21c5b854[24];
-   char s_d9153542[70];
-   char s_b67ffc50[80];
-   char s_bd250a0a[42];
-   char s_86477a78[76];
-   char s_cbdeb67b[22];
-   char s_4f7fa8b9[42];
-   char s_603f8de7[94];
-   char s_735c53f7[29];
-   char s_cbeca73d[20];
-   char s_8a16fa6b[18];
-   char s_b61d0a2d[57];
-   char s_798643f5[53];
-   char s_b87232ce[61];
-   char s_c68080b6[59];
-   char s_27db7cc0[61];
-   char s_231308e8[57];
-   char s_2a30a561[65];
-   char s_700d45a9[63];
-   char s_97eb860c[18];
-   char s_e7c0ed0f[18];
-   char s_58de51be[11];
-   char s_00119310[55];
-#ifdef HAVE_MIST
-   char s_30512c09[43];
-#endif
-   char s_74dcbca5[18];
-   char s_b3d1e989[13];
-   char s_c2280f28[11];
-   char s_79deb60c[11];
-   char s_50eb4c56[9];
-   char s_6f9583dc[37];
-   char s_b24d8753[24];
-   char s_3ea80887[25];
-   char s_b45e4c28[36];
-   char s_700983fe[11];
-   char s_e04d6098[13];
-   char s_21d7a1f6[9];
-   char s_48431da6[13];
-   char s_d2fe3ed2[24];
-   char s_205caaf6[13];
-   char s_c6d5bcb5[5];
-   char s_7e8c6399[11];
-   char s_eb4eab83[9];
-   char s_d748f469[43];
-   char s_52e94a24[22];
-   char s_eea0ed20[26];
-   char s_b662d01f[22];
-   char s_93d13126[14];
-   char s_4c8f0777[24];
-   char s_ddc6b80f[28];
-   char s_11926382[30];
-   char s_d3fc9970[73];
-   char s_7816d5d5[46];
-   char s_37d36d03[72];
-   char s_b4c3612a[48];
-   char s_7de5d198[74];
-   char s_36442b35[39];
-   char s_9da5609f[20];
-   char s_25f1508f[13];
-   char s_a85eb9f5[57];
-   char s_b91e9f23[83];
-   char s_4931fd42[31];
-   char s_c5d2f4b0[45];
-   char s_3fa8bb7e[30];
-   char s_08cb2bec[44];
-   char s_cb2c6b22[38];
-   char s_d0fbd490[64];
-   char s_cd5ff0f5[22];
-   char s_d32f5a63[38];
-   char s_89e8800d[24];
-   char s_8fb7e97b[40];
-   char s_565cbabb[19];
+   char s_42b8ffbf[13];
+   char s_62564465[25];
+   char s_2950bbb6[47];
+   char s_6951a166[32];
+   char s_9d8a8d82[38];
+   char s_4327ffcc[46];
    char s_216de9d9[72];
    char s_216de9da[22];
    char s_216de9db[61];
    char s_216de9dc[27];
    char s_b9e4eae3[13];
-   char s_4327ffcc[46];
-   char s_96ee0cfb[13];
-   char s_d39fc80f[39];
-   char s_5bbcf84b[10];
-   char s_62c35c34[23];
-   char s_ca981b76[20];
-   char s_e8bf64a4[66];
-   char s_38193683[16];
-   char s_579b5e71[91];
    char s_9528d92a[20];
-   char s_8203db0a[9];
-   char s_0ae2f7f3[20];
-   char s_24c106e6[15];
-   char s_1e1c0557[22];
-   char s_e0863b45[93];
-   char s_12e77e8f[20];
-   char s_4674fab3[32];
-   char s_5f612db6[18];
-   char s_3ecc1739[84];
-   char s_9017e0d3[36];
-   char s_ae3f2a01[129];
-   char s_865cee49[14];
-   char s_279c08f7[67];
-   char s_91dd478e[33];
-   char s_331c623c[93];
-   char s_4c1871ec[78];
-   char s_8950b378[100];
-   char s_bcf3997a[22];
-   char s_c2d7c9a8[71];
-   char s_6090802e[27];
-   char s_e36de8fd[13];
-   char s_2976d474[20];
-   char s_f910f918[24];
-   char s_1ad1dee7[11];
-   char s_9eed897f[11];
-   char s_52fded9c[23];
-   char s_a578b37f[18];
-   char s_92c32104[26];
-   char s_99eaf2ff[7];
-   char s_8089e40c[39];
-   char s_91f69bb0[12];
-   char s_c9afcfe6[36];
-   char s_10358d4e[21];
-   char s_0b7c8e91[32];
-   char s_db16b335[36];
-   char s_35da9191[30];
-   char s_1906f1fc[31];
-   char s_1792565e[32];
-   char s_580f7fc4[21];
-   char s_0ad18744[23];
-   char s_8cfdee2a[38];
-   char s_e03017dc[36];
-   char s_36b2a31c[25];
-   char s_3646f8e0[23];
-   char s_40582c14[28];
-   char s_5cb15718[28];
-   char s_b84a6df0[28];
-   char s_8f2a984c[23];
-   char s_05dca252[21];
-   char s_6a95fdaa[32];
-   char s_b2edd9fe[27];
-   char s_14755194[45];
-   char s_d235c6fc[23];
-   char s_721da345[32];
-   char s_baa6d7fc[37];
-   char s_69039805[7];
-   char s_58b116d3[41];
-   char s_87603f77[31];
-   char s_8630802e[44];
-   char s_b3841fa4[72];
-   char s_d7d5e8f7[25];
-   char s_aaea6e1b[19];
-   char s_25e87d9d[9];
-   char s_ddf3c771[18];
-   char s_704e200c[7];
-   char s_dac26dd6[42];
-   char s_99d3d4ae[15];
-   char s_3aff8242[47];
-   char s_328dfd67[20];
-   char s_0fd30a6d[7];
-   char s_7c9bfdda[16];
-   char s_225da616[9];
-   char s_f9d105bf[22];
-   char s_304c0542[22];
-   char s_f1f74dd3[11];
-   char s_215e6dd8[20];
-   char s_9c6ed9ca[22];
-   char s_69b36417[24];
-   char s_879ee2c5[75];
-   char s_fdd6e708[26];
-   char s_1bc265b6[88];
-   char s_d6591125[42];
-   char s_3f33ad82[16];
-   char s_e072c830[28];
-   char s_d61df2ba[16];
-   char s_8d6d6fa8[28];
-   char s_93e2fd9c[29];
-   char s_9c5329ad[18];
-   char s_feb1c160[16];
-   char s_3783f4ea[23];
-   char s_314e7dec[19];
-   char s_fd67817e[54];
-   char s_5b51050b[13];
-   char s_4927597c[25];
-   char s_a9c8430e[36];
    char s_ea0de502[15];
    char s_51f16286[15];
-   char s_1aebff8d[11];
+   char s_733174db[25];
+   char s_e36de8fd[13];
+   char s_89920317[24];
+   char s_87d88aa2[9];
    char s_e2f5e678[15];
-   char s_f632c879[15];
-   char s_c3168f05[9];
    char s_25e86ee3[11];
-   char s_df763da7[13];
-   char s_d61d87cd[15];
-   char s_72898bf0[20];
-   char s_bd8bf83a[15];
-   char s_bd84f1a3[13];
-   char s_f8d42b14[13];
-   char s_728ca1d3[11];
-   char s_ccfe26d1[20];
-   char s_ec1c0efd[13];
-   char s_b30b56ad[11];
-   char s_65e6ea7c[15];
-   char s_490a6c83[13];
+   char s_c3168f05[9];
+   char s_e2c6c781[31];
+   char s_a670da0a[27];
+   char s_46f50d5b[22];
+   char s_164566fb[20];
    char s_857c70d0[18];
    char s_7f10fcd2[15];
    char s_7206ddda[15];
-   char s_f4c2f40f[13];
-   char s_f4c9faa6[11];
-   char s_006dbffd[11];
-   char s_906aff13[11];
-   char s_3a0abeb9[11];
-   char s_c2f915b2[9];
-   char s_6d059c18[15];
-   char s_753c8d3b[8];
-   char s_5f15f7a7[17];
-   char s_7534cfc9[14];
-   char s_2aeb5474[26];
-   char s_6d08238d[7];
-   char s_b71e6907[27];
-   char s_08785e85[22];
+   char s_0f1d488a[13];
+   char s_b3cc8a43[27];
+   char s_6090802e[27];
+   char s_1aebff8d[11];
+   char s_f632c879[15];
+   char s_8d94cfea[27];
+   char s_5bbcf84b[10];
+   char s_62c35c34[23];
+   char s_64dd7209[70];
+   char s_56e21ee1[22];
+   char s_f70406ce[29];
+   char s_66df5c89[23];
+   char s_ca981b76[20];
+   char s_3361e11d[51];
+   char s_9b3ca94b[47];
    char s_6d025795[9];
+   char s_6d059c18[15];
    char s_99d648f2[15];
-   char s_5633a523[113];
-   char s_6d0b3292[9];
-   char s_6d0ca7a7[7];
-   char s_e8ae394f[8];
+   char s_2aeb5474[26];
+   char s_7534cfc9[14];
+   char s_753c8d3b[8];
+   char s_036acd54[34];
+   char s_a0a191ca[34];
+   char s_5f15f7a7[17];
+   char s_6d08238d[7];
    char s_e8a86d57[10];
    char s_725702e3[23];
+   char s_e8ae394f[8];
    char s_d93c753a[7];
-   char s_b6172513[13];
-   char s_e2f9cd07[11];
-   char s_25babaa7[9];
-   char s_2950bbb6[47];
-   char s_6951a166[32];
-   char s_9d8a8d82[38];
-   char s_e2f27171[13];
-   char s_03c57bc8[20];
-   char s_63a238b1[47];
-   char s_f878311b[35];
-   char s_1a5c880d[20];
-   char s_e290a5ae[13];
-   char s_50d77da7[14];
-   char s_0bf629fd[9];
-   char s_ec502f2a[33];
-#ifdef HAVE_LAKKA
-   char s_0d83eb84[13];
-#endif
+   char s_5633a523[113];
+   char s_6d0b3292[9];
+   char s_08785e85[22];
+   char s_b71e6907[27];
+   char s_6d0ca7a7[7];
+   char s_a85eb9f5[57];
+   char s_3fa8bb7e[30];
+   char s_cb2c6b22[38];
+   char s_4931fd42[31];
+   char s_3f33ad82[16];
+   char s_d61df2ba[16];
+   char s_260261d6[20];
+   char s_95cf0994[9];
+   char s_36109f2c[19];
+   char s_cf24fcc2[35];
+   char s_8d13ec48[16];
+   char s_b93afb41[25];
+   char s_47f4eb8e[9];
+   char s_d3a2aa7d[23];
+   char s_3413595a[25];
+   char s_70bac144[18];
+   char s_bdc1c274[13];
+   char s_06650b16[13];
+   char s_6c06b558[29];
+   char s_00966fb4[29];
+   char s_00dfe961[23];
+   char s_2742a469[26];
+   char s_17983560[25];
+   char s_3af38d58[32];
+   char s_b2865f23[15];
+   char s_e8ad0320[16];
+   char s_9251b4c1[9];
+   char s_887214f4[9];
+   char s_92be1c10[11];
+   char s_0472da71[7];
+   char s_cbdfd37c[15];
+   char s_f019e498[9];
+   char s_0e740679[23];
+   char s_a986c4da[19];
+   char s_69f2e90c[23];
+   char s_4ceac87e[18];
+   char s_f62d1074[11];
+   char s_387a4176[20];
+   char s_28863bc1[20];
+   char s_f751c497[31];
+   char s_9329c64c[13];
+   char s_f8883f70[11];
+   char s_09ba892e[17];
+   char s_58b9d895[25];
+   char s_ffd0dac4[13];
+   char s_91dd478e[33];
+   char s_865cee49[14];
+   char s_1b8a5cb5[7];
+   char s_6f9583dc[37];
+   char s_721e7bb2[7];
+   char s_ddf3c771[18];
+   char s_1938dce6[47];
+   char s_59980356[18];
+   char s_f1f74dd3[11];
+   char s_62144cdf[19];
+   char s_749f0441[19];
+   char s_f8d42b14[13];
+   char s_ccfe26d1[20];
+   char s_728ca1d3[11];
+   char s_5f612db6[18];
+   char s_ec1c0efd[13];
+   char s_b30b56ad[11];
+   char s_bd84f1a3[13];
+   char s_bd8bf83a[15];
+   char s_25e87d9d[9];
+   char s_00119310[55];
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
    char s_addc7f89[77];
+#endif
+#endif
+   char s_87ee250e[39];
+   char s_a11934f5[39];
+   char s_69b36417[24];
+   char s_e7a63560[20];
+   char s_df763da7[13];
+   char s_d61d87cd[15];
+   char s_bcf3997a[22];
+   char s_fd9cfe13[27];
+   char s_fcc3aec5[13];
+   char s_4aaeeb99[15];
+   char s_89e8800d[24];
+   char s_cd5ff0f5[22];
+   char s_9932960f[15];
+   char s_302fdd56[17];
+   char s_3783f4ea[23];
+   char s_25f1508f[13];
+   char s_ed013a05[35];
+   char s_01a73130[41];
+   char s_467f06c1[7];
+   char s_084af156[13];
+   char s_d7fc4c9c[33];
+   char s_d21c686b[41];
+   char s_f465878a[20];
+   char s_206b1acd[18];
+   char s_b24d8753[24];
+   char s_52e94a24[22];
+   char s_d748f469[43];
+   char s_7943e750[44];
+   char s_ea80654d[57];
+   char s_bab74532[26];
+   char s_7d2035c4[20];
+   char s_b3565d3d[37];
+   char s_f8fa3e2f[24];
+   char s_8356c98c[38];
+   char s_5c7bbce1[48];
+   char s_cd916c68[48];
+   char s_8fe41f79[26];
+   char s_519cd5f8[33];
+   char s_43ac80a0[15];
+   char s_ebe994b4[18];
+   char s_da093426[26];
+   char s_0a008a9d[11];
+   char s_9c6ed9ca[22];
+   char s_4674fab3[32];
+   char s_9a981aa0[20];
+   char s_0ca3b319[13];
+   char s_8c15b43a[37];
+   char s_c8370855[38];
+   char s_f90272bb[34];
+   char s_eea0ed20[26];
+   char s_48da4695[31];
+   char s_95cbebbd[41];
+   char s_6b80a1bc[60];
+   char s_eb0d7f1d[48];
+   char s_99a77122[43];
+   char s_51cbf8f0[64];
+   char s_4a5b7672[54];
+   char s_8fa79de5[43];
+   char s_5eee10e5[53];
+   char s_eb3c8b7f[45];
+   char s_6ae93e68[51];
+   char s_e2f9cd07[11];
+   char s_7277e127[22];
+   char s_8203db0a[9];
+   char s_3a9d7557[11];
+   char s_e8636306[40];
+   char s_adcf82d6[13];
+   char s_c79d5013[20];
+   char s_133cc3d1[62];
+   char s_71ebd242[51];
+   char s_9a90acec[47];
+   char s_0ef856cb[60];
+   char s_22ee45f4[63];
+   char s_4bceefff[25];
+   char s_cc973e8a[11];
+   char s_d0a04fe4[26];
+   char s_ed22c5f1[33];
+   char s_ddc6b80f[28];
+   char s_f5ab35c0[31];
+   char s_44e1c38f[33];
+   char s_aa9bc75d[13];
+   char s_57047267[9];
+   char s_020e2bc5[29];
+   char s_59f183c8[27];
+   char s_59f183c9[33];
+   char s_b45e4c28[36];
+   char s_61213f1d[26];
+   char s_57665cff[11];
+   char s_b3d1e989[13];
+   char s_50eb4c56[9];
+   char s_c2280f28[11];
+   char s_79deb60c[11];
+   char s_205caaf6[13];
+   char s_eb4eab83[9];
+   char s_c6d5bcb5[5];
+   char s_7e8c6399[11];
+   char s_74dcbca5[18];
+   char s_3ea80887[25];
+   char s_c0cdc638[38];
+   char s_afd69a70[53];
+   char s_22735e37[80];
+   char s_6c40d14e[20];
+   char s_6c1369c6[29];
+   char s_4d7e9b13[20];
+   char s_69b801ef[11];
+   char s_580e244f[11];
+   char s_a9c8430e[36];
+   char s_9017e0d3[36];
+   char s_ef3d53d8[26];
+   char s_48431da6[13];
+   char s_21d7a1f6[9];
+   char s_700983fe[11];
+   char s_e04d6098[13];
+   char s_d2fe3ed2[24];
+   char s_c017f975[13];
+   char s_730df420[22];
+   char s_bcddf275[15];
+   char s_92a02470[44];
+   char s_b7ef9e17[38];
+   char s_8f379310[46];
+   char s_6c52dfb1[41];
+   char s_84c46931[47];
+   char s_ebf10493[27];
+   char s_a64b3a0b[37];
+   char s_83e8dc72[35];
+   char s_7cf985f0[68];
+   char s_0f5266ce[24];
+   char s_2d8cb7ce[24];
+   char s_68190518[65];
+   char s_b9e24170[37];
+   char s_30140cb5[24];
+   char s_1c0a61e2[14];
+   char s_50d77da7[14];
+   char s_65e6ea7c[15];
+   char s_490a6c83[13];
+   char s_9ca4bbd7[22];
+   char s_9ca4bbd8[22];
+   char s_5a8511ce[78];
+   char s_579b5e71[91];
+   char s_243da114[93];
+   char s_17385b20[146];
+   char s_23b8ca2e[39];
+   char s_950e7a66[57];
+   char s_ce113b1c[74];
+   char s_cb649822[19];
+   char s_95821d83[41];
+   char s_bdeebb68[59];
+   char s_6ade80dd[71];
+   char s_5977d6d8[66];
+   char s_cb67f2a4[51];
+   char s_3c3598a9[70];
+   char s_f63531f4[88];
+   char s_65e89a5b[52];
+   char s_60f69a39[58];
+   char s_4c0a8b68[55];
+   char s_de265901[88];
+   char s_4a3d27dc[56];
+   char s_f496371e[101];
+   char s_3ecc1739[84];
+   char s_544da5c1[81];
+   char s_e0863b45[93];
+   char s_dc427c47[92];
+   char s_684b0cb1[38];
+   char s_1d47af21[83];
+   char s_a64647a4[81];
+   char s_35f2309a[49];
+   char s_791acb32[101];
+   char s_92cf524f[50];
+   char s_48e88dc4[246];
+   char s_79b8ce4a[140];
+   char s_d5231783[159];
+   char s_74022c02[143];
+   char s_16b9856e[40];
+   char s_0ef5e125[34];
+   char s_fe3fb37b[100];
+   char s_7b51019e[106];
+   char s_f2a19576[76];
+   char s_b2a8d230[84];
+   char s_11c7fa0c[132];
+   char s_3f2095b2[68];
+   char s_ccbacaee[150];
+   char s_aa39aae6[127];
+   char s_d43521db[158];
+   char s_44040aad[150];
+   char s_64d24441[113];
+   char s_ad7da224[110];
+   char s_dec53d8f[113];
+   char s_df614545[112];
+   char s_8d99673a[69];
+   char s_9eb26572[40];
+   char s_2aa39081[58];
+   char s_a17a67e1[85];
+   char s_603f8de7[94];
+   char s_0832c8b3[83];
+   char s_d9153542[70];
+   char s_86477a78[76];
+   char s_b67ffc50[80];
+   char s_74d87c7a[56];
+   char s_12adb1e7[60];
+   char s_6f5a032a[70];
+   char s_e0bb7a18[322];
+   char s_a7d61696[88];
+   char s_0ea19c95[52];
+   char s_bde8a108[100];
+   char s_a2fb1996[102];
+   char s_c6e1f92b[60];
+   char s_2f5a9518[225];
+   char s_1bc265b6[88];
+   char s_aadb028d[59];
+   char s_193e1462[69];
+   char s_6895dfd6[90];
+   char s_db495a9d[36];
+   char s_d3fc9970[73];
+   char s_37d36d03[72];
+   char s_7de5d198[74];
+   char s_8b636a26[61];
+   char s_a9d2ffe8[52];
+   char s_f2b2b8e9[52];
+   char s_4be9dc09[46];
+   char s_0295f370[58];
+   char s_198c91d3[73];
+   char s_7279e585[87];
+   char s_a5ffd3d0[66];
+   char s_f28ded2f[80];
+   char s_5dc056f8[132];
+   char s_8950b378[100];
+   char s_4c1871ec[78];
+   char s_d34eb231[116];
+   char s_70a53ed8[59];
+   char s_061c8cb7[116];
+   char s_0e319bcf[63];
+   char s_e8bf64a4[66];
+   char s_b91e9f23[83];
+   char s_08cb2bec[44];
+   char s_d0fbd490[64];
+   char s_c5d2f4b0[45];
+   char s_e072c830[28];
+   char s_8d6d6fa8[28];
+   char s_a5962f42[120];
+   char s_0c7750cd[126];
+   char s_331c623c[93];
+   char s_279c08f7[67];
+   char s_60a8a963[48];
+   char s_caa797e4[52];
+   char s_1f084654[75];
+   char s_3ca87244[54];
+   char s_2b36bd4d[76];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
    char s_96c461f7[125];
 #endif
 #endif
-#ifdef _3DS
-   char s_17813ad9[16];
-   char s_1131883a[18];
-#endif
+   char s_70d6077c[58];
+   char s_a9c51063[74];
+   char s_879ee2c5[75];
+   char s_f05210ce[61];
+   char s_c2d7c9a8[71];
+   char s_e8aee6c7[31];
+   char s_8fb7e97b[40];
+   char s_d32f5a63[38];
+   char s_4b009af3[50];
+   char s_46c57dde[93];
+   char s_12510638[52];
+   char s_1a8301fe[104];
+   char s_8bbf7ffb[168];
+   char s_ffd591e0[72];
+   char s_2beab583[61];
+   char s_6e9f0493[102];
+   char s_78474a95[63];
+   char s_8759e741[55];
+   char s_1ec5857f[82];
+   char s_0d96ed73[70];
+   char s_9f0fd076[206];
+   char s_9f0fd077[212];
+   char s_7a2050af[68];
+   char s_82fab47a[58];
+   char s_4a09218b[78];
+   char s_19d092ed[63];
+   char s_b5a603de[94];
+   char s_d9c2db25[97];
+   char s_7968f59d[63];
+   char s_67d549fd[63];
+   char s_ae3f2a01[129];
+   char s_7e96b5ce[74];
+   char s_47ae341f[154];
+   char s_3c13e61f[180];
+   char s_d96182c1[68];
+   char s_3370e7fc[55];
+   char s_5562855e[80];
+   char s_63a238b1[47];
+   char s_2a9c73f3[34];
+   char s_05e3f715[42];
+   char s_631c5635[45];
+   char s_19e809ad[38];
+   char s_db1e4390[38];
+   char s_f7e279a6[15];
+   char s_4b6a946a[36];
+   char s_8d677b5b[29];
+   char s_f878311b[35];
+   char s_e533ddbb[22];
+   char s_45130077[26];
+   char s_856bdef7[31];
+   char s_46f6a65d[11];
+   char s_543fcabd[20];
+   char s_b1e9bfbf[20];
+   char s_28bbcc15[30];
+   char s_03c57bc8[20];
+   char s_d15060ee[27];
+   char s_a068841f[28];
+   char s_4d7ee7e2[20];
+   char s_509dd374[25];
+   char s_bab020a4[22];
+   char s_1a5c880d[20];
+   char s_88494936[37];
 } msg_hash_fa_blob =
 {
-   "\331\201\331\207\330\261\330\263\330\252 \330\247\330\265\331\204\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252",
-   "\330\250\330\261\332\257\330\262\333\214\330\257\331\207\342\200\214\331\207\330\247",
-   "\330\252\330\247\330\261\333\214\330\256\332\206\331\207",
-   "\330\252\330\265\330\247\331\210\333\214\330\261",
-   "\331\205\331\210\330\263\333\214\331\202\333\214",
-   "\331\210\333\214\330\257\333\214\331\210\331\207\330\247",
-   "\330\250\330\247\330\262\333\214 \330\264\330\250\332\251\331\207\342\200\214\330\247\333\214",
-   "\332\251\330\247\331\210\330\264",
-   "\331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \330\250\333\214\342\200"
-   "\214\331\205\330\255\330\252\331\210\330\247",
-   "\331\210\330\247\330\261\330\257 \332\251\330\261\330\257\331\206 \331\205\330\255\330\252\331"
-   "\210\330\247",
-   "\330\264\333\214\330\247\330\261 \331\210\330\266\330\271\333\214\330\252",
-   "\330\252\330\272\333\214\333\214\330\261 \330\264\333\214\330\247\330\261 \331\210\330\266\330"
-   "\271\333\214\330\252 \330\247\331\206\330\252\330\256\330\247\330\250 \330\264\330\257\331\207.",
-   "\330\252\330\272\333\214\333\214\330\261 \330\264\333\214\330\247\330\261 \331\210\330\266\330"
-   "\271\333\214\330\252 \330\247\331\206\330\252\330\256\330\247\330\250 \330\264\330\257\331\207.",
-   "\330\242\330\272\330\247\330\262 \331\276\330\261\330\257\330\247\330\262\330\264\332\257\330"
-   "\261 \331\210\333\214\330\257\330\246\331\210\333\214\333\214",
-   "\330\264\330\261\331\210\330\271 \330\261\330\252\330\261\331\210\331\276\330\257 \330\261\333"
-   "\214\331\205\331\210\330\252",
-   "\331\201\331\207\330\261\330\263\330\252 \330\263\330\261\333\214\330\271",
-   "\330\257\330\263\330\252\330\261\330\263\333\214 \330\263\330\261\333\214\330\271 \330\250\331"
-   "\207 \330\252\331\205\330\247\331\205 \330\252\331\206\330\270\333\214\331\205\330\247\330\252 "
-   "\331\205\330\261\330\250\331\210\330\267\331\207 \330\255\333\214\331\206 \330\250\330\247\330"
-   "\262\333\214.",
-   "\331\206\331\205\330\247\333\214\330\264 \330\252\331\205\330\247\331\205 \330\252\331\206\330"
-   "\270\333\214\331\205\330\247\330\252 \331\205\330\261\330\250\331\210\330\267 \330\250\331\207 "
-   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214.",
-   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\207\330\263\330\252\331"
-   "\207",
-   "\330\247\331\206\330\252\330\256\330\247\330\250 \331\207\330\263\330\252\331\207\331\224 \331"
-   "\205\331\210\330\261\330\257 \330\247\330\263\330\252\331\201\330\247\330\257\331\207.",
+   "\330\247\333\214\331\206 \331\206\331\205\330\247 \330\261\330\247 \330\255\330\260\331\201 \332"
+   "\251\331\206",
+   "\331\206\330\247\331\205 \331\206\331\205\330\247\333\214 \330\254\330\257\333\214\330\257 \330"
+   "\261\330\247 \331\210\330\247\330\261\330\257 \332\251\331\206",
+   "\330\252\331\206\330\270\333\214\331\205 \331\276\330\247\331\204\330\247\333\214\331\207\331"
+   "\224 \330\257\330\247\331\205\331\206\331\207",
+   "\330\250\331\207\342\200\214\330\271\331\206\331\210\330\247\331\206 \331\206\331\205\330\247 "
+   "\330\260\330\256\333\214\330\261\331\207 \332\251\331\206",
+   "\331\206\331\205\330\247",
+   "\331\206\331\205\330\247 \330\255\330\260\331\201 \330\264\330\257",
+   "\333\214\332\251 \331\206\331\205\330\247 \330\250\330\247 \330\247\330\263\331\205 \331\205\330"
+   "\264\330\247\330\250\331\207 \331\276\333\214\330\264 \330\247\330\262 \330\247\333\214\331\206 "
+   "\331\210\330\254\331\210\330\257 \330\257\330\247\330\261\330\257",
+   "\331\206\331\205\330\247 \330\260\330\256\333\214\330\261\331\207 \330\264\330\257\331\207",
+   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 OpenAL.",
+   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 OpenSL.",
+   "\331\276\333\214\330\247\330\257\331\207\342\200\214\330\263\330\247\330\262\333\214 Convoluted "
+   "Cosine.",
+   "\331\276\333\214\330\247\330\257\331\207\342\200\214\330\263\330\247\330\262\333\214 Windowed Si"
+   "nc.",
    ".",
-   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\205\330\255\330\252\331"
-   "\210\330\247",
-   "\330\247\331\206\330\252\330\256\330\247\330\250 \331\205\330\255\330\252\331\210\330\247\333"
-   "\214 \331\205\331\210\330\261\330\257\331\206\330\270\330\261 \330\250\330\261\330\247\333\214 "
-   "\330\242\330\272\330\247\330\262.",
-   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \330\257\333\214\330\263\332"
-   "\251",
-   "\331\205\330\255\330\252\331\210\330\247 \330\261\330\247 \330\247\330\262 \330\257\333\214\330"
-   "\263\332\251 \331\201\333\214\330\262\333\214\332\251\333\214 \330\250\330\247\330\261\332\257"
-   "\330\260\330\247\330\261\333\214 \332\251\331\206\333\214\330\257. \330\247\330\250\330\252\330"
-   "\257\330\247 \331\207\330\263\330\252\331\207\331\224 \331\205\331\210\330\261\330\257 \331\206"
-   "\330\270\330\261 \330\261\330\247 \330\247\330\262 \330\250\330\256\330\264 \302\253\330\247\331"
-   "\206\330\252\330\256\330\247\330\250 \331\207\330\263\330\252\331\207\302\273 \330\250\330\261"
-   "\330\247\333\214 \330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\247\330\262 \331"
-   "\205\330\255\330\252\331\210\330\247\333\214 \330\257\333\214\330\263\332\251 \330\247\331\206"
-   "\330\252\330\256\330\247\330\250 \332\251\331\206\333\214\330\257.",
-   "\330\252\330\256\331\204\333\214\331\207 \330\257\333\214\330\263\332\251",
-   "\330\257\333\214\330\263\332\251 \331\201\333\214\330\262\333\214\332\251\333\214 \330\261\330"
-   "\263\330\247\331\206\331\207 \330\261\330\247 \330\257\330\261 \330\255\330\247\331\201\330\270"
-   "\331\207 \330\257\330\247\330\256\331\204\333\214 \330\252\330\256\331\204\333\214\331\207 \332"
-   "\251\331\206\333\214\330\257. \330\250\331\207 \330\271\331\206\331\210\330\247\331\206 \333\214"
-   "\332\251 \331\201\330\247\333\214\331\204 image \330\260\330\256\333\214\330\261\331\207 \330"
-   "\256\331\210\330\247\331\207\330\257 \330\264\330\257.",
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-   "\330\256\330\247\330\261\330\254 \332\251\330\261\330\257\331\206 \331\204\331\210\330\255",
-   "\330\256\330\247\330\261\330\254 \332\251\330\261\330\257\331\206 \331\204\331\210\330\255 \330"
-   "\247\330\262 \330\257\330\263\330\252\332\257\330\247\331\207 \331\201\333\214\330\262\333\214"
-   "\332\251\333\214 CD/DVD.",
-#endif
-#endif
-   "\330\263\333\214\330\247\331\207\331\207\342\200\214\331\207\330\247\333\214 \331\276\330\256"
-   "\330\264",
-   "\331\205\330\255\330\252\331\210\330\247\333\214 \330\247\330\263\332\251\331\206 \330\264\330"
-   "\257\331\207 \331\205\330\267\330\247\330\250\331\202 \330\250\330\247 \331\276\330\247\333\214"
-   "\332\257\330\247\331\207 \330\257\330\247\330\257\331\207 \330\257\330\261 \330\247\333\214\331"
-   "\206\330\254\330\247 \331\206\331\205\330\247\333\214\330\264 \330\257\330\247\330\257\331\207 "
-   "\331\205\333\214 \330\264\331\210\330\257.",
-   "\331\210\330\247\330\261\330\257 \332\251\330\261\330\257\331\206 \331\205\330\255\330\252\331"
-   "\210\330\247",
-   "\330\250\330\247 \330\247\330\263\332\251\331\206 \331\205\330\255\330\252\331\210\330\247\330"
-   "\214 \331\204\333\214\330\263\330\252 \331\207\330\247\333\214 \331\276\330\256\330\264 \330\261"
-   "\330\247 \330\247\333\214\330\254\330\247\330\257 \331\210 \330\250\331\207\342\200\214\330\261"
-   "\331\210\330\262 \332\251\331\206\333\214\330\257.",
-   "\330\263\331\206\330\257 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214",
-   "\331\205\330\257\333\214\330\261\333\214\330\252 \331\210 \330\247\333\214\330\254\330\247\330"
-   "\257 \330\247\330\263\331\206\330\247\330\257 \331\276\333\214\332\251\330\261\330\250\331\206"
-   "\330\257\333\214.",
-   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\276\333\214\332\251\330"
-   "\261\330\250\331\206\330\257\333\214",
-   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\276\333\214\332\251\330"
-   "\261\330\250\331\206\330\257\333\214 \331\205\331\210\330\254\331\210\330\257 \331\210 \330\254"
-   "\330\247\333\214\332\257\330\262\333\214\331\206\333\214 \331\205\331\202\330\247\330\257\333"
-   "\214\330\261 \331\201\330\271\331\204\333\214.",
-   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\276\333\214\332\251\330\261\330\250\331"
-   "\206\330\257\333\214 \331\201\330\271\331\204\333\214",
-   "\330\250\330\247\330\262\331\206\331\210\333\214\330\263\333\214 \330\261\331\210\333\214 \330"
-   "\263\331\206\330\257 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \331\201"
-   "\330\271\331\204\333\214.",
-   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\276\333\214\332\251\330\261\330\250\331"
-   "\206\330\257\333\214 \330\254\330\257\333\214\330\257",
-   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\276\333\214\332\251\330\261\330\250\331"
-   "\206\330\257\333\214 \331\201\330\271\331\204\333\214 \330\257\330\261 \333\214\332\251 \331\201"
-   "\330\247\333\214\331\204 \330\254\330\257\330\247\332\257\330\247\331\206\331\207.",
-   "\330\250\330\247\330\262\331\206\330\264\330\247\331\206\333\214 \330\250\331\207 \330\255\330"
-   "\247\331\204\330\252 \331\276\333\214\330\264\342\200\214\331\201\330\261\330\266",
-   "\330\250\330\247\330\262\331\206\330\264\330\247\331\206\333\214 \331\276\333\214\332\251\330"
-   "\261\330\250\331\206\330\257\333\214 \331\201\330\271\331\204\333\214 \330\250\331\207 \331\205"
-   "\331\202\330\247\330\257\333\214\330\261 \331\276\333\214\330\264\331\201\330\261\330\266.",
-   "\332\251\331\205\332\251",
-   "\330\257\330\261\330\250\330\247\330\261\331\207 \330\267\330\261\330\262 \332\251\330\247\330"
-   "\261 \330\250\330\261\331\206\330\247\331\205\331\207 \330\250\333\214\330\264\330\252\330\261 "
-   "\330\250\333\214\330\247\331\205\331\210\330\262\333\214\330\257.",
-   "\331\206\331\205\330\247\333\214\330\264 \331\201\331\207\330\261\330\263\330\252 \331\205\333"
-   "\214\330\262\332\251\330\247\330\261",
-   "\330\250\330\247\330\262 \332\251\330\261\330\257\331\206 \331\201\331\207\330\261\330\263\330"
-   "\252 \330\263\331\206\330\252\333\214 \331\205\333\214\330\262\332\251\330\247\330\261.",
-   "\330\250\330\247\330\262\333\214 \330\264\330\250\332\251\331\207\342\200\214\330\247\333\214",
-   "\331\205\333\214\330\262\330\250\330\247\331\206\333\214 \333\214\330\247 \331\276\333\214\331"
-   "\210\330\263\330\252\331\206 \330\250\331\207 \331\206\330\264\330\263\330\252 \330\250\330\247"
-   "\330\262\333\214 \330\264\330\250\332\251\331\207\342\200\214\330\247\333\214.",
-   "\330\250\331\207\342\200\214\330\261\331\210\330\262\330\261\330\263\330\247\331\206 \330\250"
-   "\330\261\330\256\330\267",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \330\247\331\201\330\262\331\210\331"
-   "\206\331\207\330\214 \331\205\330\244\331\204\331\201\331\207 \331\210 \331\205\330\255\330\252"
-   "\331\210\330\247 \330\250\330\261\330\247\333\214 \330\261\330\252\330\261\331\210\330\242\330"
-   "\261\332\206.",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252",
-   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\250\330\261\331\206\330"
-   "\247\331\205\331\207.",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252",
-   "\331\206\331\205\330\247\333\214\330\264 \330\247\330\267\331\204\330\247\330\271\330\247\330"
-   "\252 \330\263\330\247\331\205\330\247\331\206\331\207.",
-   "\330\264\330\261\331\210\330\271 \331\205\330\254\330\257\330\257",
-   "\330\264\330\261\331\210\330\271 \331\205\330\254\330\257\330\257 \331\206\330\261\331\205\342"
-   "\200\214\330\247\331\201\330\262\330\247\330\261 \330\261\330\252\330\261\331\210\330\242\330"
-   "\261\332\206.",
-   "\330\256\330\261\331\210\330\254",
-   "\330\256\330\261\331\210\330\254 \330\247\330\262 \331\206\330\261\331\205\342\200\214\330\247"
-   "\331\201\330\262\330\247\330\261 \330\261\330\252\330\261\331\210\330\242\330\261\332\206. \330"
-   "\260\330\256\333\214\330\261\331\207\331\224 \331\276\333\214\332\251\330\261\330\250\331\206"
-   "\330\257\333\214 \330\257\330\261 \330\262\331\205\330\247\331\206 \330\256\330\261\331\210\330"
-   "\254 \331\201\330\271\330\247\331\204 \330\247\330\263\330\252.",
-   "\330\256\330\261\331\210\330\254 \330\247\330\262 \331\206\330\261\331\205\342\200\214\330\247"
-   "\331\201\330\262\330\247\330\261 \330\261\330\252\330\261\331\210\330\242\330\261\332\206. \330"
-   "\260\330\256\333\214\330\261\331\207\331\224 \331\276\333\214\332\251\330\261\330\250\331\206"
-   "\330\257\333\214 \330\257\330\261 \330\262\331\205\330\247\331\206 \330\256\330\261\331\210\330"
-   "\254 \330\272\333\214\330\261\331\201\330\271\330\247\331\204 \330\247\330\263\330\252.",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\207\330\263\330\252\331\207",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\210 \331\206\330\265\330\250 \333"
-   "\214\332\251 \331\207\330\263\330\252\331\207 \330\247\330\262 \330\250\331\207\342\200\214\330"
-   "\261\331\210\330\262\330\261\330\263\330\247\331\206 \330\250\330\261\330\256\330\267.",
-   "\331\206\330\265\330\250 \333\214\330\247 \330\250\330\247\330\262\330\263\330\247\330\262\333"
-   "\214 \333\214\332\251 \331\207\330\263\330\252\331\207",
-   "\333\214\332\251 \331\207\330\263\330\252\331\207 \330\261\330\247 \331\206\330\265\330\250 \333"
-   "\214\330\247 \330\247\330\262 \330\257\330\247\333\214\330\261\332\251\330\252\331\210\330\261"
-   "\333\214 \330\257\330\247\331\206\331\204\331\210\330\257\331\207\330\247 \330\250\330\247\330"
-   "\262\330\263\330\247\330\262\333\214 \332\251\331\206.",
-   "\331\205\330\263\333\214\330\261 \330\264\330\261\331\210\330\271",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214\342\200\214\331\207\330\247",
-   "\331\205\330\261\331\210\330\261 \330\242\330\261\330\264\333\214\331\210",
-   "\330\250\330\247\330\261\332\257\330\262\330\247\330\261\333\214 \330\242\330\261\330\264\333"
-   "\214\331\210",
-   "\331\205\331\210\330\247\330\261\330\257 \330\257\331\204\330\256\331\210\330\247\331\207",
-   "\331\205\330\255\330\252\331\210\330\247\333\214 \330\247\330\266\330\247\331\201\331\207 \330"
-   "\264\330\257\331\207 \330\250\331\207 \302\253\331\205\331\210\330\247\330\261\330\257 \330\257"
-   "\331\204\330\256\331\210\330\247\331\207\302\273 \330\257\330\261 \330\247\333\214\331\206\330"
-   "\254\330\247 \331\206\331\205\330\247\333\214\330\264 \330\257\330\247\330\257\331\207 \331\205"
-   "\333\214 \330\264\331\210\330\257.",
-   "\331\205\331\210\330\263\333\214\331\202\333\214",
-   "\331\205\331\210\330\263\333\214\331\202\333\214 \331\207\330\247\333\214\333\214 \332\251\331"
-   "\207 \331\202\330\250\331\204\330\247 \330\252\331\205\330\247\330\264\330\247 \332\251\330\261"
-   "\330\257\331\207\342\200\214\330\247\333\214\330\257 \330\247\333\214\331\206\330\254\330\247 "
-   "\331\206\330\264\330\247\331\206 \330\257\330\247\330\257\331\207 \330\256\331\210\330\247\331"
-   "\207\331\206\330\257 \330\264\330\257.",
-   "\330\252\330\265\331\210\333\214\330\261",
-   "\330\252\330\265\330\247\331\210\333\214\330\261\333\214 \332\251\331\207 \331\202\330\250\331"
-   "\204\330\247\331\213 \331\205\330\264\330\247\331\207\330\257\331\207 \332\251\330\261\330\257"
-   "\331\207\342\200\214\330\247\333\214\330\257 \330\247\333\214\331\206\330\254\330\247 \331\206"
-   "\330\264\330\247\331\206 \330\257\330\247\330\257\331\207 \330\256\331\210\330\247\331\207\331"
-   "\206\330\257 \330\264\330\257.",
-   "\331\210\333\214\330\257\330\246\331\210",
-   "\331\210\333\214\330\257\330\246\331\210\331\207\330\247\333\214\333\214 \332\251\331\207 \331"
-   "\202\330\250\331\204\330\247\331\213 \330\252\331\205\330\247\330\264\330\247 \332\251\330\261"
-   "\330\257\331\207\342\200\214\330\247\333\214\330\257 \330\247\333\214\331\206\330\254\330\247 "
-   "\331\206\330\264\330\247\331\206 \330\257\330\247\330\257\331\207 \330\256\331\210\330\247\331"
-   "\207\331\206\330\257 \330\264\330\257.",
-   "\332\251\330\247\331\210\330\264",
-   "\330\252\331\205\330\247\331\205 \331\205\330\255\330\252\331\210\330\247\333\214 \331\205\330"
-   "\267\330\247\330\250\331\202 \330\250\330\247 \331\276\330\247\333\214\332\257\330\247\331\207 "
-   "\330\257\330\247\330\257\331\207 \330\261\330\247 \330\247\330\262 \330\267\330\261\333\214\331"
-   "\202 \333\214\332\251 \330\261\330\247\330\250\330\267 \330\254\330\263\330\252\330\254\331\210"
-   "\333\214 \330\267\330\250\331\202\331\207 \330\250\331\206\330\257\333\214 \330\264\330\257\331"
-   "\207 \331\205\330\261\331\210\330\261 \332\251\331\206\333\214\330\257.",
-   "\331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \330\250\333\214\342\200"
-   "\214\331\205\330\255\330\252\331\210\330\247",
-   "\331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \331\206\330\265\330\250"
-   "\342\200\214\330\264\330\257\331\207\342\200\214\330\247\333\214 \332\251\331\207 \331\205\333"
-   "\214\342\200\214\330\252\331\210\330\247\331\206\331\206\330\257 \330\250\330\257\331\210\331"
-   "\206 \330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\205\330\255\330\252"
-   "\331\210\330\247 \332\251\330\247\330\261 \332\251\331\206\331\206\330\257\330\214 \330\247\333"
-   "\214\331\206\330\254\330\247 \330\270\330\247\331\207\330\261 \331\205\333\214\342\200\214\330"
-   "\264\331\210\331\206\330\257.",
-   "\330\257\330\261\333\214\330\247\331\201\330\252\342\200\214\332\251\331\206\331\206\330\257\331"
-   "\207\331\224 \331\207\330\263\330\252\331\207",
-   "\330\250\330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 \331\207\330\263\330"
-   "\252\331\207\342\200\214\331\207\330\247\333\214 \331\206\330\265\330\250\342\200\214\330\264"
-   "\330\257\331\207",
-   "\330\252\331\205\330\247\331\205 \331\207\330\263\330\252\331\207 \331\207\330\247\333\214 \331"
-   "\206\330\265\330\250 \330\264\330\257\331\207 \330\261\330\247 \330\250\331\207 \330\242\330\256"
-   "\330\261\333\214\331\206 \331\206\330\263\330\256\331\207 \331\205\331\210\330\254\331\210\330"
-   "\257 \330\250\331\207 \330\261\331\210\330\262 \332\251\331\206\333\214\330\257.",
-   "\330\252\330\272\333\214\333\214\330\261 \331\207\330\263\330\252\331\207 \331\207\330\247 \330"
-   "\250\331\207 \331\206\330\263\330\256\331\207 \331\207\330\247\333\214 Play store",
-   "\330\257\330\261 \330\265\331\210\330\261\330\252 \331\210\330\254\331\210\330\257\330\214 \330"
-   "\252\331\205\330\247\331\205 \331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333"
-   "\214 \331\202\330\257\333\214\331\205\333\214 \331\210 \331\206\330\265\330\250\342\200\214\330"
-   "\264\330\257\331\207 \330\257\330\263\330\252\333\214 \330\261\330\247 \330\250\330\247 \330\242"
-   "\330\256\330\261\333\214\331\206 \331\206\330\263\330\256\331\207\342\200\214\331\207\330\247"
-   "\333\214 Play Store\330\214 \330\254\330\247\333\214\332\257\330\262\333\214\331\206 \332\251"
-   "\331\206\333\214\330\257.",
-   "\330\250\331\207\342\200\214\330\261\331\210\330\262\330\261\330\263\330\247\331\206 \330\252"
-   "\330\265\330\247\331\210\333\214\330\261 \330\250\331\206\330\257\330\247\331\206\332\257\330"
-   "\264\330\252\333\214 \331\204\333\214\330\263\330\252 \331\276\330\256\330\264",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \330\252\330\265\330\247\331\210\333"
-   "\214\330\261 \330\250\331\206\330\257\330\247\331\206\332\257\330\264\330\252\333\214 \330\250"
-   "\330\261\330\247\333\214 \331\210\330\261\331\210\330\257\333\214\342\200\214\331\207\330\247 "
-   "\330\257\330\261 \331\204\333\214\330\263\330\252 \331\276\330\256\330\264 \330\247\331\206\330"
-   "\252\330\256\330\247\330\250 \330\264\330\257\331\207.",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214\342\200\214\332\251\331\206\331\206\330"
-   "\257\331\207\331\224 \331\205\330\255\330\252\331\210\330\247",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\205\330\255\330\252\331\210\330"
-   "\247\333\214 \330\261\330\247\333\214\332\257\330\247\331\206 \330\250\330\261\330\247\333\214 "
-   "\331\207\330\263\330\252\331\207\331\224 \330\250\330\261\332\257\330\262\333\214\330\257\331"
-   "\207 \330\264\330\257\331\207.",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \332\251\331\206\331\206\330\257\331"
-   "\207\331\224 \331\276\330\261\331\210\331\206\330\257\331\207\342\200\214\331\207\330\247\333"
-   "\214 \330\263\333\214\330\263\331\205\330\252\333\214 \331\207\330\263\330\252\331\207\342\200"
-   "\214\331\207\330\247",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\276\330\261\331\210\331\206\330"
-   "\257\331\207\342\200\214\331\207\330\247\333\214 \330\263\333\214\330\263\330\252\331\205\333"
-   "\214 \332\251\331\205\332\251\333\214 \331\205\331\210\330\261\330\257\331\206\333\214\330\247"
-   "\330\262 \330\250\330\261\330\247\333\214 \332\251\330\247\330\261\332\251\330\261\330\257 \331"
-   "\205\331\206\330\247\330\263\330\250/\330\250\331\207\333\214\331\206\331\207\331\224 \331\207"
-   "\330\263\330\252\331\207.",
-   "\330\250\331\207\342\200\214\330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 "
-   "\331\201\330\247\333\214\331\204 \331\207\330\247\333\214 \330\247\330\267\331\204\330\247\330"
-   "\271\330\247\330\252 \331\207\330\263\330\252\331\207",
-   "\330\250\331\207 \330\261\331\210\330\262 \330\261\330\263\330\247\331\206\333\214 \330\257\330"
-   "\247\330\261\330\247\333\214\333\214 \331\207\330\247",
-   "\330\250\331\207 \330\261\331\210\330\262\342\200\214\330\261\330\263\330\247\331\206\333\214 "
-   "\331\276\330\261\331\210\331\201\330\247\333\214\331\204 \331\207\330\247\333\214 \332\251\331"
-   "\206\330\252\330\261\331\204\330\261",
-   "\330\250\331\207 \330\261\331\210\330\262 \330\261\330\263\330\247\331\206\333\214 \332\251\330"
-   "\257\331\207\330\247\333\214 \330\252\331\202\331\204\330\250",
-   "\330\250\331\207 \330\261\331\210\330\262 \330\261\330\263\330\247\331\206\333\214 \331\276\330"
-   "\247\333\214\332\257\330\247\331\207\342\200\214\330\257\330\247\330\257\331\207\342\200\214\331"
-   "\207\330\247",
-   "\330\250\331\207 \330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 \331\207\331"
-   "\205\342\200\214\331\276\331\210\330\264\330\247\331\206 \331\207\330\247",
-   "\330\250\331\207 \330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 \330\263\330"
-   "\247\333\214\331\207\342\200\214\330\262\331\206 GLSL",
-   "\330\250\331\207 \330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 \330\263\330"
-   "\247\333\214\331\207\342\200\214\330\262\331\206 \331\207\330\247\333\214 Cg",
-   "\330\250\331\207 \330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 \330\263\330"
-   "\247\333\214\331\207\342\200\214\330\262\331\206 \331\207\330\247\333\214 Slang",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \331\207\330\263\330\252\331\207",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \331\205\330\261\330\250\331\210\330"
-   "\267 \330\250\331\207 \330\250\330\261\331\206\330\247\331\205\331\207/\331\207\330\263\330\252"
-   "\331\207 \330\261\330\247 \331\205\330\264\330\247\331\207\330\257\331\207 \332\251\331\206\333"
-   "\214\330\257.",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \330\257\333\214\330\263\332\251",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \331\205\330\261\330\250\331\210\330"
-   "\267 \330\250\331\207 \330\257\333\214\330\263\332\251 \331\207\330\247\333\214 \330\261\330\263"
-   "\330\247\331\206\331\207 \330\247\333\214 \331\210\330\247\330\261\330\257\330\264\330\257\331"
-   "\207 \330\261\330\247 \331\205\330\264\330\247\331\207\330\257\331\207 \332\251\331\206\333\214"
-   "\330\257.",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \330\264\330\250\332\251\331\207",
-   "\330\261\330\247\330\250\330\267(\331\207\330\247\333\214) \330\264\330\250\332\251\331\207 \331"
-   "\210 \330\242\330\257\330\261\330\263 \331\207\330\247\333\214 IP \331\205\330\261\330\252\330"
-   "\250\330\267 \330\261\330\247 \331\205\330\264\330\247\331\207\330\257\331\207 \332\251\331\206"
-   "\333\214\330\257.",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \330\263\333\214\330\263\330\252\331"
-   "\205",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \331\205\330\256\330\265\331\210\330"
-   "\265 \330\250\331\207 \330\257\330\263\330\252\332\257\330\247\331\207 \330\261\330\247 \331\205"
-   "\330\264\330\247\331\207\330\257\331\207 \332\251\331\206\333\214\330\257.",
-   "\331\205\330\257\333\214\330\261\333\214\330\252 \331\276\330\247\333\214\332\257\330\247\331"
-   "\207\342\200\214\330\257\330\247\330\257\331\207",
-   "\331\206\331\205\330\247\333\214\330\264 \331\276\330\247\333\214\332\257\330\247\331\207 \330"
-   "\257\330\247\330\257\331\207.",
-   "\331\205\330\257\333\214\330\261 \331\206\330\264\330\247\331\206\332\257\330\261",
-   "\331\206\331\205\330\247\333\214\330\264 \330\254\330\263\330\252\330\254\331\210\331\207\330"
-   "\247\333\214 \331\276\333\214\330\264\333\214\331\206.",
-   "\330\247\330\263\331\205 \331\207\330\263\330\252\331\207",
-   "\330\250\330\261\332\206\330\263\330\250 \331\207\330\263\330\252\331\207",
-   "\331\206\330\263\330\256\331\207\331\224 \331\207\330\263\330\252\331\207",
-   "\331\206\330\247\331\205 \330\263\333\214\330\263\330\252\331\205",
-   "\330\252\331\210\331\204\333\214\330\257\332\251\331\206\331\206\330\257\331\207\331\224 \330"
-   "\263\333\214\330\263\330\252\331\205",
-   "\330\257\330\263\330\252\331\207\342\200\214\331\207\330\247",
-   "\331\206\331\210\333\214\330\263\331\206\330\257\331\207",
-   "\330\257\330\263\330\252\330\261\330\263\333\214\342\200\214\331\207\330\247",
-   "\332\257\331\210\330\247\331\207\333\214\331\206\330\247\331\205\331\207",
-   "\330\247\331\201\330\262\331\210\331\206\331\207\342\200\214\331\207\330\247\333\214 \331\276"
-   "\330\264\330\252\333\214\330\250\330\247\331\206\333\214\342\200\214\330\264\330\257\331\207",
-   "API \332\257\330\261\330\247\331\201\333\214\332\251\333\214 \331\205\331\210\330\261\330\257 "
-   "\331\206\333\214\330\247\330\262",
-   "\331\276\330\264\330\252\333\214\330\250\330\247\331\206\333\214 \330\247\330\262 \330\260\330"
-   "\256\333\214\330\261\331\207\331\224 \331\210\330\266\330\271\333\214\330\252",
-   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
-   "\331\276\330\247\333\214\331\207\342\200\214\330\247\333\214 (\330\260\330\256\333\214\330\261"
-   "\331\207/\330\250\330\247\330\261\332\257\333\214\330\261\333\214)",
-   "\332\206\331\206\330\257\330\250\330\256\330\264\333\214 (\330\260\330\256\333\214\330\261\331"
-   "\207/\330\250\330\247\330\261\332\257\333\214\330\261\333\214\330\214 \330\271\331\202\330\250"
-   "\342\200\214\332\257\330\261\330\257)",
-   "\330\257\331\202\333\214\331\202 (\330\260\330\256\333\214\330\261\331\207/\330\250\330\247\330"
-   "\261\332\257\333\214\330\261\333\214\330\214 \330\271\331\202\330\250\342\200\214\332\257\330"
-   "\261\330\257\330\214 \331\276\333\214\330\264\342\200\214\330\247\330\254\330\261\330\247\330"
-   "\214 \330\250\330\247\330\262\333\214 \330\264\330\250\332\251\331\207\342\200\214\330\247\333"
-   "\214)",
-   "\330\263\331\201\330\252\342\200\214\330\247\331\201\330\262\330\247\330\261",
-   "\331\206\330\247\331\205\331\210\330\254\331\210\330\257\330\214 \331\204\330\247\330\262\331"
-   "\205:",
-   "\331\206\330\247\331\205\331\210\330\254\331\210\330\257\330\214 \330\247\330\256\330\252\333"
-   "\214\330\247\330\261\333\214:",
-   "\331\205\331\210\330\254\331\210\330\257\330\214 \331\204\330\247\330\262\331\205:",
-   "\331\205\331\210\330\254\331\210\330\257\330\214 \330\247\330\256\330\252\333\214\330\247\330"
-   "\261\333\214:",
-   "\331\202\331\201\331\204 \332\251\330\261\330\257\331\206 \331\207\330\263\330\252\331\207\331"
-   "\224 \331\206\330\265\330\250\342\200\214\330\264\330\257\331\207",
-   "\330\247\330\262 \332\257\330\262\333\214\331\206\332\257\330\247\331\206 \302\253\331\207\330"
-   "\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \330\250\330\257\331\210\331\206 \331"
-   "\205\330\255\330\252\331\210\330\247\302\273 \330\255\330\260\331\201 \332\251\331\206",
-   "\330\254\331\204\331\210\332\257\333\214\330\261\333\214 \330\247\330\262 \331\206\331\205\330"
-   "\247\333\214\330\264 \330\257\330\247\330\257\331\206 \330\247\333\214\331\206 \331\207\330\263"
-   "\330\252\331\207 \330\257\330\261 \332\257\330\262\333\214\331\206\332\257\330\247\331\206/\330"
-   "\262\330\250\330\247\331\206\331\207\331\224 \302\253\331\207\330\263\330\252\331\207\342\200"
-   "\214\331\207\330\247\333\214 \330\250\330\257\331\210\331\206 \331\205\330\255\330\252\331\210"
-   "\330\247\302\273. \331\201\331\202\330\267 \331\210\331\202\330\252\333\214 \332\251\331\207 "
-   "\330\255\330\247\331\204\330\252 \331\206\331\205\330\247\333\214\330\264 \330\261\331\210\333"
-   "\214 \330\263\331\201\330\247\330\261\330\264\333\214 \330\252\331\206\330\270\333\214\331\205 "
-   "\330\264\330\257\331\207 \330\250\330\247\330\264\330\257 \330\247\330\271\331\205\330\247\331"
-   "\204 \331\205\333\214\342\200\214\330\264\331\210\330\257.",
-   "\330\255\330\260\331\201 \331\207\330\263\330\252\331\207",
-   "\330\255\330\260\331\201 \330\247\333\214\331\206 \331\207\330\263\330\252\331\207 \330\247\330"
-   "\262 \330\257\333\214\330\263\332\251.",
-   "\331\276\330\264\330\252\333\214\330\250\330\247\331\206\342\200\214\332\257\333\214\330\261\333"
-   "\214 \330\247\330\262 \331\207\330\263\330\252\331\207",
-   "\330\263\330\247\330\256\330\252 \333\214\332\251 \331\276\330\264\330\252\333\214\330\250\330"
-   "\247\331\206 \330\242\330\261\330\264\333\214\331\210\330\264\330\257\331\207 \330\247\330\262 "
-   "\331\207\330\263\330\252\331\207\331\224 \331\206\330\265\330\250\342\200\214\330\264\330\257"
-   "\331\207\331\224 \332\251\331\206\331\210\331\206\333\214.",
-   "\330\250\330\247\330\262\330\263\330\247\330\262\333\214 \331\276\330\264\330\252\333\214\330"
-   "\250\330\247\331\206",
-   "\331\206\330\265\330\250 \333\214\332\251 \331\206\330\263\330\256\331\207\331\224 \331\276\333"
-   "\214\330\264\333\214\331\206 \331\207\330\263\330\252\331\207 \330\247\330\262 \331\201\331\207"
-   "\330\261\330\263\330\252 \331\276\330\264\330\252\333\214\330\250\330\247\331\206\342\200\214"
-   "\331\207\330\247\333\214 \330\242\330\261\330\264\333\214\331\210\330\264\330\257\331\207.",
-   "\330\255\330\260\331\201 \331\206\330\263\330\256\331\207\331\224 \331\276\330\264\330\252\333"
-   "\214\330\250\330\247\331\206",
-   "\330\255\330\260\331\201 \333\214\332\251 \331\276\330\261\331\210\331\206\330\257\331\207 \330"
-   "\247\330\262 \331\201\331\207\330\261\330\263\330\252 \331\276\330\264\330\252\333\214\330\250"
-   "\330\247\331\206\342\200\214\331\207\330\247\333\214 \330\242\330\261\330\264\333\214\331\210"
-   "\330\264\330\257\331\207.",
-   "CRC\333\263\333\262: ",
-   "\330\252\330\247\330\261\333\214\330\256 \330\263\330\247\330\256\330\252",
-   "\331\206\330\263\330\256\331\207\331\224 \330\261\330\252\330\261\331\210\330\242\330\261\332"
-   "\206",
-   "\331\206\330\263\330\256\331\207\331\224 Git",
-   "\332\251\331\205\331\276\330\247\333\214\331\204\330\261",
-   "\331\205\330\257\331\204 \331\276\330\261\330\257\330\247\330\262\331\206\330\257\331\207",
-   "\331\210\333\214\332\230\332\257\333\214\342\200\214\331\207\330\247\333\214 \331\276\330\261"
-   "\330\257\330\247\330\262\331\206\330\257\331\207",
-   "\331\205\330\271\331\205\330\247\330\261\333\214 \331\276\330\261\330\257\330\247\330\262\331"
-   "\206\330\257\331\207",
-   "\331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \331\276\330\261\330\257"
-   "\330\247\330\262\331\206\330\257\331\207",
-   "JIT \330\257\330\261 \330\257\330\263\330\252\330\261\330\263",
-   "\330\264\331\206\330\247\330\263\331\207\331\224 \331\276\333\214\330\264\330\247\331\206\331"
-   "\207",
-   "\330\263\333\214\330\263\330\252\331\205 \330\271\330\247\331\205\331\204 \331\276\333\214\330"
-   "\264\330\247\331\206\331\207",
-   "\331\205\331\206\330\250\330\271 \331\206\333\214\330\261\331\210",
-   "\331\202\330\247\330\271\330\257\331\207\331\224 \331\206\331\205\330\247\333\214\330\264\332"
-   "\257\330\261 (\331\205\333\214\331\204\333\214\342\200\214\331\205\330\252\330\261)",
-   "\330\247\330\261\330\252\331\201\330\247\330\271 \331\206\331\205\330\247\333\214\330\264\332"
-   "\257\330\261 (\331\205\333\214\331\204\333\214\342\200\214\331\205\330\252\330\261)",
-   "\331\206\331\202\330\267\331\207 \330\257\330\261 \330\247\333\214\331\206\332\206 \331\206\331"
-   "\205\330\247\333\214\330\264\332\257\330\261",
-   "\331\206\330\247\331\205",
-   "\330\257\330\261\330\250\330\247\330\261\331\207",
-   "\330\264\330\247\330\256\331\207",
-   "\330\257\330\263\330\252\330\247\331\210\330\261\330\257\331\207\330\247",
-   "\330\257\330\263\330\252\331\207",
-   "\330\262\330\250\330\247\331\206",
-   "\331\205\331\206\330\267\331\202\331\207",
-   "\330\250\330\263\330\252\331\207 \330\250\331\207 \332\251\331\206\330\263\331\210\331\204",
-   "\330\250\330\263\330\252\331\207 \330\250\331\207 \330\263\332\251\331\221\331\210",
-   "\330\247\331\205\330\252\333\214\330\247\330\262",
-   "\330\261\330\263\330\247\331\206\331\207",
-   "\332\251\331\206\330\252\330\261\331\204\342\200\214\331\207\330\247",
-   "\330\263\330\250\332\251 \331\207\331\206\330\261\333\214",
-   "\332\257\333\214\331\205\342\200\214\331\276\331\204\333\214",
-   "\330\261\331\210\330\247\333\214\330\252\332\257\330\261",
-   "\332\230\330\261\331\201\330\247\331\206\331\205\330\247\333\214\333\214",
-   "\330\263\330\247\331\205\330\247\331\206\330\257\331\207\333\214",
-   "\330\257\333\214\330\257\330\247\330\261\333\214",
-   "\331\276\330\256\330\264 \332\251\331\206\331\206\330\257\331\207",
-   "\330\263\330\247\330\262\331\206\330\257\331\207",
-   "\331\205\330\250\330\257\330\247",
-   "\331\201\330\261\331\206\332\206\330\247\333\214\330\262",
-   "\330\257\330\261\330\254\331\207\342\200\214\330\250\331\206\330\257\333\214 TGDB",
-   "\330\247\331\205\330\252\333\214\330\247\330\262 \331\205\330\254\331\204\331\207\331\224 Famits"
-   "u",
-   "\331\206\331\202\330\257 \331\205\330\254\331\204\331\207\331\224 Edge",
-   "\330\247\331\205\330\252\333\214\330\247\330\262 \331\205\330\254\331\204\331\207\331\224 Edge",
-   "\330\264\331\205\330\247\330\261\331\207\331\224 \331\205\330\254\331\204\331\207\331\224 Edge",
-   "\331\205\330\247\331\207 \330\247\331\206\330\252\330\264\330\247\330\261",
-   "\330\263\330\247\331\204 \330\247\331\206\330\252\330\264\330\247\330\261",
-   "\330\257\330\261\330\254\331\207\342\200\214\330\250\331\206\330\257\333\214 BBFC",
-   "\330\257\330\261\330\254\331\207\342\200\214\330\250\331\206\330\257\333\214 ESRB",
-   "\330\257\330\261\330\254\331\207\342\200\214\330\250\331\206\330\257\333\214 ELSPA",
-   "\330\261\330\257\331\207\342\200\214\330\250\331\206\330\257\333\214 PEGI",
-   "\330\261\330\257\331\207\342\200\214\330\250\331\206\330\257\333\214 CERO",
-   "\330\263\330\261\333\214\330\247\331\204",
-   "\331\276\330\264\330\252\333\214\330\250\330\247\331\206\333\214 \330\247\330\262 \330\242\331"
-   "\206\330\247\331\204\331\210\332\257",
-   "\331\276\330\264\330\252\333\214\330\250\330\247\331\206\333\214 \330\247\330\262 \331\204\330"
-   "\261\330\262\330\264",
-   "\331\276\333\214\331\205\330\247\333\214\330\264 \330\250\331\207 \330\250\330\247\331\204\330"
-   "\247",
-   "\333\214\331\205\330\247\333\214\330\264 \330\250\331\207 \331\276\330\247\333\214\333\214\331"
-   "\206",
-   "\330\252\330\243\333\214\333\214\330\257",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252",
-   "\330\242\330\272\330\247\330\262",
-   "\330\252\330\272\333\214\333\214\330\261 \331\210\330\266\330\271\333\214\330\252 \331\201\331"
-   "\207\330\261\330\263\330\252",
-   "\330\256\330\261\331\210\330\254",
-   "\330\252\330\272\333\214\333\214\330\261 \331\210\330\266\330\271\333\214\330\252 \330\265\331"
-   "\201\330\255\331\207\342\200\214\332\251\331\204\333\214\330\257",
-   "\330\257\330\261\330\247\333\214\331\210\330\261\331\207\330\247",
-   "\330\252\330\272\333\214\333\214\330\261 \330\257\330\261\330\247\333\214\331\210\330\261\331"
-   "\207\330\247\333\214 \331\205\331\210\330\261\330\257 \330\247\330\263\330\252\331\201\330\247"
-   "\330\257\331\207\331\224 \330\263\333\214\330\263\330\252\331\205.",
-   "\331\210\333\214\330\257\333\214\331\210",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\256\330\261\331\210\330\254\333"
-   "\214 \331\210\333\214\330\257\333\214\331\210 \330\261\330\247 \330\252\330\272\333\214\333\214"
-   "\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\263\333\214\332\257\331\206\330\247\331\204\342\200\214\331\207\330\247\333\214 \330\250"
-   "\331\210\331\205\333\214 \330\250\330\247 \330\252\331\201\332\251\333\214\332\251\342\200\214"
-   "\331\276\330\260\333\214\330\261\333\214 \331\276\330\247\333\214\333\214\331\206 \331\205\331"
-   "\206\330\247\330\263\330\250 \331\206\331\205\330\247\333\214\330\264\332\257\330\261\331\207"
-   "\330\247\333\214 CRT \330\261\330\247 \330\250\331\207 \330\256\330\261\331\210\330\254\333\214 "
-   "\330\250\330\257\331\207\333\214\330\257.",
-   "\330\256\330\261\331\210\330\254\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\256\330\261\331\210\330\254\333"
-   "\214 \331\210\333\214\330\257\333\214\331\210 \330\261\330\247 \330\252\330\272\333\214\333\214"
-   "\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\265\330\257\330\247",
-   "\330\252\330\272\333\214\333\214\330\261 \330\252\331\206\330\270\333\214\331\205\330\247\330"
-   "\252 \331\210\330\261\331\210\330\257\333\214/\330\256\330\261\331\210\330\254\333\214 \330\265"
-   "\330\257\330\247\330\252\330\272\333\214\333\214\330\261.",
-   "\330\252\330\261\332\251\333\214\330\250\342\200\214\332\251\331\206\331\206\330\257\331\207",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\252\330\261\332\251\333\214\330"
-   "\250\342\200\214\332\251\331\206\331\206\330\257\331\207\331\224 \330\265\330\257\330\247 \330"
-   "\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\265\330\257\330\247\331\207\330\247\333\214 \331\201\331\207\330\261\330\263\330\252",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\265\330\257\330\247\333\214 \331"
-   "\201\331\207\330\261\330\263\330\252 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 "
-   "\330\257\331\207\333\214\330\257.",
-   "\331\210\330\261\331\210\330\257\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \332\251\331\206\330\252\330\261\331"
-   "\204\330\261\330\214 \331\205\330\247\331\210\330\263 \331\210 \330\265\331\201\330\255\331\207"
-   "\342\200\214\332\251\331\204\333\214\330\257 \330\261\330\247 \330\252\330\272\333\214\333\214"
-   "\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\252\330\243\330\256\333\214\330\261",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\330\261\330\250\331\210\330"
-   "\267 \330\250\331\207 \330\252\330\243\330\256\333\214\330\261 \331\210\333\214\330\257\333\214"
-   "\331\210\330\214 \330\265\330\257\330\247 \331\210 \331\210\330\261\331\210\330\257\333\214 \330"
-   "\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\331\207\330\263\330\252\331\207",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\207\330\263\330\252\331\207 \330"
-   "\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\276\333\214\330\264\342\200\214"
-   "\331\201\330\261\330\266 \330\250\330\261\330\247\333\214 \331\201\330\247\333\214\331\204\342"
-   "\200\214\331\207\330\247\333\214 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333"
-   "\214 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\260\330\256\333\214\330\261\331\207 \332\251\330\261\330\257\331\206",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\260\330\256\333\214\330\261\331"
-   "\207 \332\251\330\261\330\257\331\206 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 "
-   "\330\257\331\207\333\214\330\257.",
-   "\330\253\330\250\330\252 \332\257\330\262\330\247\330\261\330\264\342\200\214\331\207\330\247",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\253\330\250\330\252 \332\257\330"
-   "\262\330\247\330\261\330\264 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257"
-   "\331\207\333\214\330\257.",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\250\330\261\332\257\330\261\330"
-   "\257\330\247\331\206\330\257\331\206 \330\252\330\265\331\210\333\214\330\261\330\214 \330\254"
-   "\331\204\331\210 \332\251\330\264\333\214\330\257\331\206 \330\252\330\265\331\210\333\214\330"
-   "\261 \331\210 \330\252\330\265\331\210\333\214\330\261 \330\242\331\207\330\263\330\252\331\207 "
-   "\330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\250\330\261\332\257\330\261\330\257\330\247\331\206\330\257\331\206",
-   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330\247"
-   "\330\250\330\261\333\214",
-   "\330\252\330\272\333\214\333\214\330\261 \330\252\331\206\330\270\333\214\331\205\330\247\330"
-   "\252 \331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330"
-   "\247\330\250\330\261\333\214.",
-   "\331\201\330\271\330\247\331\204\342\200\214\330\263\330\247\330\262\333\214 \331\207\331\205"
-   "\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330\247\330\250\330\261"
-   "\333\214",
-   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330\247"
-   "\330\250\330\261\333\214 \330\252\330\256\330\261\333\214\330\250\333\214",
-   "\330\257\330\263\330\252\333\214",
-   "\330\264\333\214\331\210\331\207\342\200\214\331\206\330\247\331\205\331\207\331\224 \330\264"
-   "\330\250\332\251\331\207\331\224 \331\201\330\266\330\247\333\214 \330\247\330\250\330\261\333"
-   "\214 \332\251\331\207 \330\250\330\247\333\214\330\257 \330\247\330\263\330\252\331\201\330\247"
-   "\330\257\331\207 \330\264\331\210\330\257.",
-   "\331\206\330\264\330\247\331\206\333\214 \331\205\330\255\331\204 \330\260\330\256\333\214\330"
-   "\261\331\207\342\200\214\330\263\330\247\330\262\333\214 \330\247\330\250\330\261\333\214",
-   "\331\206\330\247\331\205 \332\251\330\247\330\261\330\250\330\261\333\214",
-   "\331\206\330\247\331\205 \332\251\330\247\330\261\330\250\330\261\333\214 \330\255\330\263\330"
-   "\247\330\250 \331\201\330\266\330\247\333\214 \330\247\330\250\330\261\333\214 \330\264\331\205"
-   "\330\247.",
-   "\332\257\330\260\330\261\331\210\330\247\332\230\331\207",
-   "\332\257\330\260\330\261\331\210\330\247\332\230\331\207\331\224 \330\255\330\263\330\247\330"
-   "\250 \331\201\330\266\330\247\333\214 \330\247\330\250\330\261\333\214 \330\264\331\205\330\247.",
-   "\331\206\331\205\330\247\333\214\330\264 \330\261\331\210\333\214 \330\265\331\201\330\255\331"
-   "\207",
-   "\330\252\330\272\333\214\330\261 \330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330"
-   "\247\330\271\331\204\330\247\331\206\330\247\330\252 \330\261\331\210\333\214 \330\265\331\201"
-   "\330\255\331\207\330\214 \331\207\331\205\342\200\214\331\276\331\210\330\264\330\247\331\206 "
-   "\330\265\331\201\330\255\331\207\342\200\214\332\251\331\204\333\214\330\257 \331\210 \331\207"
-   "\331\205\342\200\214\331\276\331\210\330\264\330\247\331\206 \331\206\331\205\330\247\333\214"
-   "\330\264\332\257\330\261.",
-   "\331\206\331\205\330\247\333\214\330\264 \330\247\330\271\331\204\330\247\331\206",
-#ifdef _3DS
-   "\331\206\331\205\330\247\333\214\330\264 \331\206\331\205\330\247\333\214\330\264\332\257\330"
-   "\261 \331\276\330\247\333\214\333\214\331\206\333\214 3DS",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\206\331\205\330\247\333\214\330"
-   "\264 \331\206\331\205\330\247\333\214\330\264\332\257\330\261 \331\276\330\247\333\214\333\214"
-   "\331\206\333\214 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333"
-   "\214\330\257.",
-#endif
-   "\331\201\331\207\330\261\330\263\330\252 \330\263\330\261\333\214\330\271",
-   "\330\263\330\247\331\205\330\247\331\206\330\257\331\207\333\214",
-   "\330\261\330\247\330\250\330\267 \332\251\330\247\330\261\330\250\330\261\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\261\330\247\330\250\330\267 \332"
-   "\251\330\247\330\261\330\250\330\261\333\214 \330\261\330\247 \330\252\330\272\333\214\333\214"
-   "\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\256\330\257\331\205\330\252 \331\207\331\210\330\264 \331\205\330\265\331\206\331\210\330"
-   "\271\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\330\261\330\250\331\210\330"
-   "\267 \330\250\331\207 \330\256\330\257\331\205\330\252 \331\207\331\210\330\264 \331\205\330\265"
-   "\331\206\331\210\330\271\333\214 (\330\252\330\261\330\254\331\205\331\207/\330\252\330\250\330"
-   "\257\333\214\331\204 \331\205\330\252\331\206 \330\250\331\207 \332\257\331\201\330\252\330\247"
-   "\330\261/\331\205\330\252\331\201\330\261\331\202\331\207) \330\261\330\247 \330\252\330\272\333"
-   "\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\257\330\263\330\252\330\261\330\263\333\214\342\200\214\331\276\330\260\333\214\330\261\333"
-   "\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \332\257\331\201\330\252\330\247\330"
-   "\261 \330\257\330\263\330\252\330\261\330\263\333\214\342\200\214\331\276\330\260\333\214\330"
-   "\261\333\214 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214"
-   "\330\257.",
-   "\331\205\330\257\333\214\330\261\333\214\330\252 \331\206\333\214\330\261\331\210",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\330\257\333\214\330\261\333"
-   "\214\330\252 \331\206\333\214\330\261\331\210 \330\261\330\247 \330\252\330\272\333\214\333\214"
-   "\330\261 \330\257\331\207\333\214\330\257.",
-   "\331\205\330\261\331\210\330\261\332\257\330\261 \331\201\330\247\333\214\331\204",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\330\261\331\210\330\261\332"
-   "\257\330\261 \330\263\331\206\330\257.",
-   "\330\257\330\263\330\252\330\247\331\210\330\261\330\257\331\207\330\247",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\330\261\330\250\331\210\330"
-   "\267 \330\250\331\207 \330\257\330\263\330\252\330\247\331\210\330\261\330\257\331\207\330\247 "
-   "\330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\263\331\206\330\257 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214.",
+   "\330\263\331\206\330\257 \330\252\331\202\331\204\330\250.",
    "\331\276\330\261\331\210\331\206\330\257\331\207\331\224 \330\250\330\247\333\214\332\257\330"
    "\247\331\206\333\214 \331\201\330\264\330\261\330\257\331\207.",
-   "\330\263\331\206\330\257 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330"
-   "\266\330\250\330\267.",
    "\330\263\331\206\330\257 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214.",
-   "\330\263\331\206\330\257 \330\264\333\214\330\257\330\261.",
-   "\330\263\331\206\330\257 \330\252\331\202\331\204\330\250.",
-   "\330\263\331\206\330\257 \331\207\331\205\342\200\214\331\276\331\210\330\264\330\247\331\206.",
-   "\330\263\331\206\330\257 \331\276\330\247\333\214\332\257\330\247\331\207 \330\257\330\247\330"
-   "\257\331\207.",
+   "\331\207\330\263\330\252\331\207\331\224 \331\204\333\214\330\250\330\261\330\252\330\261\331"
+   "\210. \330\247\331\206\330\252\330\256\330\247\330\250 \330\247\333\214\331\206 \332\257\330\262"
+   "\333\214\331\206\331\207 \330\247\333\214\331\206 \331\207\330\263\330\252\331\207 \330\261\330"
+   "\247 \330\250\331\207 \330\247\333\214\331\206 \330\250\330\247\330\262\333\214 \330\247\330\256"
+   "\330\252\330\265\330\247\330\265 \331\205\333\214\342\200\214\330\257\331\207\330\257.",
    "\330\263\331\206\330\257 \331\202\331\204\331\205 TrueType.",
-   "\330\263\331\206\330\257 \330\263\330\247\330\257\331\207.",
+   "\330\263\331\206\330\257 \330\252\330\265\331\210\333\214\330\261.",
+   "\330\252\330\265\331\210\333\214\330\261. \330\250\330\261\330\247\333\214 \330\250\330\247\330"
+   "\262 \332\251\330\261\330\257\331\206 \330\263\331\206\330\257 \330\257\330\261 \331\276\330\256"
+   "\330\264\342\200\214\332\251\331\206\331\206\330\257\331\207\331\224 \330\252\330\265\331\210"
+   "\333\214\330\261 \330\247\333\214\331\206 \330\261\330\247 \330\247\331\206\330\252\330\256\330"
+   "\247\330\250 \332\251\331\206\333\214\330\257.",
    "\331\210\333\214\330\257\333\214\331\210. \330\250\330\261\330\247\333\214 \330\250\330\247\330"
    "\262 \332\251\330\261\330\257\331\206 \330\263\331\206\330\257 \330\257\330\261 \331\276\330\256"
    "\330\264\342\200\214\332\251\331\206\331\206\330\257\331\207\331\224 \331\210\333\214\330\257"
@@ -1386,62 +798,20 @@ static const struct
    "\330\256\330\264\342\200\214\332\251\331\206\331\206\330\257\331\207\331\224 \331\205\331\210"
    "\330\263\333\214\331\202\333\214 \330\247\333\214\331\206 \330\261\330\247 \330\247\331\206\330"
    "\252\330\256\330\247\330\250 \332\251\331\206\333\214\330\257.",
-   "\330\263\331\206\330\257 \330\252\330\265\331\210\333\214\330\261.",
-   "\330\252\330\265\331\210\333\214\330\261. \330\250\330\261\330\247\333\214 \330\250\330\247\330"
-   "\262 \332\251\330\261\330\257\331\206 \330\263\331\206\330\257 \330\257\330\261 \331\276\330\256"
-   "\330\264\342\200\214\332\251\331\206\331\206\330\257\331\207\331\224 \330\252\330\265\331\210"
-   "\333\214\330\261 \330\247\333\214\331\206 \330\261\330\247 \330\247\331\206\330\252\330\256\330"
-   "\247\330\250 \332\251\331\206\333\214\330\257.",
-   "\331\207\330\263\330\252\331\207\331\224 \331\204\333\214\330\250\330\261\330\252\330\261\331"
-   "\210. \330\247\331\206\330\252\330\256\330\247\330\250 \330\247\333\214\331\206 \332\257\330\262"
-   "\333\214\331\206\331\207 \330\247\333\214\331\206 \331\207\330\263\330\252\331\207 \330\261\330"
-   "\247 \330\250\331\207 \330\247\333\214\331\206 \330\250\330\247\330\262\333\214 \330\247\330\256"
-   "\330\252\330\265\330\247\330\265 \331\205\333\214\342\200\214\330\257\331\207\330\257.",
-   "\330\266\330\250\330\267",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\266\330\250\330\267 \330\261\330"
-   "\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\264\330\250\332\251\331\207",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \332\251\330\247\330\261\330\263\330"
-   "\247\330\262 \331\210 \330\264\330\250\332\251\331\207 \330\261\330\247 \330\252\330\272\333\214"
-   "\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\331\201\331\207\330\261\330\263\330\252\342\200\214\331\207\330\247\333\214 \331\276\330\256"
-   "\330\264",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\201\331\207\330\261\330\263\330"
-   "\252 \331\276\330\256\330\264 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257"
-   "\331\207\333\214\330\257.",
-   "\332\251\330\247\330\261\330\250\330\261",
-   "\331\276\331\210\330\264\331\207",
-   "\331\205\330\263\333\214\330\261\331\207\330\247\333\214 \331\276\333\214\330\264\342\200\214"
-   "\331\201\330\261\330\266\333\214 \332\251\331\207 \331\201\330\247\333\214\331\204\342\200\214"
-   "\331\207\330\247 \330\242\331\206\330\254\330\247 \331\207\330\263\330\252\331\206\330\257 \330"
-   "\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\331\207\332\251\342\200\214\331\207\330\247",
-   "\331\206\332\257\330\247\330\264\330\252",
-   "\330\261\330\263\330\247\331\206\331\207",
-   "\330\271\331\205\331\204\332\251\330\261\330\257",
-   "\330\265\330\257\330\247",
-   "\331\205\330\264\330\256\330\265\330\247\330\252",
-   "\331\205\330\255\331\204 \330\260\330\256\333\214\330\261\331\207",
-   "\330\263\333\214\330\263\330\252\331\205",
-   "\330\262\331\205\330\247\331\206\342\200\214\330\263\331\206\330\254\333\214",
-#ifdef HAVE_MIST
-   "\330\247\330\263\330\252\333\214\331\205",
-   "\330\252\330\272\333\214\333\214\330\261 \330\252\331\206\330\270\333\214\331\205\330\247\330"
-   "\252 \331\205\330\261\330\250\331\210\330\267 \330\250\331\207 \330\247\330\263\330\252\333\214"
-   "\331\205.",
-#endif
-   "\331\210\330\261\331\210\330\257\333\214",
+   "\330\263\331\206\330\257 \331\207\331\205\342\200\214\331\276\331\210\330\264\330\247\331\206.",
+   "\330\263\331\206\330\257 \330\263\330\247\330\257\331\207.",
+   "\330\263\331\206\330\257 \331\276\330\247\333\214\332\257\330\247\331\207 \330\257\330\247\330"
+   "\257\331\207.",
+   "\330\263\331\206\330\257 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330"
+   "\266\330\250\330\267.",
+   "\330\263\331\206\330\257 \330\264\333\214\330\257\330\261.",
+   "\330\263\331\206\330\257 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214.",
    "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 \331\210\330\261"
    "\331\210\330\257\333\214. \330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247"
    "\330\262 \331\210\330\261\331\210\330\257\333\214 \331\205\331\205\332\251\331\206 \330\247\330"
    "\263\330\252 \330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 \330"
    "\257\333\214\332\257\330\261\333\214 \330\261\330\247 \330\247\330\254\330\250\330\247\330\261 "
    "\332\251\331\206\330\257.",
-   "\330\257\330\263\330\252\331\207\331\224 \330\250\330\247\330\262\333\214",
-   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 \330\257\330\263"
-   "\330\252\331\207\342\200\214\330\250\330\247\330\262\333\214 \330\250\330\261\330\247\333\214 "
-   "\330\247\330\263\330\252\331\201\330\247\330\257\331\207. (\331\206\333\214\330\247\330\262\331"
-   "\205\331\206\330\257 \330\264\330\261\331\210\330\271 \331\205\330\254\330\257\330\257)",
    "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 \330\257\330\263"
    "\330\252\331\207\342\200\214\330\250\330\247\330\262\333\214 DirectInput.",
    "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 \330\257\330\263"
@@ -1470,7 +840,21 @@ static const struct
    "\330\250\330\247\331\213 \330\250\330\261\330\247\333\214 \330\257\330\263\330\252\331\207\342"
    "\200\214\330\250\330\247\330\262\333\214\342\200\214\331\207\330\247\333\214 \330\247\333\214"
    "\332\251\330\263\342\200\214\330\250\330\247\332\251\330\263.",
-   "\331\210\333\214\330\257\333\214\331\210",
+   "Ozone \330\261\330\247\330\250\330\267 \332\251\330\247\330\261\330\250\330\261\333\214 \332\257"
+   "\330\261\330\247\331\201\333\214\332\251\333\214 \331\276\333\214\330\264\342\200\214\331\201"
+   "\330\261\330\266 \330\261\330\252\330\261\331\210\330\242\330\261\332\206 \330\261\331\210\333"
+   "\214 \330\250\333\214\330\264\330\252\330\261 \330\263\332\251\331\210\331\207\330\247 \330\247"
+   "\330\263\330\252 \332\251\331\207 \330\250\330\261\330\247\333\214 \331\206\330\247\331\210\330"
+   "\250\330\261\333\214 \330\250\330\247 \330\257\330\263\330\252\331\207\342\200\214\330\250\330"
+   "\247\330\262\333\214 \330\250\331\207\333\214\331\206\331\207 \330\264\330\257\331\207 \330\247"
+   "\330\263\330\252.",
+   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 Direct3D 8 \330\250"
+   "\330\257\331\210\331\206 \331\276\330\264\330\252\333\214\330\250\330\247\331\206\333\214 \330"
+   "\247\330\262 \330\264\333\214\330\257\330\261.",
+   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 Direct3D 9 \330\250"
+   "\330\247 \331\276\330\264\330\252\333\214\330\250\330\247\331\206\333\214 \330\247\330\262 \330"
+   "\264\333\214\330\257\330\261\331\207\330\247\333\214 \330\250\330\247 \331\202\330\247\331\204"
+   "\330\250 Cg.",
    "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 OpenGL 1.x. \332"
    "\251\331\205\330\252\330\261\333\214\331\206 \331\206\332\257\330\247\330\261\330\264 \331\205"
    "\331\210\330\261\330\257\331\206\333\214\330\247\330\262: OpenGL 1.1 \330\247\330\262 \330\264"
@@ -1480,129 +864,876 @@ static const struct
    "\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262\331\207\330\247\333\214 "
    "\330\254\330\257\333\214\330\257\330\252\330\261 OpenGL \330\247\330\263\330\252\331\201\330\247"
    "\330\257\331\207 \332\251\331\206\333\214\330\257.",
-   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 Direct3D 8 \330\250"
-   "\330\257\331\210\331\206 \331\276\330\264\330\252\333\214\330\250\330\247\331\206\333\214 \330"
-   "\247\330\262 \330\264\333\214\330\257\330\261.",
-   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 Direct3D 9 \330\250"
-   "\330\247 \331\276\330\264\330\252\333\214\330\250\330\247\331\206\333\214 \330\247\330\262 \330"
-   "\264\333\214\330\257\330\261\331\207\330\247\333\214 \330\250\330\247 \331\202\330\247\331\204"
-   "\330\250 Cg.",
    "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 \331\210\333\214"
    "\330\257\333\214\331\210\333\214 \330\254\330\247\330\261\333\214.",
+   "\330\257\330\263\330\252\330\261\330\263\333\214\342\200\214\331\276\330\260\333\214\330\261\333"
+   "\214",
+   "\332\257\330\260\330\261\331\210\330\247\332\230\331\207",
+   "\331\206\330\247\331\205 \332\251\330\247\330\261\330\250\330\261\333\214",
+   "\330\255\330\263\330\247\330\250\342\200\214\331\207\330\247",
+   "\330\257\330\263\330\252\330\247\331\210\330\261\330\257\331\207\330\247",
+   "\331\210\330\247\330\261\330\257 \332\251\330\261\330\257\331\206 \331\205\330\255\330\252\331"
+   "\210\330\247",
+   "\331\210\330\247\330\261\330\257 \332\251\330\261\330\257\331\206 \331\205\330\255\330\252\331"
+   "\210\330\247",
+   "\330\247\331\201\330\262\331\210\330\257\331\206 \330\250\331\207 \331\205\331\210\330\247\330"
+   "\261\330\257 \330\257\331\204\330\256\331\210\330\247\331\207",
+   "\330\247\331\201\330\262\331\210\330\257\331\206 \330\250\331\207 \331\205\331\210\330\247\330"
+   "\261\330\257 \330\257\331\204\330\256\331\210\330\247\331\207",
+   "\330\256\330\257\331\205\330\252 \331\207\331\210\330\264 \331\205\330\265\331\206\331\210\330"
+   "\271\333\214",
+   "\330\257\330\247\330\261\330\247\333\214\333\214\342\200\214\331\207\330\247",
+   "\330\257\330\263\330\252\332\257\330\247\331\207",
    "\330\265\330\257\330\247",
-   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 OpenAL.",
-   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 OpenSL.",
-#ifdef HAVE_MICROPHONE
-   "\331\205\333\214\332\251\330\261\331\210\331\201\331\206",
-   "\330\250\330\247\330\262\331\206\331\205\331\210\331\206\331\207\342\200\214\332\257\333\214\330"
-   "\261 \331\205\333\214\332\251\330\261\331\210\331\201\331\206",
-   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 \330\250\330\247"
-   "\330\262\331\206\331\205\331\210\331\206\331\207\342\200\214\332\257\333\214\330\261 \331\205"
-   "\333\214\332\251\330\261\331\210\331\201\331\206 \330\250\330\261\330\247\333\214 \330\247\330"
-   "\263\330\252\331\201\330\247\330\257\331\207.",
-#endif
+   "\330\247\331\201\330\262\331\210\331\206\331\207\331\224 DSP",
+   "\330\255\330\260\331\201 \330\247\331\201\330\262\331\210\331\206\331\207\331\224 DSP",
+   "\330\265\330\257\330\247",
+   "\330\252\330\261\332\251\333\214\330\250\342\200\214\332\251\331\206\331\206\330\257\331\207",
+   "\330\263\330\247\332\251\330\252 \332\251\330\261\330\257\331\206 \330\252\330\261\332\251\333"
+   "\214\330\250\342\200\214\332\251\331\206\331\206\330\257\331\207",
+   "\330\252\330\261\332\251\333\214\330\250\342\200\214\332\251\331\206\331\206\330\257\331\207",
+   "\330\263\330\247\332\251\330\252",
+   "\331\206\330\261\330\256 \330\256\330\261\331\210\330\254\333\214 (\331\207\330\261\330\252\330"
+   "\262)",
+   "\330\256\330\261\331\210\330\254\333\214",
    "\330\250\330\247\330\262\331\206\331\205\331\210\331\206\331\207\342\200\214\332\257\333\214\330"
    "\261 \330\265\330\257\330\247",
-   "\330\257\330\261\330\247\333\214\331\210\330\261 \330\250\330\247\330\262\331\206\331\205\331"
-   "\210\331\206\331\207\342\200\214\332\257\333\214\330\261 \330\265\330\257\330\247 \330\250\330"
-   "\261\330\247\333\214 \330\247\330\263\330\252\331\201\330\247\330\257\331\207.",
-   "\331\276\333\214\330\247\330\257\331\207\342\200\214\330\263\330\247\330\262\333\214 Windowed Si"
-   "nc.",
-   "\331\276\333\214\330\247\330\257\331\207\342\200\214\330\263\330\247\330\262\333\214 Convoluted "
-   "Cosine.",
-   "\330\257\331\210\330\261\330\250\333\214\331\206",
-   "\330\250\331\204\331\210\330\252\331\210\330\253",
-   "\331\210\330\247\333\214 \331\201\330\247\333\214",
-   "\330\254\330\247",
-   "\331\201\331\207\330\261\330\263\330\252",
-   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 \331\201\331\207"
-   "\330\261\330\263\330\252 \330\250\330\261\330\247\333\214 \330\247\330\263\330\252\331\201\330"
-   "\247\330\257\331\207 (\331\206\333\214\330\247\330\262\331\205\331\206\330\257 \330\264\330\261"
-   "\331\210\330\271 \331\205\330\254\330\257\330\257)",
-   "Ozone \330\261\330\247\330\250\330\267 \332\251\330\247\330\261\330\250\330\261\333\214 \332\257"
-   "\330\261\330\247\331\201\333\214\332\251\333\214 \331\276\333\214\330\264\342\200\214\331\201"
-   "\330\261\330\266 \330\261\330\252\330\261\331\210\330\242\330\261\332\206 \330\261\331\210\333"
-   "\214 \330\250\333\214\330\264\330\252\330\261 \330\263\332\251\331\210\331\207\330\247 \330\247"
-   "\330\263\330\252 \332\251\331\207 \330\250\330\261\330\247\333\214 \331\206\330\247\331\210\330"
-   "\250\330\261\333\214 \330\250\330\247 \330\257\330\263\330\252\331\207\342\200\214\330\250\330"
-   "\247\330\262\333\214 \330\250\331\207\333\214\331\206\331\207 \330\264\330\257\331\207 \330\247"
-   "\330\263\330\252.",
-   "\330\266\330\250\330\267",
-   "\330\255\330\247\331\204\330\252 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201"
-   "\330\255\331\207",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\255\330\247\331\204\330\252 \330"
-   "\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207 \330\261\330\247 \330"
-   "\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\255\330\247\331\204\330\252 \331\276\331\206\330\254\330\261\331\207\342\200\214\330\247"
-   "\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\255\330\247\331\204\330\252 \331"
-   "\276\331\206\330\254\330\261\331\207\342\200\214\330\247\333\214 \330\261\330\247 \330\252\330"
-   "\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\332\251\333\214\331\201\333\214\330\252 \330\250\330\247\330\262\331\206\331\205\331\210\331"
+   "\206\331\207\342\200\214\332\257\333\214\330\261",
+   "\330\265\330\257\330\247",
    "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\207\331\205\332\257\330\247\331"
-   "\205\342\200\214\330\263\330\247\330\262\333\214 \331\210\333\214\330\257\333\214\331\210 \330"
-   "\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\331\205\331\202\333\214\330\247\330\263",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\331\202\333\214\330\247\330"
-   "\263 \331\210\333\214\330\257\333\214\331\210 \330\261\330\247 \330\252\330\272\333\214\333\214"
-   "\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\210\333\214\330\257\333\214\331"
-   "\210\333\214 HDR \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333"
-   "\214\330\257.",
+   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214",
+   "\330\252\330\243\333\214\333\214\330\257",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252",
+   "\330\256\330\261\331\210\330\254",
+   "\333\214\331\205\330\247\333\214\330\264 \330\250\331\207 \331\276\330\247\333\214\333\214\331"
+   "\206",
+   "\331\276\333\214\331\205\330\247\333\214\330\264 \330\250\331\207 \330\250\330\247\331\204\330"
+   "\247",
+   "\330\242\330\272\330\247\330\262",
+   "\330\252\330\272\333\214\333\214\330\261 \331\210\330\266\330\271\333\214\330\252 \330\265\331"
+   "\201\330\255\331\207\342\200\214\332\251\331\204\333\214\330\257",
+   "\330\252\330\272\333\214\333\214\330\261 \331\210\330\266\330\271\333\214\330\252 \331\201\331"
+   "\207\330\261\330\263\330\252",
+   "\330\250\331\204\331\210\330\252\331\210\330\253",
+   "\330\250\331\204\331\210\330\252\331\210\330\253",
+   "\330\242\330\272\330\247\330\262",
+   "\330\257\331\210\330\261\330\250\333\214\331\206",
+   "\330\257\330\261\330\250\330\247\330\261\331\207",
+   "\330\242\330\272\330\247\330\262 \333\214\330\247 \330\264\330\261\331\210\330\271 \331\205\330"
+   "\254\330\257\330\257 \330\254\330\263\330\252\330\254\331\210\333\214 \330\252\331\202\331\204"
+   "\330\250",
+   "\330\257\330\263\330\252\330\247\331\210\330\261\330\257\331\207\330\247",
+   "\330\250\330\263\330\252\331\206 \331\205\330\255\330\252\331\210\330\247",
+   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330\247"
+   "\330\250\330\261\333\214 \330\252\330\256\330\261\333\214\330\250\333\214",
+   "\331\201\330\271\330\247\331\204\342\200\214\330\263\330\247\330\262\333\214 \331\207\331\205"
+   "\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330\247\330\250\330\261"
+   "\333\214",
+   "\332\257\330\260\330\261\331\210\330\247\332\230\331\207",
+   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330\247"
+   "\330\250\330\261\333\214",
+   "\330\257\330\263\330\252\333\214",
+   "\331\206\330\264\330\247\331\206\333\214 \331\205\330\255\331\204 \330\260\330\256\333\214\330"
+   "\261\331\207\342\200\214\330\263\330\247\330\262\333\214 \330\247\330\250\330\261\333\214",
+   "\331\206\330\247\331\205 \332\251\330\247\330\261\330\250\330\261\333\214",
+   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\276\333\214\332\251\330"
+   "\261\330\250\331\206\330\257\333\214",
+   "\330\263\331\206\330\257 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214",
+   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214",
+   "\331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \330\250\333\214\342\200"
+   "\214\331\205\330\255\330\252\331\210\330\247",
+   "\330\247\331\206\330\257\330\247\330\262\331\207\331\224 \331\205\331\210\330\247\330\261\330"
+   "\257 \330\257\331\204\330\256\331\210\330\247\331\207",
+   "\331\207\330\263\330\252\331\207",
+   "\331\276\330\247\333\214\332\257\330\247\331\207 \330\257\330\247\330\257\331\207",
+   "\331\206\330\247\331\205",
+   "\331\210\330\247\331\276\330\263\333\214\331\206 \330\250\330\247\330\262\333\214",
+   "\331\205\330\263\333\214\330\261 \330\263\331\206\330\257",
+   "\331\201\331\207\330\261\330\263\330\252 \330\263\330\261\333\214\330\271",
+   "\331\206\331\205\330\247\333\214\330\264 \302\253\331\205\331\210\330\247\330\261\330\257 \330"
+   "\257\331\204\330\256\331\210\330\247\331\207\302\273",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214\342\200\214\331\207\330\247",
+   "CRC\333\263\333\262: ",
+   "\330\252\331\202\331\204\330\250\342\200\214\331\207\330\247",
+   "\331\276\330\264\330\252\333\214\330\250\330\247\331\206\342\200\214\332\257\333\214\330\261\333"
+   "\214 \330\247\330\262 \331\207\330\263\330\252\331\207",
+   "\330\255\330\260\331\201 \331\207\330\263\330\252\331\207",
+   "\330\255\330\260\331\201 \331\206\330\263\330\256\331\207\331\224 \331\276\330\264\330\252\333"
+   "\214\330\250\330\247\331\206",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \331\207\330\263\330\252\331\207",
+   "\331\206\331\210\333\214\330\263\331\206\330\257\331\207",
+   "\330\257\330\263\330\252\331\207\342\200\214\331\207\330\247",
+   "\330\250\330\261\332\206\330\263\330\250 \331\207\330\263\330\252\331\207",
+   "\330\247\330\263\331\205 \331\207\330\263\330\252\331\207",
+   "\331\206\330\263\330\256\331\207\331\224 \331\207\330\263\330\252\331\207",
+   "\330\263\331\201\330\252\342\200\214\330\247\331\201\330\262\330\247\330\261",
+   "\332\257\331\210\330\247\331\207\333\214\331\206\330\247\331\205\331\207",
+   "\330\257\330\263\330\252\330\261\330\263\333\214\342\200\214\331\207\330\247",
+   "API \332\257\330\261\330\247\331\201\333\214\332\251\333\214 \331\205\331\210\330\261\330\257 "
+   "\331\206\333\214\330\247\330\262",
+   "\331\276\330\247\333\214\331\207\342\200\214\330\247\333\214 (\330\260\330\256\333\214\330\261"
+   "\331\207/\330\250\330\247\330\261\332\257\333\214\330\261\333\214)",
+   "\330\257\331\202\333\214\331\202 (\330\260\330\256\333\214\330\261\331\207/\330\250\330\247\330"
+   "\261\332\257\333\214\330\261\333\214\330\214 \330\271\331\202\330\250\342\200\214\332\257\330"
+   "\261\330\257\330\214 \331\276\333\214\330\264\342\200\214\330\247\330\254\330\261\330\247\330"
+   "\214 \330\250\330\247\330\262\333\214 \330\264\330\250\332\251\331\207\342\200\214\330\247\333"
+   "\214)",
+   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
+   "\332\206\331\206\330\257\330\250\330\256\330\264\333\214 (\330\260\330\256\333\214\330\261\331"
+   "\207/\330\250\330\247\330\261\332\257\333\214\330\261\333\214\330\214 \330\271\331\202\330\250"
+   "\342\200\214\332\257\330\261\330\257)",
+   "\331\276\330\264\330\252\333\214\330\250\330\247\331\206\333\214 \330\247\330\262 \330\260\330"
+   "\256\333\214\330\261\331\207\331\224 \331\210\330\266\330\271\333\214\330\252",
+   "\330\247\331\201\330\262\331\210\331\206\331\207\342\200\214\331\207\330\247\333\214 \331\276"
+   "\330\264\330\252\333\214\330\250\330\247\331\206\333\214\342\200\214\330\264\330\257\331\207",
+   "\330\252\331\210\331\204\333\214\330\257\332\251\331\206\331\206\330\257\331\207\331\224 \330"
+   "\263\333\214\330\263\330\252\331\205",
+   "\331\206\330\247\331\205 \330\263\333\214\330\263\330\252\331\205",
+   "\332\251\331\206\330\252\330\261\331\204\342\200\214\331\207\330\247",
+   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\207\330\263\330\252\331"
+   "\207",
+   "\331\202\331\201\331\204 \332\251\330\261\330\257\331\206 \331\207\330\263\330\252\331\207\331"
+   "\224 \331\206\330\265\330\250\342\200\214\330\264\330\257\331\207",
+   "\332\257\330\262\333\214\331\206\331\207\342\200\214\331\207\330\247\333\214 \331\207\330\263"
+   "\330\252\331\207",
+   "\330\250\330\247\330\262\330\263\330\247\330\262\333\214 \331\276\330\264\330\252\333\214\330"
+   "\250\330\247\331\206",
+   "\331\207\330\263\330\252\331\207",
+   "\330\247\330\262 \332\257\330\262\333\214\331\206\332\257\330\247\331\206 \302\253\331\207\330"
+   "\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \330\250\330\257\331\210\331\206 \331"
+   "\205\330\255\330\252\331\210\330\247\302\273 \330\255\330\260\331\201 \332\251\331\206",
+   "\330\257\330\261\333\214\330\247\331\201\330\252\342\200\214\332\251\331\206\331\206\330\257\331"
+   "\207\331\224 \331\207\330\263\330\252\331\207",
+   "\331\205\330\271\331\205\330\247\330\261\333\214 \331\276\330\261\330\257\330\247\330\262\331"
+   "\206\330\257\331\207",
+   "\331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \331\276\330\261\330\257"
+   "\330\247\330\262\331\206\330\257\331\207",
+   "\330\257\330\263\330\252\333\214",
+   "\330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\247\330\262 \331\201\331\207\330"
+   "\261\330\263\330\252 \330\250\330\247 \331\210\330\266\331\210\330\255 \330\250\330\247\331\204"
+   "\330\247",
+   "\331\201\330\261\330\247\330\252\331\201\332\251\333\214\332\251\342\200\214\331\276\330\260\333"
+   "\214\330\261\333\214 CRT",
+   "\331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330\247\330\262"
+   "\333\214 \330\263\331\201\330\247\330\261\330\264\333\214",
+   "\331\205\330\257\333\214\330\261 \331\206\330\264\330\247\331\206\332\257\330\261",
+   "\331\205\330\257\333\214\330\261\333\214\330\252 \331\276\330\247\333\214\332\257\330\247\331"
+   "\207\342\200\214\330\257\330\247\330\257\331\207",
+   "\330\255\330\260\331\201",
+   "\331\207\330\263\330\252\331\207\331\224 \330\254\330\247\330\261\333\214",
+   "\331\276\331\210\330\264\331\207",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \330\257\333\214\330\263\332\251",
+   "\330\256\330\247\330\261\330\254 \332\251\330\261\330\257\331\206 \331\204\331\210\330\255",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214\342\200\214\331\207\330\247",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\207\330\263\330\252\331\207",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214\342\200\214\332\251\331\206\331\206\330"
+   "\257\331\207\331\224 \331\205\330\255\330\252\331\210\330\247",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \332\251\331\206\331\206\330\257\331"
+   "\207\331\224 \331\276\330\261\331\210\331\206\330\257\331\207\342\200\214\331\207\330\247\333"
+   "\214 \330\263\333\214\330\263\331\205\330\252\333\214 \331\207\330\263\330\252\331\207\342\200"
+   "\214\331\207\330\247",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \330\252\330\265\330\247\331\210\333"
+   "\214\330\261 \330\250\331\206\330\257\330\247\331\206\332\257\330\264\330\252\333\214",
+   "\330\257\330\261\330\247\333\214\331\210\330\261\331\207\330\247",
+   "\330\252\330\256\331\204\333\214\331\207 \330\257\333\214\330\263\332\251",
+   "\331\201\330\271\330\247\331\204\342\200\214\330\263\330\247\330\262\333\214 \331\204\330\261"
+   "\330\262\330\264 \330\257\330\263\330\252\332\257\330\247\331\207 (\330\250\330\261\330\247\333"
+   "\214 \331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \331\276\330\264\330"
+   "\252\333\214\330\250\330\247\331\206\333\214 \330\264\330\257\331\207)",
+   "\331\276\330\247\331\204\330\247\333\214\331\207\331\224 \330\250\333\214\330\264\330\252\330"
+   "\261",
+   "\330\247\331\201\330\262\331\210\330\257\331\206 \331\276\330\247\331\204\330\247\333\214\331"
+   "\207\331\224 \330\250\333\214\330\264\330\252\330\261",
+   "\331\207\331\205\331\207",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\257\330\263\330\252\330\247\331\210\330\261\330"
+   "\257\331\207\330\247",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\263\330\250\332\251 \331\207\331\206\330\261\333"
+   "\214",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\257\330\263\330\252\331\207\342\200\214\330\250"
+   "\331\206\330\257\333\214",
+   "\330\250\330\261 \330\255\330\263\330\250 \332\251\331\206\330\263\331\210\331\204 \330\247\330"
+   "\256\330\252\330\265\330\247\330\265\333\214",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\257\330\263\330\252\331\207\342\200\214\331\207"
+   "\330\247",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\252\331\210\330\263\330\271\331\207\342\200\214"
+   "\330\257\331\207\331\206\330\257\331\207",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\263\330\250\332\251 \330\250\330\247\330\262\333"
+   "\214",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\263\330\250\332\251 (\332\230\330\247\331\206\330"
+   "\261)",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\262\330\250\330\247\331\206",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\261\330\263\330\247\331\206\331\207",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\261\331\210\330\247\333\214\330\252",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\263\330\261\330\271\330\252",
+   "\330\250\330\261 \330\255\330\263\330\250 \332\206\330\264\331\205\342\200\214\330\247\331\206"
+   "\330\257\330\247\330\262",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\263\332\251\331\210\333\214 \330\247\330\256\330"
+   "\252\330\265\330\247\330\265\333\214",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\252\330\271\330\257\330\247\330\257 \330\250\330"
+   "\247\330\262\333\214\332\251\331\206",
+   "\330\250\330\261 \330\255\330\263\330\250 \331\206\330\247\330\264\330\261",
+   "\330\250\330\261 \330\255\330\263\330\250 \331\205\331\206\330\267\331\202\331\207",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\263\330\247\331\204 \330\247\331\206\330\252\330"
+   "\264\330\247\330\261",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\247\331\205\330\252\333\214\330\247\330\262",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\252\331\206\330\270\333\214\331\205\330\247\330"
+   "\252",
+   "\330\250\330\261 \330\255\330\263\330\250 \331\206\330\247\331\205 \330\263\330\247\331\205\330"
+   "\247\331\206\331\207",
+   "\330\250\330\261 \330\255\330\263\330\250 \330\250\330\261\332\206\330\263\330\250",
+   "\330\250\330\261 \330\255\330\263\330\250 \331\210\333\214\332\230\332\257\333\214\342\200\214"
+   "\331\207\330\247\333\214 \330\257\333\214\330\257\330\247\330\261\333\214",
+   "\330\252\330\271\330\257\330\247\330\257 \330\250\330\247\330\262\333\214\332\251\331\206",
+   "\331\205\331\206\330\267\331\202\331\207",
+   "\330\263\330\247\331\204 \330\247\331\206\330\252\330\264\330\247\330\261",
+   "\330\250\330\261\332\206\330\263\330\250",
+   "%u \331\205\331\210\330\261\330\257",
+   "\330\254\330\263\330\252\330\254\331\210\333\214 \331\206\330\247\331\205...",
+   "\331\206\331\205\330\247\333\214\330\264 \331\207\331\205\331\207",
+   "\332\251\330\247\331\210\330\264",
+   "\331\205\330\263\333\214\330\261 \330\264\330\261\331\210\330\271",
+   "\330\250\330\261\332\257\330\262\333\214\330\257\331\207\342\200\214\331\207\330\247",
+   "\331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \330\250\333\214\342\200"
+   "\214\331\205\330\255\330\252\331\210\330\247",
+   "\332\251\330\247\331\210\330\264",
+   "\331\205\331\210\330\247\330\261\330\257 \330\257\331\204\330\256\331\210\330\247\331\207",
+   "\330\252\330\265\331\210\333\214\330\261",
+   "\331\205\331\210\330\263\333\214\331\202\333\214",
+   "\331\210\333\214\330\257\330\246\331\210",
+   "\331\207\332\251\342\200\214\331\207\330\247",
+   "\330\261\330\247\331\207\331\206\331\205\330\247",
+   "\332\251\331\205\332\251",
+   "\331\276\333\214\330\264\333\214\331\206\331\207",
+   "\330\252\330\247\330\261\333\214\330\256\332\206\331\207",
+   "\330\252\330\265\330\247\331\210\333\214\330\261",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252",
+   "\330\264\331\210\332\251 \330\263\331\205\330\252 \332\206\331\276 \331\205\330\255\331\210\330"
+   "\261 \330\247\331\201\331\202\333\214 \331\205\331\206\331\201\333\214 (\332\206\331\276)",
+   "\330\264\331\210\332\251 \330\263\331\205\330\252 \332\206\331\276 \331\205\330\255\331\210\330"
+   "\261 \330\247\331\201\331\202\333\214 \331\205\330\253\330\250\330\252 (\330\261\330\247\330\263"
+   "\330\252)",
+   "\330\264\331\210\332\251 \330\263\331\205\330\252 \332\206\331\276 \331\205\330\255\331\210\330"
+   "\261 \330\271\331\205\331\210\330\257\333\214 \331\205\331\206\331\201\333\214 (\330\250\330\247"
+   "\331\204\330\247)",
+   "\330\264\331\210\332\251 \330\263\331\205\330\252 \332\206\331\276 \331\205\330\255\331\210\330"
+   "\261 \330\271\331\205\331\210\330\257\333\214 \331\205\330\253\330\250\330\252 (\331\276\330\247"
+   "\333\214\333\214\331\206)",
+   "\330\264\331\210\332\251 \330\263\331\205\330\252 \330\261\330\247\330\263\330\252 \331\205\330"
+   "\255\331\210\330\261 \330\247\331\201\331\202\333\214 \331\205\331\206\331\201\333\214 (\332\206"
+   "\331\276)",
+   "\330\264\331\210\332\251 \330\263\331\205\330\252 \330\261\330\247\330\263\330\252 \331\205\330"
+   "\255\331\210\330\261 \330\247\331\201\331\202\333\214 \331\205\330\253\330\250\330\252 (\330\261"
+   "\330\247\330\263\330\252)",
+   "\330\264\331\210\332\251 \330\263\331\205\330\252 \330\261\330\247\330\263\330\252 \331\205\330"
+   "\255\331\210\330\261 \330\271\331\205\331\210\330\257\333\214 \331\205\331\206\331\201\333\214 ("
+   "\330\250\330\247\331\204\330\247)",
+   "\330\264\331\210\332\251 \330\263\331\205\330\252 \330\261\330\247\330\263\330\252 \331\205\330"
+   "\255\331\210\330\261 \330\271\331\205\331\210\330\257\333\214 \331\205\330\253\330\250\330\252 ("
+   "\331\276\330\247\333\214\333\214\331\206)",
+   "\330\255\330\263\330\247\330\263\333\214\330\252 \330\242\331\206\330\247\331\204\331\210\332"
+   "\257",
+   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\256\331\210\330\257\332"
+   "\251\330\247\330\261",
+   "\331\201\330\271\330\247\331\204 \330\263\330\247\330\262\333\214 \330\256\331\210\330\257\332"
+   "\251\330\247\330\261 \330\255\330\247\331\204\330\252 \302\253\330\252\331\205\330\261\332\251"
+   "\330\262 \330\250\330\247\330\262\333\214\302\273",
+   "\330\252\330\264\330\256\333\214\330\265",
+   "\330\256\330\247\331\205\331\210\330\264",
+   "\330\261\331\210\330\264\331\206",
+   "\331\202\330\247\331\276\333\214\330\257\331\206 \330\256\331\210\330\257\332\251\330\247\330"
+   "\261 \331\205\330\247\331\210\330\263 \331\205\330\247\331\210\330\263",
+   "\330\272\333\214\330\261\331\201\330\271\330\247\331\204 \332\251\330\261\330\257\331\206 \330"
+   "\257\332\251\331\205\331\207\331\224 \330\247\330\267\331\204\330\247\330\271\330\247\330\252",
+   "\330\272\333\214\330\261\331\201\330\271\330\247\331\204\342\200\214\330\263\330\247\330\262\333"
+   "\214 \330\257\332\251\331\205\331\207\331\224 \330\254\330\263\330\252\330\254\331\210",
+   "\331\210\330\261\331\210\330\257\333\214",
+   "\330\252\330\271\331\204\333\214\331\202",
+   "\332\251\331\204\333\214\330\257\331\207\330\247\333\214 \331\205\333\214\330\247\331\206\330"
+   "\250\330\261",
+   "\330\257\332\251\331\205\331\207 \332\257\330\262\333\214\331\206\330\264",
+   "\330\257\332\251\331\205\331\207 \330\242\330\272\330\247\330\262",
+   "\330\256\330\264\330\247\330\250 \330\252\331\201\331\206\332\257",
+   "\331\205\330\247\330\264\331\207 \330\252\331\201\331\206\332\257",
+   "\330\255\330\257\330\247\332\251\330\253\330\261 \332\251\330\247\330\261\330\250\330\261\331"
+   "\207\330\247",
+   "\330\256\330\257\331\205\330\252 \331\207\331\210\330\264 \331\205\330\265\331\206\331\210\330"
+   "\271\333\214",
+   "\330\250\330\263\330\252\331\206 \331\205\330\255\330\252\331\210\330\247",
+   "\330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207 (\330\252\330\272"
+   "\333\214\333\214\330\261 \330\255\330\247\331\204\330\252)",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\210\330\266\330\271\333\214\330"
+   "\252",
+   "\330\256\330\261\331\210\330\254",
+   "\330\264\330\261\331\210\330\271 \331\205\330\254\330\257\330\257 \330\261\330\252\330\261\331"
+   "\210\330\242\330\261\332\206",
+   "\330\250\330\261\332\257\330\261\330\257\330\247\331\206\330\257\331\206",
+   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\210\330\266\330\271\333\214\330\252",
+   "\330\253\330\250\330\252 \331\206\331\205\330\247\332\257\330\261\331\201\330\252",
+   "\330\264\333\214\330\247\330\261 \330\260\330\256\333\214\330\261\331\207\331\224 \331\210\330"
+   "\266\330\271\333\214\330\252 \331\202\330\250\331\204\333\214",
+   "\332\251\330\247\331\207\330\264 \330\255\330\254\331\205 \330\265\330\257\330\247",
+   "\331\206\331\205\330\247\333\214\330\264 \330\247\330\271\331\204\330\247\331\206",
+   "\330\257\330\263\330\252\331\207 (\331\201\333\214\330\262\333\214\332\251\333\214)",
+   "\330\252\330\247\332\206\342\200\214\331\276\330\257",
+   "\331\202\330\257\330\261\330\252 \331\204\330\261\330\262\330\264",
+   "\331\210\330\261\331\210\330\257\333\214 \330\255\330\263\332\257\330\261\331\207\330\247\333"
+   "\214 \332\251\331\205\332\251\333\214",
+   "\331\210\330\261\331\210\330\257\333\214",
+   "\330\255\330\247\331\204\330\252 \330\252\331\210\330\261\330\250\331\210",
+   "\332\251\331\206\330\252\330\261\331\204\342\200\214\331\207\330\247\333\214 \330\257\330\261"
+   "\332\257\330\247\331\207 %u",
+   "JIT \330\257\330\261 \330\257\330\263\330\252\330\261\330\263",
+   "\330\257\330\263\330\252\331\207\331\224 \330\250\330\247\330\262\333\214",
+   "\330\252\330\243\330\256\333\214\330\261",
+   "\330\250\330\247\330\261\332\257\330\262\330\247\330\261\333\214 \330\242\330\261\330\264\333"
+   "\214\331\210",
+   "\331\276\333\214\330\264\333\214\331\206\331\207",
+   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\205\330\255\330\252\331"
+   "\210\330\247",
+   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \330\257\333\214\330\263\332"
+   "\251",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\210\330\266\330\271\333\214\330"
+   "\252",
+   "\330\254\330\247",
+   "\330\253\330\250\330\252 \332\257\330\262\330\247\330\261\330\264\342\200\214\331\207\330\247",
+   "\331\201\331\207\330\261\330\263\330\252 \330\247\330\265\331\204\333\214",
+   "\331\206\332\257\330\247\330\264\330\252",
+   "\330\261\331\210\330\264\331\206",
+   "\330\256\330\247\331\205\331\210\330\264",
+   "\330\256\331\210\330\257\332\251\330\247\330\261",
+   "\330\256\330\247\331\205\331\210\330\264",
+   "\330\256\330\247\331\205\331\210\330\264",
+   "\330\256\330\247\331\205\331\210\330\264",
+   "\330\261\330\263\330\247\331\206\331\207",
+   "\332\257\330\262\333\214\331\206 \331\201\331\207\330\261\330\263\330\252",
+   "\331\201\331\207\330\261\330\263\330\252",
+   "\331\205\330\261\331\210\330\261\332\257\330\261 \331\201\330\247\333\214\331\204",
+   "\331\206\330\263\330\250\330\252 \330\252\330\265\331\210\333\214\330\261",
+   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\247\330\267\331\204\330\247\330\271\330"
+   "\247\330\252\302\273",
+   "\"Load Content\" Startup Notification",
+   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\250\331\207\342\200\214\330\261\331\210"
+   "\330\262\330\261\330\263\330\247\331\206 \330\250\330\261\330\256\330\267\302\273",
+   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\264\330\261\331\210\330\271 \331\205\330"
+   "\254\330\257\330\257 \330\261\330\252\330\261\331\210\330\242\330\261\332\206\302\273",
+   "\330\265\330\257\330\247\331\207\330\247\333\214 \331\201\331\207\330\261\330\263\330\252",
+   "\331\210\330\261\331\210\330\257\333\214",
+   "\330\256\330\261\331\210\330\254\333\214",
+   "\330\255\330\254\331\205 \330\265\330\257\330\247",
+   "\331\206\330\247\331\205\331\210\330\254\331\210\330\257\330\214 \330\247\330\256\330\252\333"
+   "\214\330\247\330\261\333\214:",
+   "\331\206\330\247\331\205\331\210\330\254\331\210\330\257\330\214 \331\204\330\247\330\262\331"
+   "\205:",
+   "\331\276\330\256\330\264",
+   "\331\276\330\256\330\264 (\330\250\330\247 \330\252\332\251\330\261\330\247\330\261)",
+   "\331\276\330\256\330\264 (\330\252\330\261\330\252\333\214\330\250\333\214)",
+   "\330\255\330\260\331\201",
+   "\330\252\331\210\331\202\331\201",
+   "\330\255\330\254\331\205 \330\265\330\257\330\247",
+   "\331\205\331\210\330\263\333\214\331\202\333\214",
+   "\330\250\330\247\330\262\333\214 \330\264\330\250\332\251\331\207\342\200\214\330\247\333\214",
+   "\330\257\330\261 \330\254\330\263\330\252\330\254\331\210\333\214 \331\205\330\255\330\252\331"
+   "\210\330\247\333\214 \330\263\330\247\330\262\332\257\330\247\330\261\342\200\246",
+   "\331\207\330\263\330\252\331\207\342\200\214\330\247\333\214 \331\276\333\214\330\257\330\247 "
+   "\331\206\330\264\330\257",
+   "\331\201\331\207\330\261\330\263\330\252\342\200\214\331\276\330\256\330\264\333\214 \331\276"
+   "\333\214\330\257\330\247 \331\206\330\264\330\257",
+   "\330\250\333\214\330\264\330\252\330\261\333\214\331\206 \330\247\330\252\330\265\330\247\331"
+   "\204\330\247\330\252 \331\207\331\205\342\200\214\330\262\331\205\330\247\331\206",
+   "\330\247\331\205\330\261\333\214\332\251\330\247\333\214 \330\264\331\205\330\247\331\204\333"
+   "\214 (\330\263\330\247\330\255\331\204 \330\264\330\261\331\202\333\214\330\214 \330\247\333\214"
+   "\330\247\331\204\330\247\330\252 \331\205\330\252\330\255\330\257\331\207)",
+   "\330\247\330\261\331\210\331\276\330\247\333\214 \330\272\330\261\330\250\333\214",
+   "\330\247\331\205\330\261\333\214\332\251\330\247\333\214 \330\254\331\206\331\210\330\250\333"
+   "\214 (\330\254\331\206\331\210\330\250\342\200\214\330\264\330\261\331\202\333\214\330\214 \330"
+   "\250\330\261\330\262\333\214\331\204)",
+   "\330\254\331\206\331\210\330\250 \330\264\330\261\331\202\333\214 \330\242\330\263\333\214\330"
+   "\247",
+   "\330\263\331\201\330\247\330\261\330\264\333\214",
+   "\331\206\330\247\331\205 \332\251\330\247\330\261\330\250\330\261\333\214",
+   "\331\205\333\214\330\247\331\206\332\257\333\214\331\206",
+   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
+   "\330\250\330\247\330\262\333\214 \330\264\330\250\332\251\331\207\342\200\214\330\247\333\214",
+   "\331\205\333\214\330\262\330\250\330\247\331\206",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \330\264\330\250\332\251\331\207",
+   "\330\264\330\250\332\251\331\207",
+   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
+   "\330\256\330\247\331\205\331\210\330\264",
+   "\330\261\331\210\330\264\331\206",
+   "\330\250\331\207\342\200\214\330\261\331\210\330\262\330\261\330\263\330\247\331\206 \330\250"
+   "\330\261\330\256\330\267",
+   "\331\206\331\205\330\247\333\214\330\264 \330\261\331\210\333\214 \330\265\331\201\330\255\331"
+   "\207",
+   "\331\206\331\205\330\247\333\214\330\264 \330\247\330\271\331\204\330\247\331\206",
+   "\331\205\330\261\331\210\330\261 \330\242\330\261\330\264\333\214\331\210",
+   "\331\205\331\202\333\214\330\247\330\263 \331\202\331\204\331\205",
+   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
+   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
+   "\330\271\331\205\331\204\332\251\330\261\330\257",
+   "\330\263\333\214\330\247\331\207\331\207\342\200\214\331\207\330\247\333\214 \331\276\330\256"
+   "\330\264",
+   "\331\201\331\207\330\261\330\263\330\252\342\200\214\331\207\330\247\333\214 \331\276\330\256"
+   "\330\264",
+   "\330\256\330\247\331\205\331\210\330\264",
+   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
+   "\331\201\331\207\330\261\330\263\330\252\342\200\214\331\207\330\247\333\214 \331\276\330\256"
+   "\330\264",
+   "\331\207\330\263\330\252\331\207:",
+   "\331\210\330\247\331\276\330\263\333\214\331\206 \330\250\330\247\330\262\333\214:",
+   "\330\250\331\207\342\200\214\330\261\331\210\330\262\330\261\330\263\330\247\331\206 \330\252"
+   "\330\265\330\247\331\210\333\214\330\261 \330\250\331\206\330\257\330\247\331\206\332\257\330"
+   "\264\330\252\333\214 \331\204\333\214\330\263\330\252 \331\276\330\256\330\264",
+   "\331\205\330\257\333\214\330\261\333\214\330\252 \331\206\333\214\330\261\331\210",
+   "\331\205\331\210\330\254\331\210\330\257\330\214 \330\247\330\256\330\252\333\214\330\247\330"
+   "\261\333\214:",
+   "\331\205\331\210\330\254\331\210\330\257\330\214 \331\204\330\247\330\262\331\205:",
+   "\330\255\330\261\333\214\331\205 \330\256\330\265\331\210\330\265\333\214",
+   "Are you sure you want to delete the playlist \"%1\"?",
+   "Are you sure you want to delete the item \"%1\"?",
+   "\331\207\330\263\330\252\331\207",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252",
+   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\207\330\263\330\252\331"
+   "\207",
+   "&\330\261\330\247\331\207\331\206\331\205\330\247",
+   "&\331\206\331\205\330\247",
+   "\"All Playlists\" max grid entries:",
+   "\"All Playlists\" max list entries:",
+   "\330\263\330\247\331\205\330\247\331\206\330\257\331\207\333\214",
+   "\331\206\330\247\331\205",
+   "\331\207\330\263\330\252\331\207:",
+   "\331\276\330\247\333\214\332\257\330\247\331\207 \330\257\330\247\330\257\331\207:",
+   "\331\206\330\247\331\205:",
+   "\330\255\330\260\331\201",
+   "\331\204\330\267\331\201\330\247\331\213 \330\250\331\207\342\200\214\331\205\331\206\330\270"
+   "\331\210\330\261 \330\247\330\271\330\252\331\205\330\247\331\204 \330\252\330\272\333\214\333"
+   "\214\330\261\330\247\330\252 \330\250\330\261\331\206\330\247\331\205\331\207 \330\261\330\247 "
+   "\330\250\330\247\330\262\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330"
+   "\262\333\214 \332\251\331\206\333\214\330\257.",
+   "\330\252\331\210\331\202\331\201",
+   "\331\205\330\261\331\210\330\261\332\257\330\261 \331\201\330\247\333\214\331\204",
+   "\331\201\331\207\330\261\330\263\330\252\342\200\214\331\207\330\247\333\214 \331\276\330\256"
+   "\330\264",
+   "\331\206\331\205\330\247",
+   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\247\331\201\330\262\331\210\330\257\331"
+   "\206 \330\250\331\207 \331\205\331\210\330\247\330\261\330\257 \330\257\331\204\330\256\331\210"
+   "\330\247\331\207\302\273",
+   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\247\330\267\331\204\330\247\330\271\330"
+   "\247\330\252\302\273",
+   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\263\330\247\333\214\331\207\342\200\214"
+   "\330\262\331\206\342\200\214\331\207\330\247\302\273",
+   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\242\330\272\330\247\330\262 \330\266\330"
+   "\250\330\267\302\273",
+   "\330\264\330\261\331\210\330\271 \330\266\330\250\330\267",
+   "\330\252\331\210\331\202\331\201 \330\266\330\250\330\267",
+   "\331\201\331\207\330\261\330\263\330\252 \330\263\330\261\333\214\330\271",
+   "\330\256\330\261\331\210\330\254",
+   "\330\257\330\263\330\252\330\247\331\210\330\261\330\257\331\207\330\247",
+   "\331\276\330\264\330\252\333\214\330\250\330\247\331\206\333\214 \330\247\330\262 \330\242\331"
+   "\206\330\247\331\204\331\210\332\257",
+   "\330\263\330\250\332\251 \331\207\331\206\330\261\333\214",
+   "\330\257\330\261\330\254\331\207\342\200\214\330\250\331\206\330\257\333\214 BBFC",
+   "\330\257\330\263\330\252\331\207",
+   "\330\261\330\257\331\207\342\200\214\330\250\331\206\330\257\333\214 CERO",
+   "\330\250\330\263\330\252\331\207 \330\250\331\207 \332\251\331\206\330\263\331\210\331\204",
+   "\332\251\331\206\330\252\330\261\331\204\342\200\214\331\207\330\247",
+   "\330\257\330\261\330\250\330\247\330\261\331\207",
+   "\330\263\330\247\330\262\331\206\330\257\331\207",
+   "\330\264\331\205\330\247\330\261\331\207\331\224 \331\205\330\254\331\204\331\207\331\224 Edge",
+   "\330\247\331\205\330\252\333\214\330\247\330\262 \331\205\330\254\331\204\331\207\331\224 Edge",
+   "\331\206\331\202\330\257 \331\205\330\254\331\204\331\207\331\224 Edge",
+   "\330\257\330\261\330\254\331\207\342\200\214\330\250\331\206\330\257\333\214 ELSPA",
+   "\330\257\330\261\330\254\331\207\342\200\214\330\250\331\206\330\257\333\214 ESRB",
+   "\330\247\331\205\330\252\333\214\330\247\330\262 \331\205\330\254\331\204\331\207\331\224 Famits"
+   "u",
+   "\331\201\330\261\331\206\332\206\330\247\333\214\330\262",
+   "\332\257\333\214\331\205\342\200\214\331\276\331\204\333\214",
+   "\330\264\330\247\330\256\331\207",
+   "\330\262\330\250\330\247\331\206",
+   "\330\261\330\263\330\247\331\206\331\207",
+   "\331\206\330\247\331\205",
+   "\330\261\331\210\330\247\333\214\330\252\332\257\330\261",
+   "\331\205\330\250\330\257\330\247",
+   "\330\261\330\257\331\207\342\200\214\330\250\331\206\330\257\333\214 PEGI",
+   "\332\230\330\261\331\201\330\247\331\206\331\205\330\247\333\214\333\214",
+   "\330\250\330\263\330\252\331\207 \330\250\331\207 \330\263\332\251\331\221\331\210",
+   "\331\276\330\256\330\264 \332\251\331\206\331\206\330\257\331\207",
+   "\331\205\331\206\330\267\331\202\331\207",
+   "\331\205\330\247\331\207 \330\247\331\206\330\252\330\264\330\247\330\261",
+   "\330\263\330\247\331\204 \330\247\331\206\330\252\330\264\330\247\330\261",
+   "\331\276\330\264\330\252\333\214\330\250\330\247\331\206\333\214 \330\247\330\262 \331\204\330"
+   "\261\330\262\330\264",
+   "\330\247\331\205\330\252\333\214\330\247\330\262",
+   "\330\263\330\261\333\214\330\247\331\204",
+   "\330\263\330\247\331\205\330\247\331\206\330\257\331\207\333\214",
+   "\330\257\330\261\330\254\331\207\342\200\214\330\250\331\206\330\257\333\214 TGDB",
+   "\330\257\333\214\330\257\330\247\330\261\333\214",
+   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214\342\200\214\331\207\330\247\333"
+   "\214 \330\266\330\250\330\267",
+   "\330\266\330\250\330\267\342\200\214\331\207\330\247",
+   "\330\266\330\250\330\267",
+   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\263\331\201\330\247\330"
+   "\261\330\264\333\214 \330\266\330\250\330\267",
+   "\330\266\330\250\330\267",
+   "\330\252\330\272\333\214\333\214\330\261 \331\206\330\247\331\205",
+   "\330\250\330\247\330\262\331\206\330\264\330\247\331\206\333\214 \330\250\331\207 \330\255\330"
+   "\247\331\204\330\252 \331\276\333\214\330\264\342\200\214\331\201\330\261\330\266",
+   "\330\264\330\261\331\210\330\271 \331\205\330\254\330\257\330\257",
+   "\330\247\330\257\330\247\331\205\331\207",
+   "\330\257\330\263\330\252\330\247\331\210\330\261\330\257\331\207\330\247",
+   "\330\250\330\261\332\257\330\261\330\257\330\247\331\206\330\257\331\206",
+   "\330\256\331\210\330\257\332\251\330\247\330\261",
+   "\331\205\331\202\333\214\330\247\330\263 \330\265\330\255\333\214\330\255",
+   "\330\256\330\247\331\205\331\210\330\264",
+   "\331\205\330\263\333\214\330\261 \330\264\330\261\331\210\330\271",
+   "\330\263\331\201\330\247\330\261\330\264\333\214",
+   "\330\256\330\247\331\205\331\210\330\264",
+   "\330\256\331\210\330\257\332\251\330\247\330\261",
+   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
+   "\330\247\330\254\330\261\330\247",
+   "\331\205\330\256\331\201\333\214 \332\251\330\261\330\257\331\206 \331\207\330\264\330\257\330"
+   "\247\330\261 \331\207\330\247\333\214 \330\250\330\247\330\262\330\247\330\254\330\261\330\247"
+   "\333\214\333\214",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
+#endif
+#endif
+   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\276\333\214\332\251\330\261\330\250\331"
+   "\206\330\257\333\214 \331\201\330\271\331\204\333\214",
+   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\276\333\214\332\251\330\261\330\250\331"
+   "\206\330\257\333\214 \330\254\330\257\333\214\330\257",
+   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\210\330\266\330\271\333\214\330\252",
+   "\330\260\330\256\333\214\330\261\331\207 \332\251\330\261\330\257\331\206",
+   "\330\263\331\201\330\247\330\261\330\264\333\214",
+   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
+   "\331\206\331\205\330\247\332\257\330\261\331\201\330\252\342\200\214\331\207\330\247",
+   "\330\254\331\207\330\252 \330\265\331\201\330\255\331\207 \331\206\331\205\330\247\333\214\330"
+   "\264",
+   "\330\256\331\210\330\257\332\251\330\247\330\261",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252",
+   "\331\206\331\205\330\247\333\214\330\264 \302\253\331\276\331\210\330\264\331\207\302\273",
+   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\266\330\250\330\267\302\273",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252",
+   "\330\263\330\247\331\205\330\247\331\206\330\257\331\207\333\214",
+   "\330\263\330\247\333\214\331\207\342\200\214\330\262\331\206\342\200\214\331\207\330\247",
+   "\330\263\331\201\330\247\330\261\330\264\333\214",
+   "\331\206\331\205\330\247\333\214\330\264 \331\201\331\207\330\261\330\263\330\252 \331\205\333"
+   "\214\330\262\332\251\330\247\330\261",
+   "\331\206\330\265\330\250 \333\214\330\247 \330\250\330\247\330\262\330\263\330\247\330\262\333"
+   "\214 \333\214\332\251 \331\207\330\263\330\252\331\207",
+   "\330\265\330\257\330\247",
+   "\331\205\330\264\330\256\330\265\330\247\330\252",
+   "\330\264\330\261\331\210\330\271 \330\261\330\252\330\261\331\210\331\276\330\257 \330\261\333"
+   "\214\331\205\331\210\330\252",
+   "\330\242\330\272\330\247\330\262 \331\276\330\261\330\257\330\247\330\262\330\264\332\257\330"
+   "\261 \331\210\333\214\330\257\330\246\331\210\333\214\333\214",
+   "\330\264\333\214\330\247\330\261 \331\210\330\266\330\271\333\214\330\252",
+   "\331\205\330\255\331\204 \330\260\330\256\333\214\330\261\331\207",
+   "\330\271\331\206\331\210\330\247\331\206 \330\247\330\263\330\252\330\261\333\214\331\205",
+   "\331\204\333\214\331\206\332\251 \330\247\330\263\330\252\330\261\333\214\331\205",
+   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\247\330\263\330\252\330"
+   "\261\333\214\331\205 \330\263\331\201\330\247\330\261\330\264\333\214",
    "\330\252\330\271\331\204\333\214\331\202 \331\205\330\255\330\247\331\201\330\270 \330\265\331"
    "\201\330\255\331\207\342\200\214\331\206\331\205\330\247\333\214\330\264",
-   "\330\247\330\262 \331\201\330\271\330\247\331\204 \330\264\330\257\331\206 \331\205\330\255\330"
-   "\247\331\201\330\270 \330\265\331\201\330\255\331\207\342\200\214\331\206\331\205\330\247\333"
-   "\214\330\264 \330\257\330\263\330\252\332\257\330\247\331\207 \330\264\331\205\330\247 \330\254"
-   "\331\204\331\210\332\257\333\214\330\261\333\214 \331\205\333\214\342\200\214\332\251\331\206"
-   "\330\257.",
-   "\330\257\330\261\330\254 \331\201\330\261\333\214\331\205 \330\263\333\214\330\247\331\207",
-   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330\271"
-   "\331\205\331\210\330\257\333\214 (VSync)",
-   "\330\256\330\261\331\210\330\254\333\214 \331\210\333\214\330\257\333\214\331\210\333\214 \332"
-   "\251\330\247\330\261\330\252 \332\257\330\261\330\247\331\201\333\214\332\251 \330\261\330\247 "
-   "\330\250\330\247 \331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263"
-   "\330\247\330\262\333\214 \330\265\331\201\330\255\331\207\342\200\214\331\206\331\205\330\247"
-   "\333\214\330\264 \331\207\331\205\332\257\330\247\331\205 \331\205\333\214\342\200\214\332\251"
-   "\331\206\330\257. \331\276\333\214\330\264\331\206\331\207\330\247\330\257 \330\264\330\257\331"
-   "\207.",
-   "\331\276\330\247\331\204\330\247\333\214\331\207\331\224 \330\257\331\210\330\256\330\267\333"
+   "\330\252\330\272\333\214\333\214\330\261 \331\207\330\263\330\252\331\207 \331\207\330\247 \330"
+   "\250\331\207 \331\206\330\263\330\256\331\207 \331\207\330\247\333\214 Play store",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \330\263\333\214\330\263\330\252\331"
+   "\205",
+   "\330\252\330\247\330\261\333\214\330\256 \330\263\330\247\330\256\330\252",
+   "\331\210\333\214\332\230\332\257\333\214\342\200\214\331\207\330\247\333\214 \331\276\330\261"
+   "\330\257\330\247\330\262\331\206\330\257\331\207",
+   "\331\205\330\257\331\204 \331\276\330\261\330\257\330\247\330\262\331\206\330\257\331\207",
+   "\331\206\331\202\330\267\331\207 \330\257\330\261 \330\247\333\214\331\206\332\206 \331\206\331"
+   "\205\330\247\333\214\330\264\332\257\330\261",
+   "\330\247\330\261\330\252\331\201\330\247\330\271 \331\206\331\205\330\247\333\214\330\264\332"
+   "\257\330\261 (\331\205\333\214\331\204\333\214\342\200\214\331\205\330\252\330\261)",
+   "\331\202\330\247\330\271\330\257\331\207\331\224 \331\206\331\205\330\247\333\214\330\264\332"
+   "\257\330\261 (\331\205\333\214\331\204\333\214\342\200\214\331\205\330\252\330\261)",
+   "\330\264\331\206\330\247\330\263\331\207\331\224 \331\276\333\214\330\264\330\247\331\206\331"
+   "\207",
+   "\330\263\333\214\330\263\330\252\331\205 \330\271\330\247\331\205\331\204 \331\276\333\214\330"
+   "\264\330\247\331\206\331\207",
+   "\331\206\330\263\330\256\331\207\331\224 Git",
+   "\331\205\331\206\330\250\330\271 \331\206\333\214\330\261\331\210",
+   "\331\206\330\263\330\256\331\207\331\224 \330\261\330\252\330\261\331\210\330\242\330\261\332"
+   "\206",
+   "\330\263\333\214\330\263\330\252\331\205",
+   "\330\253\330\250\330\252 \331\206\331\205\330\247\332\257\330\261\331\201\330\252",
+   "\330\252\330\265\330\247\331\210\333\214\330\261 \330\250\331\206\330\257\330\247\331\206\332"
+   "\257\330\264\330\252\333\214",
+   "\330\262\331\205\330\247\331\206\342\200\214\330\263\331\206\330\254\333\214",
+   "\332\251\331\204\330\247\330\263\333\214\332\251",
+   "\332\251\331\204\330\247\330\263\333\214\332\251 (\330\252\330\272\333\214\333\214\330\261 \331"
+   "\210\330\266\330\271\333\214\330\252)",
+   "\333\214\332\251 \330\257\332\251\331\205\331\207 (\330\252\330\272\333\214\333\214\330\261 \331"
+   "\210\330\266\330\271\333\214\330\252)",
+   "\333\214\332\251 \330\257\332\251\331\205\331\207 (\331\206\332\257\331\207 \330\257\330\247\330"
+   "\264\330\252\331\206)",
+   "\331\276\331\210\330\261\330\252 UDP \330\247\330\263\330\252\330\261\333\214\331\205",
+   "\331\206\331\205\330\247\333\214\330\264 \331\206\331\210\330\247\330\261 \331\201\331\207\330"
+   "\261\330\263\330\252",
+   "\330\250\331\207 \330\261\331\210\330\262 \330\261\330\263\330\247\331\206\333\214 \330\257\330"
+   "\247\330\261\330\247\333\214\333\214 \331\207\330\247",
+   "\330\250\331\207 \330\261\331\210\330\262\342\200\214\330\261\330\263\330\247\331\206\333\214 "
+   "\331\276\330\261\331\210\331\201\330\247\333\214\331\204 \331\207\330\247\333\214 \332\251\331"
+   "\206\330\252\330\261\331\204\330\261",
+   "\330\250\331\207 \330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 \330\263\330"
+   "\247\333\214\331\207\342\200\214\330\262\331\206 \331\207\330\247\333\214 Cg",
+   "\330\250\331\207 \330\261\331\210\330\262 \330\261\330\263\330\247\331\206\333\214 \332\251\330"
+   "\257\331\207\330\247\333\214 \330\252\331\202\331\204\330\250",
+   "\330\250\331\207\342\200\214\330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 "
+   "\331\201\330\247\333\214\331\204 \331\207\330\247\333\214 \330\247\330\267\331\204\330\247\330"
+   "\271\330\247\330\252 \331\207\330\263\330\252\331\207",
+   "\330\250\331\207 \330\261\331\210\330\262 \330\261\330\263\330\247\331\206\333\214 \331\276\330"
+   "\247\333\214\332\257\330\247\331\207\342\200\214\330\257\330\247\330\257\331\207\342\200\214\331"
+   "\207\330\247",
+   "\330\250\331\207 \330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 \330\263\330"
+   "\247\333\214\331\207\342\200\214\330\262\331\206 GLSL",
+   "\330\250\330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 \331\207\330\263\330"
+   "\252\331\207\342\200\214\331\207\330\247\333\214 \331\206\330\265\330\250\342\200\214\330\264"
+   "\330\257\331\207",
+   "\330\250\331\207 \330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 \331\207\331"
+   "\205\342\200\214\331\276\331\210\330\264\330\247\331\206 \331\207\330\247",
+   "\330\250\331\207 \330\261\331\210\330\262\330\261\330\263\330\247\331\206\333\214 \330\263\330"
+   "\247\333\214\331\207\342\200\214\330\262\331\206 \331\207\330\247\333\214 Slang",
+   "\332\251\330\247\330\261\330\250\330\261",
+   "\330\261\330\247\330\250\330\267 \332\251\330\247\330\261\330\250\330\261\333\214",
+   "\330\262\330\250\330\247\331\206",
+   "\332\251\330\247\330\261\330\250\330\261",
+   "\331\204\330\261\330\262\330\264 \331\207\331\206\332\257\330\247\331\205 \331\201\330\264\330"
+   "\261\330\257\331\206 \332\251\331\204\333\214\330\257",
+   "\330\263\331\201\330\247\330\261\330\264\333\214",
+   "\331\206\330\263\330\250\330\252 \330\252\330\265\331\210\333\214\330\261",
+   "\330\242\330\263\330\252\330\247\331\206\331\207\331\224 \330\256\331\210\330\257\332\251\330"
+   "\247\330\261 \331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330"
+   "\247\330\262\333\214 \331\276\330\247\331\204",
+   "\330\252\330\271\331\210\333\214\330\266 \330\256\331\210\330\257\332\251\330\247\330\261 \331"
+   "\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330\247\330\262\333"
    "\214",
-#if defined(DINGUX)
-   "\330\257\330\261\331\210\331\206\333\214\330\247\330\250\333\214 \330\252\330\265\331\210\333"
-   "\214\330\261",
-   "\331\205\330\264\330\256\330\265 \332\251\330\261\330\257\331\206 \330\261\331\210\330\264 \330"
-   "\257\330\261\331\210\331\206\333\214\330\247\330\250\333\214 \330\252\330\265\331\210\333\214"
-   "\330\261 \331\207\331\206\332\257\330\247\331\205 \330\252\330\272\333\214\333\214\330\261 \331"
-   "\205\331\202\333\214\330\247\330\263 \331\205\330\255\330\252\331\210\330\247 \330\252\331\210"
-   "\330\263\330\267 IPU. \331\207\331\206\332\257\330\247\331\205 \330\247\330\263\330\252\331\201"
-   "\330\247\330\257\331\207 \330\247\330\262 \331\276\330\247\331\204\330\247\333\214\331\207\342"
-   "\200\214\331\207\330\247\333\214 \331\210\333\214\330\257\333\214\331\210\333\214\333\214 \331"
-   "\205\330\250\330\252\331\206\333\214 \330\250\330\261 CPU \330\261\331\210\330\264\342\200\214"
-   "\331\207\330\247\333\214 \302\253\330\257\331\210\331\205\332\251\330\271\330\250\333\214\302"
-   "\273 \331\210 \302\253\330\257\331\210\330\256\330\267\333\214\302\273 \331\276\333\214\330\264"
-   "\331\206\331\207\330\247\330\257 \331\205\333\214\342\200\214\330\264\331\210\330\257. \330\247"
-   "\333\214\331\206 \332\257\330\262\333\214\331\206\331\207 \330\247\330\253\330\261\333\214 \330"
-   "\261\331\210\333\214 \330\271\331\205\331\204\332\251\330\261\330\257 \331\206\330\257\330\247"
-   "\330\261\330\257.",
-   "\330\257\331\210\331\205\332\251\330\271\330\250\333\214",
-   "\330\257\331\210\330\256\330\267\333\214",
-   "\331\206\330\262\330\257\333\214\332\251\342\200\214\330\252\330\261\333\214\331\206 \331\207"
-   "\331\205\330\263\330\247\333\214\331\207",
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   "\330\257\330\261\331\210\331\206\333\214\330\247\330\250\333\214 \330\252\330\265\331\210\333"
-   "\214\330\261",
-   "\331\206\330\262\330\257\333\214\332\251\342\200\214\330\252\330\261\333\214\331\206 \331\207"
-   "\331\205\330\263\330\247\333\214\331\207",
-   "\330\264\330\250\331\207\342\200\214\330\256\330\267\333\214",
-#endif
-#endif
+   "\330\252\331\205\330\247\331\205 \330\255\330\247\331\204\330\252\342\200\214\331\207\330\247"
+   "\333\214 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207",
+   "\330\252\331\206\331\207\330\247 \330\257\330\261 \330\255\330\247\331\204\330\252 \330\252\331"
+   "\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207\331\224 \330\247\330\256\330"
+   "\252\330\265\330\247\330\265\333\214",
+   "\330\252\331\206\331\207\330\247 \330\257\330\261 \330\255\330\247\331\204\330\252 \330\252\331"
+   "\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207\331\224 \331\276\331\206\330"
+   "\254\330\261\331\207\342\200\214\330\247\333\214",
+   "\330\257\330\261\330\254 \331\201\330\261\333\214\331\205 \330\263\333\214\330\247\331\207",
+   "\331\210\333\214\330\257\333\214\331\210",
    "\331\276\330\247\331\204\330\247\333\214\331\207\331\224 \331\210\333\214\330\257\333\214\331"
    "\210",
    "\330\255\330\260\331\201 \331\276\330\247\331\204\330\247\333\214\331\207\331\224 \331\210\333"
    "\214\330\257\333\214\331\210",
+   "\330\247\331\206\330\257\330\247\330\262\331\207 \330\242\332\257\330\247\331\207\330\263\330"
+   "\247\330\262",
+   "\330\247\330\254\330\250\330\247\330\261 \331\210\330\266\331\210\330\255 \330\261\331\210\333"
+   "\214 UWP",
+   "\330\252\330\243\330\256\333\214\330\261 \330\256\331\210\330\257\332\251\330\247\330\261 \331"
+   "\201\330\261\333\214\331\205",
+   "\330\256\331\210\330\257\332\251\330\247\330\261",
+   "\331\205\330\244\330\253\330\261",
+   "\330\255\330\247\331\204\330\252 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201"
+   "\330\255\331\207",
+   "\330\271\330\261\330\266 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255"
+   "\331\207",
+   "\330\247\330\261\330\252\331\201\330\247\330\271 \330\252\331\205\330\247\331\205\342\200\214"
+   "\330\265\331\201\330\255\331\207",
+   "\330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\247\330\262 \330\266\330\250\330"
+   "\267 \330\250\330\247 GPU",
+   "\330\247\331\206\330\257\333\214\330\263 \331\206\331\205\330\247\333\214\330\264\332\257\330"
+   "\261",
+   "\330\256\330\261\331\210\330\254\333\214",
+   "\330\263\331\201\330\247\330\261\330\264\333\214",
+   "\330\250\330\247\331\204\330\247",
+   "\331\276\330\247\333\214\333\214\331\206",
+   "\331\205\330\252\331\210\330\263\330\267",
+   "\330\263\331\201\330\247\330\261\330\264\333\214",
+   "\330\262\333\214\330\247\330\257",
+   "\332\251\331\205",
+   "\331\205\330\252\331\210\330\263\330\267",
+   "\332\251\333\214\331\201\333\214\330\252 \330\266\330\250\330\267",
+   "\330\261\330\264\330\252\331\207\342\200\214\331\207\330\247\333\214 \330\266\330\250\330\267",
+   "\331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330\247\330\262"
+   "\333\214 \330\271\331\205\331\210\330\257\333\214",
+   "\330\252\330\256\331\205\333\214\331\206 \331\206\330\261\330\256 \330\252\330\247\330\262\331"
+   "\207\342\200\214\330\263\330\247\330\262\333\214 \331\206\331\205\330\247\333\214\330\264\332"
+   "\257\330\261",
+   "\330\252\331\206\330\270\333\214\331\205 \331\206\330\261\330\256 \330\252\330\247\330\262\331"
+   "\207\342\200\214\330\263\330\247\330\262\333\214 \332\257\330\262\330\247\330\261\330\264 \330"
+   "\264\330\257\331\207 \330\252\331\210\330\263\330\267 \331\206\331\205\330\247\333\214\330\264"
+   "\332\257\330\261",
+   "\332\206\330\261\330\256\330\264 \331\210\333\214\330\257\333\214\331\210",
+   "\331\205\331\202\333\214\330\247\330\263 \331\276\331\206\330\254\330\261\331\207\342\200\214"
+   "\330\247\333\214",
+   "\331\205\331\202\333\214\330\247\330\263 \330\265\330\255\333\214\330\255",
+   "\331\205\331\202\333\214\330\247\330\263",
+   "\331\210\333\214\330\257\333\214\331\210",
+   "\330\263\330\247\333\214\331\207\342\200\214\330\262\331\206\342\200\214\331\207\330\247\333\214"
+   " \331\210\333\214\330\257\333\214\331\210",
+   "\330\263\330\247\333\214\331\207\342\200\214\330\262\331\206\342\200\214\331\207\330\247\333\214"
+   " \331\210\333\214\330\257\333\214\331\210",
+   "\331\276\330\247\331\204\330\247\333\214\331\207\331\224 \330\257\331\210\330\256\330\267\333"
+   "\214",
+   "\330\263\331\201\330\247\330\261\330\264\333\214",
+   "\331\205\330\255\331\204\333\214",
+   "\330\252\331\210\333\214\333\214\332\206",
+   "\333\214\331\210\330\252\333\214\331\210\330\250",
+   "\332\251\333\214\331\201\333\214\330\252 \330\247\330\263\330\252\330\261\333\214\331\205",
+   "\330\256\331\210\330\257\332\251\330\247\330\261",
+   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214",
+   "\331\210\333\214\330\257\333\214\331\210\331\207\330\247",
+   "\331\206\330\261\330\256 \331\206\330\263\330\250\330\252 \330\263\331\201\330\247\330\261\330"
+   "\264\333\214 (\330\247\330\261\330\252\331\201\330\247\330\271)",
+   "\331\206\330\261\330\256 \331\206\330\263\330\250\330\252 \330\263\331\201\330\247\330\261\330"
+   "\264\333\214 (\330\271\330\261\330\266)",
+   "\331\206\330\261\330\256 \331\206\330\263\330\250\330\252 \330\263\331\201\330\247\330\261\330"
+   "\264\333\214 (\331\205\331\210\331\202\330\271\333\214\330\252 Y)",
+   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330\271"
+   "\331\205\331\210\330\257\333\214 (VSync)",
+   "\330\255\330\247\331\204\330\252 \331\276\331\206\330\254\330\261\331\207\342\200\214\330\247"
+   "\333\214 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207",
+   "\330\255\330\247\331\204\330\252 \331\276\331\206\330\254\330\261\331\207\342\200\214\330\247"
+   "\333\214",
+   "\330\255\330\257\330\247\332\251\330\253\330\261 \330\247\330\261\330\252\331\201\330\247\330"
+   "\271 \330\252\330\265\331\210\333\214\330\261",
+   "\330\255\330\257\330\247\332\251\330\253\330\261 \331\276\331\207\331\206\330\247\333\214 \330"
+   "\252\330\265\331\210\333\214\330\261",
+   "\330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\247\330\262 \330\247\331\206\330"
+   "\257\330\247\330\262\331\207\331\224 \330\263\331\201\330\247\330\261\330\264\333\214 \330\250"
+   "\330\261\330\247\333\214 \331\276\331\206\330\254\330\261\331\207",
+   "\330\247\330\261\330\252\331\201\330\247\330\271 \331\276\331\206\330\254\330\261\331\207",
+   "\330\264\331\201\330\247\331\201\333\214\330\252 \331\276\331\206\330\254\330\261\331\207",
+   "\330\250\331\207 \330\256\330\247\330\267\330\261 \330\263\331\276\330\247\330\261\333\214 \330"
+   "\247\331\206\330\257\330\247\330\262\331\207 \331\210 \331\205\331\210\331\202\330\271\333\214"
+   "\330\252 \331\276\331\206\330\254\330\261\331\207",
+   "\331\206\331\205\330\247\333\214\330\264 \330\252\330\262\330\246\333\214\331\206\330\247\330"
+   "\252 \331\276\331\206\330\254\330\261\331\207",
+   "\331\202\330\247\330\271\330\257\331\207\331\224 \331\276\331\206\330\254\330\261\331\207",
+   "\331\210\330\247\333\214 \331\201\330\247\333\214",
+   "\331\210\330\247\333\214 \331\201\330\247\333\214",
+   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
+   "\330\263\331\201\330\247\330\261\330\264\333\214",
+   "video_viewport_bias_x",
+   "video_viewport_bias_y",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \332\257\331\201\330\252\330\247\330"
+   "\261 \330\257\330\263\330\252\330\261\330\263\333\214\342\200\214\331\276\330\260\333\214\330"
+   "\261\333\214 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214"
+   "\330\257.",
+   "\330\255\330\263\330\247\330\250\342\200\214\331\207\330\247\333\214\333\214 \332\251\331\207 "
+   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\264\330\257\331\207\342"
+   "\200\214\330\247\331\206\330\257 \330\261\330\247 \331\205\330\257\333\214\330\261\333\214\330"
+   "\252 \331\205\333\214\342\200\214\332\251\331\206\330\257.",
+   "\330\250\330\247 \330\247\330\263\332\251\331\206 \331\205\330\255\330\252\331\210\330\247\330"
+   "\214 \331\204\333\214\330\263\330\252 \331\207\330\247\333\214 \331\276\330\256\330\264 \330\261"
+   "\330\247 \330\247\333\214\330\254\330\247\330\257 \331\210 \330\250\331\207\342\200\214\330\261"
+   "\331\210\330\262 \332\251\331\206\333\214\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\330\261\330\250\331\210\330"
+   "\267 \330\250\331\207 \330\256\330\257\331\205\330\252 \331\207\331\210\330\264 \331\205\330\265"
+   "\331\206\331\210\330\271\333\214 (\330\252\330\261\330\254\331\205\331\207/\330\252\330\250\330"
+   "\257\333\214\331\204 \331\205\330\252\331\206 \330\250\331\207 \332\257\331\201\330\252\330\247"
+   "\330\261/\331\205\330\252\331\201\330\261\331\202\331\207) \330\261\330\247 \330\252\330\272\333"
+   "\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\331\201\330\271\330\247\331\204\342\200\214\330\263\330\247\330\262\333\214 \330\256\330\261"
+   "\331\210\330\254\333\214 \330\265\330\257\330\247.",
+   "\330\265\330\257\330\247\333\214 \330\252\330\261\332\251\333\214\330\250\342\200\214\332\251"
+   "\331\206\331\206\330\257\331\207 \330\261\330\247 \330\263\330\247\332\251\330\252 \332\251\331"
+   "\206\333\214\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\252\330\261\332\251\333\214\330"
+   "\250\342\200\214\332\251\331\206\331\206\330\257\331\207\331\224 \330\265\330\257\330\247 \330"
+   "\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\263\330\247\332\251\330\252 \332\251\330\261\330\257\331\206.",
+   "\331\206\330\261\330\256 \331\206\331\205\331\210\331\206\331\207\331\224 \330\265\330\257\330"
+   "\247\333\214 \330\256\330\261\331\210\330\254\333\214.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\256\330\261\331\210\330\254\333"
+   "\214 \330\265\330\257\330\247 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257"
+   "\331\207\333\214\330\257.",
+   "\330\257\330\261\330\247\333\214\331\210\330\261 \330\250\330\247\330\262\331\206\331\205\331"
+   "\210\331\206\331\207\342\200\214\332\257\333\214\330\261 \330\265\330\257\330\247 \330\250\330"
+   "\261\330\247\333\214 \330\247\330\263\330\252\331\201\330\247\330\257\331\207.",
+   "\330\252\330\272\333\214\333\214\330\261 \330\252\331\206\330\270\333\214\331\205\330\247\330"
+   "\252 \331\210\330\261\331\210\330\257\333\214/\330\256\330\261\331\210\330\254\333\214 \330\265"
+   "\330\257\330\247\330\252\330\272\333\214\333\214\330\261.",
+   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330\265"
+   "\330\257\330\247. \330\252\331\210\330\265\333\214\331\207\342\200\214\330\264\330\257\331\207.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\207\331\205\332\257\330\247\331"
+   "\205\342\200\214\330\263\330\247\330\262\333\214 \330\265\330\257\330\247 \330\261\330\247 \330"
+   "\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\264\333\214\331\210\331\207\342\200\214\331\206\330\247\331\205\331\207\331\224 \330\264"
+   "\330\250\332\251\331\207\331\224 \331\201\330\266\330\247\333\214 \330\247\330\250\330\261\333"
+   "\214 \332\251\331\207 \330\250\330\247\333\214\330\257 \330\247\330\263\330\252\331\201\330\247"
+   "\330\257\331\207 \330\264\331\210\330\257.",
+   "\332\257\330\260\330\261\331\210\330\247\332\230\331\207\331\224 \330\255\330\263\330\247\330"
+   "\250 \331\201\330\266\330\247\333\214 \330\247\330\250\330\261\333\214 \330\264\331\205\330\247.",
+   "\330\252\330\272\333\214\333\214\330\261 \330\252\331\206\330\270\333\214\331\205\330\247\330"
+   "\252 \331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330"
+   "\247\330\250\330\261\333\214.",
+   "\331\206\330\247\331\205 \332\251\330\247\330\261\330\250\330\261\333\214 \330\255\330\263\330"
+   "\247\330\250 \331\201\330\266\330\247\333\214 \330\247\330\250\330\261\333\214 \330\264\331\205"
+   "\330\247.",
+   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\276\333\214\332\251\330"
+   "\261\330\250\331\206\330\257\333\214 \331\205\331\210\330\254\331\210\330\257 \331\210 \330\254"
+   "\330\247\333\214\332\257\330\262\333\214\331\206\333\214 \331\205\331\202\330\247\330\257\333"
+   "\214\330\261 \331\201\330\271\331\204\333\214.",
+   "\331\205\330\257\333\214\330\261\333\214\330\252 \331\210 \330\247\333\214\330\254\330\247\330"
+   "\257 \330\247\330\263\331\206\330\247\330\257 \331\276\333\214\332\251\330\261\330\250\331\206"
+   "\330\257\333\214.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\276\333\214\330\264\342\200\214"
+   "\331\201\330\261\330\266 \330\250\330\261\330\247\333\214 \331\201\330\247\333\214\331\204\342"
+   "\200\214\331\207\330\247\333\214 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333"
+   "\214 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\331\276\330\247\333\214\332\257\330\247\331\207\342\200\214\331\207\330\247\333\214 \330\257"
+   "\330\247\330\257\331\207 \330\257\330\261 \330\247\333\214\331\206 \331\276\331\210\330\264\331"
+   "\207 \331\206\332\257\331\207\330\257\330\247\330\261\333\214 \331\205\333\214\342\200\214\330"
+   "\264\331\210\331\206\330\257.",
+   "\330\257\330\263\330\252\330\261\330\263\333\214 \330\263\330\261\333\214\330\271 \330\250\331"
+   "\207 \330\252\331\205\330\247\331\205 \330\252\331\206\330\270\333\214\331\205\330\247\330\252 "
+   "\331\205\330\261\330\250\331\210\330\267\331\207 \330\255\333\214\331\206 \330\250\330\247\330"
+   "\262\333\214.",
+   "\331\201\330\247\333\214\331\204\342\200\214\331\207\330\247\333\214 \330\250\330\247\330\261"
+   "\332\257\333\214\330\261\333\214 \330\264\330\257\331\207 \330\257\330\261 \330\247\333\214\331"
+   "\206 \331\276\331\210\330\264\331\207 \331\206\332\257\331\207\330\257\330\247\330\261\333\214 "
+   "\331\205\333\214\342\200\214\330\264\331\210\331\206\330\257.",
+   "\330\263\330\247\330\256\330\252 \333\214\332\251 \331\276\330\264\330\252\333\214\330\250\330"
+   "\247\331\206 \330\242\330\261\330\264\333\214\331\210\330\264\330\257\331\207 \330\247\330\262 "
+   "\331\207\330\263\330\252\331\207\331\224 \331\206\330\265\330\250\342\200\214\330\264\330\257"
+   "\331\207\331\224 \332\251\331\206\331\210\331\206\333\214.",
+   "\330\255\330\260\331\201 \330\247\333\214\331\206 \331\207\330\263\330\252\331\207 \330\247\330"
+   "\262 \330\257\333\214\330\263\332\251.",
+   "\330\255\330\260\331\201 \333\214\332\251 \331\276\330\261\331\210\331\206\330\257\331\207 \330"
+   "\247\330\262 \331\201\331\207\330\261\330\263\330\252 \331\276\330\264\330\252\333\214\330\250"
+   "\330\247\331\206\342\200\214\331\207\330\247\333\214 \330\242\330\261\330\264\333\214\331\210"
+   "\330\264\330\257\331\207.",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \331\205\330\261\330\250\331\210\330"
+   "\267 \330\250\331\207 \330\250\330\261\331\206\330\247\331\205\331\207/\331\207\330\263\330\252"
+   "\331\207 \330\261\330\247 \331\205\330\264\330\247\331\207\330\257\331\207 \332\251\331\206\333"
+   "\214\330\257.",
+   "\330\247\331\206\330\252\330\256\330\247\330\250 \331\207\330\263\330\252\331\207\331\224 \331"
+   "\205\331\210\330\261\330\257 \330\247\330\263\330\252\331\201\330\247\330\257\331\207.",
+   "\331\206\330\265\330\250 \333\214\332\251 \331\206\330\263\330\256\331\207\331\224 \331\276\333"
+   "\214\330\264\333\214\331\206 \331\207\330\263\330\252\331\207 \330\247\330\262 \331\201\331\207"
+   "\330\261\330\263\330\252 \331\276\330\264\330\252\333\214\330\250\330\247\331\206\342\200\214"
+   "\331\207\330\247\333\214 \330\242\330\261\330\264\333\214\331\210\330\264\330\257\331\207.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\207\330\263\330\252\331\207 \330"
+   "\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\254\331\204\331\210\332\257\333\214\330\261\333\214 \330\247\330\262 \331\206\331\205\330"
+   "\247\333\214\330\264 \330\257\330\247\330\257\331\206 \330\247\333\214\331\206 \331\207\330\263"
+   "\330\252\331\207 \330\257\330\261 \332\257\330\262\333\214\331\206\332\257\330\247\331\206/\330"
+   "\262\330\250\330\247\331\206\331\207\331\224 \302\253\331\207\330\263\330\252\331\207\342\200"
+   "\214\331\207\330\247\333\214 \330\250\330\257\331\210\331\206 \331\205\330\255\330\252\331\210"
+   "\330\247\302\273. \331\201\331\202\330\267 \331\210\331\202\330\252\333\214 \332\251\331\207 "
+   "\330\255\330\247\331\204\330\252 \331\206\331\205\330\247\333\214\330\264 \330\261\331\210\333"
+   "\214 \330\263\331\201\330\247\330\261\330\264\333\214 \330\252\331\206\330\270\333\214\331\205 "
+   "\330\264\330\257\331\207 \330\250\330\247\330\264\330\257 \330\247\330\271\331\205\330\247\331"
+   "\204 \331\205\333\214\342\200\214\330\264\331\210\330\257.",
+   "\330\263\333\214\332\257\331\206\330\247\331\204\342\200\214\331\207\330\247\333\214 \330\250"
+   "\331\210\331\205\333\214 \330\250\330\247 \330\252\331\201\332\251\333\214\332\251\342\200\214"
+   "\331\276\330\260\333\214\330\261\333\214 \331\276\330\247\333\214\333\214\331\206 \331\205\331"
+   "\206\330\247\330\263\330\250 \331\206\331\205\330\247\333\214\330\264\332\257\330\261\331\207"
+   "\330\247\333\214 CRT \330\261\330\247 \330\250\331\207 \330\256\330\261\331\210\330\254\333\214 "
+   "\330\250\330\257\331\207\333\214\330\257.",
    "\330\252\331\206\331\207\330\247 \330\250\330\261\330\247\333\214 \331\206\331\205\330\247\333"
    "\214\330\264\332\257\330\261\331\207\330\247\333\214 CRT. \330\263\330\271\333\214 \331\205\333"
    "\214\342\200\214\332\251\331\206\330\257 \331\210\330\266\331\210\330\255 \331\210 \331\206\330"
@@ -1610,261 +1741,124 @@ static const struct
    "\257\331\202\333\214\331\202 \331\207\330\263\330\252\331\207/\330\250\330\247\330\262\333\214 "
    "\330\261\330\247 \330\247\330\263\330\252\331\201\330\247\330\257\331\207 \332\251\331\206\330"
    "\257.",
-   "\331\201\330\261\330\247\330\252\331\201\332\251\333\214\332\251\342\200\214\331\276\330\260\333"
-   "\214\330\261\333\214 CRT",
-   "\331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330\247\330\262"
-   "\333\214 \330\263\331\201\330\247\330\261\330\264\333\214",
    "\330\257\330\261 \330\265\331\210\330\261\330\252 \331\206\333\214\330\247\330\262 \330\247\330"
    "\262 \333\214\332\251 \331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330"
    "\263\330\247\330\262\333\214 \330\263\331\201\330\247\330\261\330\264\333\214 \331\205\330\264"
    "\330\256\330\265\342\200\214\330\264\330\257\331\207 \330\257\330\261 \331\201\330\247\333\214"
    "\331\204 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\247\330\263\330"
    "\252\331\201\330\247\330\257\331\207 \332\251\331\206.",
-   "\330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\247\330\262 \331\201\331\207\330"
-   "\261\330\263\330\252 \330\250\330\247 \331\210\330\266\331\210\330\255 \330\250\330\247\331\204"
-   "\330\247",
-   "\330\247\331\206\330\257\333\214\330\263 \331\206\331\205\330\247\333\214\330\264\332\257\330"
-   "\261",
-   "\333\214\332\251\333\214 \330\247\330\262 \331\206\331\205\330\247\333\214\330\264\332\257\330"
-   "\261\331\207\330\247 \330\261\330\247 \330\250\330\261\330\247\333\214 \330\247\330\263\330\252"
-   "\331\201\330\247\330\257\331\207 \330\250\330\261\332\257\330\262\333\214\331\206\333\214\330"
-   "\257.",
-   "\332\206\330\261\330\256\330\264 \331\210\333\214\330\257\333\214\331\210",
-   "\330\254\331\207\330\252 \330\265\331\201\330\255\331\207 \331\206\331\205\330\247\333\214\330"
-   "\264",
-   "\332\251\330\247\330\261\330\252 \332\257\330\261\330\247\331\201\333\214\332\251 \331\205\331"
-   "\210\330\261\330\257\330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\261\330\247 "
-   "\330\250\330\261\332\257\330\262\333\214\331\206\333\214\330\257.",
-   "\331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330\247\330\262"
-   "\333\214 \330\271\331\205\331\210\330\257\333\214",
-   "\330\252\330\256\331\205\333\214\331\206 \331\206\330\261\330\256 \330\252\330\247\330\262\331"
-   "\207\342\200\214\330\263\330\247\330\262\333\214 \331\206\331\205\330\247\333\214\330\264\332"
-   "\257\330\261",
-   "\331\205\331\202\330\257\330\247\330\261 \330\257\331\202\333\214\331\202 \330\252\330\256\331"
-   "\205\333\214\331\206 \331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330"
-   "\263\330\247\330\262\333\214 \331\206\331\205\330\247\333\214\330\264\332\257\330\261 \330\250"
-   "\330\261\330\255\330\263\330\250 \331\207\330\261\330\252\330\262.",
-   "\330\252\331\206\330\270\333\214\331\205 \331\206\330\261\330\256 \330\252\330\247\330\262\331"
-   "\207\342\200\214\330\263\330\247\330\262\333\214 \332\257\330\262\330\247\330\261\330\264 \330"
-   "\264\330\257\331\207 \330\252\331\210\330\263\330\267 \331\206\331\205\330\247\333\214\330\264"
-   "\332\257\330\261",
-   "\331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330\247\330\262"
-   "\333\214\342\200\214\330\247\333\214 \332\257\330\262\330\247\330\261\330\264 \330\264\330\257"
-   "\331\207 \330\252\331\210\330\263\330\267 \330\261\330\247\331\207\342\200\214\330\247\331\206"
-   "\330\257\330\247\330\262 \331\206\331\205\330\247\333\214\330\264\332\257\330\261.",
-   "\330\252\330\271\331\210\333\214\330\266 \330\256\331\210\330\257\332\251\330\247\330\261 \331"
-   "\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330\247\330\262\333"
-   "\214",
-   "\330\242\330\263\330\252\330\247\331\206\331\207\331\224 \330\256\331\210\330\257\332\251\330"
-   "\247\330\261 \331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330"
-   "\247\330\262\333\214 \331\276\330\247\331\204",
-   "\330\250\333\214\330\264\333\214\331\206\331\207\331\224 \331\206\330\261\330\256 \330\252\330"
-   "\247\330\262\331\207\342\200\214\330\263\330\247\330\262\333\214\330\214 \331\276\330\247\331"
-   "\204 \330\257\330\261 \331\206\330\270\330\261 \332\257\330\261\331\201\330\252\331\207 \330\264"
-   "\331\210\330\257.",
-   "\330\252\331\206\331\207\330\247 \330\257\330\261 \330\255\330\247\331\204\330\252 \330\252\331"
-   "\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207\331\224 \330\247\330\256\330"
-   "\252\330\265\330\247\330\265\333\214",
-   "\330\252\331\206\331\207\330\247 \330\257\330\261 \330\255\330\247\331\204\330\252 \330\252\331"
-   "\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207\331\224 \331\276\331\206\330"
-   "\254\330\261\331\207\342\200\214\330\247\333\214",
-   "\330\252\331\205\330\247\331\205 \330\255\330\247\331\204\330\252\342\200\214\331\207\330\247"
-   "\333\214 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207",
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   "\331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330\247\330\262"
-   "\333\214 \330\271\331\205\331\210\330\257\333\214",
-   "\330\252\331\206\330\270\333\214\331\205 \331\206\330\261\330\256 \330\252\330\247\330\262\331"
-   "\207\342\200\214\330\263\330\247\330\262\333\214 \330\271\331\205\331\210\330\257\333\214 \330"
-   "\265\331\201\330\255\331\207. \302\253\333\265\333\260 \331\207\330\261\330\252\330\262\302\273 "
-   "\331\205\331\206\330\254\330\261 \330\250\331\207 \331\206\330\261\331\205\342\200\214\330\252"
-   "\330\261 \330\264\330\257\331\206 \331\210\333\214\330\257\330\246\331\210 \330\250\330\261\330"
-   "\247\333\214 \331\205\330\255\330\252\331\210\330\247\333\214 \331\276\330\247\331\204 \331\205"
-   "\333\214\342\200\214\330\264\331\210\330\257.",
-   "\333\266\333\260 \331\207\330\261\330\252\330\262",
-   "\333\265\333\260 \331\207\330\261\330\252\330\262",
-#endif
-   "\330\255\330\247\331\204\330\252 \331\276\331\206\330\254\330\261\331\207\342\200\214\330\247"
-   "\333\214 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207",
-   "\330\257\330\261 \330\255\330\247\331\204\330\252 \330\252\331\205\330\247\331\205\342\200\214"
-   "\330\265\331\201\330\255\331\207\330\214 \330\247\330\263\330\252\331\201\330\247\330\257\331"
-   "\207 \330\247\330\262 \331\276\331\206\330\254\330\261\331\207\331\224 \330\252\331\205\330\247"
-   "\331\205\342\200\214\330\265\331\201\330\255\331\207 \330\250\331\207 \331\205\331\206\330\270"
-   "\331\210\330\261 \331\276\330\261\331\207\333\214\330\262 \330\247\330\262 \330\252\330\272\333"
-   "\214\333\214\330\261 \330\255\330\247\331\204\330\252 \331\206\331\205\330\247\333\214\330\264 "
-   "\330\252\330\261\330\254\333\214\330\255 \330\257\330\247\330\257\331\207 \330\264\331\210\330"
-   "\257.",
-   "\330\271\330\261\330\266 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255"
-   "\331\207",
-   "\330\252\331\206\330\270\333\214\331\205 \330\247\331\206\330\257\330\247\330\262\331\207\331"
-   "\224 \330\271\330\261\330\266 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330"
-   "\255\331\207 \330\250\330\261\330\247\333\214 \330\255\330\247\331\204\330\252 \330\252\331\205"
-   "\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207\331\224 \330\272\333\214\330\261"
-   "\331\276\331\206\330\254\330\261\331\207\342\200\214\330\247\333\214. \330\247\332\257\330\261 "
-   "\330\252\331\206\330\270\333\214\331\205 \331\206\330\264\331\210\330\257\330\214 \330\247\330"
-   "\262 \331\210\330\266\331\210\330\255 \331\205\333\214\330\262\332\251\330\247\330\261 \330\247"
-   "\330\263\330\252\331\201\330\247\330\257\331\207 \330\256\331\210\330\247\331\207\330\257 \330"
-   "\264\330\257.",
-   "\330\247\330\261\330\252\331\201\330\247\330\271 \330\252\331\205\330\247\331\205\342\200\214"
-   "\330\265\331\201\330\255\331\207",
-   "\330\252\331\206\330\270\333\214\331\205 \330\247\331\206\330\257\330\247\330\262\331\207\331"
-   "\224 \330\247\330\261\330\252\331\201\330\247\330\271 \330\252\331\205\330\247\331\205\342\200"
-   "\214\330\265\331\201\330\255\331\207 \330\250\330\261\330\247\333\214 \330\255\330\247\331\204"
-   "\330\252 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207\331\224 "
-   "\330\272\333\214\330\261\331\276\331\206\330\254\330\261\331\207\342\200\214\330\247\333\214. "
-   "\330\247\332\257\330\261 \330\252\331\206\330\270\333\214\331\205 \331\206\330\264\331\210\330"
-   "\257\330\214 \330\247\330\262 \331\210\330\266\331\210\330\255 \331\205\333\214\330\262\332\251"
-   "\330\247\330\261 \330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\256\331\210\330"
-   "\247\331\207\330\257 \330\264\330\257.",
-   "\330\247\330\254\330\250\330\247\330\261 \331\210\330\266\331\210\330\255 \330\261\331\210\333"
-   "\214 UWP",
-   "\331\205\331\202\333\214\330\247\330\263 \331\276\331\206\330\254\330\261\331\207\342\200\214"
-   "\330\247\333\214",
-   "\331\202\330\247\330\271\330\257\331\207\331\224 \331\276\331\206\330\254\330\261\331\207",
-   "\330\247\330\261\330\252\331\201\330\247\330\271 \331\276\331\206\330\254\330\261\331\207",
-   "\330\255\330\257\330\247\332\251\330\253\330\261 \331\276\331\207\331\206\330\247\333\214 \330"
-   "\252\330\265\331\210\333\214\330\261",
-   "\330\255\330\257\330\247\332\251\330\253\330\261 \330\247\330\261\330\252\331\201\330\247\330"
-   "\271 \330\252\330\265\331\210\333\214\330\261",
-   "\330\264\331\201\330\247\331\201\333\214\330\252 \331\276\331\206\330\254\330\261\331\207",
-   "\330\264\331\201\330\247\331\201\333\214\330\252 \331\276\331\206\330\254\330\261\331\207 \330"
-   "\261\330\247 \330\252\331\206\330\270\333\214\331\205 \331\205\333\214\342\200\214\332\251\331"
-   "\206\330\257.",
-   "\331\206\331\205\330\247\333\214\330\264 \330\252\330\262\330\246\333\214\331\206\330\247\330"
-   "\252 \331\276\331\206\330\254\330\261\331\207",
-   "\331\206\331\210\330\247\330\261 \330\271\331\206\331\210\330\247\331\206 \331\210 \330\256\330"
-   "\267 \330\255\330\247\330\264\333\214\331\207\331\224 \331\276\331\206\330\254\330\261\331\207 "
-   "\331\206\331\205\330\247\333\214\330\264 \330\257\330\247\330\257\331\207 \330\264\331\210\330"
-   "\257.",
-   "\331\206\331\205\330\247\333\214\330\264 \331\206\331\210\330\247\330\261 \331\201\331\207\330"
-   "\261\330\263\330\252",
-   "\331\206\331\210\330\247\330\261 \331\201\331\207\330\261\330\263\330\252 \331\276\331\206\330"
-   "\254\330\261\331\207\330\214 \331\206\331\205\330\247\333\214\330\264 \330\257\330\247\330\257"
-   "\331\207 \330\264\331\210\330\257.",
-   "\330\250\331\207 \330\256\330\247\330\267\330\261 \330\263\331\276\330\247\330\261\333\214 \330"
-   "\247\331\206\330\257\330\247\330\262\331\207 \331\210 \331\205\331\210\331\202\330\271\333\214"
-   "\330\252 \331\276\331\206\330\254\330\261\331\207",
-   "\330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\247\330\262 \330\247\331\206\330"
-   "\257\330\247\330\262\331\207\331\224 \330\263\331\201\330\247\330\261\330\264\333\214 \330\250"
-   "\330\261\330\247\333\214 \331\276\331\206\330\254\330\261\331\207",
-   "\331\205\331\202\333\214\330\247\330\263 \330\265\330\255\333\214\330\255",
-   "\331\206\330\263\330\250\330\252 \330\252\330\265\331\210\333\214\330\261",
-   "\331\206\330\263\330\250\330\252 \330\252\330\265\331\210\333\214\330\261 \331\206\331\205\330"
-   "\247\333\214\330\264\332\257\330\261 \330\261\330\247 \331\205\330\264\330\256\330\265 \332\251"
-   "\331\206.",
-   "\330\263\331\201\330\247\330\261\330\264\333\214",
-#if defined(DINGUX)
-   "\331\206\330\263\330\250\330\252 \330\247\330\250\330\271\330\247\330\257 \330\255\331\201\330"
-   "\270 \330\264\331\210\330\257",
-#endif
-   "\331\206\330\261\330\256 \331\206\330\263\330\250\330\252 \330\263\331\201\330\247\330\261\330"
-   "\264\333\214 (\331\205\331\210\331\202\330\271\333\214\330\252 Y)",
-   "\331\206\330\261\330\256 \331\206\330\263\330\250\330\252 \330\263\331\201\330\247\330\261\330"
-   "\264\333\214 (\330\271\330\261\330\266)",
-   "\331\206\330\261\330\256 \331\206\330\263\330\250\330\252 \330\263\331\201\330\247\330\261\330"
-   "\264\333\214 (\330\247\330\261\330\252\331\201\330\247\330\271)",
-   "\330\256\331\210\330\257\332\251\330\247\330\261",
-   "\330\252\330\243\330\256\333\214\330\261 \330\256\331\210\330\257\332\251\330\247\330\261 \331"
-   "\201\330\261\333\214\331\205",
-   "\330\256\331\210\330\257\332\251\330\247\330\261",
-   "\331\205\330\244\330\253\330\261",
-   "\330\256\330\261\331\210\330\254\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\256\330\261\331\210\330\254\333"
-   "\214 \330\265\330\257\330\247 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257"
-   "\331\207\333\214\330\257.",
-#ifdef HAVE_MICROPHONE
-   "\331\205\333\214\332\251\330\261\331\210\331\201\331\206",
-#endif
-   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\207\331\205\332\257\330\247\331"
-   "\205\342\200\214\330\263\330\247\330\262\333\214 \330\265\330\257\330\247 \330\261\330\247 \330"
-   "\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 MIDI \330\261\330\247 \330\252\330\272"
-   "\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
-   "\330\263\330\247\332\251\330\252",
-   "\330\263\330\247\332\251\330\252 \332\251\330\261\330\257\331\206.",
-   "\330\263\330\247\332\251\330\252 \332\251\330\261\330\257\331\206 \330\252\330\261\332\251\333"
-   "\214\330\250\342\200\214\332\251\331\206\331\206\330\257\331\207",
-   "\330\265\330\257\330\247\333\214 \330\252\330\261\332\251\333\214\330\250\342\200\214\332\251"
-   "\331\206\331\206\330\257\331\207 \330\261\330\247 \330\263\330\247\332\251\330\252 \332\251\331"
-   "\206\333\214\330\257.",
-   "\330\247\331\201\330\262\331\210\331\206\331\207\331\224 DSP",
-   "\330\255\330\260\331\201 \330\247\331\201\330\262\331\210\331\206\331\207\331\224 DSP",
-   "\330\265\330\257\330\247",
-   "\331\201\330\271\330\247\331\204\342\200\214\330\263\330\247\330\262\333\214 \330\256\330\261"
-   "\331\210\330\254\333\214 \330\265\330\257\330\247.",
-   "\330\257\330\263\330\252\332\257\330\247\331\207",
-   "\331\206\330\261\330\256 \330\256\330\261\331\210\330\254\333\214 (\331\207\330\261\330\252\330"
-   "\262)",
-   "\331\206\330\261\330\256 \331\206\331\205\331\210\331\206\331\207\331\224 \330\265\330\257\330"
-   "\247\333\214 \330\256\330\261\331\210\330\254\333\214.",
-#ifdef HAVE_MICROPHONE
-   "\331\205\333\214\332\251\330\261\331\210\331\201\331\206",
-#endif
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-   "\330\257\330\263\330\252\332\257\330\247\331\207",
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-   "\331\206\330\261\330\256 \331\210\330\261\331\210\330\257\333\214 \331\276\333\214\330\264\342"
-   "\200\214\331\201\330\261\330\266 (\331\207\330\261\330\252\330\262)",
-   "\332\251\333\214\331\201\333\214\330\252 \330\250\330\247\330\262\331\206\331\205\331\210\331"
-   "\206\331\207\342\200\214\332\257\333\214\330\261",
-#endif
-   "\332\251\333\214\331\201\333\214\330\252 \330\250\330\247\330\262\331\206\331\205\331\210\331"
-   "\206\331\207\342\200\214\332\257\333\214\330\261",
-   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214",
-   "\331\207\331\205\332\257\330\247\331\205\342\200\214\330\263\330\247\330\262\333\214 \330\265"
-   "\330\257\330\247. \330\252\331\210\330\265\333\214\331\207\342\200\214\330\264\330\257\331\207.",
-   "\331\210\330\261\331\210\330\257\333\214",
-   "\330\257\330\263\330\252\332\257\330\247\331\207 \331\210\330\261\331\210\330\257\333\214 \330"
-   "\261\330\247 \330\247\331\206\330\252\330\256\330\247\330\250 \332\251\331\206\333\214\330\257.",
-   "\330\256\330\261\331\210\330\254\333\214",
-   "\330\257\330\263\330\252\332\257\330\247\331\207 \330\256\330\261\331\210\330\254\333\214 \330"
-   "\261\330\247 \330\247\331\206\330\252\330\256\330\247\330\250 \332\251\331\206\333\214\330\257.",
-   "\330\255\330\254\331\205 \330\265\330\257\330\247",
-   "\330\255\330\254\331\205 \330\265\330\257\330\247\333\214 \330\256\330\261\331\210\330\254\333"
-   "\214 \330\261\330\247 \330\252\331\206\330\270\333\214\331\205 \332\251\331\206\333\214\330\257 "
-   "(\331\252).",
-   "\331\276\330\256\330\264",
-   "\331\276\330\256\330\264 (\330\250\330\247 \330\252\332\251\330\261\330\247\330\261)",
-   "\331\276\330\256\330\264 (\330\252\330\261\330\252\333\214\330\250\333\214)",
-   "\330\252\331\210\331\202\331\201",
-   "\330\255\330\260\331\201",
-   "\330\255\330\254\331\205 \330\265\330\257\330\247",
-   "\330\252\330\261\332\251\333\214\330\250\342\200\214\332\251\331\206\331\206\330\257\331\207",
-   "\330\255\330\257\330\247\332\251\330\253\330\261 \332\251\330\247\330\261\330\250\330\261\331"
-   "\207\330\247",
-   "\330\272\333\214\330\261\331\201\330\271\330\247\331\204 \332\251\330\261\330\257\331\206 \330"
-   "\257\332\251\331\205\331\207\331\224 \330\247\330\267\331\204\330\247\330\271\330\247\330\252",
-   "\330\272\333\214\330\261\331\201\330\271\330\247\331\204\342\200\214\330\263\330\247\330\262\333"
-   "\214 \330\257\332\251\331\205\331\207\331\224 \330\254\330\263\330\252\330\254\331\210",
-   "\331\204\330\261\330\262\330\264 \331\207\331\206\332\257\330\247\331\205 \331\201\330\264\330"
-   "\261\330\257\331\206 \332\251\331\204\333\214\330\257",
-   "\331\201\330\271\330\247\331\204\342\200\214\330\263\330\247\330\262\333\214 \331\204\330\261"
-   "\330\262\330\264 \330\257\330\263\330\252\332\257\330\247\331\207 (\330\250\330\261\330\247\333"
-   "\214 \331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \331\276\330\264\330"
-   "\252\333\214\330\250\330\247\331\206\333\214 \330\264\330\257\331\207)",
-   "\331\202\330\257\330\261\330\252 \331\204\330\261\330\262\330\264",
-   "\330\257\330\247\331\205\331\206\331\207\331\224 \330\247\330\253\330\261 \330\250\330\247\330"
-   "\262\330\256\331\210\330\261\330\257 \331\204\330\247\331\205\330\263\331\207 \330\261\330\247 "
-   "\331\205\330\264\330\256\330\265 \332\251\331\206\333\214\330\257.",
-   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\256\331\210\330\257\332"
-   "\251\330\247\330\261",
-#ifdef ANDROID
-   "\330\247\331\206\330\252\330\256\330\247\330\250 \330\247\333\214\331\206 \330\257\330\263\330"
-   "\252\332\257\330\247\331\207 \330\250\331\207\342\200\214\330\271\331\206\331\210\330\247\331"
-   "\206 \330\265\331\201\330\255\331\207\342\200\214\332\251\331\204\333\214\330\257 \331\201\333"
-   "\214\330\262\333\214\332\251\333\214 \330\250\331\207\342\200\214\330\254\330\247\333\214 \330"
-   "\257\330\263\330\252\331\207\342\200\214\330\250\330\247\330\262\333\214.",
-#endif
-   "\330\255\330\263\330\247\330\263\333\214\330\252 \330\242\331\206\330\247\331\204\331\210\332"
-   "\257",
+   "\331\206\331\205\330\247\333\214\330\264 \330\254\330\263\330\252\330\254\331\210\331\207\330"
+   "\247\333\214 \331\276\333\214\330\264\333\214\331\206.",
+   "\331\206\331\205\330\247\333\214\330\264 \331\276\330\247\333\214\332\257\330\247\331\207 \330"
+   "\257\330\247\330\257\331\207.",
+   "\331\205\330\263\333\214\330\261\331\207\330\247\333\214 \331\276\333\214\330\264\342\200\214"
+   "\331\201\330\261\330\266\333\214 \332\251\331\207 \331\201\330\247\333\214\331\204\342\200\214"
+   "\331\207\330\247 \330\242\331\206\330\254\330\247 \331\207\330\263\330\252\331\206\330\257 \330"
+   "\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \331\205\330\261\330\250\331\210\330"
+   "\267 \330\250\331\207 \330\257\333\214\330\263\332\251 \331\207\330\247\333\214 \330\261\330\263"
+   "\330\247\331\206\331\207 \330\247\333\214 \331\210\330\247\330\261\330\257\330\264\330\257\331"
+   "\207 \330\261\330\247 \331\205\330\264\330\247\331\207\330\257\331\207 \332\251\331\206\333\214"
+   "\330\257.",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\210 \331\206\330\265\330\250 \333"
+   "\214\332\251 \331\207\330\263\330\252\331\207 \330\247\330\262 \330\250\331\207\342\200\214\330"
+   "\261\331\210\330\262\330\261\330\263\330\247\331\206 \330\250\330\261\330\256\330\267.",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\205\330\255\330\252\331\210\330"
+   "\247\333\214 \330\261\330\247\333\214\332\257\330\247\331\206 \330\250\330\261\330\247\333\214 "
+   "\331\207\330\263\330\252\331\207\331\224 \330\250\330\261\332\257\330\262\333\214\330\257\331"
+   "\207 \330\264\330\257\331\207.",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\276\330\261\331\210\331\206\330"
+   "\257\331\207\342\200\214\331\207\330\247\333\214 \330\263\333\214\330\263\330\252\331\205\333"
+   "\214 \332\251\331\205\332\251\333\214 \331\205\331\210\330\261\330\257\331\206\333\214\330\247"
+   "\330\262 \330\250\330\261\330\247\333\214 \332\251\330\247\330\261\332\251\330\261\330\257 \331"
+   "\205\331\206\330\247\330\263\330\250/\330\250\331\207\333\214\331\206\331\207\331\224 \331\207"
+   "\330\263\330\252\331\207.",
+   "\330\252\330\272\333\214\333\214\330\261 \330\257\330\261\330\247\333\214\331\210\330\261\331"
+   "\207\330\247\333\214 \331\205\331\210\330\261\330\257 \330\247\330\263\330\252\331\201\330\247"
+   "\330\257\331\207\331\224 \330\263\333\214\330\263\330\252\331\205.",
+   "\330\257\333\214\330\263\332\251 \331\201\333\214\330\262\333\214\332\251\333\214 \330\261\330"
+   "\263\330\247\331\206\331\207 \330\261\330\247 \330\257\330\261 \330\255\330\247\331\201\330\270"
+   "\331\207 \330\257\330\247\330\256\331\204\333\214 \330\252\330\256\331\204\333\214\331\207 \332"
+   "\251\331\206\333\214\330\257. \330\250\331\207 \330\271\331\206\331\210\330\247\331\206 \333\214"
+   "\332\251 \331\201\330\247\333\214\331\204 image \330\260\330\256\333\214\330\261\331\207 \330"
+   "\256\331\210\330\247\331\207\330\257 \330\264\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\250\330\261\332\257\330\261\330"
+   "\257\330\247\331\206\330\257\331\206 \330\252\330\265\331\210\333\214\330\261\330\214 \330\254"
+   "\331\204\331\210 \332\251\330\264\333\214\330\257\331\206 \330\252\330\265\331\210\333\214\330"
+   "\261 \331\210 \330\252\330\265\331\210\333\214\330\261 \330\242\331\207\330\263\330\252\331\207 "
+   "\330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333\214 \331\206\330\265\330\250"
+   "\342\200\214\330\264\330\257\331\207\342\200\214\330\247\333\214 \332\251\331\207 \331\205\333"
+   "\214\342\200\214\330\252\331\210\330\247\331\206\331\206\330\257 \330\250\330\257\331\210\331"
+   "\206 \330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\205\330\255\330\252"
+   "\331\210\330\247 \332\251\330\247\330\261 \332\251\331\206\331\206\330\257\330\214 \330\247\333"
+   "\214\331\206\330\254\330\247 \330\270\330\247\331\207\330\261 \331\205\333\214\342\200\214\330"
+   "\264\331\210\331\206\330\257.",
+   "\330\252\331\205\330\247\331\205 \331\205\330\255\330\252\331\210\330\247\333\214 \331\205\330"
+   "\267\330\247\330\250\331\202 \330\250\330\247 \331\276\330\247\333\214\332\257\330\247\331\207 "
+   "\330\257\330\247\330\257\331\207 \330\261\330\247 \330\247\330\262 \330\267\330\261\333\214\331"
+   "\202 \333\214\332\251 \330\261\330\247\330\250\330\267 \330\254\330\263\330\252\330\254\331\210"
+   "\333\214 \330\267\330\250\331\202\331\207 \330\250\331\206\330\257\333\214 \330\264\330\257\331"
+   "\207 \331\205\330\261\331\210\330\261 \332\251\331\206\333\214\330\257.",
+   "\331\205\330\255\330\252\331\210\330\247\333\214 \330\247\330\266\330\247\331\201\331\207 \330"
+   "\264\330\257\331\207 \330\250\331\207 \302\253\331\205\331\210\330\247\330\261\330\257 \330\257"
+   "\331\204\330\256\331\210\330\247\331\207\302\273 \330\257\330\261 \330\247\333\214\331\206\330"
+   "\254\330\247 \331\206\331\205\330\247\333\214\330\264 \330\257\330\247\330\257\331\207 \331\205"
+   "\333\214 \330\264\331\210\330\257.",
+   "\330\252\330\265\330\247\331\210\333\214\330\261\333\214 \332\251\331\207 \331\202\330\250\331"
+   "\204\330\247\331\213 \331\205\330\264\330\247\331\207\330\257\331\207 \332\251\330\261\330\257"
+   "\331\207\342\200\214\330\247\333\214\330\257 \330\247\333\214\331\206\330\254\330\247 \331\206"
+   "\330\264\330\247\331\206 \330\257\330\247\330\257\331\207 \330\256\331\210\330\247\331\207\331"
+   "\206\330\257 \330\264\330\257.",
+   "\331\205\331\210\330\263\333\214\331\202\333\214 \331\207\330\247\333\214\333\214 \332\251\331"
+   "\207 \331\202\330\250\331\204\330\247 \330\252\331\205\330\247\330\264\330\247 \332\251\330\261"
+   "\330\257\331\207\342\200\214\330\247\333\214\330\257 \330\247\333\214\331\206\330\254\330\247 "
+   "\331\206\330\264\330\247\331\206 \330\257\330\247\330\257\331\207 \330\256\331\210\330\247\331"
+   "\207\331\206\330\257 \330\264\330\257.",
+   "\331\210\333\214\330\257\330\246\331\210\331\207\330\247\333\214\333\214 \332\251\331\207 \331"
+   "\202\330\250\331\204\330\247\331\213 \330\252\331\205\330\247\330\264\330\247 \332\251\330\261"
+   "\330\257\331\207\342\200\214\330\247\333\214\330\257 \330\247\333\214\331\206\330\254\330\247 "
+   "\331\206\330\264\330\247\331\206 \330\257\330\247\330\257\331\207 \330\256\331\210\330\247\331"
+   "\207\331\206\330\257 \330\264\330\257.",
+   "\330\257\330\261\330\250\330\247\330\261\331\207 \330\267\330\261\330\262 \332\251\330\247\330"
+   "\261 \330\250\330\261\331\206\330\247\331\205\331\207 \330\250\333\214\330\264\330\252\330\261 "
+   "\330\250\333\214\330\247\331\205\331\210\330\262\333\214\330\257.",
+   "\331\206\331\205\330\247\333\214\330\264 \330\247\330\267\331\204\330\247\330\271\330\247\330"
+   "\252 \330\263\330\247\331\205\330\247\331\206\331\207.",
    "\330\252\331\206\330\270\333\214\331\205 \330\255\330\263\330\247\330\263\333\214\330\252 \330"
    "\247\331\207\330\261\331\205\332\251\342\200\214\331\207\330\247\333\214 \330\242\331\206\330"
    "\247\331\204\331\210\332\257.",
-   "\331\210\330\261\331\210\330\257\333\214 \330\255\330\263\332\257\330\261\331\207\330\247\333"
-   "\214 \332\251\331\205\332\251\333\214",
+   "\331\201\330\271\330\247\331\204\342\200\214\330\263\330\247\330\262\333\214 \331\202\330\247"
+   "\331\276\333\214\330\257\331\206 \331\205\330\247\331\210\330\263 \331\207\331\206\332\257\330"
+   "\247\331\205 \330\252\331\205\330\261\332\251\330\262 \330\261\331\210\333\214 \330\250\330\261"
+   "\331\206\330\247\331\205\331\207.",
+   "\330\250\333\214\331\206 \330\255\330\247\331\204\330\252\342\200\214\331\207\330\247\333\214 "
+   "\330\252\331\205\330\247\331\205 \330\265\331\201\330\255\331\207 \331\210 \331\276\331\206\330"
+   "\254\330\261\331\207\342\200\214\330\247\333\214 \330\252\330\272\333\214\333\214\330\261 \330"
+   "\255\330\247\331\204\330\252 \330\257\331\207\333\214\330\257.",
+   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\210\330\266\330\271\333"
+   "\214\330\252 \330\260\330\256\333\214\330\261\331\207\342\200\214\330\264\330\257\331\207 \330"
+   "\247\330\262 \330\264\333\214\330\247\330\261 \331\210\330\266\330\271\333\214\330\252 \331\201"
+   "\330\271\331\204\333\214.",
+   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\210\330\266\330\271\333\214\330\252 \330"
+   "\257\330\261 \330\264\333\214\330\247\330\261 \330\247\331\206\330\252\330\256\330\247\330\250 "
+   "\330\264\330\257\331\207\331\224 \331\201\330\271\331\204\333\214.",
+   "\332\251\330\247\331\207\330\264 \330\264\331\205\330\247\330\261\331\207\331\224 \330\264\333"
+   "\214\330\247\330\261 \330\260\330\256\333\214\330\261\331\207\331\224 \331\210\330\266\330\271"
+   "\333\214\330\252 \330\247\331\206\330\252\330\256\330\247\330\250 \330\264\330\257\331\207.",
+   "\330\247\331\201\330\262\330\247\333\214\330\264 \330\264\331\205\330\247\330\261\331\207\331"
+   "\224 \330\264\333\214\330\247\330\261 \330\260\330\256\333\214\330\261\331\207\331\224 \331\210"
+   "\330\266\330\271\333\214\330\252 \330\247\331\206\330\252\330\256\330\247\330\250 \330\264\330"
+   "\257\331\207.",
+   "\330\255\330\254\331\205 \330\265\330\257\330\247\333\214 \330\256\330\261\331\210\330\254\333"
+   "\214 \330\261\330\247 \332\251\330\247\331\207\330\264 \331\205\333\214\342\200\214\330\257\331"
+   "\207\330\257.",
+   "\330\255\330\254\331\205 \330\265\330\257\330\247\333\214 \330\256\330\261\331\210\330\254\333"
+   "\214 \330\261\330\247 \330\247\331\201\330\262\330\247\333\214\330\264 \331\205\333\214\342\200"
+   "\214\330\257\331\207\330\257.",
+   "\330\257\330\247\331\205\331\206\331\207\331\224 \330\247\330\253\330\261 \330\250\330\247\330"
+   "\262\330\256\331\210\330\261\330\257 \331\204\330\247\331\205\330\263\331\207 \330\261\330\247 "
+   "\331\205\330\264\330\256\330\265 \332\251\331\206\333\214\330\257.",
    "\330\257\330\261 \330\265\331\210\330\261\330\252 \331\276\330\264\330\252\333\214\330\250\330"
    "\247\331\206\333\214 \330\252\331\210\330\263\330\267 \330\263\330\256\330\252\342\200\214\330"
    "\247\331\201\330\262\330\247\330\261 \331\201\330\271\331\204\333\214\330\214 \331\210\330\261"
@@ -1878,1316 +1872,1087 @@ static const struct
    "\271\330\266\333\214 \330\247\330\262 \330\263\332\251\331\210\331\207\330\247 \331\205\330\265"
    "\330\261\331\201 \331\206\333\214\330\261\331\210 \330\261\330\247 \330\247\331\201\330\262\330"
    "\247\333\214\330\264 \330\257\331\207\330\257.",
-   "\331\202\330\247\331\276\333\214\330\257\331\206 \330\256\331\210\330\257\332\251\330\247\330"
-   "\261 \331\205\330\247\331\210\330\263 \331\205\330\247\331\210\330\263",
-   "\331\201\330\271\330\247\331\204\342\200\214\330\263\330\247\330\262\333\214 \331\202\330\247"
-   "\331\276\333\214\330\257\331\206 \331\205\330\247\331\210\330\263 \331\207\331\206\332\257\330"
-   "\247\331\205 \330\252\331\205\330\261\332\251\330\262 \330\261\331\210\333\214 \330\250\330\261"
-   "\331\206\330\247\331\205\331\207.",
-   "\331\201\330\271\330\247\331\204 \330\263\330\247\330\262\333\214 \330\256\331\210\330\257\332"
-   "\251\330\247\330\261 \330\255\330\247\331\204\330\252 \302\253\330\252\331\205\330\261\332\251"
-   "\330\262 \330\250\330\247\330\262\333\214\302\273",
-   "\330\256\330\247\331\205\331\210\330\264",
-   "\330\261\331\210\330\264\331\206",
-   "\330\252\330\264\330\256\333\214\330\265",
-   "\330\256\331\210\330\257\332\251\330\247\330\261",
-   "\330\247\330\252\331\205\330\247\331\205 \331\205\331\207\331\204\330\252",
-   "\330\252\330\271\331\204\333\214\331\202",
-   "\330\255\330\247\331\204\330\252 \330\252\331\210\330\261\330\250\331\210",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \332\251\331\206\330\252\330\261\331"
+   "\204\330\261\330\214 \331\205\330\247\331\210\330\263 \331\210 \330\265\331\201\330\255\331\207"
+   "\342\200\214\332\251\331\204\333\214\330\257 \330\261\330\247 \330\252\330\272\333\214\333\214"
+   "\330\261 \330\257\331\207\333\214\330\257.",
    "\330\247\331\206\330\252\330\256\330\247\330\250 \330\261\331\201\330\252\330\247\330\261 \332"
    "\251\331\204\333\214 \330\255\330\247\331\204\330\252 \330\252\331\210\330\261\330\250\331\210.",
-   "\332\251\331\204\330\247\330\263\333\214\332\251",
-   "\332\251\331\204\330\247\330\263\333\214\332\251 (\330\252\330\272\333\214\333\214\330\261 \331"
-   "\210\330\266\330\271\333\214\330\252)",
-   "\333\214\332\251 \330\257\332\251\331\205\331\207 (\330\252\330\272\333\214\333\214\330\261 \331"
-   "\210\330\266\330\271\333\214\330\252)",
-   "\333\214\332\251 \330\257\332\251\331\205\331\207 (\331\206\332\257\331\207 \330\257\330\247\330"
-   "\264\330\252\331\206)",
-   "\332\251\331\204\333\214\330\257\331\207\330\247\333\214 \331\205\333\214\330\247\331\206\330"
-   "\250\330\261",
-   "\332\251\331\206\330\252\330\261\331\204\342\200\214\331\207\330\247\333\214 \330\257\330\261"
-   "\332\257\330\247\331\207 %u",
-   "\330\256\330\261\331\210\330\254",
-   "\330\250\330\263\330\252\331\206 \331\205\330\255\330\252\331\210\330\247",
-   "\330\250\330\261\332\257\330\261\330\257\330\247\331\206\330\257\331\206",
-   "\330\255\330\254\331\205 \330\265\330\257\330\247\333\214 \330\256\330\261\331\210\330\254\333"
-   "\214 \330\261\330\247 \330\247\331\201\330\262\330\247\333\214\330\264 \331\205\333\214\342\200"
-   "\214\330\257\331\207\330\257.",
-   "\332\251\330\247\331\207\330\264 \330\255\330\254\331\205 \330\265\330\257\330\247",
-   "\330\255\330\254\331\205 \330\265\330\257\330\247\333\214 \330\256\330\261\331\210\330\254\333"
-   "\214 \330\261\330\247 \332\251\330\247\331\207\330\264 \331\205\333\214\342\200\214\330\257\331"
-   "\207\330\257.",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\210\330\266\330\271\333\214\330"
-   "\252",
-   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\210\330\266\330\271\333"
-   "\214\330\252 \330\260\330\256\333\214\330\261\331\207\342\200\214\330\264\330\257\331\207 \330"
-   "\247\330\262 \330\264\333\214\330\247\330\261 \331\210\330\266\330\271\333\214\330\252 \331\201"
-   "\330\271\331\204\333\214.",
-   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\210\330\266\330\271\333\214\330\252",
-   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\210\330\266\330\271\333\214\330\252 \330"
-   "\257\330\261 \330\264\333\214\330\247\330\261 \330\247\331\206\330\252\330\256\330\247\330\250 "
-   "\330\264\330\257\331\207\331\224 \331\201\330\271\331\204\333\214.",
-   "\330\247\331\201\330\262\330\247\333\214\330\264 \330\264\331\205\330\247\330\261\331\207\331"
-   "\224 \330\264\333\214\330\247\330\261 \330\260\330\256\333\214\330\261\331\207\331\224 \331\210"
-   "\330\266\330\271\333\214\330\252 \330\247\331\206\330\252\330\256\330\247\330\250 \330\264\330"
-   "\257\331\207.",
-   "\330\264\333\214\330\247\330\261 \330\260\330\256\333\214\330\261\331\207\331\224 \331\210\330"
-   "\266\330\271\333\214\330\252 \331\202\330\250\331\204\333\214",
-   "\332\251\330\247\331\207\330\264 \330\264\331\205\330\247\330\261\331\207\331\224 \330\264\333"
-   "\214\330\247\330\261 \330\260\330\256\333\214\330\261\331\207\331\224 \331\210\330\266\330\271"
-   "\333\214\330\252 \330\247\331\206\330\252\330\256\330\247\330\250 \330\264\330\257\331\207.",
-   "\330\253\330\250\330\252 \331\206\331\205\330\247\332\257\330\261\331\201\330\252",
-   "\330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207 (\330\252\330\272"
-   "\333\214\333\214\330\261 \330\255\330\247\331\204\330\252)",
-   "\330\250\333\214\331\206 \330\255\330\247\331\204\330\252\342\200\214\331\207\330\247\333\214 "
-   "\330\252\331\205\330\247\331\205 \330\265\331\201\330\255\331\207 \331\210 \331\276\331\206\330"
-   "\254\330\261\331\207\342\200\214\330\247\333\214 \330\252\330\272\333\214\333\214\330\261 \330"
-   "\255\330\247\331\204\330\252 \330\257\331\207\333\214\330\257.",
-   "\330\256\330\257\331\205\330\252 \331\207\331\210\330\264 \331\205\330\265\331\206\331\210\330"
-   "\271\333\214",
-   "\330\257\332\251\331\205\331\207 \332\257\330\262\333\214\331\206\330\264",
-   "\330\257\332\251\331\205\331\207 \330\242\330\272\330\247\330\262",
-   "\330\264\331\210\332\251 \330\263\331\205\330\252 \332\206\331\276 \331\205\330\255\331\210\330"
-   "\261 \330\247\331\201\331\202\333\214 \331\205\330\253\330\250\330\252 (\330\261\330\247\330\263"
-   "\330\252)",
-   "\330\264\331\210\332\251 \330\263\331\205\330\252 \332\206\331\276 \331\205\330\255\331\210\330"
-   "\261 \330\247\331\201\331\202\333\214 \331\205\331\206\331\201\333\214 (\332\206\331\276)",
-   "\330\264\331\210\332\251 \330\263\331\205\330\252 \332\206\331\276 \331\205\330\255\331\210\330"
-   "\261 \330\271\331\205\331\210\330\257\333\214 \331\205\330\253\330\250\330\252 (\331\276\330\247"
-   "\333\214\333\214\331\206)",
-   "\330\264\331\210\332\251 \330\263\331\205\330\252 \332\206\331\276 \331\205\330\255\331\210\330"
-   "\261 \330\271\331\205\331\210\330\257\333\214 \331\205\331\206\331\201\333\214 (\330\250\330\247"
-   "\331\204\330\247)",
-   "\330\264\331\210\332\251 \330\263\331\205\330\252 \330\261\330\247\330\263\330\252 \331\205\330"
-   "\255\331\210\330\261 \330\247\331\201\331\202\333\214 \331\205\330\253\330\250\330\252 (\330\261"
-   "\330\247\330\263\330\252)",
-   "\330\264\331\210\332\251 \330\263\331\205\330\252 \330\261\330\247\330\263\330\252 \331\205\330"
-   "\255\331\210\330\261 \330\247\331\201\331\202\333\214 \331\205\331\206\331\201\333\214 (\332\206"
-   "\331\276)",
-   "\330\264\331\210\332\251 \330\263\331\205\330\252 \330\261\330\247\330\263\330\252 \331\205\330"
-   "\255\331\210\330\261 \330\271\331\205\331\210\330\257\333\214 \331\205\330\253\330\250\330\252 ("
-   "\331\276\330\247\333\214\333\214\331\206)",
-   "\330\264\331\210\332\251 \330\263\331\205\330\252 \330\261\330\247\330\263\330\252 \331\205\330"
-   "\255\331\210\330\261 \330\271\331\205\331\210\330\257\333\214 \331\205\331\206\331\201\333\214 ("
-   "\330\250\330\247\331\204\330\247)",
-   "\331\205\330\247\330\264\331\207 \330\252\331\201\331\206\332\257",
-   "\330\256\330\264\330\247\330\250 \330\252\331\201\331\206\332\257",
-   "\330\252\330\271\331\204\333\214\331\202",
-   "\331\205\330\256\331\201\333\214 \332\251\330\261\330\257\331\206 \331\207\330\264\330\257\330"
-   "\247\330\261 \331\207\330\247\333\214 \330\250\330\247\330\262\330\247\330\254\330\261\330\247"
-   "\333\214\333\214",
-#ifdef HAVE_MIST
-   "\331\207\330\263\330\252\331\207 \330\257\330\261 \330\255\330\247\331\204 \330\250\330\247\330"
-   "\261\332\257\333\214\330\261\333\214 \330\247\330\263\330\252",
-#endif
-   "\332\251\333\214\331\201\333\214\330\252 \330\266\330\250\330\267",
-   "\330\263\331\201\330\247\330\261\330\264\333\214",
-   "\331\276\330\247\333\214\333\214\331\206",
-   "\331\205\330\252\331\210\330\263\330\267",
-   "\330\250\330\247\331\204\330\247",
-   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\263\331\201\330\247\330"
-   "\261\330\264\333\214 \330\266\330\250\330\267",
-   "\330\271\331\206\331\210\330\247\331\206 \330\247\330\263\330\252\330\261\333\214\331\205",
-   "\330\261\330\264\330\252\331\207\342\200\214\331\207\330\247\333\214 \330\266\330\250\330\267",
-   "\330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\247\330\262 \330\266\330\250\330"
-   "\267 \330\250\330\247 GPU",
-   "\330\252\331\210\333\214\333\214\332\206",
-   "\333\214\331\210\330\252\333\214\331\210\330\250",
-   "\331\205\330\255\331\204\333\214",
-   "\330\263\331\201\330\247\330\261\330\264\333\214",
-   "\332\251\333\214\331\201\333\214\330\252 \330\247\330\263\330\252\330\261\333\214\331\205",
-   "\330\263\331\201\330\247\330\261\330\264\333\214",
-   "\332\251\331\205",
-   "\331\205\330\252\331\210\330\263\330\267",
-   "\330\262\333\214\330\247\330\257",
-   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\247\330\263\330\252\330"
-   "\261\333\214\331\205 \330\263\331\201\330\247\330\261\330\264\333\214",
-   "\331\204\333\214\331\206\332\251 \330\247\330\263\330\252\330\261\333\214\331\205",
-   "\331\276\331\210\330\261\330\252 UDP \330\247\330\263\330\252\330\261\333\214\331\205",
-   "\331\206\331\205\330\247\333\214\330\264 \330\247\330\271\331\204\330\247\331\206",
-   "\330\252\330\247\332\206\342\200\214\331\276\330\257",
-   "\330\257\330\263\330\252\331\207 (\331\201\333\214\330\262\333\214\332\251\333\214)",
-   "\330\247\331\206\330\257\330\247\330\262\331\207 \330\242\332\257\330\247\331\207\330\263\330"
-   "\247\330\262",
-   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\247\330\267\331\204\330\247\330\271\330"
-   "\247\330\252\302\273",
+   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 \330\257\330\263"
+   "\330\252\331\207\342\200\214\330\250\330\247\330\262\333\214 \330\250\330\261\330\247\333\214 "
+   "\330\247\330\263\330\252\331\201\330\247\330\257\331\207. (\331\206\333\214\330\247\330\262\331"
+   "\205\331\206\330\257 \330\264\330\261\331\210\330\271 \331\205\330\254\330\257\330\257)",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\330\261\330\250\331\210\330"
+   "\267 \330\250\331\207 \330\252\330\243\330\256\333\214\330\261 \331\210\333\214\330\257\333\214"
+   "\331\210\330\214 \330\265\330\257\330\247 \331\210 \331\210\330\261\331\210\330\257\333\214 \330"
+   "\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\247\331\206\330\252\330\256\330\247\330\250 \331\205\330\255\330\252\331\210\330\247\333"
+   "\214 \331\205\331\210\330\261\330\257\331\206\330\270\330\261 \330\250\330\261\330\247\333\214 "
+   "\330\242\330\272\330\247\330\262.",
+   "\331\205\330\255\330\252\331\210\330\247 \330\261\330\247 \330\247\330\262 \330\257\333\214\330"
+   "\263\332\251 \331\201\333\214\330\262\333\214\332\251\333\214 \330\250\330\247\330\261\332\257"
+   "\330\260\330\247\330\261\333\214 \332\251\331\206\333\214\330\257. \330\247\330\250\330\252\330"
+   "\257\330\247 \331\207\330\263\330\252\331\207\331\224 \331\205\331\210\330\261\330\257 \331\206"
+   "\330\270\330\261 \330\261\330\247 \330\247\330\262 \330\250\330\256\330\264 \302\253\330\247\331"
+   "\206\330\252\330\256\330\247\330\250 \331\207\330\263\330\252\331\207\302\273 \330\250\330\261"
+   "\330\247\333\214 \330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\247\330\262 \331"
+   "\205\330\255\330\252\331\210\330\247\333\214 \330\257\333\214\330\263\332\251 \330\247\331\206"
+   "\330\252\330\256\330\247\330\250 \332\251\331\206\333\214\330\257.",
+   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \333\214\332\251 \331\210\330"
+   "\266\330\271\333\214\330\252 \330\260\330\256\333\214\330\261\331\207\342\200\214\330\264\330"
+   "\257\331\207 \330\247\330\262 \330\264\333\214\330\247\330\261 \331\210\330\266\330\271\333\214"
+   "\330\252 \331\201\330\271\331\204\333\214.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\253\330\250\330\252 \332\257\330"
+   "\262\330\247\330\261\330\264 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257"
+   "\331\207\333\214\330\257.",
+   "\331\206\331\205\330\247\333\214\330\264 \330\252\331\205\330\247\331\205 \330\252\331\206\330"
+   "\270\333\214\331\205\330\247\330\252 \331\205\330\261\330\250\331\210\330\267 \330\250\331\207 "
+   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214.",
+   "\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330\262 \331\201\331\207"
+   "\330\261\330\263\330\252 \330\250\330\261\330\247\333\214 \330\247\330\263\330\252\331\201\330"
+   "\247\330\257\331\207 (\331\206\333\214\330\247\330\262\331\205\331\206\330\257 \330\264\330\261"
+   "\331\210\330\271 \331\205\330\254\330\257\330\257)",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\330\261\331\210\330\261\332"
+   "\257\330\261 \330\263\331\206\330\257.",
    "\331\206\331\205\330\247\333\214\330\264 \332\257\330\262\333\214\331\206\331\207\331\224 \302"
    "\253\330\247\330\267\331\204\330\247\330\271\330\247\330\252\302\273 \330\257\330\261 \332\257"
    "\330\262\333\214\331\206\332\257\330\247\331\206 \330\247\330\265\331\204\333\214.",
    "\331\206\331\205\330\247\333\214\330\264 \302\253\330\250\331\207\342\200\214\330\261\331\210"
-   "\330\262\330\261\330\263\330\247\331\206 \330\250\330\261\330\256\330\267\302\273",
-   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\250\331\207\342\200\214\330\261\331\210"
    "\330\262\330\261\330\263\330\247\331\206 \330\250\330\261\330\256\330\267\302\273 \330\257\330"
    "\261 \331\201\331\207\330\261\330\263\330\252 \330\247\330\265\331\204\333\214.",
    "\331\206\331\205\330\247\333\214\330\264 \302\253\330\264\330\261\331\210\330\271 \331\205\330"
-   "\254\330\257\330\257 \330\261\330\252\330\261\331\210\330\242\330\261\332\206\302\273",
-   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\264\330\261\331\210\330\271 \331\205\330"
    "\254\330\257\330\257 \330\261\330\252\330\261\331\210\330\242\330\261\332\206\302\273 \330\257"
    "\330\261 \331\201\331\207\330\261\330\263\330\252 \330\247\330\265\331\204\333\214.",
-   "\331\206\331\205\330\247\333\214\330\264 \302\253\331\205\331\210\330\247\330\261\330\257 \330"
-   "\257\331\204\330\256\331\210\330\247\331\207\302\273",
-   "\332\257\330\262\333\214\331\206 \331\201\331\207\330\261\330\263\330\252",
-   "\330\263\331\201\330\247\330\261\330\264\333\214",
-   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\247\331\201\330\262\331\210\330\257\331"
-   "\206 \330\250\331\207 \331\205\331\210\330\247\330\261\330\257 \330\257\331\204\330\256\331\210"
-   "\330\247\331\207\302\273",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\265\330\257\330\247\333\214 \331"
+   "\201\331\207\330\261\330\263\330\252 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 "
+   "\330\257\331\207\333\214\330\257.",
+   "\330\257\330\263\330\252\332\257\330\247\331\207 \331\210\330\261\331\210\330\257\333\214 \330"
+   "\261\330\247 \330\247\331\206\330\252\330\256\330\247\330\250 \332\251\331\206\333\214\330\257.",
+   "\330\257\330\263\330\252\332\257\330\247\331\207 \330\256\330\261\331\210\330\254\333\214 \330"
+   "\261\330\247 \330\247\331\206\330\252\330\256\330\247\330\250 \332\251\331\206\333\214\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 MIDI \330\261\330\247 \330\252\330\272"
+   "\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\255\330\254\331\205 \330\265\330\257\330\247\333\214 \330\256\330\261\331\210\330\254\333"
+   "\214 \330\261\330\247 \330\252\331\206\330\270\333\214\331\205 \332\251\331\206\333\214\330\257 "
+   "(\331\252).",
+   "\331\205\333\214\330\262\330\250\330\247\331\206\333\214 \333\214\330\247 \331\276\333\214\331"
+   "\210\330\263\330\252\331\206 \330\250\331\207 \331\206\330\264\330\263\330\252 \330\250\330\247"
+   "\330\262\333\214 \330\264\330\250\332\251\331\207\342\200\214\330\247\333\214.",
+   "\330\261\330\247\330\250\330\267(\331\207\330\247\333\214) \330\264\330\250\332\251\331\207 \331"
+   "\210 \330\242\330\257\330\261\330\263 \331\207\330\247\333\214 IP \331\205\330\261\330\252\330"
+   "\250\330\267 \330\261\330\247 \331\205\330\264\330\247\331\207\330\257\331\207 \332\251\331\206"
+   "\333\214\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \332\251\330\247\330\261\330\263\330"
+   "\247\330\262 \331\210 \330\264\330\250\332\251\331\207 \330\261\330\247 \330\252\330\272\333\214"
+   "\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \330\247\331\201\330\262\331\210\331"
+   "\206\331\207\330\214 \331\205\330\244\331\204\331\201\331\207 \331\210 \331\205\330\255\330\252"
+   "\331\210\330\247 \330\250\330\261\330\247\333\214 \330\261\330\252\330\261\331\210\330\242\330"
+   "\261\332\206.",
+   "\330\252\330\272\333\214\330\261 \330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330"
+   "\247\330\271\331\204\330\247\331\206\330\247\330\252 \330\261\331\210\333\214 \330\265\331\201"
+   "\330\255\331\207\330\214 \331\207\331\205\342\200\214\331\276\331\210\330\264\330\247\331\206 "
+   "\330\265\331\201\330\255\331\207\342\200\214\332\251\331\204\333\214\330\257 \331\210 \331\207"
+   "\331\205\342\200\214\331\276\331\210\330\264\330\247\331\206 \331\206\331\205\330\247\333\214"
+   "\330\264\332\257\330\261.",
+   "\331\207\331\205\342\200\214\331\276\331\210\330\264\330\247\331\206\342\200\214\331\207\330\247"
+   "\333\214 \330\265\331\201\330\255\331\207\342\200\214\332\251\331\204\333\214\330\257 \330\257"
+   "\330\261 \330\247\333\214\331\206 \331\205\330\263\333\214\330\261 \331\206\332\257\331\207\330"
+   "\257\330\247\330\261\333\214 \331\205\333\214\342\200\214\330\264\331\210\331\206\330\257.",
+   "\331\207\331\205\342\200\214\331\276\331\210\330\264\330\247\331\206\342\200\214\331\207\330\247"
+   " \330\257\330\261 \330\247\333\214\331\206 \331\276\331\210\330\264\331\207 \331\206\332\257\331"
+   "\207\330\257\330\247\330\261\333\214 \331\205\333\214\342\200\214\330\264\331\210\331\206\330"
+   "\257.",
+   "\331\205\330\255\330\252\331\210\330\247\333\214 \330\247\330\263\332\251\331\206 \330\264\330"
+   "\257\331\207 \331\205\330\267\330\247\330\250\331\202 \330\250\330\247 \331\276\330\247\333\214"
+   "\332\257\330\247\331\207 \330\257\330\247\330\257\331\207 \330\257\330\261 \330\247\333\214\331"
+   "\206\330\254\330\247 \331\206\331\205\330\247\333\214\330\264 \330\257\330\247\330\257\331\207 "
+   "\331\205\333\214 \330\264\331\210\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\201\331\207\330\261\330\263\330"
+   "\252 \331\276\330\256\330\264 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257"
+   "\331\207\333\214\330\257.",
+   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \330\252\330\265\330\247\331\210\333"
+   "\214\330\261 \330\250\331\206\330\257\330\247\331\206\332\257\330\264\330\252\333\214 \330\250"
+   "\330\261\330\247\333\214 \331\210\330\261\331\210\330\257\333\214\342\200\214\331\207\330\247 "
+   "\330\257\330\261 \331\204\333\214\330\263\330\252 \331\276\330\256\330\264 \330\247\331\206\330"
+   "\252\330\256\330\247\330\250 \330\264\330\257\331\207.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\330\257\333\214\330\261\333"
+   "\214\330\252 \331\206\333\214\330\261\331\210 \330\261\330\247 \330\252\330\272\333\214\333\214"
+   "\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\255\330\261\333\214\331\205 \330"
+   "\256\330\265\331\210\330\265\333\214 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 "
+   "\331\205\333\214\342\200\214\330\257\331\207\330\257.",
    "\332\257\330\262\333\214\331\206\331\207\331\224 \302\253\330\247\331\201\330\262\331\210\330"
    "\257\331\206 \330\250\331\207 \331\205\331\210\330\247\330\261\330\257 \330\257\331\204\330\256"
    "\331\210\330\247\331\207\302\273 \330\261\330\247 \331\206\331\205\330\247\333\214\330\264 \330"
    "\250\330\257\331\207.",
-   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\242\330\272\330\247\330\262 \330\266\330"
-   "\250\330\267\302\273",
-   "\331\206\331\205\330\247\333\214\330\264 \332\257\330\262\333\214\331\206\331\207\331\224 \302"
-   "\253\330\242\330\272\330\247\330\262 \330\266\330\250\330\267\302\273.",
-   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\247\330\267\331\204\330\247\330\271\330"
-   "\247\330\252\302\273",
    "\331\206\331\205\330\247\333\214\330\264 \332\257\330\262\333\214\331\206\331\207\331\224 \302"
    "\253\330\247\330\267\331\204\330\247\330\271\330\247\330\252\302\273.",
-   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\263\330\247\333\214\331\207\342\200\214"
-   "\330\262\331\206\342\200\214\331\207\330\247\302\273",
    "\332\257\330\262\333\214\331\206\331\207\331\224 \302\253\330\263\330\247\333\214\331\207\342"
    "\200\214\330\262\331\206\342\200\214\331\207\330\247\302\273 \330\261\330\247 \331\206\331\205"
    "\330\247\333\214\330\264 \330\250\330\257\331\207.",
-   "\331\206\331\205\330\247\333\214\330\264 \302\253\330\266\330\250\330\267\302\273",
-   "\331\206\331\205\330\247\333\214\330\264 \330\252\331\206\330\270\333\214\331\205\330\247\330"
-   "\252 \302\253\330\266\330\250\330\267\302\273.",
-   "\331\206\331\205\330\247\333\214\330\264 \302\253\331\276\331\210\330\264\331\207\302\273",
-   "\331\206\331\205\330\247\333\214\330\264 \330\252\331\206\330\270\333\214\331\205\330\247\330"
-   "\252 \302\253\331\276\331\210\330\264\331\207\302\273.",
-   "\330\257\330\263\330\252\330\247\331\210\330\261\330\257\331\207\330\247",
-   "\330\247\331\205\330\261\333\214\332\251\330\247\333\214 \330\264\331\205\330\247\331\204\333"
-   "\214 (\330\263\330\247\330\255\331\204 \330\264\330\261\331\202\333\214\330\214 \330\247\333\214"
-   "\330\247\331\204\330\247\330\252 \331\205\330\252\330\255\330\257\331\207)",
-   "\330\247\330\261\331\210\331\276\330\247\333\214 \330\272\330\261\330\250\333\214",
-   "\330\247\331\205\330\261\333\214\332\251\330\247\333\214 \330\254\331\206\331\210\330\250\333"
-   "\214 (\330\254\331\206\331\210\330\250\342\200\214\330\264\330\261\331\202\333\214\330\214 \330"
-   "\250\330\261\330\262\333\214\331\204)",
-   "\330\254\331\206\331\210\330\250 \330\264\330\261\331\202\333\214 \330\242\330\263\333\214\330"
-   "\247",
-   "\330\263\331\201\330\247\330\261\330\264\333\214",
-   "\330\250\333\214\330\264\330\252\330\261\333\214\331\206 \330\247\330\252\330\265\330\247\331"
-   "\204\330\247\330\252 \331\207\331\205\342\200\214\330\262\331\205\330\247\331\206",
-   "\331\276\333\214\330\264\333\214\331\206\331\207",
-   "\330\247\331\206\330\257\330\247\330\262\331\207\331\224 \331\205\331\210\330\247\330\261\330"
-   "\257 \330\257\331\204\330\256\331\210\330\247\331\207",
-   "\331\207\330\263\330\252\331\207:",
-   "\331\210\330\247\331\276\330\263\333\214\331\206 \330\250\330\247\330\262\333\214:",
-   "\330\255\330\261\333\214\331\205 \330\256\330\265\331\210\330\265\333\214",
-   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\255\330\261\333\214\331\205 \330"
-   "\256\330\265\331\210\330\265\333\214 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 "
-   "\331\205\333\214\342\200\214\330\257\331\207\330\257.",
-   "\330\255\330\263\330\247\330\250\342\200\214\331\207\330\247",
-   "\330\255\330\263\330\247\330\250\342\200\214\331\207\330\247\333\214\333\214 \332\251\331\207 "
-   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\264\330\257\331\207\342"
-   "\200\214\330\247\331\206\330\257 \330\261\330\247 \331\205\330\257\333\214\330\261\333\214\330"
-   "\252 \331\205\333\214\342\200\214\332\251\331\206\330\257.",
-   "\331\206\330\247\331\205 \332\251\330\247\330\261\330\250\330\261\333\214",
-   "\330\262\330\250\330\247\331\206",
-   "\331\206\330\247\331\205 \332\251\330\247\330\261\330\250\330\261\333\214",
-   "\332\257\330\260\330\261\331\210\330\247\332\230\331\207",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214\342\200\214\331\207\330\247",
-   "\331\201\330\247\333\214\331\204\342\200\214\331\207\330\247\333\214 \330\250\330\247\330\261"
-   "\332\257\333\214\330\261\333\214 \330\264\330\257\331\207 \330\257\330\261 \330\247\333\214\331"
+   "\331\206\331\205\330\247\333\214\330\264 \332\257\330\262\333\214\331\206\331\207\331\224 \302"
+   "\253\330\242\330\272\330\247\330\262 \330\266\330\250\330\267\302\273.",
+   "\330\264\330\261\331\210\330\271 \330\266\330\250\330\267 \331\210\333\214\330\257\333\214\331"
+   "\210.",
+   "\330\252\331\210\331\202\331\201 \330\266\330\250\330\267 \331\210\333\214\330\257\333\214\331"
+   "\210.",
+   "\330\256\330\261\331\210\330\254 \330\247\330\262 \331\206\330\261\331\205\342\200\214\330\247"
+   "\331\201\330\262\330\247\330\261 \330\261\330\252\330\261\331\210\330\242\330\261\332\206. \330"
+   "\260\330\256\333\214\330\261\331\207\331\224 \331\276\333\214\332\251\330\261\330\250\331\206"
+   "\330\257\333\214 \330\257\330\261 \330\262\331\205\330\247\331\206 \330\256\330\261\331\210\330"
+   "\254 \331\201\330\271\330\247\331\204 \330\247\330\263\330\252.",
+   "\330\256\330\261\331\210\330\254 \330\247\330\262 \331\206\330\261\331\205\342\200\214\330\247"
+   "\331\201\330\262\330\247\330\261 \330\261\330\252\330\261\331\210\330\242\330\261\332\206. \330"
+   "\260\330\256\333\214\330\261\331\207\331\224 \331\276\333\214\332\251\330\261\330\250\331\206"
+   "\330\257\333\214 \330\257\330\261 \330\262\331\205\330\247\331\206 \330\256\330\261\331\210\330"
+   "\254 \330\272\333\214\330\261\331\201\330\271\330\247\331\204 \330\247\330\263\330\252.",
+   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214\342\200\214\331\207\330\247\333"
+   "\214 \330\266\330\250\330\267\342\200\214\331\207\330\247 \330\257\330\261 \330\247\333\214\331"
    "\206 \331\276\331\210\330\264\331\207 \331\206\332\257\331\207\330\257\330\247\330\261\333\214 "
    "\331\205\333\214\342\200\214\330\264\331\210\331\206\330\257.",
-   "\330\257\330\247\330\261\330\247\333\214\333\214\342\200\214\331\207\330\247",
-   "\330\252\330\265\330\247\331\210\333\214\330\261 \330\250\331\206\330\257\330\247\331\206\332"
-   "\257\330\264\330\252\333\214",
-   "\331\205\330\263\333\214\330\261 \330\264\330\261\331\210\330\271",
-   "\331\276\330\247\333\214\332\257\330\247\331\207\342\200\214\331\207\330\247\333\214 \330\257"
-   "\330\247\330\257\331\207 \330\257\330\261 \330\247\333\214\331\206 \331\276\331\210\330\264\331"
-   "\207 \331\206\332\257\331\207\330\257\330\247\330\261\333\214 \331\205\333\214\342\200\214\330"
-   "\264\331\210\331\206\330\257.",
-   "\330\263\330\247\333\214\331\207\342\200\214\330\262\331\206\342\200\214\331\207\330\247\333\214"
-   " \331\210\333\214\330\257\333\214\331\210",
+   "\330\266\330\250\330\267\342\200\214\331\207\330\247 \330\257\330\261 \330\247\333\214\331\206 "
+   "\331\276\331\210\330\264\331\207 \331\206\332\257\331\207\330\257\330\247\330\261\333\214 \331"
+   "\205\333\214\342\200\214\330\264\331\210\331\206\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\266\330\250\330\267 \330\261\330"
+   "\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\252\330\272\333\214\333\214\330\261 \330\264\333\214\330\247\330\261 \331\210\330\266\330"
+   "\271\333\214\330\252 \330\247\331\206\330\252\330\256\330\247\330\250 \330\264\330\257\331\207.",
+   "\330\250\330\247\330\262\331\206\330\264\330\247\331\206\333\214 \331\276\333\214\332\251\330"
+   "\261\330\250\331\206\330\257\333\214 \331\201\330\271\331\204\333\214 \330\250\331\207 \331\205"
+   "\331\202\330\247\330\257\333\214\330\261 \331\276\333\214\330\264\331\201\330\261\330\266.",
+   "\330\264\330\261\331\210\330\271 \331\205\330\254\330\257\330\257 \331\206\330\261\331\205\342"
+   "\200\214\330\247\331\201\330\262\330\247\330\261 \330\261\330\252\330\261\331\210\330\242\330"
+   "\261\332\206.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\330\261\330\250\331\210\330"
+   "\267 \330\250\331\207 \330\257\330\263\330\252\330\247\331\210\330\261\330\257\331\207\330\247 "
+   "\330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
+   "eboot is required when changing.",
+#endif
+#endif
+   "\330\250\330\247\330\262\331\206\331\210\333\214\330\263\333\214 \330\261\331\210\333\214 \330"
+   "\263\331\206\330\257 \331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \331\201"
+   "\330\271\331\204\333\214.",
+   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\276\333\214\332\251\330\261\330\250\331"
+   "\206\330\257\333\214 \331\201\330\271\331\204\333\214 \330\257\330\261 \333\214\332\251 \331\201"
+   "\330\247\333\214\331\204 \330\254\330\257\330\247\332\257\330\247\331\206\331\207.",
+   "\330\260\330\256\333\214\330\261\331\207\331\224 \333\214\332\251 \331\210\330\266\330\271\333"
+   "\214\330\252 \330\257\330\261 \330\264\333\214\330\247\330\261 \330\247\331\206\330\252\330\256"
+   "\330\247\330\250 \330\264\330\257\331\207\331\224 \331\201\330\271\331\204\333\214.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\260\330\256\333\214\330\261\331"
+   "\207 \332\251\330\261\330\257\331\206 \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 "
+   "\330\257\331\207\333\214\330\257.",
+   "\331\206\331\205\330\247\332\257\330\261\331\201\330\252\342\200\214\331\207\330\247 \330\257"
+   "\330\261 \330\247\333\214\331\206 \331\276\331\210\330\264\331\207 \330\260\330\256\333\214\330"
+   "\261\331\207 \331\205\333\214\342\200\214\330\264\331\210\331\206\330\257.",
+   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214 \330\250\330\261\331\206\330"
+   "\247\331\205\331\207.",
+   "\331\206\331\205\330\247\333\214\330\264 \330\252\331\206\330\270\333\214\331\205\330\247\330"
+   "\252 \302\253\331\276\331\210\330\264\331\207\302\273.",
+   "\331\206\331\205\330\247\333\214\330\264 \330\252\331\206\330\270\333\214\331\205\330\247\330"
+   "\252 \302\253\330\266\330\250\330\267\302\273.",
+   "\330\250\330\247\330\262 \332\251\330\261\330\257\331\206 \331\201\331\207\330\261\330\263\330"
+   "\252 \330\263\331\206\330\252\333\214 \331\205\333\214\330\262\332\251\330\247\330\261.",
+   "\333\214\332\251 \331\207\330\263\330\252\331\207 \330\261\330\247 \331\206\330\265\330\250 \333"
+   "\214\330\247 \330\247\330\262 \330\257\330\247\333\214\330\261\332\251\330\252\331\210\330\261"
+   "\333\214 \330\257\330\247\331\206\331\204\331\210\330\257\331\207\330\247 \330\250\330\247\330"
+   "\262\330\263\330\247\330\262\333\214 \332\251\331\206.",
+   "\330\252\330\272\333\214\333\214\330\261 \330\264\333\214\330\247\330\261 \331\210\330\266\330"
+   "\271\333\214\330\252 \330\247\331\206\330\252\330\256\330\247\330\250 \330\264\330\257\331\207.",
+   "\330\247\330\262 \331\201\330\271\330\247\331\204 \330\264\330\257\331\206 \331\205\330\255\330"
+   "\247\331\201\330\270 \330\265\331\201\330\255\331\207\342\200\214\331\206\331\205\330\247\333"
+   "\214\330\264 \330\257\330\263\330\252\332\257\330\247\331\207 \330\264\331\205\330\247 \330\254"
+   "\331\204\331\210\332\257\333\214\330\261\333\214 \331\205\333\214\342\200\214\332\251\331\206"
+   "\330\257.",
+   "\330\257\330\261 \330\265\331\210\330\261\330\252 \331\210\330\254\331\210\330\257\330\214 \330"
+   "\252\331\205\330\247\331\205 \331\207\330\263\330\252\331\207\342\200\214\331\207\330\247\333"
+   "\214 \331\202\330\257\333\214\331\205\333\214 \331\210 \331\206\330\265\330\250\342\200\214\330"
+   "\264\330\257\331\207 \330\257\330\263\330\252\333\214 \330\261\330\247 \330\250\330\247 \330\242"
+   "\330\256\330\261\333\214\331\206 \331\206\330\263\330\256\331\207\342\200\214\331\207\330\247"
+   "\333\214 Play Store\330\214 \330\254\330\247\333\214\332\257\330\262\333\214\331\206 \332\251"
+   "\331\206\333\214\330\257.",
+   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252 \331\205\330\256\330\265\331\210\330"
+   "\265 \330\250\331\207 \330\257\330\263\330\252\332\257\330\247\331\207 \330\261\330\247 \331\205"
+   "\330\264\330\247\331\207\330\257\331\207 \332\251\331\206\333\214\330\257.",
+   "\331\206\331\210\330\247\330\261 \331\201\331\207\330\261\330\263\330\252 \331\276\331\206\330"
+   "\254\330\261\331\207\330\214 \331\206\331\205\330\247\333\214\330\264 \330\257\330\247\330\257"
+   "\331\207 \330\264\331\210\330\257.",
+   "\330\252\331\205\330\247\331\205 \331\207\330\263\330\252\331\207 \331\207\330\247\333\214 \331"
+   "\206\330\265\330\250 \330\264\330\257\331\207 \330\261\330\247 \330\250\331\207 \330\242\330\256"
+   "\330\261\333\214\331\206 \331\206\330\263\330\256\331\207 \331\205\331\210\330\254\331\210\330"
+   "\257 \330\250\331\207 \330\261\331\210\330\262 \332\251\331\206\333\214\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\261\330\247\330\250\330\267 \332"
+   "\251\330\247\330\261\330\250\330\261\333\214 \330\261\330\247 \330\252\330\272\333\214\333\214"
+   "\330\261 \330\257\331\207\333\214\330\257.",
+   "\331\206\330\263\330\250\330\252 \330\252\330\265\331\210\333\214\330\261 \331\206\331\205\330"
+   "\247\333\214\330\264\332\257\330\261 \330\261\330\247 \331\205\330\264\330\256\330\265 \332\251"
+   "\331\206.",
+   "\330\250\333\214\330\264\333\214\331\206\331\207\331\224 \331\206\330\261\330\256 \330\252\330"
+   "\247\330\262\331\207\342\200\214\330\263\330\247\330\262\333\214\330\214 \331\276\330\247\331"
+   "\204 \330\257\330\261 \331\206\330\270\330\261 \332\257\330\261\331\201\330\252\331\207 \330\264"
+   "\331\210\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\255\330\247\331\204\330\252 \330"
+   "\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207 \330\261\330\247 \330"
+   "\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205 \330\247\331\206\330\257\330\247\330\262\331\207\331"
+   "\224 \330\271\330\261\330\266 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330"
+   "\255\331\207 \330\250\330\261\330\247\333\214 \330\255\330\247\331\204\330\252 \330\252\331\205"
+   "\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207\331\224 \330\272\333\214\330\261"
+   "\331\276\331\206\330\254\330\261\331\207\342\200\214\330\247\333\214. \330\247\332\257\330\261 "
+   "\330\252\331\206\330\270\333\214\331\205 \331\206\330\264\331\210\330\257\330\214 \330\247\330"
+   "\262 \331\210\330\266\331\210\330\255 \331\205\333\214\330\262\332\251\330\247\330\261 \330\247"
+   "\330\263\330\252\331\201\330\247\330\257\331\207 \330\256\331\210\330\247\331\207\330\257 \330"
+   "\264\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205 \330\247\331\206\330\257\330\247\330\262\331\207\331"
+   "\224 \330\247\330\261\330\252\331\201\330\247\330\271 \330\252\331\205\330\247\331\205\342\200"
+   "\214\330\265\331\201\330\255\331\207 \330\250\330\261\330\247\333\214 \330\255\330\247\331\204"
+   "\330\252 \330\252\331\205\330\247\331\205\342\200\214\330\265\331\201\330\255\331\207\331\224 "
+   "\330\272\333\214\330\261\331\276\331\206\330\254\330\261\331\207\342\200\214\330\247\333\214. "
+   "\330\247\332\257\330\261 \330\252\331\206\330\270\333\214\331\205 \331\206\330\264\331\210\330"
+   "\257\330\214 \330\247\330\262 \331\210\330\266\331\210\330\255 \331\205\333\214\330\262\332\251"
+   "\330\247\330\261 \330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\256\331\210\330"
+   "\247\331\207\330\257 \330\264\330\257.",
+   "\332\251\330\247\330\261\330\252 \332\257\330\261\330\247\331\201\333\214\332\251 \331\205\331"
+   "\210\330\261\330\257\330\247\330\263\330\252\331\201\330\247\330\257\331\207 \330\261\330\247 "
+   "\330\250\330\261\332\257\330\262\333\214\331\206\333\214\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\210\333\214\330\257\333\214\331"
+   "\210\333\214 HDR \330\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333"
+   "\214\330\257.",
+   "\333\214\332\251\333\214 \330\247\330\262 \331\206\331\205\330\247\333\214\330\264\332\257\330"
+   "\261\331\207\330\247 \330\261\330\247 \330\250\330\261\330\247\333\214 \330\247\330\263\330\252"
+   "\331\201\330\247\330\257\331\207 \330\250\330\261\332\257\330\262\333\214\331\206\333\214\330"
+   "\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\256\330\261\331\210\330\254\333"
+   "\214 \331\210\333\214\330\257\333\214\331\210 \330\261\330\247 \330\252\330\272\333\214\333\214"
+   "\330\261 \330\257\331\207\333\214\330\257.",
+   "\331\205\331\202\330\257\330\247\330\261 \330\257\331\202\333\214\331\202 \330\252\330\256\331"
+   "\205\333\214\331\206 \331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330"
+   "\263\330\247\330\262\333\214 \331\206\331\205\330\247\333\214\330\264\332\257\330\261 \330\250"
+   "\330\261\330\255\330\263\330\250 \331\207\330\261\330\252\330\262.",
+   "\331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263\330\247\330\262"
+   "\333\214\342\200\214\330\247\333\214 \332\257\330\262\330\247\330\261\330\264 \330\264\330\257"
+   "\331\207 \330\252\331\210\330\263\330\267 \330\261\330\247\331\207\342\200\214\330\247\331\206"
+   "\330\257\330\247\330\262 \331\206\331\205\330\247\333\214\330\264\332\257\330\261.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\205\331\202\333\214\330\247\330"
+   "\263 \331\210\333\214\330\257\333\214\331\210 \330\261\330\247 \330\252\330\272\333\214\333\214"
+   "\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\256\330\261\331\210\330\254\333"
+   "\214 \331\210\333\214\330\257\333\214\331\210 \330\261\330\247 \330\252\330\272\333\214\333\214"
+   "\330\261 \330\257\331\207\333\214\330\257.",
    "\330\263\330\247\333\214\331\207\342\200\214\330\262\331\206\342\200\214\331\207\330\247\333\214"
    " \331\210\333\214\330\257\333\214\331\210\333\214 \330\250\330\261 \331\276\330\247\333\214\331"
    "\207\331\224 \332\251\330\247\330\261\330\252 \332\257\330\261\330\247\331\201\333\214\332\251 "
    "\330\257\330\261 \330\247\333\214\331\206 \331\205\330\263\333\214\330\261 \331\206\332\257\331"
    "\207\330\257\330\247\330\261\333\214 \330\264\330\257\331\207\342\200\214\330\247\331\206\330"
    "\257.",
-   "\330\266\330\250\330\267\342\200\214\331\207\330\247",
-   "\330\266\330\250\330\267\342\200\214\331\207\330\247 \330\257\330\261 \330\247\333\214\331\206 "
-   "\331\276\331\210\330\264\331\207 \331\206\332\257\331\207\330\257\330\247\330\261\333\214 \331"
-   "\205\333\214\342\200\214\330\264\331\210\331\206\330\257.",
-   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214\342\200\214\331\207\330\247\333"
-   "\214 \330\266\330\250\330\267",
-   "\331\276\333\214\332\251\330\261\330\250\331\206\330\257\333\214\342\200\214\331\207\330\247\333"
-   "\214 \330\266\330\250\330\267\342\200\214\331\207\330\247 \330\257\330\261 \330\247\333\214\331"
-   "\206 \331\276\331\210\330\264\331\207 \331\206\332\257\331\207\330\257\330\247\330\261\333\214 "
-   "\331\205\333\214\342\200\214\330\264\331\210\331\206\330\257.",
-   "\331\207\331\205\342\200\214\331\276\331\210\330\264\330\247\331\206\342\200\214\331\207\330\247"
-   " \330\257\330\261 \330\247\333\214\331\206 \331\276\331\210\330\264\331\207 \331\206\332\257\331"
-   "\207\330\257\330\247\330\261\333\214 \331\205\333\214\342\200\214\330\264\331\210\331\206\330"
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \331\207\331\205\332\257\330\247\331"
+   "\205\342\200\214\330\263\330\247\330\262\333\214 \331\210\333\214\330\257\333\214\331\210 \330"
+   "\261\330\247 \330\252\330\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\256\330\261\331\210\330\254\333\214 \331\210\333\214\330\257\333\214\331\210\333\214 \332"
+   "\251\330\247\330\261\330\252 \332\257\330\261\330\247\331\201\333\214\332\251 \330\261\330\247 "
+   "\330\250\330\247 \331\206\330\261\330\256 \330\252\330\247\330\262\331\207\342\200\214\330\263"
+   "\330\247\330\262\333\214 \330\265\331\201\330\255\331\207\342\200\214\331\206\331\205\330\247"
+   "\333\214\330\264 \331\207\331\205\332\257\330\247\331\205 \331\205\333\214\342\200\214\332\251"
+   "\331\206\330\257. \331\276\333\214\330\264\331\206\331\207\330\247\330\257 \330\264\330\257\331"
+   "\207.",
+   "\330\257\330\261 \330\255\330\247\331\204\330\252 \330\252\331\205\330\247\331\205\342\200\214"
+   "\330\265\331\201\330\255\331\207\330\214 \330\247\330\263\330\252\331\201\330\247\330\257\331"
+   "\207 \330\247\330\262 \331\276\331\206\330\254\330\261\331\207\331\224 \330\252\331\205\330\247"
+   "\331\205\342\200\214\330\265\331\201\330\255\331\207 \330\250\331\207 \331\205\331\206\330\270"
+   "\331\210\330\261 \331\276\330\261\331\207\333\214\330\262 \330\247\330\262 \330\252\330\272\333"
+   "\214\333\214\330\261 \330\255\330\247\331\204\330\252 \331\206\331\205\330\247\333\214\330\264 "
+   "\330\252\330\261\330\254\333\214\330\255 \330\257\330\247\330\257\331\207 \330\264\331\210\330"
    "\257.",
-   "\331\207\331\205\342\200\214\331\276\331\210\330\264\330\247\331\206\342\200\214\331\207\330\247"
-   "\333\214 \330\265\331\201\330\255\331\207\342\200\214\332\251\331\204\333\214\330\257 \330\257"
-   "\330\261 \330\247\333\214\331\206 \331\205\330\263\333\214\330\261 \331\206\332\257\331\207\330"
-   "\257\330\247\330\261\333\214 \331\205\333\214\342\200\214\330\264\331\210\331\206\330\257.",
-   "\331\206\331\205\330\247\332\257\330\261\331\201\330\252\342\200\214\331\207\330\247",
-   "\331\206\331\205\330\247\332\257\330\261\331\201\330\252\342\200\214\331\207\330\247 \330\257"
-   "\330\261 \330\247\333\214\331\206 \331\276\331\210\330\264\331\207 \330\260\330\256\333\214\330"
-   "\261\331\207 \331\205\333\214\342\200\214\330\264\331\210\331\206\330\257.",
-   "\331\201\331\207\330\261\330\263\330\252\342\200\214\331\207\330\247\333\214 \331\276\330\256"
-   "\330\264",
-   "\331\205\333\214\330\262\330\250\330\247\331\206",
-   "\330\263\330\247\331\204 \330\247\331\206\330\252\330\264\330\247\330\261",
-   "\330\252\330\271\330\257\330\247\330\257 \330\250\330\247\330\262\333\214\332\251\331\206",
-   "\331\205\331\206\330\267\331\202\331\207",
-   "\330\250\330\261\332\206\330\263\330\250",
-   "\330\254\330\263\330\252\330\254\331\210\333\214 \331\206\330\247\331\205...",
-   "\331\206\331\205\330\247\333\214\330\264 \331\207\331\205\331\207",
-   "\331\276\330\247\331\204\330\247\333\214\331\207\331\224 \330\250\333\214\330\264\330\252\330"
-   "\261",
-   "\331\207\331\205\331\207",
-   "\330\247\331\201\330\262\331\210\330\257\331\206 \331\276\330\247\331\204\330\247\333\214\331"
-   "\207\331\224 \330\250\333\214\330\264\330\252\330\261",
-   "%u \331\205\331\210\330\261\330\257",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\252\331\210\330\263\330\271\331\207\342\200\214"
-   "\330\257\331\207\331\206\330\257\331\207",
-   "\330\250\330\261 \330\255\330\263\330\250 \331\206\330\247\330\264\330\261",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\263\330\247\331\204 \330\247\331\206\330\252\330"
-   "\264\330\247\330\261",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\252\330\271\330\257\330\247\330\257 \330\250\330"
-   "\247\330\262\333\214\332\251\331\206",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\263\330\250\332\251 (\332\230\330\247\331\206\330"
-   "\261)",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\257\330\263\330\252\330\247\331\210\330\261\330"
-   "\257\331\207\330\247",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\257\330\263\330\252\331\207\342\200\214\330\250"
-   "\331\206\330\257\333\214",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\262\330\250\330\247\331\206",
-   "\330\250\330\261 \330\255\330\263\330\250 \331\205\331\206\330\267\331\202\331\207",
-   "\330\250\330\261 \330\255\330\263\330\250 \332\251\331\206\330\263\331\210\331\204 \330\247\330"
-   "\256\330\252\330\265\330\247\330\265\333\214",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\263\332\251\331\210\333\214 \330\247\330\256\330"
-   "\252\330\265\330\247\330\265\333\214",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\247\331\205\330\252\333\214\330\247\330\262",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\261\330\263\330\247\331\206\331\207",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\257\330\263\330\252\331\207\342\200\214\331\207"
-   "\330\247",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\263\330\250\332\251 \331\207\331\206\330\261\333"
-   "\214",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\263\330\250\332\251 \330\250\330\247\330\262\333"
-   "\214",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\261\331\210\330\247\333\214\330\252",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\263\330\261\330\271\330\252",
-   "\330\250\330\261 \330\255\330\263\330\250 \332\206\330\264\331\205\342\200\214\330\247\331\206"
-   "\330\257\330\247\330\262",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\252\331\206\330\270\333\214\331\205\330\247\330"
-   "\252",
-   "\330\250\330\261 \330\255\330\263\330\250 \331\210\333\214\332\230\332\257\333\214\342\200\214"
-   "\331\207\330\247\333\214 \330\257\333\214\330\257\330\247\330\261\333\214",
-   "\330\250\330\261 \330\255\330\263\330\250 \330\250\330\261\332\206\330\263\330\250",
-   "\330\250\330\261 \330\255\330\263\330\250 \331\206\330\247\331\205 \330\263\330\247\331\205\330"
-   "\247\331\206\331\207",
-   "\330\252\331\206\330\270\333\214\331\205 \331\276\330\247\331\204\330\247\333\214\331\207\331"
-   "\224 \330\257\330\247\331\205\331\206\331\207",
-   "\331\206\331\205\330\247",
-   "\330\250\331\207\342\200\214\330\271\331\206\331\210\330\247\331\206 \331\206\331\205\330\247 "
-   "\330\260\330\256\333\214\330\261\331\207 \332\251\331\206",
-   "\330\247\333\214\331\206 \331\206\331\205\330\247 \330\261\330\247 \330\255\330\260\331\201 \332"
-   "\251\331\206",
-   "\331\206\330\247\331\205 \331\206\331\205\330\247\333\214 \330\254\330\257\333\214\330\257 \330"
-   "\261\330\247 \331\210\330\247\330\261\330\257 \332\251\331\206",
-   "\333\214\332\251 \331\206\331\205\330\247 \330\250\330\247 \330\247\330\263\331\205 \331\205\330"
-   "\264\330\247\330\250\331\207 \331\276\333\214\330\264 \330\247\330\262 \330\247\333\214\331\206 "
-   "\331\210\330\254\331\210\330\257 \330\257\330\247\330\261\330\257",
-   "\331\206\331\205\330\247 \330\260\330\256\333\214\330\261\331\207 \330\264\330\257\331\207",
-   "\331\206\331\205\330\247 \330\255\330\260\331\201 \330\264\330\257",
-   "\330\247\330\254\330\261\330\247",
-   "\330\252\330\272\333\214\333\214\330\261 \331\206\330\247\331\205",
-   "\330\255\330\260\331\201",
-   "\330\247\331\201\330\262\331\210\330\257\331\206 \330\250\331\207 \331\205\331\210\330\247\330"
-   "\261\330\257 \330\257\331\204\330\256\331\210\330\247\331\207",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \330\252\330\265\330\247\331\210\333"
-   "\214\330\261 \330\250\331\206\330\257\330\247\331\206\332\257\330\264\330\252\333\214",
-   "\331\207\330\263\330\252\331\207\331\224 \330\254\330\247\330\261\333\214",
-   "\331\206\330\247\331\205",
-   "\331\205\330\263\333\214\330\261 \330\263\331\206\330\257",
-   "\331\207\330\263\330\252\331\207",
-   "\331\210\330\247\331\276\330\263\333\214\331\206 \330\250\330\247\330\262\333\214",
-   "\331\276\330\247\333\214\332\257\330\247\331\207 \330\257\330\247\330\257\331\207",
-   "\330\247\330\257\330\247\331\205\331\207",
-   "\330\250\330\263\330\252\331\206 \331\205\330\255\330\252\331\210\330\247",
-   "\330\253\330\250\330\252 \331\206\331\205\330\247\332\257\330\261\331\201\330\252",
-   "\330\260\330\256\333\214\330\261\331\207\331\224 \331\210\330\266\330\271\333\214\330\252",
-   "\330\260\330\256\333\214\330\261\331\207\331\224 \333\214\332\251 \331\210\330\266\330\271\333"
-   "\214\330\252 \330\257\330\261 \330\264\333\214\330\247\330\261 \330\247\331\206\330\252\330\256"
-   "\330\247\330\250 \330\264\330\257\331\207\331\224 \331\201\330\271\331\204\333\214.",
-   "\330\250\330\247\330\261\332\257\333\214\330\261\333\214 \331\210\330\266\330\271\333\214\330"
-   "\252",
-   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \333\214\332\251 \331\210\330"
-   "\266\330\271\333\214\330\252 \330\260\330\256\333\214\330\261\331\207\342\200\214\330\264\330"
-   "\257\331\207 \330\247\330\262 \330\264\333\214\330\247\330\261 \331\210\330\266\330\271\333\214"
-   "\330\252 \331\201\330\271\331\204\333\214.",
-   "\330\247\331\201\330\262\331\210\330\257\331\206 \330\250\331\207 \331\205\331\210\330\247\330"
-   "\261\330\257 \330\257\331\204\330\256\331\210\330\247\331\207",
-   "\330\264\330\261\331\210\330\271 \330\266\330\250\330\267",
-   "\330\264\330\261\331\210\330\271 \330\266\330\250\330\267 \331\210\333\214\330\257\333\214\331"
-   "\210.",
-   "\330\252\331\210\331\202\331\201 \330\266\330\250\330\267",
-   "\330\252\331\210\331\202\331\201 \330\266\330\250\330\267 \331\210\333\214\330\257\333\214\331"
-   "\210.",
-   "\332\257\330\262\333\214\331\206\331\207\342\200\214\331\207\330\247\333\214 \331\207\330\263"
-   "\330\252\331\207",
-   "\332\251\331\206\330\252\330\261\331\204\342\200\214\331\207\330\247",
-   "\330\252\331\202\331\204\330\250\342\200\214\331\207\330\247",
-   "\330\263\330\247\333\214\331\207\342\200\214\330\262\331\206\342\200\214\331\207\330\247",
-   "\330\257\330\263\330\252\330\247\331\210\330\261\330\257\331\207\330\247",
-   "\330\242\330\272\330\247\330\262 \333\214\330\247 \330\264\330\261\331\210\330\271 \331\205\330"
-   "\254\330\257\330\257 \330\254\330\263\330\252\330\254\331\210\333\214 \330\252\331\202\331\204"
-   "\330\250",
-   "\330\257\330\261\330\250\330\247\330\261\331\207",
-   "\330\256\330\247\330\261\330\254 \332\251\330\261\330\257\331\206 \331\204\331\210\330\255",
-   "\330\263\330\247\333\214\331\207\342\200\214\330\262\331\206\342\200\214\331\207\330\247\333\214"
-   " \331\210\333\214\330\257\333\214\331\210",
-   "\331\205\333\214\330\247\331\206\332\257\333\214\331\206",
-   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
-   "\330\256\330\247\331\205\331\210\330\264",
-   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
-   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
-   "\330\261\331\210\330\264\331\206",
-   "\330\256\330\247\331\205\331\210\330\264",
-   "\330\263\331\201\330\247\330\261\330\264\333\214",
-   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
-   "\331\206\330\263\330\250\330\252 \330\252\330\265\331\210\333\214\330\261",
-   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
-   "\330\256\331\210\330\257\332\251\330\247\330\261",
-   "\330\256\331\210\330\257\332\251\330\247\330\261",
-   "\330\256\330\247\331\205\331\210\330\264",
-   "\331\205\331\202\333\214\330\247\330\263 \330\265\330\255\333\214\330\255",
-   "\330\263\331\201\330\247\330\261\330\264\333\214",
-   "\330\256\330\247\331\205\331\210\330\264",
-   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
-   "\330\263\331\201\330\247\330\261\330\264\333\214",
-   "\331\205\331\202\333\214\330\247\330\263 \331\202\331\204\331\205",
-   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
-   "\331\207\333\214\332\206\332\251\330\257\330\247\331\205",
-   "\330\256\331\210\330\257\332\251\330\247\330\261",
-   "\330\256\330\247\331\205\331\210\330\264",
-   "\330\256\330\247\331\205\331\210\330\264",
-   "\330\256\330\247\331\205\331\210\330\264",
-   "\330\256\330\247\331\205\331\210\330\264",
-   "\330\261\331\210\330\264\331\206",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252",
-   "&\331\206\331\205\330\247",
-   "\330\263\330\247\331\205\330\247\331\206\330\257\331\207\333\214",
-   "&\330\261\330\247\331\207\331\206\331\205\330\247",
-   "\330\250\330\247\330\261\332\257\330\260\330\247\330\261\333\214 \331\207\330\263\330\252\331"
-   "\207",
-   "\331\206\330\247\331\205",
-   "\331\201\331\207\330\261\330\263\330\252\342\200\214\331\207\330\247\333\214 \331\276\330\256"
-   "\330\264",
-   "\331\205\330\261\331\210\330\261\332\257\330\261 \331\201\330\247\333\214\331\204",
-   "\331\207\330\263\330\252\331\207",
-   "\330\247\330\267\331\204\330\247\330\271\330\247\330\252",
-   "\331\204\330\267\331\201\330\247\331\213 \330\250\331\207\342\200\214\331\205\331\206\330\270"
-   "\331\210\330\261 \330\247\330\271\330\252\331\205\330\247\331\204 \330\252\330\272\333\214\333"
-   "\214\330\261\330\247\330\252 \330\250\330\261\331\206\330\247\331\205\331\207 \330\261\330\247 "
-   "\330\250\330\247\330\262\330\261\330\247\331\207\342\200\214\330\247\331\206\330\257\330\247\330"
-   "\262\333\214 \332\251\331\206\333\214\330\257.",
-   "\330\252\331\210\331\202\331\201",
-   "\331\206\331\205\330\247",
-   "\331\206\330\247\331\205:",
-   "\331\207\330\263\330\252\331\207:",
-   "\331\276\330\247\333\214\332\257\330\247\331\207 \330\257\330\247\330\257\331\207:",
-   "\330\255\330\260\331\201",
-   "\331\276\333\214\330\264\333\214\331\206\331\207",
-   "\332\251\330\247\330\261\330\250\330\261",
-   "\330\242\330\272\330\247\330\262",
-   "\330\257\330\261 \330\254\330\263\330\252\330\254\331\210\333\214 \331\205\330\255\330\252\331"
-   "\210\330\247\333\214 \330\263\330\247\330\262\332\257\330\247\330\261\342\200\246",
-   "\331\207\330\263\330\252\331\207\342\200\214\330\247\333\214 \331\276\333\214\330\257\330\247 "
-   "\331\206\330\264\330\257",
-   "\331\201\331\207\330\261\330\263\330\252\342\200\214\331\276\330\256\330\264\333\214 \331\276"
-   "\333\214\330\257\330\247 \331\206\330\264\330\257",
-   "\330\261\330\247\331\207\331\206\331\205\330\247",
-   "\330\257\330\263\330\252\332\257\330\247\331\207\342\200\214\331\207\330\247",
+   "\330\252\331\206\330\270\333\214\331\205\330\247\330\252 \330\255\330\247\331\204\330\252 \331"
+   "\276\331\206\330\254\330\261\331\207\342\200\214\330\247\333\214 \330\261\330\247 \330\252\330"
+   "\272\333\214\333\214\330\261 \330\257\331\207\333\214\330\257.",
+   "\330\264\331\201\330\247\331\201\333\214\330\252 \331\276\331\206\330\254\330\261\331\207 \330"
+   "\261\330\247 \330\252\331\206\330\270\333\214\331\205 \331\205\333\214\342\200\214\332\251\331"
+   "\206\330\257.",
+   "\331\206\331\210\330\247\330\261 \330\271\331\206\331\210\330\247\331\206 \331\210 \330\256\330"
+   "\267 \330\255\330\247\330\264\333\214\331\207\331\224 \331\276\331\206\330\254\330\261\331\207 "
+   "\331\206\331\205\330\247\333\214\330\264 \330\257\330\247\330\257\331\207 \330\264\331\210\330"
+   "\257.",
    "\330\250\331\207 \331\205\331\210\330\247\330\261\330\257 \330\257\331\204\330\256\331\210\330"
    "\247\331\207 \330\247\331\201\330\262\331\210\330\257\331\207 \330\264\330\257",
+   "Controller profile saved as \"%s\".",
+   "Auto-loading save state from \"%s\" failed.",
+   "Auto-loading save state from \"%s\" succeeded.",
+   "bringing_up_command_interface_at_port",
+   "RetroAchievements: Logged in as \"%s\".",
+   "\332\251\331\205\331\276\330\247\333\214\331\204\330\261",
+   "disconnect_device_from_a_valid_port",
+   "failed_to_start_audio_driver",
    "\330\264\330\261\331\210\330\271 \330\266\330\250\330\267 \330\264\332\251\330\263\330\252 \330"
    "\256\331\210\330\261\330\257.",
+   "found_last_state_slot",
+   "Got connection from: \"%s\"",
+   "Got connection from: \"%s (%s)\"",
+   "\330\252\330\271\331\204\333\214\331\202",
+   "\330\247\330\252\331\205\330\247\331\205 \331\205\331\207\331\204\330\252",
+   "Client banned: \"%s\"",
+   "Your nickname changed to \"%s\"",
+   "\330\257\330\263\330\252\332\257\330\247\331\207\342\200\214\331\207\330\247",
+   "Failed to ban client: \"%s\"",
+   "Failed to kick client: \"%s\"",
+   "Client kicked: \"%s\"",
+   "Netplay peer \"%s\" paused",
+   "\"%s\" has disconnected",
    "\330\264\333\214\330\247\330\261 \331\210\330\266\330\271\333\214\330\252",
-   "\330\250\331\204\331\210\330\252\331\210\330\253",
-   "\331\210\330\247\333\214 \331\201\330\247\333\214",
-   "\330\257\330\263\330\252\333\214",
-   "\330\264\330\261\331\210\330\271 \331\205\330\254\330\257\330\257 \330\261\330\252\330\261\331"
-   "\210\330\242\330\261\332\206",
-#ifdef HAVE_LAKKA
-   "\330\250\331\204\331\210\330\252\331\210\330\253",
-#endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_RETROFLAG
-   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
-   "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
-   "eboot is required when changing.",
-#endif
-#endif
-#ifdef _3DS
-   "\331\202\331\204\331\205 \331\201\330\271\330\247\331\204",
-   "\331\205\331\202\333\214\330\247\330\263 \331\202\331\204\331\205",
-#endif
+   "Unrecognized command \"%s\" received.\n",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fa_blob_check[
-      (sizeof(msg_hash_fa_blob) == (28041u
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-       + 25u
-       + 64u
-#endif
-#endif
-#ifdef _3DS
-       + 43u
-       + 80u
-#endif
-#ifdef HAVE_MIST
-       + 11u
-       + 54u
-#endif
-#ifdef HAVE_MICROPHONE
-       + 15u
-       + 41u
-       + 86u
-#endif
-#if defined(DINGUX)
-       + 28u
-       + 341u
-       + 15u
-       + 11u
-       + 35u
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-       + 28u
-       + 35u
-       + 16u
-#endif
-#endif
-#if defined(DINGUX) && defined(DINGUX_BETA)
-       + 38u
-       + 167u
-       + 14u
-       + 14u
-#endif
-#if defined(DINGUX)
-       + 34u
-#endif
-#ifdef HAVE_MICROPHONE
-       + 15u
-       + 15u
-#endif
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-       + 13u
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-       + 45u
-       + 37u
-#endif
-#ifdef ANDROID
-       + 119u
-#endif
-#ifdef HAVE_MIST
-       + 43u
-#endif
-#ifdef HAVE_LAKKA
-       + 13u
-#endif
+      (sizeof(msg_hash_fa_blob) == (28837u
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
        + 125u
 #endif
 #endif
-#ifdef _3DS
-       + 16u
-       + 18u
-#endif
       )) ? 1 : -1];
 
 static const uint32_t msg_hash_fa_ids[] =
 {
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_SLOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW_DELETED,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW_SAVED,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
    (uint32_t)MENU_ENUM_LABEL_HELP_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   (uint32_t)MSG_COMPILER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-#ifdef _3DS
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
-#ifdef HAVE_MIST
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
-#ifdef HAVE_MICROPHONE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-#if defined(DINGUX)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
-#if defined(DINGUX)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-#ifdef HAVE_MICROPHONE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-#ifdef HAVE_MICROPHONE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-#endif
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-#ifdef ANDROID
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
-   (uint32_t)MSG_INPUT_BIND_TIMEOUT,
-   (uint32_t)MSG_INPUT_BIND_HOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-#ifdef HAVE_MIST
-   (uint32_t)MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_TWITCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_YOUTUBE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
-   (uint32_t)MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER,
-   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW,
-   (uint32_t)MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW,
-   (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
-   (uint32_t)MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
-   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS,
-   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW_SAVED,
-   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW_DELETED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_STATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_STATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OFF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_STOP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_VIEW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_REMOVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
-   (uint32_t)MSG_NETPLAY_CLIENT_DEVICES,
-   (uint32_t)MSG_ADDED_TO_FAVORITES,
-   (uint32_t)MSG_FAILED_TO_START_RECORDING,
-   (uint32_t)MSG_STATE_SLOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-#ifdef HAVE_LAKKA
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
-#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_STOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_TWITCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_YOUTUBE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
    (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
-#ifdef _3DS
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
-#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   (uint32_t)MSG_ADDED_TO_FAVORITES,
+   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   (uint32_t)MSG_COMPILER,
+   (uint32_t)MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+   (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
+   (uint32_t)MSG_FAILED_TO_START_RECORDING,
+   (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
+   (uint32_t)MSG_GOT_CONNECTION_FROM,
+   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
+   (uint32_t)MSG_INPUT_BIND_HOLD,
+   (uint32_t)MSG_INPUT_BIND_TIMEOUT,
+   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_CHANGED_NICK,
+   (uint32_t)MSG_NETPLAY_CLIENT_DEVICES,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
+   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   (uint32_t)MSG_STATE_SLOT,
+   (uint32_t)MSG_UNRECOGNIZED_COMMAND,
 };

@@ -14,520 +14,502 @@
 
 static const struct
 {
-   char s_2cb9dc71[11];
-   char s_733174db[9];
-   char s_555cd658[40];
-   char s_62564465[9];
-   char s_198c91d3[33];
+   char s_8630802e[31];
+   char s_23b2ac5a[203];
+   char s_550d5320[175];
+   char s_a4d0f03f[268];
+   char s_3817de39[328];
+   char s_16ae54ac[240];
+   char s_ff583ef3[495];
+   char s_60255deb[447];
+   char s_f39c636f[319];
+   char s_4c991c18[330];
+   char s_4b299805[149];
    char s_24e40f00[247];
-   char s_550b1e93[11];
-   char s_64d24441[48];
-   char s_44040aad[78];
-   char s_ea80654d[40];
-   char s_7b51019e[61];
-   char s_49c9bf91[8];
-   char s_ba582576[31];
-   char s_b0b9ca3e[55];
-   char s_8fe41f79[21];
-   char s_519cd5f8[13];
-   char s_8d13ec48[10];
-   char s_cf24fcc2[19];
-#ifdef HAVE_LIBNX
-   char s_09902e71[15];
-   char s_4eae7b1f[27];
-#endif
-   char s_5b2d8d2f[17];
-   char s_6ade80dd[32];
-   char s_020e2bc5[17];
-   char s_0d96ed73[34];
-   char s_730df420[16];
-   char s_7e96b5ce[39];
-   char s_5e14cb20[133];
+   char s_4dc69fe8[410];
    char s_a7206ebc[103];
+   char s_7e97e2f6[282];
+   char s_5fdad539[273];
    char s_353c64eb_0[500];
    char s_353c64eb_1[6];
-   char s_5fdad539[273];
-   char s_6c52dfb1[23];
-   char s_47ae341f[98];
-   char s_45816e1d[21];
-   char s_2e69508b[282];
-   char s_e6ca3876[26];
-   char s_9119ef97[21];
-   char s_48696c85[78];
-   char s_a1a7717d[22];
-   char s_f2687ca7[78];
-#if defined(DINGUX)
-   char s_6dc7aece[195];
-   char s_bfd4c6ef[9];
-   char s_52153570[18];
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   char s_eaa5cf6a[123];
-   char s_fec3d9e4[18];
-#endif
-#endif
-   char s_3aaf6bf1[109];
-   char s_17663212[152];
    char s_2d9d0a50[211];
    char s_0e7699a6[201];
-   char s_95e4b29f[57];
-   char s_a68d6d11[54];
-   char s_da7a38eb[20];
-   char s_a39ca959[81];
-   char s_8abad013[81];
-   char s_a1a8257e[98];
-#if defined (WIIU)
-#ifdef WIIU
-   char s_afb881f7[46];
-#endif
-#endif
-   char s_0ef856cb[35];
-   char s_22ee45f4[34];
-   char s_9a90acec[22];
-   char s_f417f6f1[20];
-   char s_123f401f[95];
-   char s_84c46931[26];
-   char s_3c13e61f[85];
-   char s_59f183c8[18];
-   char s_9f0fd076[115];
-   char s_59f183c9[19];
-   char s_9f0fd077[116];
-   char s_055c296e[102];
-   char s_b2f7627c[27];
-   char s_ad5ff591[11];
-#if defined(DINGUX)
-   char s_c0e554ab[153];
-#endif
-   char s_73658ec1[124];
-   char s_73658ec2[116];
-#if defined(RARCH_MOBILE)
-   char s_82c9e375[147];
-   char s_82c9e376[139];
-#endif
-   char s_d6fb8efe[16];
-   char s_e645f7ac[24];
-   char s_25a21976[52];
-   char s_6ac06624[114];
-   char s_30acd6fb[16];
-   char s_3c3598a9[39];
+   char s_9834febe[418];
+   char s_d6591125[18];
+   char s_dac26dd6[18];
    char s_48c208ee[12];
-   char s_66e9521c[71];
    char s_a38cafbb[19];
-   char s_a95c1929[37];
-   char s_98b02857[171];
-#ifdef HAVE_MICROPHONE
-   char s_ca9a92ae[19];
-   char s_b80b10dc[152];
-   char s_93d4d8b9[121];
-#endif
+   char s_5b2d8d2f[17];
    char s_affd948c[19];
-   char s_b5ccfdfa[152];
    char s_ad7c73f6[16];
-   char s_cb67f2a4[36];
-   char s_f9005edc[159];
-   char s_a83d6467[175];
-   char s_d264a13e[20];
-   char s_998970f0[30];
-   char s_c245fbde[40];
-   char s_3518bec3[31];
-   char s_7566a771[94];
-   char s_38cf005e[37];
-   char s_6da9b571[230];
-   char s_4fe7b3d2[156];
-   char s_9c702ee1[33];
-   char s_e28bc72f[18];
-   char s_5b920f01[93];
-   char s_b1e1d992[19];
-   char s_744c0f80[55];
-   char s_6ae6f953[21];
-   char s_2aa39081[43];
-   char s_cd94bb16[184];
-   char s_0ea19c95[44];
-   char s_ff583ef3[495];
-   char s_c7e66e0a[30];
-   char s_23b87da5[326];
-   char s_79381041[146];
-   char s_a11a7d85[155];
-   char s_4f7fa8b9[21];
-   char s_603f8de7[57];
-   char s_6b84e5e6[42];
-   char s_070529d4[49];
-   char s_d4f2cc9b[28];
-   char s_8c424989[36];
-   char s_fc2d1328[23];
-   char s_07b5d4d6[64];
-   char s_2f4cd458[26];
-   char s_3ad59606[34];
-   char s_7b4aa4e9[37];
-   char s_16cae8d7[71];
-   char s_e5a6dde5[21];
-   char s_f12f9f93[54];
-   char s_4263d137[57];
-   char s_87994f40[25];
-   char s_976074ee[98];
-   char s_16ae54ac[240];
-   char s_5d20ea2c[52];
-   char s_d6d8d4be[80];
-   char s_30d1fc05[47];
-   char s_b61d0a2d[25];
-   char s_798643f5[24];
-   char s_b87232ce[24];
-   char s_c68080b6[22];
-   char s_27db7cc0[26];
-   char s_231308e8[25];
-   char s_2a30a561[25];
-   char s_700d45a9[23];
-   char s_1127e777[27];
-   char s_b152eb42[29];
-   char s_a4d0f03f[268];
-   char s_6ff78e00[53];
-   char s_a8d552a7[43];
-   char s_6112ec7c[38];
-   char s_693db7da[212];
-   char s_db671d75[237];
-   char s_550d5320[175];
-   char s_5ae6337d[52];
-   char s_998d1a40[24];
-   char s_deab66ee[108];
-   char s_f02f73fc[25];
-   char s_dd9ff22a[59];
-   char s_7785c81e[35];
-   char s_21ec213c[25];
-   char s_623a09ea[82];
-   char s_223aff92[120];
-   char s_cc3c2510[122];
-   char s_791ba074[121];
-   char s_9b2a97d9[18];
-   char s_94ce603f[38];
-   char s_8ed62097[47];
-   char s_d8e11f05[293];
-   char s_6b9ce765[44];
-   char s_94597253[290];
+   char s_30acd6fb[16];
+   char s_ed31b08a[5];
+   char s_bbb615a1[21];
+   char s_b6cd2ff0[48];
+   char s_b7ed78f3[14];
+   char s_32550f71[11];
+   char s_53f57122[14];
+   char s_3425a408[16];
+   char s_638978e9[20];
+   char s_d39fc80f[16];
+   char s_4e254ff1[9];
+   char s_36442b35[18];
+   char s_b3fd357c[22];
+   char s_86ec481f[16];
+   char s_49c9bf91[8];
+   char s_b0b9ca3e[55];
+   char s_ba582576[31];
+   char s_eb66d46b[20];
+   char s_da7a38eb[20];
+   char s_5cb15718[13];
+   char s_1e1182e5[21];
+   char s_e645f7ac[24];
+   char s_2cb9dc71[11];
    char s_988f00b1[19];
    char s_cb7ae477[39];
-   char s_b462c6e5[66];
-   char s_69e645f2[22];
-   char s_4cf6b4e0[48];
-   char s_df92f5b5[37];
-   char s_e53de5dd[48];
-   char s_883e5f82[44];
-   char s_1e197ffb[136];
-   char s_686b74ae[29];
-   char s_e50c6c1c[51];
-   char s_0571321b[26];
-   char s_0b409b89[79];
-   char s_25c645b1[28];
-   char s_dd15c29f[81];
-   char s_b38ecfa8[27];
-   char s_734b66d6[80];
-   char s_ed06873e[41];
-   char s_75537d84[37];
-   char s_2ca2fa72[85];
-   char s_17690f5a[39];
-   char s_e08b7fc8[87];
-   char s_1fba8831[38];
-   char s_c0f9a2df[86];
-   char s_9448a1b0[85];
-   char s_00961284[114];
-   char s_36442b35[18];
-   char s_45f51ee3[28];
-   char s_b3fd357c[22];
-   char s_a16db3aa[36];
-   char s_86ec481f[16];
-   char s_3bb4fbf9[110];
-   char s_a85eb9f5[25];
-   char s_b91e9f23[37];
-   char s_5c6a50d2[99];
-   char s_1193e37b[34];
-   char s_0a583569[72];
-   char s_41702fdc[53];
-   char s_53f57122[14];
-   char s_ac45efa3[125];
-   char s_6f85964e[41];
-   char s_32550f71[11];
-   char s_b7ed78f3[14];
-   char s_3848eade[47];
-   char s_3425a408[16];
-   char s_d564beb6[58];
-   char s_d48223f9[27];
-   char s_da518d67[121];
-   char s_8b64010b[131];
-   char s_216de9db[35];
-   char s_216de9dc[16];
-   char s_fc6e3a57[18];
-   char s_4327ffcc[33];
-   char s_1d4d1099[24];
-   char s_be8c2b47[34];
-   char s_6c4b8962[23];
-   char s_e4405788[22];
-   char s_59508007[40];
-   char s_388ef77f[22];
-   char s_3e7327ad[90];
-   char s_4b299805[149];
-   char s_60255deb[447];
-   char s_71e4e031[177];
-   char s_f39c636f[319];
-   char s_7ef3d15a[176];
-   char s_4c991c18[330];
-   char s_4037367a[23];
-   char s_7567faa8[23];
-   char s_eb66d46b[20];
-   char s_a2b65159[57];
-   char s_bbb615a1[21];
-   char s_a49df80f[59];
-   char s_165e564b[237];
-   char s_d39fc80f[16];
-   char s_e350bbbd[256];
-   char s_fd7bb9e2[30];
-   char s_fd7b6a38[29];
-   char s_0f49d986[54];
-   char s_d86c49f4[103];
-   char s_abf90aae[114];
-   char s_b0d3045a[34];
-   char s_b3502258[86];
-   char s_7e97e2f6[282];
-   char s_23b2ac5a[203];
-   char s_e7f367f5[86];
-   char s_91dd478e[25];
-   char s_638978e9[20];
-   char s_2cabe957[48];
-   char s_cd66ffc9[25];
-   char s_8fd135b7[58];
-   char s_b9e684ee[30];
-   char s_ff04d19c[42];
-   char s_0b9c6082[27];
-   char s_ce069670[25];
-   char s_28adc26d[26];
-   char s_1195a4db[32];
-   char s_788f3ba8[20];
-   char s_61771e16[38];
-   char s_38311095[19];
-   char s_1e1182e5[21];
-   char s_5cb15718[13];
-   char s_8630802e[31];
-   char s_dac26dd6[18];
-   char s_9211eac4[33];
-   char s_4e254ff1[9];
-   char s_d6591125[18];
-   char s_f4805a53[33];
-   char s_96f1fa3d[43];
-   char s_43eca1b5[16];
-   char s_d3bff7ab[163];
-   char s_6cc5ba39[51];
-   char s_9813eaa4[41];
-   char s_9a1af409[41];
-   char s_dd416951[41];
-   char s_16a53432[50];
-   char s_2c1469aa[149];
-   char s_4dc69fe8[410];
-   char s_9834febe[418];
-   char s_b6cd2ff0[48];
-   char s_821edb57[24];
-   char s_ed31b08a[5];
-   char s_88ea76ed[8];
-   char s_5e511971[21];
-   char s_313105c8[21];
-   char s_7e65d975[23];
-   char s_62109a32[8];
+   char s_97c02a5a[19];
+   char s_998d1a40[24];
+   char s_550b1e93[11];
+   char s_87994f40[25];
+   char s_b1e1d992[19];
+   char s_798643f5[24];
+   char s_b61d0a2d[25];
+   char s_c68080b6[22];
+   char s_b87232ce[24];
+   char s_231308e8[25];
+   char s_27db7cc0[26];
+   char s_700d45a9[23];
+   char s_2a30a561[25];
+   char s_6ae6f953[21];
+   char s_e28bc72f[18];
+   char s_998970f0[30];
+   char s_3518bec3[31];
+   char s_4f7fa8b9[21];
+   char s_7b4aa4e9[37];
+   char s_2f4cd458[26];
+   char s_fc2d1328[23];
+   char s_e5a6dde5[21];
+   char s_d4f2cc9b[28];
+   char s_6b84e5e6[42];
+   char s_21ec213c[25];
+   char s_7785c81e[35];
+   char s_38cf005e[37];
+   char s_9c702ee1[33];
    char s_706c1104[14];
    char s_88ff9936[23];
-   char s_085b8f97[15];
-   char s_0ea29469[24];
-   char s_039b790e[65];
-   char s_0bd86aec[49];
-   char s_6ea6ac6f[148];
-   char s_e6600c20[243];
-   char s_a9145c83[13];
-   char s_6b7e9271[95];
-   char s_c4eae01a[113];
-   char s_29a8b1f5[185];
-   char s_bae1c983[103];
-   char s_7e88336d[109];
-   char s_3f9035ee[25];
-   char s_d90b137a[15];
+   char s_5c160fe2[26];
+   char s_16ff0a79[13];
+   char s_a72ca64c[10];
+   char s_8d566802[11];
+   char s_911d0106[15];
+   char s_f02f73fc[25];
+   char s_df92f5b5[37];
+   char s_d264a13e[20];
+   char s_1193e37b[34];
+   char s_9b2a97d9[18];
+   char s_94ce603f[38];
+   char s_0c1e1a65[33];
+   char s_8ed62097[47];
+   char s_6b9ce765[44];
+   char s_62564465[9];
+   char s_e4405788[22];
+   char s_6c4b8962[23];
+   char s_388ef77f[22];
+   char s_38311095[19];
+   char s_b9e684ee[30];
+   char s_cd66ffc9[25];
+   char s_788f3ba8[20];
+   char s_1adb7f60[79];
+   char s_4327ffcc[33];
+   char s_216de9db[35];
+   char s_216de9dc[16];
+   char s_4037367a[23];
+   char s_69e645f2[22];
+   char s_d48223f9[27];
+   char s_28adc26d[26];
+   char s_0b9c6082[27];
+   char s_7567faa8[23];
+   char s_88ea76ed[8];
+   char s_1d4d1099[24];
+   char s_c19bc96b[44];
+   char s_733174db[9];
+   char s_fc6e3a57[18];
+   char s_e53de5dd[48];
+   char s_883e5f82[44];
+   char s_686b74ae[29];
+   char s_821edb57[24];
+   char s_ed43994d[27];
+   char s_78ccdecc[25];
+   char s_a2bb0576[10];
+   char s_fab0ac6c[11];
+   char s_f1776a70[15];
+   char s_20f9b0a6[16];
+   char s_69a447f7[13];
+   char s_fd7b6a38[29];
+   char s_5e511971[21];
+   char s_fd7bb9e2[30];
+   char s_313105c8[21];
+   char s_0f49d986[54];
+   char s_b152eb42[29];
+   char s_3361e11d[51];
+   char s_9b3ca94b[47];
+   char s_036acd54[38];
+   char s_a0a191ca[38];
+   char s_aee9789b[18];
+   char s_1c540479[41];
+   char s_21083aca[14];
+   char s_d725639f[8];
+   char s_a85eb9f5[25];
+   char s_cf24fcc2[19];
+   char s_8d13ec48[10];
+   char s_91dd478e[25];
+   char s_7e65d975[23];
    char s_5c821ce2[16];
+   char s_d90b137a[15];
    char s_4a32f316[15];
    char s_b8199d1f[14];
    char s_ac709442[14];
-   char s_443e29a5[15];
    char s_5f421d29[28];
-   char s_7ec78dd0[15];
-   char s_584e4006[16];
+   char s_443e29a5[15];
+   char s_a9145c83[13];
    char s_7f2f8cd6[10];
    char s_65b61fcc[11];
-   char s_394e4cd7[47];
+   char s_7ec78dd0[15];
+   char s_584e4006[16];
+   char s_3f9035ee[25];
+   char s_085b8f97[15];
+   char s_0ea29469[24];
+   char s_1127e777[27];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   char s_addc7f89[77];
+#endif
+#endif
+   char s_ea80654d[40];
+   char s_8fe41f79[21];
+   char s_2c296537[15];
+   char s_519cd5f8[13];
+   char s_62109a32[8];
+   char s_c7e66e0a[30];
+   char s_d6fb8efe[16];
+   char s_b2f7627c[27];
+   char s_ad5ff591[11];
+   char s_9a90acec[22];
+   char s_0ef856cb[35];
+   char s_22ee45f4[34];
+   char s_f417f6f1[20];
+   char s_020e2bc5[17];
+   char s_59f183c8[18];
+   char s_59f183c9[19];
+   char s_a1a7717d[22];
+   char s_e6ca3876[26];
+   char s_1fba8831[38];
+   char s_17690f5a[39];
+   char s_75537d84[37];
+   char s_b38ecfa8[27];
+   char s_25c645b1[28];
+   char s_0571321b[26];
+   char s_95e4b29f[57];
+   char s_45816e1d[21];
+   char s_730df420[16];
+   char s_ad14307a[11];
+   char s_6c52dfb1[23];
+   char s_9119ef97[21];
+   char s_84c46931[26];
+   char s_25a21976[52];
    char s_8d5d41b3[13];
-   char s_934171e1[44];
    char s_4cfcae06[10];
    char s_ed2766fc[11];
-   char s_69a447f7[13];
-   char s_79553ba5[33];
-   char s_f1776a70[15];
-   char s_20f9b0a6[16];
-   char s_a2bb0576[10];
-   char s_fab0ac6c[11];
-   char s_16ff0a79[13];
-   char s_e0217ae7[44];
-   char s_5c160fe2[26];
+   char s_9ca4bbd7[22];
+   char s_9ca4bbd8[22];
+   char s_f4805a53[33];
+   char s_9211eac4[33];
+   char s_66e9521c[71];
+   char s_a95c1929[37];
+   char s_98b02857[171];
+   char s_f9005edc[159];
+   char s_6ade80dd[32];
+   char s_b5ccfdfa[152];
+   char s_cb67f2a4[36];
+   char s_3c3598a9[39];
+   char s_a8d552a7[43];
+   char s_6112ec7c[38];
+   char s_27aef25c[45];
+   char s_a49df80f[59];
+   char s_16a53432[50];
+   char s_6cc5ba39[51];
+   char s_dd416951[41];
+   char s_9a1af409[41];
+   char s_9813eaa4[41];
+   char s_6f85964e[41];
+   char s_e7f367f5[86];
+   char s_ac45efa3[125];
+   char s_3848eade[47];
+   char s_d564beb6[58];
+   char s_555cd658[40];
+   char s_2cabe957[48];
+   char s_e350bbbd[256];
+   char s_45f51ee3[28];
+   char s_a16db3aa[36];
+   char s_d3bff7ab[163];
+   char s_165e564b[237];
+   char s_a2b65159[57];
+   char s_a1a8257e[98];
+   char s_a68d6d11[54];
+   char s_8abad013[81];
+   char s_a39ca959[81];
+   char s_b0d3045a[34];
+   char s_7b51019e[61];
+   char s_b462c6e5[66];
+   char s_deab66ee[108];
+   char s_6ff78e00[53];
+   char s_693db7da[212];
+   char s_44040aad[78];
+   char s_64d24441[48];
+   char s_976074ee[98];
+   char s_744c0f80[55];
+   char s_2aa39081[43];
+   char s_cd94bb16[184];
+   char s_5b920f01[93];
+   char s_5d20ea2c[52];
+   char s_c245fbde[40];
+   char s_7566a771[94];
+   char s_6da9b571[230];
+   char s_79381041[146];
+   char s_23b87da5[326];
+   char s_603f8de7[57];
+   char s_a11a7d85[155];
+   char s_4263d137[57];
+   char s_16cae8d7[71];
+   char s_3ad59606[34];
+   char s_07b5d4d6[64];
+   char s_f12f9f93[54];
+   char s_8c424989[36];
+   char s_070529d4[49];
+   char s_30d1fc05[47];
+   char s_623a09ea[82];
+   char s_791ba074[121];
+   char s_cc3c2510[122];
+   char s_223aff92[120];
+   char s_d6d8d4be[80];
+   char s_0ea19c95[44];
+   char s_394e4cd7[47];
+   char s_7e88336d[109];
    char s_cfb4dee1[118];
-   char s_911d0106[15];
-   char s_a72ca64c[10];
-   char s_8d566802[11];
-   char s_d725639f[8];
-   char s_aee9789b[18];
-   char s_21083aca[14];
-   char s_a0a191ca[38];
-   char s_036acd54[38];
-   char s_1c540479[41];
-   char s_97c02a5a[19];
-   char s_78ccdecc[25];
-   char s_ed43994d[27];
-   char s_c19bc96b[44];
-   char s_c8812645[49];
-   char s_1adb7f60[79];
-   char s_4bc518be[24];
-   char s_b30573ed[86];
-   char s_843b6a7b[34];
-   char s_263efdcf[32];
-   char s_2f98e072[33];
-   char s_dd3ee761[123];
-   char s_f9aa7e70[72];
-   char s_680d4c36[111];
-   char s_f5ab7ff9[61];
-   char s_d277f01e[110];
-   char s_0c53fe6c[60];
-   char s_a1aa4c42[64];
-   char s_a6abc697[32];
-   char s_5b678bc4[29];
-   char s_9cfca240[35];
-   char s_f9a13828[22];
-   char s_509dd374[26];
-   char s_28bbcc15[34];
-   char s_76c4c7ce[28];
-   char s_25f63cc5[48];
-   char s_4bc02672[56];
+   char s_e0217ae7[44];
+   char s_dd9ff22a[59];
+   char s_4fe7b3d2[156];
+   char s_039b790e[65];
+   char s_0bd86aec[49];
+   char s_6ea6ac6f[148];
+   char s_29a8b1f5[185];
+   char s_e6600c20[243];
+   char s_c4eae01a[113];
+   char s_41702fdc[53];
+   char s_0a583569[72];
+   char s_5c6a50d2[99];
+   char s_cbdab193[273];
+   char s_d8e11f05[293];
+   char s_94597253[290];
+   char s_a83d6467[175];
+   char s_198c91d3[33];
+   char s_59508007[40];
+   char s_3e7327ad[90];
+   char s_ff04d19c[42];
+   char s_8fd135b7[58];
+   char s_61771e16[38];
+   char s_71e4e031[177];
+   char s_7ef3d15a[176];
+   char s_b3502258[86];
+   char s_4cf6b4e0[48];
+   char s_da518d67[121];
+   char s_1195a4db[32];
+   char s_ce069670[25];
+   char s_be8c2b47[34];
+   char s_8b64010b[131];
+   char s_e50c6c1c[51];
+   char s_1e197ffb[136];
+   char s_79553ba5[33];
+   char s_abf90aae[114];
+   char s_d86c49f4[103];
+   char s_b91e9f23[37];
+   char s_96f1fa3d[43];
+   char s_43eca1b5[16];
+   char s_00961284[114];
+   char s_6b7e9271[95];
+   char s_3bb4fbf9[110];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   char s_96c461f7[125];
+#endif
+#endif
+   char s_5ae6337d[52];
+   char s_db671d75[237];
+   char s_2c1469aa[149];
+   char s_bae1c983[103];
+   char s_1d92d9e0[141];
+   char s_c6e32f19[132];
+   char s_5e14cb20[133];
+   char s_17663212[152];
+   char s_055c296e[102];
+   char s_123f401f[95];
+   char s_0d96ed73[34];
+   char s_9f0fd076[115];
+   char s_9f0fd077[116];
+   char s_f2687ca7[78];
+   char s_c0f9a2df[86];
+   char s_ed06873e[41];
+   char s_e08b7fc8[87];
+   char s_9448a1b0[85];
+   char s_2ca2fa72[85];
+   char s_734b66d6[80];
+   char s_dd15c29f[81];
+   char s_0b409b89[79];
+   char s_1eebf4f8[154];
+   char s_2f2ca2b6[151];
+   char s_3aaf6bf1[109];
+   char s_2e69508b[282];
+   char s_7e96b5ce[39];
+   char s_73658ec1[124];
+   char s_73658ec2[116];
+   char s_47ae341f[98];
+   char s_48696c85[78];
+   char s_3c13e61f[85];
+   char s_6ac06624[114];
+   char s_7059a595[55];
+   char s_934171e1[44];
    char s_63a238b1[20];
    char s_06fb676c[39];
+   char s_4bc02672[56];
+   char s_25f63cc5[48];
    char s_4173591b[16];
    char s_c2b63d3e[15];
+   char s_2a9c73f3[34];
+   char s_05e3f715[42];
+   char s_631c5635[45];
    char s_6c868497[31];
+   char s_19e809ad[38];
    char s_0256d7eb[59];
+   char s_2a345bc4[43];
+   char s_7058f002[40];
+   char s_3267601f[75];
+   char s_8db0184a[44];
+   char s_db1e4390[38];
    char s_12a68ed0[64];
+   char s_76c4c7ce[28];
    char s_5eafa434[28];
    char s_7f1e25bf[32];
    char s_ed9e4f6f[140];
+   char s_4b6a946a[36];
    char s_d8f36eee[31];
+   char s_8d677b5b[29];
    char s_e68913bc[29];
+   char s_e533ddbb[22];
+   char s_45130077[26];
+   char s_856bdef7[31];
+   char s_0e7aca8a[23];
+   char s_ab1afe7c[21];
+   char s_3b7c0dd8[23];
+   char s_b43a100a[21];
    char s_2471a06d[23];
    char s_f7c1ff1a[24];
    char s_143f28c7[97];
    char s_dde3bd30[34];
    char s_1943a9c7[22];
+   char s_b1e9bfbf[20];
+   char s_28bbcc15[34];
+   char s_f9a13828[22];
+   char s_f5ab7ff9[61];
+   char s_d277f01e[110];
+   char s_680d4c36[111];
+   char s_0c53fe6c[60];
+   char s_5b678bc4[29];
+   char s_a6abc697[32];
    char s_e3bb7f4c[30];
+   char s_d15060ee[27];
+   char s_a068841f[28];
+   char s_4d7ee7e2[20];
+   char s_9d7c6772[31];
+   char s_4bc518be[24];
+   char s_c8812645[49];
+   char s_dd3ee761[123];
+   char s_f9aa7e70[72];
+   char s_509dd374[26];
+   char s_a1aa4c42[64];
+   char s_9cfca240[35];
+   char s_bab020a4[22];
    char s_b1b24b70[32];
+   char s_263efdcf[32];
    char s_676d783e[53];
-   char s_b62a855c[74];
    char s_f6783947[37];
    char s_670757eb[64];
+   char s_b62a855c[74];
+   char s_8fd932f3[30];
+   char s_b30573ed[86];
    char s_8f35069c[24];
    char s_6cc672f6[24];
    char s_c6156015[23];
+   char s_843b6a7b[34];
    char s_88494936[37];
+   char s_2f98e072[33];
    char s_a2250ebd[39];
-   char s_8fd932f3[30];
-   char s_9d7c6772[31];
-   char s_ab1afe7c[21];
-   char s_0e7aca8a[23];
-   char s_b43a100a[21];
-   char s_3b7c0dd8[23];
-   char s_8db0184a[44];
-   char s_3267601f[75];
-   char s_7058f002[40];
-   char s_2a345bc4[43];
-   char s_b7248c5d[42];
    char s_5876788a[43];
-   char s_2c296537[15];
-   char s_0c1e1a65[33];
-   char s_cbdab193[273];
-   char s_27aef25c[45];
-   char s_7059a595[55];
-   char s_ad14307a[11];
-   char s_2f2ca2b6[151];
-   char s_1eebf4f8[154];
-   char s_1d92d9e0[141];
-   char s_c6e32f19[132];
-   char s_3817de39[328];
-#ifdef HAVE_LAKKA
-#ifdef HAVE_RETROFLAG
-   char s_addc7f89[77];
-   char s_96c461f7[125];
-#endif
-#endif
-#ifdef HAVE_LAKKA
-   char s_f947e37f[176];
-#endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_LAKKA_SWITCH
-   char s_37eb8e31[15];
-#endif
-#endif
-#ifdef GEKKO
-   char s_3180dcf5[47];
-#endif
-#ifdef UDEV_TOUCH_SUPPORT
-   char s_dda6a015[99];
-#endif
-#ifdef HAVE_ODROIDGO2
-   char s_e8460c46[55];
-#endif
-#ifdef _3DS
-   char s_a69ccdc1[49];
-   char s_c7690859[38];
-   char s_450ca36f[40];
-   char s_b4816da6[39];
-   char s_6651ce29[20];
-#endif
-#ifdef HAVE_QT
-   char s_974d8c3a_0[500];
-   char s_974d8c3a_1[91];
-#endif
+   char s_b7248c5d[42];
 } msg_hash_en_blob =
 {
-   "Favourites",
-   "Net-play",
-   "Manually trigger cloud synchronisation.",
-   "Net-play",
-   "Join or host a net-play session.",
+   "Enter the name of the new view",
+   "Log-in details for your RetroAchievements account. Visit retroachievements.org and sign up for a"
+   " free account.\nAfter you are done registering, you need to input the username and password into"
+   " RetroArch.",
+   "Autosaves the non-volatile SRAM at a regular interval. This is disabled by default unless set ot"
+   "herwise. The interval is measured in seconds. A value of 0 disables autosaves.",
+   "Some cores might have a shut down feature. If this option is left disabled, selecting the shut d"
+   "own procedure would trigger RetroArch being shut down.\nEnabling this option will load a dummy c"
+   "ore instead so that we remain inside the menu and RetroArch won't shut down.",
+   "Enabling Linux GameMode can improve latency, fix audio crackling issues and maximise overall per"
+   "formance by automatically configuring your CPU and GPU for best performance.\nThe GameMode softw"
+   "are needs to be installed for this to work. See https://github.com/FeralInteractive/gamemode for"
+   " information on how to install GameMode.",
+   "Map specified analogue stick for D-Pad input.\nIf core has native analogue support, D-Pad mappin"
+   "g will be disabled unless a '(Forced)' option is selected.\nIf D-Pad mapping is forced, core wil"
+   "l receive no analogue input from specified stick.",
+   "Libretro uses a virtual gamepad abstraction known as the 'RetroPad' to communicate from front-en"
+   "ds (like RetroArch) to cores and vice versa. This menu determines how the virtual RetroPad is ma"
+   "pped to the physical input devices and which virtual input ports these devices occupy.\nIf a phy"
+   "sical input device is recognised and autoconfigured correctly, users probably do not need to use"
+   " this menu at all, and for core-specific input changes, should use the Quick Menu's 'Controls' s"
+   "ubmenu instead.",
+   "The frequency in frames with which net-play will verify that the host and client are in sync. Wi"
+   "th most cores, this value will have no visible effect and can be ignored. With nondeterminstic c"
+   "ores, this value determines how often the net-play peers will be brought into sync. With buggy c"
+   "ores, setting this to any non-zero value will cause severe performance issues. Set to zero to pe"
+   "rform no checks. This value is only used on the net-play host.",
+   "The number of frames of input latency for net-play to use to hide network latency.\nWhen in net-"
+   "play, this option delays local input, so that the frame being run is closer to the frames being "
+   "received from the network. This reduces jitter and makes net-play less CPU-intensive, but at the"
+   " price of noticeable input lag.",
+   "The range of frames of input latency that may be used by net-play to hide network latency.\nIf s"
+   "et, net-play will adjust the number of frames of input latency dynamically to balance CPU time, "
+   "input latency and network latency. This reduces jitter and makes net-play less CPU-intensive, bu"
+   "t at the price of unpredictable input lag.",
+   "Whether to start net-play in spectator mode. If set to true, net-play will be in spectator mode "
+   "on start. It's always possible to change mode later.",
    "Quit RetroArch. Killing the program in any hard way (SIGKILL, etc.) will terminate RetroArch wit"
    "hout saving the configuration in any case. On Unix-likes, SIGINT/SIGTERM allows a clean deinitia"
    "lisation which includes configuration save if enabled.",
-   "Favourites",
-   "Content added to 'Favourites' will appear here.",
-   "Browse all content matching the database with a categorised search interface.",
-   "Switch Cores to the Play Store versions",
-   "View information about the currently inserted media disc(s).",
-   "Licence",
-   "Serialised (Save/Load, Rewind)",
-   "Deterministic (Save/Load, Rewind, Run-Ahead, Net-play)",
-   "Front-End Identifier",
-   "Front-End OS",
-   "Art Style",
-   "Analogue Supported",
-#ifdef HAVE_LIBNX
-   "CPU Over-clock",
-   "Over-clock the Switch CPU.",
-#endif
-   "Audio Re-sampler",
-   "Audio re-sampler driver to use.",
-   "Full-Screen Mode",
-   "Change full-screen mode settings.",
-   "Synchronisation",
-   "Change video synchronisation settings.",
-   "Cut off a few pixels around the edges of the image customarily left blank by developers which so"
-   "metimes also contain rubbish pixels.",
+   "After changing shader settings such as the amount of shader passes, filtering, FBO scale, use th"
+   "is to apply changes.\nChanging these shader settings is a somewhat expensive operation so it has"
+   " to be done explicitly.\nWhen you apply shaders, the shader settings are saved to a temporary fi"
+   "le (retroarch.slangp/.cgp/.glslp) and loaded. The file persists after RetroArch exits and is sav"
+   "ed to the Shader Directory.",
    "Suspends the screensaver. Is a hint that does not necessarily have to be honoured by the video d"
    "river.",
+   "Localises the menu and all on-screen messages according to the language you have selected here. "
+   "Requires a restart for the changes to take effect.\nTranslation completeness is shown next to ea"
+   "ch option. In case a language is not implemented for a menu item, we fall back to English.",
+   "Adjusts the number of frames displayed in the BFI sequence that are black. More black frames inc"
+   "reases motion clarity but reduces brightness. Not applicable at 120hz as there is only one total"
+   " extra 60hz frame, so it must be black otherwise BFI would not be active at all.",
    "Inserts black frame(s) in between frames for enhanced motion clarity. Only use option designated"
    " for your current display refresh rate. Not for use at refresh rates that are non-multiples of 6"
    "0Hz such as 144Hz, 165Hz, etc. Do not combine with Swap Interval > 1, sub-frames, Frame Delay, o"
@@ -535,1135 +517,969 @@ static const struct
    "tice -any- temporary image retention, you should disable at 120Hz, and for higher Hz adjust the "
    "dark frames setting ",
    "[...]",
-   "Adjusts the number of frames displayed in the BFI sequence that are black. More black frames inc"
-   "reases motion clarity but reduces brightness. Not applicable at 120hz as there is only one total"
-   " extra 60hz frame, so it must be black otherwise BFI would not be active at all.",
-   "Vertical Sync (V-Sync)",
-   "Synchronise the output video of the graphics card to the refresh rate of the screen. Recommended"
-   ".",
-   "V-Sync Swap Interval",
-   "Use a custom swap interval for V-Sync. Effectively reduces monitor refresh rate by the specified"
-   " factor. 'Auto' sets factor based on core-reported frame rate, providing improved frame pacing w"
-   "hen running e.g. 30 fps content on a 60 Hz display or 60 fps content on a 120 Hz display.",
-   "Maximum Swap Chain Images",
-   "Waitable Swap Chains",
-   "Hard synchronise the CPU and GPU. Reduces latency at the cost of performance.",
-   "Maximum Frame Latency",
-   "Hard synchronise the CPU and GPU. Reduces latency at the cost of performance.",
-#if defined(DINGUX)
-   "Specify image interpolation method when scaling content with the internal IPU. 'Bicubic' or 'Bil"
-   "inear' is recommended when using CPU powered video filters. This option has no performance impac"
-   "t.",
-   "Bi-cubic",
-   "Nearest Neighbour",
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   "Specify image interpolation method when 'Integer Scale' is disabled. 'Nearest Neighbour' has the"
-   " least performance impact.",
-   "Nearest Neighbour",
-#endif
-#endif
-   "Delay autoloading shaders (in ms). Can work around graphical glitches when using 'screen grabbin"
-   "g' software.",
-   "Apply a CPU powered video filter. Might come at a high performance cost. Some video filters migh"
-   "t only work for cores that use 32-bit or 16-bit colour.",
    "Apply a CPU powered video filter. Might come at a high performance cost. Some video filters migh"
    "t only work for cores that use 32-bit or 16-bit colour. Dynamically linked video filter librarie"
    "s can be selected.",
    "Apply a CPU powered video filter. Might come at a high performance cost. Some video filters migh"
    "t only work for cores that use 32-bit or 16-bit colour. Built-in video filter libraries can be s"
    "elected.",
-   "Enable full-screen over notch in Android and iOS devices",
-   "Switch among native and ultra-wide super resolutions.",
-   "Horizontal Centring",
-   "Cycle through these options if the image is not centred properly on the display.",
-   "Cycle through these options if the image is not centred properly on the display.",
-   "Switch to high resolution mode-line for use with high-resolution menus when no content is loaded"
-   ".",
-#if defined (WIIU)
-#ifdef WIIU
-   "Optimise for Wii U GamePad (Restart required)",
-#endif
-#endif
-   "Only in Exclusive Full-Screen Mode",
-   "Only in Windowed Full-Screen Mode",
-   "All Full-Screen Modes",
-   "Full-Screen Display",
-   "Display in full-screen. Can be changed at runtime. Can be overridden by a command line switch.",
-   "Windowed Full-Screen Mode",
-   "If full-screen, prefer using a full-screen window to prevent display mode switching.",
-   "Full-Screen Width",
-   "Set the custom width size for the non-windowed full-screen mode. Leaving it unset will use the d"
-   "esktop resolution.",
-   "Full-Screen Height",
-   "Set the custom height size for the non-windowed full-screen mode. Leaving it unset will use the "
-   "desktop resolution.",
-   "Force the resolution to the full-screen size. If set to 0, a fixed value of 3840 x 2160 will be "
-   "used.",
-   "Configuration Aspect Ratio",
-   "Configured",
-#if defined(DINGUX)
-   "Maintain 1:1 pixel aspect ratios when scaling content with the internal IPU. If it's disabled, i"
-   "mages will then be stretched to fill the entire display.",
-#endif
-   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 i"
-   "s centre, 1.0 is far right.",
-   "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is cen"
-   "tre, 1.0 is bottom.",
-#if defined(RARCH_MOBILE)
-   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 i"
-   "s centre, 1.0 is far right. (Portrait Orientation)",
-   "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is cen"
-   "tre, 1.0 is bottom. (Portrait Orientation)",
-#endif
-   "Adaptive V-Sync",
-   "Fast-Forward Frame-Skip",
-   "Sync to Exact Content Frame Rate (G-Sync, FreeSync)",
-   "No deviation from core requested timing. Use for Variable Refresh Rate screens (G-Sync, Free-Syn"
-   "c, HDMI 2.1 VRR).",
-   "Synchronisation",
-   "Change audio synchronisation settings.",
-   "DSP Plug-in",
-   "Audio DSP plug-in that processes audio before it's sent to the driver.",
-   "Remove DSP Plug-in",
-   "Unload any active audio DSP plug-in.",
-   "Maximum audio latency in milliseconds. The driver aims to keep actual latency at 50% of this val"
-   "ue. Might not be honoured if the audio driver can't provide given latency.",
-#ifdef HAVE_MICROPHONE
-   "Re-sampler Quality",
-   "Lower this value to favour performance/lower latency over audio quality, increase for better aud"
-   "io quality at the expense of performance/lower latency.",
-   "Desired audio input latency in milliseconds. Might not be honoured if the microphone driver can'"
-   "t provide given latency.",
-#endif
-   "Re-sampler Quality",
-   "Lower this value to favour performance/lower latency over audio quality, increase for better aud"
-   "io quality at the expense of performance/lower latency.",
-   "Synchronisation",
-   "Synchronise the audio. Recommended.",
-   "Helps smooth out imperfections in timing when synchronising audio and video. Be aware that if di"
-   "sabled, proper synchronisation is nearly impossible to obtain.",
-   "Will start playback of the audio stream. Once finished, it will jump to the next audio stream in"
-   " sequential order and repeat this behaviour. Useful as an album playback mode.",
-   "Enable 'Okay' Sound",
-   "Disable Left Analogue in Menu",
-   "Prevent menu left analogue stick input.",
-   "Disable Right Analogue in Menu",
-   "Prevent menu right analogue stick input. Right analogue stick cycles thumbnails in playlists.",
-   "Polling Behaviour (Restart required)",
-   "Add a delay in frames before normal input is blocked after pressing the assigned 'Hot-key Enable"
-   "' key. Allows normal input from the 'Hot-key Enable' key to be captured when it is mapped to ano"
-   "ther action (e.g. RetroPad 'Select').",
-   "Swap buttons for Okay/Cancel. When disabled, the Japanese button orientation is on by default, w"
-   "hen this is enabled, it is the western orientation instead.",
-   "Remap the Controls for This Core",
-   "Autoconfiguration",
-   "How far an axis must be tilted to result in a button press when using 'Analogue to Digital'.",
-   "Analogue Dead Zone",
-   "Ignore analogue stick movements below dead zone value.",
-   "Analogue Sensitivity",
-   "Adjust the sensitivity of analogue sticks.",
-   "Always enable 'Game Focus' mode when launching and resuming content. When set to 'Detect', optio"
-   "n will be enabled if current core implements front-end keyboard callback functionality.",
-   "Select the general behaviour of turbo mode.",
-   "Libretro uses a virtual gamepad abstraction known as the 'RetroPad' to communicate from front-en"
-   "ds (like RetroArch) to cores and vice versa. This menu determines how the virtual RetroPad is ma"
-   "pped to the physical input devices and which virtual input ports these devices occupy.\nIf a phy"
-   "sical input device is recognised and autoconfigured correctly, users probably do not need to use"
-   " this menu at all, and for core-specific input changes, should use the Quick Menu's 'Controls' s"
-   "ubmenu instead.",
-   "Open Desktop Menu on Start-up",
-   "When assigned, the 'Hotkey Enable' key must be held before any other hotkeys are recognised. All"
-   "ows controller buttons to be mapped to hotkey functions without affecting normal input. Assignin"
-   "g the modifier to controller only will not require it for keyboard hotkeys, and vice versa, but "
-   "both modifiers work for both devices.",
-   "If virtual disc tray is closed, this opens it and removes the loaded disc. Otherwise, it inserts"
-   " the currently selected disc and closes the tray.",
-   "Switches 'Game Focus' mode on/off. When content has focus, hot-keys are disabled (full keyboard "
-   "input is passed to the running core) and mouse is grabbed.",
-   "Full-Screen (Toggle)",
-   "Switches between full-screen and windowed display modes.",
-   "Sync to Exact Content Frame Rate (Toggle)",
-   "Toggles sync to exact content frame rate on/off.",
-   "Pre-emptive Frames (Toggle)",
-   "Switches Pre-emptive Frames on/off.",
-   "Net-play Ping (Toggle)",
-   "Switches the ping counter for the current net-play room on/off.",
-   "Net-play Hosting (Toggle)",
-   "Switches net-play hosting on/off.",
-   "Net-play Play/Spectate Mode (Toggle)",
-   "Switches current net-play session between 'play' and 'spectate' modes.",
-   "Net-play Player Chat",
-   "Sends a chat message to the current net-play session.",
-   "Toggle between fading and static net-play chat messages.",
-   "Analogue to Digital Type",
-   "Use specified analogue stick for D-Pad input. 'Forced' modes override core native analogue input"
-   ".",
-   "Map specified analogue stick for D-Pad input.\nIf core has native analogue support, D-Pad mappin"
-   "g will be disabled unless a '(Forced)' option is selected.\nIf D-Pad mapping is forced, core wil"
-   "l receive no analogue input from specified stick.",
-   "The physical controller as recognised by RetroArch.",
-   "Specifies which core port will receive input from front-end controller port %u.",
-   "The physical mouse as recognised by RetroArch.",
-   "Left Analogue X+ (Right)",
-   "Left Analogue X- (Left)",
-   "Left Analogue Y+ (Down)",
-   "Left Analogue Y- (Up)",
-   "Right Analogue X+ (Right)",
-   "Right Analogue X- (Left)",
-   "Right Analogue Y+ (Down)",
-   "Right Analogue Y- (Up)",
-   "[Run-Ahead is Unavailable]",
-   "Number of Pre-emptive Frames",
-   "Some cores might have a shut down feature. If this option is left disabled, selecting the shut d"
-   "own procedure would trigger RetroArch being shut down.\nEnabling this option will load a dummy c"
-   "ore instead so that we remain inside the menu and RetroArch won't shut down.",
-   "Load customised core options by default at start-up.",
-   "Load customised configuration at start-up.",
-   "Load customised controls at start-up.",
-   "Save all core options to a common settings file (retroarch-core-options.cfg). When disabled, opt"
-   "ions for each core will be saved to a separate core-specific folder/file in RetroArch's 'Configu"
-   "rations' directory.",
-   "Write non-volatile SaveRAM files in an archived format. Dramatically reduces file size at the ex"
-   "pense of (negligibly) increased saving/loading times.\nOnly applies to cores that enable saving "
-   "with the standard libretro SaveRAM interface.",
-   "Autosaves the non-volatile SRAM at a regular interval. This is disabled by default unless set ot"
-   "herwise. The interval is measured in seconds. A value of 0 disables autosaves.",
-   "Automatically load the auto save state on start-up.",
-   "Front-End Logging Level",
-   "Set log level for the front-end. If a log level issued by the front-end is below this value, it "
-   "is ignored.",
-   "Throttle Menu Frame Rate",
-   "Makes sure the frame rate is capped while inside the menu.",
-   "Show the Mouse Cursor With Overlay",
-   "Analogue Recentring Zone",
-   "Analogue stick input will be relative to first touch if pressed within this zone.",
-   "Select input to send when two pointers are on screen. Trigger Delay should be non-zero to distin"
-   "guish from other input.",
-   "Select input to send when three pointers are on screen. Trigger Delay should be non-zero to dist"
-   "inguish from other input.",
-   "Select input to send when four pointers are on screen. Trigger Delay should be non-zero to disti"
-   "nguish from other input.",
-   "Graphical Widgets",
-   "Scale Graphical Widgets Automatically",
-   "Graphical Widgets Scale Override (Full-Screen)",
-   "Apply a manual scaling factor override when drawing display widgets in full-screen mode. Only ap"
-   "plies when 'Scale Graphical Widgets Automatically' is disabled. Can be used to increase or decre"
-   "ase the size of decorated notifications, indicators and controls independently from the menu its"
-   "elf.",
-   "Graphical Widgets Scale Override (Windowed)",
-   "Apply a manual scaling factor override when drawing display widgets in windowed mode. Only appli"
-   "es when 'Scale Graphical Widgets Automatically' is disabled. Can be used to increase or decrease"
-   " the size of decorated notifications, indicators and controls independently from the menu itself"
-   ".",
-   "Display Frame Rate",
-   "Frame Rate Update Interval (In Frames)",
-   "Frame Rate display will be updated at the set interval in frames.",
-   "Display Net-play Ping",
-   "Display the ping for the current net-play room.",
-   "\"Load Content\" Start-up Notification",
-   "Input (Autoconfigured) Connection Notifications",
-   "Configuration Override Loaded Notifications",
-   "Display an on-screen message when automatically restoring at launch the last used disc of multi-"
-   "disc content loaded with M3U playlists.",
-   "Extra Net-play Notifications",
-   "Display non-essential net-play on-screen messages.",
-   "Notification Colour (Red)",
-   "Sets the red value of the OSD text colour. Valid values are between 0 and 255.",
-   "Notification Colour (Green)",
-   "Sets the green value of the OSD text colour. Valid values are between 0 and 255.",
-   "Notification Colour (Blue)",
-   "Sets the blue value of the OSD text colour. Valid values are between 0 and 255.",
-   "Enables a background colour for the OSD.",
-   "Notification Background Colour (Red)",
-   "Sets the red value of the OSD background colour. Valid values are between 0 and 255.",
-   "Notification Background Colour (Green)",
-   "Sets the green value of the OSD background colour. Valid values are between 0 and 255.",
-   "Notification Background Colour (Blue)",
-   "Sets the blue value of the OSD background colour. Valid values are between 0 and 255.",
-   "Sets the opacity of the OSD background colour. Valid values are between 0.0 and 1.0.",
-   "Automatically quit RetroArch when closing content. 'CLI' quits only when content is launched wit"
-   "h a command line.",
-   "Show 'Favourites'",
-   "Show the 'Favourites' menu.",
-   "Show Favourites First",
-   "Show 'Favourites' before 'History'.",
-   "Show 'Net-play'",
-   "Show start-up screen in menu. This is automatically set to false after the program starts for th"
-   "e first time.",
-   "Show 'Add to Favourites'",
-   "Show the 'Add to Favourites' option.",
-   "Select an image to set as menu background. Manual and dynamic images will override 'Colour Theme"
-   "'.",
-   "Use Preferred System Colour Theme",
-   "Use operating system's colour theme (if any). Overrides theme settings.",
-   "The animation speed when the long menu text scrolls.",
-   "Leader-boards",
-   "Periodically send contextual game information to the RetroAchievements website. Has no effect if"
-   " 'Hardcore Mode' is enabled.",
-   "Display badges in the Achievements List.",
-   "Top Centre",
-   "Bottom Centre",
-   "Show additional diagnostic and error messages.",
-   "Log-in Messages",
-   "Show messages related to RetroAchievements account login.",
-   "Publicly Announce Net-play",
-   "Whether to announce net-play games publicly. If unset, clients must manually connect rather than"
-   " using the public lobby.",
-   "Forward net-play connections through a man-in-the-middle server. Useful if the host is behind a "
-   "firewall or has NAT/UPnP problems.",
-   "South America (South-east, Brazil)",
-   "South-east Asia",
-   "Net-play TCP Port",
-   "Maximum Simultaneous Connections",
-   "Net-play Spectator Mode",
-   "Start net-play in spectator mode.",
-   "Chat Colour (Nickname)",
-   "Chat Colour (Message)",
-   "Allow players to pause during net-play.",
-   "Net-play Check Frames",
-   "The frequency (in frames) that net-play will verify that the host and client are in sync.",
-   "Whether to start net-play in spectator mode. If set to true, net-play will be in spectator mode "
-   "on start. It's always possible to change mode later.",
-   "The frequency in frames with which net-play will verify that the host and client are in sync. Wi"
-   "th most cores, this value will have no visible effect and can be ignored. With nondeterminstic c"
-   "ores, this value determines how often the net-play peers will be brought into sync. With buggy c"
-   "ores, setting this to any non-zero value will cause severe performance issues. Set to zero to pe"
-   "rform no checks. This value is only used on the net-play host.",
-   "The number of frames of input latency for net-play to use to hide network latency. Reduces jitte"
-   "r and makes net-play less CPU-intensive, at the expense of noticeable input lag.",
-   "The number of frames of input latency for net-play to use to hide network latency.\nWhen in net-"
-   "play, this option delays local input, so that the frame being run is closer to the frames being "
-   "received from the network. This reduces jitter and makes net-play less CPU-intensive, but at the"
-   " price of noticeable input lag.",
-   "The range of frames of input latency that may be used to hide network latency. Reduces jitter an"
-   "d makes net-play less CPU-intensive, at the expense of unpredictable input lag.",
-   "The range of frames of input latency that may be used by net-play to hide network latency.\nIf s"
-   "et, net-play will adjust the number of frames of input latency dynamically to balance CPU time, "
-   "input latency and network latency. This reduces jitter and makes net-play less CPU-intensive, bu"
-   "t at the price of unpredictable input lag.",
-   "Net-play NAT Traversal",
-   "Analogue Input Sharing",
-   "Build-bot Cores URL",
-   "URL to core updater directory on the libretro build-bot.",
-   "Build-bot Assets URL",
-   "URL to assets updater directory on the libretro build-bot.",
-   "Specify how many automatically generated backups to keep for each installed core. When this limi"
-   "t is reached, creating a new backup with an online update will delete the oldest backup. Manual "
-   "core backups are unaffected by this setting.",
-   "Favourites Size",
-   "Limit the number of entries in the 'Favourites' playlist. Once the limit is reached, new additio"
-   "ns will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' ent"
-   "ries.\nWARNING: Reducing the value will delete existing entries!",
-   "Allow the Renaming of Entries",
-   "Allow the Removal of Entries",
-   "Show Content Specific Icons in History and Favourites",
-   "Show specific icons for each history and favourites playlist entry. Has a variable performance i"
-   "mpact.",
-   "Specify core to use when launching content with a playlist entry that does not have an existing "
-   "core association.",
-   "Remove playlist from file-system.",
-   "Input your username here. This will be used for netplay sessions, among other things.",
-   "Localises the menu and all on-screen messages according to the language you have selected here. "
-   "Requires a restart for the changes to take effect.\nTranslation completeness is shown next to ea"
-   "ch option. In case a language is not implemented for a menu item, we fall back to English.",
-   "Log-in details for your RetroAchievements account. Visit retroachievements.org and sign up for a"
-   " free account.\nAfter you are done registering, you need to input the username and password into"
-   " RetroArch.",
-   "Input the password of your RetroAchievements account. Maximum length: 255 characters.",
-   "Recording Configurations",
-   "Favourites Playlist",
-   "Save the Favourites playlist to this directory.",
-   "Connect to Net-play Host",
-   "Enter net-play server address and connect in client mode.",
-   "Disconnect From Net-play Host",
-   "Disconnect an active net-play connection.",
-   "Refresh Net-play Host List",
-   "Scan for net-play hosts.",
-   "Refresh Net-play LAN List",
-   "Scan for net-play hosts on LAN.",
-   "Start Net-play Host",
-   "Start net-play in host (server) mode.",
-   "Stop Net-play Host",
-   "Initialising list...",
-   "By Art Style",
-   "Enter the name of the new view",
-   "Add to Favourites",
-   "Add the content to 'Favourites'.",
-   "Playtime",
-   "Add to Favourites",
-   "Add the content to 'Favourites'.",
-   "Start streaming to the chosen destination.",
-   "End the stream.",
-   "Force current settings to be written to active options file. Ensures options are preserved in th"
-   "e event that a core bug causes improper shutdown of the front-end.",
-   "Load a cheat file and replace the existing cheats.",
-   "Press Left or Right to change the value.",
-   "Press Left or Right to change the value.",
-   "Press Left or Right to change the value.",
-   "Address bit-mask when Memory Search Size < 8-bit.",
-   "Changes to the shader configuration will take effect immediately. Use this if you've changed the"
-   " amount of shader passes, filtering, FBO scale, etc.",
-   "After changing shader settings such as the amount of shader passes, filtering, FBO scale, use th"
-   "is to apply changes.\nChanging these shader settings is a somewhat expensive operation so it has"
-   " to be done explicitly.\nWhen you apply shaders, the shader settings are saved to a temporary fi"
-   "le (retroarch.slangp/.cgp/.glslp) and loaded. The file persists after RetroArch exits and is sav"
-   "ed to the Shader Directory.",
    "Scale for this pass. The scale factor accumulates, i.e. 2x for first pass and 2x for second pass"
    " will give you a 4x total scale.\nIf there is a scale factor for last pass, the result is stretc"
    "hed to screen with the default filter, depending on Bilinear Filtering setting under Video setti"
    "ngs.\nIf 'Default' is set, either 1x scale or stretch to full-screen will be used, depending on "
    "whether or not it is the last pass.",
-   "Achievements cannot be activated with this core",
-   "No Favourites Available",
+   "Add to Favourites",
+   "Add to Favourites",
+   "DSP Plug-in",
+   "Remove DSP Plug-in",
+   "Audio Re-sampler",
+   "Re-sampler Quality",
+   "Synchronisation",
+   "Synchronisation",
    "Okay",
-   "Maximum",
-   "History & Favourites",
-   "History & Favourites",
-   "RetroPad with Analogue",
-   "Box Art",
+   "Build-bot Assets URL",
+   "Achievements cannot be activated with this core",
+   "Bottom Centre",
+   "Top Centre",
+   "Leader-boards",
+   "Log-in Messages",
+   "Favourites Playlist",
+   "Favourites Size",
+   "Playtime",
+   "Show 'Favourites'",
+   "Show Favourites First",
+   "Show 'Net-play'",
+   "Licence",
+   "Deterministic (Save/Load, Rewind, Run-Ahead, Net-play)",
+   "Serialised (Save/Load, Rewind)",
+   "Build-bot Cores URL",
+   "Horizontal Centring",
+   "By Art Style",
+   "Initialising list...",
+   "Fast-Forward Frame-Skip",
+   "Favourites",
+   "Display Frame Rate",
+   "Frame Rate Update Interval (In Frames)",
+   "Front-End Counters",
+   "Front-End Logging Level",
+   "Favourites",
+   "Analogue to Digital Type",
+   "Analogue Dead Zone",
+   "Left Analogue X- (Left)",
+   "Left Analogue X+ (Right)",
+   "Left Analogue Y- (Up)",
+   "Left Analogue Y+ (Down)",
+   "Right Analogue X- (Left)",
+   "Right Analogue X+ (Right)",
+   "Right Analogue Y- (Up)",
+   "Right Analogue Y+ (Down)",
+   "Analogue Sensitivity",
+   "Autoconfiguration",
+   "Disable Left Analogue in Menu",
+   "Disable Right Analogue in Menu",
+   "Full-Screen (Toggle)",
+   "Net-play Play/Spectate Mode (Toggle)",
+   "Net-play Hosting (Toggle)",
+   "Net-play Ping (Toggle)",
+   "Net-play Player Chat",
+   "Pre-emptive Frames (Toggle)",
+   "Sync to Exact Content Frame Rate (Toggle)",
+   "Analogue Recentring Zone",
+   "Show the Mouse Cursor With Overlay",
+   "Polling Behaviour (Restart required)",
+   "Remap the Controls for This Core",
    "Left Analogue",
    "Left Analogue (Forced)",
+   "Optimise Landscape Layout",
+   "Colour Theme",
+   "Grey Dark",
+   "Grey Light",
+   "Solarised Dark",
+   "Throttle Menu Frame Rate",
+   "\"Load Content\" Start-up Notification",
+   "Enable 'Okay' Sound",
+   "Use Preferred System Colour Theme",
+   "Graphical Widgets",
+   "Scale Graphical Widgets Automatically",
+   "Graphical Widgets Scale Override",
+   "Graphical Widgets Scale Override (Full-Screen)",
+   "Graphical Widgets Scale Override (Windowed)",
+   "Net-play",
+   "Chat Colour (Message)",
+   "Chat Colour (Nickname)",
+   "Net-play Check Frames",
+   "Stop Net-play Host",
+   "Disconnect From Net-play Host",
+   "Connect to Net-play Host",
+   "Start Net-play Host",
+   "Couldn't find a suitable core or content file, please try loading it manually.",
+   "Maximum Simultaneous Connections",
+   "South America (South-east, Brazil)",
+   "South-east Asia",
+   "Net-play NAT Traversal",
+   "Display Net-play Ping",
+   "Publicly Announce Net-play",
+   "Refresh Net-play LAN List",
+   "Refresh Net-play Host List",
+   "Analogue Input Sharing",
+   "Maximum",
+   "Net-play Spectator Mode",
+   "Net-play will start when content is loaded.",
+   "Net-play",
+   "Net-play TCP Port",
+   "Input (Autoconfigured) Connection Notifications",
+   "Configuration Override Loaded Notifications",
+   "Extra Net-play Notifications",
+   "No Favourites Available",
+   "No net-play clients found.",
+   "No net-play hosts found.",
+   "Grey Dark",
+   "Grey Light",
+   "Solarised Dark",
+   "Solarised Light",
+   "Colour Theme",
+   "Allow the Removal of Entries",
+   "History & Favourites",
+   "Allow the Renaming of Entries",
+   "History & Favourites",
+   "Show Content Specific Icons in History and Favourites",
+   "Number of Pre-emptive Frames",
+   "Are you sure you want to delete the playlist \"%1\"?",
+   "Are you sure you want to delete the item \"%1\"?",
+   "\"All Playlists\" maximum grid entries:",
+   "\"All Playlists\" maximum list entries:",
+   "Highlight Colour:",
+   "Please fill out all the required fields.",
+   "Select Colour",
+   "Box Art",
+   "Show 'Add to Favourites'",
+   "Analogue Supported",
+   "Art Style",
+   "Recording Configurations",
+   "RetroPad with Analogue",
+   "16:10 (Centred)",
+   "16:9 (Centred)",
+   "21:9 (Centred)",
+   "3:2 (Centred)",
+   "5:3 (Centred)",
+   "Fill the Screen (Stretched)",
+   "Fit the Screen",
+   "Colour Theme",
+   "Grey Dark",
+   "Grey Light",
+   "Solarised Dark",
+   "Solarised Light",
+   "Nearest Neighbour (Fast)",
    "Right Analogue",
    "Right Analogue (Forced)",
+   "[Run-Ahead is Unavailable]",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
+#endif
+#endif
+   "Switch Cores to the Play Store versions",
+   "Front-End Identifier",
+   "Front-End Name",
+   "Front-End OS",
+   "Box Art",
+   "Open Desktop Menu on Start-up",
+   "Adaptive V-Sync",
+   "Configuration Aspect Ratio",
+   "Configured",
+   "All Full-Screen Modes",
+   "Only in Exclusive Full-Screen Mode",
+   "Only in Windowed Full-Screen Mode",
+   "Full-Screen Display",
+   "Full-Screen Mode",
+   "Full-Screen Width",
+   "Full-Screen Height",
+   "Maximum Frame Latency",
+   "Maximum Swap Chain Images",
+   "Notification Background Colour (Blue)",
+   "Notification Background Colour (Green)",
+   "Notification Background Colour (Red)",
+   "Notification Colour (Blue)",
+   "Notification Colour (Green)",
+   "Notification Colour (Red)",
+   "Enable full-screen over notch in Android and iOS devices",
+   "V-Sync Swap Interval",
+   "Synchronisation",
+   "De-flicker",
+   "Vertical Sync (V-Sync)",
+   "Waitable Swap Chains",
+   "Windowed Full-Screen Mode",
+   "Sync to Exact Content Frame Rate (G-Sync, FreeSync)",
+   "Colour Theme",
+   "Grey Dark",
+   "Grey Light",
+   "video_viewport_bias_x",
+   "video_viewport_bias_y",
+   "Add the content to 'Favourites'.",
+   "Add the content to 'Favourites'.",
+   "Audio DSP plug-in that processes audio before it's sent to the driver.",
+   "Unload any active audio DSP plug-in.",
+   "Maximum audio latency in milliseconds. The driver aims to keep actual latency at 50% of this val"
+   "ue. Might not be honoured if the audio driver can't provide given latency.",
+   "Helps smooth out imperfections in timing when synchronising audio and video. Be aware that if di"
+   "sabled, proper synchronisation is nearly impossible to obtain.",
+   "Audio re-sampler driver to use.",
+   "Lower this value to favour performance/lower latency over audio quality, increase for better aud"
+   "io quality at the expense of performance/lower latency.",
+   "Synchronise the audio. Recommended.",
+   "Change audio synchronisation settings.",
+   "Load customised configuration at start-up.",
+   "Load customised controls at start-up.",
+   "Scan for Bluetooth devices and connect them.",
+   "URL to assets updater directory on the libretro build-bot.",
+   "Address bit-mask when Memory Search Size < 8-bit.",
+   "Load a cheat file and replace the existing cheats.",
+   "Press Left or Right to change the value.",
+   "Press Left or Right to change the value.",
+   "Press Left or Right to change the value.",
+   "Display badges in the Achievements List.",
+   "Input the password of your RetroAchievements account. Maximum length: 255 characters.",
+   "Periodically send contextual game information to the RetroAchievements website. Has no effect if"
+   " 'Hardcore Mode' is enabled.",
+   "Show additional diagnostic and error messages.",
+   "Show messages related to RetroAchievements account login.",
+   "Manually trigger cloud synchronisation.",
+   "Save the Favourites playlist to this directory.",
+   "Limit the number of entries in the 'Favourites' playlist. Once the limit is reached, new additio"
+   "ns will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' ent"
+   "ries.\nWARNING: Reducing the value will delete existing entries!",
+   "Show the 'Favourites' menu.",
+   "Show 'Favourites' before 'History'.",
+   "Force current settings to be written to active options file. Ensures options are preserved in th"
+   "e event that a core bug causes improper shutdown of the front-end.",
+   "Specify how many automatically generated backups to keep for each installed core. When this limi"
+   "t is reached, creating a new backup with an online update will delete the oldest backup. Manual "
+   "core backups are unaffected by this setting.",
+   "URL to core updater directory on the libretro build-bot.",
+   "Switch to high resolution mode-line for use with high-resolution menus when no content is loaded"
+   ".",
+   "Switch among native and ultra-wide super resolutions.",
+   "Cycle through these options if the image is not centred properly on the display.",
+   "Cycle through these options if the image is not centred properly on the display.",
+   "Remove playlist from file-system.",
+   "View information about the currently inserted media disc(s).",
+   "Frame Rate display will be updated at the set interval in frames.",
+   "Set log level for the front-end. If a log level issued by the front-end is below this value, it "
+   "is ignored.",
+   "Load customised core options by default at start-up.",
+   "Save all core options to a common settings file (retroarch-core-options.cfg). When disabled, opt"
+   "ions for each core will be saved to a separate core-specific folder/file in RetroArch's 'Configu"
+   "rations' directory.",
+   "Browse all content matching the database with a categorised search interface.",
+   "Content added to 'Favourites' will appear here.",
+   "Use specified analogue stick for D-Pad input. 'Forced' modes override core native analogue input"
+   ".",
+   "Ignore analogue stick movements below dead zone value.",
+   "Adjust the sensitivity of analogue sticks.",
+   "Always enable 'Game Focus' mode when launching and resuming content. When set to 'Detect', optio"
+   "n will be enabled if current core implements front-end keyboard callback functionality.",
+   "How far an axis must be tilted to result in a button press when using 'Analogue to Digital'.",
+   "The physical controller as recognised by RetroArch.",
+   "Prevent menu left analogue stick input.",
+   "Prevent menu right analogue stick input. Right analogue stick cycles thumbnails in playlists.",
+   "Add a delay in frames before normal input is blocked after pressing the assigned 'Hot-key Enable"
+   "' key. Allows normal input from the 'Hot-key Enable' key to be captured when it is mapped to ano"
+   "ther action (e.g. RetroPad 'Select').",
+   "If virtual disc tray is closed, this opens it and removes the loaded disc. Otherwise, it inserts"
+   " the currently selected disc and closes the tray.",
+   "When assigned, the 'Hotkey Enable' key must be held before any other hotkeys are recognised. All"
+   "ows controller buttons to be mapped to hotkey functions without affecting normal input. Assignin"
+   "g the modifier to controller only will not require it for keyboard hotkeys, and vice versa, but "
+   "both modifiers work for both devices.",
+   "Switches between full-screen and windowed display modes.",
+   "Switches 'Game Focus' mode on/off. When content has focus, hot-keys are disabled (full keyboard "
+   "input is passed to the running core) and mouse is grabbed.",
+   "Toggle between fading and static net-play chat messages.",
+   "Switches current net-play session between 'play' and 'spectate' modes.",
+   "Switches net-play hosting on/off.",
+   "Switches the ping counter for the current net-play room on/off.",
+   "Sends a chat message to the current net-play session.",
+   "Switches Pre-emptive Frames on/off.",
+   "Toggles sync to exact content frame rate on/off.",
+   "The physical mouse as recognised by RetroArch.",
+   "Analogue stick input will be relative to first touch if pressed within this zone.",
+   "Select input to send when four pointers are on screen. Trigger Delay should be non-zero to disti"
+   "nguish from other input.",
+   "Select input to send when three pointers are on screen. Trigger Delay should be non-zero to dist"
+   "inguish from other input.",
+   "Select input to send when two pointers are on screen. Trigger Delay should be non-zero to distin"
+   "guish from other input.",
+   "Specifies which core port will receive input from front-end controller port %u.",
+   "Select the general behaviour of turbo mode.",
+   "Type of thumbnail to display on the left side.",
+   "Type of thumbnail to display at the bottom right of playlists. Can be cycled with Right Analogue"
+   " Down/Right.",
+   "Automatically move the navigation bar to the right-hand side of the screen when using landscape "
+   "display orientations.",
+   "Select a different background colour theme.",
+   "Makes sure the frame rate is capped while inside the menu.",
+   "Swap buttons for Okay/Cancel. When disabled, the Japanese button orientation is on by default, w"
+   "hen this is enabled, it is the western orientation instead.",
    "Increase coarseness of the menu background chequerboard pattern.",
    "Increase coarseness of menu border chequerboard.",
    "Resize and position menu entries to make the best use of the available screen space. Disable thi"
    "s to use the classic fixed-width two column layout.",
+   "Enable display of inline downscaled thumbnails while viewing playlists. Toggleable with RetroPad"
+   " Select. When disabled, thumbnails can still be toggled full-screen with RetroPad Start.",
    "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, re"
    "moves scaling artefacts (uneven pixels) while maintaining a sharp image. Has a significant perfo"
    "rmance impact that increases with upscaling level.",
-   "Colour Theme",
-   "Select a different colour theme. Choosing 'Custom' enables the use of menu theme preset files.",
    "Enable background display of content while Quick Menu is active. Disabling transparency may alte"
    "r theme colours.",
-   "Enable display of inline downscaled thumbnails while viewing playlists. Toggleable with RetroPad"
-   " Select. When disabled, thumbnails can still be toggled full-screen with RetroPad Start.",
+   "The animation speed when the long menu text scrolls.",
+   "Use operating system's colour theme (if any). Overrides theme settings.",
+   "Select an image to set as menu background. Manual and dynamic images will override 'Colour Theme"
+   "'.",
+   "Apply a manual scaling factor override when drawing display widgets. Only applies when 'Scale Gr"
+   "aphical Widgets Automatically' is disabled. Can be used to increase or decrease the size of deco"
+   "rated notifications, indicators and controls independently from the menu itself.",
+   "Apply a manual scaling factor override when drawing display widgets in full-screen mode. Only ap"
+   "plies when 'Scale Graphical Widgets Automatically' is disabled. Can be used to increase or decre"
+   "ase the size of decorated notifications, indicators and controls independently from the menu its"
+   "elf.",
+   "Apply a manual scaling factor override when drawing display widgets in windowed mode. Only appli"
+   "es when 'Scale Graphical Widgets Automatically' is disabled. Can be used to increase or decrease"
+   " the size of decorated notifications, indicators and controls independently from the menu itself"
+   ".",
+   "Will start playback of the audio stream. Once finished, it will jump to the next audio stream in"
+   " sequential order and repeat this behaviour. Useful as an album playback mode.",
+   "Join or host a net-play session.",
+   "Allow players to pause during net-play.",
+   "The frequency (in frames) that net-play will verify that the host and client are in sync.",
+   "Disconnect an active net-play connection.",
+   "Enter net-play server address and connect in client mode.",
+   "Start net-play in host (server) mode.",
+   "The number of frames of input latency for net-play to use to hide network latency. Reduces jitte"
+   "r and makes net-play less CPU-intensive, at the expense of noticeable input lag.",
+   "The range of frames of input latency that may be used to hide network latency. Reduces jitter an"
+   "d makes net-play less CPU-intensive, at the expense of unpredictable input lag.",
+   "Input your username here. This will be used for netplay sessions, among other things.",
+   "Display the ping for the current net-play room.",
+   "Whether to announce net-play games publicly. If unset, clients must manually connect rather than"
+   " using the public lobby.",
+   "Scan for net-play hosts on LAN.",
+   "Scan for net-play hosts.",
+   "Start net-play in spectator mode.",
+   "Forward net-play connections through a man-in-the-middle server. Useful if the host is behind a "
+   "firewall or has NAT/UPnP problems.",
+   "Display non-essential net-play on-screen messages.",
+   "Display an on-screen message when automatically restoring at launch the last used disc of multi-"
+   "disc content loaded with M3U playlists.",
+   "Select a different colour theme.",
+   "Specify core to use when launching content with a playlist entry that does not have an existing "
+   "core association.",
+   "Show specific icons for each history and favourites playlist entry. Has a variable performance i"
+   "mpact.",
+   "Show the 'Add to Favourites' option.",
+   "Start streaming to the chosen destination.",
+   "End the stream.",
+   "Automatically quit RetroArch when closing content. 'CLI' quits only when content is launched wit"
+   "h a command line.",
+   "Select a different colour theme. Choosing 'Custom' enables the use of menu theme preset files.",
+   "Show start-up screen in menu. This is automatically set to false after the program starts for th"
+   "e first time.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
+   "eboot is required when changing.",
+#endif
+#endif
+   "Automatically load the auto save state on start-up.",
+   "Write non-volatile SaveRAM files in an archived format. Dramatically reduces file size at the ex"
+   "pense of (negligibly) increased saving/loading times.\nOnly applies to cores that enable saving "
+   "with the standard libretro SaveRAM interface.",
+   "Changes to the shader configuration will take effect immediately. Use this if you've changed the"
+   " amount of shader passes, filtering, FBO scale, etc.",
    "Type of thumbnail to display at the top right of playlists. Can be cycled with Right Analogue Up"
    "/Left.",
-   "Type of thumbnail to display at the bottom right of playlists. Can be cycled with Right Analogue"
-   " Down/Right.",
-   "Nearest Neighbour (Fast)",
-   "16:9 (Centred)",
-   "16:10 (Centred)",
-   "21:9 (Centred)",
-   "3:2 (Centred)",
-   "5:3 (Centred)",
-   "Fit the Screen",
-   "Fill the Screen (Stretched)",
-   "Solarised Dark",
-   "Solarised Light",
-   "Grey Dark",
-   "Grey Light",
-   "Type of thumbnail to display on the left side.",
-   "Colour Theme",
+   "Allows the choice of what governors to use in menus and during gameplay. Performance, Ondemand o"
+   "r Schedutil are recommended during gameplay.",
+   "Use the lowest frequency available to save power. Useful on battery powered devices, but perform"
+   "ance will be significantly reduced.",
+   "Cut off a few pixels around the edges of the image customarily left blank by developers which so"
+   "metimes also contain rubbish pixels.",
+   "Apply a CPU powered video filter. Might come at a high performance cost. Some video filters migh"
+   "t only work for cores that use 32-bit or 16-bit colour.",
+   "Force the resolution to the full-screen size. If set to 0, a fixed value of 3840 x 2160 will be "
+   "used.",
+   "Display in full-screen. Can be changed at runtime. Can be overridden by a command line switch.",
+   "Change full-screen mode settings.",
+   "Set the custom width size for the non-windowed full-screen mode. Leaving it unset will use the d"
+   "esktop resolution.",
+   "Set the custom height size for the non-windowed full-screen mode. Leaving it unset will use the "
+   "desktop resolution.",
+   "Hard synchronise the CPU and GPU. Reduces latency at the cost of performance.",
+   "Sets the blue value of the OSD background colour. Valid values are between 0 and 255.",
+   "Enables a background colour for the OSD.",
+   "Sets the green value of the OSD background colour. Valid values are between 0 and 255.",
+   "Sets the opacity of the OSD background colour. Valid values are between 0.0 and 1.0.",
+   "Sets the red value of the OSD background colour. Valid values are between 0 and 255.",
+   "Sets the blue value of the OSD text colour. Valid values are between 0 and 255.",
+   "Sets the green value of the OSD text colour. Valid values are between 0 and 255.",
+   "Sets the red value of the OSD text colour. Valid values are between 0 and 255.",
+   "Adjust display overscan cropping by reducing image size by specified number of scan lines (taken"
+   " from bottom of screen). May introduce scaling artefacts.",
+   "Adjust display overscan cropping by reducing image size by specified number of scan lines (taken"
+   " from top of screen). May introduce scaling artefacts.",
+   "Delay autoloading shaders (in ms). Can work around graphical glitches when using 'screen grabbin"
+   "g' software.",
+   "Use a custom swap interval for V-Sync. Effectively reduces monitor refresh rate by the specified"
+   " factor. 'Auto' sets factor based on core-reported frame rate, providing improved frame pacing w"
+   "hen running e.g. 30 fps content on a 60 Hz display or 60 fps content on a 120 Hz display.",
+   "Change video synchronisation settings.",
+   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 i"
+   "s centre, 1.0 is far right.",
+   "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is cen"
+   "tre, 1.0 is bottom.",
+   "Synchronise the output video of the graphics card to the refresh rate of the screen. Recommended"
+   ".",
+   "Hard synchronise the CPU and GPU. Reduces latency at the cost of performance.",
+   "If full-screen, prefer using a full-screen window to prevent display mode switching.",
+   "No deviation from core requested timing. Use for Variable Refresh Rate screens (G-Sync, Free-Syn"
+   "c, HDMI 2.1 VRR).",
+   "Scan for wireless networks and establish a connection.",
    "Select a different background colour theme.",
-   "Grey Dark",
-   "Grey Light",
-   "Colour Theme",
-   "Select a different colour theme.",
-   "Solarised Dark",
-   "Solarised Light",
-   "Grey Dark",
-   "Grey Light",
-   "Colour Theme",
-   "Select a different background colour theme.",
-   "Optimise Landscape Layout",
-   "Automatically move the navigation bar to the right-hand side of the screen when using landscape "
-   "display orientations.",
-   "Solarised Dark",
-   "Grey Dark",
-   "Grey Light",
-   "Box Art",
-   "Highlight Colour:",
-   "Select Colour",
-   "\"All Playlists\" maximum list entries:",
-   "\"All Playlists\" maximum grid entries:",
-   "Please fill out all the required fields.",
-   "Front-End Counters",
-   "No net-play hosts found.",
-   "No net-play clients found.",
-   "Net-play will start when content is loaded.",
-   "Content must be loaded before starting net-play.",
-   "Couldn't find a suitable core or content file, please try loading it manually.",
-   "Net-play scan complete.",
-   "Sorry, unimplemented: cores that don't demand content cannot participate in net-play.",
-   "Unknown net-play command received",
-   "Netplay port mapping successful",
-   "Netplay UPnP port mapping failed",
-   "A net-play connection attempt failed because the peer is not running RetroArch, or is running an"
-   " old version of RetroArch.",
-   "A net-play peer is running an old version of RetroArch. Cannot connect.",
-   "WARNING: A net-play peer is running a different version of RetroArch. If problems occur, use the"
-   " same version.",
-   "A net-play peer is running a different core. Cannot connect.",
-   "WARNING: A net-play peer is running a different version of the core. If problems occur, use the "
-   "same version.",
-   "This core does not support net-play between these platforms",
-   "This core does not support net-play between different platforms",
-   "Enter net-play server password:",
-   "Enter net-play chat message:",
-   "A net-play client has disconnected",
-   "Net-play disconnected",
-   "Net-play peer \"%s\" paused",
-   "Your nickname was changed to \"%s\"",
-   "Connecting to net-play host",
-   "All installed cores are at their latest version",
-   "All supported cores are switched to Play Store versions",
    "Added to favourites",
    "Failed to add favourite: playlist full",
+   "All supported cores are switched to Play Store versions",
+   "All installed cores are at their latest version",
    "Audio disabled.",
    "Audio enabled.",
+   "Controller profile saved as \"%s\".",
+   "Auto-loading save state from \"%s\" failed.",
+   "Auto-loading save state from \"%s\" succeeded.",
    "Could not initialise autosave.",
+   "bringing_up_command_interface_at_port",
    "Cannot infer new configuration path. Use the current time.",
+   "New cheat added to the bottom of the list.",
+   "New cheat added to the top of the list.",
+   "There's not enough room. The maximum number of simultaneous cheats is 100.",
+   "Searching has not been initialised/started.",
+   "RetroAchievements: Logged in as \"%s\".",
    "Configuration directory not set. Cannot save new configuration.",
+   "Connecting to net-play host",
    "Could not read film header.",
    "Could not read state from film.",
    "CRC32 checksum mismatch between content file and saved content checksum in replay file header. R"
    "eplay highly likely to de-sync on playback.",
+   "disconnect_device_from_a_valid_port",
    "Failed saving configuration to",
+   "failed_to_start_audio_driver",
    "Failed to start film record.",
+   "found_last_state_slot",
+   "Got connection from: \"%s\"",
+   "Got connection from: \"%s (%s)\"",
+   "Password is incorrect.",
+   "Password is correct.",
+   "Password is incorrect.",
+   "Password is correct.",
    "Front-end for libretro",
    "Loading favourites file",
    "Input replay film format seems to have a different serialiser version. It will most likely fail.",
    "Input replay film playback ended.",
    "Stopping film record.",
+   "Client banned: \"%s\"",
+   "Your nickname was changed to \"%s\"",
+   "Net-play disconnected",
+   "A net-play peer is running a different core. Cannot connect.",
+   "WARNING: A net-play peer is running a different version of the core. If problems occur, use the "
+   "same version.",
+   "WARNING: A net-play peer is running a different version of RetroArch. If problems occur, use the"
+   " same version.",
+   "This core does not support net-play between these platforms",
+   "Enter net-play chat message:",
+   "Enter net-play server password:",
    "Failed to initialise netplay.",
+   "Failed to ban client: \"%s\"",
+   "Failed to kick client: \"%s\"",
+   "Client kicked: \"%s\"",
+   "Scanning for net-play hosts...",
+   "Net-play scan complete.",
+   "Content must be loaded before starting net-play.",
+   "A net-play connection attempt failed because the peer is not running RetroArch, or is running an"
+   " old version of RetroArch.",
+   "A net-play peer is running an old version of RetroArch. Cannot connect.",
+   "Net-play peer \"%s\" paused",
+   "This core does not support net-play between different platforms",
+   "A net-play client has disconnected",
+   "\"%s\" has disconnected",
    "Core does not support net-play.",
+   "Netplay port mapping successful",
    "Restarting recording due to driver reinitialisation.",
-   "Rewind unavailable because this core lacks serialised save state support.",
    "Initialising rewind buffer with size",
    "Failed to initialise rewind buffer. Rewinding will be disabled.",
+   "Rewind unavailable because this core lacks serialised save state support.",
+   "Scanning Bluetooth devices...",
+   "Sorry, unimplemented: cores that don't demand content cannot participate in net-play.",
    "Starting film playback.",
    "Starting film record to",
    "Full-screen thumbnails",
+   "Unknown net-play command received",
    "Unrecognised command \"%s\" received.\n",
+   "Netplay UPnP port mapping failed",
    "Using core name for new configuration.",
-   "Scanning Bluetooth devices...",
-   "Scanning for net-play hosts...",
-   "Password is correct.",
-   "Password is incorrect.",
-   "Password is correct.",
-   "Password is incorrect.",
-   "Searching has not been initialised/started.",
-   "There's not enough room. The maximum number of simultaneous cheats is 100.",
-   "New cheat added to the top of the list.",
-   "New cheat added to the bottom of the list.",
-   "Sync to exact content frame rate enabled.",
    "Sync to exact content frame rate disabled.",
-   "Front-End Name",
-   "Graphical Widgets Scale Override",
-   "Apply a manual scaling factor override when drawing display widgets. Only applies when 'Scale Gr"
-   "aphical Widgets Automatically' is disabled. Can be used to increase or decrease the size of deco"
-   "rated notifications, indicators and controls independently from the menu itself.",
-   "Scan for Bluetooth devices and connect them.",
-   "Scan for wireless networks and establish a connection.",
-   "De-flicker",
-   "Adjust display overscan cropping by reducing image size by specified number of scan lines (taken"
-   " from top of screen). May introduce scaling artefacts.",
-   "Adjust display overscan cropping by reducing image size by specified number of scan lines (taken"
-   " from bottom of screen). May introduce scaling artefacts.",
-   "Allows the choice of what governors to use in menus and during gameplay. Performance, Ondemand o"
-   "r Schedutil are recommended during gameplay.",
-   "Use the lowest frequency available to save power. Useful on battery powered devices, but perform"
-   "ance will be significantly reduced.",
-   "Enabling Linux GameMode can improve latency, fix audio crackling issues and maximise overall per"
-   "formance by automatically configuring your CPU and GPU for best performance.\nThe GameMode softw"
-   "are needs to be installed for this to work. See https://github.com/FeralInteractive/gamemode for"
-   " information on how to install GameMode.",
-#ifdef HAVE_LAKKA
-#ifdef HAVE_RETROFLAG
-   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
-   "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
-   "eboot is required when changing.",
-#endif
-#endif
-#ifdef HAVE_LAKKA
-   "Displays a list of available time zones. After selecting a time zone, time and date is adjusted "
-   "to the selected time zone. It assumes that system/hardware clock is set to UTC.",
-#endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_LAKKA_SWITCH
-   "CPU Over-clock",
-#endif
-#endif
-#ifdef GEKKO
-   "Adjust x/y scale for Wii-mote light gun speed.",
-#endif
-#ifdef UDEV_TOUCH_SUPPORT
-   "Enable along with Mouse to utilise the touch screen as a trackball, adding inertia to the pointe"
-   "r.",
-#endif
-#ifdef HAVE_ODROIDGO2
-   "RGA scaling and bi-cubic filtering. May break widgets.",
-#endif
-#ifdef _3DS
-   "Tap the Touch Screen to go\nto the RetroArch menu",
-   "Adjust bottom screen font red colour.",
-   "Adjust bottom screen font green colour.",
-   "Adjust bottom screen font blue colour.",
-   "Font Colour Opacity",
-#endif
-#ifdef HAVE_QT
-   "Scan Finished.<br><br>\nIn order for content to be correctly scanned, you must:\n<ul><li>have a "
-   "compatible core already downloaded</li>\n<li>have \"Core Info Files\" updated with the Online Up"
-   "dater</li>\n<li>have \"Databases\" updated with the Online Updater</li>\n<li>restart RetroArch i"
-   "f any of the above was just done</li></ul>\nFinally, the content must match existing databases f"
-   "rom <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If"
-   " it is still not working, consid",
-   "er <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>.",
-#endif
+   "Sync to exact content frame rate enabled.",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26756u
-#ifdef HAVE_LIBNX
-       + 15u
-       + 27u
-#endif
-#if defined(DINGUX)
-       + 195u
-       + 9u
-       + 18u
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-       + 123u
-       + 18u
-#endif
-#endif
-#if defined (WIIU)
-#ifdef WIIU
-       + 46u
-#endif
-#endif
-#if defined(DINGUX)
-       + 153u
-#endif
-#if defined(RARCH_MOBILE)
-       + 147u
-       + 139u
-#endif
-#ifdef HAVE_MICROPHONE
-       + 19u
-       + 152u
-       + 121u
-#endif
+      (sizeof(msg_hash_en_blob) == (27356u
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
        + 125u
 #endif
 #endif
-#ifdef HAVE_LAKKA
-       + 176u
-#endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_LAKKA_SWITCH
-       + 15u
-#endif
-#endif
-#ifdef GEKKO
-       + 47u
-#endif
-#ifdef UDEV_TOUCH_SUPPORT
-       + 99u
-#endif
-#ifdef HAVE_ODROIDGO2
-       + 55u
-#endif
-#ifdef _3DS
-       + 49u
-       + 38u
-       + 40u
-       + 39u
-       + 20u
-#endif
-#ifdef HAVE_QT
-       + 591u
-#endif
       )) ? 1 : -1];
 
 static const uint32_t msg_hash_en_ids[] =
 {
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-#ifdef HAVE_LIBNX
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-#if defined(DINGUX)
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-#if defined (WIIU)
-#ifdef WIIU
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
-#if defined(DINGUX)
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-#if defined(RARCH_MOBILE)
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-#ifdef HAVE_MICROPHONE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
-#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
-   (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FPS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
-   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-   (uint32_t)MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-   (uint32_t)MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
-   (uint32_t)MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_LIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   (uint32_t)MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-   (uint32_t)MSG_NETPLAY_NEED_CONTENT_LOADED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
-   (uint32_t)MSG_NETPLAY_LAN_SCAN_COMPLETE,
-   (uint32_t)MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   (uint32_t)MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   (uint32_t)MSG_PUBLIC_ADDRESS,
-   (uint32_t)MSG_UPNP_FAILED,
-   (uint32_t)MSG_NETPLAY_NOT_RETROARCH,
-   (uint32_t)MSG_NETPLAY_OUT_OF_DATE,
-   (uint32_t)MSG_NETPLAY_DIFFERENT_VERSIONS,
-   (uint32_t)MSG_NETPLAY_DIFFERENT_CORES,
-   (uint32_t)MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-   (uint32_t)MSG_NETPLAY_ENDIAN_DEPENDENT,
-   (uint32_t)MSG_NETPLAY_PLATFORM_DEPENDENT,
-   (uint32_t)MSG_NETPLAY_ENTER_PASSWORD,
-   (uint32_t)MSG_NETPLAY_ENTER_CHAT,
-   (uint32_t)MSG_NETPLAY_SERVER_HANGUP,
-   (uint32_t)MSG_NETPLAY_CLIENT_HANGUP,
-   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
-   (uint32_t)MSG_NETPLAY_CHANGED_NICK,
-   (uint32_t)MSG_CONNECTING_TO_NETPLAY_HOST,
-   (uint32_t)MSG_ALL_CORES_UPDATED,
-   (uint32_t)MSG_ALL_CORES_SWITCHED_PFD,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    (uint32_t)MSG_ADDED_TO_FAVORITES,
    (uint32_t)MSG_ADD_TO_FAVORITES_FAILED,
+   (uint32_t)MSG_ALL_CORES_SWITCHED_PFD,
+   (uint32_t)MSG_ALL_CORES_UPDATED,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,
+   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
    (uint32_t)MSG_AUTOSAVE_FAILED,
+   (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    (uint32_t)MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+   (uint32_t)MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+   (uint32_t)MSG_CHEAT_ADD_TOP_SUCCESS,
+   (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
+   (uint32_t)MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
    (uint32_t)MSG_CONFIG_DIRECTORY_NOT_SET,
+   (uint32_t)MSG_CONNECTING_TO_NETPLAY_HOST,
    (uint32_t)MSG_COULD_NOT_READ_MOVIE_HEADER,
    (uint32_t)MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
    (uint32_t)MSG_CRC32_CHECKSUM_MISMATCH,
+   (uint32_t)MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    (uint32_t)MSG_FAILED_SAVING_CONFIG_TO,
+   (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
    (uint32_t)MSG_FAILED_TO_START_MOVIE_RECORD,
+   (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
+   (uint32_t)MSG_GOT_CONNECTION_FROM,
+   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
+   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
+   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
    (uint32_t)MSG_LIBRETRO_FRONTEND,
    (uint32_t)MSG_LOADING_FAVORITES_FILE,
    (uint32_t)MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
    (uint32_t)MSG_MOVIE_PLAYBACK_ENDED,
    (uint32_t)MSG_MOVIE_RECORD_STOPPED,
+   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_CHANGED_NICK,
+   (uint32_t)MSG_NETPLAY_CLIENT_HANGUP,
+   (uint32_t)MSG_NETPLAY_DIFFERENT_CORES,
+   (uint32_t)MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+   (uint32_t)MSG_NETPLAY_DIFFERENT_VERSIONS,
+   (uint32_t)MSG_NETPLAY_ENDIAN_DEPENDENT,
+   (uint32_t)MSG_NETPLAY_ENTER_CHAT,
+   (uint32_t)MSG_NETPLAY_ENTER_PASSWORD,
    (uint32_t)MSG_NETPLAY_FAILED,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_LAN_SCANNING,
+   (uint32_t)MSG_NETPLAY_LAN_SCAN_COMPLETE,
+   (uint32_t)MSG_NETPLAY_NEED_CONTENT_LOADED,
+   (uint32_t)MSG_NETPLAY_NOT_RETROARCH,
+   (uint32_t)MSG_NETPLAY_OUT_OF_DATE,
+   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
+   (uint32_t)MSG_NETPLAY_PLATFORM_DEPENDENT,
+   (uint32_t)MSG_NETPLAY_SERVER_HANGUP,
+   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
    (uint32_t)MSG_NETPLAY_UNSUPPORTED,
+   (uint32_t)MSG_PUBLIC_ADDRESS,
    (uint32_t)MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-   (uint32_t)MSG_REWIND_UNSUPPORTED,
    (uint32_t)MSG_REWIND_INIT,
    (uint32_t)MSG_REWIND_INIT_FAILED,
+   (uint32_t)MSG_REWIND_UNSUPPORTED,
+   (uint32_t)MSG_SCANNING_BLUETOOTH_DEVICES,
+   (uint32_t)MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
    (uint32_t)MSG_STARTING_MOVIE_PLAYBACK,
    (uint32_t)MSG_STARTING_MOVIE_RECORD_TO,
    (uint32_t)MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   (uint32_t)MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
    (uint32_t)MSG_UNRECOGNIZED_COMMAND,
+   (uint32_t)MSG_UPNP_FAILED,
    (uint32_t)MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
-   (uint32_t)MSG_SCANNING_BLUETOOTH_DEVICES,
-   (uint32_t)MSG_NETPLAY_LAN_SCANNING,
-   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
-   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
-   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
-   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
-   (uint32_t)MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-   (uint32_t)MSG_CHEAT_ADD_TOP_SUCCESS,
-   (uint32_t)MSG_CHEAT_ADD_BOTTOM_SUCCESS,
-   (uint32_t)MSG_VRR_RUNLOOP_ENABLED,
    (uint32_t)MSG_VRR_RUNLOOP_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-   (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
-#ifdef HAVE_LAKKA
-#ifdef HAVE_RETROFLAG
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
-#endif
-#endif
-#ifdef HAVE_LAKKA
-   (uint32_t)MENU_ENUM_LABEL_HELP_TIMEZONE,
-#endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_LAKKA_SWITCH
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
-#endif
-#endif
-#ifdef GEKKO
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
-#endif
-#ifdef UDEV_TOUCH_SUPPORT
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
-#endif
-#ifdef HAVE_ODROIDGO2
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
-#endif
-#ifdef _3DS
-   (uint32_t)MSG_3DS_BOTTOM_MENU_DEFAULT,
-   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
-   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
-#endif
-#ifdef HAVE_QT
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-#endif
+   (uint32_t)MSG_VRR_RUNLOOP_ENABLED,
 };

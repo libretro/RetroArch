@@ -84,7 +84,7 @@ def expand_def_includes(text, base_dir):
                 out.append(def_text[i:line_end])
                 i = line_end + 1
                 continue
-            m = re.match(r'S_(BOOL|UINT|INT|FLOAT|STRING_P|STRING|DIR|PATH_DS|PATH|ACTION)(_EX)?(_NS)?(_H)?\s*\(', def_text[i:])
+            m = re.match(r'S_(BOOL|UINT|INT|FLOAT|STRING_P|STRING|DIR|PATH_DS|PATH|ACTION)(_EX|_LV|_AT|_AT_EX)?(_NS)?(_H)?\s*\(', def_text[i:])
             if not m:
                 i = line_end + 1
                 continue
@@ -113,7 +113,10 @@ def expand_def_includes(text, base_dir):
                     args[-1] += ch
                 jx += 1
             token = (args[0] if m.group(1) == 'ACTION' else args[1]).strip()
-            if m.group(3):
+            if m.group(2) == '_LV':
+                # the value string belongs to the value token's owning def
+                pairs = () if m.group(3) else (('MENU_ENUM_SUBLABEL_', args[-1]),)
+            elif m.group(3):
                 pairs = (('MENU_ENUM_LABEL_VALUE_', args[-1]),)
             else:
                 pairs = (('MENU_ENUM_LABEL_VALUE_', args[-2]),

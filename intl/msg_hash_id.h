@@ -14,2978 +14,2768 @@
 
 static const struct
 {
-   char s_d9685b01[11];
-   char s_9932960f[11];
-   char s_2cb9dc71[8];
-   char s_ae50c550[8];
-   char s_b30d3e14[7];
-   char s_42b8ffbf[6];
-   char s_bcddf275[6];
-   char s_99eb425d[9];
-   char s_ec59110b[19];
-   char s_7632d987[13];
-   char s_d21c686b[21];
-   char s_d7fc4c9c[22];
-   char s_36265c93[11];
-   char s_544da5c1[52];
-   char s_136eaaf4[23];
-   char s_193e1462[50];
-   char s_d7f2cfac[10];
-   char s_35f2309a[32];
-   char s_87e07c0e[11];
-   char s_e3d18a3d[12];
-   char s_c6e1f92b[35];
-   char s_d15b342a[12];
-   char s_2f5a9518[84];
-   char s_6ebb6a00[18];
-   char s_ccbacaee[95];
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-   char s_e65393d5[17];
-   char s_043f1283[43];
-#endif
-#endif
-   char s_b3cc8a43[12];
-   char s_d34eb231[64];
-   char s_061657e6[13];
-   char s_243da114[57];
-   char s_6c74f3ea[11];
-   char s_555cd658[39];
-   char s_6155456e[19];
-   char s_4a3d27dc[36];
-   char s_ce5f3353[17];
-   char s_de265901[51];
-   char s_87ee250e[28];
-   char s_70d6077c[37];
-   char s_a11934f5[24];
-   char s_a9c51063[51];
-   char s_1938dce6[23];
-   char s_1f084654[44];
-   char s_2f9a064c[8];
-   char s_8d99673a[43];
-   char s_ed013a05[23];
-   char s_4b009af3[31];
-   char s_198c91d3[31];
-   char s_e2c6c781[17];
-   char s_f28ded2f[57];
-#ifdef HAVE_MIST
-   char s_c3f0e1ff[10];
-#endif
-   char s_4aaeeb99[11];
-   char s_e8aee6c7[26];
-   char s_d81bf7a9[10];
-   char s_9eb26572[28];
-   char s_59980356[12];
-   char s_3ca87244[34];
-   char s_95cf0994[7];
-   char s_a5962f42[75];
-   char s_0c7750cd[74];
-   char s_d31f6d88[11];
-   char s_f2a19576[52];
-   char s_01a73130[26];
-   char s_46c57dde[54];
-   char s_941e50fb[15];
-   char s_10342503[8];
-   char s_164566fb[15];
-   char s_6107eb09[11];
-   char s_550b1e93[9];
-   char s_64d24441[54];
-   char s_c0d9bee1[6];
-   char s_dec53d8f[58];
-   char s_d2224db6[7];
-   char s_ad7da224[59];
-   char s_c175c697[6];
-   char s_df614545[58];
-   char s_fd3e287f[9];
-   char s_44040aad[85];
-   char s_c4842e2d[19];
-   char s_145f5880[15];
-   char s_5eee10e5[26];
-   char s_6e9f0493[65];
-   char s_ea80654d[37];
-   char s_8bbf7ffb[105];
-   char s_64dd7209[35];
-   char s_061c8cb7[51];
-   char s_f03e9c42[17];
-   char s_b2a8d230[44];
-   char s_7088df5e[29];
-   char s_11c7fa0c[76];
-   char s_51cbf8f0[26];
-   char s_95cbebbd[14];
-   char s_6b80a1bc[29];
-   char s_99a77122[15];
-   char s_4a5b7672[18];
-   char s_eb3c8b7f[18];
-   char s_8fa79de5[21];
-   char s_eb0d7f1d[19];
-   char s_6ae93e68[22];
-   char s_881efe76[15];
-   char s_a64647a4[53];
-   char s_5d29b870[17];
-   char s_7b51019e[43];
-   char s_89920317[19];
-   char s_7279e585[55];
-   char s_bab74532[17];
-   char s_ffd591e0[39];
-   char s_f0ce97f7[17];
-   char s_0ef5e125[16];
-   char s_06f25fc0[15];
-   char s_16b9856e[28];
-   char s_78071664[10];
-   char s_78c58363[11];
-   char s_cc781d49[11];
-   char s_8f133960[12];
-   char s_38b82e6c[18];
-   char s_babee9c1[9];
-   char s_1e4264a1[8];
-   char s_04ecbe77[10];
-   char s_49c9bf91[14];
-   char s_8d30abf0[18];
-   char s_525068d3[26];
-   char s_78083010[14];
-   char s_33ed5ede[20];
-   char s_66ed0f42[8];
-   char s_18cc5aec[23];
-   char s_ba582576[38];
-   char s_19e9df3c[56];
-   char s_0a2e0504[15];
-   char s_51844cc2[34];
-   char s_e1a8f707[27];
-   char s_66df5c89[22];
-   char s_f70406ce[15];
-   char s_d7f2e719[21];
-   char s_8cefb843[11];
-   char s_684b0cb1[30];
-   char s_97242f99[15];
-   char s_dc427c47[49];
-   char s_b95e3404[18];
-   char s_791acb32[62];
-   char s_177845b3[15];
-   char s_1d47af21[49];
-   char s_e68b50a2[11];
-   char s_7d2035c4[18];
-   char s_da093426[16];
-   char s_43ac80a0[10];
-   char s_f8fa3e2f[10];
-   char s_b3565d3d[10];
-   char s_9af4bf52[15];
-   char s_e5d096ab[11];
-   char s_bd07998f[13];
-   char s_8fe41f79[18];
-   char s_ebe994b4[12];
-   char s_d9b00fbd[21];
-   char s_cd916c68[17];
-   char s_5c7bbce1[18];
-   char s_8356c98c[11];
-   char s_0472da71[5];
-   char s_bdc1c274[10];
-   char s_36109f2c[8];
-   char s_47f4eb8e[9];
-   char s_887214f4[7];
-   char s_f62d1074[7];
-   char s_3413595a[20];
-   char s_69f2e90c[22];
-   char s_9329c64c[5];
-   char s_70bac144[15];
-   char s_8d13ec48[12];
-   char s_cbdfd37c[8];
-   char s_f1382b82[12];
-   char s_a986c4da[11];
-   char s_09ba892e[11];
-   char s_0a2aa953[14];
-   char s_4ceac87e[9];
-   char s_06650b16[11];
-   char s_f019e498[5];
-   char s_b2865f23[9];
-   char s_58b9d895[15];
-   char s_3af38d58[26];
-   char s_00dfe961[20];
-   char s_00966fb4[23];
-   char s_6c06b558[22];
-   char s_387a4176[12];
-   char s_28863bc1[12];
-   char s_b93afb41[15];
-   char s_17983560[15];
-   char s_2742a469[16];
-   char s_0e740679[15];
-   char s_a708b2f4[24];
-   char s_d3a2aa7d[15];
-   char s_cf24fcc2[16];
-   char s_f751c497[16];
-   char s_046d0e21[21];
-   char s_efb7504d[60];
-   char s_6f02b5b0[25];
-   char s_7fc52043[14];
-   char s_8584f1d6[15];
-   char s_14ec7b7e[11];
-   char s_0cadcd1e[6];
-   char s_c7a999e6[14];
-   char s_00614813[9];
-   char s_9509d1c2[21];
-#ifdef HAVE_LIBNX
-   char s_09902e71[15];
-   char s_4eae7b1f[34];
-#endif
-   char s_3674ba44[10];
-   char s_3f2095b2[38];
-   char s_67d549fd[32];
-   char s_79b8ce4a[61];
-   char s_57665cff[9];
-   char s_19d092ed[32];
-   char s_49b0b12a[6];
-   char s_5977d6d8[33];
-   char s_ce113b1c[29];
-   char s_b00815b8[11];
-   char s_8b636a26[28];
-   char s_980ef0e8[8];
-   char s_a7d61696[56];
-   char s_84d3d068[8];
-   char s_a2fb1996[59];
-   char s_92cf524f[28];
-   char s_e4e54370[12];
-   char s_f496371e[48];
-   char s_e7a63560[10];
-   char s_f05210ce[29];
-   char s_8cb3b95f[15];
-   char s_aadb028d[27];
-   char s_a46a4178[17];
-   char s_aa39aae6[60];
-   char s_749f0441[13];
-   char s_780eb7cb[13];
-   char s_60f69a39[28];
-   char s_152cd261[22];
-   char s_19b6373a[91];
-   char s_7505029f[28];
-   char s_7ad46c0d[79];
-   char s_1a1260db[23];
-   char s_29c35489[151];
-   char s_fb12e29b[18];
-   char s_00f712c9[144];
-   char s_96114701[9];
-   char s_6322a8fa[14];
-   char s_4c0a8b68[44];
-   char s_7d00b7ed[11];
-   char s_65e89a5b[44];
-   char s_d4c7eb99[20];
-   char s_c23869c7[49];
-   char s_a670da0a[20];
-   char s_5dc056f8[72];
-   char s_7895cc5b[18];
-   char s_e46faa42[17];
-   char s_260261d6[11];
-   char s_302fdd56[11];
-   char s_7277e127[19];
-   char s_78474a95[36];
-   char s_2e5078b2[11];
-   char s_17385b20[53];
-   char s_4ad41e20[14];
-   char s_5a8511ce[38];
-   char s_56e21ee1[17];
-   char s_0e319bcf[34];
-   char s_3a0a3fef[16];
-   char s_62144cdf[8];
-   char s_2b36bd4d[25];
-   char s_513ae2ac[20];
-   char s_1d921fac[24];
-   char s_f319134a[28];
-   char s_51a9df54[30];
-   char s_6a15d029[20];
-   char s_bdf1165f[23];
-   char s_7607974d[15];
-   char s_418f98ab[29];
+   char s_37033dd5[82];
    char s_4081ac3b[14];
-   char s_2409f1f8[17];
-   char s_3e97494e[23];
+   char s_1d921fac[24];
+   char s_513ae2ac[20];
+   char s_952ec37c[60];
+   char s_51a9df54[30];
+   char s_40f0ecd9[15];
    char s_cdf5ba47[62];
    char s_bf709068[62];
-   char s_40f0ecd9[15];
-   char s_952ec37c[60];
-   char s_1b8a5cb5[8];
-   char s_60a8a963[25];
-   char s_87d88aa2[9];
-   char s_a5ffd3d0[37];
-   char s_8d94cfea[12];
-   char s_70a53ed8[29];
-   char s_3a9d7557[9];
-   char s_b92166cd[10];
-   char s_fe3fb37b[30];
-   char s_9ef5d822[8];
-   char s_8a9a3ae4[9];
-   char s_0f1d488a[8];
-   char s_467f06c1[6];
-   char s_084af156[12];
-   char s_206b1acd[12];
-   char s_0a008a9d[7];
-   char s_9a981aa0[10];
-#ifdef HAVE_MIST
-   char s_32956bc0[36];
-#endif
-   char s_009a10e3[8];
-   char s_9e66791a[13];
-   char s_bde8a108[54];
-   char s_479aa7f0[203];
-   char s_7354d146[185];
+   char s_2409f1f8[17];
+   char s_3e97494e[23];
+   char s_f319134a[28];
+   char s_418f98ab[29];
+   char s_7607974d[15];
+   char s_bdf1165f[23];
+   char s_6a15d029[20];
    char s_5468c818[110];
+   char s_479aa7f0[203];
    char s_ad397cb2[83];
-   char s_daead8a5[6];
-   char s_6ade80dd[32];
-   char s_502f623c[7];
-   char s_31b177ec[7];
-   char s_6895dfd6[46];
-   char s_721e7bb2[6];
-   char s_020e2bc5[12];
-   char s_0d96ed73[34];
-   char s_ebf10493[11];
-   char s_d96182c1[33];
-   char s_730df420[13];
-   char s_7e96b5ce[36];
-   char s_69b801ef[11];
-   char s_7968f59d[34];
-   char s_82fab47a[27];
-   char s_ef13be35[61];
-   char s_752ce8b2[43];
-   char s_5e14cb20[129];
-   char s_7943e750[23];
-   char s_1a8301fe[40];
-   char s_3547866d[120];
-   char s_4bceefff[25];
-   char s_4577a14d[38];
-   char s_47ae341f[83];
-   char s_48696c85[87];
-   char s_f2687ca7[87];
-   char s_59dc5d76[26];
-   char s_698d5124[92];
-   char s_ef3d53d8[21];
-#if defined(DINGUX)
-   char s_805730a0[19];
-   char s_6dc7aece[197];
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   char s_c1e9447c[19];
-   char s_eaa5cf6a[122];
-   char s_5a03a511[12];
-#endif
-#endif
-   char s_f5911f43[24];
-   char s_3aaf6bf1[123];
-   char s_d0a04fe4[13];
-   char s_17663212[149];
-   char s_ed22c5f1[19];
-   char s_d60aa85f[47];
-   char s_d5231783[97];
-   char s_dd6afca3[19];
-   char s_a68d6d11[52];
-   char s_a39ca959[70];
-   char s_8abad013[70];
-   char s_4bcbcc14[20];
-   char s_74022c02[84];
-   char s_a1a8257e[101];
-   char s_61213f1d[15];
-   char s_4a09218b[47];
-#if defined (WIIU)
-#ifdef WIIU
-   char s_afb881f7[51];
-#endif
-#endif
-   char s_6c40d14e[13];
-   char s_7c07f6fc[85];
-   char s_fd9cfe13[16];
-   char s_42bb4ac1[54];
-   char s_7a2050af[35];
-   char s_ea2674d3[28];
-   char s_ac90aac1[80];
-   char s_ea2674d4[26];
-   char s_ac90aac2[78];
-   char s_c0cdc638[25];
-   char s_afd69a70[31];
-   char s_b5a603de[53];
-   char s_22735e37[46];
-   char s_d9c2db25[51];
-   char s_22ee45f4[37];
-   char s_9a90acec[26];
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   char s_f98e1e26[22];
-   char s_b0dd9b14[106];
-#endif
-   char s_3c70d08d[23];
-   char s_fc2d67bb[146];
-   char s_84c46931[28];
-   char s_3c13e61f[101];
-   char s_59f183c8[18];
-   char s_9f0fd076[124];
-   char s_59f183c9[19];
-   char s_9f0fd077[126];
-   char s_f5ab35c0[22];
-   char s_055c296e[97];
-   char s_6c1369c6[17];
-   char s_30140cb5[14];
-   char s_75325963[42];
-   char s_0f5266ce[15];
-   char s_f83a493c[47];
-   char s_83e8dc72[29];
-   char s_4d0b4ce0[89];
-   char s_a64b3a0b[28];
-   char s_93bbb839[90];
-   char s_2d8cb7ce[17];
-   char s_3370e7fc[33];
-   char s_74e69f4b[58];
-   char s_b9e24170[27];
-   char s_68190518[32];
-   char s_09581fc6[256];
-   char s_7cf985f0[54];
-   char s_f99a7d5e[183];
-   char s_4d7e9b13[21];
-   char s_c79d5013[12];
-#if defined(DINGUX)
-   char s_d374d67d[21];
-   char s_c0e554ab[150];
-#endif
-   char s_8f37930f[30];
-   char s_8f379310[30];
-   char s_b7ef9e17[27];
-   char s_81120e85[86];
-   char s_92a02470[28];
-   char s_8010a29e[87];
-   char s_c017f975[9];
-   char s_6083fff7[16];
-   char s_44e1c38f[25];
-   char s_5492b73d[45];
-   char s_aa9bc75d[9];
-   char s_57047267[8];
-   char s_25a21976[64];
-   char s_6ac06624[125];
-   char s_fb84857a[9];
-   char s_bdeebb68[32];
-   char s_30acd6fb[13];
-   char s_3c3598a9[36];
-   char s_4be9dc09[22];
-   char s_ad791974[10];
-   char s_cb649822[17];
-   char s_76e73138[16];
-   char s_950e7a66[23];
-   char s_042502c4[52];
-   char s_04b30c51[24];
-   char s_4b78ee7f[93];
-   char s_e2062515[30];
-   char s_272471c3[106];
-   char s_66e9521c[65];
-   char s_a38cafbb[17];
-   char s_a95c1929[40];
-   char s_e5aeacf9[22];
-   char s_aed11d67[136];
-   char s_5209cc72[29];
-   char s_ed8a1060[90];
-   char s_24976a5b[20];
-   char s_dbe6e749[83];
-   char s_23b8ca2e[25];
+   char s_7354d146[185];
+   char s_4ad41e20[14];
+   char s_24c106e6[11];
+   char s_0ae2f7f3[14];
+   char s_314e7dec[8];
+   char s_5b62430e[33];
+   char s_d15cd993[42];
+   char s_7136ec46[44];
+   char s_061657e6[13];
+   char s_7632d987[13];
+   char s_d6591125[19];
+   char s_dac26dd6[19];
+   char s_2e5078b2[11];
    char s_da068369[10];
-   char s_20cc6597[82];
-   char s_b271ae95[22];
-   char s_95821d83[31];
-   char s_37033dd5[82];
+   char s_daead8a5[6];
+   char s_a38cafbb[17];
    char s_792e0069[19];
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-   char s_d0fb22cb[10];
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-   char s_ca9a92ae[21];
-   char s_b80b10dc[154];
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_WASAPI
-   char s_e501ec1b[22];
-   char s_5a6c78fd[20];
-   char s_73295c14[29];
-   char s_b37744c2[90];
-#endif
-#endif
-   char s_affd948c[21];
-   char s_b5ccfdfa[154];
-   char s_ad7c73f6[13];
-   char s_cb67f2a4[36];
    char s_a9d2227f[22];
-   char s_6c3c586d[134];
+   char s_76e73138[16];
+   char s_e2062515[30];
+   char s_ad791974[10];
+   char s_b271ae95[22];
+   char s_fb84857a[9];
    char s_3943c7ae[30];
-   char s_f9005edc[153];
-   char s_8be7813a[8];
-   char s_a9d2ffe8[25];
-   char s_1757647b[9];
-   char s_f2b2b8e9[24];
-   char s_0295f370[42];
-   char s_df610c7f[6];
-   char s_c2717b6d[104];
-   char s_3acb0241[17];
-   char s_fa87996f[108];
-   char s_bacce639[18];
-   char s_a83d6467[192];
-   char s_df62d56f[9];
-   char s_c273445d[136];
-   char s_40084357[6];
-   char s_28f025c5[119];
-   char s_32f9494f[26];
-   char s_daf6d7e2[64];
-   char s_d264a13e[25];
-   char s_ada81f6a[28];
-   char s_c85198e6[33];
-   char s_1ef8917a[28];
-   char s_7c68a1ee[23];
-   char s_dedb2642[21];
-   char s_a7fd96b0[79];
-   char s_e8636306[27];
-   char s_40a4eb2b[56];
-   char s_8c49943c[17];
-   char s_6f5a032a[43];
-   char s_0b56ad4c[50];
-   char s_47df0525[54];
-   char s_aded1e43[31];
-   char s_0b32f489[32];
-   char s_c2827177[103];
-   char s_4fe7b3d2[110];
-   char s_6f199f35[28];
-   char s_5c8a1d63[99];
-   char s_9c702ee1[39];
-   char s_5c2cc60f[70];
-   char s_e28bc72f[21];
-   char s_e85b309d[76];
-#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-   char s_6a09c0b1[47];
-   char s_2c73f69f[53];
-#endif
-   char s_926f9e93[34];
-   char s_6ae6f953[26];
-   char s_2aa39081[38];
-   char s_dad749ea[32];
-   char s_e0bb7a18[173];
-   char s_df1031f3[20];
-   char s_a17a67e1[46];
-   char s_0b2a8528[38];
-   char s_cd94bb16[74];
-   char s_f9ee4a82[5];
-   char s_7beff2c4[6];
-   char s_ea5757a0[6];
-   char s_d0b943e8[71];
-   char s_9d0bdbfa[13];
-   char s_a5b7b768[59];
-   char s_22c19b64[27];
-   char s_2e4a5d12[53];
-   char s_da2acf5c[13];
-   char s_c312b1ca[30];
-   char s_fcc3aec5[9];
-   char s_e59fc3c9[12];
-   char s_f07a5367[11];
-   char s_0ea19c95[40];
-   char s_f07432ff[13];
-   char s_df29ad9e[13];
-   char s_2447fa4c[47];
-   char s_feaf16c5[11];
-   char s_47d26662[13];
-   char s_f90272bb[20];
-   char s_cde2111a[9];
-   char s_7dcf9e78[12];
-   char s_ff1b8ce5[17];
-   char s_63fbe677[26];
-   char s_87071f08[9];
-   char s_f8b9e275[13];
-   char s_5a7cfb4e[47];
-   char s_d6d350e0[26];
-   char s_8e22cdce[42];
-   char s_dd9a9026[21];
-   char s_c70e3826[13];
-   char s_574cdfa6[18];
-   char s_574e2d44[18];
-   char s_bd95eeb2[18];
-   char s_bd973c50[18];
-   char s_41b61e1c[19];
-   char s_7841d5c4[30];
-   char s_cbdeb67b[22];
-   char s_08b5bffb[23];
-   char s_75408168[23];
-   char s_3e62f1d6[74];
-   char s_8c477d6f[25];
-   char s_79b7fb9d[29];
-   char s_4f7fa8b9[25];
-   char s_6b84e5e6[58];
-   char s_070529d4[89];
-   char s_735c53f7[11];
-   char s_2f4cd458[37];
-   char s_7b4aa4e9[40];
-   char s_6831e4b8[15];
-   char s_b48bf607[8];
-   char s_fe9eade8[9];
-   char s_d2c6b214[27];
-   char s_8a16fa6b[13];
-   char s_75851363[12];
-   char s_552163d9[32];
-   char s_e567aa86[10];
-   char s_e78c87a1[30];
-   char s_d0746a0f[51];
-   char s_ea2e0a76[12];
-   char s_37f2ecc0[58];
-   char s_f5338957[22];
-   char s_82a25202[18];
-   char s_c7c09eb0[81];
-   char s_18cc9d04[31];
-   char s_5deae9b2[122];
-   char s_b24d8753[18];
-   char s_b00e1e16[15];
-   char s_d2fe3ed2[15];
-   char s_d748f469[29];
-   char s_52e94a24[14];
-   char s_eea0ed20[22];
-   char s_4c8f0777[18];
-   char s_c4a9bd3e[15];
-   char s_b6192beb[17];
-   char s_f139b159[39];
-   char s_4d00e91b[23];
-   char s_10ec6fe4[17];
-   char s_2d0af1e2[17];
-   char s_3dfb1b06[17];
-   char s_51d76325[8];
-   char s_9dd66391[13];
-   char s_68207d70[27];
-   char s_bb673df4[19];
-   char s_fb0fc8c1[14];
-   char s_8a340ca6[14];
-   char s_36442b35[21];
-   char s_c253a614[20];
-   char s_9da5609f[11];
-   char s_269e5dff[17];
-   char s_6262776d[6];
-   char s_93bae0e3[13];
-   char s_25f1508f[7];
-   char s_2c04084b[22];
-   char s_a85eb9f5[31];
-   char s_b91e9f23[39];
-   char s_ffb12f4f[28];
-   char s_7c5226bd[36];
-   char s_b861d3d4[20];
-   char s_59a0ee82[34];
-   char s_8644c442[21];
-   char s_48aefa30[35];
-   char s_8b835c60[7];
-   char s_202067d4[24];
-   char s_6f947f94[38];
+   char s_affd948c[21];
+   char s_49b0b12a[6];
+   char s_ad7c73f6[13];
+   char s_30acd6fb[13];
+   char s_04b30c51[24];
+   char s_e5aeacf9[22];
+   char s_24976a5b[20];
+   char s_5209cc72[29];
+   char s_14ec7b7e[11];
+   char s_00614813[9];
+   char s_8584f1d6[15];
+   char s_7fc52043[14];
+   char s_0cadcd1e[6];
+   char s_9509d1c2[21];
+   char s_c7a999e6[14];
+   char s_25babaa7[6];
+   char s_502f623c[7];
+   char s_5b51050b[10];
+   char s_fd67817e[29];
    char s_565cbabb[8];
    char s_7fa7d966[17];
    char s_a288f873[24];
-   char s_a85861e1[67];
-   char s_ac45efa3[133];
-   char s_71a5abbc[36];
    char s_572a869b[19];
-   char s_a1358509[75];
    char s_17d978b1[25];
-   char s_c4ab544b[18];
-   char s_07058269[24];
-   char s_5703c323[18];
-   char s_ce445b41[34];
-   char s_aadf6541[30];
-   char s_1d9a045d[29];
-   char s_96ee0cfb[8];
-   char s_7fd5ef69[74];
-   char s_43c4664e[17];
-   char s_49a8967c[88];
-   char s_d39fc80f[18];
-   char s_e350bbbd[262];
-   char s_bfe5efd0[42];
-   char s_bfe5a026[37];
-   char s_a8618aba[30];
-   char s_7a24b32c[33];
-   char s_99eec88b[22];
-   char s_bcc17320[38];
-   char s_db555f31[21];
-   char s_0f49d986[55];
-   char s_d86c49f4[108];
-   char s_2a2ed4e5[6];
-   char s_2369a893[6];
-   char s_cb86bb9b[6];
-   char s_c4c18f49[6];
-   char s_28104d87[4];
-   char s_214b2135[4];
-   char s_fff21e47[5];
-   char s_f92cf1f5[5];
-   char s_60a38895[7];
-   char s_59de5c43[7];
-   char s_b7ca3d2f[6];
-   char s_b10510dd[6];
-   char s_e1c715da[6];
-   char s_db01e988[6];
-   char s_6bcbf80c[5];
-   char s_7ea8ec8f[19];
-   char s_ee8b2d27[22];
-   char s_e1606ab3[21];
-   char s_a82728ec[18];
-   char s_b0d3045a[46];
-   char s_9528d92a[14];
-   char s_8203db0a[7];
-   char s_0ae2f7f3[14];
-   char s_24c106e6[11];
-   char s_1e1c0557[8];
-   char s_5f612db6[15];
-   char s_6f122164[43];
-   char s_9f29f708[19];
-   char s_61942cf6[53];
-   char s_690802fe[9];
-   char s_4c1871ec[37];
-   char s_c6e67d8a[21];
-   char s_8950b378[49];
-   char s_4e2f19db[20];
-   char s_10994fc9[90];
-   char s_6090802e[12];
-   char s_a5aeccdc[40];
-   char s_638978e9[21];
-   char s_2cabe957[49];
-   char s_ac35d688[20];
-   char s_63855376[48];
-   char s_c03808ea[20];
-   char s_3cd90058[56];
-   char s_5ff40648[19];
-   char s_dc94fdb6[47];
-   char s_63a07f7e[19];
-   char s_e04176ec[47];
-   char s_1ad1dee7[7];
-   char s_c9afcfe6[16];
-   char s_10358d4e[14];
-   char s_0b7c8e91[17];
-   char s_db16b335[19];
-   char s_35da9191[11];
-   char s_1906f1fc[13];
-   char s_1792565e[14];
-   char s_580f7fc4[12];
-   char s_0ad18744[15];
-   char s_8cfdee2a[22];
-   char s_e03017dc[24];
-   char s_0bf63b67[17];
-   char s_36b2a31c[10];
-   char s_3646f8e0[11];
-   char s_40582c14[19];
-   char s_5cb15718[17];
-   char s_b84a6df0[14];
-   char s_8f2a984c[18];
-   char s_05dca252[16];
-   char s_6a95fdaa[19];
-   char s_b2edd9fe[18];
-   char s_14755194[12];
-   char s_cd756e23[19];
-   char s_04be5b68[13];
-   char s_75d123f3[14];
-   char s_d235c6fc[9];
-   char s_721da345[17];
-   char s_704e200c[6];
-   char s_dac26dd6[19];
-   char s_9211eac4[34];
-   char s_288b93a6[43];
-   char s_72d7857d[45];
-   char s_99d3d4ae[10];
-   char s_0fd30a6d[5];
    char s_215e6dd8[13];
-   char s_9c6ed9ca[22];
-   char s_d6591125[19];
-   char s_f4805a53[34];
-   char s_f5b2df8f[16];
-   char s_96f1fa3d[41];
-   char s_8c9d24c7[19];
-   char s_43eca1b5[20];
+   char s_152cd261[22];
+   char s_7d00b7ed[11];
+   char s_d4c7eb99[20];
+   char s_780eb7cb[13];
+   char s_7505029f[28];
+   char s_fb12e29b[18];
+   char s_96114701[9];
+   char s_6c74f3ea[11];
+   char s_1a1260db[23];
+   char s_6322a8fa[14];
+   char s_ce5f3353[17];
+   char s_6155456e[19];
+   char s_e4e54370[12];
+   char s_e78c87a1[30];
+   char s_ec59110b[19];
+   char s_638978e9[21];
+   char s_d39fc80f[18];
+   char s_ac35d688[20];
+   char s_43c4664e[17];
+   char s_c03808ea[20];
+   char s_0fd30a6d[5];
+   char s_5ff40648[19];
+   char s_36265c93[11];
+   char s_36442b35[21];
+   char s_c253a614[20];
+   char s_63a07f7e[19];
+   char s_1e1c0557[8];
+   char s_e68b50a2[11];
+   char s_97242f99[15];
+   char s_8cefb843[11];
+   char s_177845b3[15];
+   char s_881efe76[15];
+   char s_1e4264a1[8];
+   char s_babee9c1[9];
+   char s_78c58363[11];
+   char s_78071664[10];
+   char s_78083010[14];
+   char s_cc781d49[11];
+   char s_19e9df3c[56];
+   char s_0a2e0504[15];
+   char s_49c9bf91[14];
+   char s_04ecbe77[10];
+   char s_525068d3[26];
+   char s_18cc5aec[23];
+   char s_66ed0f42[8];
+   char s_ba582576[38];
+   char s_33ed5ede[20];
+   char s_8d30abf0[18];
+   char s_38b82e6c[18];
+   char s_8f133960[12];
    char s_9c5329ad[15];
-   char s_639f529e[20];
-   char s_314e7dec[8];
-   char s_af2a7718[33];
-   char s_fd67817e[29];
-   char s_5b51050b[10];
-   char s_d95824aa[14];
-   char s_4927597c[17];
-   char s_77b74366[16];
-   char s_08e9410c[17];
-   char s_2c1469aa[135];
-   char s_6c78e4f7[24];
-   char s_d15cd993[42];
-   char s_7136ec46[44];
-   char s_5b62430e[33];
-   char s_f8cb645b[15];
-   char s_821edb57[21];
-   char s_5f080876[20];
-   char s_b5896acf[28];
-   char s_1226e190[25];
-   char s_c48f08f7[34];
-   char s_15345f7c[27];
+   char s_d7f2cfac[10];
+   char s_87e07c0e[11];
+   char s_d7f2e719[21];
+   char s_e567aa86[10];
+   char s_b95e3404[18];
+   char s_1d9a045d[29];
+   char s_145f5880[15];
+   char s_9af4bf52[15];
+   char s_e5d096ab[11];
+   char s_dd6afca3[19];
+   char s_4bcbcc14[20];
+   char s_06f25fc0[15];
    char s_0a176c2e[21];
+   char s_f0ce97f7[17];
+   char s_704e200c[6];
+   char s_a82728ec[18];
+   char s_6831e4b8[15];
+   char s_b48bf607[8];
+   char s_fe9eade8[9];
    char s_eae59928[26];
-   char s_51f16286[8];
-   char s_5e511971[19];
-   char s_d244fe96[18];
-   char s_1aebff8d[5];
-   char s_313105c8[19];
-   char s_e2f5e678[8];
-   char s_f632c879[8];
-   char s_31fa147f[14];
-   char s_c3168f05[6];
-   char s_25e86ee3[5];
-   char s_d61d87cd[8];
-   char s_875b5c6b[5];
-   char s_72898bf0[12];
-   char s_bd8bf83a[8];
-   char s_bd84f1a3[9];
-   char s_f8d42b14[9];
-   char s_728ca1d3[5];
-   char s_ccfe26d1[21];
-   char s_b30b56ad[5];
-   char s_65e6ea7c[8];
-   char s_9c6cf201[62];
-   char s_7f10fcd2[8];
-   char s_7206ddda[8];
-   char s_74b12047[37];
-   char s_f4c2f40f[9];
-   char s_f4c9faa6[5];
-   char s_006dbffd[5];
-   char s_906aff13[5];
-   char s_3a0abeb9[5];
-   char s_c2f915b2[6];
-   char s_867c965b[22];
-   char s_5f15f7a7[11];
-   char s_7534cfc9[9];
-   char s_2aeb5474[10];
-   char s_6d08238d[5];
-   char s_b71e6907[12];
-   char s_08785e85[16];
-   char s_2324cc29[18];
-   char s_99d648f2[10];
-   char s_033bf99f[15];
-   char s_5633a523[54];
-   char s_6d0b3292[9];
-   char s_92830f70[13];
-   char s_99e7641c[24];
-   char s_2e777e81[10];
-   char s_8076aea7[17];
-   char s_5dff78c4[35];
-   char s_11121f30[18];
-   char s_e8ae394f[6];
-   char s_e8af52fb[7];
-   char s_725702e3[16];
-   char s_20e22740[46];
-   char s_a9dc9f21[86];
-   char s_d93c753a[6];
-   char s_2fd5302f[31];
-   char s_2dff21ec[23];
-   char s_b6172513[8];
-   char s_bbfb5541[48];
-   char s_78ccdecc[36];
-   char s_ed43994d[35];
-   char s_e2055017[6];
-   char s_2fa1d6ef[36];
-   char s_e2f9cd07[9];
-   char s_25babaa7[6];
-   char s_2950bbb6[36];
-   char s_6951a166[21];
-   char s_9d8a8d82[28];
-   char s_52fbb99d[28];
-   char s_f62b34ed[65];
-   char s_e2f27171[8];
-   char s_bf21615a[11];
+   char s_b92166cd[10];
    char s_bf1e05df[15];
    char s_38205220[24];
-   char s_ec7e8026[12];
+   char s_bf21615a[11];
    char s_15f24ff4[7];
-   char s_030cab12[6];
-   char s_e9eb2822[46];
-   char s_f9aa7e70[75];
-   char s_0c53fe6c[58];
-   char s_a1aa4c42[62];
-   char s_2603520a[48];
-   char s_bab020a4[20];
-   char s_9cfca240[33];
-   char s_f9a13828[23];
-   char s_cdfe701e[12];
-   char s_63a238b1[21];
-   char s_06fb676c[47];
-   char s_67ac1ac9[37];
-   char s_d50c6bf1[32];
-   char s_64a038aa[16];
-   char s_fc5e1d2c[42];
-   char s_88a97252[23];
-   char s_80528b14[35];
-   char s_ed159cd6[23];
-   char s_308c47e4[33];
-   char s_e01973d9[22];
-   char s_f7c1ff1a[23];
-   char s_07b7b10d[8];
-   char s_676d783e[44];
-   char s_7eb26812[17];
-   char s_b62a855c[81];
-   char s_b2199155[35];
-   char s_842b54ed[21];
-   char s_52c66e88[16];
-   char s_eebb17f1[23];
-   char s_710d99e5[30];
-   char s_bfe46ab9[26];
-   char s_7f693288[26];
-   char s_0d212ca9[78];
-   char s_a3030e21[25];
-   char s_88727270[50];
-   char s_42cf10ff[48];
-   char s_2dc9eea7[35];
-   char s_3c214e5f[27];
-   char s_eebc54d1[11];
-   char s_6095bb1c[32];
-   char s_f6a0db44[20];
-   char s_7f2380a0[9];
-   char s_b3c7fa93[20];
-   char s_93ac5ec8[31];
-   char s_0e2c0fca[33];
-   char s_ec502f2a[22];
+   char s_ec7e8026[12];
+   char s_5d29b870[17];
+   char s_08e9410c[17];
+   char s_d95824aa[14];
+   char s_639f529e[20];
+   char s_4927597c[17];
+   char s_77b74366[16];
+   char s_10342503[8];
+   char s_d31f6d88[11];
+   char s_f03e9c42[17];
+   char s_7088df5e[29];
+   char s_3674ba44[10];
+   char s_6ebb6a00[18];
+   char s_40a4eb2b[56];
+   char s_1906f1fc[13];
+   char s_5cb15718[17];
+   char s_1792565e[14];
+   char s_8cfdee2a[22];
+   char s_40582c14[19];
+   char s_c9afcfe6[16];
+   char s_75d123f3[14];
+   char s_b84a6df0[14];
+   char s_35da9191[11];
+   char s_580f7fc4[12];
+   char s_3646f8e0[11];
+   char s_8f2a984c[18];
+   char s_04be5b68[13];
+   char s_05dca252[16];
+   char s_6a95fdaa[19];
+   char s_e03017dc[24];
+   char s_db16b335[19];
+   char s_10358d4e[14];
+   char s_0ad18744[15];
+   char s_0b7c8e91[17];
+   char s_0bf63b67[17];
+   char s_36b2a31c[10];
+   char s_b2edd9fe[18];
+   char s_721da345[17];
+   char s_d235c6fc[9];
+   char s_cd756e23[19];
+   char s_14755194[12];
+   char s_1ad1dee7[7];
+   char s_99eb425d[9];
+   char s_941e50fb[15];
+   char s_2cb9dc71[8];
+   char s_a46a4178[17];
+   char s_c4842e2d[19];
+   char s_fd3e287f[9];
+   char s_550b1e93[9];
+   char s_d2224db6[7];
+   char s_c0d9bee1[6];
+   char s_c175c697[6];
+   char s_9ef5d822[8];
+   char s_e2f27171[8];
+   char s_2f9a064c[8];
+   char s_96ee0cfb[8];
+   char s_ae50c550[8];
+   char s_b30d3e14[7];
+   char s_99d3d4ae[10];
+   char s_d81bf7a9[10];
+   char s_6f199f35[28];
+   char s_6ae6f953[26];
+   char s_e28bc72f[21];
+   char s_0b2a8528[38];
+   char s_ea5757a0[6];
+   char s_f9ee4a82[5];
+   char s_7beff2c4[6];
+   char s_df1031f3[20];
+   char s_9d0bdbfa[13];
+   char s_926f9e93[34];
+   char s_009a10e3[8];
+   char s_22c19b64[27];
+   char s_cde2111a[9];
+   char s_aded1e43[31];
+   char s_0b32f489[32];
    char s_d458f013[34];
+   char s_8a16fa6b[13];
    char s_e9f0dd82[40];
+   char s_7c68a1ee[23];
+   char s_da2acf5c[13];
+   char s_735c53f7[11];
+   char s_7841d5c4[30];
+   char s_41b61e1c[19];
+   char s_f8b9e275[13];
+   char s_574cdfa6[18];
+   char s_574e2d44[18];
+   char s_63fbe677[26];
+   char s_4f7fa8b9[25];
+   char s_7b4aa4e9[40];
+   char s_2f4cd458[37];
+   char s_87071f08[9];
+   char s_08b5bffb[23];
+   char s_ec502f2a[22];
+   char s_c70e3826[13];
+   char s_cbdeb67b[22];
+   char s_bd95eeb2[18];
+   char s_bd973c50[18];
+   char s_dd9a9026[21];
+   char s_d6d350e0[26];
+   char s_75408168[23];
+   char s_8c477d6f[25];
+   char s_6b84e5e6[58];
+   char s_3dfb1b06[17];
+   char s_c4a9bd3e[15];
+   char s_51d76325[8];
+   char s_2d0af1e2[17];
+   char s_4d00e91b[23];
+   char s_b6192beb[17];
+   char s_10ec6fe4[17];
+   char s_68207d70[27];
+   char s_9dd66391[13];
+   char s_bb673df4[19];
+   char s_4c8f0777[18];
+   char s_9c702ee1[39];
+   char s_8c49943c[17];
+   char s_d2c6b214[27];
+   char s_dad749ea[32];
+   char s_980ef0e8[8];
+   char s_75851363[12];
+   char s_f07432ff[13];
+   char s_df29ad9e[13];
+   char s_e59fc3c9[12];
+   char s_7dcf9e78[12];
+   char s_f07a5367[11];
+   char s_feaf16c5[11];
+   char s_dedb2642[21];
+   char s_ff1b8ce5[17];
+   char s_bd07998f[13];
+   char s_4e2f19db[20];
+   char s_9e66791a[13];
+   char s_84d3d068[8];
+   char s_6107eb09[11];
+   char s_b6172513[8];
+   char s_e3d18a3d[12];
+   char s_d15b342a[12];
+   char s_31b177ec[7];
+   char s_8cb3b95f[15];
+   char s_ea2e0a76[12];
+   char s_d9685b01[11];
+   char s_8a9a3ae4[9];
+   char s_c2f915b2[6];
+   char s_3a0abeb9[5];
+   char s_867c965b[22];
+   char s_f4c2f40f[9];
+   char s_f4c9faa6[5];
+   char s_74b12047[37];
+   char s_906aff13[5];
+   char s_006dbffd[5];
+   char s_9da5609f[11];
+   char s_269e5dff[17];
+   char s_136eaaf4[23];
+   char s_3a0a3fef[16];
+   char s_8b835c60[7];
+   char s_6f947f94[38];
+   char s_202067d4[24];
+   char s_72898bf0[12];
+   char s_df92f5b5[36];
+   char s_b00815b8[11];
+   char s_1ef8917a[28];
+   char s_ada81f6a[28];
+   char s_c85198e6[33];
+   char s_d264a13e[25];
+   char s_8be7813a[8];
+   char s_1757647b[9];
+   char s_e1a8f707[27];
+   char s_51844cc2[34];
+   char s_df610c7f[6];
+   char s_3acb0241[17];
+   char s_bacce639[18];
+   char s_40084357[6];
+   char s_df62d56f[9];
+   char s_42b8ffbf[6];
+   char s_52fbb99d[28];
+   char s_2950bbb6[36];
+   char s_f62b34ed[65];
+   char s_6951a166[21];
+   char s_9d8a8d82[28];
+   char s_9528d92a[14];
+   char s_51f16286[8];
+   char s_c4ab544b[18];
+   char s_07058269[24];
+   char s_f8cb645b[15];
+   char s_89920317[19];
+   char s_5703c323[18];
+   char s_ce445b41[34];
+   char s_87d88aa2[9];
+   char s_aadf6541[30];
+   char s_e2f5e678[8];
+   char s_8a340ca6[14];
+   char s_fb0fc8c1[14];
+   char s_6c78e4f7[24];
+   char s_c48f08f7[34];
+   char s_821edb57[21];
+   char s_5f080876[20];
+   char s_ed43994d[35];
+   char s_78ccdecc[36];
+   char s_15345f7c[27];
+   char s_b5896acf[28];
+   char s_1226e190[25];
+   char s_25e86ee3[5];
+   char s_c3168f05[6];
+   char s_e2c6c781[17];
+   char s_a670da0a[20];
+   char s_164566fb[15];
+   char s_c6e67d8a[21];
+   char s_690802fe[9];
+   char s_7895cc5b[18];
+   char s_e46faa42[17];
+   char s_7f10fcd2[8];
+   char s_7206ddda[8];
+   char s_9c6cf201[62];
+   char s_0f1d488a[8];
+   char s_b3cc8a43[12];
+   char s_99eec88b[22];
+   char s_6090802e[12];
+   char s_d244fe96[18];
+   char s_5e511971[19];
+   char s_1aebff8d[5];
+   char s_313105c8[19];
+   char s_ee8b2d27[22];
+   char s_7ea8ec8f[19];
+   char s_e1606ab3[21];
+   char s_f632c879[8];
+   char s_31fa147f[14];
+   char s_db555f31[21];
+   char s_8d94cfea[12];
+   char s_0f49d986[55];
+   char s_bcc17320[38];
+   char s_a8618aba[30];
+   char s_7a24b32c[33];
+   char s_64dd7209[35];
+   char s_56e21ee1[17];
+   char s_f70406ce[15];
+   char s_66df5c89[22];
+   char s_2324cc29[18];
+   char s_92830f70[13];
+   char s_3361e11d[51];
+   char s_9b3ca94b[47];
+   char s_11121f30[18];
+   char s_2fd5302f[31];
+   char s_2dff21ec[23];
+   char s_5dff78c4[35];
+   char s_99e7641c[24];
+   char s_99d648f2[10];
+   char s_2aeb5474[10];
+   char s_7534cfc9[9];
+   char s_036acd54[34];
+   char s_a0a191ca[34];
+   char s_5f15f7a7[11];
+   char s_6d08238d[5];
+   char s_033bf99f[15];
+   char s_8076aea7[17];
+   char s_725702e3[16];
+   char s_20e22740[46];
+   char s_e8ae394f[6];
+   char s_e8af52fb[7];
+   char s_2e777e81[10];
+   char s_d93c753a[6];
+   char s_5633a523[54];
+   char s_6d0b3292[9];
+   char s_08785e85[16];
+   char s_b71e6907[12];
+   char s_a9dc9f21[86];
+   char s_a85eb9f5[31];
+   char s_ffb12f4f[28];
+   char s_f5b2df8f[16];
+   char s_8c9d24c7[19];
+   char s_260261d6[11];
+   char s_95cf0994[7];
+   char s_36109f2c[8];
+   char s_cf24fcc2[16];
+   char s_8d13ec48[12];
+   char s_b93afb41[15];
+   char s_47f4eb8e[9];
+   char s_d3a2aa7d[15];
+   char s_3413595a[20];
+   char s_70bac144[15];
+   char s_046d0e21[21];
+   char s_bdc1c274[10];
+   char s_06650b16[11];
+   char s_6c06b558[22];
+   char s_00966fb4[23];
+   char s_00dfe961[20];
+   char s_2742a469[16];
+   char s_a708b2f4[24];
+   char s_17983560[15];
+   char s_3af38d58[26];
+   char s_b2865f23[9];
+   char s_887214f4[7];
+   char s_0472da71[5];
+   char s_cbdfd37c[8];
+   char s_f019e498[5];
+   char s_f1382b82[12];
+   char s_0e740679[15];
+   char s_a986c4da[11];
+   char s_69f2e90c[22];
+   char s_4ceac87e[9];
+   char s_f62d1074[7];
+   char s_387a4176[12];
+   char s_28863bc1[12];
+   char s_f751c497[16];
+   char s_9329c64c[5];
+   char s_09ba892e[11];
+   char s_58b9d895[15];
+   char s_0a2aa953[14];
+   char s_1b8a5cb5[8];
+   char s_721e7bb2[6];
+   char s_1938dce6[23];
+   char s_59980356[12];
+   char s_62144cdf[8];
+   char s_18cc9d04[31];
+   char s_f5338957[22];
+   char s_82a25202[18];
+   char s_749f0441[13];
+   char s_f8d42b14[9];
+   char s_ccfe26d1[21];
+   char s_728ca1d3[5];
+   char s_5f612db6[15];
+   char s_9f29f708[19];
+   char s_b30b56ad[5];
+   char s_2c04084b[22];
+   char s_bd84f1a3[9];
+   char s_bd8bf83a[8];
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
    char s_addc7f89[77];
+#endif
+#endif
+   char s_87ee250e[28];
+   char s_6f02b5b0[25];
+   char s_a11934f5[24];
+   char s_e7a63560[10];
+   char s_d61d87cd[8];
+   char s_fd9cfe13[16];
+   char s_e2055017[6];
+   char s_fcc3aec5[9];
+   char s_4aaeeb99[11];
+   char s_b861d3d4[20];
+   char s_8644c442[21];
+   char s_9932960f[11];
+   char s_302fdd56[11];
+   char s_6262776d[6];
+   char s_25f1508f[7];
+   char s_93bae0e3[13];
+   char s_ed013a05[23];
+   char s_01a73130[26];
+   char s_467f06c1[6];
+   char s_084af156[12];
+   char s_d7fc4c9c[22];
+   char s_d21c686b[21];
+   char s_206b1acd[12];
+   char s_b00e1e16[15];
+   char s_b24d8753[18];
+   char s_52e94a24[14];
+   char s_d748f469[29];
+   char s_7943e750[23];
+   char s_ea80654d[37];
+   char s_bab74532[17];
+   char s_7d2035c4[18];
+   char s_b3565d3d[10];
+   char s_f8fa3e2f[10];
+   char s_8356c98c[11];
+   char s_5c7bbce1[18];
+   char s_cd916c68[17];
+   char s_8fe41f79[18];
+   char s_43ac80a0[10];
+   char s_ebe994b4[12];
+   char s_da093426[16];
+   char s_d9b00fbd[21];
+   char s_0a008a9d[7];
+   char s_9c6ed9ca[22];
+   char s_875b5c6b[5];
+   char s_6bcbf80c[5];
+   char s_f92cf1f5[5];
+   char s_fff21e47[5];
+   char s_214b2135[4];
+   char s_28104d87[4];
+   char s_c4c18f49[6];
+   char s_cb86bb9b[6];
+   char s_b10510dd[6];
+   char s_b7ca3d2f[6];
+   char s_2369a893[6];
+   char s_2a2ed4e5[6];
+   char s_59de5c43[7];
+   char s_60a38895[7];
+   char s_db01e988[6];
+   char s_e1c715da[6];
+   char s_9a981aa0[10];
+   char s_47d26662[13];
+   char s_f90272bb[20];
+   char s_eea0ed20[22];
+   char s_2fa1d6ef[36];
+   char s_95cbebbd[14];
+   char s_6b80a1bc[29];
+   char s_eb0d7f1d[19];
+   char s_99a77122[15];
+   char s_51cbf8f0[26];
+   char s_4a5b7672[18];
+   char s_8fa79de5[21];
+   char s_5eee10e5[26];
+   char s_eb3c8b7f[18];
+   char s_6ae93e68[22];
+   char s_e2f9cd07[9];
+   char s_7277e127[19];
+   char s_8203db0a[7];
+   char s_3a9d7557[9];
+   char s_e8636306[27];
+   char s_c79d5013[12];
+   char s_9a90acec[26];
+   char s_22ee45f4[37];
+   char s_4577a14d[38];
+   char s_4bceefff[25];
+   char s_752ce8b2[43];
+   char s_d0a04fe4[13];
+   char s_ed22c5f1[19];
+   char s_f5ab35c0[22];
+   char s_3c70d08d[23];
+   char s_6083fff7[16];
+   char s_44e1c38f[25];
+   char s_aa9bc75d[9];
+   char s_57047267[8];
+   char s_020e2bc5[12];
+   char s_59f183c8[18];
+   char s_59f183c9[19];
+   char s_59dc5d76[26];
+   char s_61213f1d[15];
+   char s_57665cff[9];
+   char s_0e2c0fca[33];
+   char s_93ac5ec8[31];
+   char s_c0cdc638[25];
+   char s_afd69a70[31];
+   char s_22735e37[46];
+   char s_6c40d14e[13];
+   char s_6c1369c6[17];
+   char s_4d7e9b13[21];
+   char s_69b801ef[11];
+   char s_f5911f43[24];
+   char s_552163d9[32];
+   char s_ef3d53d8[21];
+   char s_d2fe3ed2[15];
+   char s_c017f975[9];
+   char s_730df420[13];
+   char s_bcddf275[6];
+   char s_92a02470[28];
+   char s_b7ef9e17[27];
+   char s_8f37930f[30];
+   char s_8f379310[30];
+   char s_84c46931[28];
+   char s_ebf10493[11];
+   char s_a64b3a0b[28];
+   char s_83e8dc72[29];
+   char s_7cf985f0[54];
+   char s_0f5266ce[15];
+   char s_ea2674d3[28];
+   char s_ea2674d4[26];
+   char s_2d8cb7ce[17];
+   char s_68190518[32];
+   char s_b9e24170[27];
+   char s_30140cb5[14];
+   char s_25a21976[64];
+   char s_7f2380a0[9];
+   char s_b3c7fa93[20];
+   char s_f6a0db44[20];
+   char s_65e6ea7c[8];
+   char s_9ca4bbd7[22];
+   char s_9ca4bbd8[22];
+   char s_5a8511ce[38];
+   char s_243da114[57];
+   char s_f4805a53[34];
+   char s_9211eac4[34];
+   char s_17385b20[53];
+   char s_20cc6597[82];
+   char s_66e9521c[65];
+   char s_a95c1929[40];
+   char s_23b8ca2e[25];
+   char s_daf6d7e2[64];
+   char s_042502c4[52];
+   char s_6c3c586d[134];
+   char s_950e7a66[23];
+   char s_ce113b1c[29];
+   char s_272471c3[106];
+   char s_cb649822[17];
+   char s_95821d83[31];
+   char s_bdeebb68[32];
+   char s_f9005edc[153];
+   char s_6ade80dd[32];
+   char s_b5ccfdfa[154];
+   char s_5977d6d8[33];
+   char s_cb67f2a4[36];
+   char s_3c3598a9[36];
+   char s_4b78ee7f[93];
+   char s_aed11d67[136];
+   char s_dbe6e749[83];
+   char s_ed8a1060[90];
+   char s_af2a7718[33];
+   char s_ac45efa3[133];
+   char s_a85861e1[67];
+   char s_71a5abbc[36];
+   char s_a1358509[75];
+   char s_19b6373a[91];
+   char s_65e89a5b[44];
+   char s_c23869c7[49];
+   char s_60f69a39[28];
+   char s_7ad46c0d[79];
+   char s_00f712c9[144];
+   char s_555cd658[39];
+   char s_29c35489[151];
+   char s_4c0a8b68[44];
+   char s_de265901[51];
+   char s_4a3d27dc[36];
+   char s_f496371e[48];
+   char s_d0746a0f[51];
+   char s_2cabe957[49];
+   char s_e350bbbd[262];
+   char s_63855376[48];
+   char s_49a8967c[88];
+   char s_3cd90058[56];
+   char s_dc94fdb6[47];
+   char s_544da5c1[52];
+   char s_e04176ec[47];
+   char s_dc427c47[49];
+   char s_684b0cb1[30];
+   char s_1d47af21[49];
+   char s_a64647a4[53];
+   char s_35f2309a[32];
+   char s_791acb32[62];
+   char s_92cf524f[28];
+   char s_79b8ce4a[61];
+   char s_a1a8257e[101];
+   char s_d5231783[97];
+   char s_a68d6d11[52];
+   char s_74022c02[84];
+   char s_8abad013[70];
+   char s_a39ca959[70];
+   char s_16b9856e[28];
+   char s_0ef5e125[16];
+   char s_b0d3045a[46];
+   char s_fe3fb37b[30];
+   char s_7b51019e[43];
+   char s_f2a19576[52];
+   char s_b2a8d230[44];
+   char s_11c7fa0c[76];
+   char s_3f2095b2[38];
+   char s_ccbacaee[95];
+   char s_37f2ecc0[58];
+   char s_aa39aae6[60];
+   char s_44040aad[85];
+   char s_64d24441[54];
+   char s_ad7da224[59];
+   char s_dec53d8f[58];
+   char s_df614545[58];
+   char s_8d99673a[43];
+   char s_7fd5ef69[74];
+   char s_9eb26572[28];
+   char s_5c8a1d63[99];
+   char s_2aa39081[38];
+   char s_e85b309d[76];
+   char s_cd94bb16[74];
+   char s_a17a67e1[46];
+   char s_a5b7b768[59];
+   char s_d0b943e8[71];
+   char s_2e4a5d12[53];
+   char s_c2827177[103];
+   char s_0b56ad4c[50];
+   char s_c312b1ca[30];
+   char s_5a7cfb4e[47];
+   char s_8e22cdce[42];
+   char s_3e62f1d6[74];
+   char s_79b7fb9d[29];
+   char s_070529d4[89];
+   char s_f139b159[39];
+   char s_47df0525[54];
+   char s_5c2cc60f[70];
+   char s_6f5a032a[43];
+   char s_e0bb7a18[173];
+   char s_a7d61696[56];
+   char s_2447fa4c[47];
+   char s_0ea19c95[40];
+   char s_a7fd96b0[79];
+   char s_10994fc9[90];
+   char s_bde8a108[54];
+   char s_a2fb1996[59];
+   char s_bbfb5541[48];
+   char s_c6e1f92b[35];
+   char s_2f5a9518[84];
+   char s_aadb028d[27];
+   char s_193e1462[50];
+   char s_6895dfd6[46];
+   char s_4fe7b3d2[110];
+   char s_8b636a26[28];
+   char s_a9d2ffe8[25];
+   char s_f2b2b8e9[24];
+   char s_4be9dc09[22];
+   char s_0295f370[42];
+   char s_c2717b6d[104];
+   char s_fa87996f[108];
+   char s_a83d6467[192];
+   char s_28f025c5[119];
+   char s_c273445d[136];
+   char s_32f9494f[26];
+   char s_198c91d3[31];
+   char s_7279e585[55];
+   char s_a5ffd3d0[37];
+   char s_f28ded2f[57];
+   char s_5dc056f8[72];
+   char s_8950b378[49];
+   char s_4c1871ec[37];
+   char s_d34eb231[64];
+   char s_a5aeccdc[40];
+   char s_bfe5a026[37];
+   char s_bfe5efd0[42];
+   char s_70a53ed8[29];
+   char s_d86c49f4[108];
+   char s_061c8cb7[51];
+   char s_0e319bcf[34];
+   char s_b91e9f23[39];
+   char s_7c5226bd[36];
+   char s_96f1fa3d[41];
+   char s_43eca1b5[20];
+   char s_a5962f42[75];
+   char s_0c7750cd[74];
+   char s_60a8a963[25];
+   char s_72d7857d[45];
+   char s_1f084654[44];
+   char s_3ca87244[34];
+   char s_2b36bd4d[25];
+   char s_5deae9b2[122];
+   char s_c7c09eb0[81];
+   char s_6f122164[43];
+   char s_61942cf6[53];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
    char s_96c461f7[125];
 #endif
 #endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_LAKKA_SWITCH
-   char s_37eb8e31[15];
-#endif
-#endif
-#ifdef HAVE_LAKKA
-   char s_02938696[34];
-#endif
+   char s_efb7504d[60];
+   char s_70d6077c[37];
+   char s_a9c51063[51];
+   char s_f05210ce[29];
+   char s_42bb4ac1[54];
+   char s_e8aee6c7[26];
+   char s_59a0ee82[34];
+   char s_48aefa30[35];
+   char s_288b93a6[43];
+   char s_2c1469aa[135];
+   char s_4b009af3[31];
+   char s_46c57dde[54];
+   char s_1a8301fe[40];
+   char s_8bbf7ffb[105];
+   char s_ffd591e0[39];
+   char s_6e9f0493[65];
+   char s_78474a95[36];
+   char s_5e14cb20[129];
 #ifdef HAVE_ODROIDGO2
 #else
    char s_c38ef33b[45];
 #endif
-#ifdef _3DS
-   char s_33e06527[21];
-#endif
+   char s_17663212[149];
+   char s_d60aa85f[47];
+   char s_055c296e[97];
+   char s_fc2d67bb[146];
+   char s_5492b73d[45];
+   char s_0d96ed73[34];
+   char s_9f0fd076[124];
+   char s_9f0fd077[126];
+   char s_7a2050af[35];
+   char s_ef13be35[61];
+   char s_f2687ca7[87];
+   char s_698d5124[92];
+   char s_82fab47a[27];
+   char s_4a09218b[47];
+   char s_19d092ed[32];
+   char s_b5a603de[53];
+   char s_d9c2db25[51];
+   char s_7c07f6fc[85];
+   char s_7968f59d[34];
+   char s_67d549fd[32];
+   char s_3aaf6bf1[123];
+   char s_7e96b5ce[36];
+   char s_3547866d[120];
+   char s_8010a29e[87];
+   char s_81120e85[86];
+   char s_47ae341f[83];
+   char s_48696c85[87];
+   char s_3c13e61f[101];
+   char s_d96182c1[33];
+   char s_93bbb839[90];
+   char s_4d0b4ce0[89];
+   char s_f99a7d5e[183];
+   char s_f83a493c[47];
+   char s_ac90aac1[80];
+   char s_ac90aac2[78];
+   char s_3370e7fc[33];
+   char s_09581fc6[256];
+   char s_74e69f4b[58];
+   char s_75325963[42];
+   char s_6ac06624[125];
+   char s_52c66e88[16];
+   char s_63a238b1[21];
+   char s_06fb676c[47];
+   char s_67ac1ac9[37];
+   char s_2a9c73f3[34];
+   char s_05e3f715[42];
+   char s_631c5635[45];
+   char s_19e809ad[38];
+   char s_0d212ca9[78];
+   char s_db1e4390[38];
+   char s_d50c6bf1[32];
+   char s_64a038aa[16];
+   char s_4b6a946a[36];
+   char s_2603520a[48];
+   char s_88727270[50];
+   char s_42cf10ff[48];
+   char s_a3030e21[25];
+   char s_fc5e1d2c[42];
+   char s_88a97252[23];
+   char s_8d677b5b[29];
+   char s_e9eb2822[46];
+   char s_ed159cd6[23];
+   char s_308c47e4[33];
+   char s_e533ddbb[22];
+   char s_45130077[26];
+   char s_856bdef7[31];
+   char s_f7c1ff1a[23];
+   char s_e01973d9[22];
+   char s_eebc54d1[11];
+   char s_3c214e5f[27];
+   char s_030cab12[6];
+   char s_b1e9bfbf[20];
+   char s_28bbcc15[30];
+   char s_f9a13828[23];
+   char s_0c53fe6c[58];
+   char s_d15060ee[27];
+   char s_a068841f[28];
+   char s_4d7ee7e2[20];
+   char s_f9aa7e70[75];
+   char s_509dd374[25];
+   char s_a1aa4c42[62];
+   char s_9cfca240[33];
+   char s_bab020a4[20];
+   char s_cdfe701e[12];
+   char s_2dc9eea7[35];
+   char s_80528b14[35];
+   char s_07b7b10d[8];
+   char s_6095bb1c[32];
+   char s_eebb17f1[23];
+   char s_bfe46ab9[26];
+   char s_676d783e[44];
+   char s_7eb26812[17];
+   char s_b2199155[35];
+   char s_b62a855c[81];
+   char s_710d99e5[30];
    char s_fb888c0b[41];
+   char s_7f693288[26];
+   char s_842b54ed[21];
+   char s_88494936[37];
 } msg_hash_id_blob =
 {
-   "Menu Utama",
-   "Pengaturan",
-   "Favorit",
-   "Riwayat",
-   "Gambar",
-   "Musik",
-   "Video",
-   "Jelajahi",
-   "Core Tak Berkonten",
-   "Impor Konten",
-   "Mulai Prosesor Video",
-   "Mulai Remote RetroPad",
-   "Menu Cepat",
-   "Mengakses cepat semua pengaturan permainan terkait.",
-   "Nonaktifkan Mode Kiosk",
-   "Menampilkan semua pengaturan terkait konfigurasi.",
-   "Muat Core",
-   "Pilih 'core' yang akan dipakai.",
-   "Lepas Core",
-   "Muat konten",
-   "Pilih konten yang akan dijalankan.",
-   "Muat Cakram",
-   "Memuat media cakram fisik. Pilih dulu 'core' (Muat Core) untuk digunakan ke cakram.",
-   "Ambil Data Cakram",
-   "Mengambil data cakram media fisik ke penyimpanan internal. Akan disimpan sebagai berkas citra.",
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-   "Keluarkan Cakram",
-   "Keluarkan cakram dari kandar CD/DVD fisik.",
-#endif
-#endif
-   "Daftar Main",
-   "Konten terpindai yang cocok di pangkalan data akan ada di sini.",
-   "Impor Konten",
-   "Membuat dan perbarui daftar main dengan memindai konten.",
-   "Sinkronkan",
-   "Manual mengaktifkan sinkronisasi awan.",
-   "Berkas Konfigurasi",
-   "Kelola dan buat berkas konfigurasi.",
-   "Muat Konfigurasi",
-   "Memuat konfigurasi dan mengganti setelan saat ini.",
-   "Simpan Konfigurasi Saat Ini",
-   "Menimpa berkas konfigurasi saat ini.",
-   "Simpan Konfigurasi Baru",
-   "Menyimpan konfigurasi saat ini ke berkas terpisah.",
-   "Setel ulang ke Default",
-   "Mengatur ulang konfigurasi ke nilai bawaan.",
-   "Bantuan",
-   "Pelajari lebih lanjut cara kerja aplikasi.",
-   "Tampilkan Menu Desktop",
-   "Buka menu desktop tradisional.",
-   "Gabung atau buat sesi netplay.",
-   "Pembaruan Daring",
-   "Mengunduh pengaya, komponen, dan konten untuk RetroArch.",
-#ifdef HAVE_MIST
-   "Atur Core",
-#endif
-   "Pengaturan",
-   "Atur konfigurasi program.",
-   "Informasi",
-   "Tampilkan informasi sistem.",
-   "Mulai ulang",
-   "Memulai ulang aplikasi RetroArch.",
-   "Keluar",
-   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dinyalakan.",
-   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dimatikan.",
-   "Unduh Core",
-   "Unduh dan pasang sebuah core dari pembaruan daring.",
-   "Pasang atau Pulihkan Core",
-   "Memasang atau pulihkan core dari direktori 'Unduhan'.",
-   "Direktori Awal",
-   "Unduhan",
-   "Jelajahi Arsip",
-   "Muat Arsip",
-   "Kesukaan",
-   "Konten yang ditambah ke 'Kesukaan'' akan ada di sini.",
-   "Musik",
-   "Musik yang pernah diputar sebelumnya akan muncul di sini.",
-   "Gambar",
-   "Gambar yang pernah dilihat sebelumnya akan muncul di sini.",
-   "Video",
-   "Video yang pernah diputar sebelumnya akan muncul di sini.",
-   "Jelajahi",
-   "Telusur semua konten yang cocok di pangkalan data lewat antarmuka pencarian terurut.",
-   "Core Tak Berkonten",
-   "Pengunduh Core",
-   "Perbarui 'core' terpasang",
-   "Perbarui semua core yang terinstall ke versi baru yang tersedia.",
-   "Ganti dengan 'core' versi Play Store",
-   "Ganti semua 'core' yang terpasang manual atau 'core' bawaan dengan 'core' dari Play Store jika t"
-   "ersedia.",
-   "Pemerbaru gambar kecil daftar main",
-   "Unduh daftar gambar kecil di daftar main terpilih.",
-   "Pengunduh Konten",
-   "Unduh konten cuma-cuma untuk core terpilih.",
-   "Pengunduh Berkas Sistem Core",
-   "Mengunduh berkas sistem tambahan untuk pelaksanaan core yang optimal/benar.",
-   "Perbarui Info Berkas Core",
-   "Perbarui Aset",
-   "Perbarui Profil Stik Kendali",
-   "Perbarui Cheat",
-   "Perbarui Database",
-   "Perbarui Hamparan",
-   "Perbarui Shader GLSL",
-   "Perbarui Shader Cg",
-   "Perbarui Shader Slang",
-   "Informasi Core",
-   "Lihat informasi yang berkaitan dengan aplikasi/core.",
-   "Informasi Cakram",
-   "Lihat info tentang cakram yang disisipkan.",
-   "Informasi Jejaring",
-   "Lihat antarmuka jejaring dan alamat IP yang terhubung.",
-   "Informasi Sistem",
-   "Lihat informasi spesifikasi perangkat.",
-   "Manajer Database",
-   "Lihat Database.",
-   "Manajer Kursor",
-   "Lihat pencarian sebelumnya.",
-   "Nama Core",
-   "Label Core",
-   "Versi Core",
-   "Nama Sistem",
-   "Pengembang Sistem",
-   "Kategori",
-   "Pembuat",
-   "Perizinan",
-   "Jenis Lisensi",
-   "Ekstensi Didukung",
-   "Syarat Minimal Grafis API",
-   "Jalur Lengkap",
-   "Dukungan Save State",
-   "Tak ada",
-   "Mendasar (Simpan/Muat)",
-   "Berserial (Simpan/Muat, Gerak Mundur)",
-   "Catatan: 'Berkas Sistem ada di Direktori Konten' aktif.",
-   "Mencari di: %s",
-   "Tidak ditemukan, yang diperlukan:",
-   "Tidak ditemukan, opsional:",
-   "Ada, yang diperlukan:",
-   "Ada, opsional:",
-   "Kunci Core Terpasang",
-   "Hapus Core",
-   "Hapus 'core' ini dari cakram.",
-   "Cadangkan Core",
-   "Membuat cadangan 'core' yang terpasang saat ini.",
-   "Pulihkan Cadangan",
-   "Memasang 'core' versi sebelumnya dari daftar 'core' terarsip.",
-   "Hapus Cadangan",
-   "Hapus file dari daftar cadangan yang diarsipkan.",
-   "[Otomatis]",
-   "Tanggal Pembuatan",
-   "Versi RetroArch",
-   "Versi Git",
-   "Model CPU",
-   "Fitur CPU",
-   "Arsitektur CPU",
-   "'Core' CPU",
-   "JIT Tersedia",
-   "Pengenal Frontend",
-   "Sumber daya",
-   "Driver Konteks Video",
-   "Lebar Layar (mm)",
-   "Tinggi Layar (mm)",
-   "Ukuran DPI",
-   "Nama",
-   "Deskripsi",
-   "Capaian",
-   "Kategori",
-   "Bahasa",
-   "Daerah",
-   "Eksklusif di Konsol",
-   "Eksklusif di Pelantar",
-   "Skor",
-   "Tombol Kendali",
-   "Gaya Gambar",
-   "Naratif",
-   "Kadar Gerak",
-   "Perspektif",
-   "Pengaturan",
-   "Jenis Kendara",
-   "Penerbit",
-   "Pengembang",
-   "Asal",
-   "Waralaba",
-   "Peringkat TGDB",
-   "Peringkat Majalah Famitsu",
-   "Ulasan Majalah Edge",
-   "Peringkat Majalah Edge",
-   "Terbitan Majalah Edge",
-   "Bulan Rilis",
-   "Tahun Rilis",
-   "Peringkat BBFC",
-   "Peringkat ESRB",
-   "Peringkat ELSPA",
-   "Peringkat PEGI",
-   "Peranti Keras Peningkat",
-   "Peringkat CERO",
-   "Didukung Analog",
-   "Didukung rumble",
-   "Didukung Multiplayer",
-   "Simpan konfigurasi terkini sebagai file konfigurasi kustom.",
-   "Simpan Konfigurasi Utama",
-   "Gulir ke Atas",
-   "Gulir ke Bawah",
-   "Konfirmasi",
-   "Mulai",
-   "Cetikkan Menu",
-   "Berhenti",
-   "Cetikkan Papan Ketik",
-#ifdef HAVE_LIBNX
-   "Percepatan CPU",
-   "Mempercepat CPU permainan Switch.",
-#endif
-   "Pengandar",
-   "Mengubah pengaturan pengandar sistem.",
-   "Ubah pengaturan keluaran video.",
-   "Berkeluaran lokal, sinyal beresolusi rendah untuk layar CRT.",
-   "Keluaran",
-   "Ubah pengaturan keluaran video.",
-   "Suara",
-   "Mengatur masukan/keluaran audio.",
-   "Ubah pengaturan mixer audio.",
-   "Suara Menu",
-   "Ubah pengaturan suara menu.",
-   "Masukan",
-   "Ubah pengaturan stik kendali, papan ketik, dan tetikus.",
-   "Latensi",
-   "Ubah pengaturan terkait latensi video, audio, dan masukan.",
-   "Mengubah pengaturan 'core'.",
-   "Konfigurasi",
-   "Ubah pengaturan bawaan pada berkas konfigurasi.",
-   "Menyimpan",
-   "Ubah pengaturan penyimpanan.",
-   "Pencatatan Log",
-   "Ubah pengaturan catat log.",
-   "Throttle Bingkai",
-   "Ubah pengaturan gerak mundur, maju-cepat, dan gerak lambat.",
-   "Gerak Mundur",
-   "Sinkron Awan",
-   "Mengatur sinkronisasi awan.",
-   "Aktifkan Sinkron Awan",
-   "Ketika dinonaktifkan, File akan dipindahkan ke folder backup sebelum ditimpa atau dihapus.",
-   "Sinkron: Berkas Konfigurasi",
-   "Ketika diaktifkan, File konfigurasi akan di sinkronisasi ke penyimpanan cloud.",
-   "Sinkron: Berkas Sistem",
-   "Ketika diaktifkan, File sistem akan disinkronisasikan ke penyimpanan cloud. Ini akan meningkatka"
-   "n waktu untuk menyinkronkan, Pakai dengan hati - hati.",
-   "Mode Sinkronisasi",
-   "Otomatis: Sinkronkan saat RetroArch dinyalakan dan saat cores tidak dimuat. Manual: Hanya sinkro"
-   "nkan saat tombol 'Sinkronkan Sekarang' ditekan.",
-   "Otomatis",
-   "Nama Pengguna",
-   "Username kamu untuk akun penyimpanan cloud.",
-   "Kata Sandi",
-   "Password kamu untuk akun penyimpanan cloud.",
-   "Kunci Akses Rahasia",
-   "Kunci rahasia kamu untuk akun penyimpanan cloud.",
-   "Tampilan Muka Layar",
-   "Mengatur hamparan tampilan, hamparan papan ketik, dan notifikasi layar.",
-   "Hamparan Lightgun",
-   "Hamparan Tetikus",
-   "Menu Cepat",
-   "Pengaturan",
-   "Antarmuka Pengguna",
-   "Ubah pengaturan antarmuka pengguna.",
-   "Layanan AI",
-   "Ubah pengaturan Layanan AI (Terjemahan/TTS/Lainnya).",
-   "Aksesibilitas",
-   "Ubah pengaturan narasi Aksesibilitas.",
-   "Pengelolaan Daya",
-   "Ubah pengaturan pengelolaan daya.",
-   "Peramban Berkas",
-   "Capaian",
-   "Ubah pengaturan capaian.",
-   "Berkas konfigurasi.",
-   "Berkas arsip terpampat.",
-   "Merekam berkas konfigurasi.",
-   "Berkas kursor pangkalan data.",
-   "Berkas konfigurasi.",
-   "Berkas praatur shader.",
-   "Berkas shader.",
-   "Berkas pemeta ulang kendali.",
+   "Ganti perangkat audio default yang digunakan driver audio. Ini tergantung driver.",
    "Berkas cheat.",
-   "Berkas hamparan.",
-   "Berkas pangkalan data.",
+   "Berkas arsip terpampat.",
+   "Berkas konfigurasi.",
+   "Core Libretro. Mempilihkan ini akan rekan core ini ke game.",
+   "Berkas kursor pangkalan data.",
+   "Berkas gambar.",
    "Video. Pilih ini untuk membuka file ini dengan pemutar video.",
    "Musik. Pilih ini untuk membuka file ini dengan pemutar musik.",
-   "Berkas gambar.",
-   "Core Libretro. Mempilihkan ini akan rekan core ini ke game.",
-   "Rekaman",
-   "Ubah pengaturan rekaman.",
-   "Jejaring",
-   "Ubah pengaturan server dan jejaring.",
-   "Daftar Main",
-   "Ubah pengaturan daftar main.",
-   "Pengguna",
-   "Direktori",
-   "Ubah direktori tempat berkas.",
-   "Retasan",
-   "Pemetaan",
-   "Kinerja",
-   "Suara",
-   "Spesifikasi",
-   "Penyimpanan",
-   "Sistem",
-   "Pewaktuan",
-#ifdef HAVE_MIST
-   "Ubah pengaturan yang terkait Steam.",
-#endif
-   "Masukan",
-   "Stik Kendali",
-   "Kandar stik kendali yang dipilih. (Perlu Mulai ulang)",
+   "Berkas hamparan.",
+   "Berkas pangkalan data.",
+   "Merekam berkas konfigurasi.",
+   "Berkas pemeta ulang kendali.",
+   "Berkas shader.",
+   "Berkas praatur shader.",
+   "Berkas konfigurasi.",
+   "Kandar video DRM biasa. Ini kandar video tingkat rendah dengan libdrm untuk penskalaan fisik ber"
+   "hamparan GPU.",
    "Driver OpenGL 3.x. Driver ini mengizinkan cores libretro GL untuk digunakan selain cores rendere"
    "r perangkat lunak. Versi minimum diperlukan: OpenGL 3.2 atau OpenGLES 3.0+. Mendukung format sha"
    "der slang.",
+   "Kandar OpenVG. Menggunakan API grafis vektor 2D bepercepatan peranti keras OpenVG.",
    "Driver Vulkan. Driver ini mengizinkan cores libretro Vulkan untuk digunakan selain cores rendere"
    "r perangkat lunak. Versi minimum diperlukan: Vulkan 1.0. Mendukung HDR dan shader Slang.",
-   "Kandar video DRM biasa. Ini kandar video tingkat rendah dengan libdrm untuk penskalaan fisik ber"
-   "hamparan GPU.",
-   "Kandar OpenVG. Menggunakan API grafis vektor 2D bepercepatan peranti keras OpenVG.",
-   "Suara",
-   "Audio resampler yang digunakan.",
-   "Kamera",
-   "Lokasi",
-   "Kandar menu yang dipilih. (Perlu Mulai ulang)",
-   "Rekam",
-   "Layar Penuh",
-   "Ubah pengaturan mode layar penuh.",
-   "Berjendela",
-   "Ubah pengaturan mode berjendela.",
-   "Sinkronisasi",
-   "Ubah pengaturan sinkronisasi video.",
-   "Penskalaan",
-   "Ubah pengaturan penskalaan video.",
-   "Ubah pengaturan HDR video.",
-   "Cuplikan layar menangkap materi berbayang GPU jika tersedia.",
-   "Pangkas Lebihan Pindai (Perlu Mulai Ulang)",
-   "Memotong beberapa piksel di sekitar tepi gambar yang biasanya pengembang biarkan kosong dan terk"
-   "adang juga berisi piksel sampah.",
-   "Tangguhkan Screensaver",
-   "Mencegah screensaver sistem Anda aktif.",
-   "Meningkatkan kinerja tapi akan banyak latensi dan video patah-patah. Gunakan hanya jika tidak da"
-   "pat berkecepatan penuh.",
-   "Penyisipan Bingkai Hitam",
-   "Sisipan Bingkai Hitam - Bingkai Gelap",
-   "Sinkronkan video keluaran kartu grafis ke laju penyegaran layar. Direkomendasikan.",
-   "Sinkronisasi CPU dan GPU dengan keras. Mengurangi latensi dengan mengorbankan kinerja.",
-   "Sinkronisasi CPU dan GPU dengan keras. Mengurangi latensi dengan mengorbankan kinerja.",
-   "Bingkai Sinkron GPU Keras",
-   "Atur berapa laju bingkai yang dijalankan CPU lebih dari GPU saat 'Sinkron GPU Keras' aktif.",
-   "Penyaringan Bilinear",
-#if defined(DINGUX)
-   "Interpolasi Gambar",
-   "Menentukan metode interpolasi gambar saat menskala konten melalui IPU internal. 'Bicubic' atau '"
-   "Bilinear' dianjurkan jika saring video bertenaga CPU digunakan. Opsi ini tidak berdampak ke kine"
-   "rja.",
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   "Interpolasi Gambar",
-   "Menentukan metode interpolasi gambar saat 'Skala Bilang Bulat' nonaktif. 'Nearest Neighbor' berd"
-   "ampak kecil pada kinerja.",
-   "Semi-Linier",
-#endif
-#endif
-   "Tundaan Shader Otomatis",
-   "Menunda muat-langsung 'shader' (dalam milidetik). Dapat mengatasi 'glitch' grafis saat menggunak"
-   "an aplikasi 'screen grab'.",
-   "Saring Video",
-   "Menerapkan saring video berdaya CPU. Akan menguras tinggi kinerja perangkat. Beberapa saring mun"
-   "gkin hanya cocok pada 'core' dengan warna 16/32 bit.",
-   "Hapus Saring Video",
-   "Melepas saring video bertenaga CPU yang aktif.",
-   "Hanya untuk tampilan CRT. Mencoba memakai resolusi tepat dari core/p'mainan dan laju penyegaran.",
-   "Resolusi Super CRT",
-   "Mengganti ke resolusi lokal atau super ultra lebar.",
-   "Atur opsi ini jika gambar tidak dapat ditampilkan memusat semestinya.",
-   "Atur opsi ini jika gambar tidak dapat ditampilkan memusat semestinya.",
-   "Refresh Rate Kustom",
-   "Gunakan laju penyegaran kustom yang ditentukan dalam berkas konfigurasi jika perlu.",
-   "Beralih ke modeline resolusi tinggi untuk menampilkan menu resolusi tinggi jika belum memuat kon"
-   "ten.",
-   "Indeks Monitor",
-   "Pilih layar tampilan mana yang akan digunakan.",
-#if defined (WIIU)
-#ifdef WIIU
-   "Optimalkan untuk Wii U GamePad (Perlu Mulai Ulang)",
-#endif
-#endif
-   "Rotasi Video",
-   "Memaksa rotasi tertentu dari video. Rotasi ditambahkan ke rotasi yang diatur 'core'.",
-   "Orientasi Layar",
-   "Memaksa orientasi layar tertentu dari sistem operasi.",
-   "Pilih kartu grafis yang digunakan.",
-   "Pengaturan Layar Horisontal",
-   "Paksa pengaturan video tertentu secara horisontal. Berlaku di semua pengaturan.",
-   "Pengaturan Layar Vertikal",
-   "Paksa pengaturan video tertentu secara vertikal. Berlaku di semua pengaturan.",
-   "Laju Penyegaran Vertikal",
-   "Estimasi Laju Penyegaran Layar",
-   "Perkiraan kecepatan refresh layar yang akurat di Hz.",
-   "Atur Laju Penyegaran yang Dilaporkan Tampilan",
-   "Laju penyegaran sesuai laporan pengandar tampilan.",
-   "Hanya di Mode Layar Penuh Berjendela",
-   "Mode Semuanya Layar Penuh",
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   "Vertikal Refresh Rate",
-   "Mengatur laju penyegaran tampilan menegak. '50 Hz' membantu memuluskan video saat menjalankan ko"
-   "nten PAL.",
-#endif
-   "Paksa matikan sRGB FBO",
-   "Menonaktifkan paksa dukungan FBO sRGB. Beberapa kandar OpenGL Intel di Windows bermasalah video "
-   "dengan FBO sRGB. Aktifkan ini untuk mengatasinya.",
-   "Mode Layar Penuh Berjendela",
-   "Jika layar penuh, lebih suka menggunakan jendela layar penuh untuk mencegah peralihan mode tampi"
-   "lan.",
-   "Lebar Layar Penuh",
-   "Atur ukuran lebar khusus untuk mode layar penuh non-jendela. Membiarkannya tidak disetel akan me"
-   "nggunakan resolusi desktop.",
-   "Tinggi Layar Penuh",
-   "Setel ukuran tinggi khusus untuk mode layar penuh non-jendela. Membiarkannya tidak disetel akan "
-   "menggunakan resolusi desktop.",
-   "Paksa resolusi di UWP",
-   "Paksa resolusi ke ukuran layar penuh, jika disetel ke 0, nilai tetap 3840 x 2160 akan digunakan.",
-   "Skala Berjendela",
-   "Lebar Jendela",
-   "Atur lebar kustom untuk jendela tampilan.",
-   "Tinggi Jendela",
-   "Atur ketinggian khusus untuk jendela tampilan.",
-   "Lebar Maksimal Jendela Layar",
-   "Atur tampilan lebar maksimal jendela layar berdasarkan skala yang ditentukan sebelumnya.",
-   "Lebar Minimal Jendela Layar",
-   "Atur tampilan tinggi maksimal jendela layar berdasarkan skala yang ditentukan sebelumnya.",
-   "Opasitas Jendela",
-   "Menetapkan transparansi jendela.",
-   "Atur ukuran jendela layar sesuai pengali yang diinginkan.",
-   "Tampilkan Dekorasi Jendela",
-   "Ingat Posisi dan Ukuran Jendela",
-   "Menampilkan semua konten di ukuran jendela tetap yang ditentukan 'Lebar Jendela' dan 'Tinggi Jen"
-   "dela', dan menyimpan ukuran dan posisi jendela sekarang saat menutup RetroArch. Jika dinonaktifk"
-   "an, ukuran jendela akan berubah berdasarkan 'Skala Berjendela'.",
-   "Gunakan Ukuran Jendela Layar Sesuai Keinginan Sendiri",
-   "Menampilkan semua konten di ukuran jendela tetap yang ditentukan 'Lebar Jendela' dan 'Tinggi Jen"
-   "dela'. Jika dinonaktifkan, ukuran jendela akan berubah berdasarkan 'Skala Berjendela'.",
-   "Skala Bilangan Bulat",
-   "Rasio Aspek",
-#if defined(DINGUX)
-   "Tetapkan Rasio Aspek",
-   "Mempertahankan rasio aspek piksel 1:1 saat menskala konten lewat IPU internal. Jika dinonaktifka"
-   "n, gambar akan diregangkan memenuhi seluruh tampilan.",
-#endif
-   "Rasio Aspek Kustom (Posisi X)",
-   "Rasio Aspek Kustom (Posisi Y)",
-   "Rasio Aspek Kustom (Lebar)",
-   "Lebar viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'.",
-   "Rasio Aspek Kustom (Tinggi)",
-   "Tinggi viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'.",
-   "Otomatis",
-   "Tundaan Bingkai",
-   "Tundaan Bingkai Otomatis",
-   "Menyesuaikan 'Tunda Bingkai' secara dinamis.",
-   "Otomatis",
-   "efektif",
-   "Sinkronkan ke Laju Bingkai Konten yang Tepat (G-Sync, FreeSync)",
-   "Pewaktuan 'core' yang diminta tidak ada deviasi. Gunakan untuk layar Variable Refresh Rate (G-Sy"
-   "nc, FreeSync, HDMI 2.1 VRR).",
-   "Keluaran",
-   "Ubah pengaturan keluaran audio.",
-   "Sinkronisasi",
-   "Ubah pengaturan sinkronisasi audio.",
-   "Ubah pengaturan MIDI.",
-   "Senyapkan",
-   "Senyapkan audio.",
-   "Senyapkan Mixer",
-   "Senyapkan suara Mixer.",
-   "Otomatis senyapkan audio saat menggunakan percepat.",
-   "Pertambahan Volume (dB)",
-   "Volume suara (dalam dB). 0 dB adalah volume normal, dan tidak ada penguatan yang diterapkan.",
-   "Pertambahan Volume Mixer (dB)",
-   "Volume mixer audio global (dalam dB). 0 dB adalah volume normal, dan tidak ada penguatan yang di"
-   "terapkan.",
-   "Plugin Audio DSP yang memproses audio sebelum dikirim ke driver.",
-   "Hapus Plugin DSP",
-   "Bongkar plugin DSP audio aktif apa pun.",
-   "Mode Eksklusif WASAPI",
-   "Mengizinkan pengandar WASAPI mengambil kendali eksklusif atas perangkat audio. Jika dinonaktifka"
-   "n, nanti akan menggunakan mode bersama.",
-   "Panjang Dapar Bersama WASAPI",
-   "Panjang dapar data menengah (sejumlah bingkai) saat menggunakan WASAPI di 'mode bersama'.",
-   "Format Apung WASAPI",
-   "Gunakan format float untuk driver WASAPI, jika didukung oleh perangkat audio Anda.",
-   "Aktifkan keluaran audio.",
-   "Perangkat",
-   "Ganti perangkat audio default yang digunakan driver audio. Ini tergantung driver.",
-   "Tingkat Keluaran (Hz)",
-   "Tingkat sampel keluaran audio.",
-   "Ganti perangkat audio default yang digunakan driver audio. Ini tergantung driver.",
-   "Latensi Audio (ms)",
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-   "Perangkat",
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-   "Mutu Percontoh Ulang",
-   "Turunkan nilai ini untuk mengutamakan kinerja/latensi rendah daripada mutu audio, tingkatkan unt"
-   "uk mutu audio lebih baik tapi kinerja/latensi akan susah.",
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_WASAPI
-   "Mode Eksklusif WASAPI",
-   "Format Apung WASAPI",
-   "Panjang Dapar Bersama WASAPI",
-   "Panjang dapar data menengah (sejumlah bingkai) saat menggunakan WASAPI di 'mode bersama'.",
-#endif
-#endif
-   "Mutu Percontoh Ulang",
-   "Turunkan nilai ini untuk mengutamakan kinerja/latensi rendah daripada mutu audio, tingkatkan unt"
-   "uk mutu audio lebih baik tapi kinerja/latensi akan susah.",
-   "Sinkronisasi",
-   "Sinkronkan audio. Direkomendasikan.",
-   "Waktu Miring Maksimal",
-   "Perubahan maksimal pada tingkat masukan suara. Bisa mengakibatkan nada suara tidak akurat (misal"
-   " memainkan core PAL pada layar NTSC).",
-   "Kendali Tingkat Audio Dinamis",
-   "Memperhalus sinkronisasi waktu agar selaras antara suara dan video. Patut diperhatikan jika fitu"
-   "r ini dimatikan, maka sinkornisasi akan sulit dilakukan.",
-   "Masukan",
-   "Pilih perangkat masukan.",
-   "Keluaran",
-   "Pilih perangkat luaran.",
-   "Atur volume luaran (dalam satuan persen).",
-   "Putar",
-   "Fitur ini akan memutar stream audio. Setelah pemutaran berakhir, stream audio akan dihapus dari "
-   "memori.",
-   "Putar (Berulang)",
-   "Fitur ini akan memutar stream audio. Setelah pemutaran berakhir, stream audio akan diputar ulang"
-   " dari awal.",
-   "Putar (Berurutan)",
-   "Fitur ini akan memutar stream audio. Setelah pemutaran berakhir, pemutaran akan berlanjut ke str"
-   "eam audio selanjutnya dan akan berulang. Cara kerja sama dengan cara pemutaran lagu satu album.",
-   "Hentikan",
-   "Akan menghentikan pemutaran stream audio, namun tidak menghapus stream tersebut dari memori. Pil"
-   "ih menu putar untuk memutarnya kembali.",
-   "Hapus",
-   "Fitur ini akan menghentikan pemutaran stream audio. Setelah pemutaran berakhir, stream audio aka"
-   "n dihapus dari memori.",
-   "Atur volume stream audio.",
-   "Putar stream audio secara bersamaan, meski dalam tampilan menu.",
-   "Nyalakan efek suara 'OK'",
-   "Nyalakan efek suara 'Batal'",
-   "Nyalakan efek suara 'Notifikasi'",
-   "Nyalakan efek 'Suara Latar'",
-   "Jumlah Maksimal Pemain",
-   "Kendali Terpadu Menu",
-   "Gunakan kendali yang sama untuk menu dan permainan. Berlaku untuk papan ketik.",
-   "Bergetar saat Tekan Tombol",
-   "Mengaktifkan Getaran Perangkat (Untuk 'Core' Terdukung)",
-   "Kekuatan Getaran",
-   "Tentukan besarnya efek umpan balik haptic.",
-   "Kombinasi tombol stik kendali untuk membuka menu.",
-   "Kombinasi tombol stik kendali untuk keluar RetroArch.",
-   "Tundaan Hotkey Aktif (Bingkai)",
-   "Gabungan Jenis Perangkat Hotkey",
-   "Menutup semua hotkey dari jenis papan ketik dan stik kendali lain jika ada yang diatur 'Hotkey A"
-   "ktif'.",
-   "Tukar tombol untuk OK/Batal. Dinonaktifkan adalah orientasi tombol Jepang, diaktifkan adalah ori"
-   "entasi barat.",
-   "Menu Kendali Semua Pengguna",
-   "Mengizinkan semua pengguna mengatur menu. Jika dinonaktifkan, hanya Pengguna 1 yang mengatur men"
-   "u.",
-   "Ubah Letak Stik Kendali untuk Core Ini",
-   "Timpa input bind dengan bind yang telah diubah untuk 'core' saat ini.",
-   "Konfigurasi otomatis",
-   "Otomatis menyetel stik kendali yang ada profil, agar jadi Pasang-dan-Pakai.",
-#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-   "Nonaktifkan Hotkey Windows (Perlu Mulai Ulang)",
-   "Kombinasi tombil Win-key hanya tersedia di aplikasi.",
-#endif
-   "Ambang Batas Tombol Masukkan Axis",
-   "Kepekaan Kontroler Analog",
-   "Sesuaikan daya tanggapan stik analok.",
-   "Aktifkan Input Sensor Auxiliary",
-   "Mengaktifkan masukan akselerometer, giroskop, dan pengindra cahaya, jika ada. Fitur ini akan mem"
-   "engaruhi kinerja perangkat dan menguras daya baterai pada pelantar tertentu.",
-   "Grab Mouse Otomatis",
-   "Aktifkan mouse grab pada saat aplikasi aktif.",
-   "Otomatis Aktif Mode 'Fokus Pada Game\"",
-   "Mode 'Fokus Pada Game' selalu aktif saat memulai atau melanjutkan konten.",
-   "MATI",
-   "NYALA",
-   "Detek",
-   "Atur berapa detik yang dibutuhkan untuk melakukan binding selanjutnya.",
-   "Tahan Tombol",
-   "Jumlah detik untuk menahan input tombol untuk mengaturnya.",
-   "Umpan Balik/Getaran Sentuh",
-   "Ubah pengaturan umpan balik dan getaran dari sentuh.",
-   "Kendali Menu",
-   "Ubah pengaturan kendali menu.",
-   "Otomatis",
-   "Tekan Turbo",
-   "Mode Turbo",
-   "Pilih tindakan utama tombol mode turbo.",
-   "Pemeta Turbo",
-   "Tombol Turbo",
-   "Menetapkan tombol turbo di mode 'Satu Tombol'.",
-   "Lama Turbo",
-   "Lama Separuh",
-   "Satu Tombol (Tahan)",
-   "Pintasan",
-   "Tekan Turbo",
-   "Kendali Porta %u",
-   "Aktifkan Kombinasi Tombol",
-   "Berhenti",
-   "Tutup Konten",
-   "Mengulang konten saat ini dari awal mula lagi.",
-   "Gerak Lambat (Mati/Nyala)",
-   "Ganti antara kecepatan lambat dan normal.",
-   "Gerak Lambat (Tahan)",
-   "Gerak Mundur",
-   "Cakram Berikutnya",
-   "Cakram Sebelumnya",
-   "Shader Berikutnya",
-   "Shader Sebelumnya",
-   "Daftar Kode Curang",
-   "Daftar Kode Curang Sebelumnya",
-   "Ambil Tangkapan Layar",
-   "Perekaman (Mati/Nyala)",
-   "Streaming (Mati/Nyala)",
-   "Memulai/hentikan siaran alir dari sesi saat ini ke pelantar video daring.",
-   "Tekan Turbo (Nyala/Mati)",
-   "Menyala/matikan tekan turbo.",
-   "Layar Penuh (Mati/Nyala)",
-   "Sinkronkan ke Laju Bingkai Konten yang Tepat (Mati/Nyala)",
-   "Mematinyalakan atau mencetik sinkronisasi ke laju bingkai (framerate) konten yang tepat.",
+   "Aksesibilitas",
+   "Kata Sandi",
+   "Nama Pengguna",
+   "Capaian",
+   "Jedakan Mode Garis Keras Capaian",
+   "Batalkan Jeda di Mode Garis Keras Capaian",
+   "Batalkan Lanjut di Mode Garis Keras Capaian",
+   "Impor Konten",
+   "Impor Konten",
+   "Tambah ke Kesukaan",
+   "Tambah ke Kesukaan",
    "Layanan AI",
-   "Jadi Tuan Rumah Netplay (Mati/Nyala)",
-   "Main Netplay/Mode Menonton (Mati/Nyala)",
-   "Tanpa Tempahan",
-   "Pilihan",
-   "Tempahan",
-   "Simpan Profil Stik Kendali",
-   "Tombol Mulai",
-   "Tekan Turbo",
-   "Konteks Bagi-Bagi Peranti Keras",
-   "Atur Core",
-   "Simpan Konfigurasi dan Keluar",
-   "Menyimpan semua perubahan konfigurasi saat keluar.",
-   "0 (Awakutu)",
-   "Menyaring berkas sesuai Core saat ini di Peramban Berkas.",
-   "Dukungan Gerak Mundur",
-   "Laju Gerak Mundur",
-   "Jumlah laju bingkai saat gerak mundur per langkah. Semakin tinggi semakin cepat.",
-   "Ukuran Dapar Gerak Mundur (MB)",
-   "Banyaknya memori (ukuran MB) untuk meluangkan dapar gerak mundur. Menambah jumlah ini akan menam"
-   "bah riwayat gerak mundur.",
-   "Judul Siaran Alir",
-   "Mode Siar Alir",
-   "Mutu Siar Alir",
-   "Konfigurasi Siar Alir Kustom",
-   "URL Siar Alir",
-   "Porta Siaran Alir UDP",
-   "Fisik (Kontroler)",
-   "Porta Lightgun",
-   "Picu saat Sentuh",
-   "Mengirim picuan dari masukan penunjuk.",
-   "Tundaan Picu (bingkai)",
-   "Masukan 2 Sentuh",
-   "Masukan 3 Sentuh",
-   "Masukan 4 Sentuh",
-   "Apa pun",
-   "Laju Tetikus",
-   "Ambang Batas Ketuk 2x (md)",
-   "Ambang Batas Geser",
-   "NYALA (Biasa)",
-   "NYALA (Cepat)",
-   "Tampilkan 'Kesukaan'",
-   "Tampilkan 'Riwayat'",
-   "Menu utama",
-   "Menu Daftar Main",
-   "Semua",
-   "Sekali Pakai",
-   "Kustom",
-   "Munculkan Layar Mulai",
-   "Tampilkan 'Tambah ke Kesukaan'",
-   "Menampilkan opsi 'Tambah ke Kesukaan'.",
-   "Tampilkan 'Mulai Siar Alir'",
-   "Menampilkan opsi 'Mulai Siar Alir'.",
-   "Tampilkan 'Capaian'",
-   "Menampilkan pengaturan 'Capaian'.",
-   "Tampilkan 'Jejaring'",
-   "Menampilkan pengaturan 'Jejaring'.",
-   "Selalu",
-   "Hanya untuk Daftar Main",
-   "Hanya untuk Menu Utama dan Pengaturan",
+   "Perangkat",
+   "Suara",
+   "Hapus Plugin DSP",
+   "Latensi Audio (ms)",
+   "Waktu Miring Maksimal",
+   "Senyapkan Mixer",
+   "Pertambahan Volume Mixer (dB)",
+   "Senyapkan",
+   "Tingkat Keluaran (Hz)",
+   "Keluaran",
+   "Kendali Tingkat Audio Dinamis",
+   "Mutu Percontoh Ulang",
+   "Suara",
+   "Sinkronisasi",
+   "Sinkronisasi",
+   "Pertambahan Volume (dB)",
+   "Mode Eksklusif WASAPI",
+   "Format Apung WASAPI",
+   "Panjang Dapar Bersama WASAPI",
+   "Konfirmasi",
+   "Berhenti",
+   "Gulir ke Bawah",
+   "Gulir ke Atas",
+   "Mulai",
+   "Cetikkan Papan Ketik",
+   "Cetikkan Menu",
+   "Mulai",
+   "Kamera",
+   "Deskripsi",
+   "Mulai atau Ulangi Cari Cheat",
    "Capaian",
    "Mode Garis Keras",
    "Uji Capaian Belum Resmi",
-   "Menggunakan capaian dan/atau fitur belum resmi untuk menguji coba.",
-   "Secara berkala mengirim konteks info permainan ke situs web RetroAchievements. Tidak berpengaruh"
-   " jika 'Mode Garis Keras' diaktifkan.",
-   "Memutar suara saat capaian terbuka.",
    "Indikator Kemajuan",
-   "Menampilkan indikator kemajuan di layar ketika melakukan capaian tertentu.",
    "Permainan dengan Capaian",
-   "Perintah Jejaring",
-   "Porta Perintah Jejaring",
-   "RetroPad Jejaring",
-   "Porta Pangkalan RetroPad Jejaring",
-   "RetroPad Jejaring Pengguna %d",
-   "Ukuran Riwayat Cadangan Core",
-   "Riwayat",
-   "Mengurus daftar main permainan, gambar, musik dan video yang tadi dibuka.",
-   "Ukuran 'Riwayat'",
-   "Membatasi jumlah entri di daftar main terkini untuk permainan, gambar, musik dan video.",
-   "Ukuran 'Kesukaan'",
-   "Membatasi jumlah entri di daftar main 'Kesukaan'. Ketika sudah di batasnya, tambahan yang baru a"
-   "kan ditolak sampai entri yang lama dihapus. Mengatur nilai (value) ke -1 membolehkan entri 'tanp"
-   "a batas'.\nPERINGATAN: Mengurangi nilai akan menghapus entri yang ada!",
-   "Izinkan mengganti nama entri daftar main.",
-   "Izinkan menghapus entri daftar main.",
-   "Urutkan Daftar Sesuai Alfabet",
-   "Simpan Daftar Dengan Format Lama",
-   "Pampatkan Daftar Main",
-   "Tampilkan Core Terkait di Daftar Main",
-   "Daftar Main Portabel",
-   "Tampilkan Ikon Spesifik Konten di Riwayat dan Kesukaan",
-   "Menampilan ikon spesifik di tiap-tiap entri daftar main riwayat dan kesukaan. Berdampak beragam "
-   "ke kinerja.",
-   "detik",
-   "detik",
-   "menit",
-   "menit",
-   "jam",
-   "jam",
-   "hari",
-   "hari",
-   "minggu",
-   "minggu",
-   "bulan",
-   "bulan",
-   "tahun",
-   "tahun",
-   "lalu",
-   "Kelola Daftar Main",
-   "Kosongkan Daftar Main",
-   "Segarkan Daftar Main",
-   "Hapus Daftar Main",
-   "Menghilangkan daftar main dari sistem berkas.",
-   "Nama Pengguna",
-   "Bahasa",
-   "Nama Pengguna",
-   "Kata Sandi",
-   "Unduhan",
-   "Direktori Awal",
-   "Atur Direktori Awal untuk Peramban Berkas.",
-   "Berkas konfigurasi",
-   "Berkas konfigurasi bawaan disimpan di direktori ini.",
-   "Hamparan",
-   "Hamparan ditampung di direktori ini.",
-   "Hamparan Papan Ketik",
-   "Hamparan papan ketik ditampung di direktori ini.",
-   "Profil Stik Kendali",
-   "Setelan otomatis profil stik kendali yang dulu digunakan akan ditampung di direktori ini.",
-   "Daftar Main",
-   "Daftar main ditampung di direktori ini.",
-   "Daftar Main Kesukaan",
-   "Menyimpan daftar main Kesukaan ke direktori ini.",
-   "Daftar Main Riwayat",
-   "Menyimpan daftar main Riwayat ke direktori ini.",
-   "Daftar Putar Gambar",
-   "Menyimpan daftar putar Riwayat Gambar ke direktori ini.",
-   "Daftar Putar Musik",
-   "Menyimpan daftar putar Musik ke direktori ini.",
-   "Daftar Putar Video",
-   "Menyimpan daftar putar Video ke direktori ini.",
-   "Daerah",
-   "Dari Pengembang",
-   "Dari Penerbit",
-   "Dari Tahun Rilis",
-   "Dari Jumlah Pemain",
-   "Dari Genre",
-   "Dari Capaian",
-   "Dari Kategori",
-   "Dari Bahasa",
-   "Dari Daerahnya",
-   "Dari Eksklusif Konsol",
-   "Dari Eksklusif Pelantar",
-   "Dari Fitur Getar",
-   "Dari Skor",
-   "Dari Media",
-   "Dari Jenis Kendali",
-   "Dari Gaya Gambar",
-   "Dari Gameplay",
-   "Dari Jenis Narasi",
-   "Dari Laju Gerak",
-   "Dari Sudut Pandang",
-   "Dari Latar Tempat",
-   "Dari Visual",
-   "Dari Jenis Kendara",
-   "Dari Asalnya",
-   "Dari Waralaba",
-   "Dari Tag",
-   "Dari Nama Sistem",
-   "Hapus",
-   "Tambah ke Kesukaan",
-   "Menambahkan konten ke 'Kesukaan'.",
-   "Tetapkan 'core' terkait dengan konten ini.",
-   "Atur ulang 'core' terkait dengan konten ini.",
-   "Informasi",
-   "Nama",
    "Tutup Konten",
-   "Ambil Tangkapan Layar",
-   "Tambah ke Kesukaan",
-   "Menambahkan konten ke 'Kesukaan'.",
-   "Mulai Siar Alir",
-   "Memulai siar alir ke destinasi terpilih.",
-   "Berhenti Siar Alir",
-   "Akhiri siaran alir.",
-   "Tombol Kendali",
-   "Pengendalian Cakram",
-   "Capaian",
-   "Perubahan cheat akan diterapkan.",
-   "Mulai atau Ulangi Cari Cheat",
-   "Deskripsi",
-   "Indeks Cakram",
-   "Keluarkan Cakram",
-   "Sisipkan Cakram",
-   "Muat Cakram Baru",
-   "Ubahan pada konfigurasi 'shader' akan diterapkan. Gunakan ini jika ingin mengubah jumlah laluan "
-   "'shader', penyaringan, skala FBO, dll.",
-   "Tidak Tampilkan Capaian",
-   "Batalkan Jeda di Mode Garis Keras Capaian",
-   "Batalkan Lanjut di Mode Garis Keras Capaian",
-   "Jedakan Mode Garis Keras Capaian",
-   "Galat Jejaring",
-   "Belum Ada 'Kesukaan'",
-   "Belum Ada 'Riwayat'",
-   "Entri Daftar Main Belum Ada",
-   "Tak Ditemukan Pengaturan",
-   "Tidak Ditemukan Peranti Bluetooth",
-   "Tidak Ditemukan Jejaringan",
-   "Daurkan gambar kecil",
-   "Direktori Tidak Ditemukan",
-   "Tak ada",
-   "Riwayat & Kesukaan",
-   "Semua Daftar Main",
-   "MATI",
-   "Riwayat & Kesukaan",
-   "Tak ada",
-   "Tak ada",
-   "Bawaan Sistem",
-   "NYALA",
-   "MATI",
-   "Tak ada",
-   "Lalu",
-   "Rasio Aspek",
-   "Tak ada",
+   "Aktifkan Sinkron Awan",
+   "Kata Sandi",
+   "Kunci Akses Rahasia",
+   "Sinkron Awan",
+   "Sinkron: Berkas Konfigurasi",
+   "Mode Sinkronisasi",
    "Otomatis",
-   "Otomatis",
-   "MATI",
-   "Skala Bilangan Bulat",
-   "MATI",
-   "Tak ada",
-   "Urut Daftar Main Setelah Pemenggalan Nama (Perlu Mulai Ulang)",
-   "Tak ada",
-   "Tak ada",
-   "Ikon Daftar Main (Perlu Mulai Ulang)",
-   "Otomatis",
-   "MATI",
-   "MATI",
-   "MATI",
-   "MATI",
-   "NYALA",
-   "Sisihkan Gambar Kecil",
-   "Pengaturan",
-   "&Bantuan",
-   "Muat Core",
+   "Sinkronkan",
+   "Sinkron: Berkas Sistem",
+   "Nama Pengguna",
+   "Muat Konfigurasi",
+   "Berkas Konfigurasi",
+   "Konfigurasi",
+   "Simpan Konfigurasi dan Keluar",
+   "Core Tak Berkonten",
+   "Daftar Main Kesukaan",
+   "Ukuran 'Kesukaan'",
+   "Daftar Main Riwayat",
+   "Ukuran 'Riwayat'",
+   "Daftar Putar Gambar",
    "Nama",
-   "Daftar Main",
-   "Perambah Berkas",
-   "Semua Daftar Main",
-   "Informasi",
-   "Galat Jejaring",
-   "Mohon mulai ulang program untuk menerapkan perubahan.",
-   "Hentikan",
-   "Core Terkait",
-   "Daftar Main Tersembunyi",
-   "Kemajuan:",
-   "Daftar Main Baru",
-   "Mohon tulis nama daftar main baru:",
-   "Hapus Daftar Main",
-   "Nama:",
-   "Jalur:",
-   "Pangkalan Data:",
-   "(dipisah spasi; termasuk semua secara bawaan)",
-   "RetroArch berhasil diperbarui. Mohon mulai ulang aplikasi untuk menerapkan perubahan.",
+   "Daftar Putar Musik",
+   "Menu Cepat",
+   "Tampilkan 'Kesukaan'",
+   "Tampilkan 'Riwayat'",
+   "Daftar Putar Video",
+   "Unduhan",
+   "[Otomatis]",
+   "Cadangkan Core",
+   "Hapus Core",
+   "Hapus Cadangan",
+   "Informasi Core",
+   "Pembuat",
+   "Kategori",
+   "Label Core",
+   "Nama Core",
+   "Jalur Lengkap",
+   "Versi Core",
+   "Catatan: 'Berkas Sistem ada di Direktori Konten' aktif.",
+   "Mencari di: %s",
+   "Jenis Lisensi",
+   "Perizinan",
+   "Syarat Minimal Grafis API",
+   "Mendasar (Simpan/Muat)",
+   "Tak ada",
+   "Berserial (Simpan/Muat, Gerak Mundur)",
+   "Dukungan Save State",
+   "Ekstensi Didukung",
+   "Pengembang Sistem",
+   "Nama Sistem",
+   "Tombol Kendali",
+   "Muat Core",
+   "Lepas Core",
+   "Kunci Core Terpasang",
+   "Atur Core",
+   "Pulihkan Cadangan",
+   "Ukuran Riwayat Cadangan Core",
+   "Pengunduh Core",
+   "Arsitektur CPU",
+   "'Core' CPU",
+   "Resolusi Super CRT",
+   "Refresh Rate Kustom",
+   "Manajer Kursor",
+   "Daurkan gambar kecil",
+   "Manajer Database",
    "Hapus",
-   "Pengunduhan sudah berlangsung.",
-   "Berhasil: %1 Gagal: %2",
-   "Riwayat",
-   "Pilih konten dari daftar putar riwayat terkini.",
-   "Tidak ditemukan tuan rumah netplay.",
-   "Tidak ditemukan tamu main netplay.",
-   "detik",
-   "Tak dapat membaca berkas terpampat.",
-   "Pengguna",
-   "Mulai",
-   "Sedang mencari konten kompatibel...",
-   "Core tidak ditemukan",
-   "Daftar main tidak ditemukan",
-   "Konten kompatibel ditemukan",
-   "Gagal melacak konten yang cocok berdasarkan CRC atau nama berkas",
-   "Bantuan",
-   "Dalam Menu",
+   "Hapus Daftar Main",
+   "Tanpa Tempahan",
+   "Pilihan",
+   "Tempahan",
+   "Direktori Tidak Ditemukan",
+   "Direktori",
    "Dalam P'mainan",
    "Dalam P'mainan (Dijeda)",
-   "Sedang Main",
+   "Dalam Menu",
    "Dijeda",
-   "Lokal",
-   "Berkas sudah ada. Menyimpan ke dapar cadangan",
-   "Kawan (peer) Netplay bermain di versi lama RetroArch. Tidak dapat sambung.",
-   "Core ini tidak mendukung Netplay antara para pelantar ini",
-   "Core ini tidak mendukung Netplay antara pelantar yang berbeda",
-   "Apakah sambungan dari pengguna ingin diizinkan:",
-   "\"%s\" telah terputus",
-   "Tamu main NetPlay telah terputus",
-   "NetPlay telah terputus",
    "Sedang Main",
-   "Ditambah ke kesukaan",
-   "Gagal menambahkan kesukaan: daftar putar penuh",
-   "Galat menyimpan profil stik kendali.",
-   "Lepas pampat sudah berlangsung.",
-   "Gagal memampat.",
-   "Gagal mengekstrak konten berkas terpampat",
-   "Gagal memuat hamparan.",
-   "Hamparan papan ketik belum diatur.",
-   "Berkas tidak ditemukan",
-   "Save state otomatis ditemukan di",
-   "Memuat berkas riwayat",
-   "Memuat berkas kesukaan",
-   "Dijeda.",
-   "Mengulang perekaman karena reinsial kandar.",
-   "Bergerak mundur.",
-   "Gerak mundur tidak bisa karena core ini tidak ada dukungan save state berserial.",
-   "Sudah di ujung dapar gerak mundur.",
-   "Gerak mundur lambat.",
-   "Capaian Terbuka",
-   "Capaian Langka Terbuka",
-   "Memindai jejaring nirkabel...",
-   "Cakram telah dikeluarkan.",
-   "Mengatur cakram di nampan",
-   "Mode Capaian Garis Keras Diaktifkan: save state & gerak mundur dinonaktifkan.",
-   "Mengambil data cakram...",
-   "Gagal membaca dari kandar. Ambil data dibatalkan.",
-   "Gagal menulis ke cakram. Ambil data dibatalkan.",
-   "Cakram belum disisipkan di kandar.",
-   "Memeriksa entri saat ini: ",
-   "Memindai: ",
-   "Menghapus cadangan yang usang: ",
-   "Sambung ke Jejaring",
-   "Putuskan",
-   "Sambung ke Jejaring",
-   "Betulkan Lebihan Pindai (Atas)",
-   "Perbaikan Lebihan Pindai (Bawah)",
-   "Mulai Ulang RetroArch",
+   "Informasi Cakram",
+   "Muat Cakram Baru",
+   "Indeks Cakram",
+   "Pengendalian Cakram",
+   "Keluarkan Cakram",
+   "Sisipkan Cakram",
+   "Unduhan",
+   "Unduh Core",
+   "Pengunduh Konten",
+   "Pengunduh Berkas Sistem Core",
+   "Pengandar",
+   "Ambil Data Cakram",
+   "Mengaktifkan Getaran Perangkat (Untuk 'Core' Terdukung)",
+   "Dari Capaian",
+   "Dari Gaya Gambar",
+   "Dari Kategori",
+   "Dari Eksklusif Konsol",
+   "Dari Jenis Kendali",
+   "Dari Pengembang",
+   "Dari Waralaba",
+   "Dari Gameplay",
+   "Dari Genre",
+   "Dari Bahasa",
+   "Dari Media",
+   "Dari Jenis Narasi",
+   "Dari Asalnya",
+   "Dari Laju Gerak",
+   "Dari Sudut Pandang",
+   "Dari Eksklusif Pelantar",
+   "Dari Jumlah Pemain",
+   "Dari Penerbit",
+   "Dari Daerahnya",
+   "Dari Tahun Rilis",
+   "Dari Fitur Getar",
+   "Dari Skor",
+   "Dari Latar Tempat",
+   "Dari Nama Sistem",
+   "Dari Tag",
+   "Dari Jenis Kendara",
+   "Dari Visual",
+   "Daerah",
+   "Jelajahi",
+   "Direktori Awal",
+   "Favorit",
+   "Throttle Bingkai",
+   "Core Tak Berkonten",
+   "Jelajahi",
+   "Kesukaan",
+   "Gambar",
+   "Musik",
+   "Video",
+   "Retasan",
+   "Bantuan",
+   "Bantuan",
+   "Riwayat",
+   "Riwayat",
+   "Gambar",
+   "Informasi",
+   "Informasi",
+   "Menu Kendali Semua Pengguna",
+   "Kepekaan Kontroler Analog",
+   "Konfigurasi otomatis",
+   "Otomatis Aktif Mode 'Fokus Pada Game\"",
+   "Detek",
+   "MATI",
+   "NYALA",
+   "Grab Mouse Otomatis",
+   "Tahan Tombol",
+   "Ambang Batas Tombol Masukkan Axis",
+   "Masukan",
+   "Umpan Balik/Getaran Sentuh",
+   "Pintasan",
+   "Tundaan Hotkey Aktif (Bingkai)",
+   "Gabungan Jenis Perangkat Hotkey",
    "Pemetaan Stik Kendali Papan Ketik",
+   "Tombol Mulai",
    "Jenis Pemetaan Stik Kendali Papan Ketik",
+   "Jumlah Maksimal Pemain",
+   "Kendali Menu",
+   "Layanan AI",
+   "Daftar Kode Curang Sebelumnya",
+   "Daftar Kode Curang",
+   "Tutup Konten",
+   "Cakram Berikutnya",
+   "Cakram Sebelumnya",
+   "Aktifkan Kombinasi Tombol",
+   "Layar Penuh (Mati/Nyala)",
+   "Main Netplay/Mode Menonton (Mati/Nyala)",
+   "Jadi Tuan Rumah Netplay (Mati/Nyala)",
+   "Berhenti",
+   "Perekaman (Mati/Nyala)",
+   "Mulai Ulang RetroArch",
+   "Gerak Mundur",
+   "Ambil Tangkapan Layar",
+   "Shader Berikutnya",
+   "Shader Sebelumnya",
+   "Gerak Lambat (Tahan)",
+   "Gerak Lambat (Mati/Nyala)",
+   "Streaming (Mati/Nyala)",
+   "Tekan Turbo (Nyala/Mati)",
+   "Sinkronkan ke Laju Bingkai Konten yang Tepat (Mati/Nyala)",
+   "Masukan 4 Sentuh",
+   "Porta Lightgun",
+   "Apa pun",
+   "Masukan 3 Sentuh",
+   "Tundaan Picu (bingkai)",
+   "Picu saat Sentuh",
+   "Masukan 2 Sentuh",
+   "Ambang Batas Ketuk 2x (md)",
+   "Laju Tetikus",
+   "Ambang Batas Geser",
+   "Fisik (Kontroler)",
+   "Ubah Letak Stik Kendali untuk Core Ini",
+   "Kekuatan Getaran",
+   "Simpan Profil Stik Kendali",
+   "Aktifkan Input Sensor Auxiliary",
+   "Masukan",
+   "Tekan Turbo",
+   "Pemeta Turbo",
+   "Tombol Turbo",
+   "Tekan Turbo",
+   "Tekan Turbo",
+   "Mode Turbo",
+   "Lama Turbo",
+   "Kendali Terpadu Menu",
+   "Kendali Porta %u",
+   "JIT Tersedia",
+   "Profil Stik Kendali",
+   "Stik Kendali",
+   "Latensi",
+   "Muat Arsip",
+   "Riwayat",
+   "Muat konten",
+   "Muat Cakram",
+   "Lokasi",
+   "Pencatatan Log",
+   "0 (Awakutu)",
+   "Menu Utama",
+   "Pemetaan",
+   "NYALA",
+   "MATI",
+   "Sisihkan Gambar Kecil",
+   "Otomatis",
+   "MATI",
+   "Ikon Daftar Main (Perlu Mulai Ulang)",
+   "MATI",
+   "MATI",
+   "Menu utama",
+   "Menu Daftar Main",
+   "Nonaktifkan Mode Kiosk",
+   "Peramban Berkas",
+   "Selalu",
+   "Hanya untuk Menu Utama dan Pengaturan",
+   "Hanya untuk Daftar Main",
+   "Rasio Aspek",
+   "\"Load Content\" Startup Notification",
+   "Suara Menu",
+   "Nyalakan efek 'Suara Latar'",
+   "Nyalakan efek suara 'Batal'",
+   "Nyalakan efek suara 'Notifikasi'",
+   "Nyalakan efek suara 'OK'",
+   "Masukan",
+   "Keluaran",
+   "Tidak ditemukan, opsional:",
+   "Tidak ditemukan, yang diperlukan:",
+   "Putar",
+   "Putar (Berulang)",
+   "Putar (Berurutan)",
+   "Hapus",
+   "Hentikan",
+   "Musik",
+   "Konten kompatibel ditemukan",
+   "Sedang mencari konten kompatibel...",
+   "Gagal melacak konten yang cocok berdasarkan CRC atau nama berkas",
+   "Core tidak ditemukan",
+   "Daftar main tidak ditemukan",
+   "Nama Pengguna",
+   "Tak ada",
+   "Perintah Jejaring",
+   "Porta Perintah Jejaring",
+   "Galat Jejaring",
+   "Informasi Jejaring",
+   "RetroPad Jejaring",
+   "Porta Pangkalan RetroPad Jejaring",
+   "Jejaring",
+   "RetroPad Jejaring Pengguna %d",
+   "Tak ada",
+   "NYALA (Cepat)",
+   "NYALA (Biasa)",
+   "Tidak Tampilkan Capaian",
+   "Tidak Ditemukan Peranti Bluetooth",
+   "Belum Ada 'Kesukaan'",
+   "Belum Ada 'Riwayat'",
+   "Tidak ditemukan tamu main netplay.",
+   "Tidak ditemukan tuan rumah netplay.",
+   "Tidak Ditemukan Jejaringan",
+   "Entri Daftar Main Belum Ada",
+   "Tak Ditemukan Pengaturan",
+   "MATI",
+   "NYALA",
+   "Pembaruan Daring",
+   "Tampilan Muka Layar",
+   "Jelajahi Arsip",
+   "Hamparan Papan Ketik",
+   "Hamparan",
+   "Hamparan Lightgun",
+   "Hamparan Tetikus",
+   "Tak ada",
+   "Tak ada",
+   "Urut Daftar Main Setelah Pemenggalan Nama (Perlu Mulai Ulang)",
+   "Kinerja",
+   "Daftar Main",
+   "Pampatkan Daftar Main",
+   "Daftar Main",
+   "Semua Daftar Main",
+   "Riwayat & Kesukaan",
+   "MATI",
+   "Riwayat & Kesukaan",
+   "Kosongkan Daftar Main",
+   "Kelola Daftar Main",
+   "Segarkan Daftar Main",
+   "Tak ada",
+   "Bawaan Sistem",
+   "Daftar Main Portabel",
+   "Daftar Main",
+   "Tampilkan Ikon Spesifik Konten di Riwayat dan Kesukaan",
+   "Tampilkan Core Terkait di Daftar Main",
+   "Urutkan Daftar Sesuai Alfabet",
+   "Simpan Daftar Dengan Format Lama",
+   "Pemerbaru gambar kecil daftar main",
+   "Pengelolaan Daya",
+   "Ada, opsional:",
+   "Ada, yang diperlukan:",
+   "Semua Daftar Main",
+   "Core Terkait",
+   "Are you sure you want to delete the playlist \"%1\"?",
+   "Are you sure you want to delete the item \"%1\"?",
+   "Hapus Daftar Main",
+   "Pengunduhan sudah berlangsung.",
+   "Berhasil: %1 Gagal: %2",
+   "Mohon tulis nama daftar main baru:",
+   "Daftar Main Tersembunyi",
+   "Informasi",
+   "Muat Core",
+   "&Bantuan",
+   "\"All Playlists\" max grid entries:",
+   "\"All Playlists\" max list entries:",
+   "Pengaturan",
+   "Nama",
+   "Galat Jejaring",
+   "Daftar Main Baru",
+   "Pangkalan Data:",
+   "(dipisah spasi; termasuk semua secara bawaan)",
+   "Nama:",
+   "Jalur:",
+   "Kemajuan:",
+   "Hapus",
+   "Mohon mulai ulang program untuk menerapkan perubahan.",
+   "Hentikan",
+   "Perambah Berkas",
+   "Daftar Main",
+   "RetroArch berhasil diperbarui. Mohon mulai ulang aplikasi untuk menerapkan perubahan.",
+   "Tampilkan 'Tambah ke Kesukaan'",
+   "Tampilkan 'Mulai Siar Alir'",
+   "Mulai Siar Alir",
+   "Berhenti Siar Alir",
+   "Menu Cepat",
+   "Keluar",
+   "Capaian",
+   "Didukung Analog",
+   "Gaya Gambar",
+   "Peringkat BBFC",
+   "Kategori",
+   "Peringkat CERO",
+   "Eksklusif di Konsol",
+   "Tombol Kendali",
+   "Didukung Multiplayer",
+   "Deskripsi",
+   "Pengembang",
+   "Terbitan Majalah Edge",
+   "Peringkat Majalah Edge",
+   "Ulasan Majalah Edge",
+   "Peringkat ELSPA",
+   "Peranti Keras Peningkat",
+   "Peringkat ESRB",
+   "Peringkat Majalah Famitsu",
+   "Waralaba",
+   "Bahasa",
+   "Nama",
+   "Naratif",
+   "Asal",
+   "Kadar Gerak",
+   "Peringkat PEGI",
+   "Perspektif",
+   "Eksklusif di Pelantar",
+   "Penerbit",
+   "Daerah",
+   "Bulan Rilis",
+   "Tahun Rilis",
+   "Didukung rumble",
+   "Skor",
+   "Pengaturan",
+   "Peringkat TGDB",
+   "Jenis Kendara",
+   "Rekaman",
+   "Rekam",
+   "Setel ulang ke Default",
+   "Mulai ulang",
+   "Capaian",
+   "Ukuran Dapar Gerak Mundur (MB)",
+   "Dukungan Gerak Mundur",
+   "Laju Gerak Mundur",
+   "Gerak Mundur",
+   "Otomatis",
+   "Skala Bilangan Bulat",
+   "MATI",
+   "Direktori Awal",
+   "Berkas konfigurasi",
+   "MATI",
+   "Munculkan Layar Mulai",
+   "Otomatis",
+   "Tak ada",
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
    "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
+#endif
+#endif
+   "Simpan Konfigurasi Saat Ini",
+   "Simpan Konfigurasi Utama",
+   "Simpan Konfigurasi Baru",
+   "Menyimpan",
+   "Tak ada",
+   "Orientasi Layar",
+   "detik",
+   "Otomatis",
+   "Pengaturan",
+   "Tampilkan 'Capaian'",
+   "Tampilkan 'Jejaring'",
+   "Pengaturan",
+   "Pengaturan",
+   "Semua",
+   "Kustom",
+   "Sekali Pakai",
+   "Tampilkan Menu Desktop",
+   "Pasang atau Pulihkan Core",
+   "Suara",
+   "Spesifikasi",
+   "Mulai Remote RetroPad",
+   "Mulai Prosesor Video",
+   "Penyimpanan",
+   "Mode Siar Alir",
+   "Judul Siaran Alir",
+   "URL Siar Alir",
+   "Konfigurasi Siar Alir Kustom",
+   "Tangguhkan Screensaver",
+   "Ganti dengan 'core' versi Play Store",
+   "Informasi Sistem",
+   "Tanggal Pembuatan",
+   "Fitur CPU",
+   "Model CPU",
+   "Ukuran DPI",
+   "Tinggi Layar (mm)",
+   "Lebar Layar (mm)",
+   "Pengenal Frontend",
+   "Versi Git",
+   "Sumber daya",
+   "Versi RetroArch",
+   "Driver Konteks Video",
+   "Sistem",
+   "Ambil Tangkapan Layar",
+   "Lalu",
+   "lalu",
+   "hari",
+   "hari",
+   "jam",
+   "jam",
+   "menit",
+   "menit",
+   "bulan",
+   "bulan",
+   "detik",
+   "detik",
+   "minggu",
+   "minggu",
+   "tahun",
+   "tahun",
+   "Pewaktuan",
+   "Lama Separuh",
+   "Satu Tombol (Tahan)",
+   "Porta Siaran Alir UDP",
+   "Tak dapat membaca berkas terpampat.",
+   "Perbarui Aset",
+   "Perbarui Profil Stik Kendali",
+   "Perbarui Shader Cg",
+   "Perbarui Cheat",
+   "Perbarui Info Berkas Core",
+   "Perbarui Database",
+   "Perbarui Shader GLSL",
+   "Perbarui 'core' terpasang",
+   "Perbarui Hamparan",
+   "Perbarui Shader Slang",
+   "Pengguna",
+   "Antarmuka Pengguna",
+   "Bahasa",
+   "Pengguna",
+   "Bergetar saat Tekan Tombol",
+   "Rasio Aspek",
+   "Mode Semuanya Layar Penuh",
+   "Hanya di Mode Layar Penuh Berjendela",
+   "Sisipan Bingkai Hitam - Bingkai Gelap",
+   "Penyisipan Bingkai Hitam",
+   "Pangkas Lebihan Pindai (Perlu Mulai Ulang)",
+   "Saring Video",
+   "Hapus Saring Video",
+   "Paksa resolusi di UWP",
+   "Paksa matikan sRGB FBO",
+   "Tundaan Bingkai",
+   "Tundaan Bingkai Otomatis",
+   "Otomatis",
+   "efektif",
+   "Layar Penuh",
+   "Lebar Layar Penuh",
+   "Tinggi Layar Penuh",
+   "Bingkai Sinkron GPU Keras",
+   "Indeks Monitor",
+   "Keluaran",
+   "Perbaikan Lebihan Pindai (Bawah)",
+   "Betulkan Lebihan Pindai (Atas)",
+   "Laju Penyegaran Vertikal",
+   "Estimasi Laju Penyegaran Layar",
+   "Atur Laju Penyegaran yang Dilaporkan Tampilan",
+   "Rotasi Video",
+   "Skala Berjendela",
+   "Skala Bilangan Bulat",
+   "Penskalaan",
+   "Tundaan Shader Otomatis",
+   "Konteks Bagi-Bagi Peranti Keras",
+   "Penyaringan Bilinear",
+   "Mutu Siar Alir",
+   "Otomatis",
+   "Sinkronisasi",
+   "Video",
+   "Rasio Aspek Kustom (Tinggi)",
+   "Rasio Aspek Kustom (Lebar)",
+   "Rasio Aspek Kustom (Posisi X)",
+   "Rasio Aspek Kustom (Posisi Y)",
+   "Mode Layar Penuh Berjendela",
+   "Berjendela",
+   "Lebar Minimal Jendela Layar",
+   "Lebar Maksimal Jendela Layar",
+   "Gunakan Ukuran Jendela Layar Sesuai Keinginan Sendiri",
+   "Tinggi Jendela",
+   "Pengaturan Layar Horisontal",
+   "Pengaturan Layar Vertikal",
+   "Opasitas Jendela",
+   "Ingat Posisi dan Ukuran Jendela",
+   "Tampilkan Dekorasi Jendela",
+   "Lebar Jendela",
+   "Sinkronkan ke Laju Bingkai Konten yang Tepat (G-Sync, FreeSync)",
+   "Putuskan",
+   "Sambung ke Jejaring",
+   "Sambung ke Jejaring",
+   "Tak ada",
+   "video_viewport_bias_x",
+   "video_viewport_bias_y",
+   "Ubah pengaturan narasi Aksesibilitas.",
+   "Membuat dan perbarui daftar main dengan memindai konten.",
+   "Menambahkan konten ke 'Kesukaan'.",
+   "Menambahkan konten ke 'Kesukaan'.",
+   "Ubah pengaturan Layanan AI (Terjemahan/TTS/Lainnya).",
+   "Ganti perangkat audio default yang digunakan driver audio. Ini tergantung driver.",
+   "Plugin Audio DSP yang memproses audio sebelum dikirim ke driver.",
+   "Bongkar plugin DSP audio aktif apa pun.",
+   "Aktifkan keluaran audio.",
+   "Putar stream audio secara bersamaan, meski dalam tampilan menu.",
+   "Otomatis senyapkan audio saat menggunakan percepat.",
+   "Perubahan maksimal pada tingkat masukan suara. Bisa mengakibatkan nada suara tidak akurat (misal"
+   " memainkan core PAL pada layar NTSC).",
+   "Senyapkan suara Mixer.",
+   "Ubah pengaturan mixer audio.",
+   "Volume mixer audio global (dalam dB). 0 dB adalah volume normal, dan tidak ada penguatan yang di"
+   "terapkan.",
+   "Senyapkan audio.",
+   "Tingkat sampel keluaran audio.",
+   "Ubah pengaturan keluaran audio.",
+   "Memperhalus sinkronisasi waktu agar selaras antara suara dan video. Patut diperhatikan jika fitu"
+   "r ini dimatikan, maka sinkornisasi akan sulit dilakukan.",
+   "Audio resampler yang digunakan.",
+   "Turunkan nilai ini untuk mengutamakan kinerja/latensi rendah daripada mutu audio, tingkatkan unt"
+   "uk mutu audio lebih baik tapi kinerja/latensi akan susah.",
+   "Mengatur masukan/keluaran audio.",
+   "Sinkronkan audio. Direkomendasikan.",
+   "Ubah pengaturan sinkronisasi audio.",
+   "Volume suara (dalam dB). 0 dB adalah volume normal, dan tidak ada penguatan yang diterapkan.",
+   "Mengizinkan pengandar WASAPI mengambil kendali eksklusif atas perangkat audio. Jika dinonaktifka"
+   "n, nanti akan menggunakan mode bersama.",
+   "Gunakan format float untuk driver WASAPI, jika didukung oleh perangkat audio Anda.",
+   "Panjang dapar data menengah (sejumlah bingkai) saat menggunakan WASAPI di 'mode bersama'.",
+   "Perubahan cheat akan diterapkan.",
+   "Secara berkala mengirim konteks info permainan ke situs web RetroAchievements. Tidak berpengaruh"
+   " jika 'Mode Garis Keras' diaktifkan.",
+   "Menggunakan capaian dan/atau fitur belum resmi untuk menguji coba.",
+   "Memutar suara saat capaian terbuka.",
+   "Menampilkan indikator kemajuan di layar ketika melakukan capaian tertentu.",
+   "Ketika dinonaktifkan, File akan dipindahkan ke folder backup sebelum ditimpa atau dihapus.",
+   "Password kamu untuk akun penyimpanan cloud.",
+   "Kunci rahasia kamu untuk akun penyimpanan cloud.",
+   "Mengatur sinkronisasi awan.",
+   "Ketika diaktifkan, File konfigurasi akan di sinkronisasi ke penyimpanan cloud.",
+   "Otomatis: Sinkronkan saat RetroArch dinyalakan dan saat cores tidak dimuat. Manual: Hanya sinkro"
+   "nkan saat tombol 'Sinkronkan Sekarang' ditekan.",
+   "Manual mengaktifkan sinkronisasi awan.",
+   "Ketika diaktifkan, File sistem akan disinkronisasikan ke penyimpanan cloud. Ini akan meningkatka"
+   "n waktu untuk menyinkronkan, Pakai dengan hati - hati.",
+   "Username kamu untuk akun penyimpanan cloud.",
+   "Memuat konfigurasi dan mengganti setelan saat ini.",
+   "Kelola dan buat berkas konfigurasi.",
+   "Ubah pengaturan bawaan pada berkas konfigurasi.",
+   "Menyimpan semua perubahan konfigurasi saat keluar.",
+   "Menyimpan daftar main Kesukaan ke direktori ini.",
+   "Membatasi jumlah entri di daftar main 'Kesukaan'. Ketika sudah di batasnya, tambahan yang baru a"
+   "kan ditolak sampai entri yang lama dihapus. Mengatur nilai (value) ke -1 membolehkan entri 'tanp"
+   "a batas'.\nPERINGATAN: Mengurangi nilai akan menghapus entri yang ada!",
+   "Menyimpan daftar main Riwayat ke direktori ini.",
+   "Membatasi jumlah entri di daftar main terkini untuk permainan, gambar, musik dan video.",
+   "Menyimpan daftar putar Riwayat Gambar ke direktori ini.",
+   "Menyimpan daftar putar Musik ke direktori ini.",
+   "Mengakses cepat semua pengaturan permainan terkait.",
+   "Menyimpan daftar putar Video ke direktori ini.",
+   "Membuat cadangan 'core' yang terpasang saat ini.",
+   "Hapus 'core' ini dari cakram.",
+   "Hapus file dari daftar cadangan yang diarsipkan.",
+   "Lihat informasi yang berkaitan dengan aplikasi/core.",
+   "Pilih 'core' yang akan dipakai.",
+   "Memasang 'core' versi sebelumnya dari daftar 'core' terarsip.",
+   "Mengubah pengaturan 'core'.",
+   "Berkeluaran lokal, sinyal beresolusi rendah untuk layar CRT.",
+   "Beralih ke modeline resolusi tinggi untuk menampilkan menu resolusi tinggi jika belum memuat kon"
+   "ten.",
+   "Hanya untuk tampilan CRT. Mencoba memakai resolusi tepat dari core/p'mainan dan laju penyegaran.",
+   "Mengganti ke resolusi lokal atau super ultra lebar.",
+   "Gunakan laju penyegaran kustom yang ditentukan dalam berkas konfigurasi jika perlu.",
+   "Atur opsi ini jika gambar tidak dapat ditampilkan memusat semestinya.",
+   "Atur opsi ini jika gambar tidak dapat ditampilkan memusat semestinya.",
+   "Lihat pencarian sebelumnya.",
+   "Lihat Database.",
+   "Menghilangkan daftar main dari sistem berkas.",
+   "Ubah direktori tempat berkas.",
+   "Lihat info tentang cakram yang disisipkan.",
+   "Unduh dan pasang sebuah core dari pembaruan daring.",
+   "Unduh konten cuma-cuma untuk core terpilih.",
+   "Mengunduh berkas sistem tambahan untuk pelaksanaan core yang optimal/benar.",
+   "Mengubah pengaturan pengandar sistem.",
+   "Mengambil data cakram media fisik ke penyimpanan internal. Akan disimpan sebagai berkas citra.",
+   "Menyaring berkas sesuai Core saat ini di Peramban Berkas.",
+   "Ubah pengaturan gerak mundur, maju-cepat, dan gerak lambat.",
+   "Telusur semua konten yang cocok di pangkalan data lewat antarmuka pencarian terurut.",
+   "Konten yang ditambah ke 'Kesukaan'' akan ada di sini.",
+   "Gambar yang pernah dilihat sebelumnya akan muncul di sini.",
+   "Musik yang pernah diputar sebelumnya akan muncul di sini.",
+   "Video yang pernah diputar sebelumnya akan muncul di sini.",
+   "Pelajari lebih lanjut cara kerja aplikasi.",
+   "Mengurus daftar main permainan, gambar, musik dan video yang tadi dibuka.",
+   "Tampilkan informasi sistem.",
+   "Mengizinkan semua pengguna mengatur menu. Jika dinonaktifkan, hanya Pengguna 1 yang mengatur men"
+   "u.",
+   "Sesuaikan daya tanggapan stik analok.",
+   "Otomatis menyetel stik kendali yang ada profil, agar jadi Pasang-dan-Pakai.",
+   "Mode 'Fokus Pada Game' selalu aktif saat memulai atau melanjutkan konten.",
+   "Aktifkan mouse grab pada saat aplikasi aktif.",
+   "Jumlah detik untuk menahan input tombol untuk mengaturnya.",
+   "Atur berapa detik yang dibutuhkan untuk melakukan binding selanjutnya.",
+   "Ubah pengaturan umpan balik dan getaran dari sentuh.",
+   "Menutup semua hotkey dari jenis papan ketik dan stik kendali lain jika ada yang diatur 'Hotkey A"
+   "ktif'.",
+   "Kombinasi tombol stik kendali untuk membuka menu.",
+   "Ubah pengaturan kendali menu.",
+   "Mengulang konten saat ini dari awal mula lagi.",
+   "Ganti antara kecepatan lambat dan normal.",
+   "Memulai/hentikan siaran alir dari sesi saat ini ke pelantar video daring.",
+   "Menyala/matikan tekan turbo.",
+   "Mematinyalakan atau mencetik sinkronisasi ke laju bingkai (framerate) konten yang tepat.",
+   "Mengirim picuan dari masukan penunjuk.",
+   "Kombinasi tombol stik kendali untuk keluar RetroArch.",
+   "Timpa input bind dengan bind yang telah diubah untuk 'core' saat ini.",
+   "Tentukan besarnya efek umpan balik haptic.",
+   "Mengaktifkan masukan akselerometer, giroskop, dan pengindra cahaya, jika ada. Fitur ini akan mem"
+   "engaruhi kinerja perangkat dan menguras daya baterai pada pelantar tertentu.",
+   "Ubah pengaturan stik kendali, papan ketik, dan tetikus.",
+   "Menetapkan tombol turbo di mode 'Satu Tombol'.",
+   "Pilih tindakan utama tombol mode turbo.",
+   "Gunakan kendali yang sama untuk menu dan permainan. Berlaku untuk papan ketik.",
+   "Setelan otomatis profil stik kendali yang dulu digunakan akan ditampung di direktori ini.",
+   "Kandar stik kendali yang dipilih. (Perlu Mulai ulang)",
+   "Ubah pengaturan terkait latensi video, audio, dan masukan.",
+   "Pilih konten dari daftar putar riwayat terkini.",
+   "Pilih konten yang akan dijalankan.",
+   "Memuat media cakram fisik. Pilih dulu 'core' (Muat Core) untuk digunakan ke cakram.",
+   "Ubah pengaturan catat log.",
+   "Menampilkan semua pengaturan terkait konfigurasi.",
+   "Kandar menu yang dipilih. (Perlu Mulai ulang)",
+   "Tukar tombol untuk OK/Batal. Dinonaktifkan adalah orientasi tombol Jepang, diaktifkan adalah ori"
+   "entasi barat.",
+   "Ubah pengaturan suara menu.",
+   "Pilih perangkat masukan.",
+   "Pilih perangkat luaran.",
+   "Ubah pengaturan MIDI.",
+   "Atur volume luaran (dalam satuan persen).",
+   "Fitur ini akan memutar stream audio. Setelah pemutaran berakhir, stream audio akan dihapus dari "
+   "memori.",
+   "Fitur ini akan memutar stream audio. Setelah pemutaran berakhir, stream audio akan diputar ulang"
+   " dari awal.",
+   "Fitur ini akan memutar stream audio. Setelah pemutaran berakhir, pemutaran akan berlanjut ke str"
+   "eam audio selanjutnya dan akan berulang. Cara kerja sama dengan cara pemutaran lagu satu album.",
+   "Fitur ini akan menghentikan pemutaran stream audio. Setelah pemutaran berakhir, stream audio aka"
+   "n dihapus dari memori.",
+   "Akan menghentikan pemutaran stream audio, namun tidak menghapus stream tersebut dari memori. Pil"
+   "ih menu putar untuk memutarnya kembali.",
+   "Atur volume stream audio.",
+   "Gabung atau buat sesi netplay.",
+   "Lihat antarmuka jejaring dan alamat IP yang terhubung.",
+   "Ubah pengaturan server dan jejaring.",
+   "Mengunduh pengaya, komponen, dan konten untuk RetroArch.",
+   "Mengatur hamparan tampilan, hamparan papan ketik, dan notifikasi layar.",
+   "Hamparan papan ketik ditampung di direktori ini.",
+   "Hamparan ditampung di direktori ini.",
+   "Konten terpindai yang cocok di pangkalan data akan ada di sini.",
+   "Daftar main ditampung di direktori ini.",
+   "Izinkan menghapus entri daftar main.",
+   "Izinkan mengganti nama entri daftar main.",
+   "Ubah pengaturan daftar main.",
+   "Menampilan ikon spesifik di tiap-tiap entri daftar main riwayat dan kesukaan. Berdampak beragam "
+   "ke kinerja.",
+   "Unduh daftar gambar kecil di daftar main terpilih.",
+   "Ubah pengaturan pengelolaan daya.",
+   "Menampilkan opsi 'Tambah ke Kesukaan'.",
+   "Menampilkan opsi 'Mulai Siar Alir'.",
+   "Memulai siar alir ke destinasi terpilih.",
+   "Akhiri siaran alir.",
+   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dinyalakan.",
+   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dimatikan.",
+   "Ubah pengaturan rekaman.",
+   "Atur ulang 'core' terkait dengan konten ini.",
+   "Mengatur ulang konfigurasi ke nilai bawaan.",
+   "Memulai ulang aplikasi RetroArch.",
+   "Ubah pengaturan capaian.",
+   "Banyaknya memori (ukuran MB) untuk meluangkan dapar gerak mundur. Menambah jumlah ini akan menam"
+   "bah riwayat gerak mundur.",
+   "Jumlah laju bingkai saat gerak mundur per langkah. Semakin tinggi semakin cepat.",
+   "Atur Direktori Awal untuk Peramban Berkas.",
+   "Berkas konfigurasi bawaan disimpan di direktori ini.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
    "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
    "eboot is required when changing.",
 #endif
 #endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_LAKKA_SWITCH
-   "Percepatan CPU",
-#endif
-#endif
-#ifdef HAVE_LAKKA
-   "Memutus sambungan dari Wi-Fi '%s'",
-#endif
+   "Simpan konfigurasi terkini sebagai file konfigurasi kustom.",
+   "Menimpa berkas konfigurasi saat ini.",
+   "Menyimpan konfigurasi saat ini ke berkas terpisah.",
+   "Ubah pengaturan penyimpanan.",
+   "Memaksa orientasi layar tertentu dari sistem operasi.",
+   "Atur konfigurasi program.",
+   "Menampilkan pengaturan 'Capaian'.",
+   "Menampilkan pengaturan 'Jejaring'.",
+   "Tetapkan 'core' terkait dengan konten ini.",
+   "Ubahan pada konfigurasi 'shader' akan diterapkan. Gunakan ini jika ingin mengubah jumlah laluan "
+   "'shader', penyaringan, skala FBO, dll.",
+   "Buka menu desktop tradisional.",
+   "Memasang atau pulihkan core dari direktori 'Unduhan'.",
+   "Mencegah screensaver sistem Anda aktif.",
+   "Ganti semua 'core' yang terpasang manual atau 'core' bawaan dengan 'core' dari Play Store jika t"
+   "ersedia.",
+   "Lihat informasi spesifikasi perangkat.",
+   "Perbarui semua core yang terinstall ke versi baru yang tersedia.",
+   "Ubah pengaturan antarmuka pengguna.",
+   "Memotong beberapa piksel di sekitar tepi gambar yang biasanya pengembang biarkan kosong dan terk"
+   "adang juga berisi piksel sampah.",
 #ifdef HAVE_ODROIDGO2
 #else
    "Penskalaan konteks peranti keras (jika ada).",
 #endif
-#ifdef _3DS
-   "Aset tidak ditemukan",
-#endif
+   "Menerapkan saring video berdaya CPU. Akan menguras tinggi kinerja perangkat. Beberapa saring mun"
+   "gkin hanya cocok pada 'core' dengan warna 16/32 bit.",
+   "Melepas saring video bertenaga CPU yang aktif.",
+   "Paksa resolusi ke ukuran layar penuh, jika disetel ke 0, nilai tetap 3840 x 2160 akan digunakan.",
+   "Menonaktifkan paksa dukungan FBO sRGB. Beberapa kandar OpenGL Intel di Windows bermasalah video "
+   "dengan FBO sRGB. Aktifkan ini untuk mengatasinya.",
+   "Menyesuaikan 'Tunda Bingkai' secara dinamis.",
+   "Ubah pengaturan mode layar penuh.",
+   "Atur ukuran lebar khusus untuk mode layar penuh non-jendela. Membiarkannya tidak disetel akan me"
+   "nggunakan resolusi desktop.",
+   "Setel ukuran tinggi khusus untuk mode layar penuh non-jendela. Membiarkannya tidak disetel akan "
+   "menggunakan resolusi desktop.",
+   "Pilih kartu grafis yang digunakan.",
+   "Cuplikan layar menangkap materi berbayang GPU jika tersedia.",
+   "Sinkronisasi CPU dan GPU dengan keras. Mengurangi latensi dengan mengorbankan kinerja.",
+   "Atur berapa laju bingkai yang dijalankan CPU lebih dari GPU saat 'Sinkron GPU Keras' aktif.",
+   "Ubah pengaturan HDR video.",
+   "Pilih layar tampilan mana yang akan digunakan.",
+   "Ubah pengaturan keluaran video.",
+   "Perkiraan kecepatan refresh layar yang akurat di Hz.",
+   "Laju penyegaran sesuai laporan pengandar tampilan.",
+   "Memaksa rotasi tertentu dari video. Rotasi ditambahkan ke rotasi yang diatur 'core'.",
+   "Ubah pengaturan penskalaan video.",
+   "Ubah pengaturan keluaran video.",
+   "Menunda muat-langsung 'shader' (dalam milidetik). Dapat mengatasi 'glitch' grafis saat menggunak"
+   "an aplikasi 'screen grab'.",
+   "Ubah pengaturan sinkronisasi video.",
+   "Meningkatkan kinerja tapi akan banyak latensi dan video patah-patah. Gunakan hanya jika tidak da"
+   "pat berkecepatan penuh.",
+   "Tinggi viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'.",
+   "Lebar viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'.",
+   "Sinkronkan video keluaran kartu grafis ke laju penyegaran layar. Direkomendasikan.",
+   "Sinkronisasi CPU dan GPU dengan keras. Mengurangi latensi dengan mengorbankan kinerja.",
+   "Jika layar penuh, lebih suka menggunakan jendela layar penuh untuk mencegah peralihan mode tampi"
+   "lan.",
+   "Ubah pengaturan mode berjendela.",
+   "Atur tampilan tinggi maksimal jendela layar berdasarkan skala yang ditentukan sebelumnya.",
+   "Atur tampilan lebar maksimal jendela layar berdasarkan skala yang ditentukan sebelumnya.",
+   "Menampilkan semua konten di ukuran jendela tetap yang ditentukan 'Lebar Jendela' dan 'Tinggi Jen"
+   "dela'. Jika dinonaktifkan, ukuran jendela akan berubah berdasarkan 'Skala Berjendela'.",
+   "Atur ketinggian khusus untuk jendela tampilan.",
+   "Paksa pengaturan video tertentu secara horisontal. Berlaku di semua pengaturan.",
+   "Paksa pengaturan video tertentu secara vertikal. Berlaku di semua pengaturan.",
+   "Menetapkan transparansi jendela.",
+   "Menampilkan semua konten di ukuran jendela tetap yang ditentukan 'Lebar Jendela' dan 'Tinggi Jen"
+   "dela', dan menyimpan ukuran dan posisi jendela sekarang saat menutup RetroArch. Jika dinonaktifk"
+   "an, ukuran jendela akan berubah berdasarkan 'Skala Berjendela'.",
+   "Atur ukuran jendela layar sesuai pengali yang diinginkan.",
+   "Atur lebar kustom untuk jendela tampilan.",
+   "Pewaktuan 'core' yang diminta tidak ada deviasi. Gunakan untuk layar Variable Refresh Rate (G-Sy"
+   "nc, FreeSync, HDMI 2.1 VRR).",
+   "Capaian Terbuka",
+   "Ditambah ke kesukaan",
+   "Gagal menambahkan kesukaan: daftar putar penuh",
+   "Galat menyimpan profil stik kendali.",
+   "Controller profile saved as \"%s\".",
+   "Auto-loading save state from \"%s\" failed.",
+   "Auto-loading save state from \"%s\" succeeded.",
+   "bringing_up_command_interface_at_port",
+   "Mode Capaian Garis Keras Diaktifkan: save state & gerak mundur dinonaktifkan.",
+   "RetroAchievements: Logged in as \"%s\".",
+   "Lepas pampat sudah berlangsung.",
+   "Gagal memampat.",
+   "disconnect_device_from_a_valid_port",
+   "Apakah sambungan dari pengguna ingin diizinkan:",
+   "Gagal membaca dari kandar. Ambil data dibatalkan.",
+   "Gagal menulis ke cakram. Ambil data dibatalkan.",
+   "Mengambil data cakram...",
+   "Gagal mengekstrak konten berkas terpampat",
+   "Gagal memuat hamparan.",
+   "failed_to_start_audio_driver",
+   "Berkas sudah ada. Menyimpan ke dapar cadangan",
+   "Berkas tidak ditemukan",
+   "Save state otomatis ditemukan di",
+   "found_last_state_slot",
+   "Got connection from: \"%s\"",
+   "Got connection from: \"%s (%s)\"",
+   "Memuat berkas kesukaan",
+   "Memuat berkas riwayat",
+   "Memindai: ",
+   "Memeriksa entri saat ini: ",
+   "Lokal",
+   "Client banned: \"%s\"",
+   "Your nickname changed to \"%s\"",
+   "NetPlay telah terputus",
+   "Core ini tidak mendukung Netplay antara para pelantar ini",
+   "Failed to ban client: \"%s\"",
+   "Failed to kick client: \"%s\"",
+   "Client kicked: \"%s\"",
+   "Kawan (peer) Netplay bermain di versi lama RetroArch. Tidak dapat sambung.",
+   "Netplay peer \"%s\" paused",
+   "Core ini tidak mendukung Netplay antara pelantar yang berbeda",
+   "Tamu main NetPlay telah terputus",
+   "\"%s\" telah terputus",
+   "Sedang Main",
+   "Cakram belum disisipkan di kandar.",
+   "Hamparan papan ketik belum diatur.",
+   "Dijeda.",
+   "Menghapus cadangan yang usang: ",
+   "Capaian Langka Terbuka",
+   "Cakram telah dikeluarkan.",
+   "Mengulang perekaman karena reinsial kandar.",
+   "Bergerak mundur.",
+   "Sudah di ujung dapar gerak mundur.",
+   "Gerak mundur tidak bisa karena core ini tidak ada dukungan save state berserial.",
+   "Memindai jejaring nirkabel...",
    "Mikrofon sdl2 perlu pengandar audio sdl2",
+   "Mengatur cakram di nampan",
+   "Gerak mundur lambat.",
+   "Unrecognized command \"%s\" received.\n",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26908u
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-       + 17u
-       + 43u
-#endif
-#endif
-#ifdef HAVE_MIST
-       + 10u
-#endif
-#ifdef HAVE_LIBNX
-       + 15u
-       + 34u
-#endif
-#ifdef HAVE_MIST
-       + 36u
-#endif
-#if defined(DINGUX)
-       + 19u
-       + 197u
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-       + 19u
-       + 122u
-       + 12u
-#endif
-#endif
-#if defined (WIIU)
-#ifdef WIIU
-       + 51u
-#endif
-#endif
-#if defined(DINGUX) && defined(DINGUX_BETA)
-       + 22u
-       + 106u
-#endif
-#if defined(DINGUX)
-       + 21u
-       + 150u
-#endif
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-       + 10u
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-       + 21u
-       + 154u
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_WASAPI
-       + 22u
-       + 20u
-       + 29u
-       + 90u
-#endif
-#endif
-#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-       + 47u
-       + 53u
-#endif
+      (sizeof(msg_hash_id_blob) == (27682u
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
        + 125u
 #endif
 #endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_LAKKA_SWITCH
-       + 15u
-#endif
-#endif
-#ifdef HAVE_LAKKA
-       + 34u
-#endif
 #ifdef HAVE_ODROIDGO2
 #else
        + 45u
-#endif
-#ifdef _3DS
-       + 21u
 #endif
       )) ? 1 : -1];
 
 static const uint32_t msg_hash_id_ids[] =
 {
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
-#ifdef HAVE_CDROM
-#ifdef HAVE_LAKKA
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-#ifdef HAVE_MIST
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-#ifdef HAVE_LIBNX
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
    (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
-#ifdef HAVE_MIST
-   (uint32_t)MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-#if defined(DINGUX)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-#if defined (WIIU)
-#ifdef WIIU
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-#if defined(DINGUX)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-#ifdef HAVE_MICROPHONE
-#if !defined(RARCH_CONSOLE)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
-#endif
-#endif
-#ifdef HAVE_MICROPHONE
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
-#endif
-#ifdef HAVE_MICROPHONE
-#ifdef HAVE_WASAPI
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_VOLUME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESET,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
-   (uint32_t)MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
-   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_PLURAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_PLURAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_SINGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_PLURAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_MUSIC_HISTORY_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_VIDEO_HISTORY_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VEHICULAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
-   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_MUSIC_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_VIDEO_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ON,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OFF,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_STOP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_REMOVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SECONDS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
-   (uint32_t)MSG_NATIVE,
-   (uint32_t)MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-   (uint32_t)MSG_NETPLAY_OUT_OF_DATE,
-   (uint32_t)MSG_NETPLAY_ENDIAN_DEPENDENT,
-   (uint32_t)MSG_NETPLAY_PLATFORM_DEPENDENT,
-   (uint32_t)MSG_DISCORD_CONNECTION_REQUEST,
-   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
-   (uint32_t)MSG_NETPLAY_SERVER_HANGUP,
-   (uint32_t)MSG_NETPLAY_CLIENT_HANGUP,
-   (uint32_t)MSG_NETPLAY_STATUS_PLAYING,
-   (uint32_t)MSG_ADDED_TO_FAVORITES,
-   (uint32_t)MSG_ADD_TO_FAVORITES_FAILED,
-   (uint32_t)MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   (uint32_t)MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
-   (uint32_t)MSG_DECOMPRESSION_FAILED,
-   (uint32_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-   (uint32_t)MSG_FAILED_TO_LOAD_OVERLAY,
-   (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
-   (uint32_t)MSG_FILE_NOT_FOUND,
-   (uint32_t)MSG_FOUND_AUTO_SAVESTATE_IN,
-   (uint32_t)MSG_LOADING_HISTORY_FILE,
-   (uint32_t)MSG_LOADING_FAVORITES_FILE,
-   (uint32_t)MSG_PAUSED,
-   (uint32_t)MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-   (uint32_t)MSG_REWINDING,
-   (uint32_t)MSG_REWIND_UNSUPPORTED,
-   (uint32_t)MSG_REWIND_REACHED_END,
-   (uint32_t)MSG_SLOW_MOTION_REWIND,
-   (uint32_t)MSG_ACHIEVEMENT_UNLOCKED,
-   (uint32_t)MSG_RARE_ACHIEVEMENT_UNLOCKED,
-   (uint32_t)MSG_SCANNING_WIRELESS_NETWORKS,
-   (uint32_t)MSG_REMOVED_DISK_FROM_TRAY,
-   (uint32_t)MSG_SETTING_DISK_IN_TRAY,
-   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   (uint32_t)MSG_DUMPING_DISC,
-   (uint32_t)MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
-   (uint32_t)MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
-   (uint32_t)MSG_NO_DISC_INSERTED,
-   (uint32_t)MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
-   (uint32_t)MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
-   (uint32_t)MSG_PRUNING_CORE_BACKUP_HISTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VEHICULAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_STOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SECONDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+   (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
    (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
-#ifdef HAVE_LAKKA
-#ifdef HAVE_LAKKA_SWITCH
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
-#endif
-#endif
-#ifdef HAVE_LAKKA
-   (uint32_t)MSG_WIFI_DISCONNECT_FROM,
-#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
+   (uint32_t)MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
 #ifdef HAVE_ODROIDGO2
 #else
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
 #endif
-#ifdef _3DS
-   (uint32_t)MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MSG_ACHIEVEMENT_UNLOCKED,
+   (uint32_t)MSG_ADDED_TO_FAVORITES,
+   (uint32_t)MSG_ADD_TO_FAVORITES_FAILED,
+   (uint32_t)MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   (uint32_t)MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
+   (uint32_t)MSG_DECOMPRESSION_FAILED,
+   (uint32_t)MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+   (uint32_t)MSG_DISCORD_CONNECTION_REQUEST,
+   (uint32_t)MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+   (uint32_t)MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+   (uint32_t)MSG_DUMPING_DISC,
+   (uint32_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+   (uint32_t)MSG_FAILED_TO_LOAD_OVERLAY,
+   (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
+   (uint32_t)MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
+   (uint32_t)MSG_FILE_NOT_FOUND,
+   (uint32_t)MSG_FOUND_AUTO_SAVESTATE_IN,
+   (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
+   (uint32_t)MSG_GOT_CONNECTION_FROM,
+   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
+   (uint32_t)MSG_LOADING_FAVORITES_FILE,
+   (uint32_t)MSG_LOADING_HISTORY_FILE,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   (uint32_t)MSG_NATIVE,
+   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_CHANGED_NICK,
+   (uint32_t)MSG_NETPLAY_CLIENT_HANGUP,
+   (uint32_t)MSG_NETPLAY_ENDIAN_DEPENDENT,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_OUT_OF_DATE,
+   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
+   (uint32_t)MSG_NETPLAY_PLATFORM_DEPENDENT,
+   (uint32_t)MSG_NETPLAY_SERVER_HANGUP,
+   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   (uint32_t)MSG_NETPLAY_STATUS_PLAYING,
+   (uint32_t)MSG_NO_DISC_INSERTED,
+   (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
+   (uint32_t)MSG_PAUSED,
+   (uint32_t)MSG_PRUNING_CORE_BACKUP_HISTORY,
+   (uint32_t)MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   (uint32_t)MSG_REMOVED_DISK_FROM_TRAY,
+   (uint32_t)MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+   (uint32_t)MSG_REWINDING,
+   (uint32_t)MSG_REWIND_REACHED_END,
+   (uint32_t)MSG_REWIND_UNSUPPORTED,
+   (uint32_t)MSG_SCANNING_WIRELESS_NETWORKS,
    (uint32_t)MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   (uint32_t)MSG_SETTING_DISK_IN_TRAY,
+   (uint32_t)MSG_SLOW_MOTION_REWIND,
+   (uint32_t)MSG_UNRECOGNIZED_COMMAND,
 };
