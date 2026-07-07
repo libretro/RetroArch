@@ -14,8 +14,11 @@
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
 /* config key "microphone_device" differs from the label string; the
- * configuration.c row stays literal for this setting. */
-#ifndef SETTINGS_DEF_CONFIG_PASS
+ * configuration.c row stays literal for this setting. Strings and
+ * enum only: the menu row lives in settings_def_audio_device.h with
+ * the device-cycling handlers, and emitting a second one here
+ * shadow-built the setting twice with divergent start actions. */
+#if defined(SETTINGS_DEF_STRINGS_PASS) || defined(SETTINGS_DEF_ENUM_PASS)
 S_STRING_H(microphone_device, MICROPHONE_DEVICE,
       "microphone_device",
       "", SD_FLAG_ALLOW_INPUT, 0, setting_string_action_ok_microphone_device, setting_get_string_representation_string_audio_device, setting_generic_action_start_default, NULL, setting_string_action_left_microphone_device, setting_string_action_right_microphone_device, ST_UI_TYPE_STRING_LINE_EDIT,
