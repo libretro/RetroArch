@@ -18941,6 +18941,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
  * Returns: settings list composed of all requested
  * settings on success, otherwise NULL.
  **/
+#if defined(RETROARCH_VALIDATION_DUMPS)
 /* Validation harness for settings-list refactoring.
  *
  * When the RETROARCH_SETTINGS_DUMP environment variable is set to a
@@ -19106,6 +19107,7 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
 
    filestream_close(f);
 }
+#endif
 
 rarch_setting_t *menu_setting_new(void)
 
@@ -19124,9 +19126,10 @@ rarch_setting_t *menu_setting_new(void)
 
    menu_setting_index_build(list);
 
+#if defined(RETROARCH_VALIDATION_DUMPS)
    menu_setting_validation_dump(list);
-
    menu_displaylist_validation_dump();
+#endif
 
    if (list_info)
       free(list_info);

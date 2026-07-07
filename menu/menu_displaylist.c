@@ -7143,6 +7143,7 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 }
 #endif
 
+#if defined(RETROARCH_VALIDATION_DUMPS)
 /* Validation dump for the displaylist build path.
  *
  * When the RETROARCH_DISPLAYLIST_DUMP environment variable names a
@@ -7208,6 +7209,7 @@ void menu_displaylist_validation_dump(void)
    }
    filestream_close(f);
 }
+#endif
 
 unsigned menu_displaylist_build_list(
       file_list_t *list,
