@@ -272,12 +272,27 @@ for k, f, T, a in rows:
         continue
     _mac = {'STRING': 'ARRAY', 'DIR': 'PATH'}.get(k, k.replace('_EX', '').replace('_LV', ''))
     m = re.search(r' *SETTING_%s\(\s*%s, *&?settings->\w+\.%s,[^;]*;\n' % (_mac, re.escape(names[T]), f), cfg)
-    if k in ('DIR', 'PATH', 'PATH_DS', 'STRING', 'STRING_LV', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV'):
+    if k.endswith('_LV') and f and re.search(r'SDESC_\w+_ROW(?:_P|_DS|_EX)?\(\s*%s,' % f, _ms_scan):
+        # the field has a plain twin in another table sharing one config
+        # row whose default belongs to neither variant exclusively; the
+        # configuration row stays literal
+        print('  note: %s shares its config row with a twin table - kept literal' % T)
+        m = None
+        cfg_guards[T] = ()
+        _keep_lv_twin = True
+    else:
+        _keep_lv_twin = False
+    if _keep_lv_twin:
+        pass
+    elif k in ('DIR', 'PATH', 'PATH_DS', 'STRING', 'STRING_LV', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV'):
         m = None  # dirs keep literal config rows: default-enable varies per row 
     if m:
         cfg_guards[T] = tuple(g for g in guard_at(cfg, m.start()) if g not in table_guard)
         cfg_spans.append((m.start(), m.end())); continue
     m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (r'\w+' if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'STRING_LV') else _mac, f), cfg)
+    if not m and _keep_lv_twin:
+        print('  note: %s config row untouched' % T)
+        continue
     if not m and k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'STRING_LV'):
         # unpersisted setting: keep-literal kinds may lack a
         # config row entirely; nothing to delete or emit
