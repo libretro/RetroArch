@@ -302,6 +302,13 @@ for k, f, T, a in rows:
         # config row entirely; nothing to delete or emit
         print('  note: %s has no config row - unpersisted, kept absent' % T)
         continue
+    if not m and f and not re.search(r'settings->\w+\.%s\b' % re.escape(f), cfg):
+        # genuinely unpersisted: the field never appears in the
+        # configuration unit at all, so upstream saved nothing and the
+        # def emits no config row - behavior preserved exactly
+        print('  note: %s is unpersisted upstream - config row kept absent' % T)
+        cfg_absent.add(T)
+        continue
     if not m and f and re.search(r'settings->\w+\.%s\s*=' % re.escape(f), cfg):
         # custom persistence: the field is assigned outside the SETTING_
         # rows (packed or computed defaults); config semantics stay with
