@@ -7906,145 +7906,180 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    return -1;
 }
 
-/* Sorted lookup indices over the settings list.
- *
- * menu_setting_find() and menu_setting_find_enum() were linear
- * scans over the entire settings array (roughly a thousand entries
- * of 224 bytes each), and menu_displaylist builds call them once
- * per displayed entry.  Keep two position indices, sorted by
- * (enum_idx, position) and (name, position) respectively, and
- * binary-search the leftmost match so that the first-in-list-order
- * semantics of the previous linear scan are preserved exactly.
- *
- * The settings list is a singleton (menu_st->entries.list_settings)
- * created by menu_setting_new() and released by menu_setting_free(),
- * so the indices live alongside it here.  If the indices are
- * unavailable for any reason, the find functions fall back to the
- * old linear scan. */
-static rarch_setting_t *settings_index_list      = NULL;
-/* Direct enum index: one uint16 slot per msg_hash enum value holding
- * (list position + 1), 0 = no setting for that enum.  Lookup is one
- * bounds check plus one load - cheaper than the linear scan this
- * replaced and cheaper than a binary search.  ~17KB (MSG_LAST * 2).
- * Slots are only written for the first list entry with a given enum,
- * preserving the first-in-list-order semantics of the old scan. */
-static uint16_t        *settings_index_by_enum   = NULL;
-static uint32_t        *settings_index_by_name   = NULL;
-static uint32_t         settings_index_name_size = 0;
-
-static int settings_index_name_compare(const void *a, const void *b)
-{
-   uint32_t pa = *(const uint32_t*)a;
-   uint32_t pb = *(const uint32_t*)b;
-   int       c = strcmp(settings_index_list[pa].name,
-         settings_index_list[pb].name);
-   if (c != 0)
-      return c;
-   if (pa != pb)
-      return (pa < pb) ? -1 : 1;
-   return 0;
-}
-
-static void menu_setting_index_free(void)
-{
-   if (settings_index_by_enum)
-      free(settings_index_by_enum);
-   if (settings_index_by_name)
-      free(settings_index_by_name);
-   settings_index_by_enum   = NULL;
-   settings_index_by_name   = NULL;
-   settings_index_name_size = 0;
-   settings_index_list      = NULL;
-}
-
-static void menu_setting_index_build(rarch_setting_t *list)
-{
-   uint32_t i;
-   uint32_t count = 0;
-
-   menu_setting_index_free();
-
-   if (!list)
-      return;
-
-   while (list[count].type != ST_NONE)
-      count++;
-
-   if (count == 0)
-      return;
-
-   if (count >= 0xFFFF)
-      return; /* positions must fit uint16; fall back to linear scan */
-
-   settings_index_by_enum = (uint16_t*)calloc(MSG_LAST, sizeof(uint16_t));
-   settings_index_by_name = (uint32_t*)malloc(count * sizeof(uint32_t));
-
-   if (!settings_index_by_enum || !settings_index_by_name)
+static const enum settings_list_type settings_list_build_order[] =
    {
-      menu_setting_index_free();
+      SETTINGS_LIST_MAIN_MENU,
+      SETTINGS_LIST_DRIVERS,
+      SETTINGS_LIST_CORE,
+      SETTINGS_LIST_CONFIGURATION,
+      SETTINGS_LIST_LOGGING,
+      SETTINGS_LIST_SAVING,
+      SETTINGS_LIST_CLOUD_SYNC,
+      SETTINGS_LIST_REWIND,
+      SETTINGS_LIST_CHEAT_DETAILS,
+      SETTINGS_LIST_CHEAT_SEARCH,
+      SETTINGS_LIST_CHEATS,
+      SETTINGS_LIST_VIDEO,
+      SETTINGS_LIST_CRT_SWITCHRES,
+      SETTINGS_LIST_AUDIO,
+#ifdef HAVE_MICROPHONE
+      SETTINGS_LIST_MICROPHONE,
+#endif
+      SETTINGS_LIST_INPUT,
+      SETTINGS_LIST_INPUT_TURBO_FIRE,
+      SETTINGS_LIST_INPUT_HOTKEY,
+      SETTINGS_LIST_RECORDING,
+      SETTINGS_LIST_FRAME_THROTTLING,
+      SETTINGS_LIST_FRAME_TIME_COUNTER,
+      SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
+      SETTINGS_LIST_OVERLAY,
+      SETTINGS_LIST_OSK_OVERLAY,
+      SETTINGS_LIST_OVERLAY_MOUSE,
+      SETTINGS_LIST_OVERLAY_LIGHTGUN,
+      SETTINGS_LIST_MENU,
+      SETTINGS_LIST_MENU_FILE_BROWSER,
+      SETTINGS_LIST_MULTIMEDIA,
+#ifdef HAVE_TRANSLATE
+      SETTINGS_LIST_AI_SERVICE,
+#endif
+      SETTINGS_LIST_ACCESSIBILITY,
+      SETTINGS_LIST_USER_INTERFACE,
+      SETTINGS_LIST_POWER_MANAGEMENT,
+      SETTINGS_LIST_WIFI_MANAGEMENT,
+      SETTINGS_LIST_MENU_SOUNDS,
+      SETTINGS_LIST_PLAYLIST,
+      SETTINGS_LIST_CHEEVOS,
+      SETTINGS_LIST_CHEEVOS_APPEARANCE,
+      SETTINGS_LIST_CHEEVOS_VISIBILITY,
+      SETTINGS_LIST_CORE_UPDATER,
+      SETTINGS_LIST_NETPLAY,
+      SETTINGS_LIST_LAKKA_SERVICES,
+#ifdef HAVE_LAKKA_SWITCH
+      SETTINGS_LIST_LAKKA_SWITCH_OPTIONS,
+#endif
+      SETTINGS_LIST_USER,
+      SETTINGS_LIST_USER_ACCOUNTS,
+      SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
+      SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE,
+      SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
+      SETTINGS_LIST_USER_ACCOUNTS_FACEBOOK,
+      SETTINGS_LIST_USER_ACCOUNTS_KICK,
+      SETTINGS_LIST_DIRECTORY,
+      SETTINGS_LIST_PRIVACY,
+      SETTINGS_LIST_MIDI,
+#ifdef HAVE_MIST
+      SETTINGS_LIST_STEAM,
+#endif
+#ifdef HAVE_SMBCLIENT
+      SETTINGS_LIST_SMBCLIENT,
+#endif
+      SETTINGS_LIST_MANUAL_CONTENT_SCAN
+   };
+
+static bool setting_append_list(settings_t *settings, global_t *global,
+      enum settings_list_type type, rarch_setting_t **list,
+      rarch_setting_info_t *list_info, const char *parent_group);
+
+/* Stage three of the menu memory work: the settings list is no
+ * longer kept resident.  menu_setting_new() builds the full list
+ * once, learns which builder produces each enum and each name, then
+ * frees it; builders are rebuilt on demand into a per-session cache
+ * when a lookup first needs them.  Standalone builds were proven
+ * byte-identical to in-sequence builds for every builder, so the
+ * cache serves exactly the rows the flat list held.  Nothing is
+ * evicted within a session: pointers handed out live until menu
+ * deinit, the same lifetime the flat list gave them. */
+static uint16_t         settings_lazy_bounds[64];
+static unsigned         settings_lazy_nbuilders;
+static rarch_setting_t *settings_lazy_lists[64];
+static uint8_t         *settings_lazy_enum2b;    /* MSG_LAST slots: builder+1 */
+/* name lookup: hash-sorted parallel arrays, five bytes per entry;
+ * ties keep walk order via a stable insertion sort at learn time */
+static uint32_t *settings_lazy_name_hash;
+static uint8_t  *settings_lazy_name_builder;
+static uint32_t  settings_lazy_names_n;
+static rarch_setting_t *settings_lazy_token;
+
+static uint32_t settings_lazy_hash(const char *s)
+{
+   uint32_t h = 5381;
+   while (*s)
+      h = ((h << 5) + h) ^ (uint8_t)*s++;
+   return h;
+}
+
+static void settings_lazy_free(void)
+{
+   unsigned k;
+   for (k = 0; k < 64; k++)
+   {
+      if (settings_lazy_lists[k])
+      {
+         menu_setting_free(settings_lazy_lists[k]);
+         free(settings_lazy_lists[k]);
+         settings_lazy_lists[k] = NULL;
+      }
+   }
+   if (settings_lazy_enum2b)
+      free(settings_lazy_enum2b);
+   if (settings_lazy_name_hash)
+      free(settings_lazy_name_hash);
+   if (settings_lazy_name_builder)
+      free(settings_lazy_name_builder);
+   settings_lazy_enum2b       = NULL;
+   settings_lazy_name_hash    = NULL;
+   settings_lazy_name_builder = NULL;
+   settings_lazy_names_n      = 0;
+   settings_lazy_token   = NULL;
+}
+
+static void settings_lazy_learn(rarch_setting_t *list)
+{
+   uint32_t i = 0;
+   unsigned k = 0;
+   settings_lazy_free();
+   settings_lazy_enum2b = (uint8_t*)calloc(MSG_LAST, sizeof(uint8_t));
+   settings_lazy_name_hash    = (uint32_t*)malloc(0xFFFF * sizeof(uint32_t));
+   settings_lazy_name_builder = (uint8_t*)malloc(0xFFFF);
+   if (!settings_lazy_enum2b || !settings_lazy_name_hash
+         || !settings_lazy_name_builder)
+   {
+      settings_lazy_free();
       return;
    }
-
-   settings_index_list = list;
-
-   for (i = 0; i < count; i++)
+   for (; list[i].type != ST_NONE; i++)
    {
-      /* Only entries the find functions can return are indexed;
-       * the old linear scans skipped everything past ST_GROUP. */
+      while (k + 1 < settings_lazy_nbuilders && i >= settings_lazy_bounds[k])
+         k++;
       if (list[i].type > ST_GROUP)
          continue;
       if (     list[i].enum_idx != MSG_UNKNOWN
             && (uint32_t)list[i].enum_idx < (uint32_t)MSG_LAST
-            && !settings_index_by_enum[list[i].enum_idx])
-         settings_index_by_enum[list[i].enum_idx] = (uint16_t)(i + 1);
-      if (list[i].name)
-         settings_index_by_name[settings_index_name_size++] = i;
+            && !settings_lazy_enum2b[list[i].enum_idx])
+         settings_lazy_enum2b[list[i].enum_idx] = (uint8_t)(k + 1);
+      if (list[i].name && settings_lazy_names_n < 0xFFFF)
+      {
+         /* stable insertion keeps walk order among equal hashes */
+         uint32_t h = settings_lazy_hash(list[i].name);
+         uint32_t p = settings_lazy_names_n;
+         while (p > 0 && settings_lazy_name_hash[p - 1] > h)
+         {
+            settings_lazy_name_hash[p]    = settings_lazy_name_hash[p - 1];
+            settings_lazy_name_builder[p] = settings_lazy_name_builder[p - 1];
+            p--;
+         }
+         settings_lazy_name_hash[p]    = h;
+         settings_lazy_name_builder[p] = (uint8_t)k;
+         settings_lazy_names_n++;
+      }
    }
-
-   qsort(settings_index_by_name, settings_index_name_size,
-         sizeof(uint32_t), settings_index_name_compare);
+   settings_lazy_name_hash    = (uint32_t*)realloc(settings_lazy_name_hash,
+         settings_lazy_names_n * sizeof(uint32_t));
+   settings_lazy_name_builder = (uint8_t*)realloc(settings_lazy_name_builder,
+         settings_lazy_names_n ? settings_lazy_names_n : 1);
 }
 
-static rarch_setting_t *menu_setting_index_find_enum(
-      enum msg_hash_enums enum_idx)
-{
-   uint16_t pos;
-
-   if ((uint32_t)enum_idx >= (uint32_t)MSG_LAST)
-      return NULL;
-
-   pos = settings_index_by_enum[enum_idx];
-   if (!pos)
-      return NULL;
-
-   return &settings_index_list[pos - 1];
-}
-
-static rarch_setting_t *menu_setting_index_find_name(const char *label)
-{
-   uint32_t lo = 0;
-   uint32_t hi = settings_index_name_size;
-
-   while (lo < hi)
-   {
-      uint32_t mid = lo + ((hi - lo) >> 1);
-      if (strcmp(settings_index_list[settings_index_by_name[mid]].name,
-            label) < 0)
-         lo = mid + 1;
-      else
-         hi = mid;
-   }
-
-   if (lo < settings_index_name_size)
-   {
-      rarch_setting_t *setting =
-            &settings_index_list[settings_index_by_name[lo]];
-      if (string_is_equal(setting->name, label))
-         return setting;
-   }
-
-   return NULL;
-}
+static rarch_setting_t *settings_lazy_get(unsigned k);
 
 /**
  * menu_setting_find:
@@ -8056,45 +8091,42 @@ static rarch_setting_t *menu_setting_index_find_name(const char *label)
  **/
 rarch_setting_t *menu_setting_find(const char *label)
 {
-   rarch_setting_t *setting;
-   struct menu_state *menu_st;
+   uint32_t h, lo, hi;
 
-   if (!label)
+   if (!label || !settings_lazy_name_hash)
       return NULL;
 
-   menu_st = menu_state_get_ptr();
-   setting = menu_st->entries.list_settings;
-
-   if (!setting)
-      return NULL;
-
-   if (settings_index_list == setting && settings_index_by_name)
+   h  = settings_lazy_hash(label);
+   lo = 0;
+   hi = settings_lazy_names_n;
+   while (lo < hi)
    {
-      if (!(setting = menu_setting_index_find_name(label)))
-         return NULL;
-
-      if (!setting->short_description || !*setting->short_description)
-         return NULL;
-
-      if (setting->actions->read)
-         setting->actions->read(setting);
-
-      return setting;
+      uint32_t mid = lo + ((hi - lo) >> 1);
+      if (settings_lazy_name_hash[mid] < h)
+         lo = mid + 1;
+      else
+         hi = mid;
    }
-
-   for (; setting->type != ST_NONE; setting++)
+   for (; lo < settings_lazy_names_n && settings_lazy_name_hash[lo] == h; lo++)
    {
-      if (  setting->type <= ST_GROUP
-         && setting->name
-         && string_is_equal(label, setting->name))
+      rarch_setting_t *sl = settings_lazy_get(settings_lazy_name_builder[lo]);
+      rarch_setting_t *setting;
+      if (!sl)
+         continue;
+      for (setting = sl; setting->type != ST_NONE; setting++)
       {
-         if (!setting->short_description || !*setting->short_description)
-            return NULL;
+         if (  setting->type <= ST_GROUP
+            && setting->name
+            && string_is_equal(label, setting->name))
+         {
+            if (!setting->short_description || !*setting->short_description)
+               return NULL;
 
-         if (setting->actions->read)
-            setting->actions->read(setting);
+            if (setting->actions->read)
+               setting->actions->read(setting);
 
-         return setting;
+            return setting;
+         }
       }
    }
 
@@ -8103,44 +8135,26 @@ rarch_setting_t *menu_setting_find(const char *label)
 
 rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
 {
-   rarch_setting_t *setting   = NULL;
-   rarch_setting_t **list     = &setting;
-   struct menu_state *menu_st = NULL;
+   rarch_setting_t *sl;
+   rarch_setting_t *setting;
+   uint8_t b;
 
-   if (enum_idx == 0)
+   if (enum_idx == 0 || !settings_lazy_enum2b)
+      return NULL;
+   if ((uint32_t)enum_idx >= (uint32_t)MSG_LAST)
       return NULL;
 
-   menu_st                    = menu_state_get_ptr();
-   setting                    = menu_st->entries.list_settings;
-
-   if (!setting)
+   if (!(b = settings_lazy_enum2b[enum_idx]))
+      return NULL;
+   if (!(sl = settings_lazy_get((unsigned)b - 1)))
       return NULL;
 
-   if (settings_index_list == setting && settings_index_by_enum)
+   for (setting = sl; setting->type != ST_NONE; setting++)
    {
-      const char *short_description;
-
-      if (!(setting = menu_setting_index_find_enum(enum_idx)))
-         return NULL;
-
-      short_description = setting->short_description;
-      if (!short_description || !*short_description)
-         return NULL;
-
-      if (setting->actions->read)
-         setting->actions->read(setting);
-
-      return setting;
-   }
-
-   for (; setting->type != ST_NONE; (*list = *list + 1))
-   {
-      if (
-             setting->type <= ST_GROUP
-          && setting->enum_idx == enum_idx)
+      if (     setting->type <= ST_GROUP
+            && setting->enum_idx == enum_idx)
       {
-         const char *short_description = setting->short_description;
-         if (!short_description || !*short_description)
+         if (!setting->short_description || !*setting->short_description)
             return NULL;
 
          if (setting->actions->read)
@@ -18722,8 +18736,8 @@ void menu_setting_free(rarch_setting_t *setting)
    if (!setting)
       return;
 
-   if (setting == settings_index_list)
-      menu_setting_index_free();
+   if (setting && setting == settings_lazy_token)
+      settings_lazy_free();
 
    list                   = (rarch_setting_t**)&setting;
 
@@ -18781,80 +18795,54 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].cmd_trigger_idx                  = CMD_EVENT_NONE; \
 }
 
+static rarch_setting_t *settings_lazy_get(unsigned k)
+{
+   settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
+   rarch_setting_t *sl  = NULL;
+   rarch_setting_t **lp = NULL;
+   rarch_setting_info_t li;
+   unsigned j;
+   if (k >= settings_lazy_nbuilders)
+      return NULL;
+   if (settings_lazy_lists[k])
+      return settings_lazy_lists[k];
+   li.index = 0;
+   li.size  = 32;
+   if (!(sl = (rarch_setting_t*)malloc(li.size * sizeof(*sl))))
+      return NULL;
+   for (j = 0; j < li.size; j++)
+   {
+      MENU_SETTING_INITIALIZE((&sl)[0], j);
+   }
+   if (!setting_append_list(settings, global,
+         settings_list_build_order[k], &sl, &li,
+         MENU_ENUM_LABEL_MAIN_MENU_STR))
+   {
+      free(sl);
+      return NULL;
+   }
+   lp = &sl;
+   if (!SETTINGS_LIST_APPEND(lp, (&li)))
+   {
+      free(sl);
+      return NULL;
+   }
+   MENU_SETTING_INITIALIZE(sl, li.index);
+   li.index++;
+   settings_lazy_lists[k] = (rarch_setting_t*)realloc(sl,
+         li.index * sizeof(*sl));
+   if (!settings_lazy_lists[k])
+      settings_lazy_lists[k] = sl;
+   return settings_lazy_lists[k];
+}
+
+
 static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_info)
 {
    unsigned i;
    rarch_setting_t* resized_list        = NULL;
-   enum settings_list_type list_types[] =
-   {
-      SETTINGS_LIST_MAIN_MENU,
-      SETTINGS_LIST_DRIVERS,
-      SETTINGS_LIST_CORE,
-      SETTINGS_LIST_CONFIGURATION,
-      SETTINGS_LIST_LOGGING,
-      SETTINGS_LIST_SAVING,
-      SETTINGS_LIST_CLOUD_SYNC,
-      SETTINGS_LIST_REWIND,
-      SETTINGS_LIST_CHEAT_DETAILS,
-      SETTINGS_LIST_CHEAT_SEARCH,
-      SETTINGS_LIST_CHEATS,
-      SETTINGS_LIST_VIDEO,
-      SETTINGS_LIST_CRT_SWITCHRES,
-      SETTINGS_LIST_AUDIO,
-#ifdef HAVE_MICROPHONE
-      SETTINGS_LIST_MICROPHONE,
-#endif
-      SETTINGS_LIST_INPUT,
-      SETTINGS_LIST_INPUT_TURBO_FIRE,
-      SETTINGS_LIST_INPUT_HOTKEY,
-      SETTINGS_LIST_RECORDING,
-      SETTINGS_LIST_FRAME_THROTTLING,
-      SETTINGS_LIST_FRAME_TIME_COUNTER,
-      SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
-      SETTINGS_LIST_OVERLAY,
-      SETTINGS_LIST_OSK_OVERLAY,
-      SETTINGS_LIST_OVERLAY_MOUSE,
-      SETTINGS_LIST_OVERLAY_LIGHTGUN,
-      SETTINGS_LIST_MENU,
-      SETTINGS_LIST_MENU_FILE_BROWSER,
-      SETTINGS_LIST_MULTIMEDIA,
-#ifdef HAVE_TRANSLATE
-      SETTINGS_LIST_AI_SERVICE,
-#endif
-      SETTINGS_LIST_ACCESSIBILITY,
-      SETTINGS_LIST_USER_INTERFACE,
-      SETTINGS_LIST_POWER_MANAGEMENT,
-      SETTINGS_LIST_WIFI_MANAGEMENT,
-      SETTINGS_LIST_MENU_SOUNDS,
-      SETTINGS_LIST_PLAYLIST,
-      SETTINGS_LIST_CHEEVOS,
-      SETTINGS_LIST_CHEEVOS_APPEARANCE,
-      SETTINGS_LIST_CHEEVOS_VISIBILITY,
-      SETTINGS_LIST_CORE_UPDATER,
-      SETTINGS_LIST_NETPLAY,
-      SETTINGS_LIST_LAKKA_SERVICES,
-#ifdef HAVE_LAKKA_SWITCH
-      SETTINGS_LIST_LAKKA_SWITCH_OPTIONS,
-#endif
-      SETTINGS_LIST_USER,
-      SETTINGS_LIST_USER_ACCOUNTS,
-      SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
-      SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE,
-      SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
-      SETTINGS_LIST_USER_ACCOUNTS_FACEBOOK,
-      SETTINGS_LIST_USER_ACCOUNTS_KICK,
-      SETTINGS_LIST_DIRECTORY,
-      SETTINGS_LIST_PRIVACY,
-      SETTINGS_LIST_MIDI,
-#ifdef HAVE_MIST
-      SETTINGS_LIST_STEAM,
-#endif
-#ifdef HAVE_SMBCLIENT
-      SETTINGS_LIST_SMBCLIENT,
-#endif
-      SETTINGS_LIST_MANUAL_CONTENT_SCAN
-   };
-   settings_t *settings                 = config_get_ptr();
+      settings_t *settings                 = config_get_ptr();
    global_t   *global                   = global_get_ptr();
    const char *root                     = NULL;
    rarch_setting_t **list_ptr           = NULL;
@@ -18871,16 +18859,18 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       MENU_SETTING_INITIALIZE(list, i);
    }
 
-   for (i = 0; i < ARRAY_SIZE(list_types); i++)
+   for (i = 0; i < ARRAY_SIZE(settings_list_build_order); i++)
    {
       if (!setting_append_list(
                settings, global,
-               list_types[i], &list, list_info, root))
+               settings_list_build_order[i], &list, list_info, root))
       {
          free(list);
          return NULL;
       }
+      settings_lazy_bounds[i] = (uint16_t)list_info->index;
    }
+   settings_lazy_nbuilders = (unsigned)ARRAY_SIZE(settings_list_build_order);
 
    list_ptr = &list;
 
@@ -19084,9 +19074,9 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
 #endif
 
 rarch_setting_t *menu_setting_new(void)
-
 {
-   rarch_setting_t* list           = NULL;
+   rarch_setting_t *list           = NULL;
+   rarch_setting_t *token          = NULL;
    rarch_setting_info_t *list_info = (rarch_setting_info_t*)
       malloc(sizeof(*list_info));
 
@@ -19098,19 +19088,38 @@ rarch_setting_t *menu_setting_new(void)
 
    list             = menu_setting_new_internal(list_info);
 
-   menu_setting_index_build(list);
+   free(list_info);
+
+   if (!list)
+      return NULL;
+
+   /* Learn which builder owns each enum and name, then let the full
+    * list go; builders rebuild on demand into the session cache.
+    * The dumps run while the full list is still alive - the
+    * displaylist dump resolves its settings through the cache and so
+    * validates the lazy path against the full build every run. */
+   settings_lazy_learn(list);
 
 #if defined(RETROARCH_VALIDATION_DUMPS)
    menu_setting_validation_dump(list);
    menu_displaylist_validation_dump(list);
 #endif
 
-   if (list_info)
-      free(list_info);
+   menu_setting_free(list);
+   free(list);
 
-   list_info        = NULL;
+   /* The caller stores and later frees one list pointer; hand it a
+    * terminator-only token whose free tears the cache down. */
+   if (!(token = (rarch_setting_t*)calloc(1, sizeof(*token))))
+   {
+      settings_lazy_free();
+      return NULL;
+   }
+   token->type          = ST_NONE;
+   token->actions       = &settings_actions_none;
+   settings_lazy_token  = token;
 
-   return list;
+   return token;
 }
 
 void video_driver_menu_settings(void **list_data, void *list_info_data,
