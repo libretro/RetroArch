@@ -189,7 +189,7 @@ def main():
           'libretro-common/string/stdstring.c '
           'libretro-common/compat/compat_strl.c '
           'libretro-common/encodings/encoding_utf.c')
-    flags = ('-O2 -I. -Ilibretro-common/include '
+    flags = ('-O0 -g0 -I. -Ilibretro-common/include '
              '-DRARCH_INTERNAL -DHAVE_MENU -DHAVE_LANGEXTRA')
     r = run('gcc %s %s /tmp/mh_name_stubs.c /tmp/mh_name_tu.c -o /tmp/mh_name'
             % (flags, mh))
