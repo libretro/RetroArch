@@ -1934,6 +1934,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
 #include "settings/settings_def_widget_scale_fullscreen.h"
@@ -2634,6 +2635,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
 #include "settings/settings_def_widget_scale_fullscreen.h"
@@ -3177,7 +3179,6 @@ static struct config_float_setting *populate_settings_float(
 
    SETTING_FLOAT("audio_rate_control_delta",     &settings->floats.audio_rate_control_delta, true, DEFAULT_RATE_CONTROL_DELTA, false);
 
-   SETTING_FLOAT("video_aspect_ratio",           &settings->floats.video_aspect_ratio, true, DEFAULT_ASPECT_RATIO, false);
    SETTING_FLOAT("crt_video_refresh_rate",       &settings->floats.crt_video_refresh_rate, true, DEFAULT_CRT_REFRESH_RATE, false);
 
 #ifdef HAVE_OVERLAY
@@ -3228,7 +3229,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("custom_viewport_height",        &settings->video_vp_custom.height, false, 0 /* TODO */, false);
    SETTING_UINT("custom_viewport_x",             (unsigned*)&settings->video_vp_custom.x, false, 0 /* TODO */, false);
    SETTING_UINT("custom_viewport_y",             (unsigned*)&settings->video_vp_custom.y, false, 0 /* TODO */, false);
-   SETTING_UINT("aspect_ratio_index",            &settings->uints.video_aspect_ratio_idx, true, DEFAULT_ASPECT_RATIO_IDX, false);
    SETTING_UINT("video_windowed_position_x",     &settings->uints.window_position_x,    true, 0, false);
    SETTING_UINT("video_windowed_position_y",     &settings->uints.window_position_y,    true, 0, false);
    SETTING_UINT("video_windowed_position_width", &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
@@ -3291,6 +3291,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
 #include "settings/settings_def_widget_scale_fullscreen.h"
@@ -3982,6 +3983,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
 #include "settings/settings_def_widget_scale_fullscreen.h"
@@ -4561,6 +4563,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
 #include "settings/settings_def_widget_scale_fullscreen.h"
