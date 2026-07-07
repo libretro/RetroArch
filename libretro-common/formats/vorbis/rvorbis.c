@@ -187,6 +187,8 @@ typedef struct
    uint8_t  sparse;
    uint32_t lookup_values;
    rvorbis_codetype *multiplicands;
+   int32_t *multiplicands_q;   /* Q20 twins: multiplicands[i]*delta  */
+   int32_t minimum_q;          /* Q20 minimum_value                  */
    uint32_t *codewords;
 #ifdef RVORBIS_FAST_HUFFMAN_SHORT
     int16_t  fast_huffman[FAST_HUFFMAN_TABLE_SIZE];
@@ -1248,6 +1250,41 @@ static INLINE int codebook_decode_scalar(vorb *f, Codebook *c)
    }
    return codebook_decode_scalar_raw(f,c);
 }
+
+/* ---- Q20 integer codebook/residue domain (s16 pipeline front-end) ----
+ * Elements and residue accumulate in Q20 (range +-2048, saturating):
+ * measured corpus maxima reach 294 pre-coupling (588 coupled), and at
+ * those magnitudes the Q20 step (9.5e-7) is ~32x finer than float32's
+ * ULP (3e-5).  Saturation gives malformed streams defined clamping. */
+#define RVQ_RBITS 20
+static INLINE int32_t rvq_sat_q20(int64_t v)
+{
+   if (v >  0x7FFFFFFFLL) return  0x7FFFFFFF;
+   if (v < -0x7FFFFFFFLL - 1) return (int32_t)-0x7FFFFFFF - 1;
+   return (int32_t)v;
+}
+static int32_t rvq_coef_q31(float c)
+{
+   double t = (double)c * 2147483648.0 + ((c >= 0.0f) ? 0.5 : -0.5);
+   if (t >=  2147483647.0) return (int32_t) 2147483647;
+   if (t <= -2147483648.0) return (int32_t)-2147483647 - 1;
+   return (int32_t)t;
+}
+static int32_t rvq_coef_q20(float c)
+{
+   double t = (double)c * (double)(1 << RVQ_RBITS)
+            + ((c >= 0.0f) ? 0.5 : -0.5);
+   if (t >=  2147483647.0) return (int32_t) 2147483647;
+   if (t <= -2147483648.0) return (int32_t)-2147483647 - 1;
+   return (int32_t)t;
+}
+#define CODEBOOK_ELEMENT_FAST_Q(c,off)   (c->multiplicands_q[off])
+#ifdef RVORBIS_CODEBOOK_FLOATS
+/* affine fully baked into multiplicands at setup: base is zero */
+#define CODEBOOK_ELEMENT_BASE_Q(c)       (0)
+#else
+#define CODEBOOK_ELEMENT_BASE_Q(c)       (c->minimum_q)
+#endif
 
 /* CODEBOOK_ELEMENT_FAST is an optimization for the CODEBOOK_FLOATS case
  * where we avoid one addition */
@@ -3126,6 +3163,454 @@ static float *get_window(vorb *f, int len)
    return NULL;
 }
 
+
+
+/* ---- Q20 integer twins of the residue-domain decode path ---- */
+
+static int codebook_decode_q(vorb *f, Codebook *c, int32_t *output, int len)
+{
+   int i,z = codebook_decode_start(f,c);
+   if (z < 0)
+      return 0;
+   if (len > c->dimensions)
+      len = c->dimensions;
+
+   z *= c->dimensions;
+   if (c->sequence_p)
+   {
+      int32_t last = CODEBOOK_ELEMENT_BASE_Q(c);
+      for (i=0; i < len; ++i)
+      {
+         int32_t val = CODEBOOK_ELEMENT_FAST_Q(c,z+i) + last;
+         output[i] = rvq_sat_q20((int64_t)output[i] + val);
+         last = rvq_sat_q20((int64_t)val + c->minimum_q);
+      }
+   }
+   else
+   {
+      int32_t last = CODEBOOK_ELEMENT_BASE_Q(c);
+      for (i=0; i < len; ++i)
+         output[i] = rvq_sat_q20((int64_t)output[i] + CODEBOOK_ELEMENT_FAST_Q(c,z+i) + last);
+   }
+
+   return 1;
+}
+
+static int codebook_decode_step_q(vorb *f, Codebook *c, int32_t *output, int len, int step)
+{
+   int i,z = codebook_decode_start(f,c);
+   int32_t last = CODEBOOK_ELEMENT_BASE_Q(c);
+   if (z < 0)
+      return 0;
+   if (len > c->dimensions)
+      len = c->dimensions;
+
+   z *= c->dimensions;
+   for (i=0; i < len; ++i)
+   {
+      int32_t val = CODEBOOK_ELEMENT_FAST_Q(c,z+i) + last;
+      output[i*step] += val;
+      if (c->sequence_p)
+         last = val;
+   }
+
+   return 1;
+}
+
+static int codebook_decode_deinterleave_repeat_q(vorb *f, Codebook *c, int32_t **outputs, int ch, int *c_inter_p, int *p_inter_p, int len, int total_decode)
+{
+   int c_inter = *c_inter_p;
+   int p_inter = *p_inter_p;
+   int i,z, effective = c->dimensions;
+
+   /* type 0 is only legal in a scalar context */
+   if (c->lookup_type == 0)   return error(f, RVORBIS_invalid_stream);
+
+   while (total_decode > 0)
+   {
+      int32_t last = CODEBOOK_ELEMENT_BASE_Q(c);
+      z = codebook_decode_scalar(f,c);
+      assert(!c->sparse || z < c->sorted_entries);
+      if (z < 0)
+      {
+         if (!f->bytes_in_seg)
+            if (f->last_seg) return 0;
+         return error(f, RVORBIS_invalid_stream);
+      }
+
+      /* if this will take us off the end of the buffers, stop short!
+       * we check by computing the length of the virtual interleaved
+       * buffer (len*ch), our current offset within it (p_inter*ch)+(c_inter),
+       * and the length we'll be using (effective) */
+      if (c_inter + p_inter*ch + effective > len * ch) {
+         effective = len*ch - (p_inter*ch - c_inter);
+      }
+
+      z *= c->dimensions;
+      if (c->sequence_p) {
+         for (i=0; i < effective; ++i) {
+            int32_t val = CODEBOOK_ELEMENT_FAST_Q(c,z+i) + last;
+            if (outputs[c_inter])
+               outputs[c_inter][p_inter] = rvq_sat_q20((int64_t)outputs[c_inter][p_inter] + val);
+            if (++c_inter == ch) { c_inter = 0; ++p_inter; }
+            last = val;
+         }
+      } else {
+         for (i=0; i < effective; ++i) {
+            int32_t val = CODEBOOK_ELEMENT_FAST_Q(c,z+i) + last;
+            if (outputs[c_inter])
+               outputs[c_inter][p_inter] = rvq_sat_q20((int64_t)outputs[c_inter][p_inter] + val);
+            if (++c_inter == ch) { c_inter = 0; ++p_inter; }
+         }
+      }
+
+      total_decode -= effective;
+   }
+   *c_inter_p = c_inter;
+   *p_inter_p = p_inter;
+   return 1;
+}
+
+static int codebook_decode_deinterleave_repeat_2_q(vorb *f, Codebook *c, int32_t **outputs, int *c_inter_p, int *p_inter_p, int len, int total_decode)
+{
+   int c_inter = *c_inter_p;
+   int p_inter = *p_inter_p;
+   int i,z, effective = c->dimensions;
+
+   /* type 0 is only legal in a scalar context */
+   if (c->lookup_type == 0)   return error(f, RVORBIS_invalid_stream);
+
+   while (total_decode > 0)
+   {
+      int32_t last = CODEBOOK_ELEMENT_BASE_Q(c);
+      z = codebook_decode_scalar(f,c);
+
+      if (z < 0) {
+         if (!f->bytes_in_seg)
+            if (f->last_seg) return 0;
+         return error(f, RVORBIS_invalid_stream);
+      }
+
+      /* if this will take us off the end of the buffers, stop short!
+       * we check by computing the length of the virtual interleaved
+       * buffer (len*ch), our current offset within it (p_inter*ch)+(c_inter),
+       * and the length we'll be using (effective)
+       */
+      if (c_inter + p_inter*2 + effective > len * 2)
+         effective = len*2 - (p_inter*2 - c_inter);
+
+      z *= c->dimensions;
+      if (c->sequence_p) {
+         /* haven't optimized this case because I don't have any examples */
+         for (i=0; i < effective; ++i) {
+            int32_t val = CODEBOOK_ELEMENT_FAST_Q(c,z+i) + last;
+            if (outputs[c_inter])
+               outputs[c_inter][p_inter] = rvq_sat_q20((int64_t)outputs[c_inter][p_inter] + val);
+            if (++c_inter == 2) { c_inter = 0; ++p_inter; }
+            last = val;
+         }
+      } else {
+         i=0;
+         if (c_inter == 1) {
+            int32_t val = CODEBOOK_ELEMENT_FAST_Q(c,z+i) + last;
+            if (outputs[c_inter])
+               outputs[c_inter][p_inter] = rvq_sat_q20((int64_t)outputs[c_inter][p_inter] + val);
+            c_inter = 0; ++p_inter;
+            ++i;
+         }
+         {
+            int32_t *z0 = outputs[0];
+            int32_t *z1 = outputs[1];
+            for (; i+1 < effective;) {
+               int32_t v0 = rvq_sat_q20((int64_t)CODEBOOK_ELEMENT_FAST_Q(c,z+i) + last);
+               int32_t v1 = rvq_sat_q20((int64_t)CODEBOOK_ELEMENT_FAST_Q(c,z+i+1) + last);
+               if (z0)
+                  z0[p_inter] = rvq_sat_q20((int64_t)z0[p_inter] + v0);
+               if (z1)
+                  z1[p_inter] = rvq_sat_q20((int64_t)z1[p_inter] + v1);
+               ++p_inter;
+               i += 2;
+            }
+         }
+         if (i < effective) {
+            int32_t val = CODEBOOK_ELEMENT_FAST_Q(c,z+i) + last;
+            if (outputs[c_inter])
+               outputs[c_inter][p_inter] = rvq_sat_q20((int64_t)outputs[c_inter][p_inter] + val);
+            if (++c_inter == 2) { c_inter = 0; ++p_inter; }
+         }
+      }
+
+      total_decode -= effective;
+   }
+   *c_inter_p = c_inter;
+   *p_inter_p = p_inter;
+   return 1;
+}
+
+static int residue_decode_q(vorb *f, Codebook *book, int32_t *target, int offset, int n, int rtype)
+{
+   int k;
+   if (rtype == 0)
+   {
+      int step = n / book->dimensions;
+      for (k=0; k < step; ++k)
+         if (!codebook_decode_step_q(f, book, target+offset+k, n-offset-k, step))
+            return 0;
+   }
+   else
+   {
+      for (k=0; k < n; ) {
+         if (!codebook_decode_q(f, book, target+offset, n-k))
+            return 0;
+         k += book->dimensions;
+         offset += book->dimensions;
+      }
+   }
+   return 1;
+}
+
+static void decode_residue_q(vorb *f, int32_t *residue_buffers[], int ch, int n, int rn, uint8_t *do_not_decode)
+{
+   int i,j,pass;
+   Residue *r = f->residue_config + rn;
+   int rtype = f->residue_types[rn];
+   int c = r->classbook;
+   int classwords = f->codebooks[c].dimensions;
+   int n_read = r->end - r->begin;
+   int part_read = n_read / r->part_size;
+   int temp_alloc_point = temp_alloc_save(f);
+   uint8_t ***part_classdata = (uint8_t ***) temp_block_array(f,f->channels, part_read * sizeof(**part_classdata));
+
+   for (i=0; i < ch; ++i)
+      if (!do_not_decode[i])
+         memset(residue_buffers[i], 0, sizeof(int32_t) * n);
+
+   if (rtype == 2 && ch != 1) {
+      for (j=0; j < ch; ++j)
+         if (!do_not_decode[j])
+            break;
+      if (j == ch)
+         goto done;
+
+      for (pass=0; pass < 8; ++pass)
+      {
+         int pcount = 0, class_set = 0;
+         if (ch == 2)
+         {
+            while (pcount < part_read) {
+               int z = r->begin + pcount*r->part_size;
+               int c_inter = (z & 1), p_inter = z>>1;
+               if (pass == 0) {
+                  Codebook *c = f->codebooks+r->classbook;
+                  int q = codebook_decode_scalar(f,c);
+                  if (c->sparse)
+                     q = c->sorted_values[q];
+                  if (q == EOP)
+                     goto done;
+                  part_classdata[0][class_set] = r->classdata[q];
+               }
+               for (i=0; i < classwords && pcount < part_read; ++i, ++pcount) {
+                  int z = r->begin + pcount*r->part_size;
+                  int c = part_classdata[0][class_set][i];
+                  int b = r->residue_books[c][pass];
+                  if (b >= 0) {
+                     Codebook *book = f->codebooks + b;
+                     /* saves 1% */
+                     if (!codebook_decode_deinterleave_repeat_2_q(f, book, residue_buffers, &c_inter, &p_inter, n, r->part_size))
+                        goto done;
+                  } else {
+                     z += r->part_size;
+                     c_inter = z & 1;
+                     p_inter = z >> 1;
+                  }
+               }
+               ++class_set;
+            }
+         }
+         else if (ch == 1)
+         {
+            while (pcount < part_read) {
+               int z = r->begin + pcount*r->part_size;
+               int c_inter = 0, p_inter = z;
+               if (pass == 0) {
+                  Codebook *c = f->codebooks+r->classbook;
+                  int q = codebook_decode_scalar(f,c);
+                  if (c->sparse)
+                     q = c->sorted_values[q];
+                  if (q == EOP) goto done;
+                  part_classdata[0][class_set] = r->classdata[q];
+               }
+               for (i=0; i < classwords && pcount < part_read; ++i, ++pcount) {
+                  int z = r->begin + pcount*r->part_size;
+                  int c = part_classdata[0][class_set][i];
+                  int b = r->residue_books[c][pass];
+                  if (b >= 0) {
+                     Codebook *book = f->codebooks + b;
+                     if (!codebook_decode_deinterleave_repeat_q(f, book, residue_buffers, ch, &c_inter, &p_inter, n, r->part_size))
+                        goto done;
+                  } else {
+                     z += r->part_size;
+                     c_inter = 0;
+                     p_inter = z;
+                  }
+               }
+               ++class_set;
+            }
+         } else {
+            while (pcount < part_read) {
+               int z = r->begin + pcount*r->part_size;
+               int c_inter = z % ch, p_inter = z/ch;
+               if (pass == 0) {
+                  Codebook *c = f->codebooks+r->classbook;
+                  int q = codebook_decode_scalar(f,c);
+                  if (c->sparse)
+                     q = c->sorted_values[q];
+                  if (q == EOP)
+                     goto done;
+                  part_classdata[0][class_set] = r->classdata[q];
+               }
+               for (i=0; i < classwords && pcount < part_read; ++i, ++pcount) {
+                  int z = r->begin + pcount*r->part_size;
+                  int c = part_classdata[0][class_set][i];
+                  int b = r->residue_books[c][pass];
+                  if (b >= 0) {
+                     Codebook *book = f->codebooks + b;
+                     if (!codebook_decode_deinterleave_repeat_q(f, book, residue_buffers, ch, &c_inter, &p_inter, n, r->part_size))
+                        goto done;
+                  } else {
+                     z += r->part_size;
+                     c_inter = z % ch;
+                     p_inter = z / ch;
+                  }
+               }
+               ++class_set;
+            }
+         }
+      }
+      goto done;
+   }
+
+   for (pass=0; pass < 8; ++pass)
+   {
+      int pcount = 0, class_set=0;
+      while (pcount < part_read) {
+         if (pass == 0)
+         {
+            for (j=0; j < ch; ++j) {
+               if (!do_not_decode[j]) {
+                  Codebook *c = f->codebooks+r->classbook;
+                  int temp = codebook_decode_scalar(f,c);
+                  if (c->sparse)
+                     temp = c->sorted_values[temp];
+                  if (temp == EOP)
+                     goto done;
+                  part_classdata[j][class_set] = r->classdata[temp];
+               }
+            }
+         }
+         for (i=0; i < classwords && pcount < part_read; ++i, ++pcount) {
+            for (j=0; j < ch; ++j) {
+               if (!do_not_decode[j]) {
+                  int c = part_classdata[j][class_set][i];
+                  int b = r->residue_books[c][pass];
+                  if (b >= 0) {
+                     int32_t *target = residue_buffers[j];
+                     int offset = r->begin + pcount * r->part_size;
+                     int n = r->part_size;
+                     Codebook *book = f->codebooks + b;
+                     if (!residue_decode_q(f, book, target, offset, n, rtype))
+                        goto done;
+                  }
+               }
+            }
+         }
+         ++class_set;
+      }
+   }
+done:
+   temp_alloc_restore(f,temp_alloc_point);
+}
+/* Q31 twin of inverse_db_table, generated once; entries are (0,1]. */
+static int32_t inverse_db_q31[256];
+static int inverse_db_q31_ready;
+static void rvq_init_db_q31(void)
+{
+   int i;
+   if (inverse_db_q31_ready) return;
+   for (i = 0; i < 256; i++)
+      inverse_db_q31[i] = rvq_coef_q31(inverse_db_table[i]);
+   inverse_db_q31_ready = 1;
+}
+/* Fused floor apply: Q20 residue * Q31 floor -> Q28 spectral sample,
+ * rounded.  Peak product ~2^60, int64-safe. */
+#define RVQ_FLOORMUL(r, fq) \
+   ((int32_t)((((int64_t)(r) * (fq)) + ((int64_t)1 << 22)) >> 23))
+
+static INLINE void draw_line_q(int32_t *output, int x0, int y0, int x1, int y1, int n)
+{
+   int dy = y1 - y0;
+   int adx = x1 - x0;
+   int ady = abs(dy);
+   int x=x0,y=y0;
+   int err = 0;
+   int sy;
+   int base = dy / adx;
+
+   if (dy < 0)
+      sy = base - 1;
+   else
+      sy = base+1;
+
+   ady -= abs(base) * adx;
+   if (x1 > n)
+      x1 = n;
+   output[x] = RVQ_FLOORMUL(output[x], inverse_db_q31[y]);
+   for (++x; x < x1; ++x)
+   {
+      err += ady;
+      if (err >= adx)
+      {
+         err -= adx;
+         y += sy;
+      }
+      else
+         y += base;
+      output[x] = RVQ_FLOORMUL(output[x], inverse_db_q31[y]);
+   }
+}
+
+static int do_floor_q(vorb *f, Mapping *map, int i, int n, int32_t *target, int16_t *finalY, uint8_t *step2_flag)
+{
+   Floor1 *g;
+   int j,q, lx = 0, ly;
+   int n2 = n >> 1;
+   int s = map->chan[i].mux, floor;
+   floor = map->submap_floor[s];
+   if (f->floor_types[floor] == 0)
+      return error(f, RVORBIS_invalid_stream);
+   g  = &f->floor_config[floor].floor1;
+   ly = finalY[0] * g->floor1_multiplier;
+
+   for (q=1; q < g->values; ++q)
+   {
+      j = g->sorted_order[q];
+      if (finalY[j] >= 0)
+      {
+         int hy = finalY[j] * g->floor1_multiplier;
+         int hx = g->Xlist[j];
+         draw_line_q(target, lx,ly, hx,hy, n2);
+         lx = hx;
+         ly = hy;
+      }
+   }
+
+   /* Optimization of: draw_line_q(target, lx,ly, n,ly, n2); */
+   if (lx < n2)
+      for (j=lx; j < n2; ++j)
+         target[j] = RVQ_FLOORMUL(target[j], inverse_db_q31[ly]);
+   return 1;
+}
+
 static int do_floor(vorb *f, Mapping *map, int i, int n, float *target, int16_t *finalY, uint8_t *step2_flag)
 {
    Floor1 *g;
@@ -3362,13 +3847,50 @@ error:
          }
       }
       r = map->submap_residue[i];
-      decode_residue(f, residue_buffers, ch, n2, r, do_not_decode);
+      if (f->s16_mode)
+         decode_residue_q(f, (int32_t **) residue_buffers, ch, n2, r, do_not_decode);
+      else
+         decode_residue(f, residue_buffers, ch, n2, r, do_not_decode);
    }
 
    if (f->alloc.alloc_buffer)
       assert(f->alloc.alloc_buffer_length_in_bytes == f->temp_offset);
 
 /* INVERSE COUPLING */
+   if (f->s16_mode) {
+   for (i = map->coupling_steps-1; i >= 0; --i) {
+      int n2 = n >> 1;
+      int32_t *m = (int32_t *) f->channel_buffers[map->chan[i].magnitude];
+      int32_t *a = (int32_t *) f->channel_buffers[map->chan[i].angle    ];
+      for (j=0; j < n2; ++j) {
+         int32_t a2,m2;
+         if (m[j] > 0)
+            if (a[j] > 0)
+            {
+                m2 = m[j];
+                a2 = rvq_sat_q20((int64_t)m[j] - a[j]);
+            }
+            else
+            {
+                a2 = m[j];
+                m2 = rvq_sat_q20((int64_t)m[j] + a[j]);
+            }
+         else
+            if (a[j] > 0)
+            {
+                m2 = m[j];
+                a2 = rvq_sat_q20((int64_t)m[j] + a[j]);
+            }
+            else
+            {
+                a2 = m[j];
+                m2 = rvq_sat_q20((int64_t)m[j] - a[j]);
+            }
+         m[j] = m2;
+         a[j] = a2;
+      }
+   }
+   } else {
    for (i = map->coupling_steps-1; i >= 0; --i) {
       int n2 = n >> 1;
       float *m = f->channel_buffers[map->chan[i].magnitude];
@@ -3401,12 +3923,15 @@ error:
          a[j] = a2;
       }
    }
+   }
 
-   /* finish decoding the floors */
+/* finish decoding the floors */
    for (i=0; i < f->channels; ++i)
    {
       if (really_zero_channel[i])
          memset(f->channel_buffers[i], 0, sizeof(*f->channel_buffers[i]) * n2);
+      else if (f->s16_mode)
+         do_floor_q(f, map, i, n, (int32_t *) f->channel_buffers[i], f->finalY[i], NULL);
       else
          do_floor(f, map, i, n, f->channel_buffers[i], f->finalY[i], NULL);
    }
@@ -3414,18 +3939,12 @@ error:
    /* INVERSE MDCT */
    if (f->s16_mode)
    {
-      /* s16 pipeline: floor/residue produce float spectral samples;
-       * convert the live half to Q28 in place and run the fixed-point
-       * MDCT.  Everything to the s16 interleave stays integer. */
+      /* s16 pipeline: packet bits decoded straight to Q20 residue,
+       * integer coupling, and the fused Q31 floor multiply landed the
+       * spectral samples in Q28 above -- no float anywhere between
+       * the bitstream and the s16 interleave. */
       for (i=0; i < f->channels; ++i)
-      {
-         float   *bf = f->channel_buffers[i];
-         int32_t *bq = (int32_t *) f->channel_buffers[i];
-         int j;
-         for (j=0; j < n >> 1; ++j)
-            bq[j] = rvq_float_to_q(bf[j]);
-         inverse_mdct_q(bq, n, f, m->blockflag);
-      }
+         inverse_mdct_q((int32_t *) f->channel_buffers[i], n, f, m->blockflag);
    }
    else
    {
@@ -3863,7 +4382,9 @@ static int start_decoder(vorb *f)
       if (c->lookup_type > 0) {
          uint16_t *mults;
          c->minimum_value = float32_unpack(get_bits(f, 32));
+         c->minimum_q = 0;
          c->delta_value = float32_unpack(get_bits(f, 32));
+         c->minimum_q = rvq_coef_q20(c->minimum_value);
          c->value_bits = get_bits(f, 4)+1;
          c->sequence_p = get_bits(f,1);
          if (c->lookup_type == 1)
@@ -3916,6 +4437,13 @@ static int start_decoder(vorb *f)
             }
             setup_temp_free(f, mults,sizeof(mults[0])*c->lookup_values);
             c->lookup_type = 2;
+            {
+               int cnt = len * c->dimensions;
+               c->multiplicands_q = (int32_t *) setup_malloc(f, sizeof(int32_t) * cnt);
+               if (!c->multiplicands_q) return error(f, RVORBIS_outofmem);
+               for (j=0; j < cnt; ++j)
+                  c->multiplicands_q[j] = rvq_coef_q20(c->multiplicands[j]);
+            }
          }
          else
          {
@@ -3927,6 +4455,10 @@ static int start_decoder(vorb *f)
                c->multiplicands[j] = mults[j] * c->delta_value + c->minimum_value;
 #endif
             setup_temp_free(f, mults,sizeof(mults[0])*c->lookup_values);
+            c->multiplicands_q = (int32_t *) setup_malloc(f, sizeof(int32_t) * c->lookup_values);
+            if (!c->multiplicands_q) return error(f, RVORBIS_outofmem);
+            for (j=0; j < (int) c->lookup_values; ++j)
+               c->multiplicands_q[j] = rvq_coef_q20(c->multiplicands[j]);
          }
 skip:;
 
@@ -3935,6 +4467,9 @@ skip:;
         for (j=1; j < (int) c->lookup_values; ++j)
            c->multiplicands[j] = c->multiplicands[j-1];
         c->sequence_p = 0;
+        if (c->multiplicands_q)
+           for (j=1; j < (int) c->lookup_values; ++j)
+              c->multiplicands_q[j] = rvq_coef_q20(c->multiplicands[j]);
      }
 #endif
       }
@@ -4523,6 +5058,8 @@ static void rvorbis_set_output_mode(vorb *f, int s16)
    if (f->s16_mode == s16)
       return;
    f->s16_mode = s16;
+   if (s16)
+      rvq_init_db_q31();
    for (i=0; i < f->channels; ++i)
    {
       float   *pf = f->previous_window[i];
