@@ -89,7 +89,12 @@ typedef struct
 {
    char access_token[2048];
    char folder_id[256];
-   gdrive_folder_entry_t folders[GDRIVE_MAX_FOLDERS];
+   /* Allocated on first use: a static array of these entries is
+    * nearly 300 kilobytes of load-resident state on platforms
+    * without demand paging, for a sync backend most sessions never
+    * touch. Lives for the session once a sync has run, exactly as
+    * the static array did. */
+   gdrive_folder_entry_t *folders;
    int folder_count;
 } gdrive_state_t;
 
@@ -593,6 +598,8 @@ static void gdrive_find_folder(gdrive_begin_ctx_t *ctx)
 static const char *gdrive_folder_cache_lookup(const char *path)
 {
    int i;
+   if (!gdrive_st.folders)
+      return NULL;
    for (i = 0; i < gdrive_st.folder_count; i++)
       if (string_is_equal(gdrive_st.folders[i].path, path))
          return gdrive_st.folders[i].id;
@@ -601,6 +608,11 @@ static const char *gdrive_folder_cache_lookup(const char *path)
 
 static void gdrive_folder_cache_add(const char *path, const char *id)
 {
+   if (!gdrive_st.folders)
+      gdrive_st.folders = (gdrive_folder_entry_t*)
+            calloc(GDRIVE_MAX_FOLDERS, sizeof(*gdrive_st.folders));
+   if (!gdrive_st.folders)
+      return;
    if (gdrive_st.folder_count >= GDRIVE_MAX_FOLDERS)
       return;
    strlcpy(gdrive_st.folders[gdrive_st.folder_count].path,
