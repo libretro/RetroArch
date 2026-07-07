@@ -31,11 +31,11 @@
  * so the +-8 range of Q28 leaves ample headroom with no inter-stage
  * rescaling. */
 #define RVQ_QBITS 28
-/* Coefficients are Q31 (tremor's discipline): the MDCT/window tables
- * are all |c| <= 1.0, so Q31 is legal and carries 16x the coefficient
- * precision of the previous Q27 tables.  The product of a Q28 sample
- * and a Q31 coefficient is rounded and shifted back to Q28; worst-case
- * magnitude 1.7 * 2^59 leaves headroom in int64. */
+/* Coefficients are Q31 (all MDCT/window tables are |c| <= 1.0): the
+ * rounded multiply (x*c + 2^30) >> 31 is exactly what NEON's
+ * vqrdmulhq_s32 computes in one 4-wide instruction, which the SIMD
+ * kernels below rely on.  Q31 also carries 16x the coefficient
+ * precision of the previous Q27 tables. */
 #define RVQ_MULQ(x, c) \
    ((int32_t)((((int64_t)(x) * (c)) + ((int64_t)1 << 30)) >> 31))
 
@@ -2230,8 +2230,63 @@ static INLINE void iter_54_q(int32_t *z)
    z[-7] = k11 + k22;    /* z1 - z5 - z2 + z6 */
 }
 
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__aarch64__)) && !defined(RVQ_NO_NEON_MDCT)
+#include <arm_neon.h>
+#define RVQ_HAVE_NEON_MDCT 1
+/* Two pair-butterflies (4 int32, descending addresses) in one vector
+ * pass.  vqrdmulhq_s32 computes sat((2*a*b + 2^31) >> 32), which for
+ * our operand ranges (|sample| < 2^30, coefficient Q31) never
+ * saturates and equals RVQ_MULQ exactly, so the SIMD path is
+ * byte-identical to the scalar loops by construction.
+ *
+ * Memory lanes at (p-3): [e[-3] e[-2] e[-1] e[0]]
+ *                       = [k01'  k00'  k01   k00 ]  after the sub.
+ * Cross terms need each lane's 64-bit partner (vrev64q) and an
+ * alternating +/- combine (sign-select between add and sub). */
+static INLINE void rvq_neon_pair2(int32_t *e0, int32_t *e2,
+                                  const int32_t *Aa, const int32_t *Ab)
+{
+   int32x4_t v0 = vld1q_s32(e0 - 3);
+   int32x4_t v2 = vld1q_s32(e2 - 3);
+   int32x4_t k  = vsubq_s32(v0, v2);
+   int32x4_t ks = vrev64q_s32(k);
+   /* [A0' A0' A0 A0] and [A1' A1' A1 A1] */
+   int32x4_t a0 = vcombine_s32(vdup_n_s32(Ab[0]), vdup_n_s32(Aa[0]));
+   int32x4_t a1 = vcombine_s32(vdup_n_s32(Ab[1]), vdup_n_s32(Aa[1]));
+   int32x4_t t0 = vqrdmulhq_s32(k,  a0);
+   int32x4_t t1 = vqrdmulhq_s32(ks, a1);
+   /* even lanes (k00 slots, lanes 1 and 3): t0 - t1
+    * odd  lanes (k01 slots, lanes 0 and 2): t0 + t1 */
+   int32x4_t sum = vaddq_s32(t0, t1);
+   int32x4_t dif = vsubq_s32(t0, t1);
+   const uint32x4_t odd = { 0xFFFFFFFFu, 0, 0xFFFFFFFFu, 0 };
+   vst1q_s32(e0 - 3, vaddq_s32(v0, v2));
+   vst1q_s32(e2 - 3, vbslq_s32(odd, sum, dif));
+}
+#else
+#define RVQ_HAVE_NEON_MDCT 0
+#endif
+
 static void imdct_step3_iter0_loop_q(int n, int32_t *e, int i_off, int k_off, int32_t *A)
 {
+#if RVQ_HAVE_NEON_MDCT
+   {
+      int32_t *ee0 = e + i_off;
+      int32_t *ee2 = ee0 + k_off;
+      int i;
+      assert((n & 3) == 0);
+      for (i=(n>>2); i > 0; --i)
+      {
+         rvq_neon_pair2(ee0,     ee2,     A,      A + 8);
+         rvq_neon_pair2(ee0 - 4, ee2 - 4, A + 16, A + 24);
+         A += 32;
+         ee0 -= 8;
+         ee2 -= 8;
+      }
+      return;
+   }
+#endif
+
    int32_t *ee0 = e + i_off;
    int32_t *ee2 = ee0 + k_off;
    int i;
@@ -2277,6 +2332,23 @@ static void imdct_step3_iter0_loop_q(int n, int32_t *e, int i_off, int k_off, in
 
 static void imdct_step3_inner_r_loop_q(int lim, int32_t *e, int d0, int k_off, int32_t *A, int k1)
 {
+#if RVQ_HAVE_NEON_MDCT
+   {
+      int i;
+      int32_t *e0 = e + d0;
+      int32_t *e2 = e0 + k_off;
+      for (i=lim >> 2; i > 0; --i)
+      {
+         rvq_neon_pair2(e0,     e2,     A,        A + k1);
+         rvq_neon_pair2(e0 - 4, e2 - 4, A + 2*k1, A + 3*k1);
+         A += 4*k1;
+         e0 -= 8;
+         e2 -= 8;
+      }
+      return;
+   }
+#endif
+
    int i;
    int32_t k00_20, k01_21;
 
