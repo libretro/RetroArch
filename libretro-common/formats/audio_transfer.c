@@ -77,6 +77,19 @@ struct audio_transfer_vorbis
    size_t      size;
    rvorbis    *handle;
    int         channels; /* cached from rvorbis_get_info at start           */
+   /* Demuxed-input path (set_demuxed_ptr): the container's CodecPrivate
+    * (the 3 xiph-laced Vorbis headers) and the concatenated audio packets.
+    * rvorbis only consumes Ogg-framed input, so start() repackages these
+    * into a synthetic Ogg stream (owned here) and opens that -- rvorbis
+    * itself is unchanged. NULL setup means the plain self-framed path. */
+   const void *setup;
+   size_t      setup_size;
+   const void *packets;
+   size_t      packets_size;
+   const uint32_t *pkt_sizes;
+   size_t      num_packets;
+   uint8_t    *ogg;      /* synthesized Ogg stream, freed in free()          */
+   size_t      ogg_size;
 };
 #endif
 
@@ -226,6 +239,202 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
    }
 }
 
+#ifdef HAVE_RVORBIS
+/* --- Ogg repackaging for demuxed Vorbis --------------------------------
+ *
+ * WebM (and Matroska generally) carries Vorbis as raw packets: the three
+ * setup headers live in CodecPrivate, xiph-laced, and the audio frames are
+ * bare packets.  rvorbis only decodes Ogg-framed input.  Rather than adding
+ * a raw-packet path to the decoder (and risking its byte-determinism), we
+ * wrap the demuxed packets in a synthetic Ogg stream here and hand that to
+ * the unchanged rvorbis_open_memory.
+ *
+ * rvorbis discards the page serial number and does not verify the page
+ * CRC (see start_page_no_capturepattern), so a correct segment table and
+ * packet payload suffice; the CRC is written correct anyway, cheaply.
+ */
+
+/* Standard Ogg CRC-32: poly 0x04c11db7, no input/output reflection,
+ * init 0. Computed directly (no table) -- it runs once per page at open. */
+static uint32_t audio_ogg_crc_poly(uint32_t crc)
+{
+   int j;
+   for (j = 0; j < 8; j++)
+      crc = (crc & 0x80000000u) ? (crc << 1) ^ 0x04c11db7u : (crc << 1);
+   return crc;
+}
+static uint32_t audio_ogg_crc(const uint8_t *buf, size_t len)
+{
+   uint32_t crc = 0;
+   size_t   i;
+   for (i = 0; i < len; i++)
+   {
+      crc ^= (uint32_t)buf[i] << 24;
+      crc  = audio_ogg_crc_poly(crc);
+   }
+   return crc;
+}
+
+/* Append one Ogg page carrying the given packets. Returns new write offset
+ * or 0 on overflow. Each packet must be < 255*255 bytes (true for Vorbis
+ * setup and typical audio frames). */
+static size_t audio_ogg_emit_page(uint8_t *out, size_t cap, size_t at,
+      uint32_t serial, uint32_t seqno, int64_t granule,
+      const uint8_t * const *pkts, const uint32_t *plens, int npk,
+      int bos, int eos)
+{
+   uint8_t  segtab[255];
+   int      nseg = 0;
+   int      k, s;
+   size_t   body = 0, hdr, total, i;
+   uint32_t crc;
+   for (k = 0; k < npk; k++)
+   {
+      uint32_t l = plens[k];
+      while (l >= 255) { if (nseg >= 255) return 0; segtab[nseg++] = 255; l -= 255; }
+      if (nseg >= 255) return 0;
+      segtab[nseg++] = (uint8_t)l;
+      body += plens[k];
+   }
+   hdr   = 27 + (size_t)nseg;
+   total = hdr + body;
+   if (at + total > cap)
+      return 0;
+   memcpy(out + at, "OggS", 4);
+   out[at + 4] = 0;                                    /* version           */
+   out[at + 5] = (uint8_t)((bos ? 2 : 0) | (eos ? 4 : 0));
+   for (i = 0; i < 8; i++)
+      out[at + 6 + i]  = (uint8_t)((uint64_t)granule >> (8 * i));
+   for (i = 0; i < 4; i++)
+      out[at + 14 + i] = (uint8_t)(serial >> (8 * i));
+   for (i = 0; i < 4; i++)
+      out[at + 18 + i] = (uint8_t)(seqno  >> (8 * i));
+   out[at + 22] = out[at + 23] = out[at + 24] = out[at + 25] = 0; /* CRC 0  */
+   out[at + 26] = (uint8_t)nseg;
+   memcpy(out + at + 27, segtab, (size_t)nseg);
+   { size_t o = at + hdr;
+     for (k = 0; k < npk; k++) { memcpy(out + o, pkts[k], plens[k]); o += plens[k]; } }
+   crc = audio_ogg_crc(out + at, total);
+   for (i = 0; i < 4; i++)
+      out[at + 22 + i] = (uint8_t)(crc >> (8 * i));
+   (void)s;
+   return at + total;
+}
+
+/* Split the xiph-laced CodecPrivate into its 3 header pointers/lengths.
+ * Returns 1 on success. */
+static int audio_vorbis_split_setup(const uint8_t *priv, size_t size,
+      const uint8_t *hdr[3], uint32_t hlen[3])
+{
+   size_t p, sum;
+   int    i;
+   if (!priv || size < 3 || priv[0] != 2) /* nheaders-1 == 2 */
+      return 0;
+   p = 1;
+   for (i = 0; i < 2; i++)
+   {
+      uint32_t l = 0;
+      while (p < size && priv[p] == 255) { l += 255; p++; }
+      if (p >= size) return 0;
+      l += priv[p++];
+      hlen[i] = l;
+   }
+   sum = (size_t)hlen[0] + hlen[1];
+   if (p + sum > size)
+      return 0;
+   hlen[2]  = (uint32_t)(size - p - sum);
+   hdr[0]   = priv + p;
+   hdr[1]   = priv + p + hlen[0];
+   hdr[2]   = priv + p + hlen[0] + hlen[1];
+   return 1;
+}
+
+/* Build a synthetic Ogg stream from demuxed Vorbis setup + packets.
+ * Stores the malloc'd buffer in v->ogg / v->ogg_size. Returns 1 on
+ * success. */
+static int audio_vorbis_build_ogg(struct audio_transfer_vorbis *v)
+{
+   const uint8_t *hdr[3];
+   uint32_t       hlen[3];
+   const uint8_t *pkts[2];
+   uint32_t       plens[2];
+   size_t         cap, at, i, off;
+   uint32_t       seq = 0;
+   uint8_t       *out;
+   const uint32_t serial = 0x0057454Du; /* 'WEM' */
+   if (!audio_vorbis_split_setup((const uint8_t*)v->setup, v->setup_size,
+            hdr, hlen))
+      return 0;
+   /* Worst case: every packet gets its own page (27 + lacing + body).
+    * Lacing is ceil(len/255)+1 bytes; bound generously. */
+   cap = v->setup_size + v->packets_size + 64;
+   cap += (v->num_packets + 4) * 64;
+   cap += (v->packets_size / 255) + (v->setup_size / 255) + 64;
+   out = (uint8_t*)malloc(cap);
+   if (!out)
+      return 0;
+   at = 0;
+   /* Page 0: identification header, BOS, single packet. */
+   pkts[0] = hdr[0]; plens[0] = hlen[0];
+   at = audio_ogg_emit_page(out, cap, at, serial, seq++, 0, pkts, plens, 1, 1, 0);
+   if (!at) { free(out); return 0; }
+   /* Page 1: comment + setup headers. */
+   pkts[0] = hdr[1]; plens[0] = hlen[1];
+   pkts[1] = hdr[2]; plens[1] = hlen[2];
+   at = audio_ogg_emit_page(out, cap, at, serial, seq++, 0, pkts, plens, 2, 0, 0);
+   if (!at) { free(out); return 0; }
+   /* Audio pages: one packet per page. Granule is unknown per-packet here;
+    * rvorbis derives sample counts from the decoded frames, so a monotone
+    * placeholder granule suffices. */
+   off = 0;
+   for (i = 0; i < v->num_packets; i++)
+   {
+      uint32_t len = v->pkt_sizes ? v->pkt_sizes[i]
+                   : (uint32_t)v->packets_size; /* single blob if unsplit */
+      const uint8_t *pk = (const uint8_t*)v->packets + off;
+      int eos = (i + 1 == v->num_packets);
+      pkts[0] = pk; plens[0] = len;
+      at = audio_ogg_emit_page(out, cap, at, serial, seq++,
+            (int64_t)(i + 1) * 1024, pkts, plens, 1, 0, eos);
+      if (!at) { free(out); return 0; }
+      off += len;
+   }
+   v->ogg      = out;
+   v->ogg_size = at;
+   return 1;
+}
+#endif
+
+bool audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
+      const void *setup, size_t setup_size,
+      const void *packets, size_t packets_size,
+      const uint32_t *sizes, size_t num_packets)
+{
+   switch (type)
+   {
+#ifdef HAVE_RVORBIS
+      case AUDIO_TYPE_VORBIS:
+      {
+         struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
+         if (!v)
+            return false;
+         v->setup        = setup;
+         v->setup_size   = setup_size;
+         v->packets      = packets;
+         v->packets_size = packets_size;
+         v->pkt_sizes    = sizes;
+         v->num_packets  = num_packets;
+         return true;
+      }
+#endif
+      default:
+         break;
+   }
+   (void)data; (void)setup; (void)setup_size;
+   (void)packets; (void)packets_size; (void)sizes; (void)num_packets;
+   return false;
+}
+
 bool audio_transfer_start(void *data, enum audio_type_enum type)
 {
    switch (type)
@@ -244,11 +453,27 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_VORBIS:
       {
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
-         int err = 0;
-         if (!v || !v->data)
+         const unsigned char *buf;
+         int   len, err = 0;
+         if (!v)
             return false;
-         v->handle = rvorbis_open_memory((const unsigned char*)v->data,
-               (int)v->size, &err, NULL);
+         if (v->setup)
+         {
+            /* Demuxed path: repackage the container's raw Vorbis setup +
+             * packets into a synthetic Ogg stream, then open that. */
+            if (!audio_vorbis_build_ogg(v))
+               return false;
+            buf = v->ogg;
+            len = (int)v->ogg_size;
+         }
+         else
+         {
+            if (!v->data)
+               return false;
+            buf = (const unsigned char*)v->data;
+            len = (int)v->size;
+         }
+         v->handle = rvorbis_open_memory(buf, len, &err, NULL);
          if (!v->handle)
             return false;
          v->channels = rvorbis_get_info(v->handle).channels;
@@ -703,6 +928,7 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
          if (v->handle)
             rvorbis_close(v->handle);
+         free(v->ogg);
          break;
       }
 #endif
