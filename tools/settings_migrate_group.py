@@ -175,7 +175,7 @@ assert len(rows) == len(all_invocations), (
     'SDESC_{BOOL,UINT,INT,FLOAT}_ROW; variant rows (_EX/_AT/_LV/...) are '
     'outside the def grammar - migrate this table manually or extend the '
     'grammar deliberately' % (len(all_invocations), len(rows)))
-assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW(?:_P|_DS|_EX)?\(', tm.group(1))), (len(rows), tm.group(1)[:200])
+assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW(?:_P|_DS|_EX|_LV)?\(', tm.group(1))), (len(rows), tm.group(1)[:200])
 
 us = open('intl/msg_hash_us.h').read()
 ref_tokens = set()
@@ -210,7 +210,7 @@ if ref_tokens:
     _tail = [r for r in rows if r[2] in ref_tokens]
     _ref_literals = {}
     for _k3, _f3, _t3, _a3 in _tail:
-        _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX)?\(\s*%s,\s*%s,(?:[^()]|\((?:[^()]|\([^()]*\))*\))*\),?' % (_f3, _t3), body)
+        _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX|_LV)?\(\s*%s,\s*%s,(?:[^()]|\((?:[^()]|\([^()]*\))*\))*\),?' % (_f3, _t3), body)
         assert _rm3, _t3
         _rl3 = _rm3.group(0).strip()
         for _g3 in reversed(guards.get(_f3 or _t3, ())):
@@ -244,10 +244,14 @@ for k, f, T, a in rows:
 # migration zeroed the fullscreen override's default. Such tables
 # wait for the variant grammar.
 _ms_all = open('menu/menu_setting.c').read()
+# the migrating table's own body is not an entanglement with itself
+_ms_scan = _ms_all[:tm.start()] + _ms_all[tm.end():]
 for _k, _f, _T, _a in rows:
-    _vm = re.search(r'SDESC_\w+_ROW_(?:LV|AT|AT_EX)\(%s,' % _f, _ms_all)
+    if _k.endswith('_LV') or not _f:
+        continue
+    _vm = re.search(r'SDESC_\w+_ROW_(?:LV|AT|AT_EX)\(\s*%s,' % _f, _ms_scan)
     assert not _vm, ("field %s is entangled with a variant row" % _f,
-                     _ms_all[_vm.start():_vm.start()+60] if _vm else '')
+                     _ms_scan[_vm.start():_vm.start()+60] if _vm else '')
 print("extraction ok: %d settings (%d without sublabel)" % (len(rows), sum(1 for _,_,T,_ in rows if T not in ussub)))
 
 cfg = open('configuration.c').read()
