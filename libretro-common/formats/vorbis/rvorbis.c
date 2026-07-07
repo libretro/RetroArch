@@ -31,8 +31,13 @@
  * so the +-8 range of Q28 leaves ample headroom with no inter-stage
  * rescaling. */
 #define RVQ_QBITS 28
+/* Coefficients are Q31 (tremor's discipline): the MDCT/window tables
+ * are all |c| <= 1.0, so Q31 is legal and carries 16x the coefficient
+ * precision of the previous Q27 tables.  The product of a Q28 sample
+ * and a Q31 coefficient is rounded and shifted back to Q28; worst-case
+ * magnitude 1.7 * 2^59 leaves headroom in int64. */
 #define RVQ_MULQ(x, c) \
-   ((int32_t)((((int64_t)(x) * (c)) + ((int64_t)1 << 26)) >> 27))
+   ((int32_t)((((int64_t)(x) * (c)) + ((int64_t)1 << 30)) >> 31))
 
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +48,17 @@
 #define alloca __builtin_alloca /* gcc/clang builtin: no header, portable everywhere */
 #endif
 #include <formats/rvorbis.h>
+/* Convert a float coefficient in [-1, 1] to Q31, round half away from
+ * zero, clamped (the window hits exactly 1.0). Double arithmetic: at
+ * Q31 scale, float's 24-bit mantissa would itself be the error floor. */
+static int32_t rvq_coef_q31(float c)
+{
+   double s = (double)c * 2147483648.0 + ((c >= 0.0f) ? 0.5 : -0.5);
+   if (s >=  2147483647.0) return (int32_t) 2147483647;
+   if (s <= -2147483648.0) return (int32_t)-2147483647 - 1;
+   return (int32_t)s;
+}
+
 
 /*   ERROR CODES */
 
@@ -780,8 +796,10 @@ static int init_blocksize(vorb *f, int b, int n)
    compute_window(n, f->window[b]);
 
    {
-      /* Q27 integer twins for the fixed-point s16 pipeline, generated
-       * from the float tables computed above. */
+      /* Q31 integer twins for the fixed-point s16 pipeline, generated
+       * from the float tables computed above.  All four tables are
+       * |c| <= 1.0; the window peaks at exactly 1.0, which would
+       * overflow Q31, so conversion clamps to INT32_MAX (0.5 ulp). */
       int k;
       f->A_q[b]      = (int32_t *) setup_malloc(f, sizeof(int32_t) * n2);
       f->B_q[b]      = (int32_t *) setup_malloc(f, sizeof(int32_t) * n2);
@@ -791,16 +809,12 @@ static int init_blocksize(vorb *f, int b, int n)
          return error(f, RVORBIS_outofmem);
       for (k = 0; k < n2; k++)
       {
-         f->A_q[b][k] = (int32_t)(f->A[b][k] * (float)(1 << 27)
-               + ((f->A[b][k] >= 0.0f) ? 0.5f : -0.5f));
-         f->B_q[b][k] = (int32_t)(f->B[b][k] * (float)(1 << 27)
-               + ((f->B[b][k] >= 0.0f) ? 0.5f : -0.5f));
-         f->window_q[b][k] = (int32_t)(f->window[b][k] * (float)(1 << 27)
-               + ((f->window[b][k] >= 0.0f) ? 0.5f : -0.5f));
+         f->A_q[b][k]      = rvq_coef_q31(f->A[b][k]);
+         f->B_q[b][k]      = rvq_coef_q31(f->B[b][k]);
+         f->window_q[b][k] = rvq_coef_q31(f->window[b][k]);
       }
       for (k = 0; k < n4; k++)
-         f->C_q[b][k] = (int32_t)(f->C[b][k] * (float)(1 << 27)
-               + ((f->C[b][k] >= 0.0f) ? 0.5f : -0.5f));
+         f->C_q[b][k] = rvq_coef_q31(f->C[b][k]);
    }
    f->bit_reverse[b] = (uint16_t *) setup_malloc(f, sizeof(uint16_t) * n8);
    if (!f->bit_reverse[b]) return error(f, RVORBIS_outofmem);
