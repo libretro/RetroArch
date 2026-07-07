@@ -1263,13 +1263,6 @@ static INLINE int32_t rvq_sat_q20(int64_t v)
    if (v < -0x7FFFFFFFLL - 1) return (int32_t)-0x7FFFFFFF - 1;
    return (int32_t)v;
 }
-static int32_t rvq_coef_q31(float c)
-{
-   double t = (double)c * 2147483648.0 + ((c >= 0.0f) ? 0.5 : -0.5);
-   if (t >=  2147483647.0) return (int32_t) 2147483647;
-   if (t <= -2147483648.0) return (int32_t)-2147483647 - 1;
-   return (int32_t)t;
-}
 static int32_t rvq_coef_q20(float c)
 {
    double t = (double)c * (double)(1 << RVQ_RBITS)
