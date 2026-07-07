@@ -180,6 +180,7 @@ HAVE_RTGA=yes              # RTGA support
 HAVE_RDDS=yes              # DDS (DXT/BCn) support
 HAVE_RWEBP=yes             # RWEBP support
 HAVE_RWEBM=no              # RWEBM (WebM/Matroska demuxer) support
+HAVE_RVP9=no               # RVP9 (VP9 video decoder) support
 HAVE_RWAV=yes              # WAV support
 HAVE_HID=no                # Low-level HID (Human Interface Device) support
 HAVE_AUDIOMIXER=yes        # Audio Mixer

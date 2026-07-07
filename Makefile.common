@@ -2315,6 +2315,11 @@ ifeq ($(HAVE_RWEBM), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/webm/rwebm.o
 endif
 
+ifeq ($(HAVE_RVP9), 1)
+   DEFINES += -DHAVE_RVP9
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/vp9/rvp9.o
+endif
+
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/rjson.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o \
