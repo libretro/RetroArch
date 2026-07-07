@@ -7143,6 +7143,10 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 }
 #endif
 
+#if defined(RETROARCH_VALIDATION_DUMPS) && !defined(_WIN32)
+#include <unistd.h>
+#include <sys/wait.h>
+#endif
 #if defined(RETROARCH_VALIDATION_DUMPS)
 /* Validation dump for the displaylist build path.
  *
@@ -7213,6 +7217,81 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
                list.list[i].type, (unsigned)list.list[i].entry_idx);
       file_list_deinitialize(&list);
    }
+   /* Second pass: menu_displaylist_ctl itself, the 271-case switch
+    * the first pass never reached.  Each type builds in a forked
+    * child from identical pristine parent state, so one crashing or
+    * hanging case names itself in the dump without taking the run
+    * down, and no case sees another's side effects.  POSIX only;
+    * the dump is a validation tool and never ships. */
+#if !defined(_WIN32)
+   for (t = 0; t <= (unsigned)DISPLAYLIST_PENDING_CLEAR; t++)
+   {
+      int pfd[2];
+      pid_t pid;
+      if (t == (unsigned)DISPLAYLIST_INFORMATION_LIST
+            || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
+            || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
+            || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
+                  && t <= (unsigned)DISPLAYLIST_CORE_SYSTEM_FILES))
+      {
+         filestream_printf(f, "=c= %u skipped\n", t);
+         continue;
+      }
+      filestream_printf(f, "=c= %u ", t);
+      filestream_flush(f);
+      if (pipe(pfd) != 0)
+         break;
+      if ((pid = fork()) == 0)
+      {
+         file_list_t cl;
+         menu_displaylist_info_t info;
+         FILE *w = fdopen(pfd[1], "w");
+         size_t i2;
+         bool ret;
+         close(pfd[0]);
+         memset(&cl, 0, sizeof(cl));
+         menu_displaylist_info_init(&info);
+         info.list = &cl;
+         ret = menu_displaylist_ctl(
+               (enum menu_displaylist_ctl_state)t, &info, settings);
+         if (w)
+         {
+            fprintf(w, "ret=%d flags=%08x size=%u\n",
+                  ret ? 1 : 0, (unsigned)info.flags, (unsigned)cl.size);
+            for (i2 = 0; i2 < cl.size; i2++)
+               fprintf(w, "%u|%s|%s|%u|%u\n", (unsigned)i2,
+                     cl.list[i2].path  ? cl.list[i2].path  : "",
+                     cl.list[i2].label ? cl.list[i2].label : "",
+                     cl.list[i2].type, (unsigned)cl.list[i2].entry_idx);
+            fflush(w);
+         }
+         _exit(0);
+      }
+      else if (pid > 0)
+      {
+         char buf[512];
+         ssize_t r;
+         int status = 0;
+         close(pfd[1]);
+         while ((r = read(pfd[0], buf, sizeof(buf))) > 0)
+            filestream_write(f, buf, (size_t)r);
+         close(pfd[0]);
+         waitpid(pid, &status, 0);
+         if (WIFSIGNALED(status))
+            filestream_printf(f, "crashed sig=%d\n", WTERMSIG(status));
+         else if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+            filestream_printf(f, "exit=%d\n",
+                  WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+         filestream_flush(f);
+      }
+      else
+      {
+         close(pfd[0]);
+         close(pfd[1]);
+         break;
+      }
+   }
+#endif
    menu_st->entries.list_settings = saved_list;
    filestream_close(f);
 }
