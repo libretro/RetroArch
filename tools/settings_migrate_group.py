@@ -624,7 +624,9 @@ def clean_objs():
             p = 'obj-unix/release/%s%s' % (f, ext)
             if os.path.exists(p): os.remove(p)
 def build_dump(out):
-    clean_objs(); run("rm -f ./retroarch"); run("nice make -j%d" % os.cpu_count())
+    clean_objs(); run("rm -f ./retroarch"); run("nice make -j%d CFLAGS='-O0 -g0' 2>/dev/null" % os.cpu_count())
+    if not os.path.exists('./retroarch'):
+        run("nice make -j%d" % os.cpu_count())
     assert os.path.exists('./retroarch'), "BUILD FAILED: " + run("make 2>&1 | tail -2").stdout
     run("HOME=/tmp/ra_home RETROARCH_SETTINGS_DUMP=%s timeout 8 ./retroarch --config /tmp/ra.cfg" % out)
     assert os.path.getsize(out) > 10000
