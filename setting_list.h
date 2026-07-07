@@ -125,11 +125,13 @@ struct rarch_setting
 
    float               min;
    float               max;
-   struct
+   /* Disjoint by type: float entries store their printf rounding
+    * string, directory entries the string shown while unset. */
+   union
    {
-      const char     *empty_path;
-   } dir;
-   const char           *rounding_fraction;
+      const char        *rounding_fraction;   /* ST_FLOAT */
+      const char        *empty_path;          /* ST_DIR   */
+   } aux;
    const char           *name;
    const char           *short_description;
    const char           *values;

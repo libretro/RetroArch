@@ -817,7 +817,7 @@ FloatSpinBox::FloatSpinBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.fraction)
 {
-   QRegularExpressionMatch match = DECIMALS_REGEX.match(setting->rounding_fraction);
+   QRegularExpressionMatch match = DECIMALS_REGEX.match(setting->aux.rounding_fraction);
 
    if (match.hasMatch())
       setDecimals(match.captured(1).toInt());
@@ -940,7 +940,7 @@ FloatSlider::FloatSlider(rarch_setting_t *setting, QWidget *parent) :
    ,m_value(setting->value.target.fraction)
    ,m_decimalsRegEx("%.(\\d)f")
 {
-   QRegularExpressionMatch match = m_decimalsRegEx.match(setting->rounding_fraction);
+   QRegularExpressionMatch match = m_decimalsRegEx.match(setting->aux.rounding_fraction);
 
    if (match.hasMatch())
       m_precision = pow(10, match.captured(1).toInt());

@@ -1252,7 +1252,7 @@ static size_t setting_get_string_representation_st_float(rarch_setting_t *settin
       char *s, size_t len)
 {
    if (setting)
-      return snprintf(s, len, setting->rounding_fraction,
+      return snprintf(s, len, setting->aux.rounding_fraction,
             *setting->value.target.fraction);
    return 0;
 }
@@ -1265,12 +1265,12 @@ static size_t setting_get_string_representation_st_dir(rarch_setting_t *setting,
 #if IOS
       if (*setting->value.target.string)
          return fill_pathname_abbreviate_special(s, setting->value.target.string, len);
-      return strlcpy(s, setting->dir.empty_path, len);
+      return strlcpy(s, setting->aux.empty_path, len);
 #else
       return strlcpy(s,
              *setting->value.target.string
             ? setting->value.target.string
-            : setting->dir.empty_path,
+            : setting->aux.empty_path,
             len);
 #endif
    }
@@ -1381,7 +1381,7 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.bind_type                 = 0;
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
+   result.aux.rounding_fraction         = NULL;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
@@ -1443,7 +1443,7 @@ static rarch_setting_t setting_group_setting(
    result.bind_type                 = 0;
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
+   result.aux.rounding_fraction         = NULL;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
@@ -1509,7 +1509,7 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.bind_type                 = 0;
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
-   result.rounding_fraction         = rounding;
+   result.aux.rounding_fraction         = rounding;
 
    result.value.target.fraction     = target;
    result.default_value.fraction    = default_value;
@@ -1580,7 +1580,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.bind_type                       = 0;
    result.browser_selection_type          = ST_NONE;
    result.step                            = 0.0f;
-   result.rounding_fraction               = NULL;
+   result.aux.rounding_fraction               = NULL;
 
    result.value.target.unsigned_integer   = target;
    result.default_value.unsigned_integer  = default_value;
@@ -1653,7 +1653,7 @@ static rarch_setting_t setting_size_setting(const char* name,
    result.bind_type                 = 0;
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
+   result.aux.rounding_fraction         = NULL;
 
    result.value.target.sizet        = target;
    result.default_value.sizet       = default_value;
@@ -1725,7 +1725,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.bind_type                 = 0;
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
+   result.aux.rounding_fraction         = NULL;
 
    result.value.target.keybind      = target;
    result.default_value.keybind     = default_value;
@@ -1843,9 +1843,9 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    result.bind_type                 = 0;
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
+   result.aux.rounding_fraction         = NULL;
 
-   result.dir.empty_path            = empty;
+   result.aux.empty_path            = empty;
    result.value.target.string       = target;
    result.default_value.string      = default_value;
 
@@ -1961,7 +1961,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.bind_type                 = 0;
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
+   result.aux.rounding_fraction         = NULL;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
@@ -2031,7 +2031,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.bind_type                 = 0;
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
+   result.aux.rounding_fraction         = NULL;
 
    result.value.target.boolean      = target;
    result.default_value.boolean     = default_value;
@@ -2102,7 +2102,7 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.bind_type                 = 0;
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
+   result.aux.rounding_fraction         = NULL;
 
    result.value.target.integer      = target;
    result.default_value.integer     = default_value;
@@ -18754,7 +18754,7 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].free_flags                       = 0; \
    (*&list)[pos].min                              = 0.0; \
    (*&list)[pos].max                              = 0.0; \
-   (*&list)[pos].rounding_fraction                = NULL; \
+   (*&list)[pos].aux.rounding_fraction                = NULL; \
    (*&list)[pos].name                             = NULL; \
    (*&list)[pos].short_description                = NULL; \
    (*&list)[pos].values                           = NULL; \
@@ -18771,7 +18771,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].get_string_representation        = NULL; \
    (*&list)[pos].default_value.fraction           = 0.0f; \
    (*&list)[pos].value.target.fraction            = NULL; \
-   (*&list)[pos].dir.empty_path                   = NULL; \
    (*&list)[pos].cmd_trigger_idx                  = CMD_EVENT_NONE; \
 }
 
@@ -19065,7 +19064,8 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
             (int)s->cmd_trigger_idx,
             (unsigned)s->size,
             dflt,
-            s->rounding_fraction ? s->rounding_fraction : "",
+            (s->type == ST_FLOAT && s->aux.rounding_fraction)
+                  ? s->aux.rounding_fraction : "",
             ok_tag, left_tag, rght_tag, strt_tag, sel_tag,
             s->short_description ? s->short_description : "",
             s->values ? s->values : "",
