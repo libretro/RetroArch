@@ -7211,6 +7211,31 @@ void menu_displaylist_validation_dump(void)
 }
 #endif
 
+typedef struct menu_displaylist_settings_row
+{
+   enum msg_hash_enums label;
+   uint16_t parse_type;   /* enum menu_displaylist_parse_type */
+   uint16_t add_empty;
+} menu_displaylist_settings_row_t;
+
+/* One loop for the runs of settings entries the displaylist switch
+ * used to spell out call by call; a run is a readable table now. */
+static unsigned menu_displaylist_parse_settings_rows(
+      file_list_t *list, settings_t *settings,
+      const menu_displaylist_settings_row_t *rows, unsigned n)
+{
+   unsigned i, count = 0;
+   for (i = 0; i < n; i++)
+      if (menu_displaylist_parse_settings_enum(list,
+            (enum menu_displaylist_parse_type)rows[i].parse_type,
+            rows[i].add_empty != 0,
+            menu_setting_find_enum(rows[i].label),
+            rows[i].label, true,
+            settings->bools.menu_show_advanced_settings) == 0)
+         count++;
+   return count;
+}
+
 unsigned menu_displaylist_build_list(
       file_list_t *list,
       settings_t *settings,
@@ -7587,18 +7612,15 @@ unsigned menu_displaylist_build_list(
                            MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + RARCH_FIRST_META_KEY),
                      PARSE_ONLY_BIND, false) == 0)
                count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_INPUT_HOTKEY_DEVICE_MERGE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
+            {
+               static const menu_displaylist_settings_row_t dl_rows_1[] = {
+                  { MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_INPUT_HOTKEY_DEVICE_MERGE, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1, PARSE_ONLY_BOOL, false },
+               };
+               count += menu_displaylist_parse_settings_rows(list, settings,
+                     dl_rows_1, (unsigned)ARRAY_SIZE(dl_rows_1));
+            }
 
             /* All other binds come last */
             for (i = 0; i < RARCH_BIND_LIST_END; i++)
@@ -7942,44 +7964,29 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
          {
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_ENABLE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_DRIVER,
-                     PARSE_ONLY_STRING_OPTIONS, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_DEVICE,
-                     PARSE_ONLY_STRING, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_LATENCY,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,
-                     PARSE_ONLY_STRING_OPTIONS, false) == 0)
-               count++;
+            {
+               static const menu_displaylist_settings_row_t dl_rows_2[] = {
+                  { MENU_ENUM_LABEL_AUDIO_ENABLE, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_AUDIO_DRIVER, PARSE_ONLY_STRING_OPTIONS, false },
+                  { MENU_ENUM_LABEL_AUDIO_DEVICE, PARSE_ONLY_STRING, false },
+                  { MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_AUDIO_LATENCY, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER, PARSE_ONLY_STRING_OPTIONS, false },
+               };
+               count += menu_displaylist_parse_settings_rows(list, settings,
+                     dl_rows_2, (unsigned)ARRAY_SIZE(dl_rows_2));
+            }
             if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
             {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_AUDIO_FASTPATH_S16,
-                        PARSE_ONLY_BOOL, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
+               {
+                  static const menu_displaylist_settings_row_t dl_rows_3[] = {
+                     { MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY, PARSE_ONLY_UINT, false },
+                     { MENU_ENUM_LABEL_AUDIO_FASTPATH_S16, PARSE_ONLY_BOOL, false },
+                     { MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION, PARSE_ONLY_UINT, false },
+                  };
+                  count += menu_displaylist_parse_settings_rows(list, settings,
+                        dl_rows_3, (unsigned)ARRAY_SIZE(dl_rows_3));
+               }
             }
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
@@ -8012,30 +8019,18 @@ unsigned menu_displaylist_build_list(
          break;
 #ifdef HAVE_MICROPHONE
       case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_DRIVER,
-                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_DEVICE,
-                  PARSE_ONLY_STRING, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_LATENCY,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER,
-                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
-            count++;
+         {
+            static const menu_displaylist_settings_row_t dl_rows_4[] = {
+               { MENU_ENUM_LABEL_MICROPHONE_ENABLE, PARSE_ONLY_BOOL, false },
+               { MENU_ENUM_LABEL_MICROPHONE_DRIVER, PARSE_ONLY_STRING_OPTIONS, false },
+               { MENU_ENUM_LABEL_MICROPHONE_DEVICE, PARSE_ONLY_STRING, false },
+               { MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_MICROPHONE_LATENCY, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER, PARSE_ONLY_STRING_OPTIONS, false },
+            };
+            count += menu_displaylist_parse_settings_rows(list, settings,
+                  dl_rows_4, (unsigned)ARRAY_SIZE(dl_rows_4));
+         }
          if (string_is_not_equal(settings->arrays.microphone_resampler, "null"))
          {
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -8048,18 +8043,15 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_UINT, false) == 0)
             count++;
 #ifdef HAVE_WASAPI
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
+         {
+            static const menu_displaylist_settings_row_t dl_rows_5[] = {
+               { MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE, PARSE_ONLY_BOOL, false },
+               { MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT, PARSE_ONLY_BOOL, false },
+               { MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH, PARSE_ONLY_UINT, false },
+            };
+            count += menu_displaylist_parse_settings_rows(list, settings,
+                  dl_rows_5, (unsigned)ARRAY_SIZE(dl_rows_5));
+         }
 #endif
          break;
 #endif
@@ -8136,30 +8128,18 @@ unsigned menu_displaylist_build_list(
          {
             gfx_ctx_flags_t flags;
 
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
+            {
+               static const menu_displaylist_settings_row_t dl_rows_6[] = {
+                  { MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS, PARSE_ACTION, false },
+                  { MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS, PARSE_ACTION, false },
+                  { MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS, PARSE_ACTION, false },
+                  { MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS, PARSE_ACTION, false },
+                  { MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS, PARSE_ACTION, false },
+                  { MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS, PARSE_ACTION, false },
+               };
+               count += menu_displaylist_parse_settings_rows(list, settings,
+                     dl_rows_6, (unsigned)ARRAY_SIZE(dl_rows_6));
+            }
 
             if (video_display_server_get_flags(&flags))
             {
@@ -8178,40 +8158,25 @@ unsigned menu_displaylist_build_list(
                      count++;
             }
 
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
+            {
+               static const menu_displaylist_settings_row_t dl_rows_7[] = {
+                  { MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE, PARSE_ONLY_BOOL, false },
 #ifdef HAVE_VIDEO_FILTER
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
+                  { MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE, PARSE_ONLY_BOOL, false },
 #endif
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_BRIGHTNESS_CONTROL,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_CTX_SCALING,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
+                  { MENU_ENUM_LABEL_BRIGHTNESS_CONTROL, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_CTX_SCALING, PARSE_ONLY_BOOL, false },
 #if defined(DINGUX)
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
+                  { MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE, PARSE_ONLY_UINT, false },
 #if defined(RS90) || defined(MIYOO)
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
+                  { MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE, PARSE_ONLY_UINT, false },
 #endif
 #endif
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
+                  { MENU_ENUM_LABEL_VIDEO_SHADER_DELAY, PARSE_ONLY_UINT, false },
+               };
+               count += menu_displaylist_parse_settings_rows(list, settings,
+                     dl_rows_7, (unsigned)ARRAY_SIZE(dl_rows_7));
+            }
 #ifdef HAVE_VIDEO_FILTER
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_FILTER,
@@ -10141,22 +10106,16 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
          {
             bool *threaded = video_driver_get_threaded();
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_DRIVER,
-                     PARSE_ONLY_STRING_OPTIONS, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_THREADED,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
-                     PARSE_ONLY_INT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
+            {
+               static const menu_displaylist_settings_row_t dl_rows_8[] = {
+                  { MENU_ENUM_LABEL_VIDEO_DRIVER, PARSE_ONLY_STRING_OPTIONS, false },
+                  { MENU_ENUM_LABEL_VIDEO_THREADED, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_VIDEO_GPU_INDEX, PARSE_ONLY_INT, false },
+                  { MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX, PARSE_ONLY_UINT, false },
+               };
+               count += menu_displaylist_parse_settings_rows(list, settings,
+                     dl_rows_8, (unsigned)ARRAY_SIZE(dl_rows_8));
+            }
 #if defined(WIIU)
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_WIIU_PREFER_DRC,
@@ -10198,22 +10157,16 @@ unsigned menu_displaylist_build_list(
                count++;
 #endif
 
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_PAL60_ENABLE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_GAMMA,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SOFT_FILTER,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
+            {
+               static const menu_displaylist_settings_row_t dl_rows_9[] = {
+                  { MENU_ENUM_LABEL_PAL60_ENABLE, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_VIDEO_GAMMA, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_SOFT_FILTER, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER, PARSE_ONLY_UINT, false },
+               };
+               count += menu_displaylist_parse_settings_rows(list, settings,
+                     dl_rows_9, (unsigned)ARRAY_SIZE(dl_rows_9));
+            }
 #if defined(DINGUX) && defined(DINGUX_BETA)
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE,
@@ -10222,18 +10175,15 @@ unsigned menu_displaylist_build_list(
 #endif
             if (threaded && !*threaded)
             {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
-                        PARSE_ONLY_FLOAT, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
-                        PARSE_ONLY_FLOAT, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
-                        PARSE_ONLY_FLOAT, false) == 0)
-                  count++;
+               {
+                  static const menu_displaylist_settings_row_t dl_rows_10[] = {
+                     { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO, PARSE_ONLY_FLOAT, false },
+                  };
+                  count += menu_displaylist_parse_settings_rows(list, settings,
+                        dl_rows_10, (unsigned)ARRAY_SIZE(dl_rows_10));
+               }
             }
             if (video_display_server_has_resolution_list())
             {
@@ -10449,22 +10399,16 @@ unsigned menu_displaylist_build_list(
                         count++;
                      break;
                   case ASPECT_RATIO_CUSTOM:
-                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
-                              PARSE_ONLY_INT, false) == 0)
-                        count++;
-                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-                              PARSE_ONLY_INT, false) == 0)
-                        count++;
-                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-                              PARSE_ONLY_UINT, false) == 0)
-                        count++;
-                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-                              PARSE_ONLY_UINT, false) == 0)
-                        count++;
+                     {
+                        static const menu_displaylist_settings_row_t dl_rows_11[] = {
+                           { MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X, PARSE_ONLY_INT, false },
+                           { MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y, PARSE_ONLY_INT, false },
+                           { MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH, PARSE_ONLY_UINT, false },
+                           { MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT, PARSE_ONLY_UINT, false },
+                        };
+                        count += menu_displaylist_parse_settings_rows(list, settings,
+                              dl_rows_11, (unsigned)ARRAY_SIZE(dl_rows_11));
+                     }
                      break;
                   default:
                      break;
@@ -10489,30 +10433,18 @@ unsigned menu_displaylist_build_list(
 #endif
             }
 
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_VFILTER,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SMOOTH,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
+            {
+               static const menu_displaylist_settings_row_t dl_rows_12[] = {
+                  { MENU_ENUM_LABEL_VIDEO_VI_WIDTH, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_VFILTER, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_VIDEO_SMOOTH, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM, PARSE_ONLY_UINT, false },
+               };
+               count += menu_displaylist_parse_settings_rows(list, settings,
+                     dl_rows_12, (unsigned)ARRAY_SIZE(dl_rows_12));
+            }
          }
          break;
       case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
@@ -10820,78 +10752,45 @@ unsigned menu_displaylist_build_list(
          }
          break;
       case DISPLAYLIST_OSK_OVERLAY_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,
-                  PARSE_ONLY_PATH, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
+         {
+            static const menu_displaylist_settings_row_t dl_rows_13[] = {
+               { MENU_ENUM_LABEL_OSK_OVERLAY_PRESET, PARSE_ONLY_PATH, false },
+               { MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_AUTO_SCALE, PARSE_ONLY_BOOL, false },
+               { MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY, PARSE_ONLY_FLOAT, false },
+            };
+            count += menu_displaylist_parse_settings_rows(list, settings,
+                  dl_rows_13, (unsigned)ARRAY_SIZE(dl_rows_13));
+         }
          break;
       case DISPLAYLIST_OVERLAY_LIGHTGUN_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
-                  PARSE_ONLY_INT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
+         {
+            static const menu_displaylist_settings_row_t dl_rows_14[] = {
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_PORT, PARSE_ONLY_INT, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH, PARSE_ONLY_BOOL, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN, PARSE_ONLY_BOOL, false },
+            };
+            count += menu_displaylist_parse_settings_rows(list, settings,
+                  dl_rows_14, (unsigned)ARRAY_SIZE(dl_rows_14));
+         }
          break;
       case DISPLAYLIST_OVERLAY_MOUSE_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SPEED,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
+         {
+            static const menu_displaylist_settings_row_t dl_rows_15[] = {
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SPEED, PARSE_ONLY_FLOAT, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG, PARSE_ONLY_BOOL, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG, PARSE_ONLY_BOOL, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD, PARSE_ONLY_FLOAT, false },
+               { MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT, PARSE_ONLY_UINT, false },
+            };
+            count += menu_displaylist_parse_settings_rows(list, settings,
+                  dl_rows_15, (unsigned)ARRAY_SIZE(dl_rows_15));
+         }
          break;
 #endif
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
@@ -11422,18 +11321,15 @@ unsigned menu_displaylist_build_list(
             /* Add action items when cloud sync is enabled */
             if (settings->bools.cloud_sync_enable)
             {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW,
-                     PARSE_ACTION, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
-                     PARSE_ACTION, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
-                     PARSE_ACTION, false) == 0)
-                  count++;
+               {
+                  static const menu_displaylist_settings_row_t dl_rows_16[] = {
+                     { MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW, PARSE_ACTION, false },
+                     { MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL, PARSE_ACTION, false },
+                     { MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER, PARSE_ACTION, false },
+                  };
+                  count += menu_displaylist_parse_settings_rows(list, settings,
+                        dl_rows_16, (unsigned)ARRAY_SIZE(dl_rows_16));
+               }
             }
          }
          break;
