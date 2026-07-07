@@ -179,6 +179,7 @@ HAVE_RJPEG=yes             # RJPEG support
 HAVE_RTGA=yes              # RTGA support
 HAVE_RDDS=yes              # DDS (DXT/BCn) support
 HAVE_RWEBP=yes             # RWEBP support
+HAVE_RWEBM=no              # RWEBM (WebM/Matroska demuxer) support
 HAVE_RWAV=yes              # WAV support
 HAVE_HID=no                # Low-level HID (Human Interface Device) support
 HAVE_AUDIOMIXER=yes        # Audio Mixer
