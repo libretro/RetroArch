@@ -10394,6 +10394,12 @@ typedef struct setting_desc
 #define SDESC_RANGE_MINMAX \
    (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN | SDESC_FLG_ENFORCE_MAX)
 
+/* Every builder adds its tables with the same seven arguments; one
+ * macro keeps each addition to a line and the surface honest. */
+#define ADD_DESC(tbl) \
+   settings_list_add_desc(list, list_info, settings, \
+         tbl, ARRAY_SIZE(tbl), &group_info, &subgroup_info, parent_group)
+
 static void settings_list_add_desc(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -12592,11 +12598,7 @@ static void settings_build_main_menu(
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_MAIN_MENU);
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_0, ARRAY_SIZE(mm_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_0);
 
 #ifndef HAVE_DYNAMIC
       if (frontend_driver_has_fork())
@@ -12621,27 +12623,15 @@ static void settings_build_main_menu(
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_LOAD_CORE);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_BROWSER_ACTION);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_1, ARRAY_SIZE(mm_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_1);
          }
       }
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_2, ARRAY_SIZE(mm_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_2);
 
       if (settings->bools.history_list_enable)
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_3, ARRAY_SIZE(mm_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_3);
       }
 
 #ifdef HAVE_CDROM
@@ -12654,11 +12644,7 @@ static void settings_build_main_menu(
          {
             if (drive_list->size)
             {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_4, ARRAY_SIZE(mm_desc_4),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_4);
             }
 
             string_list_free(drive_list);
@@ -12671,73 +12657,37 @@ static void settings_build_main_menu(
             && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
 #endif
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_5, ARRAY_SIZE(mm_desc_5),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_5);
       }
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_6, ARRAY_SIZE(mm_desc_6),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_6);
 
 #if !defined(IOS) && !defined(HAVE_LAKKA)
       if (frontend_driver_has_fork())
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_7, ARRAY_SIZE(mm_desc_7),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_7);
       }
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_8, ARRAY_SIZE(mm_desc_8),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_8);
 #if !defined(IOS)
       /* Apple rejects iOS apps that let you forcibly quit them. */
 #ifdef HAVE_LAKKA
-      {
-         settings_list_add_desc(list, list_info, settings,
-               quit_lakka_desc, ARRAY_SIZE(quit_lakka_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(quit_lakka_desc);
 #else
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_9, ARRAY_SIZE(mm_desc_9),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_9);
 #endif
       MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_QUIT);
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_10, ARRAY_SIZE(mm_desc_10),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_10);
 
       if (string_is_not_equal(settings->arrays.record_driver, "null"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_11, ARRAY_SIZE(mm_desc_11),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_11);
       }
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_12, ARRAY_SIZE(mm_desc_12),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_12);
 #ifdef HAVE_LAKKA
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 #endif
@@ -12746,37 +12696,21 @@ static void settings_build_main_menu(
       if (string_is_not_equal(
                settings->arrays.bluetooth_driver, "null"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_13, ARRAY_SIZE(mm_desc_13),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_13);
       }
 #endif
 
 #if defined(HAVE_LAKKA) || defined(HAVE_WIFI)
       if (string_is_not_equal(settings->arrays.wifi_driver, "null"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_14, ARRAY_SIZE(mm_desc_14),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_14);
       }
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_15, ARRAY_SIZE(mm_desc_15),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_15);
       if (string_is_not_equal(settings->arrays.midi_driver, "null"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mm_desc_16, ARRAY_SIZE(mm_desc_16),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mm_desc_16);
       }
 
       for (user = 0; user < MAX_USERS; user++)
@@ -13257,11 +13191,7 @@ static void settings_build_configuration(
                   bool_entries[i].flags);
          }
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               configuration_desc_0, ARRAY_SIZE(configuration_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(configuration_desc_0);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -13326,11 +13256,7 @@ static void settings_build_logging(
          menu_settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
          SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_libretro_log_level)
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               logging_desc_0, ARRAY_SIZE(logging_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(logging_desc_0);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -13499,16 +13425,8 @@ static void settings_build_saving(
                   bool_entries[i].flags);
          }
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               sav_desc_0, ARRAY_SIZE(sav_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-      {
-         settings_list_add_desc(list, list_info, settings,
-               saving2_desc_0, ARRAY_SIZE(saving2_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(sav_desc_0);
+            ADD_DESC(saving2_desc_0);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -13535,11 +13453,7 @@ static void settings_build_cloud_sync(
       parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS);
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               cs_desc_0, ARRAY_SIZE(cs_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(cs_desc_0);
 
       CONFIG_STRING_OPTIONS(
             list, list_info,
@@ -13559,19 +13473,11 @@ static void settings_build_cloud_sync(
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], setting_string_action_left_driver)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], setting_string_action_right_driver)
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               cs_desc_1, ARRAY_SIZE(cs_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(cs_desc_1);
 
 #ifdef HAVE_S3
       /* AWS */
-      {
-         settings_list_add_desc(list, list_info, settings,
-               cs_desc_2, ARRAY_SIZE(cs_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(cs_desc_2);
 #endif
       END_SUB_GROUP(list, list_info, parent_group);
       END_GROUP(list, list_info, parent_group);
@@ -13596,16 +13502,8 @@ static void settings_build_frame_time_counter(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               frame_time_cou_desc_0, ARRAY_SIZE(frame_time_cou_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-      {
-         settings_list_add_desc(list, list_info, settings,
-               frame_time_cou_desc_1, ARRAY_SIZE(frame_time_cou_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(frame_time_cou_desc_0);
+            ADD_DESC(frame_time_cou_desc_1);
 
       END_SUB_GROUP(list, list_info, parent_group);
       END_GROUP(list, list_info, parent_group);
@@ -13629,11 +13527,7 @@ static void settings_build_rewind(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               rewind_desc_0, ARRAY_SIZE(rewind_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(rewind_desc_0);
 
          /* Descriptor holdout: setting class not modelled by descriptor rows. */
          CONFIG_SIZE(
@@ -13651,11 +13545,7 @@ static void settings_build_rewind(
          menu_settings_list_current_add_range(list, list_info,
                1024 * 1024, 1024 * 1024 * 1024, settings->uints.rewind_buffer_size_step * 1024 * 1024, true, true);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               rewind_desc_1, ARRAY_SIZE(rewind_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(rewind_desc_1);
 
       END_SUB_GROUP(list, list_info, parent_group);
       END_GROUP(list, list_info, parent_group);
@@ -14191,11 +14081,7 @@ static void settings_build_video(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
 #if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_0, ARRAY_SIZE(vid_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_0);
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Platform-specific", &group_info,
@@ -14207,21 +14093,13 @@ static void settings_build_video(
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Monitor", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_1, ARRAY_SIZE(vid_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_1);
 
          /* prevent unused function warning on unsupported builds */
          (void)setting_get_string_representation_int_gpu_index;
 
 #if defined(ANDROID) || TARGET_OS_IOS
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_2, ARRAY_SIZE(vid_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_2);
 #endif
 #ifdef HAVE_VULKAN
          if (string_is_equal(video_driver_get_ident(), "vulkan"))
@@ -14244,89 +14122,53 @@ static void settings_build_video(
                   SD_FLAG_NONE);
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_3, ARRAY_SIZE(vid_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_3);
          }
 #endif
 
 #ifdef HAVE_D3D10
          if (string_is_equal(video_driver_get_ident(), "d3d10"))
          {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_4, ARRAY_SIZE(vid_desc_4),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_4);
          }
 #endif
 
 #ifdef HAVE_D3D11
          if (string_is_equal(video_driver_get_ident(), "d3d11"))
          {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_5, ARRAY_SIZE(vid_desc_5),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_5);
          }
 #endif
 
 #ifdef HAVE_D3D12
          if (string_is_equal(video_driver_get_ident(), "d3d12"))
          {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_6, ARRAY_SIZE(vid_desc_6),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_6);
          }
 #endif
 
 #ifdef HAVE_METAL
          if (string_is_equal(video_driver_get_ident(), "metal"))
          {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_7, ARRAY_SIZE(vid_desc_7),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_7);
          }
 #endif
 
 #ifdef WIIU
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_8, ARRAY_SIZE(vid_desc_8),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_8);
 #endif
          if (video_driver_has_windowed())
          {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_9, ARRAY_SIZE(vid_desc_9),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_9);
          }
 
 
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  fs_desc, ARRAY_SIZE(fs_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(fs_desc);
 
 #if defined(DINGUX) && defined(DINGUX_BETA)
          if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
              || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  dingux_rr_desc, ARRAY_SIZE(dingux_rr_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(dingux_rr_desc);
          else
 #endif
          {
@@ -14338,9 +14180,7 @@ static void settings_build_video(
                 * variant below stays imperative because its
                 * default is read from the video driver at
                 * registration time. */
-               settings_list_add_desc(list, list_info, settings,
-                     refresh_desc, ARRAY_SIZE(refresh_desc),
-                     &group_info, &subgroup_info, parent_group);
+               ADD_DESC(refresh_desc);
             }
 
             {
@@ -14365,35 +14205,19 @@ static void settings_build_video(
             }
          }
 
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  autoswitch_desc, ARRAY_SIZE(autoswitch_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(autoswitch_desc);
 
          if (string_is_equal(settings->arrays.video_driver, "gl"))
          {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_10, ARRAY_SIZE(vid_desc_10),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_10);
          }
 
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Aspect", &group_info, &subgroup_info, parent_group);
 
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  bias_desc, ARRAY_SIZE(bias_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(bias_desc);
 
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  aspect_desc, ARRAY_SIZE(aspect_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(aspect_desc);
 
 
 #if defined(GEKKO) || defined(PS2) || defined(__PS3__)
@@ -14402,132 +14226,64 @@ static void settings_build_video(
          if (!string_is_equal(video_display_server_get_ident(), "null"))
 #endif
          {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_11, ARRAY_SIZE(vid_desc_11),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_11);
          }
 
 #if defined(HAVE_WINDOW_OFFSET)
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_12, ARRAY_SIZE(vid_desc_12),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_12);
 #endif
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  vp_size_desc, ARRAY_SIZE(vp_size_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(vp_size_desc);
 
 #if defined(DINGUX)
          if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
              || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  dingux_ka_desc, ARRAY_SIZE(dingux_ka_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(dingux_ka_desc);
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_13, ARRAY_SIZE(vid_desc_13),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_13);
 
          if (video_driver_has_windowed())
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  winscale_desc, ARRAY_SIZE(winscale_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(winscale_desc);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_14, ARRAY_SIZE(vid_desc_14),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_14);
 #ifndef OSX
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_15, ARRAY_SIZE(vid_desc_15),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_15);
 #endif
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
     (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_16, ARRAY_SIZE(vid_desc_16),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_16);
 #else
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_17, ARRAY_SIZE(vid_desc_17),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_17);
 #endif
-      {
-         settings_list_add_desc(list, list_info, settings,
-               video2_desc_0, ARRAY_SIZE(video2_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(video2_desc_0);
 
 #ifdef GEKKO
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  gx_desc, ARRAY_SIZE(gx_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(gx_desc);
 #endif
 
 #if defined(DINGUX)
          if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  dingux_ipu_desc, ARRAY_SIZE(dingux_ipu_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(dingux_ipu_desc);
 #if defined(RS90) || defined(MIYOO)
          else if (string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  dingux_rs90_desc, ARRAY_SIZE(dingux_rs90_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(dingux_rs90_desc);
 #endif
          else
 #endif
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  smooth_desc, ARRAY_SIZE(smooth_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(smooth_desc);
 
 #ifdef HAVE_ODROIDGO2
-                     {
-            settings_list_add_desc(list, list_info, settings,
-                  vid_ctx_desc, ARRAY_SIZE(vid_ctx_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                              ADD_DESC(vid_ctx_desc);
 #endif
 
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  rot_desc, ARRAY_SIZE(rot_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(rot_desc);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -14535,11 +14291,7 @@ static void settings_build_video(
          {
             START_SUB_GROUP(list, list_info, "HDR", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_18, ARRAY_SIZE(vid_desc_18),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_18);
 
             /* Descriptor holdout: poke tail outside the descriptor grammar. */
             CONFIG_UINT(
@@ -14563,25 +14315,13 @@ static void settings_build_video(
 
             /* if (settings->uints.video_hdr_mode > 0) */
             {
-               {
-                  settings_list_add_desc(list, list_info, settings,
-                        hdr_desc, ARRAY_SIZE(hdr_desc),
-                        &group_info, &subgroup_info, parent_group);
-               }
+                              ADD_DESC(hdr_desc);
 
                START_SUB_GROUP(list, list_info, "HDR", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_19, ARRAY_SIZE(vid_desc_19),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_19);
 
-               {
-                  settings_list_add_desc(list, list_info, settings,
-                        hdr_desc2, ARRAY_SIZE(hdr_desc2),
-                        &group_info, &subgroup_info, parent_group);
-               }
+                              ADD_DESC(hdr_desc2);
 
                END_SUB_GROUP(list, list_info, parent_group);
             }
@@ -14599,11 +14339,7 @@ static void settings_build_video(
 
          if (frontend_driver_can_set_screen_brightness())
          {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_20, ARRAY_SIZE(vid_desc_20),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_20);
          }
 
 #if defined(HAVE_THREADS) && !defined(__PSL1GHT__) && !defined(__PS3__) && !defined(__APPLE__)
@@ -14632,23 +14368,13 @@ static void settings_build_video(
          {
             /* Synchronization block: contiguous descriptor run.
              * Row order is list order and must be preserved. */
-            settings_list_add_desc(list, list_info, settings,
-                  sync_desc, ARRAY_SIZE(sync_desc),
-                  &group_info, &subgroup_info, parent_group);
+            ADD_DESC(sync_desc);
          }
 
          if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  avsync_desc, ARRAY_SIZE(avsync_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(avsync_desc);
 
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  fdelay_desc, ARRAY_SIZE(fdelay_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(fdelay_desc);
 
          /* Unlike all other shader-related menu entries
           * (which appear in the shaders quick menu, and
@@ -14668,19 +14394,11 @@ static void settings_build_video(
                   || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)
                   || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
                   || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
-            {
-               settings_list_add_desc(list, list_info, settings,
-                     sdelay_desc, ARRAY_SIZE(sdelay_desc),
-                     &group_info, &subgroup_info, parent_group);
-            }
+                        ADD_DESC(sdelay_desc);
          }
 #endif
 
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  shader_desc, ARRAY_SIZE(shader_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(shader_desc);
 
          {
 #if defined(HAVE_STEAM) && defined(HAVE_MIST)
@@ -14694,11 +14412,7 @@ static void settings_build_video(
 #endif
             {
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               vid_desc_21, ARRAY_SIZE(vid_desc_21),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(vid_desc_21);
             }
          }
 
@@ -14711,16 +14425,8 @@ static void settings_build_video(
                &subgroup_info,
                parent_group);
 
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  misc_desc, ARRAY_SIZE(misc_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
-         {
-            settings_list_add_desc(list, list_info, settings,
-                  video_filter_desc, ARRAY_SIZE(video_filter_desc),
-                  &group_info, &subgroup_info, parent_group);
-         }
+                  ADD_DESC(misc_desc);
+                  ADD_DESC(video_filter_desc);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -14749,11 +14455,7 @@ static void settings_build_audio(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               audio_en_desc, ARRAY_SIZE(audio_en_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(audio_en_desc);
 
       /* The two mute settings stay imperative: their value
        * targets come from audio_get_bool_ptr() at registration
@@ -14794,11 +14496,7 @@ static void settings_build_audio(
             );
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               audio_state_desc, ARRAY_SIZE(audio_state_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(audio_state_desc);
 
       END_SUB_GROUP(list, list_info, parent_group);
 
@@ -14812,11 +14510,7 @@ static void settings_build_audio(
             &subgroup_info,
             parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               audio_sync_desc, ARRAY_SIZE(audio_sync_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(audio_sync_desc);
 
       /* The latency pair stays imperative: defaults come from
        * g_defaults at registration time. */
@@ -14855,17 +14549,9 @@ static void settings_build_audio(
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               audio_rq_desc, ARRAY_SIZE(audio_rq_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(audio_rq_desc);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               audio_fmt_desc, ARRAY_SIZE(audio_fmt_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(audio_fmt_desc);
 
       CONFIG_FLOAT(
             list, list_info,
@@ -14883,11 +14569,7 @@ static void settings_build_audio(
       menu_settings_list_current_add_range(list, list_info, 0.0, 0.020, 0.001, true, true);
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               audio_skew_desc, ARRAY_SIZE(audio_skew_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(audio_skew_desc);
 
       END_SUB_GROUP(list, list_info, parent_group);
 
@@ -14901,34 +14583,18 @@ static void settings_build_audio(
             &subgroup_info,
             parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               audio_dev_desc, ARRAY_SIZE(audio_dev_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(audio_dev_desc);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               audio_dsp_desc, ARRAY_SIZE(audio_dsp_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(audio_dsp_desc);
 
 #ifdef HAVE_WASAPI
       if (string_is_equal(audio_driver_get_ident(), "wasapi"))
-      {
-         settings_list_add_desc(list, list_info, settings,
-               audio_wasapi_desc, ARRAY_SIZE(audio_wasapi_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(audio_wasapi_desc);
 #endif
 
 #ifdef HAVE_ASIO
       if (string_is_equal(audio_driver_get_ident(), "asio"))
-      {
-         settings_list_add_desc(list, list_info, settings,
-               audio_asio_desc, ARRAY_SIZE(audio_asio_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(audio_asio_desc);
 #endif
 
       END_SUB_GROUP(list, list_info, parent_group);
@@ -14956,11 +14622,7 @@ static void settings_build_microphone(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mic_enable_desc, ARRAY_SIZE(mic_enable_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mic_enable_desc);
 
       END_SUB_GROUP(list, list_info, parent_group);
 
@@ -14984,11 +14646,7 @@ static void settings_build_microphone(
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef RARCH_MOBILE
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mic_block_desc, ARRAY_SIZE(mic_block_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mic_block_desc);
 #endif
 
       END_SUB_GROUP(list, list_info, parent_group);
@@ -15003,19 +14661,11 @@ static void settings_build_microphone(
             &subgroup_info,
             parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mic_misc_desc, ARRAY_SIZE(mic_misc_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mic_misc_desc);
 
 #ifdef HAVE_WASAPI
       if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))
-      {
-         settings_list_add_desc(list, list_info, settings,
-               mic_wasapi_desc, ARRAY_SIZE(mic_wasapi_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(mic_wasapi_desc);
 #endif
 
       END_SUB_GROUP(list, list_info, parent_group);
@@ -15045,76 +14695,36 @@ static void settings_build_input(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_0, ARRAY_SIZE(inp_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_0);
 
 #ifdef GEKKO
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_1, ARRAY_SIZE(inp_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_1);
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_2, ARRAY_SIZE(inp_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_2);
 
 #ifdef UDEV_TOUCH_SUPPORT
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_3, ARRAY_SIZE(inp_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_3);
 #endif
 
 #ifdef VITA
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_4, ARRAY_SIZE(inp_desc_4),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_4);
 #endif
 
 #if TARGET_OS_IPHONE
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_5, ARRAY_SIZE(inp_desc_5),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_5);
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_6, ARRAY_SIZE(inp_desc_6),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_6);
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_7, ARRAY_SIZE(inp_desc_7),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_7);
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_8, ARRAY_SIZE(inp_desc_8),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_8);
 
 #ifdef ANDROID
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_9, ARRAY_SIZE(inp_desc_9),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_9);
 
       {
          input_driver_state_t *st = input_state_get_ptr();
@@ -15138,20 +14748,12 @@ static void settings_build_input(
       }
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_10, ARRAY_SIZE(inp_desc_10),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_10);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_11, ARRAY_SIZE(inp_desc_11),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_11);
 
          {
             /* Auto (0) uses gravity detection, only available on Android.
@@ -15183,20 +14785,12 @@ static void settings_build_input(
 #endif
          SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_sensor_orientation)
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_12, ARRAY_SIZE(inp_desc_12),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_12);
 
 
          START_SUB_GROUP(list, list_info, "Binds", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               inp_desc_13, ARRAY_SIZE(inp_desc_13),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(inp_desc_13);
 
          {
             unsigned user;
@@ -15255,17 +14849,9 @@ static void settings_build_recording(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               recording_desc_0, ARRAY_SIZE(recording_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(recording_desc_0);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               recording2_desc_0, ARRAY_SIZE(recording2_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(recording2_desc_0);
 
          /* Descriptor holdout: non-general read/write handler. */
          CONFIG_UINT(
@@ -15299,23 +14885,11 @@ static void settings_build_recording(
          menu_settings_list_current_add_range(list, list_info, 1, 65536, 1, true, true);
 
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               recording_desc_1, ARRAY_SIZE(recording_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(recording_desc_1);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               recording2_desc_1, ARRAY_SIZE(recording2_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(recording2_desc_1);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               recording_desc_2, ARRAY_SIZE(recording_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(recording_desc_2);
 
          /* Descriptor holdout: value target lives in recording_state,
           * outside settings_t. */
@@ -15338,11 +14912,7 @@ static void settings_build_recording(
 
          START_SUB_GROUP(list, list_info, "Miscellaneous", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               recording_desc_3, ARRAY_SIZE(recording_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(recording_desc_3);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -15418,22 +14988,10 @@ static void settings_build_frame_throttling(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               frame_throttli_desc_0, ARRAY_SIZE(frame_throttli_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(frame_throttli_desc_0);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_thr_desc, ARRAY_SIZE(menu_thr_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
-      {
-         settings_list_add_desc(list, list_info, settings,
-               frame_throttli_desc_1, ARRAY_SIZE(frame_throttli_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_thr_desc);
+            ADD_DESC(frame_throttli_desc_1);
 
 #ifdef HAVE_RUNAHEAD
       /* Descriptor holdout: value target outside settings_t. */
@@ -15473,11 +15031,7 @@ static void settings_build_frame_throttling(
       SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], runahead_change_handler)
       menu_settings_list_current_add_range(list, list_info, 1, MAX_RUNAHEAD_FRAMES, 1, true, true);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               frame_throttli_desc_2, ARRAY_SIZE(frame_throttli_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(frame_throttli_desc_2);
 
       CONFIG_UINT(
             list, list_info,
@@ -15498,11 +15052,7 @@ static void settings_build_frame_throttling(
 #endif
 
 #ifdef ANDROID
-      {
-         settings_list_add_desc(list, list_info, settings,
-               frame_throttli_desc_3, ARRAY_SIZE(frame_throttli_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(frame_throttli_desc_3);
 #endif
       END_SUB_GROUP(list, list_info, parent_group);
       END_GROUP(list, list_info, parent_group);
@@ -15532,62 +15082,30 @@ static void settings_build_onscreen_notifications(
             parent_group);
 
 #ifdef HAVE_GFX_WIDGETS
-               {
-         settings_list_add_desc(list, list_info, settings,
-               osn_desc_0, ARRAY_SIZE(osn_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(osn_desc_0);
 
 #if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
-               {
-         settings_list_add_desc(list, list_info, settings,
-               osn_desc_1, ARRAY_SIZE(osn_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(osn_desc_1);
 #else
-      {
-         settings_list_add_desc(list, list_info, settings,
-               widget_fs_desc, ARRAY_SIZE(widget_fs_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(widget_fs_desc);
 #endif
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
 
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
-               {
-         settings_list_add_desc(list, list_info, settings,
-               osn_desc_2, ARRAY_SIZE(osn_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(osn_desc_2);
 #endif
 #endif
-               {
-         settings_list_add_desc(list, list_info, settings,
-               osn_desc_3, ARRAY_SIZE(osn_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(osn_desc_3);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               onscreen_not2_desc_0, ARRAY_SIZE(onscreen_not2_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(onscreen_not2_desc_0);
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               osn_desc_4, ARRAY_SIZE(osn_desc_4),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(osn_desc_4);
 
       END_SUB_GROUP(list, list_info, parent_group);
       START_SUB_GROUP(list, list_info, "Notification Views", &group_info, &subgroup_info, parent_group);
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               osn_desc_5, ARRAY_SIZE(osn_desc_5),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(osn_desc_5);
 
       END_SUB_GROUP(list, list_info, parent_group);
       END_GROUP(list, list_info, parent_group);
@@ -15654,11 +15172,7 @@ static void settings_build_overlay(
 
       if (video_driver_test_all_flags(GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               ovl_desc_0, ARRAY_SIZE(ovl_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(ovl_desc_0);
       }
       CONFIG_BOOL(
             list, list_info,
@@ -15765,23 +15279,11 @@ static void settings_build_overlay(
             );
       SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], overlay_enable_toggle_change_handler)
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               ovl_desc_1, ARRAY_SIZE(ovl_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(ovl_desc_1);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               overlay2_desc_0, ARRAY_SIZE(overlay2_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(overlay2_desc_0);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               ovl_desc_2, ARRAY_SIZE(ovl_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(ovl_desc_2);
 
       /* Descriptor holdout: poke tail outside the descriptor grammar. */
       CONFIG_UINT(
@@ -15836,11 +15338,7 @@ static void settings_build_overlay(
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_percentage)
       menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               ovl_desc_3, ARRAY_SIZE(ovl_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(ovl_desc_3);
 
       END_SUB_GROUP(list, list_info, parent_group);
 
@@ -15956,86 +15454,46 @@ static void settings_build_menu(
       if (   string_is_not_equal(settings->arrays.menu_driver, "rgui")
           && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu2_desc_0, ARRAY_SIZE(menu2_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu2_desc_0);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_0, ARRAY_SIZE(menu_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_0);
       }
 
       if (   string_is_not_equal(settings->arrays.menu_driver, "rgui")
           && string_is_not_equal(settings->arrays.menu_driver, "xmb"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_1, ARRAY_SIZE(menu_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_1);
       }
 
       if (string_is_equal(settings->arrays.menu_driver, "xmb"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_2, ARRAY_SIZE(menu_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_2);
       }
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_3, ARRAY_SIZE(menu_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_3);
 
 #if (defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)) && !defined(_3DS)
       if (     memcmp(settings->arrays.menu_driver, "glui", 5) == 0
             || memcmp(settings->arrays.menu_driver, "xmb", 4) == 0
             || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_4, ARRAY_SIZE(menu_desc_4),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_4);
       }
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_5, ARRAY_SIZE(menu_desc_5),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_5);
 
       if (string_is_equal(settings->arrays.menu_driver, "rgui"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_6, ARRAY_SIZE(menu_desc_6),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_6);
 
          if (video_driver_test_all_flags(GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
          {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_7, ARRAY_SIZE(menu_desc_7),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_7);
          }
 
 #if !defined(DINGUX)
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_8, ARRAY_SIZE(menu_desc_8),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_8);
 #if defined(GEKKO)
          menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LOCK_LAST-3, 1, true, true);
 #else
@@ -16044,17 +15502,9 @@ static void settings_build_menu(
          (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_9, ARRAY_SIZE(menu_desc_9),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_9);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu2_desc_1, ARRAY_SIZE(menu2_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu2_desc_1);
 
          /* ps2 and sdl_dingux/sdl_rs90 gfx drivers do
           * not support menu framebuffer transparency */
@@ -16062,29 +15512,17 @@ static void settings_build_menu(
              && !string_is_equal(settings->arrays.video_driver, "sdl_dingux")
              && !string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
          {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_10, ARRAY_SIZE(menu_desc_10),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_10);
          }
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_11, ARRAY_SIZE(menu_desc_11),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_11);
       }
 
 #if defined(HAVE_XMB) || defined (HAVE_OZONE)
       if (     string_is_equal(settings->arrays.menu_driver, "xmb")
             || string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_12, ARRAY_SIZE(menu_desc_12),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_12);
 #ifdef RARCH_MOBILE
          /* We don't want mobile users being able to switch this off. */
          SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], NULL)
@@ -16099,51 +15537,27 @@ static void settings_build_menu(
 
       if (string_is_equal(settings->arrays.menu_driver, "xmb"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_13, ARRAY_SIZE(menu_desc_13),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_13);
       }
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_14, ARRAY_SIZE(menu_desc_14),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_14);
 
       END_SUB_GROUP(list, list_info, parent_group);
 
       START_SUB_GROUP(list, list_info, "Navigation", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_15, ARRAY_SIZE(menu_desc_15),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_15);
 
       END_SUB_GROUP(list, list_info, parent_group);
       START_SUB_GROUP(list, list_info, "Settings View", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_16, ARRAY_SIZE(menu_desc_16),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_16);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu2_desc_2, ARRAY_SIZE(menu2_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu2_desc_2);
 
 #ifdef HAVE_THREADS
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_17, ARRAY_SIZE(menu_desc_17),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_17);
 #endif
       END_SUB_GROUP(list, list_info, parent_group);
 
@@ -16154,11 +15568,7 @@ static void settings_build_menu(
             || memcmp(settings->arrays.menu_driver, "xmb", 4) == 0
             || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_18, ARRAY_SIZE(menu_desc_18),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_18);
       }
 
 #ifdef HAVE_XMB
@@ -16166,23 +15576,11 @@ static void settings_build_menu(
       {
          /* only XMB uses these values, don't show
           * them on other drivers. */
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_19, ARRAY_SIZE(menu_desc_19),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_19);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu2_desc_3, ARRAY_SIZE(menu2_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu2_desc_3);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_20, ARRAY_SIZE(menu_desc_20),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_20);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #ifdef HAVE_SHADERPIPELINE
@@ -16197,147 +15595,75 @@ static void settings_build_menu(
                   || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
                   || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
             {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_21, ARRAY_SIZE(menu_desc_21),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_21);
             }
          }
 #endif
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_22, ARRAY_SIZE(menu_desc_22),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_22);
     }
 #endif
       if (string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_23, ARRAY_SIZE(menu_desc_23),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_23);
       }
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_24, ARRAY_SIZE(menu_desc_24),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_24);
 
 #ifdef HAVE_LAKKA
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_quit_lakka_desc, ARRAY_SIZE(menu_quit_lakka_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_quit_lakka_desc);
 #elif !defined(IOS)
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_25, ARRAY_SIZE(menu_desc_25),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_25);
 #endif
 
 #if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_26, ARRAY_SIZE(menu_desc_26),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_26);
 #else
 #if !defined(IOS)
          if (frontend_driver_has_fork())
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_27, ARRAY_SIZE(menu_desc_27),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_27);
 #endif
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_28, ARRAY_SIZE(menu_desc_28),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_28);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu2_desc_4, ARRAY_SIZE(menu2_desc_4),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu2_desc_4);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_29, ARRAY_SIZE(menu_desc_29),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_29);
 
 #ifdef HAVE_MATERIALUI
       if (string_is_equal(settings->arrays.menu_driver, "glui"))
       {
          /* only MaterialUI uses these values, don't show
           * them on other drivers. */
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_30, ARRAY_SIZE(menu_desc_30),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_30);
       }
 #endif
 
 #ifdef HAVE_OZONE
       if (string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_31, ARRAY_SIZE(menu_desc_31),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_31);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu2_desc_5, ARRAY_SIZE(menu2_desc_5),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu2_desc_5);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_32, ARRAY_SIZE(menu_desc_32),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_32);
       }
 #endif
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_33, ARRAY_SIZE(menu_desc_33),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_33);
 
       if (string_is_equal(settings->arrays.menu_driver, "rgui"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_34, ARRAY_SIZE(menu_desc_34),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_34);
       }
 
       if (     memcmp(settings->arrays.menu_driver, "rgui", 5) == 0
             || memcmp(settings->arrays.menu_driver, "xmb", 4) == 0
             || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_35, ARRAY_SIZE(menu_desc_35),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_35);
       }
 
       if (   string_is_equal(settings->arrays.menu_driver, "xmb")
@@ -16405,11 +15731,7 @@ static void settings_build_menu(
 
       if (string_is_equal(settings->arrays.menu_driver, "xmb"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_36, ARRAY_SIZE(menu_desc_36),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_36);
 
          CONFIG_UINT(
                list, list_info,
@@ -16431,27 +15753,15 @@ static void settings_build_menu(
             || memcmp(settings->arrays.menu_driver, "xmb", 4) == 0
             || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_37, ARRAY_SIZE(menu_desc_37),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_37);
       }
 
       if (string_is_equal(settings->arrays.menu_driver, "rgui"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_38, ARRAY_SIZE(menu_desc_38),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_38);
       }
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_desc_39, ARRAY_SIZE(menu_desc_39),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(menu_desc_39);
 
 
       END_SUB_GROUP(list, list_info, parent_group);
@@ -16480,26 +15790,14 @@ static void settings_build_power_management(
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
 #ifdef ANDROID
-      {
-         settings_list_add_desc(list, list_info, settings,
-               power_manageme_desc_0_s0, ARRAY_SIZE(power_manageme_desc_0_s0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(power_manageme_desc_0_s0);
 #endif
 #ifdef HAVE_LAKKA
-      {
-         settings_list_add_desc(list, list_info, settings,
-               power_manageme_desc_0_s1, ARRAY_SIZE(power_manageme_desc_0_s1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(power_manageme_desc_0_s1);
 #endif
 #ifndef HAVE_LAKKA
       if (frontend_driver_has_gamemode())
-      {
-         settings_list_add_desc(list, list_info, settings,
-               power_manageme_desc_1, ARRAY_SIZE(power_manageme_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(power_manageme_desc_1);
 
       END_SUB_GROUP(list, list_info, parent_group);
       END_GROUP(list, list_info, parent_group);
@@ -16530,11 +15828,7 @@ static void settings_build_ai_service(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               ai_service_desc_0, ARRAY_SIZE(ai_service_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(ai_service_desc_0);
 
       CONFIG_STRING_OPTIONS(
             list, list_info,
@@ -16570,11 +15864,7 @@ static void settings_build_ai_service(
       (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_generic_action_start_default)
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               ai_service_desc_1, ARRAY_SIZE(ai_service_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(ai_service_desc_1);
 
 
       END_SUB_GROUP(list, list_info, parent_group);
@@ -16621,11 +15911,7 @@ static void settings_build_user_interface(
          SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], appicon_change_handler)
       }
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_0, ARRAY_SIZE(ui_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_0);
 #ifdef _3DS
       {
          u8 device_model = 0xFF;
@@ -16647,9 +15933,7 @@ static void settings_build_user_interface(
                   setting_action_ok_uint, setting_get_string_representation_uint_video_3ds_display_mode,
                   NULL, NULL, NULL, NULL, 0),
          };
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_1, ARRAY_SIZE(ui_desc_1),
-               &group_info, &subgroup_info, parent_group);
+         ADD_DESC(ui_desc_1);
       }
       }
 
@@ -16670,11 +15954,7 @@ static void settings_build_user_interface(
             SD_FLAG_CMD_APPLY_AUTO);
       SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], new3ds_speedup_change_handler)
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_2, ARRAY_SIZE(ui_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_2);
 #ifdef CONSOLE_LOG
       MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
 #endif
@@ -16696,64 +15976,32 @@ static void settings_build_user_interface(
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], directory_action_start_generic)
       MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_3, ARRAY_SIZE(ui_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_3);
 #endif
 
 #ifdef HAVE_NETWORKING
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_4, ARRAY_SIZE(ui_desc_4),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_4);
 
 #if !defined(HAVE_LAKKA)
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_5, ARRAY_SIZE(ui_desc_5),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_5);
 #endif
 #endif
 
 #ifdef HAVE_MIST
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_6, ARRAY_SIZE(ui_desc_6),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_6);
 #endif
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_7, ARRAY_SIZE(ui_desc_7),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_7);
 
 #ifdef HAVE_MIST
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_8, ARRAY_SIZE(ui_desc_8),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_8);
 #endif
 
 #ifdef HAVE_SMBCLIENT
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_9, ARRAY_SIZE(ui_desc_9),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_9);
 #endif
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_10, ARRAY_SIZE(ui_desc_10),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_10);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
       {
@@ -16767,20 +16015,12 @@ static void settings_build_user_interface(
                || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
                || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
          {
-                     {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_11, ARRAY_SIZE(ui_desc_11),
-               &group_info, &subgroup_info, parent_group);
-      }
+                           ADD_DESC(ui_desc_11);
          }
       }
 #endif
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_12, ARRAY_SIZE(ui_desc_12),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_12);
       /* Descriptor holdout: poke tail outside the descriptor grammar. */
       CONFIG_BOOL(
             list, list_info,
@@ -16797,11 +16037,7 @@ static void settings_build_user_interface(
             general_read_handler,
             SD_FLAG_NONE);
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               ui_desc_13, ARRAY_SIZE(ui_desc_13),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(ui_desc_13);
       END_SUB_GROUP(list, list_info, parent_group);
       END_GROUP(list, list_info, parent_group);
    }
@@ -16827,11 +16063,7 @@ static void settings_build_playlist(
 
       START_SUB_GROUP(list, list_info, "History", &group_info, &subgroup_info, parent_group);
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               pl_desc_0, ARRAY_SIZE(pl_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(pl_desc_0);
 
       END_SUB_GROUP(list, list_info, parent_group);
 
@@ -16841,39 +16073,23 @@ static void settings_build_playlist(
        * history size, but they are in fact unrelated. We
        * therefore place this entry outside the "History"
        * sub group. */
-               {
-         settings_list_add_desc(list, list_info, settings,
-               pl_desc_1, ARRAY_SIZE(pl_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(pl_desc_1);
 
       /* Playlist entry index display and content specific history icon
        * are currently supported only by Ozone & XMB */
       if (   string_is_equal(settings->arrays.menu_driver, "xmb")
           || string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
-                  {
-         settings_list_add_desc(list, list_info, settings,
-               pl_desc_2, ARRAY_SIZE(pl_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+                        ADD_DESC(pl_desc_2);
       }
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               pl_desc_3, ARRAY_SIZE(pl_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(pl_desc_3);
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
       if (   string_is_equal(settings->arrays.menu_driver, "ozone")
           || string_is_equal(settings->arrays.menu_driver, "xmb"))
       {
-                  {
-         settings_list_add_desc(list, list_info, settings,
-               pl_desc_4, ARRAY_SIZE(pl_desc_4),
-               &group_info, &subgroup_info, parent_group);
-      }
+                        ADD_DESC(pl_desc_4);
       }
 #endif
 
@@ -16921,11 +16137,7 @@ static void settings_build_cheevos(
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], setting_bool_action_left_with_refresh)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], setting_bool_action_right_with_refresh)
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               cheevos_desc_0, ARRAY_SIZE(cheevos_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(cheevos_desc_0);
 
       CONFIG_BOOL(
             list, list_info,
@@ -17061,11 +16273,7 @@ static void settings_build_cheevos_visibility(
       parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS);
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               chv_desc_0, ARRAY_SIZE(chv_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(chv_desc_0);
 
       CONFIG_BOOL(
          list, list_info,
@@ -17083,11 +16291,7 @@ static void settings_build_cheevos_visibility(
          SD_FLAG_NONE
       );
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               chv_desc_1, ARRAY_SIZE(chv_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(chv_desc_1);
 
 
       END_SUB_GROUP(list, list_info, parent_group);
@@ -17158,18 +16362,10 @@ static void settings_build_core_updater(
       (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_generic_action_start_default)
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               core_updater_desc_0, ARRAY_SIZE(core_updater_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(core_updater_desc_0);
 
 #ifdef HAVE_UPDATE_CORES
-      {
-         settings_list_add_desc(list, list_info, settings,
-               core_updater_desc_1, ARRAY_SIZE(core_updater_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(core_updater_desc_1);
 
 #if defined(ANDROID)
       /* Play Store builds do not support automatic
@@ -17177,11 +16373,7 @@ static void settings_build_core_updater(
       if (!play_feature_delivery_enabled())
 #endif
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               core_updater_desc_2, ARRAY_SIZE(core_updater_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(core_updater_desc_2);
 
             CONFIG_UINT(
                   list, list_info,
@@ -17226,11 +16418,7 @@ static void settings_build_netplay(
 #ifdef HAVE_SMBCLIENT
       if (settings->bools.settings_show_smb_client)
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               np_desc_0, ARRAY_SIZE(np_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(np_desc_0);
       }
 #endif
 
@@ -17242,11 +16430,7 @@ static void settings_build_netplay(
          char dev_req_label[64];
          char dev_req_value[64];
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               np_desc_1, ARRAY_SIZE(np_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(np_desc_1);
 
          /* Descriptor holdout: poke tail outside the descriptor grammar. */
          CONFIG_STRING(
@@ -17267,29 +16451,13 @@ static void settings_build_netplay(
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], setting_string_action_right_netplay_mitm_server)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_netplay_mitm_server)
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               netplay2_desc_0, ARRAY_SIZE(netplay2_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(netplay2_desc_0);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               np_desc_2, ARRAY_SIZE(np_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(np_desc_2);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               netplay2_desc_1, ARRAY_SIZE(netplay2_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(netplay2_desc_1);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               np_desc_3, ARRAY_SIZE(np_desc_3),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(np_desc_3);
 
          /* Descriptor holdout: value target outside settings_t. */
          CONFIG_INT(
@@ -17322,11 +16490,7 @@ static void settings_build_netplay(
          SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
          menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               np_desc_4, ARRAY_SIZE(np_desc_4),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(np_desc_4);
 
          for (user = 0; user < MAX_USERS; user++)
          {
@@ -17363,11 +16527,7 @@ static void settings_build_netplay(
                parent_group);
 
 #if defined(HAVE_NETWORK_CMD)
-      {
-         settings_list_add_desc(list, list_info, settings,
-               np_desc_5, ARRAY_SIZE(np_desc_5),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(np_desc_5);
 
          /* Descriptor holdout: non-general read/write handler. */
          CONFIG_UINT(
@@ -17387,11 +16547,7 @@ static void settings_build_netplay(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               np_desc_6, ARRAY_SIZE(np_desc_6),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(np_desc_6);
 
          CONFIG_UINT(
                list, list_info,
@@ -17444,17 +16600,9 @@ static void settings_build_netplay(
             }
          }
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               np_desc_7, ARRAY_SIZE(np_desc_7),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(np_desc_7);
 #endif
-      {
-         settings_list_add_desc(list, list_info, settings,
-               np_desc_8, ARRAY_SIZE(np_desc_8),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(np_desc_8);
 #endif
       }
       END_SUB_GROUP(list, list_info, parent_group);
@@ -17690,17 +16838,9 @@ static void settings_build_user(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               user_desc_0, ARRAY_SIZE(user_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(user_desc_0);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               user2_desc_0, ARRAY_SIZE(user2_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(user2_desc_0);
 
 #ifdef HAVE_LANGEXTRA
       /* Descriptor holdout: value target outside settings_t. */
@@ -17731,11 +16871,7 @@ static void settings_build_user(
 #endif
 
 #ifdef HAVE_GAME_AI
-      {
-         settings_list_add_desc(list, list_info, settings,
-               user_desc_1, ARRAY_SIZE(user_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(user_desc_1);
 #endif
 
       END_SUB_GROUP(list, list_info, parent_group);
@@ -17763,19 +16899,11 @@ static void settings_build_user_accounts(
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
 #ifdef HAVE_CHEEVOS
-      {
-         settings_list_add_desc(list, list_info, settings,
-               user_accounts_desc_0_s0, ARRAY_SIZE(user_accounts_desc_0_s0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(user_accounts_desc_0_s0);
 #endif
 #ifdef HAVE_NETWORKING
 #if !IOS
-      {
-         settings_list_add_desc(list, list_info, settings,
-               user_accounts_desc_0_s1, ARRAY_SIZE(user_accounts_desc_0_s1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(user_accounts_desc_0_s1);
 #endif
 #endif
       END_SUB_GROUP(list, list_info, parent_group);
@@ -17966,11 +17094,7 @@ static void settings_build_directory(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               dir_desc_0, ARRAY_SIZE(dir_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(dir_desc_0);
       if (string_is_not_equal(settings->arrays.record_driver, "null"))
       {
          /* Descriptor holdout: value target outside settings_t. */
@@ -18004,11 +17128,7 @@ static void settings_build_directory(
                general_read_handler);
          SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], directory_action_start_generic)
       }
-      {
-         settings_list_add_desc(list, list_info, settings,
-               dir_desc_1, ARRAY_SIZE(dir_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(dir_desc_1);
 
       /* Descriptor holdouts: value targets resolved through
        * dir_get_ptr() at runtime, outside settings_t. */
@@ -18043,11 +17163,7 @@ static void settings_build_directory(
             general_read_handler);
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], directory_action_start_generic)
 
-               {
-         settings_list_add_desc(list, list_info, settings,
-               dir_desc_2, ARRAY_SIZE(dir_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+                     ADD_DESC(dir_desc_2);
 
       END_SUB_GROUP(list, list_info, parent_group);
       END_GROUP(list, list_info, parent_group);
@@ -18075,27 +17191,15 @@ static void settings_build_privacy(
 
       if (string_is_not_equal(settings->arrays.camera_driver, "null"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               privacy_desc_0, ARRAY_SIZE(privacy_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(privacy_desc_0);
       }
 
 #ifdef HAVE_DISCORD
-      {
-         settings_list_add_desc(list, list_info, settings,
-               privacy_desc_1, ARRAY_SIZE(privacy_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(privacy_desc_1);
 #endif
       if (string_is_not_equal(settings->arrays.location_driver, "null"))
       {
-      {
-         settings_list_add_desc(list, list_info, settings,
-               privacy_desc_2, ARRAY_SIZE(privacy_desc_2),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(privacy_desc_2);
       }
 
       END_SUB_GROUP(list, list_info, parent_group);
@@ -18158,11 +17262,7 @@ static void settings_build_midi(
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], setting_string_action_right_midi_output)
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], setting_string_action_ok_midi_device)
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               midi_desc_0, ARRAY_SIZE(midi_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(midi_desc_0);
 #endif
 
       END_SUB_GROUP(list, list_info, parent_group);
@@ -18372,11 +17472,7 @@ static void settings_build_steam(
       START_SUB_GROUP(list, list_info, "State",
             &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               steam_desc_0, ARRAY_SIZE(steam_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(steam_desc_0);
 
       END_SUB_GROUP(list, list_info, parent_group);
       END_GROUP(list, list_info, parent_group);
@@ -18404,11 +17500,7 @@ static void settings_build_smbclient(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               smbclient_desc_0, ARRAY_SIZE(smbclient_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(smbclient_desc_0);
 
       /* Descriptor holdout: non-general read/write handler. */
       CONFIG_STRING(
@@ -18496,11 +17588,7 @@ static void settings_build_smbclient(
          NULL);
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
-      {
-         settings_list_add_desc(list, list_info, settings,
-               smbclient_desc_1, ARRAY_SIZE(smbclient_desc_1),
-               &group_info, &subgroup_info, parent_group);
-      }
+            ADD_DESC(smbclient_desc_1);
 
       END_SUB_GROUP(list, list_info, parent_group);
       END_GROUP(list, list_info, parent_group);
@@ -19696,6 +18784,34 @@ rarch_setting_t *menu_setting_new(void)
             "act=%u name=%u tgt=%u def=%u rng=%u flag=%u other=%u\n",
             n_checked, n_ident, n_nodesc, n_nodesc_nonbind,
             mm_act, mm_name, mm_tgt, mm_def, mm_rng, mm_flag, mm_other);
+      /* Per-builder verdict: a build function may only collapse into
+       * the registry walker when every entry it produces is
+       * index-identical; print the green list. */
+      {
+         unsigned k2, b2 = 0;
+         for (k2 = 0; k2 < settings_lazy_nbuilders; k2++)
+         {
+            unsigned lo2 = b2;
+            unsigned hi2 = settings_lazy_bounds[k2];
+            unsigned bad2 = 0, tot2 = 0, nd2 = 0;
+            for (i2 = lo2; i2 < hi2 && list[i2].type != ST_NONE; i2++)
+            {
+               rarch_setting_t *e2 = &list[i2];
+               const setting_desc_t *d2;
+               if (e2->type >= ST_GROUP || e2->enum_idx == MSG_UNKNOWN)
+                  continue;
+               tot2++;
+               if (!(d2 = settings_master_find(e2->enum_idx)))
+               {
+                  nd2++;
+                  continue;
+               }
+            }
+            fprintf(stderr, "BUILDER %u span=%u..%u settings=%u nodesc=%u\n",
+                  k2, lo2, hi2, tot2, nd2);
+            b2 = hi2;
+         }
+      }
    }
    menu_setting_validation_dump(list);
    menu_displaylist_validation_dump(list);
