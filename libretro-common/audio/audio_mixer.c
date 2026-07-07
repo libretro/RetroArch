@@ -50,9 +50,11 @@
 #include <formats/audio.h>
 #endif
 
-#ifdef HAVE_IBXM
-#include <ibxm/ibxm.h>
+#ifdef HAVE_RMODTRACKER
+#include <formats/audio.h>
 #endif
+
+
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -81,7 +83,7 @@ struct audio_mixer_sound
          unsigned frames;
       } wav;
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
       struct
       {
          /* shared streaming-codec source (OGG / FLAC / MP3) */
@@ -90,14 +92,7 @@ struct audio_mixer_sound
       } stream;
 #endif
 
-#ifdef HAVE_IBXM
-      struct
-      {
-         /* mod/s3m/xm */
-         const void* data;
-         unsigned size;
-      } mod;
-#endif
+
    } types;
 };
 
@@ -110,7 +105,7 @@ struct audio_mixer_voice
          unsigned position;
       } wav;
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
       /* Shared streaming-codec voice state (OGG / FLAC / MP3). The codec is
        * identified by voice->type and passed to audio_transfer as an
        * enum audio_type_enum; the bookkeeping is identical across them. */
@@ -130,17 +125,7 @@ struct audio_mixer_voice
       } stream;
 #endif
 
-#ifdef HAVE_IBXM
-      struct
-      {
-         int*              buffer;
-         struct replay*    stream;
-         struct module*    module;
-         unsigned          position;
-         unsigned          samples;
-         unsigned          buf_samples;
-      } mod;
-#endif
+
    } types;
    audio_mixer_sound_t *sound;
    audio_mixer_stop_cb_t stop_cb;
@@ -331,7 +316,7 @@ static int32_t audio_mixer_gain_s16(int16_t s, int32_t gain_q16)
    return (p >= 0) ? (p >> 16) : -((-p) >> 16);
 }
 
-#if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3)
+#if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
 /* Only the WAV and streaming s16 resample paths consult this; a MOD-only or
  * no-codec build would otherwise flag it as unused. */
 static enum sinc_int16_quality audio_mixer_i16_quality(enum resampler_quality q)
@@ -610,15 +595,15 @@ audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size)
 
 audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size)
 {
-#ifdef HAVE_IBXM
+#ifdef HAVE_RMODTRACKER
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
    if (!sound)
       return NULL;
 
-   sound->type           = AUDIO_MIXER_TYPE_MOD;
-   sound->types.mod.size = size;
-   sound->types.mod.data = buffer;
+   sound->type              = AUDIO_MIXER_TYPE_MOD;
+   sound->types.stream.size = size;
+   sound->types.stream.data = buffer;
 
    return sound;
 #else
@@ -650,8 +635,8 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
 #endif
          break;
       case AUDIO_MIXER_TYPE_MOD:
-#ifdef HAVE_IBXM
-         handle = (void*)sound->types.mod.data;
+#ifdef HAVE_RMODTRACKER
+         handle = (void*)sound->types.stream.data;
          if (handle)
             free(handle);
 #endif
@@ -685,7 +670,7 @@ static bool audio_mixer_play_wav(audio_mixer_sound_t* sound,
    return true;
 }
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
 /* Shared streaming-codec path (OGG / FLAC / MP3). audio_transfer already
  * abstracts the codec, so one set of play/mix/release functions serves all
  * three; the caller passes the matching enum audio_type_enum. */
@@ -850,86 +835,6 @@ error:
 
 #endif
 
-#ifdef HAVE_IBXM
-static bool audio_mixer_play_mod(
-      audio_mixer_sound_t* sound,
-      audio_mixer_voice_t* voice,
-      bool repeat, float volume,
-      audio_mixer_stop_cb_t stop_cb)
-{
-   struct data data;
-   char message[64];
-   int buf_samples               = 0;
-   int samples                   = 0;
-   void *mod_buffer              = NULL;
-   struct module* module         = NULL;
-   struct replay* replay         = NULL;
-
-   data.buffer                   = (char*)sound->types.mod.data;
-   data.length                   = sound->types.mod.size;
-   module                        = module_load(&data, message);
-
-   if (!module)
-   {
-      printf("audio_mixer_play_mod module_load() failed with error: %s\n", message);
-      goto error;
-   }
-
-   if (voice->types.mod.module)
-      dispose_module(voice->types.mod.module);
-
-   voice->types.mod.module = module;
-
-   replay = new_replay(module, s_rate, 1);
-
-   if (!replay)
-   {
-      printf("audio_mixer_play_mod new_replay() failed\n");
-      goto error;
-   }
-
-   buf_samples = calculate_mix_buf_len(s_rate);
-   mod_buffer  = memalign_alloc(16, ((buf_samples + 15) & ~15) * sizeof(int));
-
-   if (!mod_buffer)
-   {
-      printf("audio_mixer_play_mod cannot allocate mod_buffer !\n");
-      goto error;
-   }
-
-   samples = replay_calculate_duration(replay);
-
-   if (!samples)
-   {
-      printf("audio_mixer_play_mod cannot retrieve duration !\n");
-      goto error;
-   }
-
-   voice->types.mod.buffer         = (int*)mod_buffer;
-   voice->types.mod.buf_samples    = buf_samples;
-   voice->types.mod.stream         = replay;
-   voice->types.mod.position       = 0;
-   voice->types.mod.samples        = 0; /* samples; */
-
-   return true;
-
-error:
-   if (mod_buffer)
-      memalign_free(mod_buffer);
-   if (module)
-      dispose_module(module);
-   return false;
-
-}
-
-static void audio_mixer_release_mod(audio_mixer_voice_t* voice)
-{
-   if (voice->types.mod.stream)
-      dispose_replay(voice->types.mod.stream);
-   if (voice->types.mod.buffer)
-      memalign_free(voice->types.mod.buffer);
-}
-#endif
 
 
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
@@ -973,8 +878,9 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
 #endif
             break;
          case AUDIO_MIXER_TYPE_MOD:
-#ifdef HAVE_IBXM
-            res = audio_mixer_play_mod(sound, voice, repeat, volume, stop_cb);
+#ifdef HAVE_RMODTRACKER
+            res = audio_mixer_play_stream(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb, AUDIO_TYPE_MOD);
 #endif
             break;
          case AUDIO_MIXER_TYPE_FLAC:
@@ -1066,8 +972,9 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
 #endif
             break;
          case AUDIO_MIXER_TYPE_MOD:
-#ifdef HAVE_IBXM
-            res = audio_mixer_play_mod(sound, voice, repeat, volume, stop_cb);
+#ifdef HAVE_RMODTRACKER
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+                  quality, stop_cb, AUDIO_TYPE_MOD);
 #endif
             break;
          case AUDIO_MIXER_TYPE_WAV:
@@ -1114,9 +1021,9 @@ static void audio_mixer_release(audio_mixer_voice_t* voice)
          audio_mixer_release_stream(voice, AUDIO_TYPE_VORBIS);
          break;
 #endif
-#ifdef HAVE_IBXM
+#ifdef HAVE_RMODTRACKER
       case AUDIO_MIXER_TYPE_MOD:
-         audio_mixer_release_mod(voice);
+         audio_mixer_release_stream(voice, AUDIO_TYPE_MOD);
          break;
 #endif
 #ifdef HAVE_RFLAC
@@ -1254,7 +1161,7 @@ again:
    }
 }
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
 static void audio_mixer_mix_stream(float* buffer, size_t num_frames,
       audio_mixer_voice_t* voice,
       float volume,
@@ -1431,142 +1338,6 @@ again:
 }
 #endif
 
-#ifdef HAVE_IBXM
-static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
-      audio_mixer_voice_t* voice,
-      float volume)
-{
-   int i;
-   float samplef                    = 0.0f;
-   unsigned temp_samples            = 0;
-   unsigned buf_free                = (unsigned)(num_frames * 2);
-   int* pcm                         = NULL;
-
-   if (voice->types.mod.samples == 0)
-   {
-again:
-      temp_samples = replay_get_audio(
-            voice->types.mod.stream, voice->types.mod.buffer, 0 ) * 2;
-
-      if (temp_samples == 0)
-      {
-         if (voice->repeat)
-         {
-            if (voice->stop_cb)
-               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
-
-            replay_seek( voice->types.mod.stream, 0);
-            goto again;
-         }
-
-         if (voice->stop_cb)
-            voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
-
-         audio_mixer_release(voice);
-         return;
-      }
-
-      voice->types.mod.position = 0;
-      voice->types.mod.samples  = temp_samples;
-   }
-   pcm = voice->types.mod.buffer + voice->types.mod.position;
-
-   if (voice->types.mod.samples < buf_free)
-   {
-      /* ibxm emits fixed-point samples whose unity is FP_ONE (32768 ==
-       * 0x8000), so scale by 1/0x8000 to match audio/conversion/
-       * s16_to_float and the rest of the mixer. The previous
-       * (s + 32768) / 65535 * 2 - 1 mapping added a small positive DC
-       * offset (0 -> +1.5e-5) and a non-canonical scale; this keeps the
-       * MOD voice consistent (and deterministic) with the other formats.
-       * Samples beyond +/-FP_ONE (loud multi-channel mixes) exceed
-       * +/-1.0 and are clamped downstream exactly as before. */
-      for (i = voice->types.mod.samples; i != 0; i--)
-      {
-         samplef     = (float)(*pcm++) * (1.0f / 0x8000);
-         *buffer++  += samplef * volume;
-      }
-
-      buf_free -= voice->types.mod.samples;
-      goto again;
-   }
-
-   for (i = buf_free; i != 0; --i )
-   {
-      samplef     = (float)(*pcm++) * (1.0f / 0x8000);
-      *buffer++  += samplef * volume;
-   }
-
-   voice->types.mod.position += buf_free;
-   voice->types.mod.samples  -= buf_free;
-}
-
-static void audio_mixer_mix_mod_s16(int16_t* buffer, size_t num_frames,
-      audio_mixer_voice_t* voice,
-      int32_t gain_q16)
-{
-   int i;
-   unsigned temp_samples = 0;
-   unsigned buf_free     = (unsigned)(num_frames * 2);
-   int     *pcm          = NULL;
-
-   if (voice->types.mod.samples == 0)
-   {
-again:
-      temp_samples = replay_get_audio(
-            voice->types.mod.stream, voice->types.mod.buffer, 0) * 2;
-
-      if (temp_samples == 0)
-      {
-         if (voice->repeat)
-         {
-            if (voice->stop_cb)
-               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
-            replay_seek(voice->types.mod.stream, 0);
-            goto again;
-         }
-         if (voice->stop_cb)
-            voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
-         audio_mixer_release(voice);
-         return;
-      }
-
-      voice->types.mod.position = 0;
-      voice->types.mod.samples  = temp_samples;
-   }
-
-   pcm = voice->types.mod.buffer + voice->types.mod.position;
-
-   /* ibxm emits fixed-point samples whose unity is FP_ONE (0x8000),
-    * which is exactly the s16 full-scale magnitude, so the rendered
-    * int sample needs no rescale: clamp it into s16 range (loud
-    * multi-channel mixes can exceed +/-FP_ONE, matching the downstream
-    * clamp on the float path), apply the Q16 gain, and accumulate with
-    * saturation.  No int16<->float round-trip and no resampler -- ibxm
-    * already renders at the mixer rate. */
-   if (voice->types.mod.samples < buf_free)
-   {
-      for (i = voice->types.mod.samples; i != 0; i--)
-      {
-         *buffer = audio_mixer_sat_s16((int32_t)*buffer
-               + audio_mixer_gain_s16(audio_mixer_sat_s16(*pcm++), gain_q16));
-         buffer++;
-      }
-      buf_free -= voice->types.mod.samples;
-      goto again;
-   }
-
-   for (i = buf_free; i != 0; --i)
-   {
-      *buffer = audio_mixer_sat_s16((int32_t)*buffer
-            + audio_mixer_gain_s16(audio_mixer_sat_s16(*pcm++), gain_q16));
-      buffer++;
-   }
-
-   voice->types.mod.position += buf_free;
-   voice->types.mod.samples  -= buf_free;
-}
-#endif
 
 
 void audio_mixer_mix(float* buffer, size_t num_frames,
@@ -1602,8 +1373,8 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
 #endif
             break;
          case AUDIO_MIXER_TYPE_MOD:
-#ifdef HAVE_IBXM
-            audio_mixer_mix_mod(buffer, num_frames, voice, volume);
+#ifdef HAVE_RMODTRACKER
+            audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_MOD);
 #endif
             break;
          case AUDIO_MIXER_TYPE_FLAC:
@@ -1672,8 +1443,8 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
 #endif
             break;
          case AUDIO_MIXER_TYPE_MOD:
-#ifdef HAVE_IBXM
-            audio_mixer_mix_mod_s16(buffer, num_frames, voice, gain_q16);
+#ifdef HAVE_RMODTRACKER
+            audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_MOD);
 #endif
             break;
          case AUDIO_MIXER_TYPE_WAV:
