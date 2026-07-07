@@ -579,7 +579,6 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
          strlcpy(probed_for, probe_target, sizeof(probed_for));
       }
    }
-   printf("captures: %s\n", envvars[3].value);
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
 }
@@ -743,13 +742,11 @@ static bool open_devices(void)
 {
    struct retro_variable videodev = { "videoproc_videodev", NULL };
    struct retro_variable audiodev = { "videoproc_audiodev", NULL };
-   struct retro_variable captureresolution = { "videoproc_capture_resolution", NULL };
    int error;
 
    /* Get the video and audio capture device names from the environment */
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
-   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &captureresolution);
 
    /* Video device is required */
    if (videodev.value == NULL)
@@ -861,6 +858,32 @@ static void release_video_buffers(void)
          v4l2_munmap(v4l2_capbuf[i].start, v4l2_capbuf[i].len);
    memset(v4l2_capbuf, 0, sizeof(v4l2_capbuf));
    v4l2_ncapbuf = 0;
+}
+
+/* Free the conversion/output frame buffers and forget the deinterlacer's
+ * rotation pointers. retro_run treats NULL buffers as "stay idle". */
+static void release_frame_buffers(void)
+{
+   int i;
+
+   if (frame_out)
+      free(frame_out);
+   frame_out = NULL;
+
+   if (frame_cap)
+      free(frame_cap);
+   frame_cap = NULL;
+
+   for (i = 0; i < 4; ++i)
+   {
+      if (frames[i])
+         free(frames[i]);
+      frames[i] = NULL;
+   }
+   frame_curr  = NULL;
+   frame_prev1 = NULL;
+   frame_prev2 = NULL;
+   frame_prev3 = NULL;
 }
 
 /* Configure the built-in test pattern source. Also used as the fallback when
@@ -1055,19 +1078,29 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_controller_port_device)(unsigned 
 {
 }
 
+/* Set when the pipeline was rebuilt outside retro_run (retro_reset): the
+ * device can come back with a different granted geometry or frame rate, and
+ * without pushing it the frontend keeps pacing on the old timing. The libretro
+ * spec allows SET_SYSTEM_AV_INFO only from within retro_run, so the push is
+ * deferred to the next iteration. */
+static bool av_info_dirty;
+
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_reset)(void)
 {
    /* Tear the whole pipeline down and bring it back up. Merely closing and
     * reopening the device fds (the old behaviour) left the V4L2 stream dead
     * — no S_FMT/REQBUFS/STREAMON — until the next option change. */
    unload_game_internal(false);
-   load_game_internal(true);
+   if (load_game_internal(true))
+      av_info_dirty = true;
 }
 
 /* TODO improve this mess and make it generic enough for use with dummy mode */
 void v4l2_frame_times(struct v4l2_buffer buf)
 {
-   if (strcmp("Off", video_frame_times) == 0)
+   /* Opt-in only: video_frame_times can still be empty (not fetched yet)
+    * when running under a frontend that doesn't resolve the variable. */
+   if (strcmp("On", video_frame_times) != 0)
        return;
 
    if (ft_info == NULL)
@@ -1095,6 +1128,9 @@ void v4l2_frame_times(struct v4l2_buffer buf)
          ft_info2, buf.sequence, buf.index, buf.field, ft_ftime/1000,
          (!(ft_fcount % 7)) ? "\n" : "");
    free(ft_info2);
+   /* Leaving this dangling made unload_game_internal() free it a second
+    * time on the next reconfigure (double free → abort). */
+   ft_info2 = NULL;
 
    ft_prevtime2 = buf.timestamp;
 }
@@ -1454,6 +1490,19 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
    struct retro_variable frametimes  = { "videoproc_frame_times", NULL };
    bool updated = false;
 
+   /* A reset rebuilt the pipeline outside retro_run; sync the frontend with
+    * whatever geometry/timing the device granted afterwards (deferred here
+    * because SET_SYSTEM_AV_INFO may only be called from within retro_run). */
+   if (av_info_dirty)
+   {
+      struct retro_system_av_info av_info;
+      struct retro_system_av_info prev_av_info = video_last_av_info;
+      av_info_dirty = false;
+      VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(&av_info);
+      if (!av_info_equal(&av_info, &prev_av_info))
+         VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &av_info);
+   }
+
    if (VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
    {
       bool video_changed, audio_changed;
@@ -1751,11 +1800,14 @@ static bool load_game_internal(bool allow_fallback)
    if (frame_times.value != NULL)
       strlcpy(video_frame_times, frame_times.value, sizeof(video_frame_times));
 
-   /* Reset per-device timing state so nothing leaks from a previously
-    * loaded device into av_info/retro_get_region. */
+   /* Reset per-device timing and pacing state so nothing leaks from a
+    * previously loaded device into av_info/retro_get_region, and a stale
+    * half-feed flag from an interlaced session doesn't skip the first
+    * capture of the new one. */
    memset(&video_standard, 0, sizeof(video_standard));
-   video_cap_rate_n = 0;
-   video_cap_rate_d = 0;
+   video_cap_rate_n     = 0;
+   video_cap_rate_d     = 0;
+   video_half_feed_rate = 0;
 
    if (strcmp(video_device, "dummy") == 0)
       setup_dummy_source();
@@ -2051,8 +2103,8 @@ device_ready:
    frame_prev2 = frames[2];
    frame_prev3 = frames[3];
 
-   /* TODO: Check frames[] allocation */
-   if (!frame_out || !frame_cap)
+   if (   !frame_out  || !frame_cap
+       || !frames[0] || !frames[1] || !frames[2] || !frames[3])
       goto error;
 
    printf("Allocated %" PRI_SIZET " byte conversion buffer\n",
@@ -2078,6 +2130,13 @@ device_fallback:
    }
    release_video_buffers();
    close_video_device();
+   /* The reconfigure path in retro_run tears audio down when the user
+    * switches to the dummy source; falling back to it behaves the same
+    * instead of leaving an audio capture running under the test pattern.
+    * audio_device[] is kept so selecting a working video device later
+    * brings audio back up. */
+   unregister_audio_callback();
+   close_audio_device();
    strlcpy(video_device, "dummy", sizeof(video_device));
    setup_dummy_source();
    {
@@ -2093,9 +2152,12 @@ device_fallback:
 error:
    /* Leave no stale state behind: a later option change runs
     * unload_game_internal() again, which must not munmap old buffer
-    * pointers or touch a dead ALSA handle. */
+    * pointers or touch a dead ALSA handle, and retro_run must see the
+    * NULL frame buffers and stay idle (a partial allocation failure
+    * would otherwise leave a half-usable buffer set around). */
    unregister_audio_callback();
    release_video_buffers();
+   release_frame_buffers();
    close_devices();
    return false;
 }
@@ -2111,7 +2173,6 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
  * mode change) so the running ALSA capture isn't bounced; see open_devices(). */
 static void unload_game_internal(bool keep_audio)
 {
-   int i;
    struct v4l2_requestbuffers reqbufs;
 
    if (!keep_audio)
@@ -2136,24 +2197,7 @@ static void unload_game_internal(bool keep_audio)
 
    }
 
-   if (frame_out)
-      free(frame_out);
-   frame_out = NULL;
-
-   if (frame_cap)
-      free(frame_cap);
-   frame_cap = NULL;
-
-   for (i = 0; i<4; ++i)
-   {
-      if (frames[i])
-         free(frames[i]);
-      frames[i] = NULL;
-   }
-   frame_curr = NULL;
-   frame_prev1 = NULL;
-   frame_prev2 = NULL;
-   frame_prev3 = NULL;
+   release_frame_buffers();
 
    if (ft_info)
    {
