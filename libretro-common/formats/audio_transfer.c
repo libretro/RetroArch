@@ -42,6 +42,9 @@
 #ifdef HAVE_RMODTRACKER
 #include <formats/rmodtracker.h>
 #endif
+#ifdef HAVE_ROPUS
+#include <formats/ropus.h>
+#endif
 
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
@@ -142,6 +145,32 @@ enum audio_type_enum audio_decode_get_type(const char *path)
    return AUDIO_TYPE_NONE;
 }
 
+#ifdef HAVE_ROPUS
+struct audio_transfer_opus
+{
+   /* Demuxed input (set_demuxed_ptr): OpusHead as setup, concatenated
+    * packets, and the per-packet byte lengths (required -- Opus packets
+    * are delimited by the container). */
+   const void *setup;
+   size_t      setup_size;
+   const uint8_t *packets;
+   size_t      packets_size;
+   const uint32_t *pkt_sizes;
+   size_t      num_packets;
+   ropus_t    *handle;
+   unsigned    channels;
+   size_t      pkt_index;   /* next packet to decode                     */
+   size_t      pkt_offset;  /* byte offset of that packet                */
+   unsigned    preskip_left;
+   int         fmt;         /* 0 none, 1 s16, 2 f32 (pending buf type)   */
+   /* Decoded-but-unconsumed frames from the last packet. */
+   size_t      pend_frames;
+   size_t      pend_pos;
+   int16_t     pend_s16[5760 * 2];
+   float       pend_f32[5760 * 2];
+};
+#endif
+
 void *audio_transfer_new(enum audio_type_enum type)
 {
    switch (type)
@@ -161,6 +190,10 @@ void *audio_transfer_new(enum audio_type_enum type)
 #ifdef HAVE_RMODTRACKER
       case AUDIO_TYPE_MOD:
          return calloc(1, sizeof(struct audio_transfer_mod));
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+         return calloc(1, sizeof(struct audio_transfer_opus));
 #endif
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
@@ -432,6 +465,22 @@ bool audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         if (!op)
+            return false;
+         op->setup        = setup;
+         op->setup_size   = setup_size;
+         op->packets      = (const uint8_t*)packets;
+         op->packets_size = packets_size;
+         op->pkt_sizes    = sizes;
+         op->num_packets  = num_packets;
+         return true;
+      }
+#endif
+      case AUDIO_TYPE_NONE:
       default:
          break;
    }
@@ -525,6 +574,25 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          return true;
       }
 #endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         if (!op || !op->setup || !op->packets || !op->pkt_sizes)
+            return false;         /* demuxed path only */
+         op->handle = ropus_open(op->setup, op->setup_size);
+         if (!op->handle)
+            return false;
+         op->channels     = ropus_channels(op->handle);
+         op->preskip_left = ropus_preskip(op->handle);
+         op->pkt_index    = 0;
+         op->pkt_offset   = 0;
+         op->pend_frames  = 0;
+         op->pend_pos     = 0;
+         op->fmt          = 0;
+         return true;
+      }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -569,6 +637,13 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          return w && w->opened;
+      }
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         return op && op->handle;
       }
 #endif
       case AUDIO_TYPE_NONE:
@@ -660,12 +735,76 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         if (!op || !op->handle)
+            return false;
+         if (channels)
+            *channels = op->channels;
+         if (rate)
+            *rate = 48000;
+         if (total_frames)
+            *total_frames = 0;   /* unknown without scanning            */
+         return true;
+      }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
    }
    return false;
 }
+
+#ifdef HAVE_ROPUS
+/* Decode the next Opus packet into the pending buffer in the requested
+ * format (1 = s16, 2 = f32), honouring pre-skip.  Returns frames now
+ * pending, 0 at end of stream, < 0 on error. */
+static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
+{
+   while (op->pend_frames == 0)
+   {
+      uint32_t plen;
+      int r;
+      unsigned skip;
+      if (op->pkt_index >= op->num_packets)
+         return 0;
+      plen = op->pkt_sizes[op->pkt_index];
+      if (op->pkt_offset + plen > op->packets_size)
+         return -1;
+      if (fmt == 1)
+         r = ropus_decode_s16(op->handle,
+               op->packets + op->pkt_offset, plen, op->pend_s16);
+      else
+         r = ropus_decode_f32(op->handle,
+               op->packets + op->pkt_offset, plen, op->pend_f32);
+      op->pkt_offset += plen;
+      op->pkt_index++;
+      if (r < 0)
+         return -1;
+      op->pend_frames = (size_t)r;
+      op->pend_pos    = 0;
+      skip = op->preskip_left;
+      if (skip)
+      {
+         if (skip >= op->pend_frames)
+         {
+            op->preskip_left -= (unsigned)op->pend_frames;
+            op->pend_frames = 0;   /* whole packet skipped; loop        */
+         }
+         else
+         {
+            op->pend_pos      = skip;
+            op->pend_frames  -= skip;
+            op->preskip_left  = 0;
+         }
+      }
+   }
+   op->fmt = fmt;
+   return (int)op->pend_frames;
+}
+#endif
 
 int audio_transfer_read_s16(void *data, enum audio_type_enum type,
       int16_t *out, size_t frames, size_t *frames_out)
@@ -714,6 +853,33 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
             return AUDIO_PROCESS_ERROR;
          produced = rmodtracker_get_samples_s16_interleaved(
                md->handle, out, frames);
+         break;
+      }
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         if (!op || !op->handle || op->fmt == 2)
+            return AUDIO_PROCESS_ERROR;
+         while (produced < frames)
+         {
+            size_t take;
+            int r = audio_transfer_opus_fill(op, 1);
+            if (r < 0)
+               return AUDIO_PROCESS_ERROR;
+            if (r == 0)
+               break;
+            take = frames - produced;
+            if (take > op->pend_frames)
+               take = op->pend_frames;
+            memcpy(out + produced * op->channels,
+                  op->pend_s16 + op->pend_pos * op->channels,
+                  take * op->channels * sizeof(int16_t));
+            op->pend_pos    += take;
+            op->pend_frames -= take;
+            produced        += take;
+         }
          break;
       }
 #endif
@@ -832,6 +998,33 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          break;
       }
 #endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         if (!op || !op->handle || op->fmt == 1)
+            return AUDIO_PROCESS_ERROR;
+         while (produced < frames)
+         {
+            size_t take;
+            int r = audio_transfer_opus_fill(op, 2);
+            if (r < 0)
+               return AUDIO_PROCESS_ERROR;
+            if (r == 0)
+               break;
+            take = frames - produced;
+            if (take > op->pend_frames)
+               take = op->pend_frames;
+            memcpy(out + produced * op->channels,
+                  op->pend_f32 + op->pend_pos * op->channels,
+                  take * op->channels * sizeof(float));
+            op->pend_pos    += take;
+            op->pend_frames -= take;
+            produced        += take;
+         }
+         break;
+      }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          return AUDIO_PROCESS_ERROR;
@@ -904,6 +1097,22 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         if (!op || !op->handle || frame != 0)
+            return false;        /* rewind-only (used by looping)       */
+         ropus_reset(op->handle);
+         op->pkt_index    = 0;
+         op->pkt_offset   = 0;
+         op->pend_frames  = 0;
+         op->pend_pos     = 0;
+         op->preskip_left = ropus_preskip(op->handle);
+         op->fmt          = 0;
+         return true;
+      }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -961,6 +1170,15 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          if (w && w->opened)
             rwav_free(&w->wav);
+         break;
+      }
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         if (op && op->handle)
+            ropus_close(op->handle);
          break;
       }
 #endif

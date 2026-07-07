@@ -65,7 +65,8 @@ enum audio_type_enum
    AUDIO_TYPE_FLAC,
    AUDIO_TYPE_VORBIS,
    AUDIO_TYPE_MP3,
-   AUDIO_TYPE_MOD   /* tracker module: MOD / S3M / XM (rmodtracker) */
+   AUDIO_TYPE_MOD,  /* tracker module: MOD / S3M / XM (rmodtracker) */
+   AUDIO_TYPE_OPUS  /* Opus (ropus); demuxed path only (no Ogg parser) */
 };
 
 /* Guess the codec from a file-name/extension (counterpart of
