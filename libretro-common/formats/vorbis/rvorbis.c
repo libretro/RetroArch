@@ -1,3 +1,25 @@
+/* rvorbis - Ogg Vorbis decoder (stb_vorbis-derived), memory-only.
+ *
+ * The public API in <formats/rvorbis.h> is the pull interface used by
+ * libretro-common's audio_transfer: open a whole file from memory,
+ * query the stream info, pull interleaved f32 frames, seek by sample.
+ *
+ * Decode pipeline, in the order the code runs it:
+ *
+ *   Ogg layer   - page capture, segment table and packet framing
+ *                 (start_page / next_segment / get8_packet);
+ *   bitstream   - a 32-bit accumulator over the packet bytes feeds the
+ *                 Huffman fast tables (prep_huffman / get_bits);
+ *   headers     - codebooks, floors and residues are parsed and
+ *                 preprocessed once (start_decoder), including the
+ *                 fast-Huffman lookup tables and pre-expanded codebook
+ *                 multiplicands used by the hot paths;
+ *   audio       - each packet decodes floor curves and residue vectors
+ *                 (decode_residue), undoes channel coupling, applies
+ *                 the floor, and runs the inverse MDCT (SIMD kernels
+ *                 near imdct_step3_iter0_loop) followed by the windowed
+ *                 overlap-add in vorbis_finish_frame.
+ */
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -16,12 +38,9 @@ enum RVorbisError
 
    RVORBIS_need_more_data=1,             /* not a real error */
 
-   RVORBIS_invalid_api_mixing,           /* can't mix API modes */
    RVORBIS_outofmem,                     /* not enough memory */
    RVORBIS_feature_not_supported,        /* uses floor 0 */
    RVORBIS_too_many_channels,            /* RVORBIS_MAX_CHANNELS is too small */
-   RVORBIS_file_open_failure,            /* fopen() failed */
-   RVORBIS_seek_without_length,          /* can't seek in unknown-length file */
 
    RVORBIS_unexpected_eof=10,            /* file is truncated? */
    RVORBIS_seek_invalid,                 /* seek past EOF */
@@ -102,7 +121,6 @@ enum RVorbisError
 #include <retro_inline.h>
 
 #define MAX_BLOCKSIZE_LOG  13   /* from specification */
-#define MAX_BLOCKSIZE      (1 << MAX_BLOCKSIZE_LOG)
 
 #ifdef RVORBIS_CODEBOOK_FLOATS
 typedef float rvorbis_codetype;
@@ -1145,7 +1163,12 @@ static int codebook_decode_scalar_raw(vorb *f, Codebook *c)
 }
 
 
-static int codebook_decode_scalar(vorb *f, Codebook *c)
+/* Hot path of the residue and floor decode: one Huffman symbol via the
+ * precomputed fast table, falling back to the sorted-codeword search
+ * only on long codes.  Called tens of millions of times per second of
+ * audio, so the fast path is inlined into its callers; the slow path
+ * stays out of line. */
+static INLINE int codebook_decode_scalar(vorb *f, Codebook *c)
 {
    int i;
    if (f->valid_bits < RVORBIS_FAST_HUFFMAN_LENGTH)
