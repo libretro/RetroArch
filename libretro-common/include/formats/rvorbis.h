@@ -58,8 +58,7 @@ extern rvorbis * rvorbis_open_memory(const unsigned char *data, int len,
 extern int rvorbis_seek(rvorbis *f, unsigned int sample_number);
 /* Total number of samples per channel in the stream (0 if unknown). */
 extern unsigned int rvorbis_stream_length_in_samples(rvorbis *f);
-/* NOT WORKING YET
- * these functions seek in the Vorbis file to (approximately) 'sample_number'.
+/* these functions seek in the Vorbis file to (approximately) 'sample_number'.
  * after calling seek_frame(), the next call to get_frame_*() will include
  * the specified sample. after calling rvorbis_seek(), the next call to
  * rvorbis_get_samples_* will start with the specified sample. If you
@@ -73,9 +72,9 @@ extern void rvorbis_seek_start(rvorbis *f);
 extern int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels, float *buffer, int num_floats);
 
 extern int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels, int16_t *buffer, int num_shorts);
-/* gets num_shorts samples as native signed 16-bit, interleaved. Vorbis
- * decodes in float; the quantisation to s16 (round half away from
- * zero, clamped) happens once, during the interleave copy. */
+/* gets num_shorts samples as native signed 16-bit, interleaved, via
+ * the fixed-point pipeline: Q28 inverse MDCT and windowing, quantised
+ * to s16 (round half away from zero, clamped) at the interleave copy. */
 
 #ifdef __cplusplus
 }
