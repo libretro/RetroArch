@@ -11017,6 +11017,1491 @@ static const char *config_get_menu_driver_options(void)
 }
 
 
+/* --- Generated settings descriptor tables -------------------------
+ * One table per def file; rows are menu display order; each table
+ * carries the platform guards of its original block. The emitter
+ * set defines before the first table and undefines after the last.
+ * setting_append_list consumes these by reference. */
+
+static const setting_desc_t mm_desc_0[] = {
+/* GENERATED: rows come from settings_def_menu_main_state.h in order. */
+#include "../settings/settings_def_menu_rows_begin.h"
+#include "../settings/settings_def_menu_main_state.h"
+};
+
+static const setting_desc_t mm_desc_1[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_1.h in order. */
+#include "../settings/settings_def_menu_main_actions_1.h"
+};
+
+static const setting_desc_t mm_desc_2[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_2.h in order. */
+#include "../settings/settings_def_menu_main_actions_2.h"
+};
+
+static const setting_desc_t mm_desc_3[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_4.h in order. */
+#include "../settings/settings_def_menu_main_actions_4.h"
+};
+
+#ifdef HAVE_CDROM
+static const setting_desc_t mm_desc_4[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_3.h in order. */
+#include "../settings/settings_def_menu_main_actions_3.h"
+};
+#endif
+
+static const setting_desc_t mm_desc_5[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_5.h in order. */
+#include "../settings/settings_def_menu_main_actions_5.h"
+};
+
+static const setting_desc_t mm_desc_6[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_6.h in order. */
+#include "../settings/settings_def_menu_main_actions_6.h"
+};
+
+#if !defined(IOS) && !defined(HAVE_LAKKA)
+static const setting_desc_t mm_desc_7[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_10.h in order. */
+#include "../settings/settings_def_menu_main_actions_10.h"
+};
+#endif
+
+static const setting_desc_t mm_desc_8[] = {
+/* GENERATED: rows come from settings_def_menu_main_lists_2.h in order. */
+#include "../settings/settings_def_menu_main_lists_2.h"
+};
+
+#if !defined(IOS)
+#ifdef HAVE_LAKKA
+static const setting_desc_t quit_lakka_desc[] = {
+/* GENERATED: rows come from settings_def_quit_restart.h in order. */
+#include "../settings/settings_def_quit_restart.h"
+};
+#endif
+#endif
+
+#if !defined(IOS)
+#if !defined(HAVE_LAKKA)
+static const setting_desc_t mm_desc_9[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_7.h in order. */
+#include "../settings/settings_def_menu_main_actions_7.h"
+};
+#endif
+#endif
+
+static const setting_desc_t mm_desc_10[] = {
+/* GENERATED: rows come from settings_def_menu_main_lists_3.h in order. */
+#include "../settings/settings_def_menu_main_lists_3.h"
+};
+
+static const setting_desc_t mm_desc_11[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_11.h in order. */
+#include "../settings/settings_def_menu_main_actions_11.h"
+};
+
+static const setting_desc_t mm_desc_12[] = {
+/* GENERATED: rows come from settings_def_menu_main_lists_4.h in order. */
+#include "../settings/settings_def_menu_main_lists_4.h"
+};
+
+#ifdef HAVE_BLUETOOTH
+static const setting_desc_t mm_desc_13[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_8.h in order. */
+#include "../settings/settings_def_menu_main_actions_8.h"
+};
+#endif
+
+#if defined(HAVE_LAKKA) || defined(HAVE_WIFI)
+static const setting_desc_t mm_desc_14[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_9.h in order. */
+#include "../settings/settings_def_menu_main_actions_9.h"
+};
+#endif
+
+static const setting_desc_t mm_desc_15[] = {
+/* GENERATED: rows come from settings_def_services_actions.h in order. */
+#include "../settings/settings_def_services_actions.h"
+};
+
+static const setting_desc_t mm_desc_16[] = {
+/* GENERATED: rows come from settings_def_menu_main_actions_12.h in order. */
+#include "../settings/settings_def_menu_main_actions_12.h"
+};
+
+static const setting_desc_t configuration_desc_0[] = {
+/* GENERATED: rows come from settings_def_shader_preset.h in order. */
+#include "../settings/settings_def_shader_preset.h"
+};
+
+static const setting_desc_t logging_desc_0[] = {
+/* GENERATED: rows come from settings_def_logging.h in order. */
+#include "../settings/settings_def_logging.h"
+};
+
+static const setting_desc_t sav_desc_0[] = {
+/* GENERATED: rows come from settings_def_saving.h in order. */
+#include "../settings/settings_def_saving.h"
+};
+
+static const setting_desc_t saving2_desc_0[] = {
+/* GENERATED: rows come from settings_def_saving_actions.h in order. */
+#include "../settings/settings_def_saving_actions.h"
+};
+
+#ifdef HAVE_CLOUDSYNC
+static const setting_desc_t cs_desc_0[] = {
+/* GENERATED: rows come from settings_def_cloud_sync_general.h in order. */
+#include "../settings/settings_def_cloud_sync_general.h"
+};
+#endif
+
+#ifdef HAVE_CLOUDSYNC
+static const setting_desc_t cs_desc_1[] = {
+/* GENERATED: rows come from settings_def_cloud_sync_webdav.h in order. */
+#include "../settings/settings_def_cloud_sync_webdav.h"
+};
+#endif
+
+#ifdef HAVE_CLOUDSYNC
+#ifdef HAVE_S3
+static const setting_desc_t cs_desc_2[] = {
+/* GENERATED: rows come from settings_def_cloud_sync_s3.h in order. */
+#include "../settings/settings_def_cloud_sync_s3.h"
+};
+#endif
+#endif
+
+static const setting_desc_t frame_time_cou_desc_0[] = {
+/* GENERATED: rows come from settings_def_video_frame_time_sample.h in order. */
+#include "../settings/settings_def_video_frame_time_sample.h"
+};
+
+static const setting_desc_t frame_time_cou_desc_1[] = {
+/* GENERATED: rows come from settings_def_frame_time_counter.h in order. */
+#include "../settings/settings_def_frame_time_counter.h"
+};
+
+static const setting_desc_t rewind_desc_0[] = {
+/* GENERATED: rows come from settings_def_rewind.h in order. */
+#include "../settings/settings_def_rewind.h"
+};
+
+static const setting_desc_t rewind_desc_1[] = {
+/* GENERATED: rows come from settings_def_rewind_step.h in order. */
+#include "../settings/settings_def_rewind_step.h"
+};
+
+static const setting_desc_t cheats_desc_0[] = {
+/* GENERATED: rows come from settings_def_cheats_apply.h in order. */
+#include "../settings/settings_def_cheats_apply.h"
+};
+
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+static const setting_desc_t vid_desc_0[] = {
+/* GENERATED: rows come from settings_def_video_suspend_screensaver.h in order. */
+#include "../settings/settings_def_video_suspend_screensaver.h"
+};
+#endif
+
+static const setting_desc_t vid_desc_1[] = {
+/* GENERATED: rows come from settings_def_video_monitor_index.h in order. */
+#include "../settings/settings_def_video_monitor_index.h"
+};
+
+#if defined(ANDROID) || TARGET_OS_IOS
+static const setting_desc_t vid_desc_2[] = {
+/* GENERATED: rows come from settings_def_video_notch.h in order. */
+#include "../settings/settings_def_video_notch.h"
+};
+#endif
+
+#ifdef HAVE_VULKAN
+static const setting_desc_t vid_desc_3[] = {
+/* GENERATED: rows come from settings_def_vulkan_gpu_index.h in order. */
+#include "../settings/settings_def_vulkan_gpu_index.h"
+};
+#endif
+
+#ifdef HAVE_D3D10
+static const setting_desc_t vid_desc_4[] = {
+/* GENERATED: rows come from settings_def_gpu_index_d3d11.h in order. */
+#include "../settings/settings_def_gpu_index_d3d11.h"
+};
+#endif
+
+#ifdef HAVE_D3D11
+static const setting_desc_t vid_desc_5[] = {
+/* GENERATED: rows come from settings_def_gpu_index_d3d12.h in order. */
+#include "../settings/settings_def_gpu_index_d3d12.h"
+};
+#endif
+
+#ifdef HAVE_D3D12
+static const setting_desc_t vid_desc_6[] = {
+/* GENERATED: rows come from settings_def_gpu_index_gl.h in order. */
+#include "../settings/settings_def_gpu_index_gl.h"
+};
+#endif
+
+#ifdef HAVE_METAL
+static const setting_desc_t vid_desc_7[] = {
+/* GENERATED: rows come from settings_def_gpu_index_vulkan.h in order. */
+#include "../settings/settings_def_gpu_index_vulkan.h"
+};
+#endif
+
+#ifdef WIIU
+static const setting_desc_t vid_desc_8[] = {
+/* GENERATED: rows come from settings_def_video_wiiu_drc.h in order. */
+#include "../settings/settings_def_video_wiiu_drc.h"
+};
+#endif
+
+static const setting_desc_t vid_desc_9[] = {
+/* GENERATED: rows come from settings_def_video_actions_1.h in order. */
+#include "../settings/settings_def_video_actions_1.h"
+};
+
+static const setting_desc_t fs_desc[] = {
+/* GENERATED: rows come from settings_def_video_fullscreen.h in order. */
+#include "../settings/settings_def_video_fullscreen.h"
+};
+
+#if defined(DINGUX) && defined(DINGUX_BETA)
+static const setting_desc_t dingux_rr_desc[] = {
+/* GENERATED: rows come from settings_def_dingux_refresh_rate.h in order. */
+#include "../settings/settings_def_dingux_refresh_rate.h"
+};
+#endif
+
+static const setting_desc_t refresh_desc[] = {
+/* GENERATED: rows come from settings_def_video_refresh_rate.h in order. */
+#include "../settings/settings_def_video_refresh_rate.h"
+};
+
+static const setting_desc_t autoswitch_desc[] = {
+/* GENERATED: rows come from settings_def_refresh_autoswitch.h in order. */
+#include "../settings/settings_def_refresh_autoswitch.h"
+};
+
+static const setting_desc_t vid_desc_10[] = {
+/* GENERATED: rows come from settings_def_video_srgb.h in order. */
+#include "../settings/settings_def_video_srgb.h"
+};
+
+static const setting_desc_t bias_desc[] = {
+/* GENERATED: rows come from settings_def_video_bias.h in order. */
+#include "../settings/settings_def_video_bias.h"
+};
+
+static const setting_desc_t aspect_desc[] = {
+/* GENERATED: rows come from settings_def_aspect_ratio.h in order. */
+#include "../settings/settings_def_aspect_ratio.h"
+};
+
+static const setting_desc_t vid_desc_11[] = {
+/* GENERATED: rows come from settings_def_video_actions_2.h in order. */
+#include "../settings/settings_def_video_actions_2.h"
+};
+
+#if defined(HAVE_WINDOW_OFFSET)
+static const setting_desc_t vid_desc_12[] = {
+/* GENERATED: rows come from settings_def_video_window_offset.h in order. */
+#include "../settings/settings_def_video_window_offset.h"
+};
+#endif
+
+static const setting_desc_t vp_size_desc[] = {
+/* GENERATED: rows come from settings_def_viewport_size.h in order. */
+#include "../settings/settings_def_viewport_size.h"
+};
+
+#if defined(DINGUX)
+static const setting_desc_t dingux_ka_desc[] = {
+/* GENERATED: rows come from settings_def_video_dingux_ipu.h in order. */
+#include "../settings/settings_def_video_dingux_ipu.h"
+};
+#endif
+
+static const setting_desc_t vid_desc_13[] = {
+/* GENERATED: rows come from settings_def_video_actions_3.h in order. */
+#include "../settings/settings_def_video_actions_3.h"
+};
+
+static const setting_desc_t winscale_desc[] = {
+/* GENERATED: rows come from settings_def_video_window.h in order. */
+#include "../settings/settings_def_video_window.h"
+};
+
+static const setting_desc_t vid_desc_14[] = {
+/* GENERATED: rows come from settings_def_video_window_decorations.h in order. */
+#include "../settings/settings_def_video_window_decorations.h"
+};
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+static const setting_desc_t vid_desc_15[] = {
+/* GENERATED: rows come from settings_def_ui_menubar.h in order. */
+#include "../settings/settings_def_ui_menubar.h"
+};
+#endif
+
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+static const setting_desc_t vid_desc_16[] = {
+/* GENERATED: rows come from settings_def_video_window_save_position.h in order. */
+#include "../settings/settings_def_video_window_save_position.h"
+};
+#endif
+
+#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)))
+static const setting_desc_t vid_desc_17[] = {
+/* GENERATED: rows come from settings_def_video_window_custom_size.h in order. */
+#include "../settings/settings_def_video_window_custom_size.h"
+};
+#endif
+
+static const setting_desc_t video2_desc_0[] = {
+/* GENERATED: rows come from settings_def_video_output_misc.h in order. */
+#include "../settings/settings_def_video_output_misc.h"
+};
+
+#ifdef GEKKO
+static const setting_desc_t gx_desc[] = {
+/* GENERATED: rows come from settings_def_video_gamecube.h in order. */
+#include "../settings/settings_def_video_gamecube.h"
+};
+#endif
+
+#if defined(DINGUX)
+static const setting_desc_t dingux_ipu_desc[] = {
+/* GENERATED: rows come from settings_def_dingux_ipu.h in order. */
+#include "../settings/settings_def_dingux_ipu.h"
+};
+#endif
+
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+static const setting_desc_t dingux_rs90_desc[] = {
+/* GENERATED: rows come from settings_def_dingux_rs90.h in order. */
+#include "../settings/settings_def_dingux_rs90.h"
+};
+#endif
+#endif
+
+static const setting_desc_t smooth_desc[] = {
+/* GENERATED: rows come from settings_def_video_smooth.h in order. */
+#include "../settings/settings_def_video_smooth.h"
+};
+
+#ifdef HAVE_ODROIDGO2
+static const setting_desc_t vid_ctx_desc[] = {
+/* GENERATED: rows come from settings_def_video_ctx_scaling.h in order. */
+#include "../settings/settings_def_video_ctx_scaling.h"
+};
+#endif
+
+static const setting_desc_t rot_desc[] = {
+/* GENERATED: rows come from settings_def_video_rotation.h in order. */
+#include "../settings/settings_def_video_rotation.h"
+};
+
+static const setting_desc_t vid_desc_18[] = {
+/* GENERATED: rows come from settings_def_video_driver_actions.h in order. */
+#include "../settings/settings_def_video_driver_actions.h"
+};
+
+static const setting_desc_t hdr_desc[] = {
+/* GENERATED: rows come from settings_def_video_hdr.h in order. */
+#include "../settings/settings_def_video_hdr.h"
+};
+
+static const setting_desc_t vid_desc_19[] = {
+/* GENERATED: rows come from settings_def_video_actions_5.h in order. */
+#include "../settings/settings_def_video_actions_5.h"
+};
+
+static const setting_desc_t hdr_desc2[] = {
+/* GENERATED: rows come from settings_def_video_hdr_toggles.h in order. */
+#include "../settings/settings_def_video_hdr_toggles.h"
+};
+
+static const setting_desc_t vid_desc_20[] = {
+/* GENERATED: rows come from settings_def_screen_brightness.h in order. */
+#include "../settings/settings_def_screen_brightness.h"
+};
+
+static const setting_desc_t sync_desc[] = {
+/* GENERATED: rows come from settings_def_video_sync.h in order. */
+#include "../settings/settings_def_video_sync.h"
+#ifdef HAVE_D3DKMT
+   SDESC_BOOL_ROW(video_scanline_sync, VIDEO_SCANLINE_SYNC,
+         DEFAULT_SCANLINE_SYNC,
+         SD_FLAG_NONE, 0, CMD_EVENT_NONE),
+#endif
+};
+
+static const setting_desc_t avsync_desc[] = {
+/* GENERATED: rows come from settings_def_video_adaptive_vsync.h in order. */
+#include "../settings/settings_def_video_adaptive_vsync.h"
+};
+
+static const setting_desc_t fdelay_desc[] = {
+/* GENERATED: rows come from settings_def_frame_delay.h in order. */
+#include "../settings/settings_def_frame_delay.h"
+};
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static const setting_desc_t sdelay_desc[] = {
+/* GENERATED: rows come from settings_def_shader_delay.h in order. */
+#include "../settings/settings_def_shader_delay.h"
+};
+#endif
+
+static const setting_desc_t shader_desc[] = {
+/* GENERATED: rows come from settings_def_shader_watch.h in order. */
+#include "../settings/settings_def_shader_watch.h"
+};
+
+static const setting_desc_t vid_desc_21[] = {
+/* GENERATED: rows come from settings_def_black_frame_insertion.h in order. */
+#include "../settings/settings_def_black_frame_insertion.h"
+};
+
+static const setting_desc_t misc_desc[] = {
+/* GENERATED: rows come from settings_def_video_filter_rotation.h in order. */
+#include "../settings/settings_def_video_filter_rotation.h"
+};
+
+static const setting_desc_t video_filter_desc[] = {
+/* GENERATED: rows come from settings_def_video_filter_path.h in order. */
+#include "../settings/settings_def_video_filter_path.h"
+};
+
+static const setting_desc_t crt_switchres_desc_0[] = {
+/* GENERATED: rows come from settings_def_crt_switchres.h in order. */
+#include "../settings/settings_def_crt_switchres.h"
+};
+
+static const setting_desc_t menu_sounds_desc_0[] = {
+/* GENERATED: rows come from settings_def_menu_sounds.h in order. */
+#include "../settings/settings_def_menu_sounds.h"
+};
+
+static const setting_desc_t audio_en_desc[] = {
+/* GENERATED: rows come from settings_def_audio_enable.h in order. */
+#include "../settings/settings_def_audio_enable.h"
+};
+
+static const setting_desc_t audio_state_desc[] = {
+/* GENERATED: rows come from settings_def_audio_state.h in order. */
+#include "../settings/settings_def_audio_state.h"
+};
+
+static const setting_desc_t audio_sync_desc[] = {
+/* GENERATED: rows come from settings_def_audio_sync.h in order. */
+#include "../settings/settings_def_audio_sync.h"
+};
+
+static const setting_desc_t audio_rq_desc[] = {
+/* GENERATED: rows come from settings_def_audio_resampler_quality.h in order. */
+#include "../settings/settings_def_audio_resampler_quality.h"
+};
+
+static const setting_desc_t audio_fmt_desc[] = {
+/* GENERATED: rows come from settings_def_audio_format.h in order. */
+#include "../settings/settings_def_audio_format.h"
+};
+
+static const setting_desc_t audio_skew_desc[] = {
+/* GENERATED: rows come from settings_def_audio_skew.h in order. */
+#include "../settings/settings_def_audio_skew.h"
+      #ifdef RARCH_MOBILE
+      #ifdef HAVE_MICROPHONE
+      SDESC_UINT_ROW(microphone_block_frames, MICROPHONE_BLOCK_FRAMES,
+         0, SD_FLAG_ADVANCED, 0, 0,
+         0, 0, 0, 0, NULL, NULL),
+#endif
+#endif
+};
+
+static const setting_desc_t audio_dev_desc[] = {
+/* GENERATED: rows come from settings_def_audio_device.h in order. */
+#include "../settings/settings_def_audio_device.h"
+};
+
+static const setting_desc_t audio_dsp_desc[] = {
+/* GENERATED: rows come from settings_def_audio_dsp_path.h in order. */
+#include "../settings/settings_def_audio_dsp_path.h"
+};
+
+#ifdef HAVE_WASAPI
+static const setting_desc_t audio_wasapi_desc[] = {
+/* GENERATED: rows come from settings_def_audio_wasapi.h in order. */
+#include "../settings/settings_def_audio_wasapi.h"
+};
+#endif
+
+#ifdef HAVE_ASIO
+static const setting_desc_t audio_asio_desc[] = {
+/* GENERATED: rows come from settings_def_audio_asio_action.h in order. */
+#include "../settings/settings_def_audio_asio_action.h"
+};
+#endif
+
+#ifdef HAVE_MICROPHONE
+static const setting_desc_t mic_enable_desc[] = {
+/* GENERATED: rows come from settings_def_microphone.h in order. */
+#include "../settings/settings_def_microphone.h"
+};
+#endif
+
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
+static const setting_desc_t mic_block_desc[] = {
+/* GENERATED: rows come from settings_def_microphone_block.h in order. */
+#include "../settings/settings_def_microphone_block.h"
+};
+#endif
+#endif
+
+#ifdef HAVE_MICROPHONE
+static const setting_desc_t mic_misc_desc[] = {
+/* GENERATED: rows come from settings_def_microphone_general.h in order. */
+#include "../settings/settings_def_microphone_general.h"
+};
+#endif
+
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+static const setting_desc_t mic_wasapi_desc[] = {
+/* GENERATED: rows come from settings_def_mic_wasapi.h in order. */
+#include "../settings/settings_def_mic_wasapi.h"
+};
+#endif
+#endif
+
+static const setting_desc_t inp_desc_0[] = {
+/* GENERATED: rows come from settings_def_input_general.h in order. */
+#include "../settings/settings_def_input_general.h"
+};
+
+#ifdef GEKKO
+static const setting_desc_t inp_desc_1[] = {
+/* GENERATED: rows come from settings_def_input_mouse_scale.h in order. */
+#include "../settings/settings_def_input_mouse_scale.h"
+};
+#endif
+
+static const setting_desc_t inp_desc_2[] = {
+/* GENERATED: rows come from settings_def_input_touch_scale.h in order. */
+#include "../settings/settings_def_input_touch_scale.h"
+};
+
+#ifdef UDEV_TOUCH_SUPPORT
+static const setting_desc_t inp_desc_3[] = {
+/* GENERATED: rows come from settings_def_input_vmouse.h in order. */
+#include "../settings/settings_def_input_vmouse.h"
+};
+#endif
+
+#ifdef VITA
+static const setting_desc_t inp_desc_4[] = {
+/* GENERATED: rows come from settings_def_input_backtouch.h in order. */
+#include "../settings/settings_def_input_backtouch.h"
+};
+#endif
+
+#if TARGET_OS_IPHONE
+static const setting_desc_t inp_desc_5[] = {
+/* GENERATED: rows come from settings_def_input_bind_timeouts.h in order. */
+#include "../settings/settings_def_input_bind_timeouts.h"
+};
+#endif
+
+static const setting_desc_t inp_desc_6[] = {
+/* GENERATED: rows come from settings_def_input_haptics.h in order. */
+#include "../settings/settings_def_input_haptics.h"
+};
+
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+static const setting_desc_t inp_desc_7[] = {
+/* GENERATED: rows come from settings_def_input_nowinkey.h in order. */
+#include "../settings/settings_def_input_nowinkey.h"
+};
+#endif
+
+static const setting_desc_t inp_desc_8[] = {
+/* GENERATED: rows come from settings_def_input_auto_mouse_grab.h in order. */
+#include "../settings/settings_def_input_auto_mouse_grab.h"
+};
+
+#ifdef ANDROID
+static const setting_desc_t inp_desc_9[] = {
+/* GENERATED: rows come from settings_def_input_android_workaround.h in order. */
+#include "../settings/settings_def_input_android_workaround.h"
+};
+#endif
+
+static const setting_desc_t inp_desc_10[] = {
+/* GENERATED: rows come from settings_def_input_turbo.h in order. */
+#include "../settings/settings_def_input_turbo.h"
+};
+
+static const setting_desc_t inp_desc_11[] = {
+/* GENERATED: rows come from settings_def_analog_deadzone.h in order. */
+#include "../settings/settings_def_analog_deadzone.h"
+};
+
+static const setting_desc_t inp_desc_12[] = {
+/* GENERATED: rows come from settings_def_input_sensors_extra.h in order. */
+#include "../settings/settings_def_input_sensors_extra.h"
+};
+
+static const setting_desc_t inp_desc_13[] = {
+/* GENERATED: rows come from settings_def_input_actions.h in order. */
+#include "../settings/settings_def_input_actions.h"
+};
+
+static const setting_desc_t input_turbo_fi_desc_0[] = {
+/* GENERATED: rows come from settings_def_input_turbo_fire.h in order. */
+#include "../settings/settings_def_input_turbo_fire.h"
+};
+
+static const setting_desc_t recording_desc_0[] = {
+/* GENERATED: rows come from settings_def_record_quality.h in order. */
+#include "../settings/settings_def_record_quality.h"
+};
+
+static const setting_desc_t recording2_desc_0[] = {
+/* GENERATED: rows come from settings_def_recording_paths.h in order. */
+#include "../settings/settings_def_recording_paths.h"
+};
+
+static const setting_desc_t recording_desc_1[] = {
+/* GENERATED: rows come from settings_def_stream_quality.h in order. */
+#include "../settings/settings_def_stream_quality.h"
+};
+
+static const setting_desc_t recording2_desc_1[] = {
+/* GENERATED: rows come from settings_def_streaming_paths.h in order. */
+#include "../settings/settings_def_streaming_paths.h"
+};
+
+static const setting_desc_t recording_desc_2[] = {
+/* GENERATED: rows come from settings_def_record_threads.h in order. */
+#include "../settings/settings_def_record_threads.h"
+};
+
+static const setting_desc_t recording_desc_3[] = {
+/* GENERATED: rows come from settings_def_recording_video.h in order. */
+#include "../settings/settings_def_recording_video.h"
+};
+
+static const setting_desc_t frame_throttli_desc_0[] = {
+/* GENERATED: rows come from settings_def_frame_throttle_general.h in order. */
+#include "../settings/settings_def_frame_throttle_general.h"
+};
+
+static const setting_desc_t menu_thr_desc[] = {
+/* GENERATED: rows come from settings_def_menu_throttle.h in order. */
+#include "../settings/settings_def_menu_throttle.h"
+};
+
+static const setting_desc_t frame_throttli_desc_1[] = {
+/* GENERATED: rows come from settings_def_frame_throttle_fastforward.h in order. */
+#include "../settings/settings_def_frame_throttle_fastforward.h"
+};
+
+#ifdef HAVE_RUNAHEAD
+static const setting_desc_t frame_throttli_desc_2[] = {
+/* GENERATED: rows come from settings_def_runahead_warnings.h in order. */
+#include "../settings/settings_def_runahead_warnings.h"
+};
+#endif
+
+#ifdef ANDROID
+static const setting_desc_t frame_throttli_desc_3[] = {
+/* GENERATED: rows come from settings_def_frame_throttle_slowmotion.h in order. */
+#include "../settings/settings_def_frame_throttle_slowmotion.h"
+};
+#endif
+
+#ifdef HAVE_GFX_WIDGETS
+static const setting_desc_t osn_desc_0[] = {
+/* GENERATED: rows come from settings_def_notification_enable.h in order. */
+#include "../settings/settings_def_notification_enable.h"
+};
+#endif
+
+#ifdef HAVE_GFX_WIDGETS
+#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+static const setting_desc_t osn_desc_1[] = {
+/* GENERATED: rows come from settings_def_widget_scale.h in order. */
+#include "../settings/settings_def_widget_scale.h"
+};
+#endif
+#endif
+
+#ifdef HAVE_GFX_WIDGETS
+#if !((defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)))
+static const setting_desc_t widget_fs_desc[] = {
+/* GENERATED: rows come from settings_def_widget_scale_fullscreen.h in order. */
+#include "../settings/settings_def_widget_scale_fullscreen.h"
+};
+#endif
+#endif
+
+#ifdef HAVE_GFX_WIDGETS
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+static const setting_desc_t osn_desc_2[] = {
+/* GENERATED: rows come from settings_def_widget_scale_windowed.h in order. */
+#include "../settings/settings_def_widget_scale_windowed.h"
+};
+#endif
+#endif
+
+static const setting_desc_t osn_desc_3[] = {
+/* GENERATED: rows come from settings_def_notification_widgets.h in order. */
+#include "../settings/settings_def_notification_widgets.h"
+};
+
+static const setting_desc_t onscreen_not2_desc_0[] = {
+/* GENERATED: rows come from settings_def_notification_font_path.h in order. */
+#include "../settings/settings_def_notification_font_path.h"
+};
+
+static const setting_desc_t osn_desc_4[] = {
+/* GENERATED: rows come from settings_def_notification_positions.h in order. */
+#include "../settings/settings_def_notification_positions.h"
+};
+
+static const setting_desc_t osn_desc_5[] = {
+/* GENERATED: rows come from settings_def_notification_views.h in order. */
+#include "../settings/settings_def_notification_views.h"
+};
+
+#ifdef HAVE_OVERLAY
+static const setting_desc_t ovl_desc_0[] = {
+/* GENERATED: rows come from settings_def_overlay_enable.h in order. */
+#include "../settings/settings_def_overlay_enable.h"
+};
+#endif
+
+#ifdef HAVE_OVERLAY
+static const setting_desc_t ovl_desc_1[] = {
+/* GENERATED: rows come from settings_def_overlay_auto_scale.h in order. */
+#include "../settings/settings_def_overlay_auto_scale.h"
+};
+#endif
+
+#ifdef HAVE_OVERLAY
+static const setting_desc_t overlay2_desc_0[] = {
+/* GENERATED: rows come from settings_def_overlay_preset_path.h in order. */
+#include "../settings/settings_def_overlay_preset_path.h"
+};
+#endif
+
+#ifdef HAVE_OVERLAY
+static const setting_desc_t ovl_desc_2[] = {
+/* GENERATED: rows come from settings_def_overlay_opacity.h in order. */
+#include "../settings/settings_def_overlay_opacity.h"
+};
+#endif
+
+#ifdef HAVE_OVERLAY
+static const setting_desc_t ovl_desc_3[] = {
+/* GENERATED: rows come from settings_def_overlay_appearance.h in order. */
+#include "../settings/settings_def_overlay_appearance.h"
+};
+#endif
+
+#ifdef HAVE_OVERLAY
+static const setting_desc_t overlay_lightg_desc_0[] = {
+/* GENERATED: rows come from settings_def_overlay_lightgun.h in order. */
+#include "../settings/settings_def_overlay_lightgun.h"
+};
+#endif
+
+#ifdef HAVE_OVERLAY
+static const setting_desc_t overlay_mouse_desc_0[] = {
+/* GENERATED: rows come from settings_def_overlay_mouse.h in order. */
+#include "../settings/settings_def_overlay_mouse.h"
+};
+#endif
+
+static const setting_desc_t menu2_desc_0[] = {
+/* GENERATED: rows come from settings_def_menu_wallpaper_path.h in order. */
+#include "../settings/settings_def_menu_wallpaper_path.h"
+};
+
+static const setting_desc_t menu_desc_0[] = {
+/* GENERATED: rows come from settings_def_wallpaper_opacity.h in order. */
+#include "../settings/settings_def_wallpaper_opacity.h"
+};
+
+static const setting_desc_t menu_desc_1[] = {
+/* GENERATED: rows come from settings_def_menu_framebuffer_opacity.h in order. */
+#include "../settings/settings_def_menu_framebuffer_opacity.h"
+};
+
+static const setting_desc_t menu_desc_2[] = {
+/* GENERATED: rows come from settings_def_menu_wallpaper.h in order. */
+#include "../settings/settings_def_menu_wallpaper.h"
+};
+
+static const setting_desc_t menu_desc_3[] = {
+/* GENERATED: rows come from settings_def_menu_appearance.h in order. */
+#include "../settings/settings_def_menu_appearance.h"
+};
+
+#if (defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)) && !defined(_3DS)
+static const setting_desc_t menu_desc_4[] = {
+/* GENERATED: rows come from settings_def_menu_header_footer.h in order. */
+#include "../settings/settings_def_menu_header_footer.h"
+};
+#endif
+
+static const setting_desc_t menu_desc_5[] = {
+/* GENERATED: rows come from settings_def_menu_visibility.h in order. */
+#include "../settings/settings_def_menu_visibility.h"
+};
+
+static const setting_desc_t menu_desc_6[] = {
+/* GENERATED: rows come from settings_def_menu_rgui_layout.h in order. */
+#include "../settings/settings_def_menu_rgui_layout.h"
+};
+
+static const setting_desc_t menu_desc_7[] = {
+/* GENERATED: rows come from settings_def_menu_scroll.h in order. */
+#include "../settings/settings_def_menu_scroll.h"
+};
+
+#if !defined(DINGUX)
+static const setting_desc_t menu_desc_8[] = {
+/* GENERATED: rows come from settings_def_rgui_aspect.h in order. */
+#include "../settings/settings_def_rgui_aspect.h"
+};
+#endif
+
+static const setting_desc_t menu_desc_9[] = {
+/* GENERATED: rows come from settings_def_rgui_color_theme.h in order. */
+#include "../settings/settings_def_rgui_color_theme.h"
+};
+
+static const setting_desc_t menu2_desc_1[] = {
+/* GENERATED: rows come from settings_def_rgui_theme_path.h in order. */
+#include "../settings/settings_def_rgui_theme_path.h"
+};
+
+static const setting_desc_t menu_desc_10[] = {
+/* GENERATED: rows come from settings_def_menu_rgui_transparency.h in order. */
+#include "../settings/settings_def_menu_rgui_transparency.h"
+};
+
+static const setting_desc_t menu_desc_11[] = {
+/* GENERATED: rows come from settings_def_menu_landscape.h in order. */
+#include "../settings/settings_def_menu_landscape.h"
+};
+
+#if defined(HAVE_XMB) || defined (HAVE_OZONE)
+static const setting_desc_t menu_desc_12[] = {
+/* GENERATED: rows come from settings_def_menu_horizontal_animation.h in order. */
+#include "../settings/settings_def_menu_horizontal_animation.h"
+};
+#endif
+
+#if defined(HAVE_XMB) || defined (HAVE_OZONE)
+static const setting_desc_t menu_desc_13[] = {
+/* GENERATED: rows come from settings_def_xmb_animations.h in order. */
+#include "../settings/settings_def_xmb_animations.h"
+};
+#endif
+
+static const setting_desc_t menu_desc_14[] = {
+/* GENERATED: rows come from settings_def_menu_startup.h in order. */
+#include "../settings/settings_def_menu_startup.h"
+};
+
+static const setting_desc_t menu_desc_15[] = {
+/* GENERATED: rows come from settings_def_menu_wraparound.h in order. */
+#include "../settings/settings_def_menu_wraparound.h"
+};
+
+static const setting_desc_t menu_desc_16[] = {
+/* GENERATED: rows come from settings_def_menu_savestate_resume.h in order. */
+#include "../settings/settings_def_menu_savestate_resume.h"
+};
+
+static const setting_desc_t menu2_desc_2[] = {
+/* GENERATED: rows come from settings_def_kiosk_password.h in order. */
+#include "../settings/settings_def_kiosk_password.h"
+};
+
+#ifdef HAVE_THREADS
+static const setting_desc_t menu_desc_17[] = {
+/* GENERATED: rows come from settings_def_menu_threaded_data.h in order. */
+#include "../settings/settings_def_menu_threaded_data.h"
+};
+#endif
+
+static const setting_desc_t menu_desc_18[] = {
+/* GENERATED: rows come from settings_def_rgui_particle_effect.h in order. */
+#include "../settings/settings_def_rgui_particle_effect.h"
+};
+
+#ifdef HAVE_XMB
+static const setting_desc_t menu_desc_19[] = {
+/* GENERATED: rows come from settings_def_menu_entry_display.h in order. */
+#include "../settings/settings_def_menu_entry_display.h"
+};
+#endif
+
+#ifdef HAVE_XMB
+static const setting_desc_t menu2_desc_3[] = {
+/* GENERATED: rows come from settings_def_xmb_font_path.h in order. */
+#include "../settings/settings_def_xmb_font_path.h"
+};
+#endif
+
+#ifdef HAVE_XMB
+static const setting_desc_t menu_desc_20[] = {
+/* GENERATED: rows come from settings_def_rgui_appearance.h in order. */
+#include "../settings/settings_def_rgui_appearance.h"
+};
+#endif
+
+#ifdef HAVE_XMB
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#ifdef HAVE_SHADERPIPELINE
+static const setting_desc_t menu_desc_21[] = {
+/* GENERATED: rows come from settings_def_xmb_shader_pipeline.h in order. */
+#include "../settings/settings_def_xmb_shader_pipeline.h"
+};
+#endif
+#endif
+#endif
+
+#ifdef HAVE_XMB
+static const setting_desc_t menu_desc_22[] = {
+/* GENERATED: rows come from settings_def_xmb_color_theme.h in order. */
+#include "../settings/settings_def_xmb_color_theme.h"
+};
+#endif
+
+static const setting_desc_t menu_desc_23[] = {
+/* GENERATED: rows come from settings_def_menu_ex_pilot.h in order. */
+#include "../settings/settings_def_menu_ex_pilot.h"
+};
+
+static const setting_desc_t menu_desc_24[] = {
+/* GENERATED: rows come from settings_def_menu_main_views.h in order. */
+#include "../settings/settings_def_menu_main_views.h"
+};
+
+#ifdef HAVE_LAKKA
+static const setting_desc_t menu_quit_lakka_desc[] = {
+/* GENERATED: rows come from settings_def_menu_show_restart.h in order. */
+#include "../settings/settings_def_menu_show_restart.h"
+};
+#endif
+
+#if !defined(HAVE_LAKKA) && !defined(IOS)
+static const setting_desc_t menu_desc_25[] = {
+/* GENERATED: rows come from settings_def_quit_visibility.h in order. */
+#include "../settings/settings_def_quit_visibility.h"
+};
+#endif
+
+#if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
+static const setting_desc_t menu_desc_26[] = {
+/* GENERATED: rows come from settings_def_menu_power_views.h in order. */
+#include "../settings/settings_def_menu_power_views.h"
+};
+#endif
+
+#if !(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2))
+#if !defined(IOS)
+static const setting_desc_t menu_desc_27[] = {
+/* GENERATED: rows come from settings_def_menu_restart_view.h in order. */
+#include "../settings/settings_def_menu_restart_view.h"
+};
+#endif
+#endif
+
+static const setting_desc_t menu_desc_28[] = {
+/* GENERATED: rows come from settings_def_menu_content_settings_view.h in order. */
+#include "../settings/settings_def_menu_content_settings_view.h"
+};
+
+static const setting_desc_t menu2_desc_4[] = {
+/* GENERATED: rows come from settings_def_settings_password.h in order. */
+#include "../settings/settings_def_settings_password.h"
+};
+
+static const setting_desc_t menu_desc_29[] = {
+/* GENERATED: rows come from settings_def_ozone_appearance.h in order. */
+#include "../settings/settings_def_ozone_appearance.h"
+};
+
+#ifdef HAVE_MATERIALUI
+static const setting_desc_t menu_desc_30[] = {
+/* GENERATED: rows come from settings_def_ozone_extras.h in order. */
+#include "../settings/settings_def_ozone_extras.h"
+};
+#endif
+
+#ifdef HAVE_OZONE
+static const setting_desc_t menu_desc_31[] = {
+/* GENERATED: rows come from settings_def_ozone_sidebar.h in order. */
+#include "../settings/settings_def_ozone_sidebar.h"
+};
+#endif
+
+#ifdef HAVE_OZONE
+static const setting_desc_t menu2_desc_5[] = {
+/* GENERATED: rows come from settings_def_ozone_font_path.h in order. */
+#include "../settings/settings_def_ozone_font_path.h"
+};
+#endif
+
+#ifdef HAVE_OZONE
+static const setting_desc_t menu_desc_32[] = {
+/* GENERATED: rows come from settings_def_ozone_typography.h in order. */
+#include "../settings/settings_def_ozone_typography.h"
+};
+#endif
+
+static const setting_desc_t menu_desc_33[] = {
+/* GENERATED: rows come from settings_def_menu_start_screen.h in order. */
+#include "../settings/settings_def_menu_start_screen.h"
+};
+
+static const setting_desc_t menu_desc_34[] = {
+/* GENERATED: rows come from settings_def_menu_rgui_thumbnails.h in order. */
+#include "../settings/settings_def_menu_rgui_thumbnails.h"
+};
+
+static const setting_desc_t menu_desc_35[] = {
+/* GENERATED: rows come from settings_def_menu_thumbnail_background.h in order. */
+#include "../settings/settings_def_menu_thumbnail_background.h"
+};
+
+static const setting_desc_t menu_desc_36[] = {
+/* GENERATED: rows come from settings_def_menu_thumbnails.h in order. */
+#include "../settings/settings_def_menu_thumbnails.h"
+};
+
+static const setting_desc_t menu_desc_37[] = {
+/* GENERATED: rows come from settings_def_thumbnail_upscale.h in order. */
+#include "../settings/settings_def_thumbnail_upscale.h"
+};
+
+static const setting_desc_t menu_desc_38[] = {
+/* GENERATED: rows come from settings_def_rgui_thumbnail_downscale.h in order. */
+#include "../settings/settings_def_rgui_thumbnail_downscale.h"
+};
+
+static const setting_desc_t menu_desc_39[] = {
+/* GENERATED: rows come from settings_def_menu_privacy.h in order. */
+#include "../settings/settings_def_menu_privacy.h"
+};
+
+static const setting_desc_t menu_file_brow_desc_0[] = {
+/* GENERATED: rows come from settings_def_menu_filebrowser.h in order. */
+#include "../settings/settings_def_menu_filebrowser.h"
+};
+
+static const setting_desc_t multimedia_desc_0[] = {
+/* GENERATED: rows come from settings_def_multimedia.h in order. */
+#include "../settings/settings_def_multimedia.h"
+};
+
+#ifdef ANDROID
+static const setting_desc_t power_manageme_desc_0_s0[] = {
+/* GENERATED: rows come from settings_def_sustained_performance.h in order. */
+#include "../settings/settings_def_sustained_performance.h"
+};
+#endif
+
+#ifdef HAVE_LAKKA
+static const setting_desc_t power_manageme_desc_0_s1[] = {
+/* GENERATED: rows come from settings_def_power_action.h in order. */
+#include "../settings/settings_def_power_action.h"
+};
+#endif
+
+#ifndef HAVE_LAKKA
+static const setting_desc_t power_manageme_desc_1[] = {
+/* GENERATED: rows come from settings_def_gamemode.h in order. */
+#include "../settings/settings_def_gamemode.h"
+};
+#endif
+
+static const setting_desc_t wifi_managemen_desc_0[] = {
+/* GENERATED: rows come from settings_def_wifi.h in order. */
+#include "../settings/settings_def_wifi.h"
+};
+
+static const setting_desc_t accessibility_desc_0[] = {
+/* GENERATED: rows come from settings_def_accessibility.h in order. */
+#include "../settings/settings_def_accessibility.h"
+};
+
+#ifdef HAVE_TRANSLATE
+static const setting_desc_t ai_service_desc_0[] = {
+/* GENERATED: rows come from settings_def_ai_service.h in order. */
+#include "../settings/settings_def_ai_service.h"
+};
+#endif
+
+#ifdef HAVE_TRANSLATE
+static const setting_desc_t ai_service_desc_1[] = {
+/* GENERATED: rows come from settings_def_ai_service_options.h in order. */
+#include "../settings/settings_def_ai_service_options.h"
+};
+#endif
+
+static const setting_desc_t ui_desc_0[] = {
+/* GENERATED: rows come from settings_def_ui_focus.h in order. */
+#include "../settings/settings_def_ui_focus.h"
+};
+
+#ifdef _3DS
+static const setting_desc_t ui_desc_2[] = {
+/* GENERATED: rows come from settings_def_3ds_bottom_lcd.h in order. */
+#include "../settings/settings_def_3ds_bottom_lcd.h"
+};
+#endif
+
+#ifdef _3DS
+static const setting_desc_t ui_desc_3[] = {
+/* GENERATED: rows come from settings_def_ui_appearance.h in order. */
+#include "../settings/settings_def_ui_appearance.h"
+};
+#endif
+
+#ifdef HAVE_NETWORKING
+static const setting_desc_t ui_desc_4[] = {
+/* GENERATED: rows come from settings_def_menu_online_updater_view.h in order. */
+#include "../settings/settings_def_menu_online_updater_view.h"
+};
+#endif
+
+#ifdef HAVE_NETWORKING
+#if !defined(HAVE_LAKKA)
+static const setting_desc_t ui_desc_5[] = {
+/* GENERATED: rows come from settings_def_menu_core_updater_view.h in order. */
+#include "../settings/settings_def_menu_core_updater_view.h"
+};
+#endif
+#endif
+
+#ifdef HAVE_MIST
+static const setting_desc_t ui_desc_6[] = {
+/* GENERATED: rows come from settings_def_menu_steam.h in order. */
+#include "../settings/settings_def_menu_steam.h"
+};
+#endif
+
+static const setting_desc_t ui_desc_7[] = {
+/* GENERATED: rows come from settings_def_menu_settings_views.h in order. */
+#include "../settings/settings_def_menu_settings_views.h"
+};
+
+#ifdef HAVE_MIST
+static const setting_desc_t ui_desc_8[] = {
+/* GENERATED: rows come from settings_def_settings_show_steam.h in order. */
+#include "../settings/settings_def_settings_show_steam.h"
+};
+#endif
+
+#ifdef HAVE_SMBCLIENT
+static const setting_desc_t ui_desc_9[] = {
+/* GENERATED: rows come from settings_def_settings_show_smb.h in order. */
+#include "../settings/settings_def_settings_show_smb.h"
+};
+#endif
+
+static const setting_desc_t ui_desc_10[] = {
+/* GENERATED: rows come from settings_def_menu_quick_views.h in order. */
+#include "../settings/settings_def_menu_quick_views.h"
+};
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static const setting_desc_t ui_desc_11[] = {
+/* GENERATED: rows come from settings_def_quick_menu_shaders_view.h in order. */
+#include "../settings/settings_def_quick_menu_shaders_view.h"
+};
+#endif
+
+static const setting_desc_t ui_desc_12[] = {
+/* GENERATED: rows come from settings_def_menu_desktop.h in order. */
+#include "../settings/settings_def_menu_desktop.h"
+};
+
+static const setting_desc_t ui_desc_13[] = {
+/* GENERATED: rows come from settings_def_desktop_menu.h in order. */
+#include "../settings/settings_def_desktop_menu.h"
+};
+
+static const setting_desc_t pl_desc_0[] = {
+/* GENERATED: rows come from settings_def_playlist_sorting.h in order. */
+#include "../settings/settings_def_playlist_sorting.h"
+};
+
+static const setting_desc_t pl_desc_1[] = {
+/* GENERATED: rows come from settings_def_playlist_management.h in order. */
+#include "../settings/settings_def_playlist_management.h"
+};
+
+static const setting_desc_t pl_desc_2[] = {
+/* GENERATED: rows come from settings_def_playlist_history.h in order. */
+#include "../settings/settings_def_playlist_history.h"
+};
+
+static const setting_desc_t pl_desc_3[] = {
+/* GENERATED: rows come from settings_def_playlist_display.h in order. */
+#include "../settings/settings_def_playlist_display.h"
+};
+
+#if defined(HAVE_OZONE) || defined(HAVE_XMB)
+static const setting_desc_t pl_desc_4[] = {
+/* GENERATED: rows come from settings_def_playlist_flags.h in order. */
+#include "../settings/settings_def_playlist_flags.h"
+};
+#endif
+
+#ifdef HAVE_CHEEVOS
+static const setting_desc_t cheevos_desc_0[] = {
+/* GENERATED: rows come from settings_def_cheevos.h in order. */
+#include "../settings/settings_def_cheevos.h"
+};
+#endif
+
+#ifdef HAVE_CHEEVOS
+static const setting_desc_t chv_desc_0[] = {
+/* GENERATED: rows come from settings_def_cheevos_general.h in order. */
+#include "../settings/settings_def_cheevos_general.h"
+};
+#endif
+
+#ifdef HAVE_CHEEVOS
+static const setting_desc_t chv_desc_1[] = {
+/* GENERATED: rows come from settings_def_cheevos_visibility.h in order. */
+#include "../settings/settings_def_cheevos_visibility.h"
+};
+#endif
+
+#ifdef HAVE_NETWORKING
+static const setting_desc_t core_updater_desc_0[] = {
+/* GENERATED: rows come from settings_def_updater_extract.h in order. */
+#include "../settings/settings_def_updater_extract.h"
+};
+#endif
+
+#ifdef HAVE_NETWORKING
+#ifdef HAVE_UPDATE_CORES
+static const setting_desc_t core_updater_desc_1[] = {
+/* GENERATED: rows come from settings_def_updater_experimental.h in order. */
+#include "../settings/settings_def_updater_experimental.h"
+};
+#endif
+#endif
+
+#ifdef HAVE_NETWORKING
+#ifdef HAVE_UPDATE_CORES
+static const setting_desc_t core_updater_desc_2[] = {
+/* GENERATED: rows come from settings_def_updater_backup.h in order. */
+#include "../settings/settings_def_updater_backup.h"
+};
+#endif
+#endif
+
+#ifdef HAVE_SMBCLIENT
+static const setting_desc_t np_desc_0[] = {
+/* GENERATED: rows come from settings_def_netplay_action.h in order. */
+#include "../settings/settings_def_netplay_action.h"
+};
+#endif
+
+#if defined(HAVE_NETWORKING)
+static const setting_desc_t np_desc_1[] = {
+/* GENERATED: rows come from settings_def_netplay_visibility.h in order. */
+#include "../settings/settings_def_netplay_visibility.h"
+};
+#endif
+
+#if defined(HAVE_NETWORKING)
+static const setting_desc_t netplay2_desc_0[] = {
+/* GENERATED: rows come from settings_def_netplay_server.h in order. */
+#include "../settings/settings_def_netplay_server.h"
+};
+#endif
+
+#if defined(HAVE_NETWORKING)
+static const setting_desc_t np_desc_2[] = {
+/* GENERATED: rows come from settings_def_netplay_ports.h in order. */
+#include "../settings/settings_def_netplay_ports.h"
+};
+#endif
+
+#if defined(HAVE_NETWORKING)
+static const setting_desc_t netplay2_desc_1[] = {
+/* GENERATED: rows come from settings_def_netplay_passwords.h in order. */
+#include "../settings/settings_def_netplay_passwords.h"
+};
+#endif
+
+#if defined(HAVE_NETWORKING)
+static const setting_desc_t np_desc_3[] = {
+/* GENERATED: rows come from settings_def_netplay_advanced.h in order. */
+#include "../settings/settings_def_netplay_advanced.h"
+};
+#endif
+
+#if defined(HAVE_NETWORKING)
+static const setting_desc_t np_desc_4[] = {
+/* GENERATED: rows come from settings_def_netplay_sync.h in order. */
+#include "../settings/settings_def_netplay_sync.h"
+};
+#endif
+
+#if defined(HAVE_NETWORKING)
+#if defined(HAVE_NETWORK_CMD)
+static const setting_desc_t np_desc_5[] = {
+/* GENERATED: rows come from settings_def_netplay_nat.h in order. */
+#include "../settings/settings_def_netplay_nat.h"
+};
+#endif
+#endif
+
+#if defined(HAVE_NETWORKING)
+#if defined(HAVE_NETWORK_CMD)
+static const setting_desc_t np_desc_6[] = {
+/* GENERATED: rows come from settings_def_netplay_stateless.h in order. */
+#include "../settings/settings_def_netplay_stateless.h"
+};
+#endif
+#endif
+
+#if defined(HAVE_NETWORKING)
+#if defined(HAVE_NETWORK_CMD)
+static const setting_desc_t np_desc_7[] = {
+/* GENERATED: rows come from settings_def_network_stdin_cmd.h in order. */
+#include "../settings/settings_def_network_stdin_cmd.h"
+};
+#endif
+#endif
+
+#if defined(HAVE_NETWORKING)
+static const setting_desc_t np_desc_8[] = {
+/* GENERATED: rows come from settings_def_network_ondemand_thumbnails.h in order. */
+#include "../settings/settings_def_network_ondemand_thumbnails.h"
+};
+#endif
+
+static const setting_desc_t user_desc_0[] = {
+/* GENERATED: rows come from settings_def_user_language_action.h in order. */
+#include "../settings/settings_def_user_language_action.h"
+};
+
+static const setting_desc_t user2_desc_0[] = {
+/* GENERATED: rows come from settings_def_user_identity.h in order. */
+#include "../settings/settings_def_user_identity.h"
+};
+
+#ifdef HAVE_GAME_AI
+static const setting_desc_t user_desc_1[] = {
+/* GENERATED: rows come from settings_def_game_ai.h in order. */
+#include "../settings/settings_def_game_ai.h"
+};
+#endif
+
+#ifdef HAVE_CHEEVOS
+static const setting_desc_t user_accounts_desc_0_s0[] = {
+/* GENERATED: rows come from settings_def_accounts_cheevos.h in order. */
+#include "../settings/settings_def_accounts_cheevos.h"
+};
+#endif
+
+#ifdef HAVE_NETWORKING
+#if !IOS
+static const setting_desc_t user_accounts_desc_0_s1[] = {
+/* GENERATED: rows come from settings_def_accounts_streaming.h in order. */
+#include "../settings/settings_def_accounts_streaming.h"
+};
+#endif
+#endif
+
+#ifdef HAVE_CHEEVOS
+static const setting_desc_t cheevos_acct_desc[] = {
+/* GENERATED: rows come from settings_def_cheevos_account.h in order. */
+#include "../settings/settings_def_cheevos_account.h"
+};
+#endif
+
+static const setting_desc_t dir_desc_0[] = {
+/* GENERATED: rows come from settings_def_dir_core.h in order. */
+#include "../settings/settings_def_dir_core.h"
+};
+
+static const setting_desc_t dir_desc_1[] = {
+/* GENERATED: rows come from settings_def_dir_user.h in order. */
+#include "../settings/settings_def_dir_user.h"
+};
+
+static const setting_desc_t dir_desc_2[] = {
+/* GENERATED: rows come from settings_def_dir_cache_log.h in order. */
+#include "../settings/settings_def_dir_cache_log.h"
+};
+
+static const setting_desc_t privacy_desc_0[] = {
+/* GENERATED: rows come from settings_def_privacy_camera.h in order. */
+#include "../settings/settings_def_privacy_camera.h"
+};
+
+#ifdef HAVE_DISCORD
+static const setting_desc_t privacy_desc_1[] = {
+/* GENERATED: rows come from settings_def_privacy_discord.h in order. */
+#include "../settings/settings_def_privacy_discord.h"
+};
+#endif
+
+static const setting_desc_t privacy_desc_2[] = {
+/* GENERATED: rows come from settings_def_privacy_location.h in order. */
+#include "../settings/settings_def_privacy_location.h"
+};
+
+#if !defined(RARCH_CONSOLE)
+static const setting_desc_t midi_desc_0[] = {
+/* GENERATED: rows come from settings_def_midi_volume.h in order. */
+#include "../settings/settings_def_midi_volume.h"
+};
+#endif
+
+#ifdef HAVE_MIST
+static const setting_desc_t steam_desc_0[] = {
+/* GENERATED: rows come from settings_def_steam_presence.h in order. */
+#include "../settings/settings_def_steam_presence.h"
+};
+#endif
+
+#ifdef HAVE_SMBCLIENT
+static const setting_desc_t smbclient_desc_0[] = {
+/* GENERATED: rows come from settings_def_smb_client.h in order. */
+#include "../settings/settings_def_smb_client.h"
+};
+#endif
+
+#ifdef HAVE_SMBCLIENT
+static const setting_desc_t smbclient_desc_1[] = {
+/* GENERATED: rows come from settings_def_smb_client_auth.h in order. */
+#include "../settings/settings_def_smb_client_auth.h"
+#include "../settings/settings_def_rows_end.h"
+};
+#endif
+
 static bool setting_append_list(
       settings_t *settings,
       global_t *global,
@@ -11042,11 +12527,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t mm_desc_0[] = {
-/* GENERATED: rows come from settings_def_menu_main_state.h in order. */
-#include "../settings/settings_def_menu_rows_begin.h"
-#include "../settings/settings_def_menu_main_state.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_0, ARRAY_SIZE(mm_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -11074,10 +12554,6 @@ static bool setting_append_list(
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_BROWSER_ACTION);
 
          {
-            static const setting_desc_t mm_desc_1[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_1.h in order. */
-#include "../settings/settings_def_menu_main_actions_1.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_1, ARRAY_SIZE(mm_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -11086,10 +12562,6 @@ static bool setting_append_list(
          }
 
          {
-            static const setting_desc_t mm_desc_2[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_2.h in order. */
-#include "../settings/settings_def_menu_main_actions_2.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_2, ARRAY_SIZE(mm_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -11098,10 +12570,6 @@ static bool setting_append_list(
          if (settings->bools.history_list_enable)
          {
          {
-            static const setting_desc_t mm_desc_3[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_4.h in order. */
-#include "../settings/settings_def_menu_main_actions_4.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_3, ARRAY_SIZE(mm_desc_3),
                   &group_info, &subgroup_info, parent_group);
@@ -11119,10 +12587,6 @@ static bool setting_append_list(
                if (drive_list->size)
                {
          {
-            static const setting_desc_t mm_desc_4[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_3.h in order. */
-#include "../settings/settings_def_menu_main_actions_3.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_4, ARRAY_SIZE(mm_desc_4),
                   &group_info, &subgroup_info, parent_group);
@@ -11140,10 +12604,6 @@ static bool setting_append_list(
 #endif
          {
          {
-            static const setting_desc_t mm_desc_5[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_5.h in order. */
-#include "../settings/settings_def_menu_main_actions_5.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_5, ARRAY_SIZE(mm_desc_5),
                   &group_info, &subgroup_info, parent_group);
@@ -11151,10 +12611,6 @@ static bool setting_append_list(
          }
 
          {
-            static const setting_desc_t mm_desc_6[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_6.h in order. */
-#include "../settings/settings_def_menu_main_actions_6.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_6, ARRAY_SIZE(mm_desc_6),
                   &group_info, &subgroup_info, parent_group);
@@ -11164,10 +12620,6 @@ static bool setting_append_list(
          if (frontend_driver_has_fork())
          {
          {
-            static const setting_desc_t mm_desc_7[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_10.h in order. */
-#include "../settings/settings_def_menu_main_actions_10.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_7, ARRAY_SIZE(mm_desc_7),
                   &group_info, &subgroup_info, parent_group);
@@ -11176,10 +12628,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t mm_desc_8[] = {
-/* GENERATED: rows come from settings_def_menu_main_lists_2.h in order. */
-#include "../settings/settings_def_menu_main_lists_2.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_8, ARRAY_SIZE(mm_desc_8),
                   &group_info, &subgroup_info, parent_group);
@@ -11188,20 +12636,12 @@ static bool setting_append_list(
          /* Apple rejects iOS apps that let you forcibly quit them. */
 #ifdef HAVE_LAKKA
          {
-            static const setting_desc_t quit_lakka_desc[] = {
-/* GENERATED: rows come from settings_def_quit_restart.h in order. */
-#include "../settings/settings_def_quit_restart.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   quit_lakka_desc, ARRAY_SIZE(quit_lakka_desc),
                   &group_info, &subgroup_info, parent_group);
          }
 #else
          {
-            static const setting_desc_t mm_desc_9[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_7.h in order. */
-#include "../settings/settings_def_menu_main_actions_7.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_9, ARRAY_SIZE(mm_desc_9),
                   &group_info, &subgroup_info, parent_group);
@@ -11211,10 +12651,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t mm_desc_10[] = {
-/* GENERATED: rows come from settings_def_menu_main_lists_3.h in order. */
-#include "../settings/settings_def_menu_main_lists_3.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_10, ARRAY_SIZE(mm_desc_10),
                   &group_info, &subgroup_info, parent_group);
@@ -11223,10 +12659,6 @@ static bool setting_append_list(
          if (string_is_not_equal(settings->arrays.record_driver, "null"))
          {
          {
-            static const setting_desc_t mm_desc_11[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_11.h in order. */
-#include "../settings/settings_def_menu_main_actions_11.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_11, ARRAY_SIZE(mm_desc_11),
                   &group_info, &subgroup_info, parent_group);
@@ -11234,10 +12666,6 @@ static bool setting_append_list(
          }
 
          {
-            static const setting_desc_t mm_desc_12[] = {
-/* GENERATED: rows come from settings_def_menu_main_lists_4.h in order. */
-#include "../settings/settings_def_menu_main_lists_4.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_12, ARRAY_SIZE(mm_desc_12),
                   &group_info, &subgroup_info, parent_group);
@@ -11251,10 +12679,6 @@ static bool setting_append_list(
                   settings->arrays.bluetooth_driver, "null"))
          {
          {
-            static const setting_desc_t mm_desc_13[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_8.h in order. */
-#include "../settings/settings_def_menu_main_actions_8.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_13, ARRAY_SIZE(mm_desc_13),
                   &group_info, &subgroup_info, parent_group);
@@ -11266,10 +12690,6 @@ static bool setting_append_list(
          if (string_is_not_equal(settings->arrays.wifi_driver, "null"))
          {
          {
-            static const setting_desc_t mm_desc_14[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_9.h in order. */
-#include "../settings/settings_def_menu_main_actions_9.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_14, ARRAY_SIZE(mm_desc_14),
                   &group_info, &subgroup_info, parent_group);
@@ -11278,10 +12698,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t mm_desc_15[] = {
-/* GENERATED: rows come from settings_def_services_actions.h in order. */
-#include "../settings/settings_def_services_actions.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_15, ARRAY_SIZE(mm_desc_15),
                   &group_info, &subgroup_info, parent_group);
@@ -11289,10 +12705,6 @@ static bool setting_append_list(
          if (string_is_not_equal(settings->arrays.midi_driver, "null"))
          {
          {
-            static const setting_desc_t mm_desc_16[] = {
-/* GENERATED: rows come from settings_def_menu_main_actions_12.h in order. */
-#include "../settings/settings_def_menu_main_actions_12.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_16, ARRAY_SIZE(mm_desc_16),
                   &group_info, &subgroup_info, parent_group);
@@ -11745,10 +13157,6 @@ static bool setting_append_list(
             }
 
          {
-            static const setting_desc_t configuration_desc_0[] = {
-/* GENERATED: rows come from settings_def_shader_preset.h in order. */
-#include "../settings/settings_def_shader_preset.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   configuration_desc_0, ARRAY_SIZE(configuration_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -11807,10 +13215,6 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_libretro_log_level;
 
          {
-            static const setting_desc_t logging_desc_0[] = {
-/* GENERATED: rows come from settings_def_logging.h in order. */
-#include "../settings/settings_def_logging.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   logging_desc_0, ARRAY_SIZE(logging_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -11972,19 +13376,11 @@ static bool setting_append_list(
             }
 
          {
-            static const setting_desc_t sav_desc_0[] = {
-/* GENERATED: rows come from settings_def_saving.h in order. */
-#include "../settings/settings_def_saving.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   sav_desc_0, ARRAY_SIZE(sav_desc_0),
                   &group_info, &subgroup_info, parent_group);
          }
          {
-            static const setting_desc_t saving2_desc_0[] = {
-/* GENERATED: rows come from settings_def_saving_actions.h in order. */
-#include "../settings/settings_def_saving_actions.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   saving2_desc_0, ARRAY_SIZE(saving2_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -12004,10 +13400,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t cs_desc_0[] = {
-/* GENERATED: rows come from settings_def_cloud_sync_general.h in order. */
-#include "../settings/settings_def_cloud_sync_general.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   cs_desc_0, ARRAY_SIZE(cs_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -12032,10 +13424,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
          {
-            static const setting_desc_t cs_desc_1[] = {
-/* GENERATED: rows come from settings_def_cloud_sync_webdav.h in order. */
-#include "../settings/settings_def_cloud_sync_webdav.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   cs_desc_1, ARRAY_SIZE(cs_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -12044,10 +13432,6 @@ static bool setting_append_list(
 #ifdef HAVE_S3
          /* AWS */
          {
-            static const setting_desc_t cs_desc_2[] = {
-/* GENERATED: rows come from settings_def_cloud_sync_s3.h in order. */
-#include "../settings/settings_def_cloud_sync_s3.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   cs_desc_2, ARRAY_SIZE(cs_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -12065,10 +13449,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t frame_time_cou_desc_0[] = {
-/* GENERATED: rows come from settings_def_video_frame_time_sample.h in order. */
-#include "../settings/settings_def_video_frame_time_sample.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   frame_time_cou_desc_0, ARRAY_SIZE(frame_time_cou_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -12081,10 +13461,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
          {
-            static const setting_desc_t frame_time_cou_desc_1[] = {
-/* GENERATED: rows come from settings_def_frame_time_counter.h in order. */
-#include "../settings/settings_def_frame_time_counter.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   frame_time_cou_desc_1, ARRAY_SIZE(frame_time_cou_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -12101,10 +13477,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t rewind_desc_0[] = {
-/* GENERATED: rows come from settings_def_rewind.h in order. */
-#include "../settings/settings_def_rewind.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   rewind_desc_0, ARRAY_SIZE(rewind_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -12127,10 +13499,6 @@ static bool setting_append_list(
                   1024 * 1024, 1024 * 1024 * 1024, settings->uints.rewind_buffer_size_step * 1024 * 1024, true, true);
 
          {
-            static const setting_desc_t rewind_desc_1[] = {
-/* GENERATED: rows come from settings_def_rewind_step.h in order. */
-#include "../settings/settings_def_rewind_step.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   rewind_desc_1, ARRAY_SIZE(rewind_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -12150,10 +13518,6 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t cheats_desc_0[] = {
-/* GENERATED: rows come from settings_def_cheats_apply.h in order. */
-#include "../settings/settings_def_cheats_apply.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   cheats_desc_0, ARRAY_SIZE(cheats_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -12656,10 +14020,6 @@ static bool setting_append_list(
 
 #if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
          {
-            static const setting_desc_t vid_desc_0[] = {
-/* GENERATED: rows come from settings_def_video_suspend_screensaver.h in order. */
-#include "../settings/settings_def_video_suspend_screensaver.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_0, ARRAY_SIZE(vid_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -12676,10 +14036,6 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "Monitor", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t vid_desc_1[] = {
-/* GENERATED: rows come from settings_def_video_monitor_index.h in order. */
-#include "../settings/settings_def_video_monitor_index.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_1, ARRAY_SIZE(vid_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -12690,10 +14046,6 @@ static bool setting_append_list(
 
 #if defined(ANDROID) || TARGET_OS_IOS
          {
-            static const setting_desc_t vid_desc_2[] = {
-/* GENERATED: rows come from settings_def_video_notch.h in order. */
-#include "../settings/settings_def_video_notch.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_2, ARRAY_SIZE(vid_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -12721,10 +14073,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t vid_desc_3[] = {
-/* GENERATED: rows come from settings_def_vulkan_gpu_index.h in order. */
-#include "../settings/settings_def_vulkan_gpu_index.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_3, ARRAY_SIZE(vid_desc_3),
                   &group_info, &subgroup_info, parent_group);
@@ -12736,10 +14084,6 @@ static bool setting_append_list(
             if (string_is_equal(video_driver_get_ident(), "d3d10"))
             {
          {
-            static const setting_desc_t vid_desc_4[] = {
-/* GENERATED: rows come from settings_def_gpu_index_d3d11.h in order. */
-#include "../settings/settings_def_gpu_index_d3d11.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_4, ARRAY_SIZE(vid_desc_4),
                   &group_info, &subgroup_info, parent_group);
@@ -12751,10 +14095,6 @@ static bool setting_append_list(
             if (string_is_equal(video_driver_get_ident(), "d3d11"))
             {
          {
-            static const setting_desc_t vid_desc_5[] = {
-/* GENERATED: rows come from settings_def_gpu_index_d3d12.h in order. */
-#include "../settings/settings_def_gpu_index_d3d12.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_5, ARRAY_SIZE(vid_desc_5),
                   &group_info, &subgroup_info, parent_group);
@@ -12766,10 +14106,6 @@ static bool setting_append_list(
             if (string_is_equal(video_driver_get_ident(), "d3d12"))
             {
          {
-            static const setting_desc_t vid_desc_6[] = {
-/* GENERATED: rows come from settings_def_gpu_index_gl.h in order. */
-#include "../settings/settings_def_gpu_index_gl.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_6, ARRAY_SIZE(vid_desc_6),
                   &group_info, &subgroup_info, parent_group);
@@ -12781,10 +14117,6 @@ static bool setting_append_list(
             if (string_is_equal(video_driver_get_ident(), "metal"))
             {
          {
-            static const setting_desc_t vid_desc_7[] = {
-/* GENERATED: rows come from settings_def_gpu_index_vulkan.h in order. */
-#include "../settings/settings_def_gpu_index_vulkan.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_7, ARRAY_SIZE(vid_desc_7),
                   &group_info, &subgroup_info, parent_group);
@@ -12794,10 +14126,6 @@ static bool setting_append_list(
 
 #ifdef WIIU
          {
-            static const setting_desc_t vid_desc_8[] = {
-/* GENERATED: rows come from settings_def_video_wiiu_drc.h in order. */
-#include "../settings/settings_def_video_wiiu_drc.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_8, ARRAY_SIZE(vid_desc_8),
                   &group_info, &subgroup_info, parent_group);
@@ -12806,10 +14134,6 @@ static bool setting_append_list(
             if (video_driver_has_windowed())
             {
          {
-            static const setting_desc_t vid_desc_9[] = {
-/* GENERATED: rows come from settings_def_video_actions_1.h in order. */
-#include "../settings/settings_def_video_actions_1.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_9, ARRAY_SIZE(vid_desc_9),
                   &group_info, &subgroup_info, parent_group);
@@ -12818,10 +14142,6 @@ static bool setting_append_list(
 
 
             {
-               static const setting_desc_t fs_desc[] = {
-/* GENERATED: rows come from settings_def_video_fullscreen.h in order. */
-#include "../settings/settings_def_video_fullscreen.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      fs_desc, ARRAY_SIZE(fs_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -12831,10 +14151,6 @@ static bool setting_append_list(
             if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
                 || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
-               static const setting_desc_t dingux_rr_desc[] = {
-/* GENERATED: rows come from settings_def_dingux_refresh_rate.h in order. */
-#include "../settings/settings_def_dingux_refresh_rate.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      dingux_rr_desc, ARRAY_SIZE(dingux_rr_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -12850,10 +14166,6 @@ static bool setting_append_list(
                    * variant below stays imperative because its
                    * default is read from the video driver at
                    * registration time. */
-                  static const setting_desc_t refresh_desc[] = {
-/* GENERATED: rows come from settings_def_video_refresh_rate.h in order. */
-#include "../settings/settings_def_video_refresh_rate.h"
-                  };
                   settings_list_add_desc(list, list_info, settings,
                         refresh_desc, ARRAY_SIZE(refresh_desc),
                         &group_info, &subgroup_info, parent_group);
@@ -12883,10 +14195,6 @@ static bool setting_append_list(
             }
 
             {
-               static const setting_desc_t autoswitch_desc[] = {
-/* GENERATED: rows come from settings_def_refresh_autoswitch.h in order. */
-#include "../settings/settings_def_refresh_autoswitch.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      autoswitch_desc, ARRAY_SIZE(autoswitch_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -12895,10 +14203,6 @@ static bool setting_append_list(
             if (string_is_equal(settings->arrays.video_driver, "gl"))
             {
          {
-            static const setting_desc_t vid_desc_10[] = {
-/* GENERATED: rows come from settings_def_video_srgb.h in order. */
-#include "../settings/settings_def_video_srgb.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_10, ARRAY_SIZE(vid_desc_10),
                   &group_info, &subgroup_info, parent_group);
@@ -12909,20 +14213,12 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "Aspect", &group_info, &subgroup_info, parent_group);
 
             {
-               static const setting_desc_t bias_desc[] = {
-/* GENERATED: rows come from settings_def_video_bias.h in order. */
-#include "../settings/settings_def_video_bias.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      bias_desc, ARRAY_SIZE(bias_desc),
                      &group_info, &subgroup_info, parent_group);
             }
 
             {
-               static const setting_desc_t aspect_desc[] = {
-/* GENERATED: rows come from settings_def_aspect_ratio.h in order. */
-#include "../settings/settings_def_aspect_ratio.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      aspect_desc, ARRAY_SIZE(aspect_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -12936,10 +14232,6 @@ static bool setting_append_list(
 #endif
             {
          {
-            static const setting_desc_t vid_desc_11[] = {
-/* GENERATED: rows come from settings_def_video_actions_2.h in order. */
-#include "../settings/settings_def_video_actions_2.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_11, ARRAY_SIZE(vid_desc_11),
                   &group_info, &subgroup_info, parent_group);
@@ -12948,20 +14240,12 @@ static bool setting_append_list(
 
 #if defined(HAVE_WINDOW_OFFSET)
          {
-            static const setting_desc_t vid_desc_12[] = {
-/* GENERATED: rows come from settings_def_video_window_offset.h in order. */
-#include "../settings/settings_def_video_window_offset.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_12, ARRAY_SIZE(vid_desc_12),
                   &group_info, &subgroup_info, parent_group);
          }
 #endif
             {
-               static const setting_desc_t vp_size_desc[] = {
-/* GENERATED: rows come from settings_def_viewport_size.h in order. */
-#include "../settings/settings_def_viewport_size.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      vp_size_desc, ARRAY_SIZE(vp_size_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -12971,10 +14255,6 @@ static bool setting_append_list(
             if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
                 || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
-               static const setting_desc_t dingux_ka_desc[] = {
-/* GENERATED: rows come from settings_def_video_dingux_ipu.h in order. */
-#include "../settings/settings_def_video_dingux_ipu.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      dingux_ka_desc, ARRAY_SIZE(dingux_ka_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -12985,10 +14265,6 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t vid_desc_13[] = {
-/* GENERATED: rows come from settings_def_video_actions_3.h in order. */
-#include "../settings/settings_def_video_actions_3.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_13, ARRAY_SIZE(vid_desc_13),
                   &group_info, &subgroup_info, parent_group);
@@ -12996,20 +14272,12 @@ static bool setting_append_list(
 
             if (video_driver_has_windowed())
             {
-               static const setting_desc_t winscale_desc[] = {
-/* GENERATED: rows come from settings_def_video_window.h in order. */
-#include "../settings/settings_def_video_window.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      winscale_desc, ARRAY_SIZE(winscale_desc),
                      &group_info, &subgroup_info, parent_group);
             }
 
          {
-            static const setting_desc_t vid_desc_14[] = {
-/* GENERATED: rows come from settings_def_video_window_decorations.h in order. */
-#include "../settings/settings_def_video_window_decorations.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_14, ARRAY_SIZE(vid_desc_14),
                   &group_info, &subgroup_info, parent_group);
@@ -13020,10 +14288,6 @@ static bool setting_append_list(
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
          {
-            static const setting_desc_t vid_desc_15[] = {
-/* GENERATED: rows come from settings_def_ui_menubar.h in order. */
-#include "../settings/settings_def_ui_menubar.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_15, ARRAY_SIZE(vid_desc_15),
                   &group_info, &subgroup_info, parent_group);
@@ -13032,30 +14296,18 @@ static bool setting_append_list(
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
     (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
          {
-            static const setting_desc_t vid_desc_16[] = {
-/* GENERATED: rows come from settings_def_video_window_save_position.h in order. */
-#include "../settings/settings_def_video_window_save_position.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_16, ARRAY_SIZE(vid_desc_16),
                   &group_info, &subgroup_info, parent_group);
          }
 #else
          {
-            static const setting_desc_t vid_desc_17[] = {
-/* GENERATED: rows come from settings_def_video_window_custom_size.h in order. */
-#include "../settings/settings_def_video_window_custom_size.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_17, ARRAY_SIZE(vid_desc_17),
                   &group_info, &subgroup_info, parent_group);
          }
 #endif
          {
-            static const setting_desc_t video2_desc_0[] = {
-/* GENERATED: rows come from settings_def_video_output_misc.h in order. */
-#include "../settings/settings_def_video_output_misc.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   video2_desc_0, ARRAY_SIZE(video2_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -13063,10 +14315,6 @@ static bool setting_append_list(
 
 #ifdef GEKKO
             {
-               static const setting_desc_t gx_desc[] = {
-/* GENERATED: rows come from settings_def_video_gamecube.h in order. */
-#include "../settings/settings_def_video_gamecube.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      gx_desc, ARRAY_SIZE(gx_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -13076,10 +14324,6 @@ static bool setting_append_list(
 #if defined(DINGUX)
             if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
             {
-               static const setting_desc_t dingux_ipu_desc[] = {
-/* GENERATED: rows come from settings_def_dingux_ipu.h in order. */
-#include "../settings/settings_def_dingux_ipu.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      dingux_ipu_desc, ARRAY_SIZE(dingux_ipu_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -13087,10 +14331,6 @@ static bool setting_append_list(
 #if defined(RS90) || defined(MIYOO)
             else if (string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
-               static const setting_desc_t dingux_rs90_desc[] = {
-/* GENERATED: rows come from settings_def_dingux_rs90.h in order. */
-#include "../settings/settings_def_dingux_rs90.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      dingux_rs90_desc, ARRAY_SIZE(dingux_rs90_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -13099,10 +14339,6 @@ static bool setting_append_list(
             else
 #endif
             {
-               static const setting_desc_t smooth_desc[] = {
-/* GENERATED: rows come from settings_def_video_smooth.h in order. */
-#include "../settings/settings_def_video_smooth.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      smooth_desc, ARRAY_SIZE(smooth_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -13110,10 +14346,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_ODROIDGO2
                         {
-               static const setting_desc_t vid_ctx_desc[] = {
-/* GENERATED: rows come from settings_def_video_ctx_scaling.h in order. */
-#include "../settings/settings_def_video_ctx_scaling.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      vid_ctx_desc, ARRAY_SIZE(vid_ctx_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -13121,10 +14353,6 @@ static bool setting_append_list(
 #endif
 
             {
-               static const setting_desc_t rot_desc[] = {
-/* GENERATED: rows come from settings_def_video_rotation.h in order. */
-#include "../settings/settings_def_video_rotation.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      rot_desc, ARRAY_SIZE(rot_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -13137,10 +14365,6 @@ static bool setting_append_list(
                START_SUB_GROUP(list, list_info, "HDR", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t vid_desc_18[] = {
-/* GENERATED: rows come from settings_def_video_driver_actions.h in order. */
-#include "../settings/settings_def_video_driver_actions.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_18, ARRAY_SIZE(vid_desc_18),
                   &group_info, &subgroup_info, parent_group);
@@ -13170,10 +14394,6 @@ static bool setting_append_list(
                /* if (settings->uints.video_hdr_mode > 0) */
                {
                   {
-                     static const setting_desc_t hdr_desc[] = {
-/* GENERATED: rows come from settings_def_video_hdr.h in order. */
-#include "../settings/settings_def_video_hdr.h"
-                     };
                      settings_list_add_desc(list, list_info, settings,
                            hdr_desc, ARRAY_SIZE(hdr_desc),
                            &group_info, &subgroup_info, parent_group);
@@ -13182,20 +14402,12 @@ static bool setting_append_list(
                   START_SUB_GROUP(list, list_info, "HDR", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t vid_desc_19[] = {
-/* GENERATED: rows come from settings_def_video_actions_5.h in order. */
-#include "../settings/settings_def_video_actions_5.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_19, ARRAY_SIZE(vid_desc_19),
                   &group_info, &subgroup_info, parent_group);
          }
 
                   {
-                     static const setting_desc_t hdr_desc2[] = {
-/* GENERATED: rows come from settings_def_video_hdr_toggles.h in order. */
-#include "../settings/settings_def_video_hdr_toggles.h"
-                     };
                      settings_list_add_desc(list, list_info, settings,
                            hdr_desc2, ARRAY_SIZE(hdr_desc2),
                            &group_info, &subgroup_info, parent_group);
@@ -13218,10 +14430,6 @@ static bool setting_append_list(
             if (frontend_driver_can_set_screen_brightness())
             {
          {
-            static const setting_desc_t vid_desc_20[] = {
-/* GENERATED: rows come from settings_def_screen_brightness.h in order. */
-#include "../settings/settings_def_screen_brightness.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_20, ARRAY_SIZE(vid_desc_20),
                   &group_info, &subgroup_info, parent_group);
@@ -13254,15 +14462,6 @@ static bool setting_append_list(
             {
                /* Synchronization block: contiguous descriptor run.
                 * Row order is list order and must be preserved. */
-               static const setting_desc_t sync_desc[] = {
-/* GENERATED: rows come from settings_def_video_sync.h in order. */
-#include "../settings/settings_def_video_sync.h"
-#ifdef HAVE_D3DKMT
-                  SDESC_BOOL_ROW(video_scanline_sync, VIDEO_SCANLINE_SYNC,
-                        DEFAULT_SCANLINE_SYNC,
-                        SD_FLAG_NONE, 0, CMD_EVENT_NONE),
-#endif
-               };
                settings_list_add_desc(list, list_info, settings,
                      sync_desc, ARRAY_SIZE(sync_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -13270,20 +14469,12 @@ static bool setting_append_list(
 
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
             {
-               static const setting_desc_t avsync_desc[] = {
-/* GENERATED: rows come from settings_def_video_adaptive_vsync.h in order. */
-#include "../settings/settings_def_video_adaptive_vsync.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      avsync_desc, ARRAY_SIZE(avsync_desc),
                      &group_info, &subgroup_info, parent_group);
             }
 
             {
-               static const setting_desc_t fdelay_desc[] = {
-/* GENERATED: rows come from settings_def_frame_delay.h in order. */
-#include "../settings/settings_def_frame_delay.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      fdelay_desc, ARRAY_SIZE(fdelay_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -13308,10 +14499,6 @@ static bool setting_append_list(
                      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
                      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
                {
-                  static const setting_desc_t sdelay_desc[] = {
-/* GENERATED: rows come from settings_def_shader_delay.h in order. */
-#include "../settings/settings_def_shader_delay.h"
-                  };
                   settings_list_add_desc(list, list_info, settings,
                         sdelay_desc, ARRAY_SIZE(sdelay_desc),
                         &group_info, &subgroup_info, parent_group);
@@ -13320,10 +14507,6 @@ static bool setting_append_list(
 #endif
 
             {
-               static const setting_desc_t shader_desc[] = {
-/* GENERATED: rows come from settings_def_shader_watch.h in order. */
-#include "../settings/settings_def_shader_watch.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      shader_desc, ARRAY_SIZE(shader_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -13342,10 +14525,6 @@ static bool setting_append_list(
                {
 
          {
-            static const setting_desc_t vid_desc_21[] = {
-/* GENERATED: rows come from settings_def_black_frame_insertion.h in order. */
-#include "../settings/settings_def_black_frame_insertion.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_21, ARRAY_SIZE(vid_desc_21),
                   &group_info, &subgroup_info, parent_group);
@@ -13363,19 +14542,11 @@ static bool setting_append_list(
                   parent_group);
 
             {
-               static const setting_desc_t misc_desc[] = {
-/* GENERATED: rows come from settings_def_video_filter_rotation.h in order. */
-#include "../settings/settings_def_video_filter_rotation.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      misc_desc, ARRAY_SIZE(misc_desc),
                      &group_info, &subgroup_info, parent_group);
             }
             {
-               static const setting_desc_t video_filter_desc[] = {
-/* GENERATED: rows come from settings_def_video_filter_path.h in order. */
-#include "../settings/settings_def_video_filter_path.h"
-               };
                settings_list_add_desc(list, list_info, settings,
                      video_filter_desc, ARRAY_SIZE(video_filter_desc),
                      &group_info, &subgroup_info, parent_group);
@@ -13395,10 +14566,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t crt_switchres_desc_0[] = {
-/* GENERATED: rows come from settings_def_crt_switchres.h in order. */
-#include "../settings/settings_def_crt_switchres.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   crt_switchres_desc_0, ARRAY_SIZE(crt_switchres_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -13416,10 +14583,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t menu_sounds_desc_0[] = {
-/* GENERATED: rows come from settings_def_menu_sounds.h in order. */
-#include "../settings/settings_def_menu_sounds.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_sounds_desc_0, ARRAY_SIZE(menu_sounds_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -13438,10 +14601,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t audio_en_desc[] = {
-/* GENERATED: rows come from settings_def_audio_enable.h in order. */
-#include "../settings/settings_def_audio_enable.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   audio_en_desc, ARRAY_SIZE(audio_en_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13487,10 +14646,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t audio_state_desc[] = {
-/* GENERATED: rows come from settings_def_audio_state.h in order. */
-#include "../settings/settings_def_audio_state.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   audio_state_desc, ARRAY_SIZE(audio_state_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13509,10 +14664,6 @@ static bool setting_append_list(
                parent_group);
 
          {
-            static const setting_desc_t audio_sync_desc[] = {
-/* GENERATED: rows come from settings_def_audio_sync.h in order. */
-#include "../settings/settings_def_audio_sync.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   audio_sync_desc, ARRAY_SIZE(audio_sync_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13556,20 +14707,12 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t audio_rq_desc[] = {
-/* GENERATED: rows come from settings_def_audio_resampler_quality.h in order. */
-#include "../settings/settings_def_audio_resampler_quality.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   audio_rq_desc, ARRAY_SIZE(audio_rq_desc),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t audio_fmt_desc[] = {
-/* GENERATED: rows come from settings_def_audio_format.h in order. */
-#include "../settings/settings_def_audio_format.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   audio_fmt_desc, ARRAY_SIZE(audio_fmt_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13592,17 +14735,6 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
          {
-            static const setting_desc_t audio_skew_desc[] = {
-/* GENERATED: rows come from settings_def_audio_skew.h in order. */
-#include "../settings/settings_def_audio_skew.h"
-                  #ifdef RARCH_MOBILE
-                  #ifdef HAVE_MICROPHONE
-                  SDESC_UINT_ROW(microphone_block_frames, MICROPHONE_BLOCK_FRAMES,
-                     0, SD_FLAG_ADVANCED, 0, 0,
-                     0, 0, 0, 0, NULL, NULL),
-#endif
-#endif
-            };
             settings_list_add_desc(list, list_info, settings,
                   audio_skew_desc, ARRAY_SIZE(audio_skew_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13621,20 +14753,12 @@ static bool setting_append_list(
                parent_group);
 
          {
-            static const setting_desc_t audio_dev_desc[] = {
-/* GENERATED: rows come from settings_def_audio_device.h in order. */
-#include "../settings/settings_def_audio_device.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   audio_dev_desc, ARRAY_SIZE(audio_dev_desc),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t audio_dsp_desc[] = {
-/* GENERATED: rows come from settings_def_audio_dsp_path.h in order. */
-#include "../settings/settings_def_audio_dsp_path.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   audio_dsp_desc, ARRAY_SIZE(audio_dsp_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13643,10 +14767,6 @@ static bool setting_append_list(
 #ifdef HAVE_WASAPI
          if (string_is_equal(audio_driver_get_ident(), "wasapi"))
          {
-            static const setting_desc_t audio_wasapi_desc[] = {
-/* GENERATED: rows come from settings_def_audio_wasapi.h in order. */
-#include "../settings/settings_def_audio_wasapi.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   audio_wasapi_desc, ARRAY_SIZE(audio_wasapi_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13656,10 +14776,6 @@ static bool setting_append_list(
 #ifdef HAVE_ASIO
          if (string_is_equal(audio_driver_get_ident(), "asio"))
          {
-            static const setting_desc_t audio_asio_desc[] = {
-/* GENERATED: rows come from settings_def_audio_asio_action.h in order. */
-#include "../settings/settings_def_audio_asio_action.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   audio_asio_desc, ARRAY_SIZE(audio_asio_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13680,10 +14796,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t mic_enable_desc[] = {
-/* GENERATED: rows come from settings_def_microphone.h in order. */
-#include "../settings/settings_def_microphone.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mic_enable_desc, ARRAY_SIZE(mic_enable_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13712,10 +14824,6 @@ static bool setting_append_list(
 
 #ifdef RARCH_MOBILE
          {
-            static const setting_desc_t mic_block_desc[] = {
-/* GENERATED: rows come from settings_def_microphone_block.h in order. */
-#include "../settings/settings_def_microphone_block.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mic_block_desc, ARRAY_SIZE(mic_block_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13735,10 +14843,6 @@ static bool setting_append_list(
                parent_group);
 
          {
-            static const setting_desc_t mic_misc_desc[] = {
-/* GENERATED: rows come from settings_def_microphone_general.h in order. */
-#include "../settings/settings_def_microphone_general.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mic_misc_desc, ARRAY_SIZE(mic_misc_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13747,10 +14851,6 @@ static bool setting_append_list(
 #ifdef HAVE_WASAPI
          if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))
          {
-            static const setting_desc_t mic_wasapi_desc[] = {
-/* GENERATED: rows come from settings_def_mic_wasapi.h in order. */
-#include "../settings/settings_def_mic_wasapi.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   mic_wasapi_desc, ARRAY_SIZE(mic_wasapi_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -13773,10 +14873,6 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t inp_desc_0[] = {
-/* GENERATED: rows come from settings_def_input_general.h in order. */
-#include "../settings/settings_def_input_general.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_0, ARRAY_SIZE(inp_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -13784,10 +14880,6 @@ static bool setting_append_list(
 
 #ifdef GEKKO
          {
-            static const setting_desc_t inp_desc_1[] = {
-/* GENERATED: rows come from settings_def_input_mouse_scale.h in order. */
-#include "../settings/settings_def_input_mouse_scale.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_1, ARRAY_SIZE(inp_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -13795,10 +14887,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t inp_desc_2[] = {
-/* GENERATED: rows come from settings_def_input_touch_scale.h in order. */
-#include "../settings/settings_def_input_touch_scale.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_2, ARRAY_SIZE(inp_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -13806,10 +14894,6 @@ static bool setting_append_list(
 
 #ifdef UDEV_TOUCH_SUPPORT
          {
-            static const setting_desc_t inp_desc_3[] = {
-/* GENERATED: rows come from settings_def_input_vmouse.h in order. */
-#include "../settings/settings_def_input_vmouse.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_3, ARRAY_SIZE(inp_desc_3),
                   &group_info, &subgroup_info, parent_group);
@@ -13818,10 +14902,6 @@ static bool setting_append_list(
 
 #ifdef VITA
          {
-            static const setting_desc_t inp_desc_4[] = {
-/* GENERATED: rows come from settings_def_input_backtouch.h in order. */
-#include "../settings/settings_def_input_backtouch.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_4, ARRAY_SIZE(inp_desc_4),
                   &group_info, &subgroup_info, parent_group);
@@ -13830,10 +14910,6 @@ static bool setting_append_list(
 
 #if TARGET_OS_IPHONE
          {
-            static const setting_desc_t inp_desc_5[] = {
-/* GENERATED: rows come from settings_def_input_bind_timeouts.h in order. */
-#include "../settings/settings_def_input_bind_timeouts.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_5, ARRAY_SIZE(inp_desc_5),
                   &group_info, &subgroup_info, parent_group);
@@ -13841,10 +14917,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t inp_desc_6[] = {
-/* GENERATED: rows come from settings_def_input_haptics.h in order. */
-#include "../settings/settings_def_input_haptics.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_6, ARRAY_SIZE(inp_desc_6),
                   &group_info, &subgroup_info, parent_group);
@@ -13852,10 +14924,6 @@ static bool setting_append_list(
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
          {
-            static const setting_desc_t inp_desc_7[] = {
-/* GENERATED: rows come from settings_def_input_nowinkey.h in order. */
-#include "../settings/settings_def_input_nowinkey.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_7, ARRAY_SIZE(inp_desc_7),
                   &group_info, &subgroup_info, parent_group);
@@ -13863,10 +14931,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t inp_desc_8[] = {
-/* GENERATED: rows come from settings_def_input_auto_mouse_grab.h in order. */
-#include "../settings/settings_def_input_auto_mouse_grab.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_8, ARRAY_SIZE(inp_desc_8),
                   &group_info, &subgroup_info, parent_group);
@@ -13874,10 +14938,6 @@ static bool setting_append_list(
 
 #ifdef ANDROID
          {
-            static const setting_desc_t inp_desc_9[] = {
-/* GENERATED: rows come from settings_def_input_android_workaround.h in order. */
-#include "../settings/settings_def_input_android_workaround.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_9, ARRAY_SIZE(inp_desc_9),
                   &group_info, &subgroup_info, parent_group);
@@ -13906,10 +14966,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t inp_desc_10[] = {
-/* GENERATED: rows come from settings_def_input_turbo.h in order. */
-#include "../settings/settings_def_input_turbo.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_10, ARRAY_SIZE(inp_desc_10),
                   &group_info, &subgroup_info, parent_group);
@@ -13919,10 +14975,6 @@ static bool setting_append_list(
 
 
          {
-            static const setting_desc_t inp_desc_11[] = {
-/* GENERATED: rows come from settings_def_analog_deadzone.h in order. */
-#include "../settings/settings_def_analog_deadzone.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_11, ARRAY_SIZE(inp_desc_11),
                   &group_info, &subgroup_info, parent_group);
@@ -13960,10 +15012,6 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_sensor_orientation;
 
          {
-            static const setting_desc_t inp_desc_12[] = {
-/* GENERATED: rows come from settings_def_input_sensors_extra.h in order. */
-#include "../settings/settings_def_input_sensors_extra.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_12, ARRAY_SIZE(inp_desc_12),
                   &group_info, &subgroup_info, parent_group);
@@ -13973,10 +15021,6 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "Binds", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t inp_desc_13[] = {
-/* GENERATED: rows come from settings_def_input_actions.h in order. */
-#include "../settings/settings_def_input_actions.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_13, ARRAY_SIZE(inp_desc_13),
                   &group_info, &subgroup_info, parent_group);
@@ -14025,10 +15069,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t input_turbo_fi_desc_0[] = {
-/* GENERATED: rows come from settings_def_input_turbo_fire.h in order. */
-#include "../settings/settings_def_input_turbo_fire.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   input_turbo_fi_desc_0, ARRAY_SIZE(input_turbo_fi_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -14048,20 +15088,12 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t recording_desc_0[] = {
-/* GENERATED: rows come from settings_def_record_quality.h in order. */
-#include "../settings/settings_def_record_quality.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   recording_desc_0, ARRAY_SIZE(recording_desc_0),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t recording2_desc_0[] = {
-/* GENERATED: rows come from settings_def_recording_paths.h in order. */
-#include "../settings/settings_def_recording_paths.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   recording2_desc_0, ARRAY_SIZE(recording2_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -14101,30 +15133,18 @@ static bool setting_append_list(
 
 
          {
-            static const setting_desc_t recording_desc_1[] = {
-/* GENERATED: rows come from settings_def_stream_quality.h in order. */
-#include "../settings/settings_def_stream_quality.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   recording_desc_1, ARRAY_SIZE(recording_desc_1),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t recording2_desc_1[] = {
-/* GENERATED: rows come from settings_def_streaming_paths.h in order. */
-#include "../settings/settings_def_streaming_paths.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   recording2_desc_1, ARRAY_SIZE(recording2_desc_1),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t recording_desc_2[] = {
-/* GENERATED: rows come from settings_def_record_threads.h in order. */
-#include "../settings/settings_def_record_threads.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   recording_desc_2, ARRAY_SIZE(recording_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -14152,10 +15172,6 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "Miscellaneous", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t recording_desc_3[] = {
-/* GENERATED: rows come from settings_def_recording_video.h in order. */
-#include "../settings/settings_def_recording_video.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   recording_desc_3, ARRAY_SIZE(recording_desc_3),
                   &group_info, &subgroup_info, parent_group);
@@ -14212,29 +15228,17 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t frame_throttli_desc_0[] = {
-/* GENERATED: rows come from settings_def_frame_throttle_general.h in order. */
-#include "../settings/settings_def_frame_throttle_general.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   frame_throttli_desc_0, ARRAY_SIZE(frame_throttli_desc_0),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t menu_thr_desc[] = {
-/* GENERATED: rows come from settings_def_menu_throttle.h in order. */
-#include "../settings/settings_def_menu_throttle.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_thr_desc, ARRAY_SIZE(menu_thr_desc),
                   &group_info, &subgroup_info, parent_group);
          }
          {
-            static const setting_desc_t frame_throttli_desc_1[] = {
-/* GENERATED: rows come from settings_def_frame_throttle_fastforward.h in order. */
-#include "../settings/settings_def_frame_throttle_fastforward.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   frame_throttli_desc_1, ARRAY_SIZE(frame_throttli_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -14281,10 +15285,6 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 1, MAX_RUNAHEAD_FRAMES, 1, true, true);
 
          {
-            static const setting_desc_t frame_throttli_desc_2[] = {
-/* GENERATED: rows come from settings_def_runahead_warnings.h in order. */
-#include "../settings/settings_def_runahead_warnings.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   frame_throttli_desc_2, ARRAY_SIZE(frame_throttli_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -14310,10 +15310,6 @@ static bool setting_append_list(
 
 #ifdef ANDROID
          {
-            static const setting_desc_t frame_throttli_desc_3[] = {
-/* GENERATED: rows come from settings_def_frame_throttle_slowmotion.h in order. */
-#include "../settings/settings_def_frame_throttle_slowmotion.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   frame_throttli_desc_3, ARRAY_SIZE(frame_throttli_desc_3),
                   &group_info, &subgroup_info, parent_group);
@@ -14336,10 +15332,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_GFX_WIDGETS
                   {
-            static const setting_desc_t osn_desc_0[] = {
-/* GENERATED: rows come from settings_def_notification_enable.h in order. */
-#include "../settings/settings_def_notification_enable.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_0, ARRAY_SIZE(osn_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -14347,20 +15339,12 @@ static bool setting_append_list(
 
 #if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
                   {
-            static const setting_desc_t osn_desc_1[] = {
-/* GENERATED: rows come from settings_def_widget_scale.h in order. */
-#include "../settings/settings_def_widget_scale.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_1, ARRAY_SIZE(osn_desc_1),
                   &group_info, &subgroup_info, parent_group);
          }
 #else
          {
-            static const setting_desc_t widget_fs_desc[] = {
-/* GENERATED: rows come from settings_def_widget_scale_fullscreen.h in order. */
-#include "../settings/settings_def_widget_scale_fullscreen.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   widget_fs_desc, ARRAY_SIZE(widget_fs_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -14371,10 +15355,6 @@ static bool setting_append_list(
 
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
                   {
-            static const setting_desc_t osn_desc_2[] = {
-/* GENERATED: rows come from settings_def_widget_scale_windowed.h in order. */
-#include "../settings/settings_def_widget_scale_windowed.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_2, ARRAY_SIZE(osn_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -14382,30 +15362,18 @@ static bool setting_append_list(
 #endif
 #endif
                   {
-            static const setting_desc_t osn_desc_3[] = {
-/* GENERATED: rows come from settings_def_notification_widgets.h in order. */
-#include "../settings/settings_def_notification_widgets.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_3, ARRAY_SIZE(osn_desc_3),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t onscreen_not2_desc_0[] = {
-/* GENERATED: rows come from settings_def_notification_font_path.h in order. */
-#include "../settings/settings_def_notification_font_path.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   onscreen_not2_desc_0, ARRAY_SIZE(onscreen_not2_desc_0),
                   &group_info, &subgroup_info, parent_group);
          }
 
                   {
-            static const setting_desc_t osn_desc_4[] = {
-/* GENERATED: rows come from settings_def_notification_positions.h in order. */
-#include "../settings/settings_def_notification_positions.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_4, ARRAY_SIZE(osn_desc_4),
                   &group_info, &subgroup_info, parent_group);
@@ -14415,10 +15383,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Notification Views", &group_info, &subgroup_info, parent_group);
 
                   {
-            static const setting_desc_t osn_desc_5[] = {
-/* GENERATED: rows come from settings_def_notification_views.h in order. */
-#include "../settings/settings_def_notification_views.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_5, ARRAY_SIZE(osn_desc_5),
                   &group_info, &subgroup_info, parent_group);
@@ -14478,10 +15442,6 @@ static bool setting_append_list(
          if (video_driver_test_all_flags(GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED))
          {
          {
-            static const setting_desc_t ovl_desc_0[] = {
-/* GENERATED: rows come from settings_def_overlay_enable.h in order. */
-#include "../settings/settings_def_overlay_enable.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ovl_desc_0, ARRAY_SIZE(ovl_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -14595,30 +15555,18 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
          {
-            static const setting_desc_t ovl_desc_1[] = {
-/* GENERATED: rows come from settings_def_overlay_auto_scale.h in order. */
-#include "../settings/settings_def_overlay_auto_scale.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ovl_desc_1, ARRAY_SIZE(ovl_desc_1),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t overlay2_desc_0[] = {
-/* GENERATED: rows come from settings_def_overlay_preset_path.h in order. */
-#include "../settings/settings_def_overlay_preset_path.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   overlay2_desc_0, ARRAY_SIZE(overlay2_desc_0),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t ovl_desc_2[] = {
-/* GENERATED: rows come from settings_def_overlay_opacity.h in order. */
-#include "../settings/settings_def_overlay_opacity.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ovl_desc_2, ARRAY_SIZE(ovl_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -14681,10 +15629,6 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
 
          {
-            static const setting_desc_t ovl_desc_3[] = {
-/* GENERATED: rows come from settings_def_overlay_appearance.h in order. */
-#include "../settings/settings_def_overlay_appearance.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ovl_desc_3, ARRAY_SIZE(ovl_desc_3),
                   &group_info, &subgroup_info, parent_group);
@@ -14776,10 +15720,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t overlay_lightg_desc_0[] = {
-/* GENERATED: rows come from settings_def_overlay_lightgun.h in order. */
-#include "../settings/settings_def_overlay_lightgun.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   overlay_lightg_desc_0, ARRAY_SIZE(overlay_lightg_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -14801,10 +15741,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t overlay_mouse_desc_0[] = {
-/* GENERATED: rows come from settings_def_overlay_mouse.h in order. */
-#include "../settings/settings_def_overlay_mouse.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   overlay_mouse_desc_0, ARRAY_SIZE(overlay_mouse_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -14829,20 +15765,12 @@ static bool setting_append_list(
              && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
          {
          {
-            static const setting_desc_t menu2_desc_0[] = {
-/* GENERATED: rows come from settings_def_menu_wallpaper_path.h in order. */
-#include "../settings/settings_def_menu_wallpaper_path.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu2_desc_0, ARRAY_SIZE(menu2_desc_0),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t menu_desc_0[] = {
-/* GENERATED: rows come from settings_def_wallpaper_opacity.h in order. */
-#include "../settings/settings_def_wallpaper_opacity.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_0, ARRAY_SIZE(menu_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -14853,10 +15781,6 @@ static bool setting_append_list(
              && string_is_not_equal(settings->arrays.menu_driver, "xmb"))
          {
          {
-            static const setting_desc_t menu_desc_1[] = {
-/* GENERATED: rows come from settings_def_menu_framebuffer_opacity.h in order. */
-#include "../settings/settings_def_menu_framebuffer_opacity.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_1, ARRAY_SIZE(menu_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -14866,10 +15790,6 @@ static bool setting_append_list(
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
          {
-            static const setting_desc_t menu_desc_2[] = {
-/* GENERATED: rows come from settings_def_menu_wallpaper.h in order. */
-#include "../settings/settings_def_menu_wallpaper.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_2, ARRAY_SIZE(menu_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -14877,10 +15797,6 @@ static bool setting_append_list(
          }
 
          {
-            static const setting_desc_t menu_desc_3[] = {
-/* GENERATED: rows come from settings_def_menu_appearance.h in order. */
-#include "../settings/settings_def_menu_appearance.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_3, ARRAY_SIZE(menu_desc_3),
                   &group_info, &subgroup_info, parent_group);
@@ -14892,10 +15808,6 @@ static bool setting_append_list(
                || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
          {
          {
-            static const setting_desc_t menu_desc_4[] = {
-/* GENERATED: rows come from settings_def_menu_header_footer.h in order. */
-#include "../settings/settings_def_menu_header_footer.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_4, ARRAY_SIZE(menu_desc_4),
                   &group_info, &subgroup_info, parent_group);
@@ -14904,10 +15816,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t menu_desc_5[] = {
-/* GENERATED: rows come from settings_def_menu_visibility.h in order. */
-#include "../settings/settings_def_menu_visibility.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_5, ARRAY_SIZE(menu_desc_5),
                   &group_info, &subgroup_info, parent_group);
@@ -14916,10 +15824,6 @@ static bool setting_append_list(
          if (string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
          {
-            static const setting_desc_t menu_desc_6[] = {
-/* GENERATED: rows come from settings_def_menu_rgui_layout.h in order. */
-#include "../settings/settings_def_menu_rgui_layout.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_6, ARRAY_SIZE(menu_desc_6),
                   &group_info, &subgroup_info, parent_group);
@@ -14928,10 +15832,6 @@ static bool setting_append_list(
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
             {
          {
-            static const setting_desc_t menu_desc_7[] = {
-/* GENERATED: rows come from settings_def_menu_scroll.h in order. */
-#include "../settings/settings_def_menu_scroll.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_7, ARRAY_SIZE(menu_desc_7),
                   &group_info, &subgroup_info, parent_group);
@@ -14940,10 +15840,6 @@ static bool setting_append_list(
 
 #if !defined(DINGUX)
          {
-            static const setting_desc_t menu_desc_8[] = {
-/* GENERATED: rows come from settings_def_rgui_aspect.h in order. */
-#include "../settings/settings_def_rgui_aspect.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_8, ARRAY_SIZE(menu_desc_8),
                   &group_info, &subgroup_info, parent_group);
@@ -14957,20 +15853,12 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t menu_desc_9[] = {
-/* GENERATED: rows come from settings_def_rgui_color_theme.h in order. */
-#include "../settings/settings_def_rgui_color_theme.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_9, ARRAY_SIZE(menu_desc_9),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t menu2_desc_1[] = {
-/* GENERATED: rows come from settings_def_rgui_theme_path.h in order. */
-#include "../settings/settings_def_rgui_theme_path.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu2_desc_1, ARRAY_SIZE(menu2_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -14983,10 +15871,6 @@ static bool setting_append_list(
                 && !string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
          {
-            static const setting_desc_t menu_desc_10[] = {
-/* GENERATED: rows come from settings_def_menu_rgui_transparency.h in order. */
-#include "../settings/settings_def_menu_rgui_transparency.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_10, ARRAY_SIZE(menu_desc_10),
                   &group_info, &subgroup_info, parent_group);
@@ -14994,10 +15878,6 @@ static bool setting_append_list(
             }
 
          {
-            static const setting_desc_t menu_desc_11[] = {
-/* GENERATED: rows come from settings_def_menu_landscape.h in order. */
-#include "../settings/settings_def_menu_landscape.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_11, ARRAY_SIZE(menu_desc_11),
                   &group_info, &subgroup_info, parent_group);
@@ -15009,10 +15889,6 @@ static bool setting_append_list(
                || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
          {
-            static const setting_desc_t menu_desc_12[] = {
-/* GENERATED: rows come from settings_def_menu_horizontal_animation.h in order. */
-#include "../settings/settings_def_menu_horizontal_animation.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_12, ARRAY_SIZE(menu_desc_12),
                   &group_info, &subgroup_info, parent_group);
@@ -15032,10 +15908,6 @@ static bool setting_append_list(
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
          {
-            static const setting_desc_t menu_desc_13[] = {
-/* GENERATED: rows come from settings_def_xmb_animations.h in order. */
-#include "../settings/settings_def_xmb_animations.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_13, ARRAY_SIZE(menu_desc_13),
                   &group_info, &subgroup_info, parent_group);
@@ -15044,10 +15916,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t menu_desc_14[] = {
-/* GENERATED: rows come from settings_def_menu_startup.h in order. */
-#include "../settings/settings_def_menu_startup.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_14, ARRAY_SIZE(menu_desc_14),
                   &group_info, &subgroup_info, parent_group);
@@ -15058,10 +15926,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Navigation", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t menu_desc_15[] = {
-/* GENERATED: rows come from settings_def_menu_wraparound.h in order. */
-#include "../settings/settings_def_menu_wraparound.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_15, ARRAY_SIZE(menu_desc_15),
                   &group_info, &subgroup_info, parent_group);
@@ -15071,20 +15935,12 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Settings View", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t menu_desc_16[] = {
-/* GENERATED: rows come from settings_def_menu_savestate_resume.h in order. */
-#include "../settings/settings_def_menu_savestate_resume.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_16, ARRAY_SIZE(menu_desc_16),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t menu2_desc_2[] = {
-/* GENERATED: rows come from settings_def_kiosk_password.h in order. */
-#include "../settings/settings_def_kiosk_password.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu2_desc_2, ARRAY_SIZE(menu2_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -15092,10 +15948,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_THREADS
          {
-            static const setting_desc_t menu_desc_17[] = {
-/* GENERATED: rows come from settings_def_menu_threaded_data.h in order. */
-#include "../settings/settings_def_menu_threaded_data.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_17, ARRAY_SIZE(menu_desc_17),
                   &group_info, &subgroup_info, parent_group);
@@ -15111,10 +15963,6 @@ static bool setting_append_list(
                || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
          {
          {
-            static const setting_desc_t menu_desc_18[] = {
-/* GENERATED: rows come from settings_def_rgui_particle_effect.h in order. */
-#include "../settings/settings_def_rgui_particle_effect.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_18, ARRAY_SIZE(menu_desc_18),
                   &group_info, &subgroup_info, parent_group);
@@ -15127,30 +15975,18 @@ static bool setting_append_list(
             /* only XMB uses these values, don't show
              * them on other drivers. */
          {
-            static const setting_desc_t menu_desc_19[] = {
-/* GENERATED: rows come from settings_def_menu_entry_display.h in order. */
-#include "../settings/settings_def_menu_entry_display.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_19, ARRAY_SIZE(menu_desc_19),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t menu2_desc_3[] = {
-/* GENERATED: rows come from settings_def_xmb_font_path.h in order. */
-#include "../settings/settings_def_xmb_font_path.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu2_desc_3, ARRAY_SIZE(menu2_desc_3),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t menu_desc_20[] = {
-/* GENERATED: rows come from settings_def_rgui_appearance.h in order. */
-#include "../settings/settings_def_rgui_appearance.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_20, ARRAY_SIZE(menu_desc_20),
                   &group_info, &subgroup_info, parent_group);
@@ -15170,10 +16006,6 @@ static bool setting_append_list(
                      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
                {
          {
-            static const setting_desc_t menu_desc_21[] = {
-/* GENERATED: rows come from settings_def_xmb_shader_pipeline.h in order. */
-#include "../settings/settings_def_xmb_shader_pipeline.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_21, ARRAY_SIZE(menu_desc_21),
                   &group_info, &subgroup_info, parent_group);
@@ -15184,10 +16016,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t menu_desc_22[] = {
-/* GENERATED: rows come from settings_def_xmb_color_theme.h in order. */
-#include "../settings/settings_def_xmb_color_theme.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_22, ARRAY_SIZE(menu_desc_22),
                   &group_info, &subgroup_info, parent_group);
@@ -15197,10 +16025,6 @@ static bool setting_append_list(
          if (string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
          {
-            static const setting_desc_t menu_desc_23[] = {
-/* GENERATED: rows come from settings_def_menu_ex_pilot.h in order. */
-#include "../settings/settings_def_menu_ex_pilot.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_23, ARRAY_SIZE(menu_desc_23),
                   &group_info, &subgroup_info, parent_group);
@@ -15208,10 +16032,6 @@ static bool setting_append_list(
          }
 
          {
-            static const setting_desc_t menu_desc_24[] = {
-/* GENERATED: rows come from settings_def_menu_main_views.h in order. */
-#include "../settings/settings_def_menu_main_views.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_24, ARRAY_SIZE(menu_desc_24),
                   &group_info, &subgroup_info, parent_group);
@@ -15219,20 +16039,12 @@ static bool setting_append_list(
 
 #ifdef HAVE_LAKKA
          {
-            static const setting_desc_t menu_quit_lakka_desc[] = {
-/* GENERATED: rows come from settings_def_menu_show_restart.h in order. */
-#include "../settings/settings_def_menu_show_restart.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_quit_lakka_desc, ARRAY_SIZE(menu_quit_lakka_desc),
                   &group_info, &subgroup_info, parent_group);
          }
 #elif !defined(IOS)
          {
-            static const setting_desc_t menu_desc_25[] = {
-/* GENERATED: rows come from settings_def_quit_visibility.h in order. */
-#include "../settings/settings_def_quit_visibility.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_25, ARRAY_SIZE(menu_desc_25),
                   &group_info, &subgroup_info, parent_group);
@@ -15241,10 +16053,6 @@ static bool setting_append_list(
 
 #if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
          {
-            static const setting_desc_t menu_desc_26[] = {
-/* GENERATED: rows come from settings_def_menu_power_views.h in order. */
-#include "../settings/settings_def_menu_power_views.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_26, ARRAY_SIZE(menu_desc_26),
                   &group_info, &subgroup_info, parent_group);
@@ -15253,10 +16061,6 @@ static bool setting_append_list(
 #if !defined(IOS)
             if (frontend_driver_has_fork())
          {
-            static const setting_desc_t menu_desc_27[] = {
-/* GENERATED: rows come from settings_def_menu_restart_view.h in order. */
-#include "../settings/settings_def_menu_restart_view.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_27, ARRAY_SIZE(menu_desc_27),
                   &group_info, &subgroup_info, parent_group);
@@ -15265,30 +16069,18 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t menu_desc_28[] = {
-/* GENERATED: rows come from settings_def_menu_content_settings_view.h in order. */
-#include "../settings/settings_def_menu_content_settings_view.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_28, ARRAY_SIZE(menu_desc_28),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t menu2_desc_4[] = {
-/* GENERATED: rows come from settings_def_settings_password.h in order. */
-#include "../settings/settings_def_settings_password.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu2_desc_4, ARRAY_SIZE(menu2_desc_4),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t menu_desc_29[] = {
-/* GENERATED: rows come from settings_def_ozone_appearance.h in order. */
-#include "../settings/settings_def_ozone_appearance.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_29, ARRAY_SIZE(menu_desc_29),
                   &group_info, &subgroup_info, parent_group);
@@ -15300,10 +16092,6 @@ static bool setting_append_list(
             /* only MaterialUI uses these values, don't show
              * them on other drivers. */
          {
-            static const setting_desc_t menu_desc_30[] = {
-/* GENERATED: rows come from settings_def_ozone_extras.h in order. */
-#include "../settings/settings_def_ozone_extras.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_30, ARRAY_SIZE(menu_desc_30),
                   &group_info, &subgroup_info, parent_group);
@@ -15315,30 +16103,18 @@ static bool setting_append_list(
          if (string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
          {
-            static const setting_desc_t menu_desc_31[] = {
-/* GENERATED: rows come from settings_def_ozone_sidebar.h in order. */
-#include "../settings/settings_def_ozone_sidebar.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_31, ARRAY_SIZE(menu_desc_31),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t menu2_desc_5[] = {
-/* GENERATED: rows come from settings_def_ozone_font_path.h in order. */
-#include "../settings/settings_def_ozone_font_path.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu2_desc_5, ARRAY_SIZE(menu2_desc_5),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t menu_desc_32[] = {
-/* GENERATED: rows come from settings_def_ozone_typography.h in order. */
-#include "../settings/settings_def_ozone_typography.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_32, ARRAY_SIZE(menu_desc_32),
                   &group_info, &subgroup_info, parent_group);
@@ -15347,10 +16123,6 @@ static bool setting_append_list(
 #endif
 
          {
-            static const setting_desc_t menu_desc_33[] = {
-/* GENERATED: rows come from settings_def_menu_start_screen.h in order. */
-#include "../settings/settings_def_menu_start_screen.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_33, ARRAY_SIZE(menu_desc_33),
                   &group_info, &subgroup_info, parent_group);
@@ -15359,10 +16131,6 @@ static bool setting_append_list(
          if (string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
          {
-            static const setting_desc_t menu_desc_34[] = {
-/* GENERATED: rows come from settings_def_menu_rgui_thumbnails.h in order. */
-#include "../settings/settings_def_menu_rgui_thumbnails.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_34, ARRAY_SIZE(menu_desc_34),
                   &group_info, &subgroup_info, parent_group);
@@ -15374,10 +16142,6 @@ static bool setting_append_list(
                || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
          {
          {
-            static const setting_desc_t menu_desc_35[] = {
-/* GENERATED: rows come from settings_def_menu_thumbnail_background.h in order. */
-#include "../settings/settings_def_menu_thumbnail_background.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_35, ARRAY_SIZE(menu_desc_35),
                   &group_info, &subgroup_info, parent_group);
@@ -15452,10 +16216,6 @@ static bool setting_append_list(
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
          {
-            static const setting_desc_t menu_desc_36[] = {
-/* GENERATED: rows come from settings_def_menu_thumbnails.h in order. */
-#include "../settings/settings_def_menu_thumbnails.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_36, ARRAY_SIZE(menu_desc_36),
                   &group_info, &subgroup_info, parent_group);
@@ -15482,10 +16242,6 @@ static bool setting_append_list(
                || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
          {
          {
-            static const setting_desc_t menu_desc_37[] = {
-/* GENERATED: rows come from settings_def_thumbnail_upscale.h in order. */
-#include "../settings/settings_def_thumbnail_upscale.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_37, ARRAY_SIZE(menu_desc_37),
                   &group_info, &subgroup_info, parent_group);
@@ -15495,10 +16251,6 @@ static bool setting_append_list(
          if (string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
          {
-            static const setting_desc_t menu_desc_38[] = {
-/* GENERATED: rows come from settings_def_rgui_thumbnail_downscale.h in order. */
-#include "../settings/settings_def_rgui_thumbnail_downscale.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_38, ARRAY_SIZE(menu_desc_38),
                   &group_info, &subgroup_info, parent_group);
@@ -15506,10 +16258,6 @@ static bool setting_append_list(
          }
 
          {
-            static const setting_desc_t menu_desc_39[] = {
-/* GENERATED: rows come from settings_def_menu_privacy.h in order. */
-#include "../settings/settings_def_menu_privacy.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_39, ARRAY_SIZE(menu_desc_39),
                   &group_info, &subgroup_info, parent_group);
@@ -15529,10 +16277,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t menu_file_brow_desc_0[] = {
-/* GENERATED: rows come from settings_def_menu_filebrowser.h in order. */
-#include "../settings/settings_def_menu_filebrowser.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   menu_file_brow_desc_0, ARRAY_SIZE(menu_file_brow_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -15550,10 +16294,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t multimedia_desc_0[] = {
-/* GENERATED: rows come from settings_def_multimedia.h in order. */
-#include "../settings/settings_def_multimedia.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   multimedia_desc_0, ARRAY_SIZE(multimedia_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -15571,10 +16311,6 @@ static bool setting_append_list(
 
 #ifdef ANDROID
          {
-            static const setting_desc_t power_manageme_desc_0_s0[] = {
-/* GENERATED: rows come from settings_def_sustained_performance.h in order. */
-#include "../settings/settings_def_sustained_performance.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   power_manageme_desc_0_s0, ARRAY_SIZE(power_manageme_desc_0_s0),
                   &group_info, &subgroup_info, parent_group);
@@ -15582,10 +16318,6 @@ static bool setting_append_list(
 #endif
 #ifdef HAVE_LAKKA
          {
-            static const setting_desc_t power_manageme_desc_0_s1[] = {
-/* GENERATED: rows come from settings_def_power_action.h in order. */
-#include "../settings/settings_def_power_action.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   power_manageme_desc_0_s1, ARRAY_SIZE(power_manageme_desc_0_s1),
                   &group_info, &subgroup_info, parent_group);
@@ -15594,10 +16326,6 @@ static bool setting_append_list(
 #ifndef HAVE_LAKKA
          if (frontend_driver_has_gamemode())
          {
-            static const setting_desc_t power_manageme_desc_1[] = {
-/* GENERATED: rows come from settings_def_gamemode.h in order. */
-#include "../settings/settings_def_gamemode.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   power_manageme_desc_1, ARRAY_SIZE(power_manageme_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -15616,10 +16344,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t wifi_managemen_desc_0[] = {
-/* GENERATED: rows come from settings_def_wifi.h in order. */
-#include "../settings/settings_def_wifi.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   wifi_managemen_desc_0, ARRAY_SIZE(wifi_managemen_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -15638,10 +16362,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t accessibility_desc_0[] = {
-/* GENERATED: rows come from settings_def_accessibility.h in order. */
-#include "../settings/settings_def_accessibility.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   accessibility_desc_0, ARRAY_SIZE(accessibility_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -15660,10 +16380,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t ai_service_desc_0[] = {
-/* GENERATED: rows come from settings_def_ai_service.h in order. */
-#include "../settings/settings_def_ai_service.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ai_service_desc_0, ARRAY_SIZE(ai_service_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -15704,10 +16420,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          {
-            static const setting_desc_t ai_service_desc_1[] = {
-/* GENERATED: rows come from settings_def_ai_service_options.h in order. */
-#include "../settings/settings_def_ai_service_options.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ai_service_desc_1, ARRAY_SIZE(ai_service_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -15747,10 +16459,6 @@ static bool setting_append_list(
          }
 
                   {
-            static const setting_desc_t ui_desc_0[] = {
-/* GENERATED: rows come from settings_def_ui_focus.h in order. */
-#include "../settings/settings_def_ui_focus.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_0, ARRAY_SIZE(ui_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -15800,10 +16508,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].change_handler = new3ds_speedup_change_handler;
 
                   {
-            static const setting_desc_t ui_desc_2[] = {
-/* GENERATED: rows come from settings_def_3ds_bottom_lcd.h in order. */
-#include "../settings/settings_def_3ds_bottom_lcd.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_2, ARRAY_SIZE(ui_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -15830,10 +16534,6 @@ static bool setting_append_list(
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
                   {
-            static const setting_desc_t ui_desc_3[] = {
-/* GENERATED: rows come from settings_def_ui_appearance.h in order. */
-#include "../settings/settings_def_ui_appearance.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_3, ARRAY_SIZE(ui_desc_3),
                   &group_info, &subgroup_info, parent_group);
@@ -15842,10 +16542,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_NETWORKING
                   {
-            static const setting_desc_t ui_desc_4[] = {
-/* GENERATED: rows come from settings_def_menu_online_updater_view.h in order. */
-#include "../settings/settings_def_menu_online_updater_view.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_4, ARRAY_SIZE(ui_desc_4),
                   &group_info, &subgroup_info, parent_group);
@@ -15853,10 +16549,6 @@ static bool setting_append_list(
 
 #if !defined(HAVE_LAKKA)
                   {
-            static const setting_desc_t ui_desc_5[] = {
-/* GENERATED: rows come from settings_def_menu_core_updater_view.h in order. */
-#include "../settings/settings_def_menu_core_updater_view.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_5, ARRAY_SIZE(ui_desc_5),
                   &group_info, &subgroup_info, parent_group);
@@ -15866,10 +16558,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_MIST
                   {
-            static const setting_desc_t ui_desc_6[] = {
-/* GENERATED: rows come from settings_def_menu_steam.h in order. */
-#include "../settings/settings_def_menu_steam.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_6, ARRAY_SIZE(ui_desc_6),
                   &group_info, &subgroup_info, parent_group);
@@ -15877,10 +16565,6 @@ static bool setting_append_list(
 #endif
 
                   {
-            static const setting_desc_t ui_desc_7[] = {
-/* GENERATED: rows come from settings_def_menu_settings_views.h in order. */
-#include "../settings/settings_def_menu_settings_views.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_7, ARRAY_SIZE(ui_desc_7),
                   &group_info, &subgroup_info, parent_group);
@@ -15888,10 +16572,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_MIST
                   {
-            static const setting_desc_t ui_desc_8[] = {
-/* GENERATED: rows come from settings_def_settings_show_steam.h in order. */
-#include "../settings/settings_def_settings_show_steam.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_8, ARRAY_SIZE(ui_desc_8),
                   &group_info, &subgroup_info, parent_group);
@@ -15900,10 +16580,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_SMBCLIENT
                   {
-            static const setting_desc_t ui_desc_9[] = {
-/* GENERATED: rows come from settings_def_settings_show_smb.h in order. */
-#include "../settings/settings_def_settings_show_smb.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_9, ARRAY_SIZE(ui_desc_9),
                   &group_info, &subgroup_info, parent_group);
@@ -15911,10 +16587,6 @@ static bool setting_append_list(
 #endif
 
                   {
-            static const setting_desc_t ui_desc_10[] = {
-/* GENERATED: rows come from settings_def_menu_quick_views.h in order. */
-#include "../settings/settings_def_menu_quick_views.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_10, ARRAY_SIZE(ui_desc_10),
                   &group_info, &subgroup_info, parent_group);
@@ -15933,10 +16605,6 @@ static bool setting_append_list(
                   || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
             {
                         {
-            static const setting_desc_t ui_desc_11[] = {
-/* GENERATED: rows come from settings_def_quick_menu_shaders_view.h in order. */
-#include "../settings/settings_def_quick_menu_shaders_view.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_11, ARRAY_SIZE(ui_desc_11),
                   &group_info, &subgroup_info, parent_group);
@@ -15946,10 +16614,6 @@ static bool setting_append_list(
 #endif
 
                   {
-            static const setting_desc_t ui_desc_12[] = {
-/* GENERATED: rows come from settings_def_menu_desktop.h in order. */
-#include "../settings/settings_def_menu_desktop.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_12, ARRAY_SIZE(ui_desc_12),
                   &group_info, &subgroup_info, parent_group);
@@ -15971,10 +16635,6 @@ static bool setting_append_list(
                SD_FLAG_NONE);
 
                   {
-            static const setting_desc_t ui_desc_13[] = {
-/* GENERATED: rows come from settings_def_desktop_menu.h in order. */
-#include "../settings/settings_def_desktop_menu.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_13, ARRAY_SIZE(ui_desc_13),
                   &group_info, &subgroup_info, parent_group);
@@ -15993,10 +16653,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "History", &group_info, &subgroup_info, parent_group);
 
                   {
-            static const setting_desc_t pl_desc_0[] = {
-/* GENERATED: rows come from settings_def_playlist_sorting.h in order. */
-#include "../settings/settings_def_playlist_sorting.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   pl_desc_0, ARRAY_SIZE(pl_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -16011,10 +16667,6 @@ static bool setting_append_list(
           * therefore place this entry outside the "History"
           * sub group. */
                   {
-            static const setting_desc_t pl_desc_1[] = {
-/* GENERATED: rows come from settings_def_playlist_management.h in order. */
-#include "../settings/settings_def_playlist_management.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   pl_desc_1, ARRAY_SIZE(pl_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -16026,10 +16678,6 @@ static bool setting_append_list(
              || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
                      {
-            static const setting_desc_t pl_desc_2[] = {
-/* GENERATED: rows come from settings_def_playlist_history.h in order. */
-#include "../settings/settings_def_playlist_history.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   pl_desc_2, ARRAY_SIZE(pl_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -16037,10 +16685,6 @@ static bool setting_append_list(
          }
 
                   {
-            static const setting_desc_t pl_desc_3[] = {
-/* GENERATED: rows come from settings_def_playlist_display.h in order. */
-#include "../settings/settings_def_playlist_display.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   pl_desc_3, ARRAY_SIZE(pl_desc_3),
                   &group_info, &subgroup_info, parent_group);
@@ -16051,10 +16695,6 @@ static bool setting_append_list(
              || string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
                      {
-            static const setting_desc_t pl_desc_4[] = {
-/* GENERATED: rows come from settings_def_playlist_flags.h in order. */
-#include "../settings/settings_def_playlist_flags.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   pl_desc_4, ARRAY_SIZE(pl_desc_4),
                   &group_info, &subgroup_info, parent_group);
@@ -16095,10 +16735,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 
          {
-            static const setting_desc_t cheevos_desc_0[] = {
-/* GENERATED: rows come from settings_def_cheevos.h in order. */
-#include "../settings/settings_def_cheevos.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   cheevos_desc_0, ARRAY_SIZE(cheevos_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -16216,10 +16852,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
                   {
-            static const setting_desc_t chv_desc_0[] = {
-/* GENERATED: rows come from settings_def_cheevos_general.h in order. */
-#include "../settings/settings_def_cheevos_general.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   chv_desc_0, ARRAY_SIZE(chv_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -16242,10 +16874,6 @@ static bool setting_append_list(
          );
 
                   {
-            static const setting_desc_t chv_desc_1[] = {
-/* GENERATED: rows come from settings_def_cheevos_visibility.h in order. */
-#include "../settings/settings_def_cheevos_visibility.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   chv_desc_1, ARRAY_SIZE(chv_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -16309,10 +16937,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          {
-            static const setting_desc_t core_updater_desc_0[] = {
-/* GENERATED: rows come from settings_def_updater_extract.h in order. */
-#include "../settings/settings_def_updater_extract.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   core_updater_desc_0, ARRAY_SIZE(core_updater_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -16320,10 +16944,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_UPDATE_CORES
          {
-            static const setting_desc_t core_updater_desc_1[] = {
-/* GENERATED: rows come from settings_def_updater_experimental.h in order. */
-#include "../settings/settings_def_updater_experimental.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   core_updater_desc_1, ARRAY_SIZE(core_updater_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -16336,10 +16956,6 @@ static bool setting_append_list(
 #endif
          {
          {
-            static const setting_desc_t core_updater_desc_2[] = {
-/* GENERATED: rows come from settings_def_updater_backup.h in order. */
-#include "../settings/settings_def_updater_backup.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   core_updater_desc_2, ARRAY_SIZE(core_updater_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -16377,10 +16993,6 @@ static bool setting_append_list(
          if (settings->bools.settings_show_smb_client)
          {
          {
-            static const setting_desc_t np_desc_0[] = {
-/* GENERATED: rows come from settings_def_netplay_action.h in order. */
-#include "../settings/settings_def_netplay_action.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_0, ARRAY_SIZE(np_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -16397,10 +17009,6 @@ static bool setting_append_list(
             char dev_req_value[64];
 
          {
-            static const setting_desc_t np_desc_1[] = {
-/* GENERATED: rows come from settings_def_netplay_visibility.h in order. */
-#include "../settings/settings_def_netplay_visibility.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_1, ARRAY_SIZE(np_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -16427,40 +17035,24 @@ static bool setting_append_list(
             &setting_get_string_representation_netplay_mitm_server;
 
          {
-            static const setting_desc_t netplay2_desc_0[] = {
-/* GENERATED: rows come from settings_def_netplay_server.h in order. */
-#include "../settings/settings_def_netplay_server.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   netplay2_desc_0, ARRAY_SIZE(netplay2_desc_0),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t np_desc_2[] = {
-/* GENERATED: rows come from settings_def_netplay_ports.h in order. */
-#include "../settings/settings_def_netplay_ports.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_2, ARRAY_SIZE(np_desc_2),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t netplay2_desc_1[] = {
-/* GENERATED: rows come from settings_def_netplay_passwords.h in order. */
-#include "../settings/settings_def_netplay_passwords.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   netplay2_desc_1, ARRAY_SIZE(netplay2_desc_1),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t np_desc_3[] = {
-/* GENERATED: rows come from settings_def_netplay_advanced.h in order. */
-#include "../settings/settings_def_netplay_advanced.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_3, ARRAY_SIZE(np_desc_3),
                   &group_info, &subgroup_info, parent_group);
@@ -16498,10 +17090,6 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
 
          {
-            static const setting_desc_t np_desc_4[] = {
-/* GENERATED: rows come from settings_def_netplay_sync.h in order. */
-#include "../settings/settings_def_netplay_sync.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_4, ARRAY_SIZE(np_desc_4),
                   &group_info, &subgroup_info, parent_group);
@@ -16543,10 +17131,6 @@ static bool setting_append_list(
 
 #if defined(HAVE_NETWORK_CMD)
          {
-            static const setting_desc_t np_desc_5[] = {
-/* GENERATED: rows come from settings_def_netplay_nat.h in order. */
-#include "../settings/settings_def_netplay_nat.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_5, ARRAY_SIZE(np_desc_5),
                   &group_info, &subgroup_info, parent_group);
@@ -16571,10 +17155,6 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
          {
-            static const setting_desc_t np_desc_6[] = {
-/* GENERATED: rows come from settings_def_netplay_stateless.h in order. */
-#include "../settings/settings_def_netplay_stateless.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_6, ARRAY_SIZE(np_desc_6),
                   &group_info, &subgroup_info, parent_group);
@@ -16632,20 +17212,12 @@ static bool setting_append_list(
             }
 
          {
-            static const setting_desc_t np_desc_7[] = {
-/* GENERATED: rows come from settings_def_network_stdin_cmd.h in order. */
-#include "../settings/settings_def_network_stdin_cmd.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_7, ARRAY_SIZE(np_desc_7),
                   &group_info, &subgroup_info, parent_group);
          }
 #endif
          {
-            static const setting_desc_t np_desc_8[] = {
-/* GENERATED: rows come from settings_def_network_ondemand_thumbnails.h in order. */
-#include "../settings/settings_def_network_ondemand_thumbnails.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_8, ARRAY_SIZE(np_desc_8),
                   &group_info, &subgroup_info, parent_group);
@@ -16850,20 +17422,12 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t user_desc_0[] = {
-/* GENERATED: rows come from settings_def_user_language_action.h in order. */
-#include "../settings/settings_def_user_language_action.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   user_desc_0, ARRAY_SIZE(user_desc_0),
                   &group_info, &subgroup_info, parent_group);
          }
 
          {
-            static const setting_desc_t user2_desc_0[] = {
-/* GENERATED: rows come from settings_def_user_identity.h in order. */
-#include "../settings/settings_def_user_identity.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   user2_desc_0, ARRAY_SIZE(user2_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -16900,10 +17464,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_GAME_AI
          {
-            static const setting_desc_t user_desc_1[] = {
-/* GENERATED: rows come from settings_def_game_ai.h in order. */
-#include "../settings/settings_def_game_ai.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   user_desc_1, ARRAY_SIZE(user_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -16924,10 +17484,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_CHEEVOS
          {
-            static const setting_desc_t user_accounts_desc_0_s0[] = {
-/* GENERATED: rows come from settings_def_accounts_cheevos.h in order. */
-#include "../settings/settings_def_accounts_cheevos.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   user_accounts_desc_0_s0, ARRAY_SIZE(user_accounts_desc_0_s0),
                   &group_info, &subgroup_info, parent_group);
@@ -16936,10 +17492,6 @@ static bool setting_append_list(
 #ifdef HAVE_NETWORKING
 #if !IOS
          {
-            static const setting_desc_t user_accounts_desc_0_s1[] = {
-/* GENERATED: rows come from settings_def_accounts_streaming.h in order. */
-#include "../settings/settings_def_accounts_streaming.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   user_accounts_desc_0_s1, ARRAY_SIZE(user_accounts_desc_0_s1),
                   &group_info, &subgroup_info, parent_group);
@@ -17073,10 +17625,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_CHEEVOS
          {
-            static const setting_desc_t cheevos_acct_desc[] = {
-/* GENERATED: rows come from settings_def_cheevos_account.h in order. */
-#include "../settings/settings_def_cheevos_account.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   cheevos_acct_desc, ARRAY_SIZE(cheevos_acct_desc),
                   &group_info, &subgroup_info, parent_group);
@@ -17097,10 +17645,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
                   {
-            static const setting_desc_t dir_desc_0[] = {
-/* GENERATED: rows come from settings_def_dir_core.h in order. */
-#include "../settings/settings_def_dir_core.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   dir_desc_0, ARRAY_SIZE(dir_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -17139,10 +17683,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_start = directory_action_start_generic;
          }
          {
-            static const setting_desc_t dir_desc_1[] = {
-/* GENERATED: rows come from settings_def_dir_user.h in order. */
-#include "../settings/settings_def_dir_user.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   dir_desc_1, ARRAY_SIZE(dir_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -17182,10 +17722,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
                   {
-            static const setting_desc_t dir_desc_2[] = {
-/* GENERATED: rows come from settings_def_dir_cache_log.h in order. */
-#include "../settings/settings_def_dir_cache_log.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   dir_desc_2, ARRAY_SIZE(dir_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -17206,10 +17742,6 @@ static bool setting_append_list(
          if (string_is_not_equal(settings->arrays.camera_driver, "null"))
          {
          {
-            static const setting_desc_t privacy_desc_0[] = {
-/* GENERATED: rows come from settings_def_privacy_camera.h in order. */
-#include "../settings/settings_def_privacy_camera.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   privacy_desc_0, ARRAY_SIZE(privacy_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -17218,10 +17750,6 @@ static bool setting_append_list(
 
 #ifdef HAVE_DISCORD
          {
-            static const setting_desc_t privacy_desc_1[] = {
-/* GENERATED: rows come from settings_def_privacy_discord.h in order. */
-#include "../settings/settings_def_privacy_discord.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   privacy_desc_1, ARRAY_SIZE(privacy_desc_1),
                   &group_info, &subgroup_info, parent_group);
@@ -17230,10 +17758,6 @@ static bool setting_append_list(
          if (string_is_not_equal(settings->arrays.location_driver, "null"))
          {
          {
-            static const setting_desc_t privacy_desc_2[] = {
-/* GENERATED: rows come from settings_def_privacy_location.h in order. */
-#include "../settings/settings_def_privacy_location.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   privacy_desc_2, ARRAY_SIZE(privacy_desc_2),
                   &group_info, &subgroup_info, parent_group);
@@ -17289,10 +17813,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok    = setting_string_action_ok_midi_device;
 
          {
-            static const setting_desc_t midi_desc_0[] = {
-/* GENERATED: rows come from settings_def_midi_volume.h in order. */
-#include "../settings/settings_def_midi_volume.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   midi_desc_0, ARRAY_SIZE(midi_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -17483,10 +18003,6 @@ static bool setting_append_list(
                &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t steam_desc_0[] = {
-/* GENERATED: rows come from settings_def_steam_presence.h in order. */
-#include "../settings/settings_def_steam_presence.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   steam_desc_0, ARRAY_SIZE(steam_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -17507,10 +18023,6 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          {
-            static const setting_desc_t smbclient_desc_0[] = {
-/* GENERATED: rows come from settings_def_smb_client.h in order. */
-#include "../settings/settings_def_smb_client.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   smbclient_desc_0, ARRAY_SIZE(smbclient_desc_0),
                   &group_info, &subgroup_info, parent_group);
@@ -17604,11 +18116,6 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
          {
-            static const setting_desc_t smbclient_desc_1[] = {
-/* GENERATED: rows come from settings_def_smb_client_auth.h in order. */
-#include "../settings/settings_def_smb_client_auth.h"
-#include "../settings/settings_def_rows_end.h"
-            };
             settings_list_add_desc(list, list_info, settings,
                   smbclient_desc_1, ARRAY_SIZE(smbclient_desc_1),
                   &group_info, &subgroup_info, parent_group);
