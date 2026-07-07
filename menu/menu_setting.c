@@ -23276,94 +23276,128 @@ static bool setting_append_list(
 
                   {
             static const setting_desc_t osn_desc_5[] = {
-               SDESC_BOOL_ROW_EX(video_fps_show, FPS_SHOW,
-                     DEFAULT_FPS_SHOW, SD_FLAG_NONE, 0, 0,
-                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
-               SDESC_UINT_ROW_EX(fps_update_interval, FPS_UPDATE_INTERVAL,
-                     DEFAULT_FPS_UPDATE_INTERVAL,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     1, 512, 1, 0,
-                     setting_action_ok_uint_special, NULL,
-                     NULL, NULL, NULL, NULL, 0),
-               SDESC_BOOL_ROW_EX(video_memory_show, MEMORY_SHOW,
-                     DEFAULT_MEMORY_SHOW, SD_FLAG_NONE, 0, 0,
-                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
-               SDESC_UINT_ROW_EX(memory_update_interval, MEMORY_UPDATE_INTERVAL,
-                     DEFAULT_MEMORY_UPDATE_INTERVAL,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     1, 512, 1, 0,
-                     setting_action_ok_uint_special, NULL,
-                     NULL, NULL, NULL, NULL, 0),
-               SDESC_UINT_ROW_EX(video_time_show, TIME_SHOW,
-                     DEFAULT_TIME_SHOW,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, TIME_SHOW_LAST - 1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_time_show,
-                     NULL, NULL, setting_uint_action_left_with_refresh, setting_uint_action_right_with_refresh, ST_UI_TYPE_UINT_COMBOBOX),
-               SDESC_BOOL_ROW(video_statistics_show, STATISTICS_SHOW,
-                     DEFAULT_STATISTICS_SHOW, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(video_framecount_show, FRAMECOUNT_SHOW,
-                     DEFAULT_FRAMECOUNT_SHOW, SD_FLAG_NONE, 0, 0),
-#ifdef HAVE_GFX_WIDGETS
-#ifdef HAVE_NETWORKING
-               SDESC_BOOL_ROW_EX(netplay_ping_show, NETPLAY_PING_SHOW,
-                     DEFAULT_NETPLAY_PING_SHOW, SD_FLAG_NONE, 0, 0,
-                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
-#endif
-               SDESC_BOOL_ROW(menu_show_load_content_animation, MENU_SHOW_LOAD_CONTENT_ANIMATION,
-                     DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION, SD_FLAG_NONE, 0, 0),
-#endif
-               SDESC_BOOL_ROW(notification_show_autoconfig, NOTIFICATION_SHOW_AUTOCONFIG,
-                     DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(notification_show_autoconfig_fails, NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
-                     DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG_FAILS, SD_FLAG_NONE, 0, 0),
-#ifdef HAVE_CHEATS
-               SDESC_BOOL_ROW(notification_show_cheats_applied, NOTIFICATION_SHOW_CHEATS_APPLIED,
-                     DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED, SD_FLAG_NONE, 0, 0),
-#endif
-#ifdef HAVE_PATCH
-               SDESC_BOOL_ROW(notification_show_patch_applied, NOTIFICATION_SHOW_PATCH_APPLIED,
-                     DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED, SD_FLAG_NONE, 0, 0),
-#endif
-               SDESC_BOOL_ROW(notification_show_remap_load, NOTIFICATION_SHOW_REMAP_LOAD,
-                     DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(notification_show_config_override_load, NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-                     DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(notification_show_set_initial_disk, NOTIFICATION_SHOW_SET_INITIAL_DISK,
-                     DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(notification_show_disk_control, NOTIFICATION_SHOW_DISK_CONTROL,
-                     DEFAULT_NOTIFICATION_SHOW_DISK_CONTROL, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(notification_show_save_state, NOTIFICATION_SHOW_SAVE_STATE,
-                     DEFAULT_NOTIFICATION_SHOW_SAVE_STATE, SD_FLAG_NONE, 0, 0),
-               SDESC_BOOL_ROW(notification_show_fast_forward, NOTIFICATION_SHOW_FAST_FORWARD,
-                     DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD, SD_FLAG_NONE, 0, 0),
-#ifdef HAVE_SCREENSHOTS
-               SDESC_BOOL_ROW_EX(notification_show_screenshot, NOTIFICATION_SHOW_SCREENSHOT,
-                     DEFAULT_NOTIFICATION_SHOW_SCREENSHOT, SD_FLAG_NONE, 0, 0,
-                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
-#ifdef HAVE_GFX_WIDGETS
-               SDESC_UINT_ROW_EX(notification_show_screenshot_duration, NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-                     DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, NOTIFICATION_SHOW_SCREENSHOT_DURATION_LAST-1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_notification_show_screenshot_duration,
-                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
-               SDESC_UINT_ROW_EX(notification_show_screenshot_flash, NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-                     DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-                     SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
-                     0, NOTIFICATION_SHOW_SCREENSHOT_FLASH_LAST-1, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_uint_notification_show_screenshot_flash,
-                     NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX),
-#endif
-#endif
-               SDESC_BOOL_ROW(notification_show_refresh_rate, NOTIFICATION_SHOW_REFRESH_RATE,
-                     DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE, SD_FLAG_NONE, 0, 0),
-#ifdef HAVE_NETWORKING
-               SDESC_BOOL_ROW(notification_show_netplay_extra, NOTIFICATION_SHOW_NETPLAY_EXTRA,
-                     DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA, SD_FLAG_NONE, 0, 0),
-#endif
-               SDESC_BOOL_ROW(notification_show_when_menu_is_alive, NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-                     DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE, SD_FLAG_NONE, 0, 0),
+/* GENERATED: rows come from settings_def_notification_views.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+                  SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+                  SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+                  SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+                  SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),
+#define S_ACTION(T, n, us, sub) \
+                  SDESC_ACTION_ROW(T),
+#define S_ACTION_NS(T, n, us) \
+                  SDESC_ACTION_ROW(T),
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+                  SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+                  SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),
+#include "../settings/settings_def_notification_views.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_BOOL_H
+#undef S_BOOL_NS_H
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_UINT_H
+#undef S_UINT_NS_H
+#undef S_INT
+#undef S_INT_NS
+#undef S_INT_H
+#undef S_INT_NS_H
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_FLOAT_H
+#undef S_FLOAT_NS_H
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_5, ARRAY_SIZE(osn_desc_5),
@@ -23946,69 +23980,128 @@ static bool setting_append_list(
 
          {
             static const setting_desc_t ovl_desc_3[] = {
-               SDESC_FLOAT_ROW_EX(input_overlay_scale_landscape, OVERLAY_SCALE_LANDSCAPE,
-                     DEFAULT_INPUT_OVERLAY_SCALE_LANDSCAPE, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     0.0f, 2.0f, 0.005,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_aspect_adjust_landscape, OVERLAY_ASPECT_ADJUST_LANDSCAPE,
-                     DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_LANDSCAPE, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     -2.0f, 2.0f, 0.005f,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_x_separation_landscape, OVERLAY_X_SEPARATION_LANDSCAPE,
-                     DEFAULT_INPUT_OVERLAY_X_SEPARATION_LANDSCAPE, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     -2.0f, 2.0f, 0.005f,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_y_separation_landscape, OVERLAY_Y_SEPARATION_LANDSCAPE,
-                     DEFAULT_INPUT_OVERLAY_Y_SEPARATION_LANDSCAPE, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     -2.0f, 2.0f, 0.005f,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_x_offset_landscape, OVERLAY_X_OFFSET_LANDSCAPE,
-                     DEFAULT_INPUT_OVERLAY_X_OFFSET_LANDSCAPE, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     -1.0f, 1.0f, 0.005f,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_y_offset_landscape, OVERLAY_Y_OFFSET_LANDSCAPE,
-                     DEFAULT_INPUT_OVERLAY_Y_OFFSET_LANDSCAPE, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     -1.0f, 1.0f, 0.005f,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_scale_portrait, OVERLAY_SCALE_PORTRAIT,
-                     DEFAULT_INPUT_OVERLAY_SCALE_PORTRAIT, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     0.0f, 2.0f, 0.005,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_aspect_adjust_portrait, OVERLAY_ASPECT_ADJUST_PORTRAIT,
-                     DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_PORTRAIT, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     -2.0f, 2.0f, 0.005f,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_x_separation_portrait, OVERLAY_X_SEPARATION_PORTRAIT,
-                     DEFAULT_INPUT_OVERLAY_X_SEPARATION_PORTRAIT, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     -2.0f, 2.0f, 0.005f,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_y_separation_portrait, OVERLAY_Y_SEPARATION_PORTRAIT,
-                     DEFAULT_INPUT_OVERLAY_Y_SEPARATION_PORTRAIT, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     -2.0f, 2.0f, 0.005f,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_x_offset_portrait, OVERLAY_X_OFFSET_PORTRAIT,
-                     DEFAULT_INPUT_OVERLAY_X_OFFSET_PORTRAIT, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     -1.0f, 1.0f, 0.005f,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_FLOAT_ROW_EX(input_overlay_y_offset_portrait, OVERLAY_Y_OFFSET_PORTRAIT,
-                     DEFAULT_INPUT_OVERLAY_Y_OFFSET_PORTRAIT, "%.3f",
-                     SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
-                     -1.0f, 1.0f, 0.005f,
-                     setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0),
-               SDESC_BOOL_ROW_EX(input_overlay_pointer_enable, INPUT_OVERLAY_POINTER_ENABLE,
-                     DEFAULT_INPUT_OVERLAY_POINTER_ENABLE, SD_FLAG_NONE, 0, 0,
-                     setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0),
+/* GENERATED: rows come from settings_def_overlay_appearance.h in order. */
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+                  SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+                  SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+                  SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+                  SDESC_DIR_ROW(f, T, d, el, sd, c, sta),
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+                  SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+                  SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+                  SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+                  SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),
+#define S_ACTION(T, n, us, sub) \
+                  SDESC_ACTION_ROW(T),
+#define S_ACTION_NS(T, n, us) \
+                  SDESC_ACTION_ROW(T),
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+                  SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+                  SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+                  SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),
+#include "../settings/settings_def_overlay_appearance.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_BOOL_H
+#undef S_BOOL_NS_H
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_UINT_H
+#undef S_UINT_NS_H
+#undef S_INT
+#undef S_INT_NS
+#undef S_INT_H
+#undef S_INT_NS_H
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_FLOAT_H
+#undef S_FLOAT_NS_H
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   ovl_desc_3, ARRAY_SIZE(ovl_desc_3),
