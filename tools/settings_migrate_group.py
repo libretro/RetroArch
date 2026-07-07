@@ -54,7 +54,9 @@ SIGS = [('S_BOOL','f, T, n, d, sd, df, c'),
         ('S_BOOL_LV','f, T, TV, n, d, sd, df, c'),
         ('S_FLOAT_LV','f, T, TV, n, d, rnd, sd, df, c'),
         ('S_STRING_LV','f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui'),
-        ('S_ACTION_LV','T, TV, n, sd, ok, rp, c')]
+        ('S_ACTION_LV','T, TV, n, sd, ok, rp, c'),
+        ('S_INT_AT','offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp'),
+        ('S_UINT_AT_EX','offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui')]
 # Coupled platform defines: the polarity lanes derive tokens from row
 # guards, but some tokens only ever appear alongside a partner in real
 # builds (the SDK conditional vs the build system's own define); a lane
@@ -152,7 +154,7 @@ for ln in body.split('\n'):
         if gstack:
             gstack.pop()
     else:
-        rm = re.match(r'\s*SDESC_\w+_ROW(?:_P|_DS|_EX|_LV)?\(\s*(\w+)\s*[,)]', ln)
+        rm = re.match(r'\s*SDESC_\w+_ROW(?:_P|_DS|_EX|_LV|_AT|_AT_EX)?\(\s*(?:offsetof\s*\([^)]*\)\s*,\s*)?(\w+)\s*[,)]', ln)
         if rm and gstack:
             guards[rm.group(1)] = tuple(gstack)
 _ordered = [(m.start(), (m.group(1) + (m.group(2) or ''), m.group(3), m.group(4), re.sub(r'\s+',' ',m.group(5)).strip()))
@@ -168,6 +170,10 @@ for m in re.finditer(r'SDESC_(?:BOOL|FLOAT|STRING)_ROW_LV\(\s*\w+,\s*(\w+),\s*(\
     lv_tv[m.group(1)] = m.group(2)
 for m in re.finditer(r'SDESC_ACTION_ROW_LV\(\s*(\w+),\s*(\w+),', body):
     lv_tv[m.group(1)] = m.group(2)
+at_offs = {}
+for m in re.finditer(r'SDESC_(INT|UINT)_ROW_AT(_EX)?\(\s*(offsetof\s*\((?:[^()]|\([^()]*\))*\)),\s*(\w+),((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', body):
+    _ordered.append((m.start(), (m.group(1) + '_AT' + (m.group(2) or ''), '', m.group(4), re.sub(r'\s+',' ',m.group(5)).strip())))
+    at_offs[m.group(4)] = re.sub(r'\s+', ' ', m.group(3)).strip()
 rows = [r for _, r in sorted(_ordered)]
 all_invocations = re.findall(r'SDESC_\w+?_ROW(?:_\w+)?\(', body)
 assert len(rows) == len(all_invocations), (
@@ -175,7 +181,7 @@ assert len(rows) == len(all_invocations), (
     'SDESC_{BOOL,UINT,INT,FLOAT}_ROW; variant rows (_EX/_AT/_LV/...) are '
     'outside the def grammar - migrate this table manually or extend the '
     'grammar deliberately' % (len(all_invocations), len(rows)))
-assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW(?:_P|_DS|_EX|_LV)?\(', tm.group(1))), (len(rows), tm.group(1)[:200])
+assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW(?:_P|_DS|_EX|_LV|_AT|_AT_EX)?\(', tm.group(1))), (len(rows), tm.group(1)[:200])
 
 us = open('intl/msg_hash_us.h').read()
 ref_tokens = set()
@@ -281,17 +287,17 @@ for k, f, T, a in rows:
         _keep_lv_twin = False
     if _keep_lv_twin:
         pass
-    elif k in ('DIR', 'PATH', 'PATH_DS', 'STRING', 'STRING_LV', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV'):
+    elif k in ('DIR', 'PATH', 'PATH_DS', 'STRING', 'STRING_LV', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'INT_AT', 'UINT_AT_EX'):
         m = None  # dirs keep literal config rows: default-enable varies per row 
     if m:
         cfg_full_guards[T] = tuple(guard_at(cfg, m.start()))
         cfg_guards[T] = tuple(g for g in cfg_full_guards[T] if g not in table_guard)
         cfg_spans.append((m.start(), m.end())); continue
-    m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (r'\w+' if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'STRING_LV') else _mac, f), cfg)
+    m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (r'\w+' if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'STRING_LV', 'INT_AT', 'UINT_AT_EX') else _mac, f), cfg)
     if not m and _keep_lv_twin:
         print('  note: %s config row untouched' % T)
         continue
-    if not m and k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'STRING_LV'):
+    if not m and k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'STRING_LV', 'INT_AT', 'UINT_AT_EX'):
         # unpersisted setting: keep-literal kinds may lack a
         # config row entirely; nothing to delete or emit
         print('  note: %s has no config row - unpersisted, kept absent' % T)
@@ -342,7 +348,7 @@ if ref_tokens:
     _ref_literals = {}
     for _k3, _f3, _t3, _a3 in _tail:
         _head3 = (r'\s*%s,\s*%s,' % (_f3, _t3)) if _f3 else (r'\s*%s,' % _t3)
-        _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX|_LV)?\(%s(?:[^()]|\((?:[^()]|\([^()]*\))*\))*\),?' % _head3, body)
+        _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX|_LV|_AT|_AT_EX)?\(%s(?:[^()]|\((?:[^()]|\([^()]*\))*\))*\),?' % _head3, body)
         assert _rm3, _t3
         _rl3 = _rm3.group(0).strip()
         for _g3 in reversed(guards.get(_f3 or _t3, ())):
@@ -362,7 +368,9 @@ for k, f, T, a in rows:
     if _hs:
         assert ('MENU_LABEL(%s),' % T) not in _mh_text, (T, 'both enum forms present')
     if T in ussub:
-        if k.endswith('_LV'):
+        if '_AT' in k:
+            row = 'S_%s%s(%s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (k, _hs, at_offs[T], T, names[T], a, usval[T], ussub[T])
+        elif k.endswith('_LV'):
             if k.startswith('ACTION'):
                 row = 'S_%s%s(%s, %s,\n      %s,%s\n      %s,\n      %s)' % (k, _hs, T, lv_tv[T], names[T], (' ' + a + ',') if a else '', usval[T], ussub[T])
             else:
@@ -374,7 +382,9 @@ for k, f, T, a in rows:
             k, _hs, f, T, names[T], a, usval[T], ussub[T])
         if _hs: _h_used.add('S_%s_H' % k)
     else:
-        if k.endswith('_LV'):
+        if '_AT' in k:
+            row = 'S_%s_NS%s(%s, %s,\n      %s,\n      %s,\n      %s)' % (k, _hs, at_offs[T], T, names[T], a, usval[T])
+        elif k.endswith('_LV'):
             if k.startswith('ACTION'):
                 row = 'S_%s_NS%s(%s, %s,\n      %s,%s\n      %s)' % (k, _hs, T, lv_tv[T], names[T], (' ' + a + ',') if a else '', usval[T])
             else:
@@ -524,7 +534,9 @@ MENU_EMIT = {'S_BOOL_EX':'SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel
              'S_BOOL_LV':'SDESC_BOOL_ROW_LV(f, T, TV, d, sd, df, c),',
              'S_FLOAT_LV':'SDESC_FLOAT_ROW_LV(f, T, TV, d, rnd, sd, df, c),',
              'S_STRING_LV':'SDESC_STRING_ROW_LV(f, T, TV, d, sd, c, ok, rp, sta, sel, lf, rt, ui),',
-             'S_ACTION_LV':'SDESC_ACTION_ROW_LV(T, TV, sd, ok, rp, c),'}
+             'S_ACTION_LV':'SDESC_ACTION_ROW_LV(T, TV, sd, ok, rp, c),',
+             'S_INT_AT':'SDESC_INT_ROW_AT(offs, T, d, sd, df, c, mn, mx, st, ob, ok, rp),',
+             'S_UINT_AT_EX':'SDESC_UINT_ROW_AT_EX(offs, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),'}
 mk_menu = lambda b, _s: ' \\\n                  ' + MENU_EMIT[b]
 new_body = ('/* GENERATED: rows come from %s in order. */\n' % DEF
             + defs(mk_menu) + '\n#include "../settings/%s"\n' % DEF + UNDEFS)
@@ -747,7 +759,7 @@ if _enum_ok:
     _d = ['   /* GENERATED REGION: %s enum rows (see settings/%s). */' % (TITLE, DEF),
           '#define SETTINGS_DEF_ENUM_PASS',
           '#define SETTINGS_DEF_STRINGS_PASS']
-    for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS','S_STRING','S_STRING_NS','S_DIR','S_DIR_NS','S_STRING_P','S_STRING_P_NS','S_PATH','S_PATH_NS','S_PATH_DS','S_PATH_DS_NS','S_ACTION','S_ACTION_NS','S_BOOL_EX','S_BOOL_EX_NS','S_UINT_EX','S_UINT_EX_NS','S_INT_EX','S_INT_EX_NS','S_FLOAT_EX','S_FLOAT_EX_NS','S_ACTION_EX','S_ACTION_EX_NS','S_BOOL_LV','S_BOOL_LV_NS','S_FLOAT_LV','S_FLOAT_LV_NS','S_STRING_LV','S_STRING_LV_NS','S_ACTION_LV','S_ACTION_LV_NS'):
+    for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS','S_STRING','S_STRING_NS','S_DIR','S_DIR_NS','S_STRING_P','S_STRING_P_NS','S_PATH','S_PATH_NS','S_PATH_DS','S_PATH_DS_NS','S_ACTION','S_ACTION_NS','S_BOOL_EX','S_BOOL_EX_NS','S_UINT_EX','S_UINT_EX_NS','S_INT_EX','S_INT_EX_NS','S_FLOAT_EX','S_FLOAT_EX_NS','S_ACTION_EX','S_ACTION_EX_NS','S_BOOL_LV','S_BOOL_LV_NS','S_FLOAT_LV','S_FLOAT_LV_NS','S_STRING_LV','S_STRING_LV_NS','S_ACTION_LV','S_ACTION_LV_NS','S_INT_AT','S_INT_AT_NS','S_UINT_AT_EX','S_UINT_AT_EX_NS'):
         _d.append('#define %s(%s) MENU_LABEL(T),' % (_n, _ar[_n]))
     for _hn, _b in (('S_BOOL_H','S_BOOL'), ('S_UINT_H','S_UINT'), ('S_BOOL_NS_H','S_BOOL_NS'),
                     ('S_INT_H','S_INT'), ('S_FLOAT_H','S_FLOAT'),

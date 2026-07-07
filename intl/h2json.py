@@ -29,7 +29,7 @@ def parse_def_rows(text, messages):
     # verbatim between their first and last quote like parse_message.
     i = 0
     while True:
-        m = re.search(r'\bS_(BOOL|UINT|INT|FLOAT|STRING_P|STRING|DIR|PATH_DS|PATH|ACTION)(_EX|_LV)?(_NS)?(_H)?\s*\(', text[i:])
+        m = re.search(r'\bS_(BOOL|UINT|INT|FLOAT|STRING_P|STRING|DIR|PATH_DS|PATH|ACTION)(_EX|_LV|_AT|_AT_EX)?(_NS)?(_H)?\s*\(', text[i:])
         if not m:
             return
         j = i + m.end()

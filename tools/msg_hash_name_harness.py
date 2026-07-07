@@ -77,7 +77,7 @@ def parse_enum_names(msg_hash_h):
                     if dskip: dskip.pop()
                     if len(dstack) > len(stack): dstack.pop()
                     continue
-                dm = re.match(r'S_(BOOL|UINT|INT|FLOAT|STRING_P|STRING|DIR|PATH_DS|PATH)(_EX|_LV)?(_NS)?(_H)?\s*\(\s*\w+,\s*(\w+),', ds)
+                dm = re.match(r'S_(BOOL|UINT|INT|FLOAT|STRING_P|STRING|DIR|PATH_DS|PATH)(_EX|_LV|_AT|_AT_EX)?(_NS)?(_H)?\s*\(\s*(?:offsetof\s*\([^)]*\)|\w+),\s*(\w+),', ds)
                 if not dm:
                     am = re.match(r'S_(ACTION)(_EX|_LV)?(_NS)?(_H)?\s*\(\s*(\w+),', ds)
                     dm = am

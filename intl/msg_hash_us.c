@@ -555,6 +555,10 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) n,
 #define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub) n,
 #define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us) n,
+#define S_INT_AT(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) n,
+#define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) n,
+#define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) n,
+#define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) n,
 #define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) n,
 #define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) n,
 #define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) n,
@@ -873,6 +877,14 @@ static const char *const msg_hash_us_lbl_strs[] = {
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 };
 #undef MSG_HASH
@@ -908,6 +920,10 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_INT_AT(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
+#define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) (uint32_t)MENU_ENUM_LABEL_##T,
 #define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) (uint32_t)MENU_ENUM_LABEL_##T,
@@ -1226,6 +1242,14 @@ static const uint32_t msg_hash_us_lbl_ids[] = {
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 };
 #undef MSG_HASH

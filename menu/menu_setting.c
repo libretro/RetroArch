@@ -11181,6 +11181,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_0, ARRAY_SIZE(mm_desc_0),
@@ -11798,6 +11806,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_7, ARRAY_SIZE(mm_desc_7),
@@ -11946,6 +11962,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_8, ARRAY_SIZE(mm_desc_8),
@@ -12110,6 +12134,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   quit_lakka_desc, ARRAY_SIZE(quit_lakka_desc),
@@ -12329,6 +12361,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_10, ARRAY_SIZE(mm_desc_10),
@@ -12477,6 +12517,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_11, ARRAY_SIZE(mm_desc_11),
@@ -12624,6 +12672,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_12, ARRAY_SIZE(mm_desc_12),
@@ -12954,6 +13010,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   mm_desc_16, ARRAY_SIZE(mm_desc_16),
@@ -13632,6 +13696,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   logging_desc_0, ARRAY_SIZE(logging_desc_0),
@@ -13933,6 +14005,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   sav_desc_0, ARRAY_SIZE(sav_desc_0),
@@ -14161,6 +14241,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   cs_desc_0, ARRAY_SIZE(cs_desc_0),
@@ -14502,6 +14590,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   rewind_desc_0, ARRAY_SIZE(rewind_desc_0),
@@ -14664,6 +14760,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   rewind_desc_1, ARRAY_SIZE(rewind_desc_1),
@@ -15397,6 +15501,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_1, ARRAY_SIZE(vid_desc_1),
@@ -15602,6 +15714,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_3, ARRAY_SIZE(vid_desc_3),
@@ -15972,6 +16092,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                };
                settings_list_add_desc(list, list_info, settings,
                      dingux_rr_desc, ARRAY_SIZE(dingux_rr_desc),
@@ -16127,6 +16255,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                   };
                   settings_list_add_desc(list, list_info, settings,
                         refresh_desc, ARRAY_SIZE(refresh_desc),
@@ -16296,6 +16432,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                };
                settings_list_add_desc(list, list_info, settings,
                      autoswitch_desc, ARRAY_SIZE(autoswitch_desc),
@@ -16629,6 +16773,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_12, ARRAY_SIZE(vid_desc_12),
@@ -17021,6 +17173,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_16, ARRAY_SIZE(vid_desc_16),
@@ -17167,6 +17327,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_17, ARRAY_SIZE(vid_desc_17),
@@ -17313,6 +17481,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   video2_desc_0, ARRAY_SIZE(video2_desc_0),
@@ -17497,6 +17673,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                };
                settings_list_add_desc(list, list_info, settings,
                      dingux_ipu_desc, ARRAY_SIZE(dingux_ipu_desc),
@@ -17644,6 +17828,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                };
                settings_list_add_desc(list, list_info, settings,
                      dingux_rs90_desc, ARRAY_SIZE(dingux_rs90_desc),
@@ -17843,6 +18035,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                };
                settings_list_add_desc(list, list_info, settings,
                      vid_ctx_desc, ARRAY_SIZE(vid_ctx_desc),
@@ -17990,6 +18190,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                };
                settings_list_add_desc(list, list_info, settings,
                      rot_desc, ARRAY_SIZE(rot_desc),
@@ -18174,6 +18382,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                      };
                      settings_list_add_desc(list, list_info, settings,
                            hdr_desc, ARRAY_SIZE(hdr_desc),
@@ -18392,6 +18608,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                      };
                      settings_list_add_desc(list, list_info, settings,
                            hdr_desc2, ARRAY_SIZE(hdr_desc2),
@@ -18554,6 +18778,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_20, ARRAY_SIZE(vid_desc_20),
@@ -18800,6 +19032,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                };
                settings_list_add_desc(list, list_info, settings,
                      fdelay_desc, ARRAY_SIZE(fdelay_desc),
@@ -18964,6 +19204,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                   };
                   settings_list_add_desc(list, list_info, settings,
                         sdelay_desc, ARRAY_SIZE(sdelay_desc),
@@ -19158,6 +19406,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   vid_desc_21, ARRAY_SIZE(vid_desc_21),
@@ -19425,6 +19681,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   crt_switchres_desc_0, ARRAY_SIZE(crt_switchres_desc_0),
@@ -19701,6 +19965,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   audio_state_desc, ARRAY_SIZE(audio_state_desc),
@@ -19930,6 +20202,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   audio_rq_desc, ARRAY_SIZE(audio_rq_desc),
@@ -20076,6 +20356,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   audio_fmt_desc, ARRAY_SIZE(audio_fmt_desc),
@@ -20238,6 +20526,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
                   #ifdef RARCH_MOBILE
                   #ifdef HAVE_MICROPHONE
                   SDESC_UINT_ROW(microphone_block_frames, MICROPHONE_BLOCK_FRAMES,
@@ -20403,6 +20699,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   audio_dev_desc, ARRAY_SIZE(audio_dev_desc),
@@ -20615,6 +20919,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   audio_wasapi_desc, ARRAY_SIZE(audio_wasapi_desc),
@@ -20764,6 +21076,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   audio_asio_desc, ARRAY_SIZE(audio_asio_desc),
@@ -21027,6 +21347,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   mic_misc_desc, ARRAY_SIZE(mic_misc_desc),
@@ -21175,6 +21503,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   mic_wasapi_desc, ARRAY_SIZE(mic_wasapi_desc),
@@ -21337,6 +21673,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_0, ARRAY_SIZE(inp_desc_0),
@@ -21484,6 +21828,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_1, ARRAY_SIZE(inp_desc_1),
@@ -21631,6 +21983,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_2, ARRAY_SIZE(inp_desc_2),
@@ -21850,6 +22210,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_5, ARRAY_SIZE(inp_desc_5),
@@ -21997,6 +22365,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_6, ARRAY_SIZE(inp_desc_6),
@@ -22270,6 +22646,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_10, ARRAY_SIZE(inp_desc_10),
@@ -22419,6 +22803,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_11, ARRAY_SIZE(inp_desc_11),
@@ -22596,6 +22988,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   inp_desc_12, ARRAY_SIZE(inp_desc_12),
@@ -22857,6 +23257,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   input_turbo_fi_desc_0, ARRAY_SIZE(input_turbo_fi_desc_0),
@@ -23016,6 +23424,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   recording_desc_0, ARRAY_SIZE(recording_desc_0),
@@ -23259,6 +23675,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   recording_desc_1, ARRAY_SIZE(recording_desc_1),
@@ -23469,6 +23893,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   recording_desc_2, ARRAY_SIZE(recording_desc_2),
@@ -23720,6 +24152,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   frame_throttli_desc_0, ARRAY_SIZE(frame_throttli_desc_0),
@@ -23882,6 +24322,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_thr_desc, ARRAY_SIZE(menu_thr_desc),
@@ -24027,6 +24475,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   frame_throttli_desc_1, ARRAY_SIZE(frame_throttli_desc_1),
@@ -24266,6 +24722,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   frame_throttli_desc_3, ARRAY_SIZE(frame_throttli_desc_3),
@@ -24428,6 +24892,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_0, ARRAY_SIZE(osn_desc_0),
@@ -24591,6 +25063,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_1, ARRAY_SIZE(osn_desc_1),
@@ -24753,6 +25233,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   widget_fs_desc, ARRAY_SIZE(widget_fs_desc),
@@ -24903,6 +25391,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_2, ARRAY_SIZE(osn_desc_2),
@@ -25050,6 +25546,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_3, ARRAY_SIZE(osn_desc_3),
@@ -25260,6 +25764,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_4, ARRAY_SIZE(osn_desc_4),
@@ -25409,6 +25921,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   osn_desc_5, ARRAY_SIZE(osn_desc_5),
@@ -25749,6 +26269,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   ovl_desc_1, ARRAY_SIZE(ovl_desc_1),
@@ -25959,6 +26487,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   ovl_desc_2, ARRAY_SIZE(ovl_desc_2),
@@ -26161,6 +26697,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   ovl_desc_3, ARRAY_SIZE(ovl_desc_3),
@@ -26392,6 +26936,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   overlay_lightg_desc_0, ARRAY_SIZE(overlay_lightg_desc_0),
@@ -26553,6 +27105,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   overlay_mouse_desc_0, ARRAY_SIZE(overlay_mouse_desc_0),
@@ -26781,6 +27341,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_0, ARRAY_SIZE(menu_desc_0),
@@ -26931,6 +27499,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_1, ARRAY_SIZE(menu_desc_1),
@@ -27115,6 +27691,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_3, ARRAY_SIZE(menu_desc_3),
@@ -27266,6 +27850,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_4, ARRAY_SIZE(menu_desc_4),
@@ -27414,6 +28006,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_5, ARRAY_SIZE(menu_desc_5),
@@ -27598,6 +28198,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_7, ARRAY_SIZE(menu_desc_7),
@@ -27746,6 +28354,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_8, ARRAY_SIZE(menu_desc_8),
@@ -27899,6 +28515,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_9, ARRAY_SIZE(menu_desc_9),
@@ -28150,6 +28774,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_11, ARRAY_SIZE(menu_desc_11),
@@ -28348,6 +28980,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_13, ARRAY_SIZE(menu_desc_13),
@@ -28496,6 +29136,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_14, ARRAY_SIZE(menu_desc_14),
@@ -28683,6 +29331,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_16, ARRAY_SIZE(menu_desc_16),
@@ -28937,6 +29593,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_18, ARRAY_SIZE(menu_desc_18),
@@ -29089,6 +29753,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_19, ARRAY_SIZE(menu_desc_19),
@@ -29299,6 +29971,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_20, ARRAY_SIZE(menu_desc_20),
@@ -29458,6 +30138,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_21, ARRAY_SIZE(menu_desc_21),
@@ -29608,6 +30296,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_22, ARRAY_SIZE(menu_desc_22),
@@ -29757,6 +30453,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_23, ARRAY_SIZE(menu_desc_23),
@@ -29955,6 +30659,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_quit_lakka_desc, ARRAY_SIZE(menu_quit_lakka_desc),
@@ -30117,6 +30829,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_25, ARRAY_SIZE(menu_desc_25),
@@ -30435,6 +31155,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_29, ARRAY_SIZE(menu_desc_29),
@@ -30586,6 +31314,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_30, ARRAY_SIZE(menu_desc_30),
@@ -30737,6 +31473,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_31, ARRAY_SIZE(menu_desc_31),
@@ -30947,6 +31691,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_32, ARRAY_SIZE(menu_desc_32),
@@ -31272,6 +32024,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_36, ARRAY_SIZE(menu_desc_36),
@@ -31438,6 +32198,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_37, ARRAY_SIZE(menu_desc_37),
@@ -31587,6 +32355,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_38, ARRAY_SIZE(menu_desc_38),
@@ -31734,6 +32510,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   menu_desc_39, ARRAY_SIZE(menu_desc_39),
@@ -32136,6 +32920,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   wifi_managemen_desc_0, ARRAY_SIZE(wifi_managemen_desc_0),
@@ -32294,6 +33086,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   accessibility_desc_0, ARRAY_SIZE(accessibility_desc_0),
@@ -32452,6 +33252,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   ai_service_desc_0, ARRAY_SIZE(ai_service_desc_0),
@@ -32632,6 +33440,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   ai_service_desc_1, ARRAY_SIZE(ai_service_desc_1),
@@ -32888,6 +33704,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_2, ARRAY_SIZE(ui_desc_2),
@@ -33054,6 +33878,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_3, ARRAY_SIZE(ui_desc_3),
@@ -33547,6 +34379,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   ui_desc_13, ARRAY_SIZE(ui_desc_13),
@@ -33705,6 +34545,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   pl_desc_0, ARRAY_SIZE(pl_desc_0),
@@ -33859,6 +34707,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   pl_desc_1, ARRAY_SIZE(pl_desc_1),
@@ -34010,6 +34866,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   pl_desc_2, ARRAY_SIZE(pl_desc_2),
@@ -34157,6 +35021,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   pl_desc_3, ARRAY_SIZE(pl_desc_3),
@@ -34307,6 +35179,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   pl_desc_4, ARRAY_SIZE(pl_desc_4),
@@ -34632,6 +35512,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   chv_desc_0, ARRAY_SIZE(chv_desc_0),
@@ -35105,6 +35993,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_1, ARRAY_SIZE(np_desc_1),
@@ -35335,6 +36231,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_2, ARRAY_SIZE(np_desc_2),
@@ -35545,6 +36449,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_3, ARRAY_SIZE(np_desc_3),
@@ -35722,6 +36634,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_4, ARRAY_SIZE(np_desc_4),
@@ -35903,6 +36823,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_5, ARRAY_SIZE(np_desc_5),
@@ -36067,6 +36995,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   np_desc_6, ARRAY_SIZE(np_desc_6),
@@ -36530,6 +37466,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   user_desc_0, ARRAY_SIZE(user_desc_0),
@@ -37085,6 +38029,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   cheevos_acct_desc, ARRAY_SIZE(cheevos_acct_desc),
@@ -37617,6 +38569,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   midi_desc_0, ARRAY_SIZE(midi_desc_0),
@@ -37947,6 +38907,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   steam_desc_0, ARRAY_SIZE(steam_desc_0),
@@ -38107,6 +39075,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   smbclient_desc_0, ARRAY_SIZE(smbclient_desc_0),
@@ -38340,6 +39316,14 @@ static bool setting_append_list(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
             };
             settings_list_add_desc(list, list_info, settings,
                   smbclient_desc_1, ARRAY_SIZE(smbclient_desc_1),
