@@ -175,80 +175,62 @@ void win32_menubar_rebuild(void);
 #define _21_SECONDS 21000000
 
 #define CONFIG_SIZE(a, b, c, d, e, f, g, h, i, j, k, l) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_size(a, b, c, d, e, f, g, h, i, j, k, l)
+   config_size(a, b, c, d, e, f, g, h, i, j, k, l)
 
 #define CONFIG_BOOL_ALT(a, b, c, d, e, f, g, h, i, j, k, l, m, n) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_bool_alt(a, b, c, d, e, f, g, h, i, j, k, l, m, n)
+   config_bool_alt(a, b, c, d, e, f, g, h, i, j, k, l, m, n)
 
 #define CONFIG_BOOL(a, b, c, d, e, f, g, h, i, j, k, l, m, n) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_bool(a, b, c, d, e, f, g, h, i, j, k, l, m, n)
+   config_bool(a, b, c, d, e, f, g, h, i, j, k, l, m, n)
 
 #define CONFIG_INT(a, b, c, d, e, f, g, h, i, j, k) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_int(a, b, c, d, e, f, g, h, i, j, k)
+   config_int(a, b, c, d, e, f, g, h, i, j, k)
 
 #define CONFIG_UINT_ALT(a, b, c, d, e, f, g, h, i, j, k) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_uint_alt(a, b, c, d, e, f, g, h, i, j, k)
+   config_uint_alt(a, b, c, d, e, f, g, h, i, j, k)
 
 #define CONFIG_UINT(a, b, c, d, e, f, g, h, i, j, k) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_uint(a, b, c, d, e, f, g, h, i, j, k)
+   config_uint(a, b, c, d, e, f, g, h, i, j, k)
 
 #define CONFIG_STRING(a, b, c, d, e, f, g, h, i, j, k, l) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_string(a, b, c, d, e, f, g, h, i, j, k, l)
+   config_string(a, b, c, d, e, f, g, h, i, j, k, l)
 
 #define CONFIG_STRING_ALT(a, b, c, d, e, f, g, h, i, j, k, l) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_string_alt(a, b, c, d, e, f, g, h, i, j, k, l)
+   config_string_alt(a, b, c, d, e, f, g, h, i, j, k, l)
 
 #define CONFIG_FLOAT(a, b, c, d, e, f, g, h, i, j, k, l) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_float(a, b, c, d, e, f, g, h, i, j, k, l)
+   config_float(a, b, c, d, e, f, g, h, i, j, k, l)
 
 #define CONFIG_DIR(a, b, c, d, e, f, g, h, i, j, k, l, m) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_dir(a, b, c, d, e, f, g, h, i, j, k, l, m)
+   config_dir(a, b, c, d, e, f, g, h, i, j, k, l, m)
 
 #define CONFIG_PATH(a, b, c, d, e, f, g, h, i, j, k, l) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_path(a, b, c, d, e, f, g, h, i, j, k, l)
+   config_path(a, b, c, d, e, f, g, h, i, j, k, l)
 
 #define CONFIG_ACTION_ALT(a, b, c, d, e, f, g) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_action_alt(a, b, c, d, e, f, g)
+   config_action_alt(a, b, c, d, e, f, g)
 
 #define CONFIG_ACTION(a, b, c, d, e, f, g) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_action(a, b, c, d, e, f, g)
+   config_action(a, b, c, d, e, f, g)
 
 #define END_GROUP(a, b, c) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      end_group(a, b, c)
+   end_group(a, b, c)
 
 #define START_SUB_GROUP(a, b, c, d, e, f) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      start_sub_group(a, b, c, d, e, f)
+   start_sub_group(a, b, c, d, e, f)
 
 #define END_SUB_GROUP(a, b, c) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      end_sub_group(a, b, c)
+   end_sub_group(a, b, c)
 
 #define CONFIG_STRING_OPTIONS(a, b, c, d, e, f, g, h, i, j, k, l, m) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_string_options(a, b, c, d, e, f, g, h, i, j, k, l, m)
+   config_string_options(a, b, c, d, e, f, g, h, i, j, k, l, m)
 
 #define CONFIG_HEX(a, b, c, d, e, f, g, h, i, j, k, l) \
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_hex(a, b, c, d, e, f, g, h, i, j, k, l)
 
 #define CONFIG_BIND_ALT(a, b, c, d, e, f, g, h, i, j, k) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_bind_alt(a, b, c, d, e, f, g, h, i, j, k)
+   config_bind_alt(a, b, c, d, e, f, g, h, i, j, k)
 
 #define CONFIG_BIND(a, b, c, d, e, f, g, h, i, j, k, l) \
    if (SETTINGS_LIST_APPEND(a, b)) \
@@ -2176,6 +2158,11 @@ static void config_bool_alt(
       change_handler_t read_handler,
       uint32_t flags)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_bool_setting(
          strdup(name), strdup(SHORT),
          target, default_value,
@@ -2206,6 +2193,11 @@ static void config_bool(
       change_handler_t read_handler,
       uint32_t flags)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_bool_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
@@ -2234,6 +2226,11 @@ static void config_int(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_int_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
@@ -2257,6 +2254,11 @@ static void config_uint_alt(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_uint_setting(
          strdup(name), strdup(SHORT),
          target, default_value,
@@ -2280,6 +2282,11 @@ static void config_uint(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_uint_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
@@ -2306,6 +2313,11 @@ static void config_size(
       change_handler_t change_handler, change_handler_t read_handler,
       get_string_representation_t string_representation_handler)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_size_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
@@ -2331,6 +2343,11 @@ static void config_float(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_float_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
@@ -2355,6 +2372,11 @@ static void config_path(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_string_setting(ST_PATH,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
@@ -2382,6 +2404,11 @@ static void config_dir(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_string_setting(ST_DIR,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
@@ -2413,6 +2440,11 @@ static void config_string(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_string_setting(ST_STRING,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
@@ -2436,6 +2468,11 @@ static void config_string_alt(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_string_setting(ST_STRING,
          strdup(label), strdup(shortname),
          s, (unsigned)len,
@@ -2458,6 +2495,11 @@ static void config_string_options(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_string_setting_options(
          ST_STRING_OPTIONS,
          msg_hash_to_str(name_enum_idx),
@@ -2485,6 +2527,11 @@ static void config_bind_alt(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_bind_setting(
          strdup(name), strdup(SHORT),
          s, player, player_offset,
@@ -2503,6 +2550,11 @@ static void config_action_alt(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_action_setting(
          strdup(name), strdup(SHORT),
          group_info->name, subgroup_info->name, parent_group,
@@ -2520,6 +2572,11 @@ static void config_action(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_action_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
@@ -2543,6 +2600,11 @@ static void end_group(rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_group_setting(ST_END_GROUP, 0, parent_group);
 }
 
@@ -2552,6 +2614,11 @@ static bool start_sub_group(rarch_setting_t **list,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return false;
+
    subgroup_info->name = name;
 
    if (!SETTINGS_LIST_APPEND(list, list_info))
@@ -2566,6 +2633,11 @@ static void end_sub_group(
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
+   /* Capacity check lives here now instead of inlined at every
+    * call site - the wrappers below are plain calls. */
+   if (!SETTINGS_LIST_APPEND(list, list_info))
+      return;
+
    (*list)[list_info->index++] = setting_group_setting(ST_END_SUB_GROUP, 0, parent_group);
 }
 
@@ -14700,64 +14772,7 @@ static void settings_build_video(
    }
 }
 
-static void settings_build_crt_switchres(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS), parent_group);
-      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS);
 
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-      {
-         settings_list_add_desc(list, list_info, settings,
-               crt_switchres_desc_0, ARRAY_SIZE(crt_switchres_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
-   }
-}
-
-static void settings_build_menu_sounds(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SOUNDS),
-            parent_group);
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_sounds_desc_0, ARRAY_SIZE(menu_sounds_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
-   }
-}
 
 static void settings_build_audio(
       settings_t *settings, global_t *global,
@@ -15265,35 +15280,6 @@ static void settings_build_input(
    }
 }
 
-static void settings_build_input_turbo_fire(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS),
-            parent_group);
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-      {
-         settings_list_add_desc(list, list_info, settings,
-               input_turbo_fi_desc_0, ARRAY_SIZE(input_turbo_fi_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-
-      END_SUB_GROUP(list, list_info, parent_group);
-
-      END_GROUP(list, list_info, parent_group);
-   }
-}
 
 static void settings_build_recording(
       settings_t *settings, global_t *global,
@@ -16593,63 +16579,7 @@ static void settings_build_menu(
    }
 }
 
-static void settings_build_menu_file_browser(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
-            parent_group);
 
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-      {
-         settings_list_add_desc(list, list_info, settings,
-               menu_file_brow_desc_0, ARRAY_SIZE(menu_file_brow_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
-   }
-}
-
-static void settings_build_multimedia(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-      {
-         settings_list_add_desc(list, list_info, settings,
-               multimedia_desc_0, ARRAY_SIZE(multimedia_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
-   }
-}
 
 static void settings_build_power_management(
       settings_t *settings, global_t *global,
@@ -16698,63 +16628,7 @@ static void settings_build_power_management(
    }
 }
 
-static void settings_build_wifi_management(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS),
-            parent_group);
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_WIFI_SETTINGS);
 
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-      {
-         settings_list_add_desc(list, list_info, settings,
-               wifi_managemen_desc_0, ARRAY_SIZE(wifi_managemen_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
-   }
-}
-
-static void settings_build_accessibility(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-      {
-         settings_list_add_desc(list, list_info, settings,
-               accessibility_desc_0, ARRAY_SIZE(accessibility_desc_0),
-               &group_info, &subgroup_info, parent_group);
-      }
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
-   }
-}
 
 static void settings_build_ai_service(
       settings_t *settings, global_t *global,
@@ -18796,72 +18670,131 @@ typedef struct settings_build_entry
    void (*build)(settings_t *settings, global_t *global,
          rarch_setting_t **list, rarch_setting_info_t *list_info,
          const char *parent_group);
+   /* Data-driven groups: when build is NULL the generic builder runs
+    * from these fields and the list needs no code at all. */
+   const setting_desc_t *rows;
+   unsigned count;
+   enum msg_hash_enums value_label;   /* group title             */
+   enum msg_hash_enums idx_label;     /* enum idx, 0 for none    */
+   enum msg_hash_enums parent_label;  /* parent group, 0 keeps   */
 } settings_build_entry_t;
 
+static void settings_build_desc_group(
+      const settings_build_entry_t *e,
+      settings_t *settings, global_t *global,
+      rarch_setting_t **list, rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   group_info.name    = NULL;
+   subgroup_info.name = NULL;
+   (void)global;
+   START_GROUP(list, list_info, &group_info,
+         msg_hash_to_str(e->value_label), parent_group);
+   if (e->idx_label)
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, e->idx_label);
+   if (e->parent_label)
+      parent_group = msg_hash_to_str(e->parent_label);
+   START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+   settings_list_add_desc(list, list_info, settings,
+         e->rows, e->count, &group_info, &subgroup_info, parent_group);
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
+}
+
 static const settings_build_entry_t settings_build_registry[] = {
-   { SETTINGS_LIST_MAIN_MENU, settings_build_main_menu },
-   { SETTINGS_LIST_DRIVERS, settings_build_drivers },
-   { SETTINGS_LIST_CORE, settings_build_core },
-   { SETTINGS_LIST_CONFIGURATION, settings_build_configuration },
-   { SETTINGS_LIST_LOGGING, settings_build_logging },
-   { SETTINGS_LIST_SAVING, settings_build_saving },
-   { SETTINGS_LIST_CLOUD_SYNC, settings_build_cloud_sync },
-   { SETTINGS_LIST_FRAME_TIME_COUNTER, settings_build_frame_time_counter },
-   { SETTINGS_LIST_REWIND, settings_build_rewind },
-   { SETTINGS_LIST_CHEATS, settings_build_cheats },
-   { SETTINGS_LIST_CHEAT_DETAILS, settings_build_cheat_details },
-   { SETTINGS_LIST_CHEAT_SEARCH, settings_build_cheat_search },
-   { SETTINGS_LIST_VIDEO, settings_build_video },
-   { SETTINGS_LIST_CRT_SWITCHRES, settings_build_crt_switchres },
-   { SETTINGS_LIST_MENU_SOUNDS, settings_build_menu_sounds },
-   { SETTINGS_LIST_AUDIO, settings_build_audio },
+   { SETTINGS_LIST_MAIN_MENU, settings_build_main_menu, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_DRIVERS, settings_build_drivers, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CORE, settings_build_core, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CONFIGURATION, settings_build_configuration, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_LOGGING, settings_build_logging, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_SAVING, settings_build_saving, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CLOUD_SYNC, settings_build_cloud_sync, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_FRAME_TIME_COUNTER, settings_build_frame_time_counter, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_REWIND, settings_build_rewind, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CHEATS, settings_build_cheats, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CHEAT_DETAILS, settings_build_cheat_details, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CHEAT_SEARCH, settings_build_cheat_search, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_VIDEO, settings_build_video, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CRT_SWITCHRES, NULL,
+     crt_switchres_desc_0, (unsigned)ARRAY_SIZE(crt_switchres_desc_0),
+     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+     MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
+     MENU_ENUM_LABEL_SETTINGS },
+   { SETTINGS_LIST_MENU_SOUNDS, NULL,
+     menu_sounds_desc_0, (unsigned)ARRAY_SIZE(menu_sounds_desc_0),
+     MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_AUDIO_SETTINGS },
+   { SETTINGS_LIST_AUDIO, settings_build_audio, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
 #ifdef HAVE_MICROPHONE
-   { SETTINGS_LIST_MICROPHONE, settings_build_microphone },
+   { SETTINGS_LIST_MICROPHONE, settings_build_microphone, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
 #endif
-   { SETTINGS_LIST_INPUT, settings_build_input },
-   { SETTINGS_LIST_INPUT_TURBO_FIRE, settings_build_input_turbo_fire },
-   { SETTINGS_LIST_RECORDING, settings_build_recording },
-   { SETTINGS_LIST_INPUT_HOTKEY, settings_build_input_hotkey },
-   { SETTINGS_LIST_FRAME_THROTTLING, settings_build_frame_throttling },
-   { SETTINGS_LIST_ONSCREEN_NOTIFICATIONS, settings_build_onscreen_notifications },
-   { SETTINGS_LIST_OVERLAY, settings_build_overlay },
-   { SETTINGS_LIST_OSK_OVERLAY, settings_build_osk_overlay },
-   { SETTINGS_LIST_OVERLAY_LIGHTGUN, settings_build_overlay_lightgun },
-   { SETTINGS_LIST_OVERLAY_MOUSE, settings_build_overlay_mouse },
-   { SETTINGS_LIST_MENU, settings_build_menu },
-   { SETTINGS_LIST_MENU_FILE_BROWSER, settings_build_menu_file_browser },
-   { SETTINGS_LIST_MULTIMEDIA, settings_build_multimedia },
-   { SETTINGS_LIST_POWER_MANAGEMENT, settings_build_power_management },
-   { SETTINGS_LIST_WIFI_MANAGEMENT, settings_build_wifi_management },
-   { SETTINGS_LIST_ACCESSIBILITY, settings_build_accessibility },
-   { SETTINGS_LIST_AI_SERVICE, settings_build_ai_service },
-   { SETTINGS_LIST_USER_INTERFACE, settings_build_user_interface },
-   { SETTINGS_LIST_PLAYLIST, settings_build_playlist },
-   { SETTINGS_LIST_CHEEVOS, settings_build_cheevos },
-   { SETTINGS_LIST_CHEEVOS_APPEARANCE, settings_build_cheevos_appearance },
-   { SETTINGS_LIST_CHEEVOS_VISIBILITY, settings_build_cheevos_visibility },
-   { SETTINGS_LIST_CORE_UPDATER, settings_build_core_updater },
-   { SETTINGS_LIST_NETPLAY, settings_build_netplay },
-   { SETTINGS_LIST_LAKKA_SERVICES, settings_build_lakka_services },
+   { SETTINGS_LIST_INPUT, settings_build_input, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_INPUT_TURBO_FIRE, NULL,
+     input_turbo_fi_desc_0, (unsigned)ARRAY_SIZE(input_turbo_fi_desc_0),
+     MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS },
+   { SETTINGS_LIST_RECORDING, settings_build_recording, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_INPUT_HOTKEY, settings_build_input_hotkey, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_FRAME_THROTTLING, settings_build_frame_throttling, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_ONSCREEN_NOTIFICATIONS, settings_build_onscreen_notifications, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_OVERLAY, settings_build_overlay, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_OSK_OVERLAY, settings_build_osk_overlay, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_OVERLAY_LIGHTGUN, settings_build_overlay_lightgun, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_OVERLAY_MOUSE, settings_build_overlay_mouse, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_MENU, settings_build_menu, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_MENU_FILE_BROWSER, NULL,
+     menu_file_brow_desc_0, (unsigned)ARRAY_SIZE(menu_file_brow_desc_0),
+     MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS },
+   { SETTINGS_LIST_MULTIMEDIA, NULL,
+     multimedia_desc_0, (unsigned)ARRAY_SIZE(multimedia_desc_0),
+     MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_SETTINGS },
+   { SETTINGS_LIST_POWER_MANAGEMENT, settings_build_power_management, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_WIFI_MANAGEMENT, NULL,
+     wifi_managemen_desc_0, (unsigned)ARRAY_SIZE(wifi_managemen_desc_0),
+     MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_WIFI_SETTINGS },
+   { SETTINGS_LIST_ACCESSIBILITY, NULL,
+     accessibility_desc_0, (unsigned)ARRAY_SIZE(accessibility_desc_0),
+     MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS },
+   { SETTINGS_LIST_AI_SERVICE, settings_build_ai_service, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_USER_INTERFACE, settings_build_user_interface, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_PLAYLIST, settings_build_playlist, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CHEEVOS, settings_build_cheevos, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CHEEVOS_APPEARANCE, settings_build_cheevos_appearance, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CHEEVOS_VISIBILITY, settings_build_cheevos_visibility, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_CORE_UPDATER, settings_build_core_updater, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_NETPLAY, settings_build_netplay, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_LAKKA_SERVICES, settings_build_lakka_services, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
 #ifdef HAVE_LAKKA_SWITCH
-   { SETTINGS_LIST_LAKKA_SWITCH_OPTIONS, settings_build_lakka_switch_options },
+   { SETTINGS_LIST_LAKKA_SWITCH_OPTIONS, settings_build_lakka_switch_options, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
 #endif
-   { SETTINGS_LIST_USER, settings_build_user },
-   { SETTINGS_LIST_USER_ACCOUNTS, settings_build_user_accounts },
-   { SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE, settings_build_user_accounts_youtube },
-   { SETTINGS_LIST_USER_ACCOUNTS_TWITCH, settings_build_user_accounts_twitch },
-   { SETTINGS_LIST_USER_ACCOUNTS_FACEBOOK, settings_build_user_accounts_facebook },
-   { SETTINGS_LIST_USER_ACCOUNTS_KICK, settings_build_user_accounts_kick },
-   { SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS, settings_build_user_accounts_cheevos },
-   { SETTINGS_LIST_DIRECTORY, settings_build_directory },
-   { SETTINGS_LIST_PRIVACY, settings_build_privacy },
-   { SETTINGS_LIST_MIDI, settings_build_midi },
-   { SETTINGS_LIST_MANUAL_CONTENT_SCAN, settings_build_manual_content_scan },
+   { SETTINGS_LIST_USER, settings_build_user, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_USER_ACCOUNTS, settings_build_user_accounts, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE, settings_build_user_accounts_youtube, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_USER_ACCOUNTS_TWITCH, settings_build_user_accounts_twitch, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_USER_ACCOUNTS_FACEBOOK, settings_build_user_accounts_facebook, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_USER_ACCOUNTS_KICK, settings_build_user_accounts_kick, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS, settings_build_user_accounts_cheevos, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_DIRECTORY, settings_build_directory, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_PRIVACY, settings_build_privacy, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_MIDI, settings_build_midi, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_MANUAL_CONTENT_SCAN, settings_build_manual_content_scan, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
 #ifdef HAVE_MIST
-   { SETTINGS_LIST_STEAM, settings_build_steam },
+   { SETTINGS_LIST_STEAM, settings_build_steam, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
 #endif
 #ifdef HAVE_SMBCLIENT
-   { SETTINGS_LIST_SMBCLIENT, settings_build_smbclient },
+   { SETTINGS_LIST_SMBCLIENT, settings_build_smbclient, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
 #endif
 };
 
@@ -18878,8 +18811,12 @@ static bool setting_append_list(
    {
       if (settings_build_registry[i].type != type)
          continue;
-      settings_build_registry[i].build(settings, global,
-            list, list_info, parent_group);
+      if (settings_build_registry[i].build)
+         settings_build_registry[i].build(settings, global,
+               list, list_info, parent_group);
+      else
+         settings_build_desc_group(&settings_build_registry[i],
+               settings, global, list, list_info, parent_group);
       return true;
    }
    return true;
