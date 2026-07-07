@@ -558,7 +558,6 @@
 #define MENU_ENUM_LABEL_RESUME_CONTENT_STR "resume_content"
 #define MENU_ENUM_LABEL_CHEAT_SETTINGS_STR "cheat_settings"
 #define MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STR "rewind_buffer_size"
-#define MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE_STR "menu_throttle_framerate"
 #define MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE_STR "menu_throttle_framerate"
 #define MENU_ENUM_LABEL_ADD_TO_FAVORITES_STR "favorites_add"
 #define MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST_STR "favorites_add_playlist"
