@@ -39,6 +39,9 @@
 #ifdef HAVE_RWAV
 #include <formats/rwav.h>
 #endif
+#ifdef HAVE_RMODTRACKER
+#include <formats/rmodtracker.h>
+#endif
 
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
@@ -87,6 +90,15 @@ struct audio_transfer_mp3
 };
 #endif
 
+#ifdef HAVE_RMODTRACKER
+struct audio_transfer_mod
+{
+   const void  *data;   /* module bytes from set_buffer_ptr (caller-owned)  */
+   size_t       size;
+   rmodtracker *handle; /* replayer, NULL until start() succeeds            */
+};
+#endif
+
 /* Vorbis and MP3 expose native s16 reads (rvorbis quantises once during
  * its interleave copy; rmp3's synthesis filter emits s16 directly), so
  * the s16 pipeline below never touches float. */
@@ -103,6 +115,12 @@ enum audio_type_enum audio_decode_get_type(const char *path)
       return AUDIO_TYPE_MP3;
    if (strcasestr(path, ".wav"))
       return AUDIO_TYPE_WAV;
+#ifdef HAVE_RMODTRACKER
+   if (     strcasestr(path, ".mod")
+         || strcasestr(path, ".s3m")
+         || strcasestr(path, ".xm"))
+      return AUDIO_TYPE_MOD;
+#endif
    return AUDIO_TYPE_NONE;
 }
 
@@ -121,6 +139,10 @@ void *audio_transfer_new(enum audio_type_enum type)
 #ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
          return calloc(1, sizeof(struct audio_transfer_mp3));
+#endif
+#ifdef HAVE_RMODTRACKER
+      case AUDIO_TYPE_MOD:
+         return calloc(1, sizeof(struct audio_transfer_mod));
 #endif
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
@@ -170,6 +192,18 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          {
             m->data = ptr;
             m->size = len;
+         }
+         break;
+      }
+#endif
+#ifdef HAVE_RMODTRACKER
+      case AUDIO_TYPE_MOD:
+      {
+         struct audio_transfer_mod *md = (struct audio_transfer_mod*)data;
+         if (md)
+         {
+            md->data = ptr;
+            md->size = len;
          }
          break;
       }
@@ -231,6 +265,16 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          return m->inited != 0;
       }
 #endif
+#ifdef HAVE_RMODTRACKER
+      case AUDIO_TYPE_MOD:
+      {
+         struct audio_transfer_mod *md = (struct audio_transfer_mod*)data;
+         if (!md || !md->data)
+            return false;
+         md->handle = rmodtracker_open_memory(md->data, md->size);
+         return md->handle != NULL;
+      }
+#endif
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
       {
@@ -281,6 +325,13 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
          return (m && m->inited);
+      }
+#endif
+#ifdef HAVE_RMODTRACKER
+      case AUDIO_TYPE_MOD:
+      {
+         struct audio_transfer_mod *md = (struct audio_transfer_mod*)data;
+         return (md && md->handle);
       }
 #endif
       case AUDIO_TYPE_WAV:
@@ -349,6 +400,21 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#ifdef HAVE_RMODTRACKER
+      case AUDIO_TYPE_MOD:
+      {
+         struct audio_transfer_mod *md = (struct audio_transfer_mod*)data;
+         if (!md || !md->handle)
+            return false;
+         if (channels)  /* the replayer always mixes interleaved stereo */
+            *channels     = 2;
+         if (rate)
+            *rate         = (unsigned)rmodtracker_sample_rate(md->handle);
+         if (total_frames) /* one pass through the sequence */
+            *total_frames = (uint64_t)rmodtracker_duration_frames(md->handle);
+         return true;
+      }
+#endif
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
       {
@@ -407,6 +473,17 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          if (!m || !m->inited)
             return AUDIO_PROCESS_ERROR;
          produced = (size_t)rmp3_read_s16(&m->handle, (uint64_t)frames, out);
+         break;
+      }
+#endif
+#ifdef HAVE_RMODTRACKER
+      case AUDIO_TYPE_MOD:
+      {
+         struct audio_transfer_mod *md = (struct audio_transfer_mod*)data;
+         if (!md || !md->handle)
+            return AUDIO_PROCESS_ERROR;
+         produced = rmodtracker_get_samples_s16_interleaved(
+               md->handle, out, frames);
          break;
       }
 #endif
@@ -487,6 +564,17 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          break;
       }
 #endif
+#ifdef HAVE_RMODTRACKER
+      case AUDIO_TYPE_MOD:
+      {
+         struct audio_transfer_mod *md = (struct audio_transfer_mod*)data;
+         if (!md || !md->handle)
+            return AUDIO_PROCESS_ERROR;
+         produced = rmodtracker_get_samples_float_interleaved(
+               md->handle, out, frames);
+         break;
+      }
+#endif
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
       {
@@ -562,6 +650,20 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          return rmp3_seek_to_frame(&m->handle, (uint64_t)frame) != 0;
       }
 #endif
+#ifdef HAVE_RMODTRACKER
+      case AUDIO_TYPE_MOD:
+      {
+         struct audio_transfer_mod *md = (struct audio_transfer_mod*)data;
+         if (!md || !md->handle)
+            return false;
+         if (frame == 0) /* loop-to-start: rewind always succeeds */
+         {
+            rmodtracker_rewind(md->handle);
+            return true;
+         }
+         return false;   /* trackers are sequenced; mid-song seek unsupported */
+      }
+#endif
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
       {
@@ -610,6 +712,15 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
          if (m->inited)
             rmp3_uninit(&m->handle);
+         break;
+      }
+#endif
+#ifdef HAVE_RMODTRACKER
+      case AUDIO_TYPE_MOD:
+      {
+         struct audio_transfer_mod *md = (struct audio_transfer_mod*)data;
+         if (md->handle)
+            rmodtracker_close(md->handle);
          break;
       }
 #endif
