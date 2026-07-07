@@ -1291,26 +1291,6 @@ static size_t setting_get_string_representation_st_float(rarch_setting_t *settin
    return 0;
 }
 
-static size_t setting_get_string_representation_st_dir(rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   if (setting)
-   {
-#if IOS
-      if (*setting->value.target.string)
-         return fill_pathname_abbreviate_special(s, setting->value.target.string, len);
-      return strlcpy(s, setting->aux.empty_path, len);
-#else
-      return strlcpy(s,
-             *setting->value.target.string
-            ? setting->value.target.string
-            : setting->aux.empty_path,
-            len);
-#endif
-   }
-   return 0;
-}
-
 static size_t setting_get_string_representation_st_path(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -1324,14 +1304,6 @@ static size_t setting_get_string_representation_st_path(rarch_setting_t *setting
             "", len);
 #endif
    }
-   return 0;
-}
-
-static size_t setting_get_string_representation_st_string(rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   if (setting)
-      return strlcpy(s, setting->value.target.string, len);
    return 0;
 }
 
@@ -18799,9 +18771,10 @@ static rarch_setting_t *settings_lazy_get(unsigned k)
 {
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
-   rarch_setting_t *sl  = NULL;
-   rarch_setting_t **lp = NULL;
+   rarch_setting_t *sl       = NULL;
+   rarch_setting_t **lp      = NULL;
    rarch_setting_info_t li;
+   rarch_setting_info_t *lip = NULL;
    unsigned j;
    if (k >= settings_lazy_nbuilders)
       return NULL;
@@ -18811,7 +18784,7 @@ static rarch_setting_t *settings_lazy_get(unsigned k)
    li.size  = 32;
    if (!(sl = (rarch_setting_t*)malloc(li.size * sizeof(*sl))))
       return NULL;
-   for (j = 0; j < li.size; j++)
+   for (j = 0; j < (unsigned)li.size; j++)
    {
       MENU_SETTING_INITIALIZE((&sl)[0], j);
    }
@@ -18822,8 +18795,9 @@ static rarch_setting_t *settings_lazy_get(unsigned k)
       free(sl);
       return NULL;
    }
-   lp = &sl;
-   if (!SETTINGS_LIST_APPEND(lp, (&li)))
+   lp  = &sl;
+   lip = &li;
+   if (!SETTINGS_LIST_APPEND(lp, lip))
    {
       free(sl);
       return NULL;
