@@ -468,6 +468,13 @@ def pack(text, lang):
         if _alien:
             raise SystemExit('packed emitter: keys not in source: '
                              + ', '.join(sorted(_alien)[:5]))
+    # Canonical row order: the template follows msg_hash_us.h, which the
+    # single-source migrations continually restructure, so template order
+    # churns the whole packed file on every sync even when no value
+    # changed.  The runtime contract is order-free (ids[] pairs each row
+    # with its enum; the index maps by id; guards ride per row), so rows
+    # sort by key and the output is invariant under template reshuffling.
+    rows = sorted(rows, key=lambda r: r[0])
     mnames = member_base_names(rows)
     members = []   # (text, guard)
     inits   = []   # (text, guard)
