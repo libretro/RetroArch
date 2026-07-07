@@ -7217,6 +7217,42 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
                list.list[i].type, (unsigned)list.list[i].entry_idx);
       file_list_deinitialize(&list);
    }
+   /* Same walk with include_everything: conditionally hidden rows
+    * appear too, so refactors of the visibility plumbing are gated
+    * on the full membership, not just what this environment shows. */
+   for (t = 0; t <= (unsigned)DISPLAYLIST_PENDING_CLEAR; t++)
+   {
+      file_list_t list;
+      unsigned count;
+      size_t i;
+      /* Live values would make the fingerprint flap: the information
+       * list samples current memory use. Skipped, not built. */
+      if (t == (unsigned)DISPLAYLIST_INFORMATION_LIST
+            || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
+            || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
+            /* The core-content family reaches for the network and
+             * blocks headless; nothing deterministic lives there. */
+            || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
+                  && t <= (unsigned)DISPLAYLIST_CORE_SYSTEM_FILES))
+      {
+         filestream_printf(f, "=a= %u skipped\n", t);
+         filestream_flush(f);
+         continue;
+      }
+      memset(&list, 0, sizeof(list));
+      filestream_printf(f, "=a= %u ", t);
+      filestream_flush(f);
+      count = menu_displaylist_build_list(&list, settings,
+            (enum menu_displaylist_ctl_state)t, true);
+      filestream_printf(f, "count=%u size=%u\n", count, (unsigned)list.size);
+      filestream_flush(f);
+      for (i = 0; i < list.size; i++)
+         filestream_printf(f, "%u|%s|%s|%u|%u\n", (unsigned)i,
+               list.list[i].path  ? list.list[i].path  : "",
+               list.list[i].label ? list.list[i].label : "",
+               list.list[i].type, (unsigned)list.list[i].entry_idx);
+      file_list_deinitialize(&list);
+   }
    /* Second pass: menu_displaylist_ctl itself, the 271-case switch
     * the first pass never reached.  Each type builds in a forked
     * child from identical pristine parent state, so one crashing or
