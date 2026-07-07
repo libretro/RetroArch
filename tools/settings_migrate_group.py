@@ -50,7 +50,11 @@ SIGS = [('S_BOOL','f, T, n, d, sd, df, c'),
         ('S_UINT_EX','f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui'),
         ('S_INT_EX','f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui'),
         ('S_FLOAT_EX','f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui'),
-        ('S_ACTION_EX','T, n, sd, ok, rp, c')]
+        ('S_ACTION_EX','T, n, sd, ok, rp, c'),
+        ('S_BOOL_LV','f, T, TV, n, d, sd, df, c'),
+        ('S_FLOAT_LV','f, T, TV, n, d, rnd, sd, df, c'),
+        ('S_STRING_LV','f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui'),
+        ('S_ACTION_LV','T, TV, n, sd, ok, rp, c')]
 # Coupled platform defines: the polarity lanes derive tokens from row
 # guards, but some tokens only ever appear alongside a partner in real
 # builds (the SDK conditional vs the build system's own define); a lane
@@ -378,7 +382,8 @@ open(os.path.join('settings', DEF), 'w').write('\n'.join(out) + '\n')
 
 first = min(s for s, e in usspan)
 for s, e in sorted(usspan, reverse=True): us = us[:s] + us[e:]
-mk_us = lambda b, has_sub: (' \\\nMSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \\\nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)'
+mk_us = lambda b, has_sub: ((' \\\nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)' if has_sub else '')
+             if b.endswith('_LV') else ' \\\nMSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \\\nMSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)'
                             if has_sub else ' \\\nMSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)')
 region = ('/* GENERATED REGION: %s (see %s). */\n' % (TITLE, DEF)
           + '#define SETTINGS_DEF_STRINGS_PASS\n'
@@ -425,7 +430,11 @@ MENU_EMIT = {'S_BOOL_EX':'SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel
              'S_BOOL':'SDESC_BOOL_ROW(f, T, d, sd, df, c),',
              'S_UINT':'SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),',
              'S_INT': 'SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),',
-             'S_FLOAT':'SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),'}
+             'S_FLOAT':'SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),',
+             'S_BOOL_LV':'SDESC_BOOL_ROW_LV(f, T, TV, d, sd, df, c),',
+             'S_FLOAT_LV':'SDESC_FLOAT_ROW_LV(f, T, TV, d, rnd, sd, df, c),',
+             'S_STRING_LV':'SDESC_STRING_ROW_LV(f, T, TV, d, sd, c, ok, rp, sta, sel, lf, rt, ui),',
+             'S_ACTION_LV':'SDESC_ACTION_ROW_LV(T, TV, sd, ok, rp, c),'}
 mk_menu = lambda b, _s: ' \\\n                  ' + MENU_EMIT[b]
 new_body = ('/* GENERATED: rows come from %s in order. */\n' % DEF
             + defs(mk_menu) + '\n#include "../settings/%s"\n' % DEF + UNDEFS)
