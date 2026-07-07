@@ -266,9 +266,13 @@ static int envelope_calculate_ampl( struct envelope *envelope, int tick ) {
 			}
 		}
 		dt = envelope->points_tick[ point + 1 ] - envelope->points_tick[ point ];
-		da = envelope->points_ampl[ point + 1 ] - envelope->points_ampl[ point ];
 		ampl = envelope->points_ampl[ point ];
-		ampl += ( ( da << 24 ) / dt ) * ( tick - envelope->points_tick[ point ] ) >> 24;
+		if( dt > 0 ) {
+			/* Guard against a malformed envelope whose adjacent points share
+			 * a tick: the division below would divide by zero. */
+			da = envelope->points_ampl[ point + 1 ] - envelope->points_ampl[ point ];
+			ampl += ( ( da << 24 ) / dt ) * ( tick - envelope->points_tick[ point ] ) >> 24;
+		}
 	}
 	return ampl;
 }
@@ -279,7 +283,7 @@ static void sample_ping_pong( struct sample *sample ) {
 	int loop_length = sample->loop_length;
 	int loop_end = loop_start + loop_length;
 	short *sample_data = sample->data;
-	short *new_data = (short*)calloc( loop_end + loop_length + 1, sizeof( short ) );
+	short *new_data = calloc( loop_end + loop_length + 1, sizeof( short ) );
 	if( new_data ) {
 		memcpy( new_data, sample_data, loop_end * sizeof( short ) );
 		for( idx = 0; idx < loop_length; idx++ ) {
@@ -330,7 +334,7 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 	char ascii[ 16 ], *pattern_data;
 	struct instrument *instrument;
 	struct sample *sample;
-	struct module *module = (struct module*)calloc( 1, sizeof( struct module ) );
+	struct module *module = calloc( 1, sizeof( struct module ) );
 	if( module ) {
 		if( data_u16le( data, 58 ) != 0x0104 ) {
 			strcpy( message, "XM format version must be 0x0104!" );
@@ -351,7 +355,7 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 		module->default_tempo = data_u16le( data, 78 );
 		module->c2_rate = 8363;
 		module->gain = 64;
-		module->default_panning = (unsigned char*)calloc( module->num_channels, sizeof( unsigned char ) );
+		module->default_panning = calloc( module->num_channels, sizeof( unsigned char ) );
 		if( !module->default_panning ) {
 			dispose_module( module );
 			return NULL;
@@ -359,7 +363,7 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 		for( idx = 0; idx < module->num_channels; idx++ ) {
 			module->default_panning[ idx ] = 128;
 		}
-		module->sequence = (unsigned char*)calloc( module->sequence_len, sizeof( unsigned char ) );
+		module->sequence = calloc( module->sequence_len, sizeof( unsigned char ) );
 		if( !module->sequence ) {
 			dispose_module( module );
 			return NULL;
@@ -368,7 +372,7 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 			entry = data_u8( data, 80 + idx );
 			module->sequence[ idx ] = entry < module->num_patterns ? entry : 0;
 		}
-		module->patterns = (struct pattern*)calloc( module->num_patterns, sizeof( struct pattern ) );
+		module->patterns = calloc( module->num_patterns, sizeof( struct pattern ) );
 		if( !module->patterns ) {
 			dispose_module( module );
 			return NULL;
@@ -387,7 +391,7 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 			offset += data_u32le( data, offset );
 			next_offset = offset + pat_data_len;
 			num_notes = num_rows * module->num_channels;
-			pattern_data = (char*)calloc( num_notes, 5 );
+			pattern_data = calloc( num_notes, 5 );
 			if( !pattern_data ) {
 				dispose_module( module );
 				return NULL;
@@ -421,13 +425,13 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 			}
 			offset = next_offset;
 		}
-		module->instruments = (struct instrument*)calloc( module->num_instruments + 1, sizeof( struct instrument ) );
+		module->instruments = calloc( module->num_instruments + 1, sizeof( struct instrument ) );
 		if( !module->instruments ) {
 			dispose_module( module );
 			return NULL;
 		}
 		instrument = &module->instruments[ 0 ];
-		instrument->samples = (struct sample*)calloc( 1, sizeof( struct sample ) );
+		instrument->samples = calloc( 1, sizeof( struct sample ) );
 		if( !instrument->samples ) {
 			dispose_module( module );
 			return NULL;
@@ -437,14 +441,19 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 			data_ascii( data, offset + 4, 22, instrument->name );
 			num_samples = data_u16le( data, offset + 27 );
 			instrument->num_samples = ( num_samples > 0 ) ? num_samples : 1;
-			instrument->samples = (struct sample*)calloc( instrument->num_samples, sizeof( struct sample ) );
+			instrument->samples = calloc( instrument->num_samples, sizeof( struct sample ) );
 			if( !instrument->samples ) {
 				dispose_module( module );
 				return NULL;
 			}
 			if( num_samples > 0 ) {
 				for( key = 0; key < 96; key++ ) {
-					instrument->key_to_sample[ key + 1 ] = data_u8( data, offset + 33 + key );
+					/* Clamp the file-supplied sample index; an out-of-range
+					 * value would index past the instrument's sample array
+					 * during playback. */
+					int sample_idx = data_u8( data, offset + 33 + key );
+					instrument->key_to_sample[ key + 1 ] =
+							sample_idx < num_samples ? sample_idx : 0;
 				}
 				point_tick = 0;
 				for( point = 0; point < 12; point++ ) {
@@ -515,7 +524,7 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 				}
 				sample->loop_start = sam_loop_start;
 				sample->loop_length = sam_loop_length;
-				sample->data = (short*)calloc( sam_data_samples + 1, sizeof( short ) );
+				sample->data = calloc( sam_data_samples + 1, sizeof( short ) );
 				if( sample->data ) {
 					if( sixteen_bit ) {
 						data_sam_s16le( data, offset, sam_data_samples, sample->data );
@@ -553,7 +562,7 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 	char *pattern_data;
 	struct instrument *instrument;
 	struct sample *sample;
-	struct module *module = (struct module*)calloc( 1, sizeof( struct module ) );
+	struct module *module = calloc( 1, sizeof( struct module ) );
 	if( module ) {
 		data_ascii( data, 0, 28, module->name );
 		module->sequence_len = data_u16le( data, 32 );
@@ -581,7 +590,7 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 				channel_map[ idx ] = module->num_channels++;
 			}
 		}
-		module->sequence = (unsigned char*)calloc( module->sequence_len, sizeof( unsigned char ) );
+		module->sequence = calloc( module->sequence_len, sizeof( unsigned char ) );
 		if( !module->sequence ){
 			dispose_module( module );
 			return NULL;
@@ -589,15 +598,23 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 		for( idx = 0; idx < module->sequence_len; idx++ ) {
 			module->sequence[ idx ] = data_u8( data, 96 + idx );
 		}
+		/* The parapointer table follows the full, on-disk order list; compute
+		 * the read offset from the original length before trimming below. */
 		module_data_idx = 96 + module->sequence_len;
-		module->instruments = (struct instrument*)calloc( module->num_instruments + 1, sizeof( struct instrument ) );
+		/* Drop trailing orders that point past the pattern table; otherwise
+		 * the sequencer would fetch a pattern out of bounds. */
+		while( module->sequence_len > 0
+				&& module->sequence[ module->sequence_len - 1 ] >= module->num_patterns ) {
+			module->sequence_len--;
+		}
+		module->instruments = calloc( module->num_instruments + 1, sizeof( struct instrument ) );
 		if( !module->instruments ) {
 			dispose_module( module );
 			return NULL;
 		}
 		instrument = &module->instruments[ 0 ];
 		instrument->num_samples = 1;
-		instrument->samples = (struct sample*)calloc( 1, sizeof( struct sample ) );
+		instrument->samples = calloc( 1, sizeof( struct sample ) );
 		if( !instrument->samples ) {
 			dispose_module( module );
 			return NULL;
@@ -605,7 +622,7 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 		for( ins = 1; ins <= module->num_instruments; ins++ ) {
 			instrument = &module->instruments[ ins ];
 			instrument->num_samples = 1;
-			instrument->samples = (struct sample*)calloc( 1, sizeof( struct sample ) );
+			instrument->samples = calloc( 1, sizeof( struct sample ) );
 			if( !instrument->samples ) {
 				dispose_module( module );
 				return NULL;
@@ -640,7 +657,7 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 				tune = ( log_2( data_u32le( data, inst_offset + 32 ) ) - log_2( module->c2_rate ) ) * 12;
 				sample->rel_note = tune >> FP_SHIFT;
 				sample->fine_tune = ( tune & FP_MASK ) >> ( FP_SHIFT - 7 );
-				sample->data = (short*)calloc( sample_length + 1, sizeof( short ) );
+				sample->data = calloc( sample_length + 1, sizeof( short ) );
 				if( sample->data ) {
 					if( sixteen_bit ) {
 						data_sam_s16le( data, sample_offset, sample_length, sample->data );
@@ -659,7 +676,7 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 				}
 			}
 		}
-		module->patterns = (struct pattern*)calloc( module->num_patterns, sizeof( struct pattern ) );
+		module->patterns = calloc( module->num_patterns, sizeof( struct pattern ) );
 		if( !module->patterns ) {
 			dispose_module( module );
 			return NULL;
@@ -667,7 +684,7 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 		for( idx = 0; idx < module->num_patterns; idx++ ) {
 			module->patterns[ idx ].num_channels = module->num_channels;
 			module->patterns[ idx ].num_rows = 64;
-			pattern_data = (char*)calloc( module->num_channels * 64, 5 );
+			pattern_data = calloc( module->num_channels * 64, 5 );
 			if( !pattern_data ) {
 				dispose_module( module );
 				return NULL;
@@ -723,7 +740,7 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 			}
 			module_data_idx += 2;
 		}
-		module->default_panning = (unsigned char*)calloc( module->num_channels, sizeof( unsigned char ) );
+		module->default_panning = calloc( module->num_channels, sizeof( unsigned char ) );
 		if( module->default_panning ) {
 			for( chan = 0; chan < 32; chan++ ) {
 				if( channel_map[ chan ] >= 0 ) {
@@ -758,7 +775,7 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 	char *pattern_data;
 	struct instrument *instrument;
 	struct sample *sample;
-	struct module *module = (struct module*)calloc( 1, sizeof( struct module ) );
+	struct module *module = calloc( 1, sizeof( struct module ) );
 	if( module ) {
 		data_ascii( data, 0, 20, module->name );
 		module->sequence_len = data_u8( data, 950 ) & 0x7F;
@@ -766,7 +783,7 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 		if( module->restart_pos >= module->sequence_len ) {
 			module->restart_pos = 0;
 		}
-		module->sequence = (unsigned char*)calloc( 128, sizeof( unsigned char ) );
+		module->sequence = calloc( 128, sizeof( unsigned char ) );
 		if( !module->sequence ){
 			dispose_module( module );
 			return NULL;
@@ -805,7 +822,7 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 		module->default_gvol = 64;
 		module->default_speed = 6;
 		module->default_tempo = 125;
-		module->default_panning = (unsigned char*)calloc( module->num_channels, sizeof( unsigned char ) );
+		module->default_panning = calloc( module->num_channels, sizeof( unsigned char ) );
 		if( !module->default_panning ) {
 			dispose_module( module );
 			return NULL;
@@ -817,7 +834,7 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 			}
 		}
 		module_data_idx = 1084;
-		module->patterns = (struct pattern*)calloc( module->num_patterns, sizeof( struct pattern ) );
+		module->patterns = calloc( module->num_patterns, sizeof( struct pattern ) );
 		if( !module->patterns ) {
 			dispose_module( module );
 			return NULL;
@@ -826,7 +843,7 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 		for( pat = 0; pat < module->num_patterns; pat++ ) {
 			module->patterns[ pat ].num_channels = module->num_channels;
 			module->patterns[ pat ].num_rows = 64;
-			pattern_data = (char*)calloc( 1, pat_data_len );
+			pattern_data = calloc( 1, pat_data_len );
 			if( !pattern_data ) {
 				dispose_module( module );
 				return NULL;
@@ -866,14 +883,14 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 			}
 		}
 		module->num_instruments = 31;
-		module->instruments = (struct instrument*)calloc( module->num_instruments + 1, sizeof( struct instrument ) );
+		module->instruments = calloc( module->num_instruments + 1, sizeof( struct instrument ) );
 		if( !module->instruments ) {
 			dispose_module( module );
 			return NULL;
 		}
 		instrument = &module->instruments[ 0 ];
 		instrument->num_samples = 1;
-		instrument->samples = (struct sample*)calloc( 1, sizeof( struct sample ) );
+		instrument->samples = calloc( 1, sizeof( struct sample ) );
 		if( !instrument->samples ) {
 			dispose_module( module );
 			return NULL;
@@ -881,7 +898,7 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 		for( ins = 1; ins <= module->num_instruments; ins++ ) {
 			instrument = &module->instruments[ ins ];
 			instrument->num_samples = 1;
-			instrument->samples = (struct sample*)calloc( 1, sizeof( struct sample ) );
+			instrument->samples = calloc( 1, sizeof( struct sample ) );
 			if( !instrument->samples ) {
 				dispose_module( module );
 				return NULL;
@@ -906,7 +923,7 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 			}
 			sample->loop_start = loop_start;
 			sample->loop_length = loop_length;
-			sample->data = (short*)calloc( sample_length + 1, sizeof( short ) );
+			sample->data = calloc( sample_length + 1, sizeof( short ) );
 			if( sample->data ) {
 				data_sam_s8( data, module_data_idx, sample_length, sample->data );
 				sample->data[ loop_start + loop_length ] = sample->data[ loop_start ];
@@ -1873,7 +1890,7 @@ static void replay_set_sequence_pos( struct replay *replay, int pos ) {
 	}
 	replay->play_count = (char**)calloc( module->sequence_len, sizeof( char * ) );
 	if( replay->play_count ) {
-		replay->play_count[ 0 ] = (char*)calloc( module_init_play_count( module, NULL ), sizeof( char ) );
+		replay->play_count[ 0 ] = calloc( module_init_play_count( module, NULL ), sizeof( char ) );
 		module_init_play_count( module, replay->play_count );
 	}
 	for( idx = 0; idx < module->num_channels; idx++ ) {
@@ -1896,13 +1913,13 @@ static void dispose_replay( struct replay *replay ) {
 
 /* Allocate and initialize a replay with the specified sampling rate and interpolation. */
 static struct replay* new_replay( struct module *module, int sample_rate, int interpolation ) {
-	struct replay *replay = (struct replay*)calloc( 1, sizeof( struct replay ) );
+	struct replay *replay = calloc( 1, sizeof( struct replay ) );
 	if( replay ) {
 		replay->module = module;
 		replay->sample_rate = sample_rate;
 		replay->interpolation = interpolation;
-		replay->ramp_buf = (int*)calloc( 128, sizeof( int ) );
-		replay->channels = (struct channel*)calloc( module->num_channels, sizeof( struct channel ) );
+		replay->ramp_buf = calloc( 128, sizeof( int ) );
+		replay->channels = calloc( module->num_channels, sizeof( struct channel ) );
 		if( replay->ramp_buf && replay->channels ) {
 			replay_set_sequence_pos( replay, 0 );
 		} else {
