@@ -7297,6 +7297,22 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
 }
 #endif
 
+/* The empty-list fallback nearly every screen spelled out inline:
+ * if nothing was appended, show the no-entries row. Returns the
+ * possibly incremented count so call sites stay one line. */
+static unsigned menu_displaylist_no_entries_fallback(
+      file_list_t *list, unsigned count, unsigned entry_type)
+{
+   if (count == 0)
+      if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+            entry_type, 0, 0, NULL))
+         count++;
+   return count;
+}
+
 typedef struct menu_displaylist_settings_row
 {
    enum msg_hash_enums label;
@@ -13178,12 +13194,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                }
 
-               if (count == 0)
-                  menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL);
+               menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
                info->flags       |= MD_FLAG_NEED_REFRESH
                                   | MD_FLAG_NEED_PUSH
@@ -13195,12 +13206,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             count = menu_displaylist_parse_disc_info(info->list,
                   MENU_SET_LOAD_CDROM_LIST);
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH
@@ -13493,12 +13499,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
 #endif
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH
@@ -13515,12 +13516,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                count = menu_displaylist_parse_content_information(menu,
                      settings, info->list);
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
@@ -13615,12 +13611,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                free(info->path);
             info->path         = strdup(info->path_b);
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags       |= MD_FLAG_NEED_SORT
                                | MD_FLAG_NEED_REFRESH
@@ -13739,12 +13730,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
 #endif
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags |= MD_FLAG_NEED_PUSH;
             break;
@@ -13787,12 +13773,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
             }
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH
@@ -13871,12 +13852,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   menu->core_len, FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES,
                   true);
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH
@@ -13956,12 +13932,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   info->flags |= MD_FLAG_NEED_CLEAR;
             }
 #endif
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
@@ -13974,12 +13945,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   settings->paths.directory_playlist,
                   settings->bools.show_hidden_files);
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH
@@ -13993,12 +13959,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   menu->core_len, FILE_TYPE_DOWNLOAD_LAKKA,
                   true);
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH
@@ -14404,13 +14365,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                |  MD_FLAG_NEED_NAVIGATION_CLEAR;
 
             /* No core dlcs were found */
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             break;
          case DISPLAYLIST_CORE_INFORMATION_STEAM_LIST:
@@ -14422,13 +14377,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             count                       =
                menu_displaylist_parse_core_information_steam(info->list, info->path);
 
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             break;
 #endif
@@ -14539,12 +14488,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
 #endif
 
-               if (count == 0)
-                  menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL);
+               menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
                info->flags    |=  MD_FLAG_NEED_PUSH;
             }
@@ -14609,12 +14553,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   menu_st->selection_ptr = runloop_st->entry_state_slot + 1;
                }
 
-               if (count == 0)
-                  menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL);
+               menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
                info->flags    |=  MD_FLAG_NEED_PUSH;
             }
@@ -14782,13 +14721,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      settings->bools.remap_save_on_exit);
 
                /* Fallback */
-               if (count == 0)
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                           MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                           MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                           FILE_TYPE_NONE, 0, 0, NULL))
-                     count++;
+               count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
                if (selection >= count)
                   info->flags                |= MD_FLAG_NEED_REFRESH
@@ -14836,12 +14769,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
             count = menu_displaylist_parse_playlist_manager_list(info->list, settings);
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags    |= MD_FLAG_NEED_PUSH;
             break;
@@ -14864,12 +14792,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      settings->paths.directory_playlist,
                      settings->bools.show_hidden_files);
 
-               if (count == 0)
-                  menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL);
+               menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
                info->flags    |= MD_FLAG_NEED_PUSH;
             }
@@ -14913,13 +14836,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             count              = menu_displaylist_parse_input_retropad_bind_list(
                   info->list, info->path, settings);
 
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
@@ -14927,13 +14844,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
             count              = menu_displaylist_parse_input_device_type_list(info->list, info->path);
 
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
@@ -14942,13 +14853,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             count              = menu_displaylist_parse_input_select_reserved_device_list(
                   info->list, info->path, settings);
 
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
@@ -14958,13 +14863,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             count              = menu_displaylist_parse_input_select_physical_keyboard_list(
                   info->list, info->path, settings);
 
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
@@ -14974,13 +14873,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             count              = menu_displaylist_parse_input_description_list(
                   info, settings);
 
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
@@ -14988,13 +14881,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
             count              = menu_displaylist_parse_input_description_kbd_list(
                   info->list, info->type, settings);
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
@@ -15002,13 +14889,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
             count              = menu_displaylist_parse_audio_device_list(info->list, info->path);
 
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
@@ -15016,13 +14897,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
             count              = menu_displaylist_parse_midi_device_list(info->list, info->path);
 
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
@@ -15032,13 +14907,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             count              = menu_displaylist_parse_microphone_device_list(info->list,
                   info->path);
 
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
             info->flags       |= MD_FLAG_NEED_REFRESH
                                  | MD_FLAG_NEED_PUSH;
             break;
@@ -15050,13 +14919,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   info->list,
                   settings->arrays.netplay_mitm_server);
 
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        0, 0, 0, NULL))
-                  count++;
+            count = menu_displaylist_no_entries_fallback(info->list, count, 0);
 
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
@@ -16298,12 +16161,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
             count = menu_displaylist_parse_manual_content_scan_list(info->list);
 
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
             info->flags |= MD_FLAG_NEED_PUSH;
             break;
