@@ -180,6 +180,7 @@ assert rows and len(rows) == len(re.findall(r'SDESC_\w+_ROW(?:_P|_DS|_EX|_LV)?\(
 us = open('intl/msg_hash_us.h').read()
 ref_tokens = set()
 cfg_absent = set()
+cfg_full_guards = {}
 usval, ussub, usspan, uscmt = {}, {}, [], {}
 for k, f, T, a in rows:
     if k.endswith('_LV'):
@@ -289,7 +290,8 @@ for k, f, T, a in rows:
     elif k in ('DIR', 'PATH', 'PATH_DS', 'STRING', 'STRING_LV', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV'):
         m = None  # dirs keep literal config rows: default-enable varies per row 
     if m:
-        cfg_guards[T] = tuple(g for g in guard_at(cfg, m.start()) if g not in table_guard)
+        cfg_full_guards[T] = tuple(guard_at(cfg, m.start()))
+        cfg_guards[T] = tuple(g for g in cfg_full_guards[T] if g not in table_guard)
         cfg_spans.append((m.start(), m.end())); continue
     m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (r'\w+' if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'STRING_LV') else _mac, f), cfg)
     if not m and _keep_lv_twin:
@@ -380,10 +382,14 @@ for k, f, T, a in rows:
         row = ('/* Persistence lives in custom configuration code; no config\n'
                ' * row is emitted. */\n'
                '#ifndef SETTINGS_DEF_CONFIG_PASS\n') + row + '\n#endif'
-    if cfg_guards.get(T):
+    _row_gs_all = list(table_guard) + (list(guards[f or T]) if (f or T) in guards else [])
+    _cfg_missing_row_guard = (T in cfg_full_guards
+        and any(g not in cfg_full_guards[T] for g in _row_gs_all))
+    _cc_src = (cfg_full_guards.get(T) if _cfg_missing_row_guard else cfg_guards.get(T)) or ()
+    if _cc_src:
         _cc = ' && '.join(('defined(%s)' % g[len('#ifdef '):].strip()) if g.startswith('#ifdef ')
                           else ('!defined(%s)' % g[len('#ifndef '):].strip()) if g.startswith('#ifndef ')
-                          else '(' + g[len('#if '):].strip() + ')' for g in cfg_guards[T])
+                          else '(' + g[len('#if '):].strip() + ')' for g in _cc_src)
         row = ('/* The configuration row lives under %s; other passes are\n'
                ' * unaffected. */\n'
                '#if !defined(SETTINGS_DEF_CONFIG_PASS) || (%s)\n' % (_cc.replace('defined(', '').replace(')', '') if False else _cc, _cc)) + row + '\n#endif'
@@ -425,10 +431,12 @@ for k, f, T, a in rows:
             strings_free = True
         assert strings_guarded or strings_free, (T, us_g, lbl_g, 'mixed string-guard topology')
         if strings_free:
-            row = ('/* Descriptor and configuration rows are %s; the string\n'
+            _cfg_exempt = ' || defined(SETTINGS_DEF_CONFIG_PASS)' if _cfg_missing_row_guard else ''
+            row = ('/* Descriptor%s rows are %s; the string\n'
                    ' * tables always carry this row via the strings pass. */\n'
-                   '#if %s || defined(SETTINGS_DEF_STRINGS_PASS)\n' % (
-                       gopen.replace('\n', ' '), cond)) + row + '\n#endif'
+                   '#if %s || defined(SETTINGS_DEF_STRINGS_PASS)%s\n' % (
+                       '' if _cfg_missing_row_guard else ' and configuration',
+                       gopen.replace('\n', ' '), cond, _cfg_exempt)) + row + '\n#endif'
             enum_rows.append((T, 'S_%s%s_H' % (k, m2 or '') in _h_used if False else ('S_%s_H' % k in _h_used or 'S_%s_NS_H' % k in _h_used), []))
         else:
             row = gopen + '\n' + row + '\n' + gclose
