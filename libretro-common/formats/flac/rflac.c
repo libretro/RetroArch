@@ -1387,7 +1387,20 @@ safe to assume this will be slower on 32-bit platforms so we use a more optimal 
 #if defined(__clang__)
 __attribute__((no_sanitize("signed-integer-overflow")))
 #endif
-static INLINE int32_t rflac__calculate_prediction_32(uint32_t order, int32_t shift, const int32_t* coefficients, int32_t* pDecodedSamples)
+/* Force-inlined hot leaves: these carry INLINE hints upstream, but
+ * their bodies exceed gcc's -O2 inlining heuristics, so each residual
+ * sample paid a function call plus a bit-cache state round-trip
+ * through the decoder struct.  Forcing the inline lets the compiler
+ * keep the cache in registers across the unrolled residual loop. */
+#if defined(__GNUC__) || defined(__clang__)
+#define RFLAC_HOT_INLINE __attribute__((always_inline)) static INLINE
+#elif defined(_MSC_VER)
+#define RFLAC_HOT_INLINE static __forceinline
+#else
+#define RFLAC_HOT_INLINE static INLINE
+#endif
+
+RFLAC_HOT_INLINE int32_t rflac__calculate_prediction_32(uint32_t order, int32_t shift, const int32_t* coefficients, int32_t* pDecodedSamples)
 {
     int32_t prediction = 0;
 
@@ -1433,7 +1446,7 @@ static INLINE int32_t rflac__calculate_prediction_32(uint32_t order, int32_t shi
     return (int32_t)(prediction >> shift);
 }
 
-static INLINE int32_t rflac__calculate_prediction_64(uint32_t order, int32_t shift, const int32_t* coefficients, int32_t* pDecodedSamples)
+RFLAC_HOT_INLINE int32_t rflac__calculate_prediction_64(uint32_t order, int32_t shift, const int32_t* coefficients, int32_t* pDecodedSamples)
 {
     int64_t prediction;
 
@@ -1612,7 +1625,7 @@ static INLINE int32_t rflac__calculate_prediction_64(uint32_t order, int32_t shi
     return (int32_t)(prediction >> shift);
 }
 
-static INLINE uint32_t rflac__read_rice_parts_x1(rflac_bs* bs, uint8_t riceParam, uint32_t* pZeroCounterOut, uint32_t* pRiceParamPartOut)
+RFLAC_HOT_INLINE uint32_t rflac__read_rice_parts_x1(rflac_bs* bs, uint8_t riceParam, uint32_t* pZeroCounterOut, uint32_t* pRiceParamPartOut)
 {
     uint32_t  riceParamPlus1 = riceParam + 1;
     /*size_t riceParamPlus1Mask  = RFLAC_CACHE_L1_SELECTION_MASK(riceParamPlus1);*/
