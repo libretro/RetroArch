@@ -103,15 +103,17 @@ static inline void add_sublabel_and_whats_this(
    char tmp[512];
    tmp[0] = '\0';
 
-   cbs.enum_idx = setting->enum_idx;
+   cbs.enum_idx = (enum msg_hash_enums)setting->enum_idx;
 
-   menu_cbs_init_bind_sublabel(&cbs, NULL, NULL, 0, setting->type, setting->size);
+   menu_cbs_init_bind_sublabel(&cbs, NULL, NULL, 0,
+         (unsigned)setting->type, setting->size);
 
    cbs.action_sublabel(0, 0, 0, 0, 0, tmp, sizeof(tmp));
 
    widget->setToolTip(tmp);
 
-   msg_hash_get_help_enum(setting->enum_idx, tmp, sizeof(tmp));
+   msg_hash_get_help_enum((enum msg_hash_enums)setting->enum_idx,
+         tmp, sizeof(tmp));
 
    if (!string_is_equal(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
       widget->setWhatsThis(tmp);
