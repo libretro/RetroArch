@@ -223,6 +223,23 @@ void win32_menubar_rebuild(void);
 #define END_SUB_GROUP(a, b, c) \
    end_sub_group(a, b, c)
 
+/* Group scaffolding appears in one canonical shape across the
+ * builders: open a named group, repoint parent_group to a second
+ * enum, open the "State" sub-group; and at the end, close both.
+ * Two macros carry the shape so the builders show intent, not
+ * boilerplate.  The value enum names the group; the parent enum is
+ * passed explicitly because it is not always the value enum's twin
+ * (achievements, updater and the accounts groups reparent). */
+#define GROUP_STATE(value_enum, parent_enum) \
+   START_GROUP(list, list_info, &group_info, \
+         msg_hash_to_str(value_enum), parent_group); \
+   parent_group = msg_hash_to_str(parent_enum); \
+   START_SUB_GROUP(list, list_info, "State", \
+         &group_info, &subgroup_info, parent_group)
+#define GROUP_END() \
+   END_SUB_GROUP(list, list_info, parent_group); \
+   END_GROUP(list, list_info, parent_group)
+
 #define CONFIG_STRING_OPTIONS(a, b, c, d, e, f, g, h, i, j, k, l, m) \
    config_string_options(a, b, c, d, e, f, g, h, i, j, k, l, m)
 
@@ -10912,8 +10929,7 @@ static bool setting_append_list_input_player_options(
       }
    }
 
-   END_SUB_GROUP(list, list_info, parent_group);
-   END_GROUP(list, list_info, parent_group);
+   GROUP_END();
 
    return true;
 }
@@ -10977,8 +10993,7 @@ static bool setting_append_list_input_libretro_device_options(
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE + user));
    }
 
-   END_SUB_GROUP(list, list_info, parent_group);
-   END_GROUP(list, list_info, parent_group);
+   GROUP_END();
 
    return true;
 }
@@ -11044,8 +11059,7 @@ static bool setting_append_list_input_remap_port_options(
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_REMAP_PORT + user));
    }
 
-   END_SUB_GROUP(list, list_info, parent_group);
-   END_GROUP(list, list_info, parent_group);
+   GROUP_END();
 
    return true;
 }
@@ -12718,8 +12732,7 @@ static void settings_build_main_menu(
       setting_append_list_input_libretro_device_options(list, list_info, parent_group);
       setting_append_list_input_remap_port_options(list, list_info, parent_group);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -12921,8 +12934,7 @@ static void settings_build_drivers(
                SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], audio_driver_write_handler)
          }
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
        
    }
 }
@@ -13063,8 +13075,7 @@ static void settings_build_core(
                   bool_entries[i].flags);
          }
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
        
    }
 }
@@ -13192,8 +13203,7 @@ static void settings_build_configuration(
 
             ADD_DESC(configuration_desc_0);
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
        
    }
 }
@@ -13280,8 +13290,7 @@ static void settings_build_logging(
                general_read_handler,
                SD_FLAG_ADVANCED);
        
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -13300,13 +13309,7 @@ static void settings_build_saving(
          uint8_t i, listing = 0;
          struct bool_entry bool_entries[12];
 
-         START_GROUP(list, list_info, &group_info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS),
-               parent_group);
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
-
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
-               parent_group);
+         GROUP_STATE(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS, MENU_ENUM_LABEL_SAVING_SETTINGS);
 
          bool_entries[listing].target         = &settings->bools.sort_savefiles_enable;
          bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE;
@@ -13427,8 +13430,7 @@ static void settings_build_saving(
             ADD_DESC(sav_desc_0);
             ADD_DESC(saving2_desc_0);
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
        
 
    }
@@ -13446,11 +13448,7 @@ static void settings_build_cloud_sync(
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_CLOUDSYNC
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS),
-            parent_group);
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS);
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS, MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS);
 
             ADD_DESC(cs_desc_0);
 
@@ -13478,8 +13476,7 @@ static void settings_build_cloud_sync(
       /* AWS */
             ADD_DESC(cs_desc_2);
 #endif
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
 #endif
    }
 }
@@ -13504,8 +13501,7 @@ static void settings_build_frame_time_counter(
             ADD_DESC(frame_time_cou_desc_0);
             ADD_DESC(frame_time_cou_desc_1);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -13546,8 +13542,7 @@ static void settings_build_rewind(
 
             ADD_DESC(rewind_desc_1);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -13814,8 +13809,7 @@ static void settings_build_cheat_details(
                0,&setting_get_string_representation_uint,0,5000,1);
          SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
       }
 #endif
    }
@@ -14052,8 +14046,7 @@ static void settings_build_cheat_search(
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_uint_action_right_with_refresh)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_cheat_browse_address)
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
 #endif
    }
 }
@@ -14424,8 +14417,7 @@ static void settings_build_video(
                   ADD_DESC(misc_desc);
                   ADD_DESC(video_filter_desc);
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
        
    }
 }
@@ -14593,8 +14585,7 @@ static void settings_build_audio(
             ADD_DESC(audio_asio_desc);
 #endif
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -14664,8 +14655,7 @@ static void settings_build_microphone(
             ADD_DESC(mic_wasapi_desc);
 #endif
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 #endif
@@ -14817,9 +14807,7 @@ static void settings_build_input(
             }
          }
 
-         END_SUB_GROUP(list, list_info, parent_group);
-
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
        
    }
 }
@@ -14837,13 +14825,7 @@ static void settings_build_recording(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-         START_GROUP(list, list_info, &group_info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS),
-               parent_group);
-
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_RECORDING_SETTINGS);
-
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+         GROUP_STATE(MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS, MENU_ENUM_LABEL_RECORDING_SETTINGS);
 
             ADD_DESC(recording_desc_0);
 
@@ -14910,8 +14892,7 @@ static void settings_build_recording(
 
             ADD_DESC(recording_desc_3);
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
    }
 }
 
@@ -14959,8 +14940,7 @@ static void settings_build_input_hotkey(
                   (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i));
          }
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
        
    }
 }
@@ -14976,13 +14956,7 @@ static void settings_build_frame_throttling(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS, MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS);
 
             ADD_DESC(frame_throttli_desc_0);
 
@@ -15050,8 +15024,7 @@ static void settings_build_frame_throttling(
 #ifdef ANDROID
             ADD_DESC(frame_throttli_desc_3);
 #endif
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -15106,8 +15079,7 @@ static void settings_build_onscreen_notifications(
 
                      ADD_DESC(osn_desc_5);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -15339,9 +15311,7 @@ static void settings_build_overlay(
 
             ADD_DESC(ovl_desc_3);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
 #endif
    }
 }
@@ -15421,9 +15391,7 @@ static void settings_build_osk_overlay(
       menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
 #endif
    }
 }
@@ -15757,8 +15725,7 @@ static void settings_build_menu(
             ADD_DESC(menu_desc_39);
 
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -15775,12 +15742,7 @@ static void settings_build_power_management(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS),
-            parent_group);
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS, MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS);
 
 #ifdef ANDROID
             ADD_DESC(power_manageme_desc_0_s0);
@@ -15792,8 +15754,7 @@ static void settings_build_power_management(
       if (frontend_driver_has_gamemode())
             ADD_DESC(power_manageme_desc_1);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
 #endif
 
    }
@@ -15813,13 +15774,7 @@ static void settings_build_ai_service(
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_TRANSLATE
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_AI_SERVICE_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS, MENU_ENUM_LABEL_AI_SERVICE_SETTINGS);
 
             ADD_DESC(ai_service_desc_0);
 
@@ -15860,8 +15815,7 @@ static void settings_build_ai_service(
             ADD_DESC(ai_service_desc_1);
 
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
 #endif
    }
 }
@@ -15877,13 +15831,7 @@ static void settings_build_user_interface(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS, MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS);
 
       {
          CONFIG_STRING_OPTIONS(
@@ -16031,8 +15979,7 @@ static void settings_build_user_interface(
             SD_FLAG_NONE);
 
                      ADD_DESC(ui_desc_13);
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -16086,9 +16033,7 @@ static void settings_build_playlist(
       }
 #endif
 
-      END_SUB_GROUP(list, list_info, parent_group);
-
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -16104,11 +16049,7 @@ static void settings_build_cheevos(
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_CHEEVOS
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS),
-            parent_group);
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS);
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS, MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS);
 
       /* Descriptor holdout: non-general read/write handler. */
       CONFIG_BOOL(
@@ -16149,8 +16090,7 @@ static void settings_build_cheevos(
             );
       MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
 #endif
    }
 }
@@ -16167,11 +16107,7 @@ static void settings_build_cheevos_appearance(
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_CHEEVOS
-      START_GROUP(list, list_info, &group_info,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS),
-         parent_group);
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS);
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS, MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS);
 
 #ifdef HAVE_GFX_WIDGETS
       CONFIG_UINT(
@@ -16242,8 +16178,7 @@ static void settings_build_cheevos_appearance(
       menu_settings_list_current_add_range(list, list_info, 0.0, 0.5, 0.01, true, true);
 #endif
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
 #endif
    }
 }
@@ -16260,11 +16195,7 @@ static void settings_build_cheevos_visibility(
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_CHEEVOS
-      START_GROUP(list, list_info, &group_info,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS),
-         parent_group);
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS);
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS, MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS);
 
                      ADD_DESC(chv_desc_0);
 
@@ -16287,8 +16218,7 @@ static void settings_build_cheevos_visibility(
                      ADD_DESC(chv_desc_1);
 
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
 #endif
    }
 }
@@ -16304,11 +16234,7 @@ static void settings_build_core_updater(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS),
-            parent_group);
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS);
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS, MENU_ENUM_LABEL_UPDATER_SETTINGS);
 #ifdef HAVE_NETWORKING
 
 #ifdef HAVE_UPDATE_CORES
@@ -16386,8 +16312,7 @@ static void settings_build_core_updater(
       }
 #endif
 #endif
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -16598,8 +16523,7 @@ static void settings_build_netplay(
             ADD_DESC(np_desc_8);
 #endif
       }
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -16728,8 +16652,7 @@ static void settings_build_lakka_services(
          SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], setting_action_ok_uint)
          SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], timezone_change_handler)
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
 #endif
        
    }
@@ -16805,8 +16728,7 @@ static void settings_build_lakka_switch_options(
                general_read_handler,
                SD_FLAG_NONE);
          SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], bluetooth_ertm_disable_toggle_change_handler)
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+         GROUP_END();
        
    }
 }
@@ -16823,13 +16745,7 @@ static void settings_build_user(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_SETTINGS),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_USER_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_USER_SETTINGS, MENU_ENUM_LABEL_USER_SETTINGS);
 
             ADD_DESC(user_desc_0);
 
@@ -16867,8 +16783,7 @@ static void settings_build_user(
             ADD_DESC(user_desc_1);
 #endif
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -16883,13 +16798,7 @@ static void settings_build_user_accounts(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END, MENU_ENUM_LABEL_SETTINGS);
 
 #ifdef HAVE_CHEEVOS
             ADD_DESC(user_accounts_desc_0_s0);
@@ -16899,8 +16808,7 @@ static void settings_build_user_accounts(
             ADD_DESC(user_accounts_desc_0_s1);
 #endif
 #endif
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -16915,13 +16823,7 @@ static void settings_build_user_accounts_youtube(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE, MENU_ENUM_LABEL_SETTINGS);
 
       /* Descriptor holdout: non-general read/write handler. */
       CONFIG_STRING(
@@ -16940,8 +16842,7 @@ static void settings_build_user_accounts_youtube(
       (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_generic_action_start_default)
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -16956,13 +16857,7 @@ static void settings_build_user_accounts_twitch(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH, MENU_ENUM_LABEL_SETTINGS);
 
       CONFIG_STRING(
             list, list_info,
@@ -16980,8 +16875,7 @@ static void settings_build_user_accounts_twitch(
       (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_generic_action_start_default)
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -16996,13 +16890,7 @@ static void settings_build_user_accounts_facebook(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK, MENU_ENUM_LABEL_SETTINGS);
 
       CONFIG_STRING(
             list, list_info,
@@ -17020,8 +16908,7 @@ static void settings_build_user_accounts_facebook(
       (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_generic_action_start_default)
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -17036,13 +16923,7 @@ static void settings_build_user_accounts_kick(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK, MENU_ENUM_LABEL_SETTINGS);
 
       CONFIG_STRING(
             list, list_info,
@@ -17060,8 +16941,7 @@ static void settings_build_user_accounts_kick(
       (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_generic_action_start_default)
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -17158,8 +17038,7 @@ static void settings_build_directory(
 
                      ADD_DESC(dir_desc_2);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -17195,8 +17074,7 @@ static void settings_build_privacy(
             ADD_DESC(privacy_desc_2);
       }
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -17258,8 +17136,7 @@ static void settings_build_midi(
             ADD_DESC(midi_desc_0);
 #endif
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -17440,8 +17317,7 @@ static void settings_build_manual_content_scan(
             general_read_handler,
             SD_FLAG_NONE);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 
@@ -17467,8 +17343,7 @@ static void settings_build_steam(
 
             ADD_DESC(steam_desc_0);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 #endif
@@ -17485,13 +17360,7 @@ static void settings_build_smbclient(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-      START_GROUP(list, list_info, &group_info,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS),
-         parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS, MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS);
 
             ADD_DESC(smbclient_desc_0);
 
@@ -17583,8 +17452,7 @@ static void settings_build_smbclient(
 
             ADD_DESC(smbclient_desc_1);
 
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
+      GROUP_END();
    }
 }
 #endif
@@ -17625,8 +17493,7 @@ static void settings_build_desc_group(
    if (e->rows)
       settings_list_add_desc(list, list_info, settings,
             e->rows, e->count, &group_info, &subgroup_info, parent_group);
-   END_SUB_GROUP(list, list_info, parent_group);
-   END_GROUP(list, list_info, parent_group);
+   GROUP_END();
 }
 
 static const settings_build_entry_t settings_build_registry[] = {
