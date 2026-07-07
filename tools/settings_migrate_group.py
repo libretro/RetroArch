@@ -258,9 +258,11 @@ _ms_scan = _ms_all[:tm.start()] + _ms_all[tm.end():]
 for _k, _f, _T, _a in rows:
     if _k.endswith('_LV') or not _f:
         continue
-    _vm = re.search(r'SDESC_\w+_ROW_(?:LV|AT|AT_EX)\(\s*%s,' % _f, _ms_scan)
+    _vm = re.search(r'SDESC_\w+_ROW_(?:AT|AT_EX)\(\s*%s,' % _f, _ms_scan)
     assert not _vm, ("field %s is entangled with a variant row" % _f,
                      _ms_scan[_vm.start():_vm.start()+60] if _vm else '')
+    if re.search(r'SDESC_\w+_ROW_LV\(\s*%s,' % _f, _ms_scan):
+        print('  note: %s has a level-variant twin - it will reference this def' % _f)
 print("extraction ok: %d settings (%d without sublabel)" % (len(rows), sum(1 for _,_,T,_ in rows if T not in ussub)))
 
 cfg = open('configuration.c').read()
