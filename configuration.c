@@ -1919,6 +1919,16 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us)
+#define S_BOOL_LV(f, T, TV, n, d, sd, df, c, us, sub) \
+   SETTING_BOOL(n, &settings->bools.f, true, d, false);
+#define S_BOOL_LV_NS(f, T, TV, n, d, sd, df, c, us) \
+   SETTING_BOOL(n, &settings->bools.f, true, d, false);
+#define S_FLOAT_LV(f, T, TV, n, d, rnd, sd, df, c, us, sub)
+#define S_FLOAT_LV_NS(f, T, TV, n, d, rnd, sd, df, c, us)
+#define S_STRING_LV(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
+#define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
+#define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub)
+#define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -2415,6 +2425,22 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_ACTION_EX_NS
 #undef S_ACTION_EX_H
 #undef S_ACTION_EX_NS_H
+#undef S_BOOL_LV
+#undef S_BOOL_LV_NS
+#undef S_BOOL_LV_H
+#undef S_BOOL_LV_NS_H
+#undef S_FLOAT_LV
+#undef S_FLOAT_LV_NS
+#undef S_FLOAT_LV_H
+#undef S_FLOAT_LV_NS_H
+#undef S_STRING_LV
+#undef S_STRING_LV_NS
+#undef S_STRING_LV_H
+#undef S_STRING_LV_NS_H
+#undef S_ACTION_LV
+#undef S_ACTION_LV_NS
+#undef S_ACTION_LV_H
+#undef S_ACTION_LV_NS_H
    SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
@@ -2570,6 +2596,16 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT(n, &settings->floats.f, true, d, false);
 #define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us)
+#define S_BOOL_LV(f, T, TV, n, d, sd, df, c, us, sub)
+#define S_BOOL_LV_NS(f, T, TV, n, d, sd, df, c, us)
+#define S_FLOAT_LV(f, T, TV, n, d, rnd, sd, df, c, us, sub) \
+   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+#define S_FLOAT_LV_NS(f, T, TV, n, d, rnd, sd, df, c, us) \
+   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+#define S_STRING_LV(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
+#define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
+#define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub)
+#define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -3066,6 +3102,22 @@ static struct config_float_setting *populate_settings_float(
 #undef S_ACTION_EX_NS
 #undef S_ACTION_EX_H
 #undef S_ACTION_EX_NS_H
+#undef S_BOOL_LV
+#undef S_BOOL_LV_NS
+#undef S_BOOL_LV_H
+#undef S_BOOL_LV_NS_H
+#undef S_FLOAT_LV
+#undef S_FLOAT_LV_NS
+#undef S_FLOAT_LV_H
+#undef S_FLOAT_LV_NS_H
+#undef S_STRING_LV
+#undef S_STRING_LV_NS
+#undef S_STRING_LV_H
+#undef S_STRING_LV_NS_H
+#undef S_ACTION_LV
+#undef S_ACTION_LV_NS
+#undef S_ACTION_LV_H
+#undef S_ACTION_LV_NS_H
    SETTING_FLOAT("menu_widget_scale_factor",     &settings->floats.menu_widget_scale_factor, true, DEFAULT_MENU_WIDGET_SCALE_FACTOR, false);
    SETTING_FLOAT("menu_footer_opacity",          &settings->floats.menu_footer_opacity,      true, DEFAULT_MENU_FOOTER_OPACITY, false);
    SETTING_FLOAT("menu_header_opacity",          &settings->floats.menu_header_opacity,      true, DEFAULT_MENU_HEADER_OPACITY, false);
@@ -3181,6 +3233,14 @@ static struct config_uint_setting *populate_settings_uint(
 #define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us)
+#define S_BOOL_LV(f, T, TV, n, d, sd, df, c, us, sub)
+#define S_BOOL_LV_NS(f, T, TV, n, d, sd, df, c, us)
+#define S_FLOAT_LV(f, T, TV, n, d, rnd, sd, df, c, us, sub)
+#define S_FLOAT_LV_NS(f, T, TV, n, d, rnd, sd, df, c, us)
+#define S_STRING_LV(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
+#define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
+#define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub)
+#define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -3677,6 +3737,22 @@ static struct config_uint_setting *populate_settings_uint(
 #undef S_ACTION_EX_NS
 #undef S_ACTION_EX_H
 #undef S_ACTION_EX_NS_H
+#undef S_BOOL_LV
+#undef S_BOOL_LV_NS
+#undef S_BOOL_LV_H
+#undef S_BOOL_LV_NS_H
+#undef S_FLOAT_LV
+#undef S_FLOAT_LV_NS
+#undef S_FLOAT_LV_H
+#undef S_FLOAT_LV_NS_H
+#undef S_STRING_LV
+#undef S_STRING_LV_NS
+#undef S_STRING_LV_H
+#undef S_STRING_LV_NS_H
+#undef S_ACTION_LV
+#undef S_ACTION_LV_NS
+#undef S_ACTION_LV_H
+#undef S_ACTION_LV_NS_H
 
    SETTING_UINT("video_stream_port",             &settings->uints.video_stream_port, true, RARCH_STREAM_DEFAULT_PORT, false);
    SETTING_UINT("video_record_scale_factor",     &settings->uints.video_record_scale_factor, true, 1, false);
@@ -3825,6 +3901,14 @@ static struct config_int_setting *populate_settings_int(
 #define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us)
+#define S_BOOL_LV(f, T, TV, n, d, sd, df, c, us, sub)
+#define S_BOOL_LV_NS(f, T, TV, n, d, sd, df, c, us)
+#define S_FLOAT_LV(f, T, TV, n, d, rnd, sd, df, c, us, sub)
+#define S_FLOAT_LV_NS(f, T, TV, n, d, rnd, sd, df, c, us)
+#define S_STRING_LV(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
+#define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
+#define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub)
+#define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -4321,6 +4405,22 @@ static struct config_int_setting *populate_settings_int(
 #undef S_ACTION_EX_NS
 #undef S_ACTION_EX_H
 #undef S_ACTION_EX_NS_H
+#undef S_BOOL_LV
+#undef S_BOOL_LV_NS
+#undef S_BOOL_LV_H
+#undef S_BOOL_LV_NS_H
+#undef S_FLOAT_LV
+#undef S_FLOAT_LV_NS
+#undef S_FLOAT_LV_H
+#undef S_FLOAT_LV_NS_H
+#undef S_STRING_LV
+#undef S_STRING_LV_NS
+#undef S_STRING_LV_H
+#undef S_STRING_LV_NS_H
+#undef S_ACTION_LV
+#undef S_ACTION_LV_NS
+#undef S_ACTION_LV_H
+#undef S_ACTION_LV_NS_H
 
    /* GENERATED: single-source setting rows (string kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
@@ -4355,6 +4455,16 @@ static struct config_int_setting *populate_settings_int(
 #define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us)
+#define S_BOOL_LV(f, T, TV, n, d, sd, df, c, us, sub)
+#define S_BOOL_LV_NS(f, T, TV, n, d, sd, df, c, us)
+#define S_FLOAT_LV(f, T, TV, n, d, rnd, sd, df, c, us, sub)
+#define S_FLOAT_LV_NS(f, T, TV, n, d, rnd, sd, df, c, us)
+#define S_STRING_LV(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+   SETTING_ARRAY(n, settings->arrays.f, false, NULL, true);
+#define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+   SETTING_ARRAY(n, settings->arrays.f, false, NULL, true);
+#define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub)
+#define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us)
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
@@ -4851,6 +4961,22 @@ static struct config_int_setting *populate_settings_int(
 #undef S_ACTION_EX_NS
 #undef S_ACTION_EX_H
 #undef S_ACTION_EX_NS_H
+#undef S_BOOL_LV
+#undef S_BOOL_LV_NS
+#undef S_BOOL_LV_H
+#undef S_BOOL_LV_NS_H
+#undef S_FLOAT_LV
+#undef S_FLOAT_LV_NS
+#undef S_FLOAT_LV_H
+#undef S_FLOAT_LV_NS_H
+#undef S_STRING_LV
+#undef S_STRING_LV_NS
+#undef S_STRING_LV_H
+#undef S_STRING_LV_NS_H
+#undef S_ACTION_LV
+#undef S_ACTION_LV_NS
+#undef S_ACTION_LV_H
+#undef S_ACTION_LV_NS_H
 
 #ifdef HAVE_D3D10
    SETTING_INT("d3d10_gpu_index",                &settings->ints.d3d10_gpu_index, true, DEFAULT_D3D10_GPU_INDEX, false);

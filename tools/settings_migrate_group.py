@@ -152,13 +152,22 @@ for ln in body.split('\n'):
         if gstack:
             gstack.pop()
     else:
-        rm = re.match(r'\s*SDESC_\w+_ROW(?:_P|_DS|_EX)?\(\s*(\w+)\s*[,)]', ln)
+        rm = re.match(r'\s*SDESC_\w+_ROW(?:_P|_DS|_EX|_LV)?\(\s*(\w+)\s*[,)]', ln)
         if rm and gstack:
             guards[rm.group(1)] = tuple(gstack)
 _ordered = [(m.start(), (m.group(1) + (m.group(2) or ''), m.group(3), m.group(4), re.sub(r'\s+',' ',m.group(5)).strip()))
         for m in re.finditer(r'SDESC_(BOOL|UINT|INT|FLOAT|STRING|DIR|PATH)_ROW(_P|_DS|_EX)?\(\s*(\w+),\s*(\w+),((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', body)]
 _ordered += [(m.start(), ('ACTION', '', m.group(1), '')) for m in re.finditer(r'SDESC_ACTION_ROW\(\s*(\w+)\s*\)', body)]
 _ordered += [(m.start(), ('ACTION_EX', '', m.group(1), re.sub(r'\s+',' ',m.group(2)).strip())) for m in re.finditer(r'SDESC_ACTION_ROW_EX\(\s*(\w+),((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', body)]
+_ordered += [(m.start(), (m.group(1) + '_LV', m.group(2), m.group(3), re.sub(r'\s+',' ',m.group(5)).strip()))
+        for m in re.finditer(r'SDESC_(BOOL|FLOAT|STRING)_ROW_LV\(\s*(\w+),\s*(\w+),\s*(\w+),((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', body)]
+_ordered += [(m.start(), ('ACTION_LV', '', m.group(1), re.sub(r'\s+',' ',m.group(3)).strip()))
+        for m in re.finditer(r'SDESC_ACTION_ROW_LV\(\s*(\w+),\s*(\w+),((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', body)]
+lv_tv = {}
+for m in re.finditer(r'SDESC_(?:BOOL|FLOAT|STRING)_ROW_LV\(\s*\w+,\s*(\w+),\s*(\w+),', body):
+    lv_tv[m.group(1)] = m.group(2)
+for m in re.finditer(r'SDESC_ACTION_ROW_LV\(\s*(\w+),\s*(\w+),', body):
+    lv_tv[m.group(1)] = m.group(2)
 rows = [r for _, r in sorted(_ordered)]
 all_invocations = re.findall(r'SDESC_\w+?_ROW(?:_\w+)?\(', body)
 assert len(rows) == len(all_invocations), (
@@ -173,6 +182,15 @@ ref_tokens = set()
 cfg_absent = set()
 usval, ussub, usspan, uscmt = {}, {}, [], {}
 for k, f, T, a in rows:
+    if k.endswith('_LV'):
+        _tvm = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (lv_tv[T], CSTR), us)
+        assert _tvm or run("grep -l 'MENU_ENUM_LABEL_VALUE_%s' settings/*.h" % lv_tv[T]).stdout.strip(), (
+            'LV value token %s has no value string anywhere' % lv_tv[T])
+        usval[T] = re.sub(r'\s*\n\s*', ' ', _tvm.group(2)) if _tvm else '""'
+        m2 = re.search(r'MSG_HASH\(\s*\n?\s*MENU_ENUM_SUBLABEL_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
+        if m2:
+            ussub[T] = re.sub(r'\s*\n\s*', ' ', m2.group(1)); usspan.append((m2.start(), m2.end()))
+        continue
     m = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
     if not m:
         _own = run("grep -lE 'S_\\w*\\((\\w+, *)?%s,' settings/*.h" % T).stdout.strip()
@@ -239,15 +257,15 @@ cfg_guards = {}
 for k, f, T, a in rows:
     if T in ref_tokens:
         continue
-    _mac = {'STRING': 'ARRAY', 'DIR': 'PATH'}.get(k, k.replace('_EX', ''))
+    _mac = {'STRING': 'ARRAY', 'DIR': 'PATH'}.get(k, k.replace('_EX', '').replace('_LV', ''))
     m = re.search(r' *SETTING_%s\(\s*%s, *&?settings->\w+\.%s,[^;]*;\n' % (_mac, re.escape(names[T]), f), cfg)
-    if k in ('DIR', 'PATH', 'PATH_DS', 'STRING', 'STRING_P', 'ACTION', 'ACTION_EX'):
+    if k in ('DIR', 'PATH', 'PATH_DS', 'STRING', 'STRING_LV', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV'):
         m = None  # dirs keep literal config rows: default-enable varies per row 
     if m:
         cfg_guards[T] = tuple(g for g in guard_at(cfg, m.start()) if g not in table_guard)
         cfg_spans.append((m.start(), m.end())); continue
-    m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (r'\w+' if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX') else _mac, f), cfg)
-    if not m and k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX'):
+    m = re.search(r' *SETTING_%s\(\s*("(?:[^"\\]|\\.)*"), *&?settings->\w+\.%s,[^;]*;\n' % (r'\w+' if k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'STRING_LV') else _mac, f), cfg)
+    if not m and k in ('DIR', 'PATH', 'PATH_DS', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'STRING_LV'):
         # unpersisted setting: keep-literal kinds may lack a
         # config row entirely; nothing to delete or emit
         print('  note: %s has no config row - unpersisted, kept absent' % T)
@@ -303,14 +321,24 @@ for k, f, T, a in rows:
     if _hs:
         assert ('MENU_LABEL(%s),' % T) not in _mh_text, (T, 'both enum forms present')
     if T in ussub:
-        if k.startswith('ACTION'):
+        if k.endswith('_LV'):
+            if k.startswith('ACTION'):
+                row = 'S_%s%s(%s, %s,\n      %s,%s\n      %s,\n      %s)' % (k, _hs, T, lv_tv[T], names[T], (' ' + a + ',') if a else '', usval[T], ussub[T])
+            else:
+                row = 'S_%s%s(%s, %s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (k, _hs, f, T, lv_tv[T], names[T], a, usval[T], ussub[T])
+        elif k.startswith('ACTION'):
             row = 'S_%s%s(%s,\n      %s,%s\n      %s,\n      %s)' % (k, _hs, T, names[T], (' ' + a + ',') if a else '', usval[T], ussub[T])
         elif True:
             row = 'S_%s%s(%s, %s,\n      %s,\n      %s,\n      %s,\n      %s)' % (
             k, _hs, f, T, names[T], a, usval[T], ussub[T])
         if _hs: _h_used.add('S_%s_H' % k)
     else:
-        if k.startswith('ACTION'):
+        if k.endswith('_LV'):
+            if k.startswith('ACTION'):
+                row = 'S_%s_NS%s(%s, %s,\n      %s,%s\n      %s)' % (k, _hs, T, lv_tv[T], names[T], (' ' + a + ',') if a else '', usval[T])
+            else:
+                row = 'S_%s_NS%s(%s, %s, %s,\n      %s,\n      %s,\n      %s)' % (k, _hs, f, T, lv_tv[T], names[T], a, usval[T])
+        elif k.startswith('ACTION'):
             row = 'S_%s_NS%s(%s,\n      %s,%s\n      %s)' % (k, _hs, T, names[T], (' ' + a + ',') if a else '', usval[T])
         else:
             row = 'S_%s_NS%s(%s, %s,\n      %s,\n      %s,\n      %s)' % (
