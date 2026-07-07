@@ -17,7 +17,12 @@
  */
 
 /* Self-contained WebP decoder for libretro. No external dependencies.
- * Supports VP8L (lossless, all 4 transforms) and VP8 (lossy, prediction-only). */
+ * Supports VP8L (lossless, all 4 transforms) and VP8 (lossy): full
+ * key-frame decode -- coefficient tokens, dequantisation, the DCT/WHT
+ * inverse transforms, 4x4 and 16x16 intra prediction, both the simple
+ * and normal loop filters, fancy chroma upsampling and YUV->RGB. Only
+ * VP8 key frames occur in WebP, so inter-frame prediction (motion
+ * vectors, golden/altref reference frames) is intentionally absent. */
 
 #include <stdio.h>
 #include <stdint.h>
