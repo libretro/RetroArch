@@ -10,12 +10,16 @@
 #ifndef S_ACTION_H
 #define S_ACTION_H S_ACTION
 #endif
+#ifndef S_ACTION_EX_H
+#define S_ACTION_EX_H S_ACTION_EX
+#endif
 #endif
 /* Descriptor and configuration rows are #if !defined(IOS) #if !defined(HAVE_LAKKA); the string
  * tables always carry this row via the strings pass. */
 #if !defined(IOS) && !defined(HAVE_LAKKA) || defined(SETTINGS_DEF_STRINGS_PASS)
-S_ACTION_H(QUIT_RETROARCH,
+S_ACTION_EX_H(QUIT_RETROARCH,
       "quit_retroarch",
+      SD_FLAG_NONE, NULL, NULL, CMD_EVENT_QUIT,
       "Quit",
       "Quit RetroArch application. Configuration save on exit is enabled.")
 #endif

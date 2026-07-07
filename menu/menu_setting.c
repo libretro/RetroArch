@@ -12677,7 +12677,6 @@ static void settings_build_main_menu(
 #else
             ADD_DESC(mm_desc_9);
 #endif
-      MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_QUIT);
 #endif
 
             ADD_DESC(mm_desc_10);
@@ -14249,9 +14248,6 @@ static void settings_build_video(
                   ADD_DESC(winscale_desc);
 
             ADD_DESC(vid_desc_14);
-#ifndef OSX
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
-#endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
             ADD_DESC(vid_desc_15);
@@ -15088,9 +15084,12 @@ static void settings_build_onscreen_notifications(
                      ADD_DESC(osn_desc_1);
 #else
             ADD_DESC(widget_fs_desc);
-#endif
+      /* The fullscreen variant is an LV row and the LV float grammar
+       * has no range or handler slots yet; until it grows them, the
+       * customization stays here. The windowed row carries its own. */
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+#endif
 
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
                      ADD_DESC(osn_desc_2);
@@ -15494,12 +15493,6 @@ static void settings_build_menu(
 
 #if !defined(DINGUX)
             ADD_DESC(menu_desc_8);
-#if defined(GEKKO)
-         menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LOCK_LAST-3, 1, true, true);
-#else
-         menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LOCK_LAST-1, 1, true, true);
-#endif
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 #endif
 
             ADD_DESC(menu_desc_9);
@@ -18684,6 +18677,9 @@ rarch_setting_t *menu_setting_new(void)
       settings_t *settings = config_get_ptr();
       unsigned i2, n_checked = 0, n_nodesc = 0, n_ident = 0;
       unsigned n_nodesc_nonbind = 0;
+      /* LV twins share one enum; only the first entry per enum is
+       * reachable through find_enum, so only it is compared. */
+      uint8_t *seen = (uint8_t*)calloc(MSG_LAST, 1);
       unsigned mm_act = 0, mm_name = 0, mm_tgt = 0, mm_def = 0;
       unsigned mm_rng = 0, mm_flag = 0, mm_other = 0;
       for (i2 = 0; list[i2].type != ST_NONE; i2++)
@@ -18699,6 +18695,10 @@ rarch_setting_t *menu_setting_new(void)
             continue;
          if (e->enum_idx == MSG_UNKNOWN)
             continue;
+         if (seen && seen[e->enum_idx])
+            continue;
+         if (seen)
+            seen[e->enum_idx] = 1;
          n_checked++;
          if (!(d = settings_master_find(e->enum_idx)))
          {
@@ -18779,6 +18779,8 @@ rarch_setting_t *menu_setting_new(void)
          menu_setting_free(sc);
          free(sc);
       }
+      if (seen)
+         free(seen);
       fprintf(stderr,
             "DESC_REFEREE checked=%u identical=%u no-desc=%u nonbind-nodesc=%u "
             "act=%u name=%u tgt=%u def=%u rng=%u flag=%u other=%u\n",

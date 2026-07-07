@@ -927,7 +927,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_FLOAT_EX_NS
 #undef S_FLOAT_EX_H
 #undef S_FLOAT_EX_NS_H
-#undef S_ACTION_EX
 #undef S_ACTION_EX_NS
 #undef S_ACTION_EX_H
 #undef S_ACTION_EX_NS_H
@@ -1003,6 +1002,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_ACTION(T, n, us, sub) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
@@ -1027,6 +1029,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_PATH_NS
 #undef S_PATH_DS
 #undef S_PATH_DS_NS
+#undef S_ACTION_EX
+#undef S_ACTION_EX
 #undef S_ACTION
 #undef S_ACTION_NS
 #undef SETTINGS_DEF_STRINGS_PASS

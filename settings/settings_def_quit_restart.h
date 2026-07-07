@@ -7,5 +7,5 @@
 /* Row referencing QUIT_RETROARCH; strings owned by another def file. */
 #if !defined(SETTINGS_DEF_STRINGS_PASS) && !defined(SETTINGS_DEF_CONFIG_PASS) && !defined(SETTINGS_DEF_ENUM_PASS)
 SDESC_ACTION_ROW_LV(QUIT_RETROARCH, RESTART_RETROARCH,
-                     SD_FLAG_NONE, NULL, NULL, 0)
+                     SD_FLAG_NONE, NULL, NULL, CMD_EVENT_QUIT)
 #endif
