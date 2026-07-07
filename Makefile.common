@@ -2306,7 +2306,8 @@ endif
 
 ifeq ($(HAVE_RWEBP), 1)
    DEFINES += -DHAVE_RWEBP
-   OBJ += $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.o
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.o \
+          $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.o
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \

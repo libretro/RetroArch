@@ -438,6 +438,7 @@ VIDEO IMAGE
 #include "../libretro-common/formats/bmp/rbmp.c"
 #endif
 #ifdef HAVE_RWEBP
+#include "../libretro-common/formats/vp8/rvp8.c"
 #include "../libretro-common/formats/webp/rwebp.c"
 #endif
 #ifdef HAVE_RDDS
