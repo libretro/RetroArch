@@ -171,19 +171,21 @@ struct rarch_setting
 
    uint32_t             index_offset;
    uint32_t             size;
-   unsigned             bind_type;
    float                step;
 
-   enum event_command   cmd_trigger_idx;
-   enum ui_setting_type ui_type;
-   enum setting_type    browser_selection_type;
-   enum msg_hash_enums  enum_idx;
-   enum msg_hash_enums  enum_value_idx;
-   enum setting_type    type;
-
+   /* Narrow storage for enum-valued fields; every value in use fits,
+    * reads promote back to int, and nothing takes their address.
+    * enum event_command tops out below 1024, the setting and ui type
+    * enums below 64, and the hash enums below 65536. */
+   uint16_t             bind_type;
+   uint16_t             cmd_trigger_idx;   /* enum event_command      */
+   uint16_t             enum_idx;          /* enum msg_hash_enums     */
+   uint16_t             enum_value_idx;    /* enum msg_hash_enums     */
    uint16_t             flags;
-
    int16_t              offset_by;
+   uint8_t              ui_type;           /* enum ui_setting_type    */
+   uint8_t              browser_selection_type; /* enum setting_type  */
+   uint8_t              type;              /* enum setting_type       */
    uint8_t              free_flags;
    uint8_t              index;
 };
