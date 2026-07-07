@@ -7155,14 +7155,20 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
  * dump provides for setting_append_list. Types the function does not
  * handle fall through its default and print an empty section, which
  * keeps the fingerprint aligned across refactors. */
-void menu_displaylist_validation_dump(void)
+void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
 {
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   rarch_setting_t *saved_list = menu_st->entries.list_settings;
    const char *path     = getenv("RETROARCH_DISPLAYLIST_DUMP");
    settings_t *settings = config_get_ptr();
    RFILE *f;
    unsigned t;
    if (!path)
       return;
+   /* The dump validates the list it was handed; without this the
+    * settings rows of every screen silently resolve to nothing and
+    * the fingerprint covers only the static entries. */
+   menu_st->entries.list_settings = list_settings;
    f = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -7207,6 +7213,7 @@ void menu_displaylist_validation_dump(void)
                list.list[i].type, (unsigned)list.list[i].entry_idx);
       file_list_deinitialize(&list);
    }
+   menu_st->entries.list_settings = saved_list;
    filestream_close(f);
 }
 #endif

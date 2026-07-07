@@ -19102,7 +19102,7 @@ rarch_setting_t *menu_setting_new(void)
 
 #if defined(RETROARCH_VALIDATION_DUMPS)
    menu_setting_validation_dump(list);
-   menu_displaylist_validation_dump();
+   menu_displaylist_validation_dump(list);
 #endif
 
    if (list_info)
