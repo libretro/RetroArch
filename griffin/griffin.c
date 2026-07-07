@@ -1095,6 +1095,10 @@ CORES
 #include "../cores/libretro-ffmpeg/ffmpeg_core.c"
 #endif
 
+#ifdef HAVE_WEBMPLAYER
+#include "../cores/libretro-webm/webm_core.c"
+#endif
+
 #if defined(HAVE_MPV)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../cores/libretro-mpv/mpv-libretro.c"

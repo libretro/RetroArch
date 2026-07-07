@@ -438,7 +438,7 @@ static int filebrowser_parse(
 #endif
                break;
             case RARCH_CONTENT_MOVIE:
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
                if (builtin_mediaplayer_enable)
                   file_type = FILE_TYPE_MOVIE;
 #endif

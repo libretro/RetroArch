@@ -604,6 +604,11 @@ enum msg_file_type msg_hash_to_file_type(const char *value)
       { "crc",       FILE_TYPE_CRC },
       { "sha1",      FILE_TYPE_SHA1 },
       { "md5",       FILE_TYPE_MD5 },
+#if defined(HAVE_WEBMPLAYER) && !defined(HAVE_FFMPEG) && !defined(HAVE_MPV)
+      /* video containers the built-in WebM player handles */
+      { "mkv",       FILE_TYPE_MKV },
+      { "webm",      FILE_TYPE_WEBM },
+#endif
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       /* video containers */
       { "ogm",       FILE_TYPE_OGM },

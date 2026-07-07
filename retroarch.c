@@ -2880,6 +2880,11 @@ enum rarch_content_type path_is_media_type(const char *path)
 
    switch (msg_hash_to_file_type(ext_lower))
    {
+#if defined(HAVE_WEBMPLAYER) && !defined(HAVE_FFMPEG) && !defined(HAVE_MPV)
+      case FILE_TYPE_MKV:
+      case FILE_TYPE_WEBM:
+         return RARCH_CONTENT_MOVIE;
+#endif
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case FILE_TYPE_OGM:
       case FILE_TYPE_MKV:
@@ -7298,6 +7303,11 @@ static void retroarch_parse_input_libretro_path(
          runloop_set_current_core_type(CORE_TYPE_MPV, true);
          return;
       }
+      else if (!memcmp(path, "webm", STRLEN_CONST("webm")))
+      {
+         runloop_set_current_core_type(CORE_TYPE_WEBM, true);
+         return;
+      }
       else if (!memcmp(path, "imageviewer", STRLEN_CONST("imageviewer")))
       {
          runloop_set_current_core_type(CORE_TYPE_IMAGEVIEWER, true);
@@ -8421,6 +8431,12 @@ bool retroarch_main_init(int argc, char *argv[])
 #elif defined(HAVE_FFMPEG)
                   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
                   runloop_set_current_core_type(CORE_TYPE_FFMPEG, false);
+#elif defined(HAVE_WEBMPLAYER)
+                  if (cont_type == RARCH_CONTENT_MOVIE)
+                  {
+                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+                     runloop_set_current_core_type(CORE_TYPE_WEBM, false);
+                  }
 #endif
                }
                break;

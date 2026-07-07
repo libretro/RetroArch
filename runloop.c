@@ -302,6 +302,10 @@ static void runloop_game_ai_think_cb(void *userdata,
 #define SYMBOL_MPV(x) current_core->x = libretro_mpv_##x
 #endif
 
+#ifdef HAVE_WEBMPLAYER
+#define SYMBOL_WEBM(x) current_core->x = libretro_webm_##x
+#endif
+
 #ifdef HAVE_IMAGEVIEWER
 #define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
 #endif
@@ -3833,6 +3837,11 @@ bool runloop_init_libretro_symbols(
       case CORE_TYPE_MPV:
 #ifdef HAVE_MPV
          CORE_SYMBOLS(SYMBOL_MPV);
+#endif
+         break;
+      case CORE_TYPE_WEBM:
+#ifdef HAVE_WEBMPLAYER
+         CORE_SYMBOLS(SYMBOL_WEBM);
 #endif
          break;
       case CORE_TYPE_IMAGEVIEWER:

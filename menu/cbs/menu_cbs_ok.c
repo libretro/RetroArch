@@ -4404,7 +4404,7 @@ static int action_ok_load_core_deferred(const char *path,
 DEFAULT_ACTION_OK_START_BUILTIN_CORE(action_ok_start_net_retropad_core, CORE_TYPE_NETRETROPAD)
 DEFAULT_ACTION_OK_START_BUILTIN_CORE(action_ok_start_video_processor_core, CORE_TYPE_VIDEO_PROCESSOR)
 
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
 static int action_ok_file_load_ffmpeg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4423,12 +4423,15 @@ static int action_ok_file_load_ffmpeg(const char *path,
          sizeof(new_path));
 
    /* TODO/FIXME - should become runtime optional */
-#ifdef HAVE_MPV
+#if defined(HAVE_MPV)
    return default_action_ok_load_content_with_core_from_menu(
          new_path, CORE_TYPE_MPV);
-#else
+#elif defined(HAVE_FFMPEG)
    return default_action_ok_load_content_with_core_from_menu(
          new_path, CORE_TYPE_FFMPEG);
+#else
+   return default_action_ok_load_content_with_core_from_menu(
+         new_path, CORE_TYPE_WEBM);
 #endif
 }
 #endif
@@ -10223,7 +10226,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             break;
          case FILE_TYPE_MOVIE:
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
             /* TODO/FIXME - handle scan case */
             BIND_ACTION_OK(cbs, action_ok_file_load_ffmpeg);
 #endif
