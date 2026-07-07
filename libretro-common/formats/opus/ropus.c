@@ -3370,7 +3370,7 @@ static int ropus_compute_qn(int N, int b, int offset, int pulse_cap,
 }
 
 static void ropus_compute_theta(ropus_band_ctx *ctx, ropus_split_ctx *sctx,
-      float *X, float *Y, int N, int *b, int B, int B0, int LM,
+      float *X, float *Y, int N, int *b, int B, int rp_B0, int LM,
       int stereo, int *fill)
 {
    int qn, itheta = 0, delta, imid, iside, qalloc;
@@ -3405,7 +3405,7 @@ static void ropus_compute_theta(ropus_band_ctx *ctx, ropus_split_ctx *sctx,
             x <= x0 ? p0 * (x + 1) : (x - x0) + (x0 + 1) * p0, ft);
          itheta = x;
       }
-      else if (B0 > 1 || stereo)
+      else if (rp_B0 > 1 || stereo)
          itheta = (int)ropus_ec_dec_uint(ec, qn + 1);
       else
       {
@@ -3503,7 +3503,7 @@ static unsigned ropus_quant_partition(ropus_band_ctx *ctx, float *X,
    const uint8_t *cache;
    int q, curr_bits;
    int imid = 0, iside = 0;
-   int B0 = B;
+   int rp_B0 = B;
    float mid = 0, side = 0;
    unsigned cm = 0;
    float *Y = NULL;
@@ -3525,7 +3525,7 @@ static unsigned ropus_quant_partition(ropus_band_ctx *ctx, float *X,
       if (B == 1)
          fill = (fill & 1) | (fill << 1);
       B = (B + 1) >> 1;
-      ropus_compute_theta(ctx, &sctx, X, Y, N, &b, B, B0, LM, 0, &fill);
+      ropus_compute_theta(ctx, &sctx, X, Y, N, &b, B, rp_B0, LM, 0, &fill);
       imid = sctx.imid;
       iside = sctx.iside;
       delta = sctx.delta;
@@ -3534,7 +3534,7 @@ static unsigned ropus_quant_partition(ropus_band_ctx *ctx, float *X,
       (void)qalloc;
       mid = (1.f / 32768) * imid;
       side = (1.f / 32768) * iside;
-      if (B0 > 1 && (itheta & 0x3fff))
+      if (rp_B0 > 1 && (itheta & 0x3fff))
       {
          if (itheta > 8192)
             delta -= delta >> (4 - LM);
@@ -3556,12 +3556,12 @@ static unsigned ropus_quant_partition(ropus_band_ctx *ctx, float *X,
          if (rebalance > 3 << ROPUS_BITRES && itheta != 0)
             sbits += rebalance - (3 << ROPUS_BITRES);
          cm |= ropus_quant_partition(ctx, Y, N, sbits, B, next_lowband2,
-            LM, gain * side, fill >> B) << (B0 >> 1);
+            LM, gain * side, fill >> B) << (rp_B0 >> 1);
       }
       else
       {
          cm = ropus_quant_partition(ctx, Y, N, sbits, B, next_lowband2,
-            LM, gain * side, fill >> B) << (B0 >> 1);
+            LM, gain * side, fill >> B) << (rp_B0 >> 1);
          rebalance = sbits - (rebalance - ctx->remaining_bits);
          if (rebalance > 3 << ROPUS_BITRES && itheta != 16384)
             mbits += rebalance - (3 << ROPUS_BITRES);
@@ -3630,21 +3630,21 @@ static unsigned ropus_quant_band(ropus_band_ctx *ctx, float *X,
    int N0 = N;
    int N_B = N;
    int N_B0;
-   int B0 = B;
+   int rp_B0 = B;
    int time_divide = 0;
    int recombine = 0;
    int longBlocks;
    unsigned cm = 0;
    int k, tf_change;
    tf_change = ctx->tf_change;
-   longBlocks = B0 == 1;
+   longBlocks = rp_B0 == 1;
    N_B = (int)((uint32_t)N_B / B);
    if (N == 1)
       return ropus_quant_band_n1(ctx, X, NULL, lowband_out);
    if (tf_change > 0)
       recombine = tf_change;
    if (lowband_scratch && lowband
-         && (recombine || ((N_B & 1) == 0 && tf_change < 0) || B0 > 1))
+         && (recombine || ((N_B & 1) == 0 && tf_change < 0) || rp_B0 > 1))
    {
       memcpy(lowband_scratch, lowband, N * sizeof(*lowband));
       lowband = lowband_scratch;
@@ -3670,20 +3670,20 @@ static unsigned ropus_quant_band(ropus_band_ctx *ctx, float *X,
       time_divide++;
       tf_change++;
    }
-   B0 = B;
+   rp_B0 = B;
    N_B0 = N_B;
-   if (B0 > 1 && lowband)
+   if (rp_B0 > 1 && lowband)
       ropus_deinterleave_hadamard(lowband, N_B >> recombine,
-         B0 << recombine, longBlocks);
+         rp_B0 << recombine, longBlocks);
 
    cm = ropus_quant_partition(ctx, X, N, b, B, lowband, LM, gain, fill);
 
    /* resynthesis (always on for the decoder) */
-   if (B0 > 1)
+   if (rp_B0 > 1)
       ropus_interleave_hadamard(X, N_B >> recombine,
-         B0 << recombine, longBlocks);
+         rp_B0 << recombine, longBlocks);
    N_B = N_B0;
-   B = B0;
+   B = rp_B0;
    for (k = 0; k < time_divide; k++)
    {
       B >>= 1;
@@ -4154,9 +4154,12 @@ static INLINE __m128 ropus_mm_cmul(__m128 a, __m128 b)
 /* Load complexes t[0*step] and t[1*step] into one vector. */
 static INLINE __m128 ropus_mm_ld2c(const ropus_cpx *t, size_t step)
 {
-   __m128d lo = _mm_load_sd((const double *)t);
-   __m128d hi = _mm_load_sd((const double *)(t + step));
-   return _mm_castpd_ps(_mm_unpacklo_pd(lo, hi));
+   /* 64-bit lane loads through __m128i, whose gcc/clang definition
+    * carries may_alias; loading through a plain double* would violate
+    * strict aliasing (the storage is float). */
+   __m128i lo = _mm_loadl_epi64((const __m128i *)t);
+   __m128i hi = _mm_loadl_epi64((const __m128i *)(t + step));
+   return _mm_castsi128_ps(_mm_unpacklo_epi64(lo, hi));
 }
 
 /* (r, i) -> (i, r) per complex lane. */
@@ -5900,7 +5903,7 @@ static unsigned ropus_quant_partition_q(ropus_band_ctx *ctx, ropus_norm *X,
    const uint8_t *cache;
    int q, curr_bits;
    int imid = 0, iside = 0;
-   int B0 = B;
+   int rp_B0 = B;
    int16_t mid = 0, side = 0;
    unsigned cm = 0;
    ropus_norm *Y = NULL;
@@ -5922,7 +5925,7 @@ static unsigned ropus_quant_partition_q(ropus_band_ctx *ctx, ropus_norm *X,
       if (B == 1)
          fill = (fill & 1) | (fill << 1);
       B = (B + 1) >> 1;
-      ropus_compute_theta(ctx, &sctx, NULL, NULL, N, &b, B, B0, LM,
+      ropus_compute_theta(ctx, &sctx, NULL, NULL, N, &b, B, rp_B0, LM,
          0, &fill);
       imid = sctx.imid;
       iside = sctx.iside;
@@ -5931,7 +5934,7 @@ static unsigned ropus_quant_partition_q(ropus_band_ctx *ctx, ropus_norm *X,
       qalloc = sctx.qalloc;
       mid = (int16_t)imid;
       side = (int16_t)iside;
-      if (B0 > 1 && (itheta & 0x3fff))
+      if (rp_B0 > 1 && (itheta & 0x3fff))
       {
          if (itheta > 8192)
             delta -= delta >> (4 - LM);
@@ -5954,13 +5957,13 @@ static unsigned ropus_quant_partition_q(ropus_band_ctx *ctx, ropus_norm *X,
             sbits += rebalance - (3 << ROPUS_BITRES);
          cm |= ropus_quant_partition_q(ctx, Y, N, sbits, B, next_lowband2,
             LM, (int16_t)ROPUS_MULT16_16_P15(gain, side), fill >> B)
-            << (B0 >> 1);
+            << (rp_B0 >> 1);
       }
       else
       {
          cm = ropus_quant_partition_q(ctx, Y, N, sbits, B, next_lowband2,
             LM, (int16_t)ROPUS_MULT16_16_P15(gain, side), fill >> B)
-            << (B0 >> 1);
+            << (rp_B0 >> 1);
          rebalance = sbits - (rebalance - ctx->remaining_bits);
          if (rebalance > 3 << ROPUS_BITRES && itheta != 16384)
             mbits += rebalance - (3 << ROPUS_BITRES);
@@ -6030,21 +6033,21 @@ static unsigned ropus_quant_band_q(ropus_band_ctx *ctx, ropus_norm *X,
    int N0 = N;
    int N_B = N;
    int N_B0;
-   int B0 = B;
+   int rp_B0 = B;
    int time_divide = 0;
    int recombine = 0;
    int longBlocks;
    unsigned cm = 0;
    int k, tf_change;
    tf_change = ctx->tf_change;
-   longBlocks = B0 == 1;
+   longBlocks = rp_B0 == 1;
    N_B = (int)((uint32_t)N_B / B);
    if (N == 1)
       return ropus_quant_band_n1_q(ctx, X, NULL, lowband_out);
    if (tf_change > 0)
       recombine = tf_change;
    if (lowband_scratch && lowband
-         && (recombine || ((N_B & 1) == 0 && tf_change < 0) || B0 > 1))
+         && (recombine || ((N_B & 1) == 0 && tf_change < 0) || rp_B0 > 1))
    {
       memcpy(lowband_scratch, lowband, N * sizeof(*lowband));
       lowband = lowband_scratch;
@@ -6070,19 +6073,19 @@ static unsigned ropus_quant_band_q(ropus_band_ctx *ctx, ropus_norm *X,
       time_divide++;
       tf_change++;
    }
-   B0 = B;
+   rp_B0 = B;
    N_B0 = N_B;
-   if (B0 > 1 && lowband)
+   if (rp_B0 > 1 && lowband)
       ropus_deinterleave_hadamard_q(lowband, N_B >> recombine,
-         B0 << recombine, longBlocks);
+         rp_B0 << recombine, longBlocks);
 
    cm = ropus_quant_partition_q(ctx, X, N, b, B, lowband, LM, gain, fill);
 
-   if (B0 > 1)
+   if (rp_B0 > 1)
       ropus_interleave_hadamard_q(X, N_B >> recombine,
-         B0 << recombine, longBlocks);
+         rp_B0 << recombine, longBlocks);
    N_B = N_B0;
-   B = B0;
+   B = rp_B0;
    for (k = 0; k < time_divide; k++)
    {
       B >>= 1;
