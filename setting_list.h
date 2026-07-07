@@ -119,7 +119,11 @@ struct setting_actions
 {
    action_ok_handler_t         ok;
    action_start_handler_t      start;
-   action_select_handler_t     select;
+   /* Named sel, not select: net_compat.h defines select as a
+    * five-argument macro on platforms without a native one, and a
+    * member of that name breaks every consumer that includes the
+    * networking headers first - the Wii found this the hard way. */
+   action_select_handler_t     sel;
    action_left_handler_t       left;
    action_right_handler_t      right;
    change_handler_t            change;

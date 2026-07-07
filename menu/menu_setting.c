@@ -707,7 +707,7 @@ static void setting_add_special_callbacks(
    if (values & SD_FLAG_ALLOW_INPUT)
    {
       SETTINGS_ACTION_SET(ok, &(*list)[idx], setting_generic_action_ok_linefeed)
-      SETTINGS_ACTION_SET(select, &(*list)[idx], setting_generic_action_ok_linefeed)
+      SETTINGS_ACTION_SET(sel, &(*list)[idx], setting_generic_action_ok_linefeed)
 
       switch ((*list)[idx].type)
       {
@@ -1388,7 +1388,7 @@ static rarch_setting_t setting_action_setting(const char* name,
       memset(&_t, 0, sizeof(_t));
       _t.ok = setting_action_action_ok;
       _t.start = NULL;
-      _t.select = setting_action_action_ok;
+      _t.sel = setting_action_action_ok;
       _t.left = NULL;
       _t.right = NULL;
       _t.change = NULL;
@@ -1449,7 +1449,7 @@ static rarch_setting_t setting_group_setting(
       memset(&_t, 0, sizeof(_t));
       _t.ok = NULL;
       _t.start = NULL;
-      _t.select = NULL;
+      _t.sel = NULL;
       _t.left = NULL;
       _t.right = NULL;
       _t.change = NULL;
@@ -1523,7 +1523,7 @@ static rarch_setting_t setting_float_setting(const char* name,
       memset(&_t, 0, sizeof(_t));
       _t.ok = setting_generic_action_ok_default;
       _t.start = setting_generic_action_start_default;
-      _t.select = setting_generic_action_ok_default;
+      _t.sel = setting_generic_action_ok_default;
       _t.left = setting_fraction_action_left_default;
       _t.right = setting_fraction_action_right_default;
       _t.change = change_handler;
@@ -1596,7 +1596,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
       memset(&_t, 0, sizeof(_t));
       _t.ok = setting_generic_action_ok_default;
       _t.start = setting_generic_action_start_default;
-      _t.select = setting_generic_action_ok_default;
+      _t.sel = setting_generic_action_ok_default;
       _t.left = setting_uint_action_left_default;
       _t.right = setting_uint_action_right_default;
       _t.change = change_handler;
@@ -1671,7 +1671,7 @@ static rarch_setting_t setting_size_setting(const char* name,
       memset(&_t, 0, sizeof(_t));
       _t.ok = setting_generic_action_ok_default;
       _t.start = setting_generic_action_start_default;
-      _t.select = setting_generic_action_ok_default;
+      _t.sel = setting_generic_action_ok_default;
       _t.left = setting_size_action_left_default;
       _t.right = setting_size_action_right_default;
       _t.change = change_handler;
@@ -1745,7 +1745,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
       memset(&_t, 0, sizeof(_t));
       _t.ok = setting_bind_action_ok;
       _t.start = setting_bind_action_start;
-      _t.select = setting_bind_action_ok;
+      _t.sel = setting_bind_action_ok;
       _t.left = NULL;
       _t.right = NULL;
       _t.change = NULL;
@@ -1878,7 +1878,7 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
       memset(&_t, 0, sizeof(_t));
       _t.ok = NULL;
       _t.start = setting_string_action_start_generic;
-      _t.select = NULL;
+      _t.sel = NULL;
       _t.left = NULL;
       _t.right = NULL;
       _t.change = change_handler;
@@ -1978,7 +1978,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
       memset(&_t, 0, sizeof(_t));
       _t.ok = NULL;
       _t.start = NULL;
-      _t.select = NULL;
+      _t.sel = NULL;
       _t.left = NULL;
       _t.right = NULL;
       _t.change = NULL;
@@ -2053,7 +2053,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
       memset(&_t, 0, sizeof(_t));
       _t.ok = setting_bool_action_ok_default;
       _t.start = setting_generic_action_start_default;
-      _t.select = setting_generic_action_ok_default;
+      _t.sel = setting_generic_action_ok_default;
       _t.left = setting_bool_action_ok_default;
       _t.right = setting_bool_action_ok_default;
       _t.change = change_handler;
@@ -2126,7 +2126,7 @@ static rarch_setting_t setting_int_setting(const char* name,
       memset(&_t, 0, sizeof(_t));
       _t.ok = setting_generic_action_ok_default;
       _t.start = setting_generic_action_start_default;
-      _t.select = setting_generic_action_ok_default;
+      _t.sel = setting_generic_action_ok_default;
       _t.left = setting_int_action_left_default;
       _t.right = setting_int_action_right_default;
       _t.change = change_handler;
@@ -7850,8 +7850,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
                      ret = setting->actions->right(setting, selection, false);
                   break;
                case MENU_ACTION_SELECT:
-                  if (setting->actions->select)
-                     ret = setting->actions->select(setting, selection, true);
+                  if (setting->actions->sel)
+                     ret = setting->actions->sel(setting, selection, true);
                   break;
                case MENU_ACTION_OK:
                   if (setting->actions->ok)
@@ -10553,7 +10553,7 @@ static void settings_list_add_desc(
       if (d->action_start)
          SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], d->action_start)
       if (d->action_select)
-         SETTINGS_ACTION_SET(select, &(*list)[list_info->index - 1], d->action_select)
+         SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], d->action_select)
       if (d->action_left)
          SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], d->action_left)
       if (d->action_right)
@@ -10666,7 +10666,7 @@ static bool setting_append_list_input_player_options(
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_input_device_index)
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_input_device_index)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_input_device_index)
-      SETTINGS_ACTION_SET(select, &(*list)[list_info->index - 1], &setting_action_right_input_device_index)
+      SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], &setting_action_right_input_device_index)
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &get_string_representation_input_device_index)
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
@@ -10712,7 +10712,7 @@ static bool setting_append_list_input_player_options(
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_input_mouse_index)
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_input_mouse_index)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_input_mouse_index)
-      SETTINGS_ACTION_SET(select, &(*list)[list_info->index - 1], &setting_action_right_input_mouse_index)
+      SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], &setting_action_right_input_mouse_index)
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &get_string_representation_input_mouse_index)
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
@@ -10734,7 +10734,7 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_analog_dpad_mode)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_analog_dpad_mode)
-      SETTINGS_ACTION_SET(select, &(*list)[list_info->index - 1], &setting_action_right_analog_dpad_mode)
+      SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], &setting_action_right_analog_dpad_mode)
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_analog_dpad_mode)
       menu_settings_list_current_add_range(list, list_info, 0, ANALOG_DPAD_LAST-1, 1.0, true, true);
@@ -10757,7 +10757,7 @@ static bool setting_append_list_input_player_options(
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_input_device_reservation_type)
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_input_device_reservation_type)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_input_device_reservation_type)
-      SETTINGS_ACTION_SET(select, &(*list)[list_info->index - 1], &setting_action_right_input_device_reservation_type)
+      SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], &setting_action_right_input_device_reservation_type)
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &get_string_representation_input_device_reservation_type)
       menu_settings_list_current_add_range(list, list_info, 0, INPUT_DEVICE_RESERVATION_LAST - 1, 1.0, true, true);
@@ -10963,7 +10963,7 @@ static bool setting_append_list_input_libretro_device_options(
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_libretro_device_type)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_libretro_device_type)
-      SETTINGS_ACTION_SET(select, &(*list)[list_info->index - 1], &setting_action_right_libretro_device_type)
+      SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], &setting_action_right_libretro_device_type)
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_libretro_device_type)
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_libretro_device_type)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_libretro_device)
@@ -11029,7 +11029,7 @@ static bool setting_append_list_input_remap_port_options(
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_input_remap_port)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_input_remap_port)
-      SETTINGS_ACTION_SET(select, &(*list)[list_info->index - 1], &setting_action_right_input_remap_port)
+      SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], &setting_action_right_input_remap_port)
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_input_remap_port)
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_input_remap_port)
@@ -14185,7 +14185,6 @@ static void settings_build_video(
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
        
-         struct video_viewport *custom_vp   = &settings->video_vp_custom;
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                parent_group);
@@ -14364,7 +14363,7 @@ static void settings_build_video(
                   general_read_handler);
                SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_video_refresh_rate_polled)
                SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_video_refresh_rate_polled)
-               SETTINGS_ACTION_SET(select, &(*list)[list_info->index - 1], &setting_action_ok_video_refresh_rate_polled)
+               SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], &setting_action_ok_video_refresh_rate_polled)
                SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_st_float_video_refresh_rate_polled)
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
@@ -15034,7 +15033,6 @@ static void settings_build_input(
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   unsigned user;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
@@ -17217,7 +17215,6 @@ static void settings_build_netplay(
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   unsigned user;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
@@ -18962,9 +18959,9 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
          strt_tag = "D";
       else if (s->actions->start)
          strt_tag = "C";
-      if (s->actions->select == setting_generic_action_ok_default)
+      if (s->actions->sel == setting_generic_action_ok_default)
          sel_tag  = "D";
-      else if (s->actions->select)
+      else if (s->actions->sel)
          sel_tag  = "C";
 
       dflt[0] = '\0';
