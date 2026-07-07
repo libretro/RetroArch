@@ -364,9 +364,10 @@ static const int16_t vp8_ac_qlut[128] = {
    78,80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,110,112,114,116,119,122,125,128,131,134,137,140,143,146,149,152,
    155,158,161,164,167,170,173,177,181,185,189,193,197,201,205,209,213,217,221,225,229,234,239,245,249,254,259,264,269,274,279,284};
 
-/* Default coefficient probabilities — simplified: using a representative subset
- * that covers the most common cases in typical WebP images.
- * Full tables are 4*8*3*11 = 1056 bytes. We embed them directly. */
+/* The canonical VP8 default coefficient probabilities (RFC 6386 s13.5):
+ * the full 4 block-types * 8 bands * 3 contexts * 11 tree-node table,
+ * 1056 bytes, embedded directly. A key frame resets to these before any
+ * per-frame updates from the bitstream are applied. */
 static void vp8_init_default_cprob(uint8_t dst[4][8][3][11])
 {
    static const uint8_t def[4][8][3][11] = {
