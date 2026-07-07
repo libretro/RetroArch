@@ -61,6 +61,23 @@
 
 #include <retro_inline.h>
 
+/* SIMD kernels for the hot CELT loops (FFT butterflies, MDCT rotates,
+ * TDAC, band scaling).  Every vector path performs the same IEEE
+ * operations per element in the same order as the scalar code, so the
+ * output stays bit-identical; the scalar code remains the reference
+ * and the fallback.  NEON float is enabled on AArch64 only: ARMv7
+ * NEON flushes denormals to zero, which would break bit-exactness on
+ * decaying tails.  Define ROPUS_NO_SIMD to force the scalar paths. */
+#if !defined(ROPUS_NO_SIMD)
+#if defined(__SSE2__) || defined(_M_X64) ||       (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#define ROPUS_SSE2 1
+#include <emmintrin.h>
+#elif defined(__aarch64__) && defined(__ARM_NEON)
+#define ROPUS_NEON 1
+#include <arm_neon.h>
+#endif
+#endif
+
 /* ==================================================================== */
 /* Range decoder (celt/entdec.c, entcode.c).                            */
 /* ==================================================================== */
@@ -3073,9 +3090,29 @@ static void ropus_normalise_residual(const int *iy, float *X, int N,
    int i;
    float g = (1.f / (float)sqrt(Ryy)) * gain;
    i = 0;
+#ifdef ROPUS_SSE2
+   {
+      __m128 gv = _mm_set1_ps(g);
+      for (; i + 4 <= N; i += 4)
+         _mm_storeu_ps(&X[i], _mm_mul_ps(gv,
+            _mm_cvtepi32_ps(_mm_loadu_si128((const __m128i *)&iy[i]))));
+   }
+   for (; i < N; i++)
+      X[i] = g * iy[i];
+#elif defined(ROPUS_NEON)
+   {
+      float32x4_t gv = vdupq_n_f32(g);
+      for (; i + 4 <= N; i += 4)
+         vst1q_f32(&X[i], vmulq_f32(gv,
+            vcvtq_f32_s32(vld1q_s32(&iy[i]))));
+   }
+   for (; i < N; i++)
+      X[i] = g * iy[i];
+#else
    do
       X[i] = g * iy[i];
    while (++i < N);
+#endif
 }
 
 static void ropus_exp_rotation1(float *X, int len, int stride,
@@ -3979,9 +4016,35 @@ static void ropus_denormalise_bands(const float *X, float *freq,
       band_end = M * eBands[i + 1];
       lg = bandLogE[i] + ropus_e_means[i];
       g = ropus_exp2f(ropus_minf(32.f, lg));
+#ifdef ROPUS_SSE2
+      {
+         __m128 gv = _mm_set1_ps(g);
+         for (; j + 4 <= band_end; j += 4)
+         {
+            _mm_storeu_ps(f, _mm_mul_ps(_mm_loadu_ps(x), gv));
+            f += 4;
+            x += 4;
+         }
+      }
+      for (; j < band_end; j++)
+         *f++ = *x++ * g;
+#elif defined(ROPUS_NEON)
+      {
+         float32x4_t gv = vdupq_n_f32(g);
+         for (; j + 4 <= band_end; j += 4)
+         {
+            vst1q_f32(f, vmulq_f32(vld1q_f32(x), gv));
+            f += 4;
+            x += 4;
+         }
+      }
+      for (; j < band_end; j++)
+         *f++ = *x++ * g;
+#else
       do
          *f++ = *x++ * g;
       while (++j < band_end);
+#endif
    }
    memset(&freq[bound], 0, (N - bound) * sizeof(*freq));
 }
@@ -4070,12 +4133,153 @@ static const ropus_fft_state ropus_fft_states[4] =
    {  60, 3, ropus_fft_factors60,  ropus_fft_bitrev60  },
 };
 
+
+#ifdef ROPUS_SSE2
+/* Two interleaved complexes per __m128: (r0, i0, r1, i1).
+ * ropus_mm_cmul performs the scalar ROPUS_C_MUL per lane pair:
+ *   m.r = a.r*b.r - a.i*b.i;  m.i = a.r*b.i + a.i*b.r
+ * using a + (-x) for the subtraction, which is IEEE-exact. */
+static INLINE __m128 ropus_mm_cmul(__m128 a, __m128 b)
+{
+   const __m128 signri = _mm_castsi128_ps(
+      _mm_set_epi32(0, (int)0x80000000, 0, (int)0x80000000));
+   __m128 brr = _mm_shuffle_ps(b, b, _MM_SHUFFLE(2, 2, 0, 0));
+   __m128 bii = _mm_shuffle_ps(b, b, _MM_SHUFFLE(3, 3, 1, 1));
+   __m128 air = _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 3, 0, 1));
+   __m128 m1 = _mm_mul_ps(a, brr);
+   __m128 m2 = _mm_mul_ps(air, bii);
+   return _mm_add_ps(m1, _mm_xor_ps(m2, signri));
+}
+
+/* Load complexes t[0*step] and t[1*step] into one vector. */
+static INLINE __m128 ropus_mm_ld2c(const ropus_cpx *t, size_t step)
+{
+   __m128d lo = _mm_load_sd((const double *)t);
+   __m128d hi = _mm_load_sd((const double *)(t + step));
+   return _mm_castpd_ps(_mm_unpacklo_pd(lo, hi));
+}
+
+/* (r, i) -> (i, r) per complex lane. */
+#define ROPUS_MM_SWAPRI(x) _mm_shuffle_ps(x, x, _MM_SHUFFLE(2, 3, 0, 1))
+#endif
+
+#ifdef ROPUS_NEON
+/* NEON mirrors of the SSE2 helpers; same layout (two interleaved
+ * complexes per float32x4_t) and the same per-lane IEEE operation
+ * order, so the results stay bit-identical to the scalar code.
+ * vmulq/vaddq/vsubq are used explicitly -- never vfmaq -- to avoid
+ * fused multiply-add changing the rounding. */
+static INLINE float32x4_t ropus_vq_xor(float32x4_t x, uint32x4_t m)
+{
+   return vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(x), m));
+}
+
+#define ROPUS_VQ_SWAPRI(x) vrev64q_f32(x)
+
+/* Full four-lane reversal: (a,b,c,d) -> (d,c,b,a). */
+static INLINE float32x4_t ropus_vq_rev4(float32x4_t x)
+{
+   float32x4_t r = vrev64q_f32(x);
+   return vcombine_f32(vget_high_f32(r), vget_low_f32(r));
+}
+
+static INLINE float32x4_t ropus_vq_cmul(float32x4_t a, float32x4_t b)
+{
+   const uint32x4_t signri =
+      { 0x80000000u, 0, 0x80000000u, 0 };
+   float32x4_t brr = vtrn1q_f32(b, b);      /* (br0,br0,br1,br1)       */
+   float32x4_t bii = vtrn2q_f32(b, b);      /* (bi0,bi0,bi1,bi1)       */
+   float32x4_t air = vrev64q_f32(a);        /* (ai0,ar0,ai1,ar1)       */
+   float32x4_t m1 = vmulq_f32(a, brr);
+   float32x4_t m2 = vmulq_f32(air, bii);
+   return vaddq_f32(m1, ropus_vq_xor(m2, signri));
+}
+
+static INLINE float32x4_t ropus_vq_ld2c(const ropus_cpx *t, size_t step)
+{
+   return vcombine_f32(vld1_f32(&t->r), vld1_f32(&t[step].r));
+}
+#endif
+
 static void ropus_kf_bfly2(ropus_cpx *Fout, int m, int N)
 {
    ropus_cpx *Fout2;
    int i;
    float tw = 0.7071067812f;
    (void)m;
+#ifdef ROPUS_SSE2
+   {
+      /* Twiddle application per group of eight complexes.  Each lane
+       * reproduces the scalar expression exactly: subtraction is done
+       * as a + (-b) via sign-mask XOR (IEEE-exact), and the negated
+       * sum -(x + y) is computed as (-x) + (-y), which is likewise
+       * bit-identical. */
+      const __m128 twv = _mm_set1_ps(tw);
+      const __m128 m3 = _mm_castsi128_ps(_mm_set_epi32(
+         (int)0x80000000, 0, 0, 0));               /* flip lane 3      */
+      const __m128 m1_ = _mm_castsi128_ps(_mm_set_epi32(
+         0, 0, (int)0x80000000, 0));               /* flip lane 1      */
+      const __m128 m13 = _mm_castsi128_ps(_mm_set_epi32(
+         (int)0x80000000, 0, (int)0x80000000, 0)); /* flip lanes 1,3   */
+      const __m128 m23 = _mm_castsi128_ps(_mm_set_epi32(
+         (int)0x80000000, (int)0x80000000, 0, 0)); /* flip lanes 2,3   */
+      for (i = 0; i < N; i++)
+      {
+         __m128 f01, f23, g01, g23, gs, ga, t01, t23;
+         Fout2 = Fout + 4;
+         f01 = _mm_loadu_ps(&Fout[0].r);
+         f23 = _mm_loadu_ps(&Fout[2].r);
+         g01 = _mm_loadu_ps(&Fout2[0].r);
+         g23 = _mm_loadu_ps(&Fout2[2].r);
+         /* t0 = G0; t1 = ((G1.r+G1.i)*tw, (G1.i-G1.r)*tw)             */
+         gs = ROPUS_MM_SWAPRI(g01);
+         ga = _mm_mul_ps(_mm_add_ps(g01, _mm_xor_ps(gs, m13)), twv);
+         t01 = _mm_movelh_ps(g01, _mm_movehl_ps(ga, ga));
+         /* t2 = (G2.i, -G2.r);
+          * t3 = ((G3.i-G3.r)*tw, (-(G3.i)-(G3.r))*tw)                 */
+         gs = ROPUS_MM_SWAPRI(g23);
+         ga = _mm_mul_ps(_mm_add_ps(_mm_xor_ps(gs, m3),
+            _mm_xor_ps(g23, m23)), twv);
+         t23 = _mm_movelh_ps(_mm_xor_ps(gs, m1_),
+            _mm_movehl_ps(ga, ga));
+         _mm_storeu_ps(&Fout2[0].r, _mm_sub_ps(f01, t01));
+         _mm_storeu_ps(&Fout[0].r, _mm_add_ps(f01, t01));
+         _mm_storeu_ps(&Fout2[2].r, _mm_sub_ps(f23, t23));
+         _mm_storeu_ps(&Fout[2].r, _mm_add_ps(f23, t23));
+         Fout += 8;
+      }
+   }
+#elif defined(ROPUS_NEON)
+   {
+      const float32x4_t twv = vdupq_n_f32(tw);
+      const uint32x4_t m3 = { 0, 0, 0, 0x80000000u };
+      const uint32x4_t m1_ = { 0, 0x80000000u, 0, 0 };
+      const uint32x4_t m13 = { 0, 0x80000000u, 0, 0x80000000u };
+      const uint32x4_t m23 = { 0, 0, 0x80000000u, 0x80000000u };
+      for (i = 0; i < N; i++)
+      {
+         float32x4_t f01, f23, g01, g23, gs, ga, t01, t23;
+         Fout2 = Fout + 4;
+         f01 = vld1q_f32(&Fout[0].r);
+         f23 = vld1q_f32(&Fout[2].r);
+         g01 = vld1q_f32(&Fout2[0].r);
+         g23 = vld1q_f32(&Fout2[2].r);
+         gs = ROPUS_VQ_SWAPRI(g01);
+         ga = vmulq_f32(vaddq_f32(g01, ropus_vq_xor(gs, m13)), twv);
+         t01 = vcombine_f32(vget_low_f32(g01), vget_high_f32(ga));
+         gs = ROPUS_VQ_SWAPRI(g23);
+         ga = vmulq_f32(vaddq_f32(ropus_vq_xor(gs, m3),
+            ropus_vq_xor(g23, m23)), twv);
+         t23 = vcombine_f32(vget_low_f32(ropus_vq_xor(gs, m1_)),
+            vget_high_f32(ga));
+         vst1q_f32(&Fout2[0].r, vsubq_f32(f01, t01));
+         vst1q_f32(&Fout[0].r, vaddq_f32(f01, t01));
+         vst1q_f32(&Fout2[2].r, vsubq_f32(f23, t23));
+         vst1q_f32(&Fout[2].r, vaddq_f32(f23, t23));
+         Fout += 8;
+      }
+   }
+#else
    for (i = 0; i < N; i++)
    {
       ropus_cpx t;
@@ -4097,6 +4301,7 @@ static void ropus_kf_bfly2(ropus_cpx *Fout, int m, int N)
       ROPUS_C_ADDTO(Fout[3], t);
       Fout += 8;
    }
+#endif
 }
 
 static void ropus_kf_bfly4(ropus_cpx *Fout, size_t fstride,
@@ -4105,6 +4310,55 @@ static void ropus_kf_bfly4(ropus_cpx *Fout, size_t fstride,
    int i;
    if (m == 1)
    {
+#ifdef ROPUS_SSE2
+      const __m128 sri = _mm_castsi128_ps(
+         _mm_set_epi32(0, (int)0x80000000, 0, (int)0x80000000));
+      const __m128 sir = _mm_castsi128_ps(
+         _mm_set_epi32((int)0x80000000, 0, (int)0x80000000, 0));
+      for (i = 0; i < N; i++)
+      {
+         /* Lane pairs: v01 = (F0, F1), v23 = (F2, F3).  The vector ops
+          * mirror the scalar butterfly per element exactly. */
+         __m128 v01 = _mm_loadu_ps(&Fout[0].r);
+         __m128 v23 = _mm_loadu_ps(&Fout[2].r);
+         __m128 sub = _mm_sub_ps(v01, v23);   /* (F0-F2, F1-F3)        */
+         __m128 add = _mm_add_ps(v01, v23);   /* (F0+F2, F1+F3)        */
+         __m128 s1a = _mm_movehl_ps(add, add);/* (F1+F3, F1+F3)        */
+         __m128 f0n = _mm_add_ps(add, s1a);   /* lanes 0,1: new F0     */
+         __m128 f2n = _mm_sub_ps(add, s1a);   /* lanes 0,1: new F2     */
+         __m128 s1b = _mm_movehl_ps(sub, sub);/* (F1-F3, F1-F3)        */
+         __m128 s1s = ROPUS_MM_SWAPRI(s1b);   /* (i, r) of F1-F3       */
+         /* F1 = s0 + ( s1.i, -s1.r); F3 = s0 + (-s1.i,  s1.r) */
+         __m128 f1n = _mm_add_ps(sub, _mm_xor_ps(s1s, sir));
+         __m128 f3n = _mm_add_ps(sub, _mm_xor_ps(s1s, sri));
+         _mm_storeu_ps(&Fout[0].r, _mm_movelh_ps(f0n, f1n));
+         _mm_storeu_ps(&Fout[2].r, _mm_movelh_ps(f2n, f3n));
+         Fout += 4;
+      }
+#elif defined(ROPUS_NEON)
+      const uint32x4_t sri = { 0x80000000u, 0, 0x80000000u, 0 };
+      const uint32x4_t sir = { 0, 0x80000000u, 0, 0x80000000u };
+      for (i = 0; i < N; i++)
+      {
+         float32x4_t v01 = vld1q_f32(&Fout[0].r);
+         float32x4_t v23 = vld1q_f32(&Fout[2].r);
+         float32x4_t sub = vsubq_f32(v01, v23);
+         float32x4_t add = vaddq_f32(v01, v23);
+         float32x2_t s1a = vget_high_f32(add);
+         float32x2_t f0n = vadd_f32(vget_low_f32(add), s1a);
+         float32x2_t f2n = vsub_f32(vget_low_f32(add), s1a);
+         float32x4_t s1s4 = vrev64q_f32(sub);   /* swap r/i per pair   */
+         float32x2_t s0 = vget_low_f32(sub);
+         float32x2_t s1s = vget_high_f32(s1s4);
+         float32x2_t f1n = vadd_f32(s0, vreinterpret_f32_u32(veor_u32(
+            vreinterpret_u32_f32(s1s), vget_low_u32(sir))));
+         float32x2_t f3n = vadd_f32(s0, vreinterpret_f32_u32(veor_u32(
+            vreinterpret_u32_f32(s1s), vget_low_u32(sri))));
+         vst1q_f32(&Fout[0].r, vcombine_f32(f0n, f1n));
+         vst1q_f32(&Fout[2].r, vcombine_f32(f2n, f3n));
+         Fout += 4;
+      }
+#else
       for (i = 0; i < N; i++)
       {
          ropus_cpx scratch0, scratch1;
@@ -4120,6 +4374,7 @@ static void ropus_kf_bfly4(ropus_cpx *Fout, size_t fstride,
          Fout[3].i = scratch0.i + scratch1.r;
          Fout += 4;
       }
+#endif
    }
    else
    {
@@ -4133,7 +4388,73 @@ static void ropus_kf_bfly4(ropus_cpx *Fout, size_t fstride,
       {
          Fout = Fout_beg + i * mm;
          tw3 = tw2 = tw1 = ropus_fft_twiddles;
-         for (j = 0; j < m; j++)
+         j = 0;
+#ifdef ROPUS_SSE2
+         {
+            const __m128 sri = _mm_castsi128_ps(_mm_set_epi32(
+               0, (int)0x80000000, 0, (int)0x80000000));
+            const __m128 sir = _mm_castsi128_ps(_mm_set_epi32(
+               (int)0x80000000, 0, (int)0x80000000, 0));
+            for (; j + 2 <= m; j += 2)
+            {
+               __m128 f0 = _mm_loadu_ps(&Fout[0].r);
+               __m128 s0 = ropus_mm_cmul(_mm_loadu_ps(&Fout[m].r),
+                  ropus_mm_ld2c(tw1, fstride));
+               __m128 s1 = ropus_mm_cmul(_mm_loadu_ps(&Fout[m2].r),
+                  ropus_mm_ld2c(tw2, fstride * 2));
+               __m128 s2 = ropus_mm_cmul(_mm_loadu_ps(&Fout[m3].r),
+                  ropus_mm_ld2c(tw3, fstride * 3));
+               __m128 s5 = _mm_sub_ps(f0, s1);
+               __m128 s3, s4, s4s;
+               f0 = _mm_add_ps(f0, s1);
+               s3 = _mm_add_ps(s0, s2);
+               s4 = _mm_sub_ps(s0, s2);
+               _mm_storeu_ps(&Fout[m2].r, _mm_sub_ps(f0, s3));
+               _mm_storeu_ps(&Fout[0].r, _mm_add_ps(f0, s3));
+               s4s = ROPUS_MM_SWAPRI(s4);
+               _mm_storeu_ps(&Fout[m].r,
+                  _mm_add_ps(s5, _mm_xor_ps(s4s, sir)));
+               _mm_storeu_ps(&Fout[m3].r,
+                  _mm_add_ps(s5, _mm_xor_ps(s4s, sri)));
+               tw1 += fstride * 2;
+               tw2 += fstride * 4;
+               tw3 += fstride * 6;
+               Fout += 2;
+            }
+         }
+#elif defined(ROPUS_NEON)
+         {
+            const uint32x4_t sri = { 0x80000000u, 0, 0x80000000u, 0 };
+            const uint32x4_t sir = { 0, 0x80000000u, 0, 0x80000000u };
+            for (; j + 2 <= m; j += 2)
+            {
+               float32x4_t f0 = vld1q_f32(&Fout[0].r);
+               float32x4_t s0 = ropus_vq_cmul(vld1q_f32(&Fout[m].r),
+                  ropus_vq_ld2c(tw1, fstride));
+               float32x4_t s1 = ropus_vq_cmul(vld1q_f32(&Fout[m2].r),
+                  ropus_vq_ld2c(tw2, fstride * 2));
+               float32x4_t s2 = ropus_vq_cmul(vld1q_f32(&Fout[m3].r),
+                  ropus_vq_ld2c(tw3, fstride * 3));
+               float32x4_t s5 = vsubq_f32(f0, s1);
+               float32x4_t s3, s4, s4s;
+               f0 = vaddq_f32(f0, s1);
+               s3 = vaddq_f32(s0, s2);
+               s4 = vsubq_f32(s0, s2);
+               vst1q_f32(&Fout[m2].r, vsubq_f32(f0, s3));
+               vst1q_f32(&Fout[0].r, vaddq_f32(f0, s3));
+               s4s = ROPUS_VQ_SWAPRI(s4);
+               vst1q_f32(&Fout[m].r,
+                  vaddq_f32(s5, ropus_vq_xor(s4s, sir)));
+               vst1q_f32(&Fout[m3].r,
+                  vaddq_f32(s5, ropus_vq_xor(s4s, sri)));
+               tw1 += fstride * 2;
+               tw2 += fstride * 4;
+               tw3 += fstride * 6;
+               Fout += 2;
+            }
+         }
+#endif
+         for (; j < m; j++)
          {
             ROPUS_C_MUL(scratch[0], Fout[m], *tw1);
             ROPUS_C_MUL(scratch[1], Fout[m2], *tw2);
@@ -4174,7 +4495,68 @@ static void ropus_kf_bfly3(ropus_cpx *Fout, size_t fstride,
       Fout = Fout_beg + i * mm;
       tw1 = tw2 = ropus_fft_twiddles;
       k = m;
-      do
+#ifdef ROPUS_SSE2
+      {
+         const __m128 half = _mm_set1_ps(.5f);
+         const __m128 e3i = _mm_set1_ps(epi3.i);
+         const __m128 sri = _mm_castsi128_ps(_mm_set_epi32(
+            0, (int)0x80000000, 0, (int)0x80000000));
+         const __m128 sir = _mm_castsi128_ps(_mm_set_epi32(
+            (int)0x80000000, 0, (int)0x80000000, 0));
+         for (; k >= 2; k -= 2)
+         {
+            __m128 f0 = _mm_loadu_ps(&Fout[0].r);
+            __m128 s1 = ropus_mm_cmul(_mm_loadu_ps(&Fout[m].r),
+               ropus_mm_ld2c(tw1, fstride));
+            __m128 s2 = ropus_mm_cmul(_mm_loadu_ps(&Fout[m2].r),
+               ropus_mm_ld2c(tw2, fstride * 2));
+            __m128 s3 = _mm_add_ps(s1, s2);
+            __m128 s0 = _mm_sub_ps(s1, s2);
+            __m128 fm, s0s;
+            fm = _mm_sub_ps(f0, _mm_mul_ps(half, s3));
+            s0 = _mm_mul_ps(s0, e3i);
+            _mm_storeu_ps(&Fout[0].r, _mm_add_ps(f0, s3));
+            s0s = ROPUS_MM_SWAPRI(s0);
+            _mm_storeu_ps(&Fout[m2].r,
+               _mm_add_ps(fm, _mm_xor_ps(s0s, sir)));
+            _mm_storeu_ps(&Fout[m].r,
+               _mm_add_ps(fm, _mm_xor_ps(s0s, sri)));
+            tw1 += fstride * 2;
+            tw2 += fstride * 4;
+            Fout += 2;
+         }
+      }
+#elif defined(ROPUS_NEON)
+      {
+         const float32x4_t half = vdupq_n_f32(.5f);
+         const float32x4_t e3i = vdupq_n_f32(epi3.i);
+         const uint32x4_t sri = { 0x80000000u, 0, 0x80000000u, 0 };
+         const uint32x4_t sir = { 0, 0x80000000u, 0, 0x80000000u };
+         for (; k >= 2; k -= 2)
+         {
+            float32x4_t f0 = vld1q_f32(&Fout[0].r);
+            float32x4_t s1 = ropus_vq_cmul(vld1q_f32(&Fout[m].r),
+               ropus_vq_ld2c(tw1, fstride));
+            float32x4_t s2 = ropus_vq_cmul(vld1q_f32(&Fout[m2].r),
+               ropus_vq_ld2c(tw2, fstride * 2));
+            float32x4_t s3 = vaddq_f32(s1, s2);
+            float32x4_t s0 = vsubq_f32(s1, s2);
+            float32x4_t fm, s0s;
+            fm = vsubq_f32(f0, vmulq_f32(half, s3));
+            s0 = vmulq_f32(s0, e3i);
+            vst1q_f32(&Fout[0].r, vaddq_f32(f0, s3));
+            s0s = ROPUS_VQ_SWAPRI(s0);
+            vst1q_f32(&Fout[m2].r,
+               vaddq_f32(fm, ropus_vq_xor(s0s, sir)));
+            vst1q_f32(&Fout[m].r,
+               vaddq_f32(fm, ropus_vq_xor(s0s, sri)));
+            tw1 += fstride * 2;
+            tw2 += fstride * 4;
+            Fout += 2;
+         }
+      }
+#endif
+      for (; k; k--)
       {
          ROPUS_C_MUL(scratch[1], Fout[m], *tw1);
          ROPUS_C_MUL(scratch[2], Fout[m2], *tw2);
@@ -4191,7 +4573,7 @@ static void ropus_kf_bfly3(ropus_cpx *Fout, size_t fstride,
          Fout[m].r = Fout[m].r - scratch[0].i;
          Fout[m].i = Fout[m].i + scratch[0].r;
          ++Fout;
-      } while (--k);
+      }
    }
    (void)st;
 }
@@ -4216,7 +4598,117 @@ static void ropus_kf_bfly5(ropus_cpx *Fout, size_t fstride,
       Fout2 = Fout0 + 2 * m;
       Fout3 = Fout0 + 3 * m;
       Fout4 = Fout0 + 4 * m;
-      for (u = 0; u < m; ++u)
+      u = 0;
+#ifdef ROPUS_SSE2
+      {
+         const __m128 yar = _mm_set1_ps(ya.r);
+         const __m128 yai = _mm_set1_ps(ya.i);
+         const __m128 ybr = _mm_set1_ps(yb.r);
+         const __m128 ybi = _mm_set1_ps(yb.i);
+         const __m128 sri = _mm_castsi128_ps(_mm_set_epi32(
+            0, (int)0x80000000, 0, (int)0x80000000));
+         const __m128 sir = _mm_castsi128_ps(_mm_set_epi32(
+            (int)0x80000000, 0, (int)0x80000000, 0));
+         for (; u + 2 <= m; u += 2)
+         {
+            const ropus_cpx *twu = tw + (size_t)u * fstride;
+            __m128 s0 = _mm_loadu_ps(&Fout0->r);
+            __m128 s1 = ropus_mm_cmul(_mm_loadu_ps(&Fout1->r),
+               ropus_mm_ld2c(twu, fstride));
+            __m128 s2 = ropus_mm_cmul(_mm_loadu_ps(&Fout2->r),
+               ropus_mm_ld2c(tw + 2 * (size_t)u * fstride,
+                  2 * fstride));
+            __m128 s3 = ropus_mm_cmul(_mm_loadu_ps(&Fout3->r),
+               ropus_mm_ld2c(tw + 3 * (size_t)u * fstride,
+                  3 * fstride));
+            __m128 s4 = ropus_mm_cmul(_mm_loadu_ps(&Fout4->r),
+               ropus_mm_ld2c(tw + 4 * (size_t)u * fstride,
+                  4 * fstride));
+            __m128 s7 = _mm_add_ps(s1, s4);
+            __m128 s10 = _mm_sub_ps(s1, s4);
+            __m128 s8 = _mm_add_ps(s2, s3);
+            __m128 s9 = _mm_sub_ps(s2, s3);
+            __m128 s5, s6, s11, s12, s9s, s10s;
+            _mm_storeu_ps(&Fout0->r,
+               _mm_add_ps(s0, _mm_add_ps(s7, s8)));
+            s5 = _mm_add_ps(s0, _mm_add_ps(_mm_mul_ps(s7, yar),
+               _mm_mul_ps(s8, ybr)));
+            s10s = ROPUS_MM_SWAPRI(s10);
+            s9s = ROPUS_MM_SWAPRI(s9);
+            /* s6 = (s10.i*ya.i + s9.i*yb.i,
+             *       -(s10.r*ya.i + s9.r*yb.i))                         */
+            s6 = _mm_add_ps(_mm_mul_ps(s10s, yai),
+               _mm_mul_ps(s9s, ybi));
+            s6 = _mm_xor_ps(s6, sir);
+            _mm_storeu_ps(&Fout1->r, _mm_sub_ps(s5, s6));
+            _mm_storeu_ps(&Fout4->r, _mm_add_ps(s5, s6));
+            s11 = _mm_add_ps(s0, _mm_add_ps(_mm_mul_ps(s7, ybr),
+               _mm_mul_ps(s8, yar)));
+            /* s12 = ( s9.i*ya.i - s10.i*yb.i,
+             *         s10.r*yb.i - s9.r*ya.i )                         */
+            s12 = _mm_add_ps(_mm_xor_ps(_mm_mul_ps(s9s, yai), sir),
+               _mm_xor_ps(_mm_mul_ps(s10s, ybi), sri));
+            _mm_storeu_ps(&Fout2->r, _mm_add_ps(s11, s12));
+            _mm_storeu_ps(&Fout3->r, _mm_sub_ps(s11, s12));
+            Fout0 += 2;
+            Fout1 += 2;
+            Fout2 += 2;
+            Fout3 += 2;
+            Fout4 += 2;
+         }
+      }
+#elif defined(ROPUS_NEON)
+      {
+         const float32x4_t yar = vdupq_n_f32(ya.r);
+         const float32x4_t yai = vdupq_n_f32(ya.i);
+         const float32x4_t ybr = vdupq_n_f32(yb.r);
+         const float32x4_t ybi = vdupq_n_f32(yb.i);
+         const uint32x4_t sri = { 0x80000000u, 0, 0x80000000u, 0 };
+         const uint32x4_t sir = { 0, 0x80000000u, 0, 0x80000000u };
+         for (; u + 2 <= m; u += 2)
+         {
+            const ropus_cpx *twu = tw + (size_t)u * fstride;
+            float32x4_t s0 = vld1q_f32(&Fout0->r);
+            float32x4_t s1 = ropus_vq_cmul(vld1q_f32(&Fout1->r),
+               ropus_vq_ld2c(twu, fstride));
+            float32x4_t s2 = ropus_vq_cmul(vld1q_f32(&Fout2->r),
+               ropus_vq_ld2c(tw + 2 * (size_t)u * fstride,
+                  2 * fstride));
+            float32x4_t s3 = ropus_vq_cmul(vld1q_f32(&Fout3->r),
+               ropus_vq_ld2c(tw + 3 * (size_t)u * fstride,
+                  3 * fstride));
+            float32x4_t s4 = ropus_vq_cmul(vld1q_f32(&Fout4->r),
+               ropus_vq_ld2c(tw + 4 * (size_t)u * fstride,
+                  4 * fstride));
+            float32x4_t s7 = vaddq_f32(s1, s4);
+            float32x4_t s10 = vsubq_f32(s1, s4);
+            float32x4_t s8 = vaddq_f32(s2, s3);
+            float32x4_t s9 = vsubq_f32(s2, s3);
+            float32x4_t s5, s6, s11, s12, s9s, s10s;
+            vst1q_f32(&Fout0->r, vaddq_f32(s0, vaddq_f32(s7, s8)));
+            s5 = vaddq_f32(s0, vaddq_f32(vmulq_f32(s7, yar),
+               vmulq_f32(s8, ybr)));
+            s10s = ROPUS_VQ_SWAPRI(s10);
+            s9s = ROPUS_VQ_SWAPRI(s9);
+            s6 = vaddq_f32(vmulq_f32(s10s, yai), vmulq_f32(s9s, ybi));
+            s6 = ropus_vq_xor(s6, sir);
+            vst1q_f32(&Fout1->r, vsubq_f32(s5, s6));
+            vst1q_f32(&Fout4->r, vaddq_f32(s5, s6));
+            s11 = vaddq_f32(s0, vaddq_f32(vmulq_f32(s7, ybr),
+               vmulq_f32(s8, yar)));
+            s12 = vaddq_f32(ropus_vq_xor(vmulq_f32(s9s, yai), sir),
+               ropus_vq_xor(vmulq_f32(s10s, ybi), sri));
+            vst1q_f32(&Fout2->r, vaddq_f32(s11, s12));
+            vst1q_f32(&Fout3->r, vsubq_f32(s11, s12));
+            Fout0 += 2;
+            Fout1 += 2;
+            Fout2 += 2;
+            Fout3 += 2;
+            Fout4 += 2;
+         }
+      }
+#endif
+      for (; u < m; ++u)
       {
          scratch[0] = *Fout0;
          ROPUS_C_MUL(scratch[1], *Fout1, tw[u * fstride]);
@@ -4342,7 +4834,80 @@ static void ropus_mdct_backward(const float *in, float *out,
       float *yp0 = out + (overlap >> 1);
       float *yp1 = out + (overlap >> 1) + N2 - 2;
       const float *t = &trig[0];
-      for (i = 0; i < (N4 + 1) >> 1; i++)
+      int half = (N4 + 1) >> 1;
+      i = 0;
+#ifdef ROPUS_SSE2
+      {
+         /* Two iterations per step: the ascending stream (yp0) and the
+          * descending stream (yp1) are processed as four independent
+          * rotations; per lane, yr = re*t0 + im*t1 and
+          * yi = re*t1 + (-(im*t0)) reproduce the scalar ops exactly.
+          * Steps run only while the two 4-float windows are disjoint,
+          * so the scalar read/write interleaving at the centre is
+          * preserved by the scalar tail. */
+         const __m128 sgn = _mm_castsi128_ps(_mm_set1_epi32(
+            (int)0x80000000));
+         while (i + 2 <= half && yp1 - yp0 >= 8)
+         {
+            __m128 A = _mm_loadu_ps(yp0);          /* imA0 reA0 imA1 reA1 */
+            __m128 B = _mm_loadu_ps(yp1 - 2);      /* imB1 reB1 imB0 reB0 */
+            __m128 re4 = _mm_shuffle_ps(A, B, _MM_SHUFFLE(1, 3, 3, 1));
+            __m128 im4 = _mm_shuffle_ps(A, B, _MM_SHUFFLE(0, 2, 2, 0));
+            __m128 t0v, t1v, yr, yi, u, v;
+            t0v = _mm_loadl_pi(_mm_setzero_ps(),
+               (const __m64 *)(t + i));
+            t0v = _mm_loadh_pi(t0v, (const __m64 *)(t + N4 - i - 2));
+            t0v = _mm_shuffle_ps(t0v, t0v, _MM_SHUFFLE(2, 3, 1, 0));
+            t1v = _mm_loadl_pi(_mm_setzero_ps(),
+               (const __m64 *)(t + N4 + i));
+            t1v = _mm_loadh_pi(t1v, (const __m64 *)(t + N2 - i - 2));
+            t1v = _mm_shuffle_ps(t1v, t1v, _MM_SHUFFLE(2, 3, 1, 0));
+            yr = _mm_add_ps(_mm_mul_ps(re4, t0v),
+               _mm_mul_ps(im4, t1v));
+            yi = _mm_add_ps(_mm_mul_ps(re4, t1v),
+               _mm_xor_ps(_mm_mul_ps(im4, t0v), sgn));
+            /* yp0 <- (yrA0, yiB0, yrA1, yiB1);
+             * yp1-2 <- (yrB1, yiA1, yrB0, yiA0)                        */
+            u = _mm_shuffle_ps(yr, yi, _MM_SHUFFLE(3, 2, 1, 0));
+            v = _mm_shuffle_ps(yr, yi, _MM_SHUFFLE(0, 1, 2, 3));
+            _mm_storeu_ps(yp0,
+               _mm_shuffle_ps(u, u, _MM_SHUFFLE(3, 1, 2, 0)));
+            _mm_storeu_ps(yp1 - 2,
+               _mm_shuffle_ps(v, v, _MM_SHUFFLE(3, 1, 2, 0)));
+            yp0 += 4;
+            yp1 -= 4;
+            i += 2;
+         }
+      }
+#elif defined(ROPUS_NEON)
+      {
+         const uint32x4_t sgn = vdupq_n_u32(0x80000000u);
+         while (i + 2 <= half && yp1 - yp0 >= 8)
+         {
+            float32x4_t A = vld1q_f32(yp0);
+            float32x4_t B = vld1q_f32(yp1 - 2);
+            float32x4_t Bs = vcombine_f32(vget_high_f32(B),
+               vget_low_f32(B));
+            float32x4_t re4 = vuzp2q_f32(A, Bs);
+            float32x4_t im4 = vuzp1q_f32(A, Bs);
+            float32x4_t t0v = vcombine_f32(vld1_f32(t + i),
+               vrev64_f32(vld1_f32(t + N4 - i - 2)));
+            float32x4_t t1v = vcombine_f32(vld1_f32(t + N4 + i),
+               vrev64_f32(vld1_f32(t + N2 - i - 2)));
+            float32x4_t yr = vaddq_f32(vmulq_f32(re4, t0v),
+               vmulq_f32(im4, t1v));
+            float32x4_t yi = vaddq_f32(vmulq_f32(re4, t1v),
+               ropus_vq_xor(vmulq_f32(im4, t0v), sgn));
+            vst1q_f32(yp0, vzip1q_f32(yr, vextq_f32(yi, yi, 2)));
+            vst1q_f32(yp1 - 2,
+               vzip1q_f32(ropus_vq_rev4(yr), vrev64q_f32(yi)));
+            yp0 += 4;
+            yp1 -= 4;
+            i += 2;
+         }
+      }
+#endif
+      for (; i < half; i++)
       {
          float re, im, yr, yi, t0, t1;
          re = yp0[1];
@@ -4371,7 +4936,58 @@ static void ropus_mdct_backward(const float *in, float *out,
       float *yp1 = out;
       const float *wp1 = window;
       const float *wp2 = window + overlap - 1;
-      for (i = 0; i < overlap / 2; i++)
+      i = 0;
+#ifdef ROPUS_SSE2
+      {
+         /* Forward stream: yp1/wp1; backward stream: xp1/wp2, loaded
+          * reversed.  Per lane: y = w2*x2 + (-(w1*x1)); the negated
+          * product equals the scalar subtraction bit-exactly. */
+         const __m128 sgn = _mm_castsi128_ps(_mm_set1_epi32(
+            (int)0x80000000));
+         for (; i + 4 <= overlap / 2; i += 4)
+         {
+            __m128 x2 = _mm_loadu_ps(yp1);
+            __m128 w1 = _mm_loadu_ps(wp1);
+            __m128 x1 = _mm_loadu_ps(xp1 - 3);
+            __m128 w2 = _mm_loadu_ps(wp2 - 3);
+            __m128 yv, xv;
+            x1 = _mm_shuffle_ps(x1, x1, _MM_SHUFFLE(0, 1, 2, 3));
+            w2 = _mm_shuffle_ps(w2, w2, _MM_SHUFFLE(0, 1, 2, 3));
+            yv = _mm_add_ps(_mm_mul_ps(w2, x2),
+               _mm_xor_ps(_mm_mul_ps(w1, x1), sgn));
+            xv = _mm_add_ps(_mm_mul_ps(w1, x2), _mm_mul_ps(w2, x1));
+            _mm_storeu_ps(yp1, yv);
+            xv = _mm_shuffle_ps(xv, xv, _MM_SHUFFLE(0, 1, 2, 3));
+            _mm_storeu_ps(xp1 - 3, xv);
+            yp1 += 4;
+            xp1 -= 4;
+            wp1 += 4;
+            wp2 -= 4;
+         }
+      }
+#elif defined(ROPUS_NEON)
+      {
+         const uint32x4_t sgn = vdupq_n_u32(0x80000000u);
+         for (; i + 4 <= overlap / 2; i += 4)
+         {
+            float32x4_t x2 = vld1q_f32(yp1);
+            float32x4_t w1 = vld1q_f32(wp1);
+            float32x4_t x1 = ropus_vq_rev4(vld1q_f32(xp1 - 3));
+            float32x4_t w2 = ropus_vq_rev4(vld1q_f32(wp2 - 3));
+            float32x4_t yv, xv;
+            yv = vaddq_f32(vmulq_f32(w2, x2),
+               ropus_vq_xor(vmulq_f32(w1, x1), sgn));
+            xv = vaddq_f32(vmulq_f32(w1, x2), vmulq_f32(w2, x1));
+            vst1q_f32(yp1, yv);
+            vst1q_f32(xp1 - 3, ropus_vq_rev4(xv));
+            yp1 += 4;
+            xp1 -= 4;
+            wp1 += 4;
+            wp2 -= 4;
+         }
+      }
+#endif
+      for (; i < overlap / 2; i++)
       {
          float x1 = *xp1;
          float x2 = *yp1;
@@ -8017,67 +8633,67 @@ static void ropus_silk_decode_pulses(ropus_ec *dec, int16_t *pulses,
 }
 
 /* SILK fixed-point macros (silk/SigProc_FIX.h, macros.h), int64 forms. */
-#define RSILK_SMULWB(a, b) \
+#define ROPUS_SILK_SMULWB(a, b) \
    ((int32_t)(((a) * (int64_t)((int16_t)(b))) >> 16))
-#define RSILK_SMLAWB(a, b, c) \
+#define ROPUS_SILK_SMLAWB(a, b, c) \
    ((int32_t)((a) + (((b) * (int64_t)((int16_t)(c))) >> 16)))
-#define RSILK_SMULWW(a, b)  ((int32_t)(((int64_t)(a) * (b)) >> 16))
-#define RSILK_SMLAWW(a, b, c) \
+#define ROPUS_SILK_SMULWW(a, b)  ((int32_t)(((int64_t)(a) * (b)) >> 16))
+#define ROPUS_SILK_SMLAWW(a, b, c) \
    ((int32_t)((a) + (((int64_t)(b) * (c)) >> 16)))
-#define RSILK_SMULBB(a, b) \
+#define ROPUS_SILK_SMULBB(a, b) \
    ((int32_t)((int16_t)(a)) * (int32_t)((int16_t)(b)))
-#define RSILK_SMLABB(a, b, c) ((a) + RSILK_SMULBB(b, c))
-#define RSILK_SMULL(a, b)   ((int64_t)(a) * (b))
-#define RSILK_SMMUL(a, b)   ((int32_t)(RSILK_SMULL(a, b) >> 32))
-#define RSILK_RSHIFT_ROUND(a, s) \
+#define ROPUS_SILK_SMLABB(a, b, c) ((a) + ROPUS_SILK_SMULBB(b, c))
+#define ROPUS_SILK_SMULL(a, b)   ((int64_t)(a) * (b))
+#define ROPUS_SILK_SMMUL(a, b)   ((int32_t)(ROPUS_SILK_SMULL(a, b) >> 32))
+#define ROPUS_SILK_RSHIFT_ROUND(a, s) \
    ((s) == 1 ? ((a) >> 1) + ((a) & 1) : (((a) >> ((s) - 1)) + 1) >> 1)
-#define RSILK_RSHIFT_ROUND64(a, s) \
+#define ROPUS_SILK_RSHIFT_ROUND64(a, s) \
    ((s) == 1 ? ((a) >> 1) + ((a) & 1) : (((a) >> ((s) - 1)) + 1) >> 1)
-#define RSILK_SAT16(a) \
+#define ROPUS_SILK_SAT16(a) \
    ((a) > 32767 ? 32767 : ((a) < -32768 ? -32768 : (a)))
-#define RSILK_ADD_SAT16(a, b) \
-   ((int16_t)RSILK_SAT16((int32_t)(a) + (b)))
-#define RSILK_LIMIT(a, l1, l2) \
+#define ROPUS_SILK_ADD_SAT16(a, b) \
+   ((int16_t)ROPUS_SILK_SAT16((int32_t)(a) + (b)))
+#define ROPUS_SILK_LIMIT(a, l1, l2) \
    ((l1) > (l2) ? ((a) > (l1) ? (l1) : ((a) < (l2) ? (l2) : (a))) \
                 : ((a) > (l2) ? (l2) : ((a) < (l1) ? (l1) : (a))))
-#define RSILK_ABS(a) (((a) > 0) ? (a) : -(a))
-#define RSILK_RAND(seed) \
+#define ROPUS_SILK_ABS(a) (((a) > 0) ? (a) : -(a))
+#define ROPUS_SILK_RAND(seed) \
    ((int32_t)((uint32_t)907633515 + (uint32_t)(seed) * 196314165u))
-#define RSILK_ADD32_OVF(a, b) ((int32_t)((uint32_t)(a) + (uint32_t)(b)))
+#define ROPUS_SILK_ADD32_OVF(a, b) ((int32_t)((uint32_t)(a) + (uint32_t)(b)))
 
-static INLINE int rsilk_clz32(int32_t in32)
+static INLINE int ropus_silk_clz32(int32_t in32)
 {
    return in32 ? 32 - ropus_ec_ilog((uint32_t)in32) : 32;
 }
 
-static INLINE int32_t rsilk_lshift_sat32(int32_t a, int s)
+static INLINE int32_t ropus_silk_lshift_sat32(int32_t a, int s)
 {
    int32_t lo = (int32_t)((int32_t)0x80000000 >> s);
    int32_t hi = 0x7fffffff >> s;
-   return (int32_t)((uint32_t)RSILK_LIMIT(a, lo, hi) << s);
+   return (int32_t)((uint32_t)ROPUS_SILK_LIMIT(a, lo, hi) << s);
 }
 
-static int32_t rsilk_inverse32_varq(int32_t b32, int Qres)
+static int32_t ropus_silk_inverse32_varq(int32_t b32, int Qres)
 {
    int b_headrm, lshift;
    int32_t b32_inv, b32_nrm, err_Q32, result;
-   b_headrm = rsilk_clz32(RSILK_ABS(b32)) - 1;
+   b_headrm = ropus_silk_clz32(ROPUS_SILK_ABS(b32)) - 1;
    b32_nrm = (int32_t)((uint32_t)b32 << b_headrm);
    b32_inv = (0x7fffffff >> 2) / (b32_nrm >> 16);
    result = (int32_t)((uint32_t)b32_inv << 16);
    err_Q32 = (int32_t)((uint32_t)(((int32_t)1 << 29)
-      - RSILK_SMULWB(b32_nrm, b32_inv)) << 3);
-   result = RSILK_SMLAWW(result, err_Q32, b32_inv);
+      - ROPUS_SILK_SMULWB(b32_nrm, b32_inv)) << 3);
+   result = ROPUS_SILK_SMLAWW(result, err_Q32, b32_inv);
    lshift = 61 - b_headrm - Qres;
    if (lshift <= 0)
-      return rsilk_lshift_sat32(result, -lshift);
+      return ropus_silk_lshift_sat32(result, -lshift);
    else if (lshift < 32)
       return result >> lshift;
    return 0;
 }
 
 /* silk_log2lin (silk/log2lin.c) */
-static int32_t rsilk_log2lin(int32_t inLog_Q7)
+static int32_t ropus_silk_log2lin(int32_t inLog_Q7)
 {
    int32_t out, frac_Q7;
    if (inLog_Q7 < 0)
@@ -8087,19 +8703,19 @@ static int32_t rsilk_log2lin(int32_t inLog_Q7)
    out = 1 << (inLog_Q7 >> 7);
    frac_Q7 = inLog_Q7 & 0x7F;
    if (inLog_Q7 < 2048)
-      out = out + ((out * RSILK_SMLAWB(frac_Q7,
-         RSILK_SMULBB(frac_Q7, 128 - frac_Q7), -174)) >> 7);
+      out = out + ((out * ROPUS_SILK_SMLAWB(frac_Q7,
+         ROPUS_SILK_SMULBB(frac_Q7, 128 - frac_Q7), -174)) >> 7);
    else
-      out = out + (out >> 7) * RSILK_SMLAWB(frac_Q7,
-         RSILK_SMULBB(frac_Q7, 128 - frac_Q7), -174);
+      out = out + (out >> 7) * ROPUS_SILK_SMLAWB(frac_Q7,
+         ROPUS_SILK_SMULBB(frac_Q7, 128 - frac_Q7), -174);
    return out;
 }
 
 /* silk_gains_dequant (silk/gain_quant.c) */
-#define RSILK_QGAIN_OFFSET      ((2 * 128) / 6 + 16 * 128)
-#define RSILK_QGAIN_INV_SCALE   ((65536 * (((88 - 2) * 128) / 6)) / (64 - 1))
+#define ROPUS_SILK_QGAIN_OFFSET      ((2 * 128) / 6 + 16 * 128)
+#define ROPUS_SILK_QGAIN_INV_SCALE   ((65536 * (((88 - 2) * 128) / 6)) / (64 - 1))
 
-static void rsilk_gains_dequant(int32_t *gain_Q16, const int8_t *ind,
+static void ropus_silk_gains_dequant(int32_t *gain_Q16, const int8_t *ind,
       int8_t *prev_ind, int conditional, int nb_subfr)
 {
    int k, ind_tmp, double_step_size_threshold;
@@ -8117,15 +8733,15 @@ static void rsilk_gains_dequant(int32_t *gain_Q16, const int8_t *ind,
          else
             *prev_ind = (int8_t)(*prev_ind + ind_tmp);
       }
-      *prev_ind = (int8_t)RSILK_LIMIT(*prev_ind, 0, 64 - 1);
-      gain_Q16[k] = rsilk_log2lin(ropus_min32(
-         RSILK_SMULWB(RSILK_QGAIN_INV_SCALE, *prev_ind)
-         + RSILK_QGAIN_OFFSET, 3967));
+      *prev_ind = (int8_t)ROPUS_SILK_LIMIT(*prev_ind, 0, 64 - 1);
+      gain_Q16[k] = ropus_silk_log2lin(ropus_min32(
+         ROPUS_SILK_SMULWB(ROPUS_SILK_QGAIN_INV_SCALE, *prev_ind)
+         + ROPUS_SILK_QGAIN_OFFSET, 3967));
    }
 }
 
 /* silk_NLSF_stabilize (NLSF_stabilize.c + sort.c) */
-static void rsilk_insertion_sort_i16(int16_t *a, int L)
+static void ropus_silk_insertion_sort_i16(int16_t *a, int L)
 {
    int i, j, value;
    for (i = 1; i < L; i++)
@@ -8137,7 +8753,7 @@ static void rsilk_insertion_sort_i16(int16_t *a, int L)
    }
 }
 
-static void rsilk_nlsf_stabilize(int16_t *NLSF_Q15,
+static void ropus_silk_nlsf_stabilize(int16_t *NLSF_Q15,
       const int16_t *NDeltaMin_Q15, int L)
 {
    int i, I = 0, k, loops;
@@ -8178,8 +8794,8 @@ static void rsilk_nlsf_stabilize(int16_t *NLSF_Q15,
          for (k = L; k > I; k--)
             max_center_Q15 -= NDeltaMin_Q15[k];
          max_center_Q15 -= NDeltaMin_Q15[I] >> 1;
-         center_freq_Q15 = (int16_t)RSILK_LIMIT(
-            RSILK_RSHIFT_ROUND((int32_t)NLSF_Q15[I - 1]
+         center_freq_Q15 = (int16_t)ROPUS_SILK_LIMIT(
+            ROPUS_SILK_RSHIFT_ROUND((int32_t)NLSF_Q15[I - 1]
                + (int32_t)NLSF_Q15[I], 1),
             min_center_Q15, max_center_Q15);
          NLSF_Q15[I - 1] = (int16_t)(center_freq_Q15
@@ -8189,11 +8805,11 @@ static void rsilk_nlsf_stabilize(int16_t *NLSF_Q15,
    }
    if (loops == 20)
    {
-      rsilk_insertion_sort_i16(&NLSF_Q15[0], L);
+      ropus_silk_insertion_sort_i16(&NLSF_Q15[0], L);
       NLSF_Q15[0] = (int16_t)ropus_imax(NLSF_Q15[0], NDeltaMin_Q15[0]);
       for (i = 1; i < L; i++)
          NLSF_Q15[i] = (int16_t)ropus_imax(NLSF_Q15[i],
-            RSILK_ADD_SAT16(NLSF_Q15[i - 1], NDeltaMin_Q15[i]));
+            ROPUS_SILK_ADD_SAT16(NLSF_Q15[i - 1], NDeltaMin_Q15[i]));
       NLSF_Q15[L - 1] = (int16_t)ropus_imin(NLSF_Q15[L - 1],
          (1 << 15) - NDeltaMin_Q15[L]);
       for (i = L - 2; i >= 0; i--)
@@ -8203,7 +8819,7 @@ static void rsilk_nlsf_stabilize(int16_t *NLSF_Q15,
 }
 
 /* silk_NLSF_decode (NLSF_decode.c) */
-static void rsilk_nlsf_decode(int16_t *pNLSF_Q15, const int8_t *NLSFIndices,
+static void ropus_silk_nlsf_decode(int16_t *pNLSF_Q15, const int8_t *NLSFIndices,
       const ropus_nlsf_cb *cb)
 {
    int i;
@@ -8236,13 +8852,13 @@ static void rsilk_nlsf_decode(int16_t *pNLSF_Q15, const int8_t *NLSFIndices,
       int out_Q10 = 0, pred_Q10;
       for (i = cb->order - 1; i >= 0; i--)
       {
-         pred_Q10 = RSILK_SMULBB(out_Q10, (int16_t)pred_Q8[i]) >> 8;
+         pred_Q10 = ROPUS_SILK_SMULBB(out_Q10, (int16_t)pred_Q8[i]) >> 8;
          out_Q10 = (int)NLSFIndices[i + 1] << 10;
          if (out_Q10 > 0)
             out_Q10 = (int16_t)(out_Q10 - 102);  /* 0.1 in Q10        */
          else if (out_Q10 < 0)
             out_Q10 = (int16_t)(out_Q10 + 102);
-         out_Q10 = RSILK_SMLAWB(pred_Q10, (int32_t)out_Q10,
+         out_Q10 = ROPUS_SILK_SMLAWB(pred_Q10, (int32_t)out_Q10,
             cb->quantStepSize_Q16);
          res_Q10[i] = (int16_t)out_Q10;
       }
@@ -8253,26 +8869,26 @@ static void rsilk_nlsf_decode(int16_t *pNLSF_Q15, const int8_t *NLSFIndices,
    {
       NLSF_Q15_tmp = ((((int32_t)res_Q10[i] << 14) / pCB_Wght_Q9[i]))
          + ((int32_t)(int16_t)pCB_element[i] << 7);
-      pNLSF_Q15[i] = (int16_t)RSILK_LIMIT(NLSF_Q15_tmp, 0, 32767);
+      pNLSF_Q15[i] = (int16_t)ROPUS_SILK_LIMIT(NLSF_Q15_tmp, 0, 32767);
    }
-   rsilk_nlsf_stabilize(pNLSF_Q15, cb->deltaMin_Q15, cb->order);
+   ropus_silk_nlsf_stabilize(pNLSF_Q15, cb->deltaMin_Q15, cb->order);
 }
 
 /* silk_bwexpander_32 */
-static void rsilk_bwexpander_32(int32_t *ar, int d, int32_t chirp_Q16)
+static void ropus_silk_bwexpander_32(int32_t *ar, int d, int32_t chirp_Q16)
 {
    int i;
    int32_t chirp_minus_one_Q16 = chirp_Q16 - 65536;
    for (i = 0; i < d - 1; i++)
    {
-      ar[i] = RSILK_SMULWW(chirp_Q16, ar[i]);
-      chirp_Q16 += RSILK_RSHIFT_ROUND(chirp_Q16 * chirp_minus_one_Q16, 16);
+      ar[i] = ROPUS_SILK_SMULWW(chirp_Q16, ar[i]);
+      chirp_Q16 += ROPUS_SILK_RSHIFT_ROUND(chirp_Q16 * chirp_minus_one_Q16, 16);
    }
-   ar[d - 1] = RSILK_SMULWW(chirp_Q16, ar[d - 1]);
+   ar[d - 1] = ROPUS_SILK_SMULWW(chirp_Q16, ar[d - 1]);
 }
 
 /* silk_LPC_fit */
-static void rsilk_lpc_fit(int16_t *a_QOUT, int32_t *a_QIN, int QOUT,
+static void ropus_silk_lpc_fit(int16_t *a_QOUT, int32_t *a_QIN, int QOUT,
       int QIN, int d)
 {
    int i, k, idx = 0;
@@ -8282,21 +8898,21 @@ static void rsilk_lpc_fit(int16_t *a_QOUT, int32_t *a_QIN, int QOUT,
       maxabs = 0;
       for (k = 0; k < d; k++)
       {
-         absval = RSILK_ABS(a_QIN[k]);
+         absval = ROPUS_SILK_ABS(a_QIN[k]);
          if (absval > maxabs)
          {
             maxabs = absval;
             idx = k;
          }
       }
-      maxabs = RSILK_RSHIFT_ROUND(maxabs, QIN - QOUT);
+      maxabs = ROPUS_SILK_RSHIFT_ROUND(maxabs, QIN - QOUT);
       if (maxabs > 32767)
       {
          maxabs = ropus_min32(maxabs, 163838);
          chirp_Q16 = 65470   /* SILK_FIX_CONST(0.999, 16)              */
             - (((maxabs - 32767) << 14)
                / ((maxabs * (idx + 1)) >> 2));
-         rsilk_bwexpander_32(a_QIN, d, chirp_Q16);
+         ropus_silk_bwexpander_32(a_QIN, d, chirp_Q16);
       }
       else
          break;
@@ -8304,26 +8920,26 @@ static void rsilk_lpc_fit(int16_t *a_QOUT, int32_t *a_QIN, int QOUT,
    if (i == 10)
       for (k = 0; k < d; k++)
       {
-         a_QOUT[k] = (int16_t)RSILK_SAT16(
-            RSILK_RSHIFT_ROUND(a_QIN[k], QIN - QOUT));
+         a_QOUT[k] = (int16_t)ROPUS_SILK_SAT16(
+            ROPUS_SILK_RSHIFT_ROUND(a_QIN[k], QIN - QOUT));
          a_QIN[k] = (int32_t)((uint32_t)a_QOUT[k] << (QIN - QOUT));
       }
    else
       for (k = 0; k < d; k++)
-         a_QOUT[k] = (int16_t)RSILK_RSHIFT_ROUND(a_QIN[k], QIN - QOUT);
+         a_QOUT[k] = (int16_t)ROPUS_SILK_RSHIFT_ROUND(a_QIN[k], QIN - QOUT);
 }
 
 /* silk_LPC_inverse_pred_gain (LPC_inv_pred_gain.c), QA = 24 */
-#define RSILK_INVGAIN_QA 24
-#define RSILK_A_LIMIT 16773022        /* SILK_FIX_CONST(0.99975, 24)   */
-#define RSILK_MUL32_FRAC_Q(a, b, Q) \
-   ((int32_t)RSILK_RSHIFT_ROUND64(RSILK_SMULL(a, b), Q))
-#define RSILK_SUB_SAT32(a, b) \
+#define ROPUS_SILK_INVGAIN_QA 24
+#define ROPUS_SILK_A_LIMIT 16773022        /* SILK_FIX_CONST(0.99975, 24)   */
+#define ROPUS_SILK_MUL32_FRAC_Q(a, b, Q) \
+   ((int32_t)ROPUS_SILK_RSHIFT_ROUND64(ROPUS_SILK_SMULL(a, b), Q))
+#define ROPUS_SILK_SUB_SAT32(a, b) \
    ((int32_t)ropus_min32(ropus_max32((int64_t)(a) - (b) < -2147483647 - 1 \
       ? -2147483647 - 1 : (int32_t)((int64_t)(a) - (b)), \
       -2147483647 - 1), 2147483647))
 
-static INLINE int32_t rsilk_sub_sat32(int32_t a, int32_t b)
+static INLINE int32_t ropus_silk_sub_sat32(int32_t a, int32_t b)
 {
    int64_t r = (int64_t)a - b;
    if (r > 2147483647)
@@ -8333,52 +8949,52 @@ static INLINE int32_t rsilk_sub_sat32(int32_t a, int32_t b)
    return (int32_t)r;
 }
 
-static int32_t rsilk_lpc_inv_pred_gain_qa(int32_t *A_QA, int order)
+static int32_t ropus_silk_lpc_inv_pred_gain_qa(int32_t *A_QA, int order)
 {
    int k, n, mult2Q;
    int32_t invGain_Q30, rc_Q31, rc_mult1_Q30, rc_mult2, tmp1, tmp2;
    invGain_Q30 = (int32_t)1 << 30;
    for (k = order - 1; k > 0; k--)
    {
-      if (A_QA[k] > RSILK_A_LIMIT || A_QA[k] < -RSILK_A_LIMIT)
+      if (A_QA[k] > ROPUS_SILK_A_LIMIT || A_QA[k] < -ROPUS_SILK_A_LIMIT)
          return 0;
-      rc_Q31 = -(int32_t)((uint32_t)A_QA[k] << (31 - RSILK_INVGAIN_QA));
-      rc_mult1_Q30 = ((int32_t)1 << 30) - RSILK_SMMUL(rc_Q31, rc_Q31);
-      invGain_Q30 = (int32_t)((uint32_t)RSILK_SMMUL(invGain_Q30,
+      rc_Q31 = -(int32_t)((uint32_t)A_QA[k] << (31 - ROPUS_SILK_INVGAIN_QA));
+      rc_mult1_Q30 = ((int32_t)1 << 30) - ROPUS_SILK_SMMUL(rc_Q31, rc_Q31);
+      invGain_Q30 = (int32_t)((uint32_t)ROPUS_SILK_SMMUL(invGain_Q30,
          rc_mult1_Q30) << 2);
       if (invGain_Q30 < 107374)  /* SILK_FIX_CONST(1/1e4, 30)          */
          return 0;
-      mult2Q = 32 - rsilk_clz32(RSILK_ABS(rc_mult1_Q30));
-      rc_mult2 = rsilk_inverse32_varq(rc_mult1_Q30, mult2Q + 30);
+      mult2Q = 32 - ropus_silk_clz32(ROPUS_SILK_ABS(rc_mult1_Q30));
+      rc_mult2 = ropus_silk_inverse32_varq(rc_mult1_Q30, mult2Q + 30);
       for (n = 0; n < (k + 1) >> 1; n++)
       {
          int64_t tmp64;
          tmp1 = A_QA[n];
          tmp2 = A_QA[k - n - 1];
-         tmp64 = RSILK_RSHIFT_ROUND64(RSILK_SMULL(rsilk_sub_sat32(tmp1,
-            RSILK_MUL32_FRAC_Q(tmp2, rc_Q31, 31)), rc_mult2), mult2Q);
+         tmp64 = ROPUS_SILK_RSHIFT_ROUND64(ROPUS_SILK_SMULL(ropus_silk_sub_sat32(tmp1,
+            ROPUS_SILK_MUL32_FRAC_Q(tmp2, rc_Q31, 31)), rc_mult2), mult2Q);
          if (tmp64 > 2147483647 || tmp64 < -2147483647 - 1)
             return 0;
          A_QA[n] = (int32_t)tmp64;
-         tmp64 = RSILK_RSHIFT_ROUND64(RSILK_SMULL(rsilk_sub_sat32(tmp2,
-            RSILK_MUL32_FRAC_Q(tmp1, rc_Q31, 31)), rc_mult2), mult2Q);
+         tmp64 = ROPUS_SILK_RSHIFT_ROUND64(ROPUS_SILK_SMULL(ropus_silk_sub_sat32(tmp2,
+            ROPUS_SILK_MUL32_FRAC_Q(tmp1, rc_Q31, 31)), rc_mult2), mult2Q);
          if (tmp64 > 2147483647 || tmp64 < -2147483647 - 1)
             return 0;
          A_QA[k - n - 1] = (int32_t)tmp64;
       }
    }
-   if (A_QA[0] > RSILK_A_LIMIT || A_QA[0] < -RSILK_A_LIMIT)
+   if (A_QA[0] > ROPUS_SILK_A_LIMIT || A_QA[0] < -ROPUS_SILK_A_LIMIT)
       return 0;
-   rc_Q31 = -(int32_t)((uint32_t)A_QA[0] << (31 - RSILK_INVGAIN_QA));
-   rc_mult1_Q30 = ((int32_t)1 << 30) - RSILK_SMMUL(rc_Q31, rc_Q31);
-   invGain_Q30 = (int32_t)((uint32_t)RSILK_SMMUL(invGain_Q30,
+   rc_Q31 = -(int32_t)((uint32_t)A_QA[0] << (31 - ROPUS_SILK_INVGAIN_QA));
+   rc_mult1_Q30 = ((int32_t)1 << 30) - ROPUS_SILK_SMMUL(rc_Q31, rc_Q31);
+   invGain_Q30 = (int32_t)((uint32_t)ROPUS_SILK_SMMUL(invGain_Q30,
       rc_mult1_Q30) << 2);
    if (invGain_Q30 < 107374)
       return 0;
    return invGain_Q30;
 }
 
-static int32_t rsilk_lpc_inv_pred_gain(const int16_t *A_Q12, int order)
+static int32_t ropus_silk_lpc_inv_pred_gain(const int16_t *A_Q12, int order)
 {
    int k;
    int32_t Atmp_QA[ROPUS_SILK_MAX_LPC_ORDER];
@@ -8387,15 +9003,15 @@ static int32_t rsilk_lpc_inv_pred_gain(const int16_t *A_Q12, int order)
    {
       DC_resp += (int32_t)A_Q12[k];
       Atmp_QA[k] = (int32_t)((uint32_t)A_Q12[k]
-         << (RSILK_INVGAIN_QA - 12));
+         << (ROPUS_SILK_INVGAIN_QA - 12));
    }
    if (DC_resp >= 4096)
       return 0;
-   return rsilk_lpc_inv_pred_gain_qa(Atmp_QA, order);
+   return ropus_silk_lpc_inv_pred_gain_qa(Atmp_QA, order);
 }
 
 /* silk_NLSF2A (NLSF2A.c), QA = 16 */
-static void rsilk_nlsf2a_find_poly(int32_t *out, const int32_t *cLSF,
+static void ropus_silk_nlsf2a_find_poly(int32_t *out, const int32_t *cLSF,
       int dd)
 {
    int k, n;
@@ -8406,16 +9022,16 @@ static void rsilk_nlsf2a_find_poly(int32_t *out, const int32_t *cLSF,
    {
       ftmp = cLSF[2 * k];
       out[k + 1] = (int32_t)((uint32_t)out[k - 1] << 1)
-         - (int32_t)RSILK_RSHIFT_ROUND64(RSILK_SMULL(ftmp, out[k]), 16);
+         - (int32_t)ROPUS_SILK_RSHIFT_ROUND64(ROPUS_SILK_SMULL(ftmp, out[k]), 16);
       for (n = k; n > 1; n--)
          out[n] += out[n - 2]
-            - (int32_t)RSILK_RSHIFT_ROUND64(
-               RSILK_SMULL(ftmp, out[n - 1]), 16);
+            - (int32_t)ROPUS_SILK_RSHIFT_ROUND64(
+               ROPUS_SILK_SMULL(ftmp, out[n - 1]), 16);
       out[1] -= ftmp;
    }
 }
 
-static void rsilk_nlsf2a(int16_t *a_Q12, const int16_t *NLSF, int d)
+static void ropus_silk_nlsf2a(int16_t *a_Q12, const int16_t *NLSF, int d)
 {
    static const uint8_t ordering16[16] =
       { 0, 15, 8, 7, 4, 11, 12, 3, 2, 13, 10, 5, 6, 9, 14, 1 };
@@ -8436,12 +9052,12 @@ static void rsilk_nlsf2a(int16_t *a_Q12, const int16_t *NLSF, int d)
       f_frac = NLSF[k] - (f_int << (15 - 7));
       cos_val = ropus_LSFCosTab_FIX_Q12[f_int];
       delta = ropus_LSFCosTab_FIX_Q12[f_int + 1] - cos_val;
-      cos_LSF_QA[ordering[k]] = RSILK_RSHIFT_ROUND(
+      cos_LSF_QA[ordering[k]] = ROPUS_SILK_RSHIFT_ROUND(
          (int32_t)((uint32_t)cos_val << 8) + delta * f_frac, 20 - 16);
    }
    dd = d >> 1;
-   rsilk_nlsf2a_find_poly(P, &cos_LSF_QA[0], dd);
-   rsilk_nlsf2a_find_poly(Q, &cos_LSF_QA[1], dd);
+   ropus_silk_nlsf2a_find_poly(P, &cos_LSF_QA[0], dd);
+   ropus_silk_nlsf2a_find_poly(Q, &cos_LSF_QA[1], dd);
    for (k = 0; k < dd; k++)
    {
       Ptmp = P[k + 1] + P[k];
@@ -8449,18 +9065,18 @@ static void rsilk_nlsf2a(int16_t *a_Q12, const int16_t *NLSF, int d)
       a32_QA1[k] = -Qtmp - Ptmp;
       a32_QA1[d - k - 1] = Qtmp - Ptmp;
    }
-   rsilk_lpc_fit(a_Q12, a32_QA1, 12, 16 + 1, d);
-   for (i = 0; rsilk_lpc_inv_pred_gain(a_Q12, d) == 0 && i < 16; i++)
+   ropus_silk_lpc_fit(a_Q12, a32_QA1, 12, 16 + 1, d);
+   for (i = 0; ropus_silk_lpc_inv_pred_gain(a_Q12, d) == 0 && i < 16; i++)
    {
-      rsilk_bwexpander_32(a32_QA1, d, 65536 - (2 << i));
+      ropus_silk_bwexpander_32(a32_QA1, d, 65536 - (2 << i));
       for (k = 0; k < d; k++)
-         a_Q12[k] = (int16_t)RSILK_RSHIFT_ROUND(a32_QA1[k],
+         a_Q12[k] = (int16_t)ROPUS_SILK_RSHIFT_ROUND(a32_QA1[k],
             16 + 1 - 12);
    }
 }
 
 /* silk_decode_pitch (decode_pitch.c) */
-static void rsilk_decode_pitch(int16_t lagIndex, int8_t contourIndex,
+static void ropus_silk_decode_pitch(int16_t lagIndex, int8_t contourIndex,
       int *pitch_lags, int Fs_kHz, int nb_subfr)
 {
    int lag, k, min_lag, max_lag, cbk_size;
@@ -8497,7 +9113,7 @@ static void rsilk_decode_pitch(int16_t lagIndex, int8_t contourIndex,
    for (k = 0; k < nb_subfr; k++)
    {
       pitch_lags[k] = lag + Lag_CB_ptr[k * cbk_size + contourIndex];
-      pitch_lags[k] = RSILK_LIMIT(pitch_lags[k], min_lag, max_lag);
+      pitch_lags[k] = ROPUS_SILK_LIMIT(pitch_lags[k], min_lag, max_lag);
    }
 }
 
@@ -8512,7 +9128,7 @@ typedef struct
 } ropus_silk_ctrl;
 
 /* silk_decode_parameters (decode_parameters.c), no-loss path.          */
-static void rsilk_decode_parameters(ropus_silk_state *st,
+static void ropus_silk_decode_parameters(ropus_silk_state *st,
       ropus_silk_ctrl *ctrl, int condCoding)
 {
    int i, k, Ix;
@@ -8520,11 +9136,11 @@ static void rsilk_decode_parameters(ropus_silk_state *st,
    int16_t pNLSF0_Q15[ROPUS_SILK_MAX_LPC_ORDER];
    const int8_t *cbk_ptr_Q7;
 
-   rsilk_gains_dequant(ctrl->Gains_Q16, st->indices.GainsIndices,
+   ropus_silk_gains_dequant(ctrl->Gains_Q16, st->indices.GainsIndices,
       &st->LastGainIndex, condCoding == 2, st->nb_subfr);
 
-   rsilk_nlsf_decode(pNLSF_Q15, st->indices.NLSFIndices, st->psNLSF_CB);
-   rsilk_nlsf2a(ctrl->PredCoef_Q12[1], pNLSF_Q15, st->LPC_order);
+   ropus_silk_nlsf_decode(pNLSF_Q15, st->indices.NLSFIndices, st->psNLSF_CB);
+   ropus_silk_nlsf2a(ctrl->PredCoef_Q12[1], pNLSF_Q15, st->LPC_order);
 
    if (st->first_frame_after_reset == 1)
       st->indices.NLSFInterpCoef_Q2 = 4;
@@ -8535,7 +9151,7 @@ static void rsilk_decode_parameters(ropus_silk_state *st,
          pNLSF0_Q15[i] = (int16_t)(st->prevNLSF_Q15[i]
             + ((st->indices.NLSFInterpCoef_Q2
                * (pNLSF_Q15[i] - st->prevNLSF_Q15[i])) >> 2));
-      rsilk_nlsf2a(ctrl->PredCoef_Q12[0], pNLSF0_Q15, st->LPC_order);
+      ropus_silk_nlsf2a(ctrl->PredCoef_Q12[0], pNLSF0_Q15, st->LPC_order);
    }
    else
       memcpy(ctrl->PredCoef_Q12[0], ctrl->PredCoef_Q12[1],
@@ -8551,7 +9167,7 @@ static void rsilk_decode_parameters(ropus_silk_state *st,
          &ropus_LTP_gain_vq_0[0][0], &ropus_LTP_gain_vq_1[0][0],
          &ropus_LTP_gain_vq_2[0][0]
       };
-      rsilk_decode_pitch(st->indices.lagIndex, st->indices.contourIndex,
+      ropus_silk_decode_pitch(st->indices.lagIndex, st->indices.contourIndex,
          ctrl->pitchL, st->fs_kHz, st->nb_subfr);
       cbk_ptr_Q7 = vq_ptrs[(int)st->indices.PERIndex];
       for (k = 0; k < st->nb_subfr; k++)
@@ -8575,7 +9191,7 @@ static void rsilk_decode_parameters(ropus_silk_state *st,
 }
 
 /* silk_ADD_SAT32 (silk/macros.h) */
-static INLINE int32_t rsilk_add_sat32(int32_t a, int32_t b)
+static INLINE int32_t ropus_silk_add_sat32(int32_t a, int32_t b)
 {
    uint32_t s = (uint32_t)a + (uint32_t)b;
    if (((s ^ (uint32_t)a) & (s ^ (uint32_t)b)) & 0x80000000u)
@@ -8583,29 +9199,29 @@ static INLINE int32_t rsilk_add_sat32(int32_t a, int32_t b)
    return (int32_t)s;
 }
 
-static int32_t rsilk_div32_varq(int32_t a32, int32_t b32, int Qres)
+static int32_t ropus_silk_div32_varq(int32_t a32, int32_t b32, int Qres)
 {
    int a_headrm, b_headrm, lshift;
    int32_t b32_inv, a32_nrm, b32_nrm, result;
-   a_headrm = rsilk_clz32(RSILK_ABS(a32)) - 1;
+   a_headrm = ropus_silk_clz32(ROPUS_SILK_ABS(a32)) - 1;
    a32_nrm = (int32_t)((uint32_t)a32 << a_headrm);
-   b_headrm = rsilk_clz32(RSILK_ABS(b32)) - 1;
+   b_headrm = ropus_silk_clz32(ROPUS_SILK_ABS(b32)) - 1;
    b32_nrm = (int32_t)((uint32_t)b32 << b_headrm);
    b32_inv = (0x7fffffff >> 2) / (b32_nrm >> 16);
-   result = RSILK_SMULWB(a32_nrm, b32_inv);
+   result = ROPUS_SILK_SMULWB(a32_nrm, b32_inv);
    a32_nrm = (int32_t)((uint32_t)a32_nrm
-      - ((uint32_t)RSILK_SMMUL(b32_nrm, result) << 3));
-   result = RSILK_SMLAWB(result, a32_nrm, b32_inv);
+      - ((uint32_t)ROPUS_SILK_SMMUL(b32_nrm, result) << 3));
+   result = ROPUS_SILK_SMLAWB(result, a32_nrm, b32_inv);
    lshift = 29 + a_headrm - b_headrm - Qres;
    if (lshift < 0)
-      return rsilk_lshift_sat32(result, -lshift);
+      return ropus_silk_lshift_sat32(result, -lshift);
    else if (lshift < 32)
       return result >> lshift;
    return 0;
 }
 
 /* silk_LPC_analysis_filter (LPC_analysis_filter.c, USE_CELT_FIR=0)     */
-static void rsilk_lpc_analysis_filter(int16_t *out, const int16_t *in,
+static void ropus_silk_lpc_analysis_filter(int16_t *out, const int16_t *in,
       const int16_t *B, int32_t len, int32_t d)
 {
    int j, ix;
@@ -8614,28 +9230,28 @@ static void rsilk_lpc_analysis_filter(int16_t *out, const int16_t *in,
    for (ix = d; ix < len; ix++)
    {
       in_ptr = &in[ix - 1];
-      out32_Q12 = RSILK_SMULBB(in_ptr[0], B[0]);
-      out32_Q12 = RSILK_ADD32_OVF(out32_Q12,
-         RSILK_SMULBB(in_ptr[-1], B[1]));
-      out32_Q12 = RSILK_ADD32_OVF(out32_Q12,
-         RSILK_SMULBB(in_ptr[-2], B[2]));
-      out32_Q12 = RSILK_ADD32_OVF(out32_Q12,
-         RSILK_SMULBB(in_ptr[-3], B[3]));
-      out32_Q12 = RSILK_ADD32_OVF(out32_Q12,
-         RSILK_SMULBB(in_ptr[-4], B[4]));
-      out32_Q12 = RSILK_ADD32_OVF(out32_Q12,
-         RSILK_SMULBB(in_ptr[-5], B[5]));
+      out32_Q12 = ROPUS_SILK_SMULBB(in_ptr[0], B[0]);
+      out32_Q12 = ROPUS_SILK_ADD32_OVF(out32_Q12,
+         ROPUS_SILK_SMULBB(in_ptr[-1], B[1]));
+      out32_Q12 = ROPUS_SILK_ADD32_OVF(out32_Q12,
+         ROPUS_SILK_SMULBB(in_ptr[-2], B[2]));
+      out32_Q12 = ROPUS_SILK_ADD32_OVF(out32_Q12,
+         ROPUS_SILK_SMULBB(in_ptr[-3], B[3]));
+      out32_Q12 = ROPUS_SILK_ADD32_OVF(out32_Q12,
+         ROPUS_SILK_SMULBB(in_ptr[-4], B[4]));
+      out32_Q12 = ROPUS_SILK_ADD32_OVF(out32_Q12,
+         ROPUS_SILK_SMULBB(in_ptr[-5], B[5]));
       for (j = 6; j < d; j += 2)
       {
-         out32_Q12 = RSILK_ADD32_OVF(out32_Q12,
-            RSILK_SMULBB(in_ptr[-j], B[j]));
-         out32_Q12 = RSILK_ADD32_OVF(out32_Q12,
-            RSILK_SMULBB(in_ptr[-j - 1], B[j + 1]));
+         out32_Q12 = ROPUS_SILK_ADD32_OVF(out32_Q12,
+            ROPUS_SILK_SMULBB(in_ptr[-j], B[j]));
+         out32_Q12 = ROPUS_SILK_ADD32_OVF(out32_Q12,
+            ROPUS_SILK_SMULBB(in_ptr[-j - 1], B[j + 1]));
       }
       out32_Q12 = (int32_t)((uint32_t)((int32_t)in_ptr[1] << 12)
          - (uint32_t)out32_Q12);
-      out32 = RSILK_RSHIFT_ROUND(out32_Q12, 12);
-      out[ix] = (int16_t)RSILK_SAT16(out32);
+      out32 = ROPUS_SILK_RSHIFT_ROUND(out32_Q12, 12);
+      out[ix] = (int16_t)ROPUS_SILK_SAT16(out32);
    }
    memset(out, 0, d * sizeof(int16_t));
 }
@@ -8644,7 +9260,7 @@ static const int16_t ropus_quant_offsets_Q10[2][2] =
    { { 100, 240 }, { 32, 100 } };   /* UVL/UVH, VL/VH                  */
 
 /* silk_decode_core (decode_core.c), no-loss path.                      */
-static void rsilk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
+static void ropus_silk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
       int16_t *xq, const int16_t *pulses, int32_t *prev_gain_Q16)
 {
    int i, k, lag = 0, start_idx, sLTP_buf_idx;
@@ -8668,7 +9284,7 @@ static void rsilk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
    rand_seed = st->indices.Seed;
    for (i = 0; i < st->frame_length; i++)
    {
-      rand_seed = RSILK_RAND(rand_seed);
+      rand_seed = ROPUS_SILK_RAND(rand_seed);
       st->exc_Q14[i] = (int32_t)((uint32_t)pulses[i] << 14);
       if (st->exc_Q14[i] > 0)
          st->exc_Q14[i] -= 80 << 4;      /* QUANT_LEVEL_ADJUST_Q10     */
@@ -8677,7 +9293,7 @@ static void rsilk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
       st->exc_Q14[i] += offset_Q10 << 4;
       if (rand_seed < 0)
          st->exc_Q14[i] = -st->exc_Q14[i];
-      rand_seed = RSILK_ADD32_OVF(rand_seed, pulses[i]);
+      rand_seed = ROPUS_SILK_ADD32_OVF(rand_seed, pulses[i]);
    }
 
    memcpy(sLPC_Q14, st->sLPC_Q14_buf,
@@ -8694,14 +9310,14 @@ static void rsilk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
       B_Q14 = &ctrl->LTPCoef_Q14[k * 5];
       signalType = st->indices.signalType;
       Gain_Q10 = ctrl->Gains_Q16[k] >> 6;
-      inv_gain_Q31 = rsilk_inverse32_varq(ctrl->Gains_Q16[k], 47);
+      inv_gain_Q31 = ropus_silk_inverse32_varq(ctrl->Gains_Q16[k], 47);
 
       if (ctrl->Gains_Q16[k] != *prev_gain_Q16)
       {
-         gain_adj_Q16 = rsilk_div32_varq(*prev_gain_Q16,
+         gain_adj_Q16 = ropus_silk_div32_varq(*prev_gain_Q16,
             ctrl->Gains_Q16[k], 16);
          for (i = 0; i < ROPUS_SILK_MAX_LPC_ORDER; i++)
-            sLPC_Q14[i] = RSILK_SMULWW(gain_adj_Q16, sLPC_Q14[i]);
+            sLPC_Q14[i] = ROPUS_SILK_SMULWW(gain_adj_Q16, sLPC_Q14[i]);
       }
       else
          gain_adj_Q16 = (int32_t)1 << 16;
@@ -8718,21 +9334,21 @@ static void rsilk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
             if (k == 2)
                memcpy(&st->outBuf[st->ltp_mem_length], xq,
                   2 * st->subfr_length * sizeof(int16_t));
-            rsilk_lpc_analysis_filter(&sLTP[start_idx],
+            ropus_silk_lpc_analysis_filter(&sLTP[start_idx],
                &st->outBuf[start_idx + k * st->subfr_length],
                A_Q12, st->ltp_mem_length - start_idx, st->LPC_order);
             if (k == 0)
-               inv_gain_Q31 = (int32_t)((uint32_t)RSILK_SMULWB(
+               inv_gain_Q31 = (int32_t)((uint32_t)ROPUS_SILK_SMULWB(
                   inv_gain_Q31, ctrl->LTP_scale_Q14) << 2);
             for (i = 0; i < lag + 5 / 2; i++)
-               sLTP_Q15[sLTP_buf_idx - i - 1] = RSILK_SMULWB(
+               sLTP_Q15[sLTP_buf_idx - i - 1] = ROPUS_SILK_SMULWB(
                   inv_gain_Q31, sLTP[st->ltp_mem_length - i - 1]);
          }
          else
          {
             if (gain_adj_Q16 != (int32_t)1 << 16)
                for (i = 0; i < lag + 5 / 2; i++)
-                  sLTP_Q15[sLTP_buf_idx - i - 1] = RSILK_SMULWW(
+                  sLTP_Q15[sLTP_buf_idx - i - 1] = ROPUS_SILK_SMULWW(
                      gain_adj_Q16, sLTP_Q15[sLTP_buf_idx - i - 1]);
          }
       }
@@ -8743,15 +9359,15 @@ static void rsilk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
          for (i = 0; i < st->subfr_length; i++)
          {
             LTP_pred_Q13 = 2;
-            LTP_pred_Q13 = RSILK_SMLAWB(LTP_pred_Q13,
+            LTP_pred_Q13 = ROPUS_SILK_SMLAWB(LTP_pred_Q13,
                pred_lag_ptr[0], B_Q14[0]);
-            LTP_pred_Q13 = RSILK_SMLAWB(LTP_pred_Q13,
+            LTP_pred_Q13 = ROPUS_SILK_SMLAWB(LTP_pred_Q13,
                pred_lag_ptr[-1], B_Q14[1]);
-            LTP_pred_Q13 = RSILK_SMLAWB(LTP_pred_Q13,
+            LTP_pred_Q13 = ROPUS_SILK_SMLAWB(LTP_pred_Q13,
                pred_lag_ptr[-2], B_Q14[2]);
-            LTP_pred_Q13 = RSILK_SMLAWB(LTP_pred_Q13,
+            LTP_pred_Q13 = ROPUS_SILK_SMLAWB(LTP_pred_Q13,
                pred_lag_ptr[-3], B_Q14[3]);
-            LTP_pred_Q13 = RSILK_SMLAWB(LTP_pred_Q13,
+            LTP_pred_Q13 = ROPUS_SILK_SMLAWB(LTP_pred_Q13,
                pred_lag_ptr[-4], B_Q14[4]);
             pred_lag_ptr++;
             pres_Q14[i] = pexc_Q14[i]
@@ -8767,51 +9383,51 @@ static void rsilk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
       for (i = 0; i < st->subfr_length; i++)
       {
          LPC_pred_Q10 = st->LPC_order >> 1;
-         LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+         LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
             sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 1], A_Q12_tmp[0]);
-         LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+         LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
             sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 2], A_Q12_tmp[1]);
-         LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+         LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
             sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 3], A_Q12_tmp[2]);
-         LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+         LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
             sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 4], A_Q12_tmp[3]);
-         LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+         LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
             sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 5], A_Q12_tmp[4]);
-         LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+         LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
             sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 6], A_Q12_tmp[5]);
-         LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+         LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
             sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 7], A_Q12_tmp[6]);
-         LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+         LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
             sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 8], A_Q12_tmp[7]);
-         LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+         LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
             sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 9], A_Q12_tmp[8]);
-         LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+         LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
             sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 10], A_Q12_tmp[9]);
          if (st->LPC_order == 16)
          {
-            LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+            LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
                sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 11],
                A_Q12_tmp[10]);
-            LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+            LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
                sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 12],
                A_Q12_tmp[11]);
-            LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+            LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
                sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 13],
                A_Q12_tmp[12]);
-            LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+            LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
                sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 14],
                A_Q12_tmp[13]);
-            LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+            LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
                sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 15],
                A_Q12_tmp[14]);
-            LPC_pred_Q10 = RSILK_SMLAWB(LPC_pred_Q10,
+            LPC_pred_Q10 = ROPUS_SILK_SMLAWB(LPC_pred_Q10,
                sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i - 16],
                A_Q12_tmp[15]);
          }
-         sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i] = rsilk_add_sat32(
-            pres_Q14[i], rsilk_lshift_sat32(LPC_pred_Q10, 4));
-         pxq[i] = (int16_t)RSILK_SAT16(RSILK_RSHIFT_ROUND(
-            RSILK_SMULWW(sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i],
+         sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i] = ropus_silk_add_sat32(
+            pres_Q14[i], ropus_silk_lshift_sat32(LPC_pred_Q10, 4));
+         pxq[i] = (int16_t)ROPUS_SILK_SAT16(ROPUS_SILK_RSHIFT_ROUND(
+            ROPUS_SILK_SMULWW(sLPC_Q14[ROPUS_SILK_MAX_LPC_ORDER + i],
                Gain_Q10), 8));
       }
       memcpy(sLPC_Q14, &sLPC_Q14[st->subfr_length],
@@ -8930,7 +9546,7 @@ static int ropus_silk_resampler_init(ropus_silk_resampler *S,
       S->resampler_function = 0;
    S->invRatio_Q16 = (int32_t)((uint32_t)(
       (int32_t)((uint32_t)Fs_Hz_in << (14 + up2x)) / Fs_Hz_out) << 2);
-   while (RSILK_SMULWW(S->invRatio_Q16, Fs_Hz_out)
+   while (ROPUS_SILK_SMULWW(S->invRatio_Q16, Fs_Hz_out)
          < (int32_t)((uint32_t)Fs_Hz_in << up2x))
       S->invRatio_Q16++;
    return 0;
@@ -8944,32 +9560,32 @@ static void ropus_resampler_up2_HQ(int32_t *S, int16_t *out,
    {
       in32 = (int32_t)((uint32_t)in[k] << 10);
       Y = in32 - S[0];
-      X = RSILK_SMULWB(Y, ropus_resampler_up2_hq_0[0]);
+      X = ROPUS_SILK_SMULWB(Y, ropus_resampler_up2_hq_0[0]);
       out32_1 = S[0] + X;
       S[0] = in32 + X;
       Y = out32_1 - S[1];
-      X = RSILK_SMULWB(Y, ropus_resampler_up2_hq_0[1]);
+      X = ROPUS_SILK_SMULWB(Y, ropus_resampler_up2_hq_0[1]);
       out32_2 = S[1] + X;
       S[1] = out32_1 + X;
       Y = out32_2 - S[2];
-      X = RSILK_SMLAWB(Y, Y, ropus_resampler_up2_hq_0[2]);
+      X = ROPUS_SILK_SMLAWB(Y, Y, ropus_resampler_up2_hq_0[2]);
       out32_1 = S[2] + X;
       S[2] = out32_2 + X;
-      out[2 * k] = (int16_t)RSILK_SAT16(RSILK_RSHIFT_ROUND(out32_1, 10));
+      out[2 * k] = (int16_t)ROPUS_SILK_SAT16(ROPUS_SILK_RSHIFT_ROUND(out32_1, 10));
       Y = in32 - S[3];
-      X = RSILK_SMULWB(Y, ropus_resampler_up2_hq_1[0]);
+      X = ROPUS_SILK_SMULWB(Y, ropus_resampler_up2_hq_1[0]);
       out32_1 = S[3] + X;
       S[3] = in32 + X;
       Y = out32_1 - S[4];
-      X = RSILK_SMULWB(Y, ropus_resampler_up2_hq_1[1]);
+      X = ROPUS_SILK_SMULWB(Y, ropus_resampler_up2_hq_1[1]);
       out32_2 = S[4] + X;
       S[4] = out32_1 + X;
       Y = out32_2 - S[5];
-      X = RSILK_SMLAWB(Y, Y, ropus_resampler_up2_hq_1[2]);
+      X = ROPUS_SILK_SMLAWB(Y, Y, ropus_resampler_up2_hq_1[2]);
       out32_1 = S[5] + X;
       S[5] = out32_2 + X;
       out[2 * k + 1] =
-         (int16_t)RSILK_SAT16(RSILK_RSHIFT_ROUND(out32_1, 10));
+         (int16_t)ROPUS_SILK_SAT16(ROPUS_SILK_RSHIFT_ROUND(out32_1, 10));
    }
 }
 
@@ -8981,25 +9597,25 @@ static int16_t *ropus_resampler_IIR_FIR_interpol(int16_t *out,
    for (index_Q16 = 0; index_Q16 < max_index_Q16;
         index_Q16 += index_increment_Q16)
    {
-      table_index = RSILK_SMULWB(index_Q16 & 0xFFFF, 12);
+      table_index = ROPUS_SILK_SMULWB(index_Q16 & 0xFFFF, 12);
       buf_ptr = &buf[index_Q16 >> 16];
-      res_Q15 = RSILK_SMULBB(buf_ptr[0],
+      res_Q15 = ROPUS_SILK_SMULBB(buf_ptr[0],
          ropus_resampler_frac_FIR_12[table_index][0]);
-      res_Q15 = RSILK_SMLABB(res_Q15, buf_ptr[1],
+      res_Q15 = ROPUS_SILK_SMLABB(res_Q15, buf_ptr[1],
          ropus_resampler_frac_FIR_12[table_index][1]);
-      res_Q15 = RSILK_SMLABB(res_Q15, buf_ptr[2],
+      res_Q15 = ROPUS_SILK_SMLABB(res_Q15, buf_ptr[2],
          ropus_resampler_frac_FIR_12[table_index][2]);
-      res_Q15 = RSILK_SMLABB(res_Q15, buf_ptr[3],
+      res_Q15 = ROPUS_SILK_SMLABB(res_Q15, buf_ptr[3],
          ropus_resampler_frac_FIR_12[table_index][3]);
-      res_Q15 = RSILK_SMLABB(res_Q15, buf_ptr[4],
+      res_Q15 = ROPUS_SILK_SMLABB(res_Q15, buf_ptr[4],
          ropus_resampler_frac_FIR_12[11 - table_index][3]);
-      res_Q15 = RSILK_SMLABB(res_Q15, buf_ptr[5],
+      res_Q15 = ROPUS_SILK_SMLABB(res_Q15, buf_ptr[5],
          ropus_resampler_frac_FIR_12[11 - table_index][2]);
-      res_Q15 = RSILK_SMLABB(res_Q15, buf_ptr[6],
+      res_Q15 = ROPUS_SILK_SMLABB(res_Q15, buf_ptr[6],
          ropus_resampler_frac_FIR_12[11 - table_index][1]);
-      res_Q15 = RSILK_SMLABB(res_Q15, buf_ptr[7],
+      res_Q15 = ROPUS_SILK_SMLABB(res_Q15, buf_ptr[7],
          ropus_resampler_frac_FIR_12[11 - table_index][0]);
-      *out++ = (int16_t)RSILK_SAT16(RSILK_RSHIFT_ROUND(res_Q15, 15));
+      *out++ = (int16_t)ROPUS_SILK_SAT16(ROPUS_SILK_RSHIFT_ROUND(res_Q15, 15));
    }
    return out;
 }
@@ -9116,9 +9732,9 @@ static void ropus_silk_stereo_decode_pred(ropus_ec *dec,
    {
       ix[n][0] += 3 * ix[n][2];
       low_Q13 = ropus_stereo_pred_quant_Q13[ix[n][0]];
-      step_Q13 = RSILK_SMULWB(
+      step_Q13 = ROPUS_SILK_SMULWB(
          ropus_stereo_pred_quant_Q13[ix[n][0] + 1] - low_Q13, 6554);
-      pred_Q13[n] = RSILK_SMLABB(low_Q13, step_Q13, 2 * ix[n][1] + 1);
+      pred_Q13[n] = ROPUS_SILK_SMLABB(low_Q13, step_Q13, 2 * ix[n][1] + 1);
    }
    pred_Q13[0] -= pred_Q13[1];
 }
@@ -9141,9 +9757,9 @@ static void ropus_silk_ms_to_lr(ropus_silk_stereo *state, int16_t *x1,
    pred0_Q13 = state->pred_prev_Q13[0];
    pred1_Q13 = state->pred_prev_Q13[1];
    denom_Q16 = ((int32_t)1 << 16) / (8 * fs_kHz);
-   delta0_Q13 = RSILK_RSHIFT_ROUND(RSILK_SMULBB(
+   delta0_Q13 = ROPUS_SILK_RSHIFT_ROUND(ROPUS_SILK_SMULBB(
       pred_Q13[0] - state->pred_prev_Q13[0], denom_Q16), 16);
-   delta1_Q13 = RSILK_RSHIFT_ROUND(RSILK_SMULBB(
+   delta1_Q13 = ROPUS_SILK_RSHIFT_ROUND(ROPUS_SILK_SMULBB(
       pred_Q13[1] - state->pred_prev_Q13[1], denom_Q16), 16);
    for (n = 0; n < 8 * fs_kHz; n++)
    {
@@ -9151,11 +9767,11 @@ static void ropus_silk_ms_to_lr(ropus_silk_stereo *state, int16_t *x1,
       pred1_Q13 += delta1_Q13;
       sum = (int32_t)((uint32_t)(x1[n] + (int32_t)x1[n + 2]
          + ((int32_t)x1[n + 1] << 1)) << 9);
-      sum = RSILK_SMLAWB((int32_t)((uint32_t)x2[n + 1] << 8),
+      sum = ROPUS_SILK_SMLAWB((int32_t)((uint32_t)x2[n + 1] << 8),
          sum, pred0_Q13);
-      sum = RSILK_SMLAWB(sum,
+      sum = ROPUS_SILK_SMLAWB(sum,
          (int32_t)((uint32_t)x1[n + 1] << 11), pred1_Q13);
-      x2[n + 1] = (int16_t)RSILK_SAT16(RSILK_RSHIFT_ROUND(sum, 8));
+      x2[n + 1] = (int16_t)ROPUS_SILK_SAT16(ROPUS_SILK_RSHIFT_ROUND(sum, 8));
    }
    pred0_Q13 = pred_Q13[0];
    pred1_Q13 = pred_Q13[1];
@@ -9163,11 +9779,11 @@ static void ropus_silk_ms_to_lr(ropus_silk_stereo *state, int16_t *x1,
    {
       sum = (int32_t)((uint32_t)(x1[n] + (int32_t)x1[n + 2]
          + ((int32_t)x1[n + 1] << 1)) << 9);
-      sum = RSILK_SMLAWB((int32_t)((uint32_t)x2[n + 1] << 8),
+      sum = ROPUS_SILK_SMLAWB((int32_t)((uint32_t)x2[n + 1] << 8),
          sum, pred0_Q13);
-      sum = RSILK_SMLAWB(sum,
+      sum = ROPUS_SILK_SMLAWB(sum,
          (int32_t)((uint32_t)x1[n + 1] << 11), pred1_Q13);
-      x2[n + 1] = (int16_t)RSILK_SAT16(RSILK_RSHIFT_ROUND(sum, 8));
+      x2[n + 1] = (int16_t)ROPUS_SILK_SAT16(ROPUS_SILK_RSHIFT_ROUND(sum, 8));
    }
    state->pred_prev_Q13[0] = (int16_t)pred_Q13[0];
    state->pred_prev_Q13[1] = (int16_t)pred_Q13[1];
@@ -9175,8 +9791,8 @@ static void ropus_silk_ms_to_lr(ropus_silk_stereo *state, int16_t *x1,
    {
       sum = x1[n + 1] + (int32_t)x2[n + 1];
       diff = x1[n + 1] - (int32_t)x2[n + 1];
-      x1[n + 1] = (int16_t)RSILK_SAT16(sum);
-      x2[n + 1] = (int16_t)RSILK_SAT16(diff);
+      x1[n + 1] = (int16_t)ROPUS_SILK_SAT16(sum);
+      x2[n + 1] = (int16_t)ROPUS_SILK_SAT16(diff);
    }
 }
 
@@ -9216,8 +9832,8 @@ static void ropus_silk2_decode_frame_ch(ropus_silk2 *s, int n,
    ropus_silk_decode_indices(st, dec, st->nFramesDecoded, 0, condCoding);
    ropus_silk_decode_pulses(dec, pulses, st->indices.signalType,
       st->indices.quantOffsetType, st->frame_length);
-   rsilk_decode_parameters(st, &ctrl, condCoding);
-   rsilk_decode_core(st, &ctrl, pOut, pulses, &s->prev_gain_Q16[n]);
+   ropus_silk_decode_parameters(st, &ctrl, condCoding);
+   ropus_silk_decode_core(st, &ctrl, pOut, pulses, &s->prev_gain_Q16[n]);
    st->prevSignalType = st->indices.signalType;
    st->first_frame_after_reset = 0;
    mv_len = st->ltp_mem_length - st->frame_length;
@@ -9895,7 +10511,7 @@ int ropus_decode_s16(ropus_t *o, const void *pkt, size_t len,
          (int16_t)ROPUS_MULT16_16_P15(21771, o->gain_q8));
       for (i = 0; i < total * o->channels; i++)
       {
-         int32_t x = (int32_t)((RSILK_SMULL(out[i], gain) + 32768) >> 16);
+         int32_t x = (int32_t)((ROPUS_SILK_SMULL(out[i], gain) + 32768) >> 16);
          out[i] = (int16_t)ROPUS_SAT16(x);
       }
    }
