@@ -134,6 +134,7 @@ HAVE_STB_FONT=yes          # stb_truetype font support
 HAVE_STB_IMAGE=yes         # stb image loading support
 HAVE_RVORBIS=yes        # stb vorbis support
 HAVE_RMODTRACKER=yes        	   # rmodtracker MOD/S3M/XM support
+HAVE_ROPUS=yes        	   # ropus Opus audio support
 HAVE_XVIDEO=no             # XVideo support
 HAVE_V4L2=auto             # Video4linux2 support
 HAVE_NEON=no               # ARM NEON optimizations

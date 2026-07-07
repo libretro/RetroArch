@@ -35,6 +35,8 @@
 
 #define HAVE_RMODTRACKER 1
 
+#define HAVE_ROPUS 1
+
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
 #define HAVE_COMPRESSION 1
 #endif
@@ -1011,7 +1013,10 @@ DRIVERS
 #if defined(HAVE_RMP3)
 #include "../libretro-common/formats/mp3/rmp3.c"
 #endif
-#if defined(HAVE_RFLAC) || defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#ifdef HAVE_ROPUS
+#include "../libretro-common/formats/opus/ropus.c"
+#endif
+#if defined(HAVE_RFLAC) || defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_ROPUS)
 #include "../libretro-common/formats/audio_transfer.c"
 #endif
 #include "../libretro-common/audio/audio_mixer.c"
