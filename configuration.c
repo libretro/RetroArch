@@ -1930,6 +1930,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_widget_scale.h"
+#endif
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
@@ -2612,6 +2615,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_widget_scale.h"
+#endif
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
@@ -3126,7 +3132,6 @@ static struct config_float_setting *populate_settings_float(
 #undef S_ACTION_LV_NS
 #undef S_ACTION_LV_H
 #undef S_ACTION_LV_NS_H
-   SETTING_FLOAT("menu_widget_scale_factor",     &settings->floats.menu_widget_scale_factor, true, DEFAULT_MENU_WIDGET_SCALE_FACTOR, false);
    SETTING_FLOAT("menu_footer_opacity",          &settings->floats.menu_footer_opacity,      true, DEFAULT_MENU_FOOTER_OPACITY, false);
    SETTING_FLOAT("menu_header_opacity",          &settings->floats.menu_header_opacity,      true, DEFAULT_MENU_HEADER_OPACITY, false);
 #ifdef HAVE_OZONE
@@ -3252,6 +3257,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_widget_scale.h"
+#endif
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
@@ -3925,6 +3933,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_widget_scale.h"
+#endif
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
@@ -4486,6 +4497,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_MENU
+#include "settings/settings_def_widget_scale.h"
+#endif
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"

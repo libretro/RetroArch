@@ -316,7 +316,6 @@
 #define MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES_STR "download_core_system_files"
 #define MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES_STR "update_installed_cores"
 #define MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD_STR "switch_installed_cores_pfd"
-#define MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_STR "menu_widget_scale_factor"
 #define MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE_STR "core_option_category_enable"
 #define MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE_STR "core_info_cache_enable"
 #define MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS_STR "core_info_savestate_bypass"
