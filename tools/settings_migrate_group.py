@@ -697,6 +697,9 @@ for _T, _h, _eg in enum_rows:
         print("  enum stage skipped: %s guard mismatch enum=%s def=%s" % (_T, sorted(_et), sorted(_dt)))
         _enum_ok = False; break
 
+if not enum_rows:
+    _enum_ok = False
+    print('gate: enum stage - nothing to consolidate (all rows are references)')
 if _enum_ok:
     MARK = '/*__SETTINGS_DEF_ENUM_MARK__*/'
     _first = True
