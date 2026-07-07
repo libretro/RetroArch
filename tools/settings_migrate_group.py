@@ -388,6 +388,15 @@ for k, f, T, a in rows:
         lbl_g = guard_of(open('intl/msg_hash_lbl.h').read(), r'MENU_ENUM_LABEL_%s,' % T)
         strings_guarded = bool(us_g) and bool(lbl_g)
         strings_free    = not us_g and not lbl_g
+        if us_g and not lbl_g:
+            # Guarded base-language strings under an unguarded label row:
+            # the campaign's model is strings-always, so the guarded rows
+            # are consumed and the def emits them unconditionally. Costs
+            # a few string bytes on the excluded platform; buys one
+            # source of truth. The context scaling pair, alternated on
+            # the OdroidGo2 define, surfaced the class.
+            print('  note: %s strings were guarded %s - emitted unconditionally' % (T, us_g))
+            strings_free = True
         assert strings_guarded or strings_free, (T, us_g, lbl_g, 'mixed string-guard topology')
         if strings_free:
             row = ('/* Descriptor and configuration rows are %s; the string\n'
