@@ -11263,12 +11263,9 @@ static const setting_desc_t cs_desc_2[] = {
 #endif
 
 static const setting_desc_t frame_time_cou_desc_0[] = {
-/* GENERATED: rows come from settings_def_video_frame_time_sample.h in order. */
+/* GENERATED: two adjacent row files, concatenated so the whole
+ * screen is one table and the builder becomes pure data. */
 #include "../settings/settings_def_video_frame_time_sample.h"
-};
-
-static const setting_desc_t frame_time_cou_desc_1[] = {
-/* GENERATED: rows come from settings_def_frame_time_counter.h in order. */
 #include "../settings/settings_def_frame_time_counter.h"
 };
 
@@ -13481,29 +13478,6 @@ static void settings_build_cloud_sync(
    }
 }
 
-static void settings_build_frame_time_counter(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS), parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-            ADD_DESC(frame_time_cou_desc_0);
-            ADD_DESC(frame_time_cou_desc_1);
-
-      GROUP_END();
-   }
-}
 
 static void settings_build_rewind(
       settings_t *settings, global_t *global,
@@ -17322,30 +17296,6 @@ static void settings_build_manual_content_scan(
 }
 
 #ifdef HAVE_MIST
-static void settings_build_steam(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS), parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State",
-            &group_info, &subgroup_info, parent_group);
-
-            ADD_DESC(steam_desc_0);
-
-      GROUP_END();
-   }
-}
 #endif
 
 #ifdef HAVE_SMBCLIENT
@@ -17504,7 +17454,11 @@ static const settings_build_entry_t settings_build_registry[] = {
    { SETTINGS_LIST_LOGGING, settings_build_logging, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_SAVING, settings_build_saving, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_CLOUD_SYNC, settings_build_cloud_sync, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
-   { SETTINGS_LIST_FRAME_TIME_COUNTER, settings_build_frame_time_counter, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_FRAME_TIME_COUNTER, NULL,
+     frame_time_cou_desc_0, (unsigned)ARRAY_SIZE(frame_time_cou_desc_0),
+     MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS },
    { SETTINGS_LIST_REWIND, settings_build_rewind, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_CHEATS, NULL,
      cheats_desc_0, (unsigned)ARRAY_SIZE(cheats_desc_0),
@@ -17610,7 +17564,11 @@ static const settings_build_entry_t settings_build_registry[] = {
    { SETTINGS_LIST_MIDI, settings_build_midi, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_MANUAL_CONTENT_SCAN, settings_build_manual_content_scan, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
 #ifdef HAVE_MIST
-   { SETTINGS_LIST_STEAM, settings_build_steam, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_STEAM, NULL,
+     steam_desc_0, (unsigned)ARRAY_SIZE(steam_desc_0),
+     MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS },
 #endif
 #ifdef HAVE_SMBCLIENT
    { SETTINGS_LIST_SMBCLIENT, settings_build_smbclient, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
@@ -17818,7 +17776,6 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
 #endif
    { frame_time_cou_desc_0, (uint16_t)ARRAY_SIZE(frame_time_cou_desc_0) },
-   { frame_time_cou_desc_1, (uint16_t)ARRAY_SIZE(frame_time_cou_desc_1) },
    { rewind_desc_0, (uint16_t)ARRAY_SIZE(rewind_desc_0) },
    { rewind_desc_1, (uint16_t)ARRAY_SIZE(rewind_desc_1) },
 #if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
