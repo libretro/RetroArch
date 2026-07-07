@@ -57,6 +57,26 @@ typedef struct rvp8_dec
    int       ref_lf_delta[4], mode_lf_delta[4];
    int       seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
    int       my;                     /* next MB row to decode               */
+   /* Inter-frame state (0/unused for key frames). */
+   int       is_inter;               /* this frame is an inter frame        */
+   int       use_bilinear;           /* version 1-3: 2-tap MC filter        */
+   int       full_pixel;             /* version 3: integer-pel chroma MVs   */
+   int       refresh_golden, refresh_altref, refresh_last;
+   int       copy_golden, copy_altref;
+   int       refresh_entropy;
+   int       sign_bias[4];           /* indexed by ref_frame: 0=intra(unused),
+                                        1=last(always 0), 2=golden, 3=altref */
+   int       prob_intra, prob_last, prob_golden;
+   uint8_t   ymode_prob[4];          /* inter-frame intra Y mode probs       */
+   uint8_t   uvmode_prob[3];         /* inter-frame intra UV mode probs      */
+   uint8_t   mvc[2][19];             /* MV component probabilities           */
+   /* Reference frame planes (borrowed from the persistent decoder; the
+    * inter MB predictor reads from these). NULL for a key frame. */
+   const uint8_t *ref_y[3], *ref_u[3], *ref_v[3];
+   int       ref_ys[3], ref_uvs[3];
+   /* Per-MB motion vectors for the current frame, mbw*mbh entries, so the
+    * MV predictor can read decoded neighbours. Owned here. */
+   void     *mb_info;
 } rvp8_dec;
 
 /* One-shot: decode a complete VP8 key frame from 'data' (the raw VP8
@@ -80,6 +100,27 @@ uint32_t *rvp8_output(rvp8_dec *s);
 void      rvp8_filter_rows(rvp8_dec *s, int my0, int my1);
 int       rvp8_upsample_rows(rvp8_dec *s, uint32_t *pix, int j0, int max_rows);
 void      rvp8_abort(rvp8_dec *s);
+
+/* Persistent VP8 video decoder: decodes a sequence of frames (key and
+ * inter), maintaining the last/golden/altref reference frames and the
+ * inherited probability context across frames.  Feed raw VP8 frame
+ * payloads (e.g. WebM block data) in stream order; the first frame must
+ * be a key frame.
+ *
+ *   rvp8_video *v = rvp8_video_open();
+ *   for each frame:
+ *      if (rvp8_video_decode(v, data, len) != 0) fail;
+ *      y = rvp8_video_plane(v, 0, &ystride, &w, &h);   (also 1=U, 2=V)
+ *   rvp8_video_close(v);
+ *
+ * The returned plane pointers stay valid until the next decode call. */
+typedef struct rvp8_video rvp8_video;
+
+rvp8_video    *rvp8_video_open(void);
+int            rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len);
+const uint8_t *rvp8_video_plane(const rvp8_video *v, int plane,
+      int *stride, int *width, int *height);
+void           rvp8_video_close(rvp8_video *v);
 
 RETRO_END_DECLS
 

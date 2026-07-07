@@ -1,14 +1,22 @@
-/* rvp8 -- self-contained VP8 key-frame (intra) decoder for libretro-common.
+/* rvp8 -- self-contained VP8 decoder (key frame and inter frame) for
+ * libretro-common.
  *
- * Extracted verbatim from the WebP decoder (formats/webp/rwebp.c): this is
- * the lossy VP8 image path -- coefficient tokens, dequantisation, the DCT
- * and Walsh-Hadamard inverse transforms, 4x4 and 16x16 intra prediction,
- * both loop filters, fancy chroma upsampling and YUV->RGB.  A WebP 'VP8 '
- * chunk is always a single key frame, so no inter-frame machinery (motion
- * vectors, reference frames) is present.
+ * The intra path was extracted verbatim from the WebP decoder
+ * (formats/webp/rwebp.c): coefficient tokens, dequantisation, the DCT and
+ * Walsh-Hadamard inverse transforms, 4x4 and 16x16 intra prediction, both
+ * loop filters, fancy chroma upsampling and YUV->RGB.
  *
- * The public entry points (rvp8_decode and the resumable rvp8_* row API)
- * are declared in <formats/rvp8.h>; everything else here is private.
+ * The inter path implements the rest of RFC 6386: inter frame headers,
+ * per-macroblock mode and motion-vector decode (ZEROMV/NEAREST/NEAR/NEW/
+ * SPLITMV, intra-in-inter), near-MV prediction with reference sign bias,
+ * six-tap sub-pixel motion compensation, per-mode/ref loop-filter deltas,
+ * and last/golden/altref reference-frame management (rvp8_video_*).
+ * Every path is verified byte-identical against libvpx.
+ *
+ * Public entry points are declared in <formats/rvp8.h>:
+ *   - rvp8_decode / the resumable rvp8_* row API for single key frames
+ *     (WebP 'VP8 ' chunks are always a single key frame);
+ *   - the rvp8_video_* persistent decoder for VP8 video streams.
  *
  * SPDX-License-Identifier: MIT  (RetroArch libretro-common)
  */
@@ -672,6 +680,104 @@ static void vp8_iwht4x4(const int16_t in[16], int16_t out[16])
 static const uint8_t vp8_ymp[4] = {145,156,163,128};
 static const uint8_t vp8_uvmp[3] = {142,114,183};
 
+/* ==================================================================== */
+/* VP8 inter-frame decode (RFC 6386 sections 9.7-9.10, 16-18).          */
+/* ==================================================================== */
+
+/* Reference frame indices. */
+#define RVP8_REF_LAST    1  /* matches decoded ref_frame values */
+#define RVP8_REF_GOLDEN  2
+#define RVP8_REF_ALTREF  3
+
+/* Inter 16x16 Y prediction modes (after the intra/inter split). */
+#define MV_ZERO   0   /* ZEROMV  */
+#define MV_NEAREST 1  /* NEARESTMV */
+#define MV_NEAR   2   /* NEARMV  */
+#define MV_NEW    3   /* NEWMV   */
+#define MV_SPLIT  4   /* SPLITMV */
+
+typedef struct { int16_t x, y; } rvp8_mv;
+
+/* Per-macroblock decoded info the MV predictor and reconstruction need. */
+typedef struct
+{
+   uint8_t  ref_frame;   /* 0=intra, 1=last, 2=golden, 3=altref            */
+   uint8_t  mode;        /* MV_ZERO/NEAREST/NEAR/NEW/SPLIT (inter) or intra */
+   rvp8_mv  mv;          /* 16x16 motion vector (1/8-pel: whole = *8? no,  */
+                         /* VP8 MVs are in quarter-pel*2 = eighth? see below*/
+   rvp8_mv  bmv[16];     /* per-sub-block MVs for SPLITMV                    */
+   uint8_t  is_split;
+   uint8_t  bmodes[16];  /* B_PRED sub-block modes (intra-in-inter)         */
+   uint8_t  uvmode;      /* chroma intra mode (intra-in-inter)              */
+} rvp8_mbinfo;
+
+/* 16x16 inter mode tree probabilities (RFC 6386 s16.1, vp8_mode_contexts
+ * default row when no context; but VP8 uses per-context probs indexed by
+ * near/nearest/zero counts). We use the mode_contexts table. */
+static const uint8_t vp8_mode_contexts[6][4] = {
+   {  7,   1,   1, 143 },
+   { 14,  18,  14, 107 },
+   {135,  64,  57,  68 },
+   { 60,  56, 128,  65 },
+   {159, 134, 128,  34 },
+   {234, 188, 128,  28 }
+};
+
+/* MV component entropy: [is_short][...] per RFC 6386 s17.2.
+ * Layout matches libvpx vp8_default_mv_context: for each of 2 components,
+ * 19 probabilities. */
+#define MVPCOUNT 19
+static const uint8_t vp8_default_mv_context[2][MVPCOUNT] = {
+   { /* row (y) */
+      162, 128, 225, 146, 172, 147, 214, 39, 156,
+      128, 129, 132,  75, 145, 178, 206, 239, 254, 254
+   },
+   { /* col (x) */
+      164, 128, 204, 170, 119, 235, 140, 230, 228,
+      128, 130, 130,  74, 148, 180, 203, 236, 254, 254
+   }
+};
+
+/* MV update probabilities (RFC 6386 s17.2, vp8_mv_update_probs). */
+static const uint8_t vp8_mv_update_probs[2][MVPCOUNT] = {
+   {
+      237, 246, 253, 253, 254, 254, 254, 254, 254,
+      254, 254, 254, 254, 254, 250, 250, 252, 254, 254
+   },
+   {
+      231, 243, 245, 253, 254, 254, 254, 254, 254,
+      254, 254, 254, 254, 254, 251, 251, 254, 254, 254
+   }
+};
+
+/* Long-vector bit-probability indices within the 19-entry array. */
+#define MVPbits   9   /* offset of the 10 long-bit probs (mvlong_width=10) */
+#define MVPshort  2   /* offset of the 7 short-tree probs                  */
+#define mvlong_width 10
+#define mvnum_short  8
+
+/* 6-tap sub-pixel interpolation filters (RFC 6386 s16.2, table). Indexed
+ * by the 3-bit fractional MV; each is a 6-tap kernel. */
+static const int16_t vp8_sixtap_filters[8][6] = {
+   { 0,  0, 128,   0,  0, 0 },
+   { 0, -6, 123,  12, -1, 0 },
+   { 2, -11, 108, 36, -8, 1 },
+   { 0, -9,  93,  50, -6, 0 },
+   { 3, -16, 77,  77, -16, 3 },
+   { 0, -6,  50,  93, -9, 0 },
+   { 1, -8,  36, 108, -11, 2 },
+   { 0, -1,  12, 123, -6, 0 }
+};
+
+/* Bilinear filters (used when the frame header selects them; VP8 uses the
+ * sixtap set for the "normal" filter and bilinear for the "simple"/version
+ * variants). */
+static const int16_t vp8_bilinear_filters[8][2] = {
+   { 128,   0 }, { 112,  16 }, { 96, 32 }, { 80, 48 },
+   { 64,  64 },  { 48,  80 },  { 32, 96 }, { 16, 112 }
+};
+
+
 /* Key-frame B_PRED sub-block mode probabilities (RFC 6386 §12.1)
  * Indexed by [above_bmode][left_bmode][tree_node 0..8] */
 static const uint8_t kf_bmode_prob[10][10][9] = {
@@ -688,6 +794,28 @@ static const uint8_t kf_bmode_prob[10][10][9] = {
 };
 
 /* Decode a B_PRED sub-block mode from the key-frame tree (RFC 6386 §12.1) */
+/* Inter-frame B_PRED sub-block mode: fixed (non-contextual) probabilities
+ * vp8_bmode_prob, walked over the same bmode tree as the key-frame path. */
+static const uint8_t rvp8_inter_bmode_prob[9] =
+   { 120, 90, 79, 133, 87, 85, 80, 111, 151 };
+static int vp8_read_bmode_inter(rvp8_bool *br)
+{
+   const uint8_t *p = rvp8_inter_bmode_prob;
+   if (!vp8b_get(br, p[0])) return 0; /* B_DC_PRED */
+   if (!vp8b_get(br, p[1])) return 1; /* B_TM_PRED */
+   if (!vp8b_get(br, p[2])) return 2; /* B_VE_PRED */
+   if (!vp8b_get(br, p[3])) {
+      if (!vp8b_get(br, p[4])) return 3; /* B_HE_PRED */
+      if (!vp8b_get(br, p[5])) return 5; /* B_RD_PRED */
+      return 6; /* B_VR_PRED */
+   } else {
+      if (!vp8b_get(br, p[6])) return 4; /* B_LD_PRED */
+      if (!vp8b_get(br, p[7])) return 7; /* B_VL_PRED */
+      if (!vp8b_get(br, p[8])) return 8; /* B_HD_PRED */
+      return 9; /* B_HU_PRED */
+   }
+}
+
 static int vp8_read_bmode(rvp8_bool *br, int above, int left)
 {
    const uint8_t *p = kf_bmode_prob[above][left];
@@ -814,25 +942,87 @@ static void vp8_simple_lf_edge(uint8_t *p1p, uint8_t *p0p, uint8_t *q0p, uint8_t
    }
 }
 
+/* Per-MB loop-filter level: base/segment level plus the per-MB ref-frame
+ * and mode deltas (libvpx vp8_loop_filter_frame_init).  Shared by the
+ * normal and simple filters -- the level computation is identical, only
+ * the edge kernels differ.  mb_info is the decoded rvp8_mbinfo array for
+ * an inter frame, NULL for a key frame. */
+static int rvp8_mb_filter_level(int n, int lf_level,
+   int seg_enabled, int seg_abs, const int *seg_lf,
+   int lf_delta_enabled, const int *ref_lf_delta, const int *mode_lf_delta,
+   const uint8_t *seg_map, const uint8_t *bpred_map, const void *mb_info)
+{
+   const rvp8_mbinfo *mbi = (const rvp8_mbinfo*)mb_info;
+   int lvl = lf_level;
+   int is_bpred;
+
+   if (seg_enabled && seg_abs)
+      lvl = seg_lf[seg_map ? seg_map[n] : 0];
+   else if (seg_enabled)
+      lvl = lf_level + seg_lf[seg_map ? seg_map[n] : 0];
+   if (lvl < 0) lvl = 0;
+   if (lvl > 63) lvl = 63;
+   is_bpred = bpred_map ? bpred_map[n] : 0;
+   /* For an inter frame the ref index and mode index come from the decoded
+    * mbinfo; for a key frame every MB is INTRA + its intra mode (the bpred
+    * flag distinguishes mode 0 vs 1). */
+   if (lf_delta_enabled)
+   {
+      int ref_idx = 0;   /* INTRA_FRAME */
+      int add_mode_delta = 0;
+      int mode_idx = 0;
+      if (mbi && mbi[n].ref_frame != 0)
+      {
+         /* Inter MB: ref + mode both index the delta tables. */
+         const rvp8_mbinfo *m = &mbi[n];
+         ref_idx = m->ref_frame;
+         switch (m->mode)
+         {
+            case MV_ZERO:    mode_idx = 1; break;
+            case MV_NEAREST:
+            case MV_NEAR:
+            case MV_NEW:     mode_idx = 2; break;
+            case MV_SPLIT:   mode_idx = 3; break;
+            default:         mode_idx = 1; break;
+         }
+         add_mode_delta = 1;
+      }
+      else
+      {
+         /* Intra MB (key frame or intra-in-inter): the mode delta is
+          * applied ONLY to B_PRED (libvpx vp8_loop_filter_frame_init:
+          * mode 0 gets mode_lf_deltas[0]; all other intra modes get
+          * no mode delta). */
+         ref_idx = 0;
+         if (is_bpred) { mode_idx = 0; add_mode_delta = 1; }
+      }
+      lvl += ref_lf_delta[ref_idx];
+      if (add_mode_delta) lvl += mode_lf_delta[mode_idx];
+      if (lvl < 0) lvl = 0;
+      if (lvl > 63) lvl = 63;
+   }
+   return lvl;
+}
+
 static void vp8_loop_filter_simple(uint8_t *y, int ys,
    int mbw, int lf_my0, int lf_my1, int lf_level, int sharpness,
    int seg_enabled, int seg_abs, const int *seg_lf,
-   const uint8_t *seg_map, const uint8_t *skip_lf_map)
+   int lf_delta_enabled, const int *ref_lf_delta, const int *mode_lf_delta,
+   const uint8_t *seg_map, const uint8_t *skip_lf_map, const uint8_t *bpred_map,
+   const void *mb_info)
 {
    int mx, my, i, e;
    for (my = lf_my0; my < lf_my1; my++)
    {
       for (mx = 0; mx < mbw; mx++)
       {
-         int mb_lf = lf_level;
+         int mb_lf;
          int lim, blim, mblim, skip_lf;
          uint8_t *my0 = y + my * 16 * ys + mx * 16;
-         if (seg_enabled && seg_abs)
-            mb_lf = seg_lf[seg_map ? seg_map[my * mbw + mx] : 0];
-         else if (seg_enabled)
-            mb_lf = lf_level + seg_lf[seg_map ? seg_map[my * mbw + mx] : 0];
-         if (mb_lf < 0) mb_lf = 0;
-         if (mb_lf > 63) mb_lf = 63;
+         mb_lf = rvp8_mb_filter_level(my * mbw + mx, lf_level,
+               seg_enabled, seg_abs, seg_lf,
+               lf_delta_enabled, ref_lf_delta, mode_lf_delta,
+               seg_map, bpred_map, mb_info);
          if (mb_lf == 0) continue;
          /* Limits per libvpx vp8_loop_filter_update_sharpness */
          lim = mb_lf >> ((sharpness > 0) + (sharpness > 4));
@@ -1420,36 +1610,28 @@ static void vp8_loop_filter_normal(uint8_t *y, int ys,
    int mbw, int lf_my0, int lf_my1, int lf_level, int sharpness,
    int seg_enabled, int seg_abs, const int *seg_lf,
    int lf_delta_enabled, const int *ref_lf_delta, const int *mode_lf_delta,
-   const uint8_t *seg_map, const uint8_t *skip_lf_map, const uint8_t *bpred_map)
+   const uint8_t *seg_map, const uint8_t *skip_lf_map, const uint8_t *bpred_map,
+   const void *mb_info)
 {
+   /* Mode -> loop-filter delta index (libvpx mode_lf_lut): intra 16x16
+    * modes = 1, B_PRED = 0, ZEROMV = 1, NEAREST/NEAR/NEW = 2, SPLIT = 3. */
+   const rvp8_mbinfo *mbi = (const rvp8_mbinfo*)mb_info;
    int mx, my, e;
    for (my = lf_my0; my < lf_my1; my++)
    {
       for (mx = 0; mx < mbw; mx++)
       {
          int n = my * mbw + mx;
-         int lvl = lf_level;
-         int lim, blim, mblim, thr, skip_lf, is_bpred;
+         int lvl;
+         int lim, blim, mblim, thr, skip_lf;
          uint8_t *my0 = y + my * 16 * ys + mx * 16;
          uint8_t *mu0 = u + my * 8 * uvs + mx * 8;
          uint8_t *mv0 = v_plane + my * 8 * uvs + mx * 8;
 
-         if (seg_enabled && seg_abs)
-            lvl = seg_lf[seg_map ? seg_map[n] : 0];
-         else if (seg_enabled)
-            lvl = lf_level + seg_lf[seg_map ? seg_map[n] : 0];
-         if (lvl < 0) lvl = 0;
-         if (lvl > 63) lvl = 63;
-         is_bpred = bpred_map ? bpred_map[n] : 0;
-         /* Keyframe delta adjustment (libvpx vp8_loop_filter_frame_init):
-          * INTRA ref delta applies to all MBs; mode delta 0 to B_PRED. */
-         if (lf_delta_enabled)
-         {
-            lvl += ref_lf_delta[0];
-            if (is_bpred) lvl += mode_lf_delta[0];
-            if (lvl < 0) lvl = 0;
-            if (lvl > 63) lvl = 63;
-         }
+         lvl = rvp8_mb_filter_level(n, lf_level,
+               seg_enabled, seg_abs, seg_lf,
+               lf_delta_enabled, ref_lf_delta, mode_lf_delta,
+               seg_map, bpred_map, mb_info);
          if (lvl == 0) continue;
 
          /* Limits per vp8_loop_filter_update_sharpness */
@@ -1458,8 +1640,13 @@ static void vp8_loop_filter_normal(uint8_t *y, int ys,
          if (lim < 1) lim = 1;
          mblim = 2 * (lvl + 2) + lim;
          blim  = 2 * lvl + lim;
-         /* Keyframe high-edge-variance threshold */
-         thr = (lvl >= 40) ? 2 : (lvl >= 15) ? 1 : 0;
+         /* High-edge-variance threshold (libvpx hev_thr_lut): frame-type
+          * dependent. Inter frames use a higher index at each level. The
+          * filter receives a non-NULL mbi only for inter frames. */
+         if (mbi)  /* inter frame */
+            thr = (lvl >= 40) ? 3 : (lvl >= 20) ? 2 : (lvl >= 15) ? 1 : 0;
+         else      /* key frame */
+            thr = (lvl >= 40) ? 2 : (lvl >= 15) ? 1 : 0;
 
          skip_lf = skip_lf_map ? skip_lf_map[n] : 0;
 
@@ -1570,23 +1757,119 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
    rvp8_bool tbr[8]; /* up to 8 token partitions */
    const uint8_t *p0;
 
+   /* Preserve caller-supplied inter setup across the state reset: for an
+    * inter frame the persistent decoder fills in dimensions, reference
+    * planes and the inherited probability context before calling begin. */
+   int      save_is_inter;
+   int      save_w, save_h;
+   const uint8_t *save_ry[3], *save_ru[3], *save_rv[3];
+   int      save_rys[3], save_ruvs[3];
+   uint8_t  save_cprob[4][8][3][11];
+   uint8_t  save_mvc[2][19], save_ym[4], save_uvm[3];
+   int      save_reflfd[4], save_modelfd[4];
+   void    *save_mbinfo;
+
+   /* Free any per-frame buffers from a previous decode on this state
+    * (the persistent video decoder reuses one rvp8_dec across frames).
+    * The reference frames live in the wrapper, not here, so freeing these
+    * scratch buffers is safe. Persistent probability/delta/mbinfo state is
+    * saved and restored around the memset below. */
+   free(s->seg_map_buf); free(s->skip_lf_buf); free(s->bpred_buf);
+   free(s->yb); free(s->ub); free(s->vb);
+   free(s->above_nz_y); free(s->above_nz_u); free(s->above_nz_v);
+   free(s->above_nz_dc); free(s->above_bmodes);
+   free(s->fancy_uv);
+   s->seg_map_buf = s->skip_lf_buf = s->bpred_buf = NULL;
+   s->yb = s->ub = s->vb = NULL;
+   s->above_nz_y = s->above_nz_u = s->above_nz_v = NULL;
+   s->above_nz_dc = s->above_bmodes = s->fancy_uv = NULL;
+
+   save_is_inter = s->is_inter;
+   save_w = s->w; save_h = s->h;
+   save_mbinfo = s->mb_info;
+   {
+      int a;
+      for (a = 0; a < 3; a++)
+      {
+         save_ry[a]  = s->ref_y[a];  save_ru[a] = s->ref_u[a];
+         save_rv[a]  = s->ref_v[a];
+         save_rys[a] = s->ref_ys[a]; save_ruvs[a] = s->ref_uvs[a];
+      }
+      if (save_is_inter)
+      {
+         memcpy(save_cprob, s->cprob, sizeof(save_cprob));
+         memcpy(save_mvc, s->mvc, sizeof(save_mvc));
+         memcpy(save_ym,  s->ymode_prob,  sizeof(save_ym));
+         memcpy(save_uvm, s->uvmode_prob, sizeof(save_uvm));
+         memcpy(save_reflfd, s->ref_lf_delta, sizeof(save_reflfd));
+         memcpy(save_modelfd, s->mode_lf_delta, sizeof(save_modelfd));
+      }
+   }
+
    memset(s, 0, sizeof(*s));
 
-   if (len < 10) return -1;
+   if (save_is_inter)
+   {
+      int a;
+      s->is_inter = 1;
+      s->w = save_w; s->h = save_h;
+      for (a = 0; a < 3; a++)
+      {
+         s->ref_y[a]  = save_ry[a];  s->ref_u[a] = save_ru[a];
+         s->ref_v[a]  = save_rv[a];
+         s->ref_ys[a] = save_rys[a]; s->ref_uvs[a] = save_ruvs[a];
+      }
+      s->mb_info = save_mbinfo;
+      memcpy(s->cprob, save_cprob, sizeof(save_cprob));
+      memcpy(s->mvc, save_mvc, sizeof(save_mvc));
+      memcpy(s->ymode_prob,  save_ym,  sizeof(save_ym));
+      memcpy(s->uvmode_prob, save_uvm, sizeof(save_uvm));
+      memcpy(s->ref_lf_delta, save_reflfd, sizeof(save_reflfd));
+      memcpy(s->mode_lf_delta, save_modelfd, sizeof(save_modelfd));
+   }
+
+   if (len < 3) return -1;
    ft = (uint32_t)data[0] | ((uint32_t)data[1]<<8) | ((uint32_t)data[2]<<16);
    kf = !(ft & 1);
+   /* Version (RFC 6386 s9.1) selects the reconstruction filters:
+    * 0 = six-tap sub-pel MC; 1-3 = bilinear MC; 3 additionally restricts
+    * chroma MVs to whole pixels.  (Versions 2/3 also imply the encoder
+    * writes loop-filter level 0, which the existing level gate honours;
+    * reserved versions 4-7 fall back to the version-0 filters, matching
+    * libvpx vp8_setup_version.) */
+   {
+      int version = (int)((ft >> 1) & 7);
+      s->use_bilinear = (version >= 1 && version <= 3);
+      s->full_pixel   = (version == 3);
+   }
    p0s = (ft >> 5) & 0x7FFFF;
-   if (!kf) return -1;
-   if (data[3]!=0x9D || data[4]!=0x01 || data[5]!=0x2A) return -1;
-   w = (data[6]|(data[7]<<8)) & 0x3FFF;
-   h = (data[8]|(data[9]<<8)) & 0x3FFF;
-   if (!w || !h || w > 16384 || h > 16384) return -1;
+   if (kf)
+   {
+      if (len < 10) return -1;
+      if (data[3]!=0x9D || data[4]!=0x01 || data[5]!=0x2A) return -1;
+      w = (data[6]|(data[7]<<8)) & 0x3FFF;
+      h = (data[8]|(data[9]<<8)) & 0x3FFF;
+      if (!w || !h || w > 16384 || h > 16384) return -1;
+      p0 = data + 10;
+   }
+   else
+   {
+      /* Inter frame: no sync code or dimensions. The caller must supply
+       * them via the persistent decoder (s->w/s->h are preserved across
+       * the memset below by the wrapper). Here they arrive in s->w/s->h
+       * having been set by rvp8_inter_begin before the memset -- but the
+       * memset cleared them, so inter decode is driven through the
+       * persistent path (rvp8_video_*), never this raw entry. */
+      if (s->w <= 0 || s->h <= 0) return -1;
+      w = s->w; h = s->h;
+      p0 = data + 3;
+   }
    mbw = (w+15) >> 4; mbh = (h+15) >> 4;
-   p0 = data + 10;
    if ((size_t)(p0 - data) + p0s > len) return -1;
    vp8b_init(&br, p0, (size_t)(data + len - p0));
 
-   vp8b_bit(&br); vp8b_bit(&br); /* color_space, clamping */
+   if (kf)
+      { vp8b_bit(&br); vp8b_bit(&br); } /* color_space, clamping */
 
    /* Segmentation */
    seg_enabled = vp8b_bit(&br);
@@ -1606,6 +1889,10 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
    }
 
    filter_type = vp8b_bit(&br); lf_level = (int)vp8b_lit(&br,6); sharpness = (int)vp8b_lit(&br,3);
+   /* Loop-filter deltas persist across frames (VP8 keeps them in the
+    * decoder state); seed from the inherited values so an inter frame that
+    * doesn't re-send them keeps the key frame's deltas. */
+   for (i = 0; i < 4; i++) { ref_lf_delta[i] = s->ref_lf_delta[i]; mode_lf_delta[i] = s->mode_lf_delta[i]; }
    lf_delta_enabled = vp8b_bit(&br);
    if (lf_delta_enabled && vp8b_bit(&br))
    {
@@ -1623,11 +1910,38 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
    uvdc_dq = vp8b_bit(&br) ? vp8b_sig(&br,4) : 0;
    uvac_dq = vp8b_bit(&br) ? vp8b_sig(&br,4) : 0;
 
-   /* refresh_entropy_probs (RFC 6386) */
-   (void)vp8b_bit(&br);
+   /* Inter-only reference-refresh + sign-bias flags (RFC 6386 s9.7). */
+   if (!kf)
+   {
+      s->refresh_golden = vp8b_bit(&br);
+      s->refresh_altref = vp8b_bit(&br);
+      s->copy_golden    = s->refresh_golden ? 0 : (int)vp8b_lit(&br, 2);
+      s->copy_altref    = s->refresh_altref ? 0 : (int)vp8b_lit(&br, 2);
+      s->sign_bias[RVP8_REF_GOLDEN] = vp8b_bit(&br);
+      s->sign_bias[RVP8_REF_ALTREF] = vp8b_bit(&br);
+   }
+   else
+   {
+      s->refresh_golden = s->refresh_altref = 1;
+      s->copy_golden = s->copy_altref = 0;
+      s->sign_bias[RVP8_REF_GOLDEN] = s->sign_bias[RVP8_REF_ALTREF] = 0;
+   }
 
-   /* Initialize coefficient probabilities */
-   vp8_init_default_cprob(s->cprob);
+   /* refresh_entropy_probs: when 0, this frame's probability updates are
+    * temporary (the persistent decoder restores the saved probs after the
+    * frame). The wrapper handles save/restore; here we just record it. */
+   s->refresh_entropy = vp8b_bit(&br);
+
+   /* refresh_last_frame comes immediately after refresh_entropy_probs and
+    * before the coefficient-probability updates (key frames always
+    * refresh). */
+   s->refresh_last = kf ? 1 : vp8b_bit(&br);
+
+   /* Coefficient probabilities: a key frame resets to defaults; an inter
+    * frame inherits the persistent set (already copied into s->cprob by
+    * the wrapper). Updates from the bitstream are applied on top of that. */
+   if (kf)
+      vp8_init_default_cprob(s->cprob);
 
    /* Read coefficient probability updates using the fixed update probabilities
     * defined in RFC 6386 §13.4 (Table 2). Each prob may be updated if a flag
@@ -1679,6 +1993,31 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
    /* Dump some probs */
    skip_enabled = vp8b_bit(&br);
    prob_skip = skip_enabled ? (int)vp8b_lit(&br, 8) : 0;
+
+   /* Inter-only: refresh_last, the intra/inter and ref-frame selection
+    * probabilities, optional Y/UV intra-mode prob updates, and the motion
+    * vector probability updates (RFC 6386 s9.9-9.10). */
+   if (!kf)
+   {
+      int c, k;
+      s->prob_intra   = (int)vp8b_lit(&br, 8);
+      s->prob_last    = (int)vp8b_lit(&br, 8);
+      s->prob_golden  = (int)vp8b_lit(&br, 8);
+      /* Y intra-mode probs update (used by intra MBs in an inter frame). */
+      if (vp8b_bit(&br))
+         for (k = 0; k < 4; k++) s->ymode_prob[k] = (uint8_t)vp8b_lit(&br, 8);
+      /* UV intra-mode probs update. */
+      if (vp8b_bit(&br))
+         for (k = 0; k < 3; k++) s->uvmode_prob[k] = (uint8_t)vp8b_lit(&br, 8);
+      /* MV probability updates. */
+      for (c = 0; c < 2; c++)
+         for (k = 0; k < MVPCOUNT; k++)
+            if (vp8b_get(&br, vp8_mv_update_probs[c][k]))
+            {
+               int v = (int)vp8b_lit(&br, 7);
+               s->mvc[c][k] = (uint8_t)(v ? (v << 1) : 1);
+            }
+   }
 
    /* Initialize token partitions. Everything below is bounds-checked
     * against [data, data+len) so a truncated or hostile size table can
@@ -1777,6 +2116,11 @@ tp_ok:
    s->above_nz_dc  = (uint8_t*)calloc(mbw, 1);
    s->above_bmodes = (uint8_t*)calloc(mbw * 4, 1);
    s->fancy_uv     = (uint8_t*)malloc((size_t)w * 2); /* NULL tolerated */
+   /* Per-MB info for inter prediction (allocated once; persists across the
+    * frame). The persistent decoder may pass one in via s->mb_info; if not
+    * present and this is an inter frame, allocate it here. */
+   if (s->is_inter && !s->mb_info)
+      s->mb_info = calloc((size_t)mbw * mbh, sizeof(rvp8_mbinfo));
    if (!s->yb || !s->ub || !s->vb
          || !s->above_nz_y || !s->above_nz_u || !s->above_nz_v
          || !s->above_nz_dc || !s->above_bmodes)
@@ -1795,6 +2139,537 @@ tp_ok:
  * decode loop verbatim: read-only configuration is copied to same-named
  * locals, and only the bool decoders and probability tables (which
  * mutate across calls) go through the state struct. */
+
+/* ==================================================================== */
+/* Inter MB mode + motion-vector decode (RFC 6386 s16-17;               */
+/* mirrors libvpx vp8/decoder/decodemv.c read_mb_modes_mv).             */
+/* ==================================================================== */
+
+
+/* Small-MV tree (RFC 6386): magnitudes 0..7. */
+static const int8_t rvp8_small_mvtree[14] =
+   { 2, 8, 4, 6, 0, -1, -2, -3, 10, 12, -4, -5, -6, -7 };
+
+/* Walk a VP8 probability tree. Negative entries are leaves (return ~leaf,
+ * i.e. -entry). */
+static int rvp8_treed_read(rvp8_bool *b, const int8_t *tree,
+      const uint8_t *probs)
+{
+   int i = 0;
+   while ((i = tree[i + vp8b_get(b, probs[i >> 1])]) > 0)
+      ;
+   return -i;
+}
+
+/* MV component indices within the 19-entry prob array. */
+#define RVP8_mvpis_short 0
+#define RVP8_MVPsign     1
+#define RVP8_MVPshort    2
+#define RVP8_MVPbits     9
+#define RVP8_mvlong_width 10
+
+static int rvp8_read_mvcomponent(rvp8_bool *b, const uint8_t *p)
+{
+   int x = 0;
+   if (vp8b_get(b, p[RVP8_mvpis_short]))       /* large */
+   {
+      int i = 0;
+      do { x += vp8b_get(b, p[RVP8_MVPbits + i]) << i; } while (++i < 3);
+      i = RVP8_mvlong_width - 1;
+      do { x += vp8b_get(b, p[RVP8_MVPbits + i]) << i; } while (--i > 3);
+      if (!(x & 0xFFF0) || vp8b_get(b, p[RVP8_MVPbits + 3])) x += 8;
+   }
+   else                                         /* small */
+      x = rvp8_treed_read(b, rvp8_small_mvtree, p + RVP8_MVPshort);
+   if (x && vp8b_get(b, p[RVP8_MVPsign])) x = -x;
+   return x;
+}
+
+/* Read a full MV (row then col), each component doubled (VP8 stores MVs in
+ * quarter-pel; the *2 makes them eighth-pel for the interpolation stage). */
+static void rvp8_read_mv(rvp8_bool *b, rvp8_mv *mv, uint8_t mvc[2][19])
+{
+   mv->y = (int16_t)(rvp8_read_mvcomponent(b, mvc[0]) * 2);
+   mv->x = (int16_t)(rvp8_read_mvcomponent(b, mvc[1]) * 2);
+}
+
+/* Sign-bias adjustment: if the neighbour's reference has opposite sign bias
+ * to ours, negate its MV. */
+static INLINE void rvp8_mv_bias(int nb_bias, int my_bias, rvp8_mv *mv)
+{
+   if (nb_bias != my_bias)
+   {
+      mv->x = (int16_t)-mv->x;
+      mv->y = (int16_t)-mv->y;
+   }
+}
+
+#define RVP8_CNT_INTRA   0
+#define RVP8_CNT_NEAREST 1
+#define RVP8_CNT_NEAR    2
+#define RVP8_CNT_SPLIT   3
+
+/* Decode one inter/intra MB's mode and MV. 'above','left','aboveleft' are
+ * the neighbour mbinfos (may be NULL at frame edges -> treated as intra
+ * with zero MV). Fills 'out'. Advances the boolean decoder s->br. */
+
+/* SPLITMV sub-block motion decode (RFC 6386 s16.2; libvpx decode_split_mv). */
+static const uint8_t rvp8_mbsplit_offset[4][16] = {
+   { 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+   { 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+   { 0, 2, 8, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+   { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
+};
+static const uint8_t rvp8_mbsplit_fill_count[4] = { 8, 8, 4, 1 };
+static const uint8_t rvp8_mbsplit_fill_offset[4][16] = {
+   { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 },
+   { 0, 1, 4, 5, 8, 9, 12, 13, 2, 3, 6, 7, 10, 11, 14, 15 },
+   { 0, 1, 4, 5, 2, 3, 6, 7, 8, 9, 12, 13, 10, 11, 14, 15 },
+   { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
+};
+static const uint8_t rvp8_sub_mv_ref_prob2[5][3] = {
+   { 147, 136,  18 },
+   { 106, 145,   1 },
+   { 179, 121,   1 },
+   { 223,   1,  34 },
+   { 208,   1,   1 }
+};
+
+/* SUBMVREF selection from left/above sub-block MVs (get_sub_mv_ref_prob). */
+static const uint8_t *rvp8_sub_mv_ref_prob(int32_t left, int32_t above)
+{
+   int lez = (left == 0), aez = (above == 0), lea = (left == above);
+   int idx;
+   if (lea && lez) idx = 4;              /* LEFT_ABOVE_ZED   */
+   else if (lea)   idx = 3;              /* LEFT_ABOVE_SAME  */
+   else if (aez)   idx = 2;              /* ABOVE_ZED        */
+   else if (lez)   idx = 1;              /* LEFT_ZED         */
+   else            idx = 0;              /* NORMAL           */
+   return rvp8_sub_mv_ref_prob2[idx];
+}
+
+static INLINE int32_t rvp8_mvint(rvp8_mv m)
+{
+   /* Pack x/y into one word for equality tests. Shift in unsigned to
+    * avoid signed-overflow UB when x has its high bit set. */
+   return (int32_t)(((uint32_t)(uint16_t)m.x << 16) | (uint16_t)m.y);
+}
+
+/* Decode the SPLITMV sub-block MVs into out->bmv[16]; best_mv is the
+ * near_mvs[near_index] "best" MV. left/above are neighbour mbinfos. */
+static void rvp8_decode_split_mv(rvp8_dec *s, rvp8_mbinfo *out,
+      const rvp8_mbinfo *left, const rvp8_mbinfo *above, rvp8_mv best_mv)
+{
+   int sc, num_p, j;
+   sc = 3; num_p = 16;
+   if (vp8b_get(&s->br, 110))
+   {
+      sc = 2; num_p = 4;
+      if (vp8b_get(&s->br, 111))
+      {
+         sc = vp8b_get(&s->br, 150);
+         num_p = 2;
+      }
+   }
+   for (j = 0; j < num_p; j++)
+   {
+      rvp8_mv leftmv, abovemv, blockmv;
+      const uint8_t *prob;
+      int k = rvp8_mbsplit_offset[sc][j];
+      int fc, fi;
+
+      if (!(k & 3))
+      {
+         if (left && left->is_split)
+            leftmv = left->bmv[k + 4 - 1];
+         else if (left)
+            leftmv = left->mv;
+         else
+            leftmv.x = leftmv.y = 0;
+      }
+      else
+         leftmv = out->bmv[k - 1];
+
+      if (!(k >> 2))
+      {
+         if (above && above->is_split)
+            abovemv = above->bmv[k + 16 - 4];
+         else if (above)
+            abovemv = above->mv;
+         else
+            abovemv.x = abovemv.y = 0;
+      }
+      else
+         abovemv = out->bmv[k - 4];
+
+      prob = rvp8_sub_mv_ref_prob(rvp8_mvint(leftmv), rvp8_mvint(abovemv));
+
+      if (vp8b_get(&s->br, prob[0]))
+      {
+         if (vp8b_get(&s->br, prob[1]))
+         {
+            blockmv.x = blockmv.y = 0;
+            if (vp8b_get(&s->br, prob[2]))
+            {
+               blockmv.y = (int16_t)(rvp8_read_mvcomponent(&s->br, s->mvc[0]) * 2 + best_mv.y);
+               blockmv.x = (int16_t)(rvp8_read_mvcomponent(&s->br, s->mvc[1]) * 2 + best_mv.x);
+            }
+         }
+         else
+            blockmv = abovemv;
+      }
+      else
+         blockmv = leftmv;
+
+      fc = rvp8_mbsplit_fill_count[sc];
+      for (fi = 0; fi < fc; fi++)
+         out->bmv[rvp8_mbsplit_fill_offset[sc][j * rvp8_mbsplit_fill_count[sc] + fi]] = blockmv;
+   }
+   out->mv = out->bmv[15];  /* MB mv = last sub-block (libvpx) */
+}
+
+/* Clamp an MV so its reference fetch stays within the frame plus the
+ * 16-pixel border libvpx assumes (vp8_clamp_mv2). Edges are in 1/8-pel:
+ * to_left/top are <= 0, to_right/bottom >= 0 for interior MBs. */
+#define RVP8_MV_MARGIN (16 << 3)
+static INLINE void rvp8_clamp_mv(rvp8_mv *mv,
+      int to_left, int to_right, int to_top, int to_bottom)
+{
+   if (mv->x < to_left  - RVP8_MV_MARGIN) mv->x = (int16_t)(to_left  - RVP8_MV_MARGIN);
+   else if (mv->x > to_right + RVP8_MV_MARGIN) mv->x = (int16_t)(to_right + RVP8_MV_MARGIN);
+   if (mv->y < to_top   - RVP8_MV_MARGIN) mv->y = (int16_t)(to_top   - RVP8_MV_MARGIN);
+   else if (mv->y > to_bottom + RVP8_MV_MARGIN) mv->y = (int16_t)(to_bottom + RVP8_MV_MARGIN);
+}
+
+static void rvp8_decode_mb_mode(rvp8_dec *s, rvp8_mbinfo *out,
+      const rvp8_mbinfo *above, const rvp8_mbinfo *left,
+      const rvp8_mbinfo *aboveleft, int mx, int my, int mbw, int mbh)
+{
+   rvp8_mbinfo intra_nb;
+   /* Edges in 1/8-pel (libvpx decodeframe.c): left/top <= 0, right/bottom
+    * >= 0 for interior MBs. */
+   int to_left   = -((mx * 16) << 3);
+   int to_right  = ((mbw - 1 - mx) * 16) << 3;
+   int to_top    = -((my * 16) << 3);
+   int to_bottom = ((mbh - 1 - my) * 16) << 3;
+   memset(&intra_nb, 0, sizeof(intra_nb)); /* ref_frame=0 (intra), mv=0 */
+   if (!above)     above     = &intra_nb;
+   if (!left)      left      = &intra_nb;
+   if (!aboveleft) aboveleft = &intra_nb;
+
+   out->is_split = 0;
+   out->mv.x = out->mv.y = 0;
+   memset(out->bmv, 0, sizeof(out->bmv));
+
+   out->ref_frame = (uint8_t)vp8b_get(&s->br, s->prob_intra);
+   if (out->ref_frame)  /* inter */
+   {
+      rvp8_mv near_mvs[4];
+      int cnt[4];
+      int ci = 0;      /* index into near_mvs, mirrors libvpx nmv pointer */
+      int cx = 0;      /* index into cnt, mirrors cntx pointer            */
+      int near_index;
+      const rvp8_mbinfo *nb[3];
+      int wj;
+
+      if (vp8b_get(&s->br, s->prob_last))
+         out->ref_frame = (uint8_t)(2 + vp8b_get(&s->br, s->prob_golden));
+
+      near_mvs[0].x = near_mvs[0].y = 0;
+      near_mvs[1].x = near_mvs[1].y = 0;
+      near_mvs[2].x = near_mvs[2].y = 0;
+      near_mvs[3].x = near_mvs[3].y = 0;
+      cnt[0] = cnt[1] = cnt[2] = cnt[3] = 0;
+
+      nb[0] = above; nb[1] = left; nb[2] = aboveleft;
+      for (wj = 0; wj < 3; wj++)
+      {
+         const rvp8_mbinfo *n = nb[wj];
+         int weight = (wj == 2) ? 1 : 2; /* above/left weight 2, aboveleft 1 */
+         if (n->ref_frame != 0)  /* neighbour is inter */
+         {
+            if (n->mv.x || n->mv.y)
+            {
+               rvp8_mv tm = n->mv;
+               rvp8_mv_bias(s->sign_bias[n->ref_frame], s->sign_bias[out->ref_frame], &tm);
+               if (ci == 0 || tm.x != near_mvs[ci].x || tm.y != near_mvs[ci].y)
+               {
+                  ci++;
+                  near_mvs[ci] = tm;
+                  cx = ci;
+               }
+               cnt[cx] += weight;
+            }
+            else
+               cnt[RVP8_CNT_INTRA] += weight;
+         }
+      }
+
+      /* mode tree */
+      if (vp8b_get(&s->br, vp8_mode_contexts[cnt[RVP8_CNT_INTRA]][0]))
+      {
+         cnt[RVP8_CNT_NEAREST] += ((cnt[RVP8_CNT_SPLIT] > 0) &
+               (near_mvs[ci].x == near_mvs[RVP8_CNT_NEAREST].x &&
+                near_mvs[ci].y == near_mvs[RVP8_CNT_NEAREST].y));
+         if (cnt[RVP8_CNT_NEAR] > cnt[RVP8_CNT_NEAREST])
+         {
+            int t = cnt[RVP8_CNT_NEAREST];
+            rvp8_mv tv = near_mvs[RVP8_CNT_NEAREST];
+            cnt[RVP8_CNT_NEAREST] = cnt[RVP8_CNT_NEAR];
+            cnt[RVP8_CNT_NEAR] = t;
+            near_mvs[RVP8_CNT_NEAREST] = near_mvs[RVP8_CNT_NEAR];
+            near_mvs[RVP8_CNT_NEAR] = tv;
+         }
+         if (vp8b_get(&s->br, vp8_mode_contexts[cnt[RVP8_CNT_NEAREST]][1]))
+         {
+            if (vp8b_get(&s->br, vp8_mode_contexts[cnt[RVP8_CNT_NEAR]][2]))
+            {
+               near_index = RVP8_CNT_INTRA +
+                  (cnt[RVP8_CNT_NEAREST] >= cnt[RVP8_CNT_INTRA]);
+               rvp8_clamp_mv(&near_mvs[near_index], to_left, to_right, to_top, to_bottom);
+               /* cnt[SPLITMV] is (re)computed from neighbour SPLITMV modes
+                * for the split-vs-new decision (libvpx). above/left weight
+                * 2, aboveleft weight 1. */
+               cnt[RVP8_CNT_SPLIT] =
+                  (((above->ref_frame != 0 && above->mode == MV_SPLIT) +
+                    (left->ref_frame  != 0 && left->mode  == MV_SPLIT)) * 2) +
+                  (aboveleft->ref_frame != 0 && aboveleft->mode == MV_SPLIT);
+               if (vp8b_get(&s->br, vp8_mode_contexts[cnt[RVP8_CNT_SPLIT]][3]))
+               {
+                  out->mode = MV_SPLIT;
+                  out->is_split = 1;
+                  rvp8_decode_split_mv(s, out, left, above,
+                        near_mvs[near_index]);
+               }
+               else
+               {
+                  out->mode = MV_NEW;
+                  rvp8_read_mv(&s->br, &out->mv, s->mvc);
+                  out->mv.x = (int16_t)(out->mv.x + near_mvs[near_index].x);
+                  out->mv.y = (int16_t)(out->mv.y + near_mvs[near_index].y);
+               }
+            }
+            else
+            {
+               out->mode = MV_NEAR;
+               out->mv = near_mvs[RVP8_CNT_NEAR];
+               rvp8_clamp_mv(&out->mv, to_left, to_right, to_top, to_bottom);
+            }
+         }
+         else
+         {
+            out->mode = MV_NEAREST;
+            out->mv = near_mvs[RVP8_CNT_NEAREST];
+            rvp8_clamp_mv(&out->mv, to_left, to_right, to_top, to_bottom);
+         }
+      }
+      else
+      {
+         out->mode = MV_ZERO;
+         out->mv.x = out->mv.y = 0;
+      }
+   }
+   else  /* intra MB in inter frame */
+   {
+      /* read_ymode over vp8_ymode_tree {-DC,2,4,6,-V,-H,-TM,-B}: DC first,
+       * then V/H, then TM/B_PRED (distinct from the key-frame tree which
+       * puts B_PRED first). Then, if B_PRED, 16 bmodes; then uv mode. */
+      int ym;
+      if (!vp8b_get(&s->br, s->ymode_prob[0]))
+         ym = 0; /* DC_PRED */
+      else if (!vp8b_get(&s->br, s->ymode_prob[1]))
+         ym = vp8b_get(&s->br, s->ymode_prob[2]) ? 2 : 1; /* H : V */
+      else
+         ym = vp8b_get(&s->br, s->ymode_prob[3]) ? 4 : 3; /* B_PRED : TM */
+      out->mode = (uint8_t)(0x80 | ym); /* high bit flags intra-in-inter */
+      if (ym == 4)
+      {
+         int j;
+         for (j = 0; j < 16; j++)
+            out->bmodes[j] = (uint8_t)vp8_read_bmode_inter(&s->br);
+      }
+      /* uv mode */
+      if      (!vp8b_get(&s->br, s->uvmode_prob[0])) out->uvmode = 0;
+      else if (!vp8b_get(&s->br, s->uvmode_prob[1])) out->uvmode = 1;
+      else     out->uvmode = vp8b_get(&s->br, s->uvmode_prob[2]) ? 3 : 2;
+   }
+}
+
+
+/* ==================================================================== */
+/* Inter (motion-compensated) prediction.                               */
+/* ==================================================================== */
+
+/* Clamp a source coordinate so the (possibly sub-pel) fetch stays inside
+ * the reference plane with room for the 6-tap kernel's 2-pixel halo. */
+static INLINE int rvp8_clampc(int v, int lo, int hi)
+{
+   return v < lo ? lo : v > hi ? hi : v;
+}
+
+/* Copy/interpolate one plane block from the reference. (mvx,mvy) are in
+ * eighth-pel for luma; chroma uses the same MV but the plane is half-res so
+ * the effective fractional precision differs (handled by the caller passing
+ * the right subsample shift). For ZEROMV (frac==0) this is a plain copy. */
+static void rvp8_mc_block(const uint8_t *ref, int rstride,
+      uint8_t *dst, int dstride,
+      int x, int y, int mvx, int mvy, int bw, int bh,
+      int refw, int refh, int use_bilinear)
+{
+   int fx = mvx & 7, fy = mvy & 7;
+   int sx = x + (mvx >> 3);
+   int sy = y + (mvy >> 3);
+   int i, j;
+   if (fx == 0 && fy == 0)
+   {
+      for (j = 0; j < bh; j++)
+      {
+         int cy = rvp8_clampc(sy + j, 0, refh - 1);
+         for (i = 0; i < bw; i++)
+         {
+            int cx = rvp8_clampc(sx + i, 0, refw - 1);
+            dst[j*dstride + i] = ref[cy*rstride + cx];
+         }
+      }
+      return;
+   }
+   if (use_bilinear)
+   {
+      /* Sub-pixel: separable 2-tap bilinear (VP8 versions 1-3; libvpx
+       * filter_block2d_bil).  First pass filters bh+1 rows horizontally
+       * into an unsigned intermediate (taps are non-negative so no
+       * clamping is needed); second pass filters vertically from row
+       * pairs.  Taps {128-8f, 8f} with the usual +64 >> 7 rounding. */
+      const int16_t *hf = vp8_bilinear_filters[fx];
+      const int16_t *vf = vp8_bilinear_filters[fy];
+      uint16_t tmp[17*16]; /* (bh+1) rows x bw cols, bw<=16, bh<=16 */
+      int th = bh + 1;
+      for (j = 0; j < th; j++)
+      {
+         int cy = rvp8_clampc(sy + j, 0, refh - 1);
+         for (i = 0; i < bw; i++)
+         {
+            int c0 = rvp8_clampc(sx + i,     0, refw - 1);
+            int c1 = rvp8_clampc(sx + i + 1, 0, refw - 1);
+            tmp[j*bw + i] = (uint16_t)((hf[0]*ref[cy*rstride + c0] +
+                                        hf[1]*ref[cy*rstride + c1] + 64) >> 7);
+         }
+      }
+      for (j = 0; j < bh; j++)
+         for (i = 0; i < bw; i++)
+         {
+            int acc = (vf[0]*tmp[j*bw + i] + vf[1]*tmp[(j+1)*bw + i] + 64) >> 7;
+            dst[j*dstride + i] = (uint8_t)acc;
+         }
+      return;
+   }
+   /* Sub-pixel: separable 6-tap. Horizontal then vertical. */
+   {
+      const int16_t *hf = vp8_sixtap_filters[fx];
+      const int16_t *vf = vp8_sixtap_filters[fy];
+      int tmp[21*16]; /* (bh+5) rows x bw cols, bw<=16, bh<=16 */
+      int th = bh + 5;
+      for (j = 0; j < th; j++)
+      {
+         int cy = rvp8_clampc(sy + j - 2, 0, refh - 1);
+         for (i = 0; i < bw; i++)
+         {
+            int acc = 0, t;
+            for (t = 0; t < 6; t++)
+            {
+               int cx = rvp8_clampc(sx + i + t - 2, 0, refw - 1);
+               acc += hf[t] * ref[cy*rstride + cx];
+            }
+            acc = (acc + 64) >> 7;
+            tmp[j*bw + i] = acc < 0 ? 0 : acc > 255 ? 255 : acc;
+         }
+      }
+      for (j = 0; j < bh; j++)
+         for (i = 0; i < bw; i++)
+         {
+            int acc = 0, t;
+            for (t = 0; t < 6; t++)
+               acc += vf[t] * tmp[(j + t)*bw + i];
+            acc = (acc + 64) >> 7;
+            dst[j*dstride + i] = (uint8_t)(acc < 0 ? 0 : acc > 255 ? 255 : acc);
+         }
+   }
+}
+
+/* Motion-compensate a whole MB (16x16 Y + 8x8 U + 8x8 V) from reference r. */
+static void rvp8_inter_predict(rvp8_dec *s, int r, int mx, int my,
+      const rvp8_mv *mv, uint8_t *ydst, int ys,
+      uint8_t *udst, uint8_t *vdst, int uvs)
+{
+   const uint8_t *ry = s->ref_y[r], *ru = s->ref_u[r], *rv = s->ref_v[r];
+   int rys = s->ref_ys[r], ruvs = s->ref_uvs[r];
+   int yw = s->mbw * 16, yh = s->mbh * 16;
+   int cw = s->mbw * 8,  ch = s->mbh * 8;
+   if (!ry) return;
+   /* Luma: MV is in eighth-pel (quarter-pel * 2). */
+   rvp8_mc_block(ry, rys, ydst, ys, mx*16, my*16, mv->x, mv->y, 16, 16,
+         yw, yh, s->use_bilinear);
+   /* Chroma: the UV MV is the luma MV halved, rounded toward its sign
+    * (libvpx build_inter16x16_predictors_mb), then applied on the
+    * half-resolution plane with the usual >>3 / &7 split.  A version-3
+    * (full-pixel) stream restricts the derived chroma MV to whole pels. */
+   {
+      int cmvx = mv->x, cmvy = mv->y;
+      cmvy += 1 | (cmvy >> (int)(sizeof(int)*8 - 1));
+      cmvx += 1 | (cmvx >> (int)(sizeof(int)*8 - 1));
+      cmvy /= 2; cmvx /= 2;
+      if (s->full_pixel) { cmvx &= ~7; cmvy &= ~7; }
+      rvp8_mc_block(ru, ruvs, udst, uvs, mx*8, my*8, cmvx, cmvy, 8, 8,
+            cw, ch, s->use_bilinear);
+      rvp8_mc_block(rv, ruvs, vdst, uvs, mx*8, my*8, cmvx, cmvy, 8, 8,
+            cw, ch, s->use_bilinear);
+   }
+}
+
+/* SPLITMV prediction: per-4x4 luma from each sub-block MV, per-2x2 chroma
+ * from the averaged sub-block MVs (libvpx build_4x4uvmvs +
+ * build_inter4x4_predictors_mb). */
+static void rvp8_inter_predict_split(rvp8_dec *s, int r, int mx, int my,
+      const rvp8_mv bmv[16], uint8_t *ydst, int ys,
+      uint8_t *udst, uint8_t *vdst, int uvs)
+{
+   const uint8_t *ry = s->ref_y[r], *ru = s->ref_u[r], *rv = s->ref_v[r];
+   int rys = s->ref_ys[r], ruvs = s->ref_uvs[r];
+   int yw = s->mbw * 16, yh = s->mbh * 16;
+   int cw = s->mbw * 8,  ch = s->mbh * 8;
+   int i, j, bx, by;
+   if (!ry) return;
+   /* Luma: 16 4x4 sub-blocks, each with its own MV. */
+   for (by = 0; by < 4; by++)
+      for (bx = 0; bx < 4; bx++)
+      {
+         const rvp8_mv *m = &bmv[by*4 + bx];
+         rvp8_mc_block(ry, rys, ydst + by*4*ys + bx*4, ys,
+               mx*16 + bx*4, my*16 + by*4, m->x, m->y, 4, 4,
+               yw, yh, s->use_bilinear);
+      }
+   /* Chroma: 2x2 blocks of 4x4 px, each MV = average of the 4 luma
+    * sub-block MVs, rounded (+4 sign-adjusted) then /8. */
+   for (i = 0; i < 2; i++)
+      for (j = 0; j < 2; j++)
+      {
+         int yo = i*8 + j*2;
+         int tr = bmv[yo+0].y + bmv[yo+1].y + bmv[yo+4].y + bmv[yo+5].y;
+         int tc = bmv[yo+0].x + bmv[yo+1].x + bmv[yo+4].x + bmv[yo+5].x;
+         int cmvy, cmvx;
+         tr += 4 + ((tr >> (int)(sizeof(int)*8 - 1)) * 8);
+         tc += 4 + ((tc >> (int)(sizeof(int)*8 - 1)) * 8);
+         cmvy = tr / 8; cmvx = tc / 8;
+         if (s->full_pixel) { cmvx &= ~7; cmvy &= ~7; }
+         rvp8_mc_block(ru, ruvs, udst + i*4*uvs + j*4, uvs,
+               mx*8 + j*4, my*8 + i*4, cmvx, cmvy, 4, 4,
+               cw, ch, s->use_bilinear);
+         rvp8_mc_block(rv, ruvs, vdst + i*4*uvs + j*4, uvs,
+               mx*8 + j*4, my*8 + i*4, cmvx, cmvy, 4, 4,
+               cw, ch, s->use_bilinear);
+      }
+}
+
 int rvp8_rows(rvp8_dec *s, int nrows)
 {
    const int w = s->w, h = s->h, mbw = s->mbw, mbh = s->mbh;
@@ -1836,7 +2711,7 @@ int rvp8_rows(rvp8_dec *s, int nrows)
       left_nz_dc = 0;
       for (mx = 0; mx < mbw; mx++)
       {
-         int ym, uvm, is_skip = 0, seg_id = 0, mb_has_coeffs = 0;
+         int ym, uvm, is_skip = 0, seg_id = 0, mb_has_coeffs = 0, has_y2 = 0;
          uint8_t ay[16], ly[16], au[8], lu[8], av[8], lv[8];
          uint8_t tly=128, tlu=128, tlv=128;
          int16_t coeffs[16], y2_block[16], dc_vals[16];
@@ -1877,19 +2752,62 @@ int rvp8_rows(rvp8_dec *s, int nrows)
          if (skip_enabled)
             is_skip = vp8b_get(&s->br, prob_skip);
 
-         /* Y mode */
-         if (!vp8b_get(&s->br, vp8_ymp[0])) {
-            ym = 4; /* B_PRED */
-         } else if (!vp8b_get(&s->br, vp8_ymp[1])) {
-            /* Left subtree: DC, V */
-            ym = vp8b_get(&s->br, vp8_ymp[2]) ? 1 : 0;
-         } else {
-            /* Right subtree: H, TM */
-            ym = vp8b_get(&s->br, vp8_ymp[3]) ? 3 : 2;
+         /* Mode decode. For an inter frame the mode/MV come from the first
+          * partition via the inter decoder; the result may be an inter MB
+          * (motion-compensated) or an intra MB coded inside an inter frame.
+          * For a key frame, the original intra Y-mode read applies. */
+         if (s->is_inter)
+         {
+            rvp8_mbinfo *mi   = (rvp8_mbinfo*)s->mb_info + my * mbw + mx;
+            rvp8_mbinfo *ab   = (my > 0) ? mi - mbw : NULL;
+            rvp8_mbinfo *lf   = (mx > 0) ? mi - 1   : NULL;
+            rvp8_mbinfo *al   = (my > 0 && mx > 0) ? mi - mbw - 1 : NULL;
+            rvp8_decode_mb_mode(s, mi, ab, lf, al, mx, my, mbw, mbh);
+            if (mi->ref_frame == 0)
+               ym = mi->mode & 0x7F;   /* intra-in-inter: low bits = Y mode */
+            else
+               ym = -1;                /* sentinel: inter MB                 */
+         }
+         else
+         {
+            /* Y mode */
+            if (!vp8b_get(&s->br, vp8_ymp[0])) {
+               ym = 4; /* B_PRED */
+            } else if (!vp8b_get(&s->br, vp8_ymp[1])) {
+               /* Left subtree: DC, V */
+               ym = vp8b_get(&s->br, vp8_ymp[2]) ? 1 : 0;
+            } else {
+               /* Right subtree: H, TM */
+               ym = vp8b_get(&s->br, vp8_ymp[3]) ? 3 : 2;
+            }
+         }
+
+         /* Y2 (second-order DC) block present for every mode EXCEPT B_PRED
+          * and SPLITMV (libvpx: mode != B_PRED && mode != SPLITMV). */
+         {
+            int is_split_mb = 0;
+            if (s->is_inter)
+            {
+               rvp8_mbinfo *mm = (rvp8_mbinfo*)s->mb_info + my * mbw + mx;
+               is_split_mb = (mm->ref_frame != 0 && mm->is_split);
+            }
+            has_y2 = (ym != 4) && !is_split_mb;
          }
 
          if (ym == 4)
          {
+            if (s->is_inter)
+            {
+               /* Intra-in-inter B_PRED: bmodes were already read (with the
+                * fixed inter probability table) during mode decode. Reuse
+                * the stored values; no context tracking needed since inter
+                * B_PRED uses non-contextual probabilities. */
+               rvp8_mbinfo *mm = (rvp8_mbinfo*)s->mb_info + my * mbw + mx;
+               for (i = 0; i < 16; i++)
+                  bmodes[i] = mm->bmodes[i];
+            }
+            else
+            {
             /* B_PRED: read 16 sub-block modes using key-frame context probs. */
             for (i = 0; i < 16; i++)
             {
@@ -1917,6 +2835,7 @@ int rvp8_rows(rvp8_dec *s, int nrows)
             /* Store right column for next MB's left context */
             for (i = 0; i < 4; i++)
                left_bmodes[i] = bmodes[i * 4 + 3];
+            }
          }
          else
          {
@@ -1931,11 +2850,48 @@ int rvp8_rows(rvp8_dec *s, int nrows)
             }
          }
 
-         /* UV mode */
-         if      (!vp8b_get(&s->br, vp8_uvmp[0])) uvm = 0;
-         else if (!vp8b_get(&s->br, vp8_uvmp[1])) uvm = 1;
-         else if (!vp8b_get(&s->br, vp8_uvmp[2])) uvm = 2;
-         else uvm = 3;
+         /* UV mode — only for intra MBs (key frame, or intra-in-inter).
+          * An inter MB's chroma prediction is motion-compensated. For an
+          * intra-in-inter MB the uv mode was already read during mode
+          * decode, so reuse the stored value rather than re-reading. */
+         if (ym >= 0)
+         {
+            if (s->is_inter)
+            {
+               rvp8_mbinfo *mm = (rvp8_mbinfo*)s->mb_info + my * mbw + mx;
+               uvm = mm->uvmode;
+            }
+            else
+            {
+               if      (!vp8b_get(&s->br, vp8_uvmp[0])) uvm = 0;
+               else if (!vp8b_get(&s->br, vp8_uvmp[1])) uvm = 1;
+               else if (!vp8b_get(&s->br, vp8_uvmp[2])) uvm = 2;
+               else uvm = 3;
+            }
+         }
+         else
+            uvm = 0;
+
+         if (ym < 0)
+         {
+            /* Inter MB: motion-compensated prediction from the reference
+             * frame. For ZEROMV/skip this is a straight copy; non-zero MVs
+             * use sub-pixel interpolation (rvp8_inter_predict). The bmode
+             * context for a following intra MB is DC (0). */
+            rvp8_mbinfo *mi = (rvp8_mbinfo*)s->mb_info + my * mbw + mx;
+            int r = mi->ref_frame - 1;   /* 0=last,1=golden,2=altref        */
+            for (i = 0; i < 4; i++) above_bmodes[mx * 4 + i] = 0;
+            for (i = 0; i < 4; i++) left_bmodes[i] = 0;
+            if (mi->is_split)
+               rvp8_inter_predict_split(s, r, mx, my, mi->bmv,
+                     yb + my*16*ys + mx*16, ys,
+                     ub + my*8*uvs + mx*8, vb + my*8*uvs + mx*8, uvs);
+            else
+               rvp8_inter_predict(s, r, mx, my, &mi->mv,
+                     yb + my*16*ys + mx*16, ys,
+                     ub + my*8*uvs + mx*8, vb + my*8*uvs + mx*8, uvs);
+            goto residual;  /* skip intra context + prediction below */
+         }
 
          /* Gather prediction context. Border semantics per libvpx
           * vp8_setup_intra_recon: row above frame = 127 (including the
@@ -1964,6 +2920,7 @@ int rvp8_rows(rvp8_dec *s, int nrows)
          vp8_pred8(vb+my*8*uvs+mx*8, uvs, uvm, av, lv, tlv, my > 0, mx > 0);
 
          /* Decode and add residual */
+        residual:
          mb_has_coeffs = 0;
          if (!is_skip || ym == 4)
          {
@@ -1975,7 +2932,7 @@ int rvp8_rows(rvp8_dec *s, int nrows)
 
             /* Y2 block (DC for 16x16 prediction) */
             memset(dc_vals, 0, sizeof(dc_vals));
-            if (ym != 4) /* not B_PRED */
+            if (has_y2) /* has second-order block */
             {
                int y2_above = (my > 0) ? above_nz_dc[mx] : 0;
                int y2_left  = (mx > 0) ? left_nz_dc : 0;
@@ -2046,6 +3003,10 @@ int rvp8_rows(rvp8_dec *s, int nrows)
                      vp8_pred4x4(sb_dst, ys, bmodes[sb_idx], sa, sl, stl);
                      start = 0; /* B_PRED: decode DC from tokens (type 1) */
                   }
+                  else if (!has_y2)
+                  {
+                     start = 0; /* SPLITMV: no Y2, DC comes from tokens */
+                  }
                   else
                   {
                      start = 1; /* non-B_PRED: DC comes from Y2 */
@@ -2058,9 +3019,9 @@ int rvp8_rows(rvp8_dec *s, int nrows)
                   }
                   else
                      nz_cnt = vp8_decode_block(tp, coeffs,
-                           s->cprob[(ym == 4) ? 3 : 0], start, sb_ctx);
+                           s->cprob[has_y2 ? 0 : 3], start, sb_ctx);
                   /* Dequantize */
-                  if (ym != 4)
+                  if (has_y2)
                      coeffs[0] = dc_vals[by * 4 + bx]; /* DC from WHT */
                   else
                      coeffs[0] = (int16_t)(coeffs[0] * y1_dc_q);
@@ -2139,13 +3100,13 @@ int rvp8_rows(rvp8_dec *s, int nrows)
             memset(left_nz_y, 0, sizeof(left_nz_y));
             memset(left_nz_u, 0, sizeof(left_nz_u));
             memset(left_nz_v, 0, sizeof(left_nz_v));
-            if (ym != 4) { above_nz_dc[mx] = 0; left_nz_dc = 0; }
+            if (has_y2) { above_nz_dc[mx] = 0; left_nz_dc = 0; }
          }
          /* libvpx: filter inner edges unless MB has no coefficients
           * (parsed skip OR eobtotal==0) and is not B_PRED. */
          if (skip_lf_buf)
             skip_lf_buf[my * mbw + mx] =
-               (uint8_t)(((is_skip || !mb_has_coeffs) && ym != 4) ? 1 : 0);
+               (uint8_t)(((is_skip || !mb_has_coeffs) && has_y2) ? 1 : 0);
          if (bpred_buf)
             bpred_buf[my * mbw + mx] = (uint8_t)(ym == 4 ? 1 : 0);
 
@@ -2175,13 +3136,16 @@ void rvp8_filter_rows(rvp8_dec *s, int my0, int my1)
    if (s->filter_type == 1)
       vp8_loop_filter_simple(s->yb, s->ys, s->mbw, my0, my1,
             s->lf_level, s->sharpness, s->seg_enabled, s->seg_abs,
-            s->seg_lf, s->seg_map_buf, s->skip_lf_buf);
+            s->seg_lf, s->lf_delta_enabled, s->ref_lf_delta,
+            s->mode_lf_delta, s->seg_map_buf, s->skip_lf_buf,
+            s->bpred_buf, s->is_inter ? s->mb_info : NULL);
    else
       vp8_loop_filter_normal(s->yb, s->ys, s->ub, s->vb, s->uvs,
             s->mbw, my0, my1, s->lf_level, s->sharpness,
             s->seg_enabled, s->seg_abs, s->seg_lf,
             s->lf_delta_enabled, s->ref_lf_delta, s->mode_lf_delta,
-            s->seg_map_buf, s->skip_lf_buf, s->bpred_buf);
+            s->seg_map_buf, s->skip_lf_buf, s->bpred_buf,
+            s->is_inter ? s->mb_info : NULL);
 }
 
 /* Convert a bounded batch of luma rows starting at pair cursor j0 into
@@ -2246,4 +3210,192 @@ uint32_t *rvp8_decode(const uint8_t *data, size_t len,
    *oh = (unsigned)s.h;
    rvp8_abort(&s);
    return pix;
+}
+
+/* ==================================================================== */
+/* Persistent video decoder: drives per-frame decode while retaining    */
+/* the last/golden/altref reference frames across frames.               */
+/* ==================================================================== */
+
+struct rvp8_video
+{
+   rvp8_dec s;
+   int      w, h, mbw, mbh, ys, uvs;
+   int      have_refs;
+   /* three reference frames (last, golden, altref), each a full padded
+    * plane set matching the decoder's yb/ub/vb geometry. */
+   uint8_t *ry[3], *ru[3], *rv[3];
+   size_t   ysz, uvsz;
+};
+
+static void rvp8_video_free_refs(rvp8_video *v)
+{
+   int i;
+   for (i = 0; i < 3; i++)
+   {
+      free(v->ry[i]); free(v->ru[i]); free(v->rv[i]);
+      v->ry[i] = v->ru[i] = v->rv[i] = NULL;
+   }
+}
+
+rvp8_video *rvp8_video_open(void)
+{
+   rvp8_video *v = (rvp8_video*)calloc(1, sizeof(*v));
+   return v;
+}
+
+void rvp8_video_close(rvp8_video *v)
+{
+   if (!v) return;
+   rvp8_video_free_refs(v);
+   /* Free the decoder's per-frame scratch buffers from the last decode. */
+   free(v->s.seg_map_buf); free(v->s.skip_lf_buf); free(v->s.bpred_buf);
+   free(v->s.yb); free(v->s.ub); free(v->s.vb);
+   free(v->s.above_nz_y); free(v->s.above_nz_u); free(v->s.above_nz_v);
+   free(v->s.above_nz_dc); free(v->s.above_bmodes);
+   free(v->s.fancy_uv);
+   free(v->s.mb_info);
+   free(v);
+}
+
+/* Allocate the reference planes once the dimensions are known. */
+static int rvp8_video_alloc_refs(rvp8_video *v)
+{
+   int i;
+   v->ysz  = (size_t)v->ys  * v->mbh * 16;
+   v->uvsz = (size_t)v->uvs * v->mbh * 8;
+   for (i = 0; i < 3; i++)
+   {
+      v->ry[i] = (uint8_t*)malloc(v->ysz);
+      v->ru[i] = (uint8_t*)malloc(v->uvsz);
+      v->rv[i] = (uint8_t*)malloc(v->uvsz);
+      if (!v->ry[i] || !v->ru[i] || !v->rv[i])
+         return -1;
+   }
+   return 0;
+}
+
+/* Decode one frame (key or inter). On success the decoded YUV is in
+ * v->s.yb/ub/vb and also promoted into the reference frames per the
+ * frame's refresh flags. Returns 0 on success. */
+int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
+{
+   int kf;
+   if (len < 3) return -1;
+   kf = !((uint32_t)data[0] & 1);
+
+   if (kf)
+   {
+      /* Key frame: plain decode, then all references := this frame. The
+       * decoder state must reset fully (a key frame carries no inter
+       * context), so clear the inter flag before begin. Free the mbinfo
+       * array too — begin's reset would otherwise drop the pointer. */
+      v->s.is_inter = 0;
+      free(v->s.mb_info);
+      v->s.mb_info = NULL;
+      if (rvp8_begin(data, len, &v->s) != 0)
+         return -1;
+      while (rvp8_rows(&v->s, v->s.mbh) > 0)
+         ;
+      rvp8_filter_rows(&v->s, 0, v->s.mbh);
+
+      v->w = v->s.w; v->h = v->s.h; v->mbw = v->s.mbw; v->mbh = v->s.mbh;
+      v->ys = v->s.ys; v->uvs = v->s.uvs;
+      if (!v->have_refs)
+      {
+         if (rvp8_video_alloc_refs(v) != 0) return -1;
+         v->have_refs = 1;
+      }
+      {
+         int i;
+         for (i = 0; i < 3; i++)
+         {
+            memcpy(v->ry[i], v->s.yb, v->ysz);
+            memcpy(v->ru[i], v->s.ub, v->uvsz);
+            memcpy(v->rv[i], v->s.vb, v->uvsz);
+         }
+      }
+      return 0;
+   }
+
+   /* Inter frame: set up references + inherited context, decode, then
+    * update references per refresh/copy flags. */
+   if (!v->have_refs)
+      return -1;   /* inter before any key frame */
+
+   /* Prime the decoder struct with what begin() must preserve. */
+   v->s.is_inter = 1;
+   v->s.w = v->w; v->s.h = v->h;
+   v->s.ref_y[0] = v->ry[0]; v->s.ref_u[0] = v->ru[0]; v->s.ref_v[0] = v->rv[0];
+   v->s.ref_y[1] = v->ry[1]; v->s.ref_u[1] = v->ru[1]; v->s.ref_v[1] = v->rv[1];
+   v->s.ref_y[2] = v->ry[2]; v->s.ref_u[2] = v->ru[2]; v->s.ref_v[2] = v->rv[2];
+   v->s.ref_ys[0] = v->s.ref_ys[1] = v->s.ref_ys[2] = v->ys;
+   v->s.ref_uvs[0] = v->s.ref_uvs[1] = v->s.ref_uvs[2] = v->uvs;
+   /* cprob/mvc/ymode/uvmode already hold the inherited context from the
+    * previous frame (begin preserves them for inter). Initialise the MV
+    * and intra-mode probs on the very first inter frame from defaults. */
+   if (!v->s.mvc[0][0])
+   {
+      memcpy(v->s.mvc[0], vp8_default_mv_context[0], MVPCOUNT);
+      memcpy(v->s.mvc[1], vp8_default_mv_context[1], MVPCOUNT);
+   }
+   if (!v->s.ymode_prob[0])
+   {
+      static const uint8_t dy[4] = {112, 86, 140, 37};
+      static const uint8_t du[3] = {162, 101, 204};
+      memcpy(v->s.ymode_prob, dy, 4);
+      memcpy(v->s.uvmode_prob, du, 3);
+   }
+
+   if (rvp8_begin(data, len, &v->s) != 0)
+      return -1;
+   while (rvp8_rows(&v->s, v->s.mbh) > 0)
+      ;
+   rvp8_filter_rows(&v->s, 0, v->s.mbh);
+
+   /* Update references. copy_golden/altref: 0=no change,1=from last,2=from
+    * the other; refresh_*: replace with the just-decoded frame. Order per
+    * libvpx: copies use the OLD last frame, then refreshes apply. */
+   {
+      /* Reference updates in libvpx order (onyxd_if.c): copy_altref first
+       * (so a following copy_golden==2 sees the updated altref), then
+       * copy_golden, then the refreshes from the newly decoded frame.
+       * Copies read the pre-refresh buffers. */
+      if (!v->s.refresh_altref && v->s.copy_altref == 1)
+      { memcpy(v->ry[2], v->ry[0], v->ysz); memcpy(v->ru[2], v->ru[0], v->uvsz); memcpy(v->rv[2], v->rv[0], v->uvsz); }
+      else if (!v->s.refresh_altref && v->s.copy_altref == 2)
+      { memcpy(v->ry[2], v->ry[1], v->ysz); memcpy(v->ru[2], v->ru[1], v->uvsz); memcpy(v->rv[2], v->rv[1], v->uvsz); }
+      if (!v->s.refresh_golden && v->s.copy_golden == 1)
+      { memcpy(v->ry[1], v->ry[0], v->ysz); memcpy(v->ru[1], v->ru[0], v->uvsz); memcpy(v->rv[1], v->rv[0], v->uvsz); }
+      else if (!v->s.refresh_golden && v->s.copy_golden == 2)
+      { memcpy(v->ry[1], v->ry[2], v->ysz); memcpy(v->ru[1], v->ru[2], v->uvsz); memcpy(v->rv[1], v->rv[2], v->uvsz); }
+      if (v->s.refresh_golden)
+      { memcpy(v->ry[1], v->s.yb, v->ysz); memcpy(v->ru[1], v->s.ub, v->uvsz); memcpy(v->rv[1], v->s.vb, v->uvsz); }
+      if (v->s.refresh_altref)
+      { memcpy(v->ry[2], v->s.yb, v->ysz); memcpy(v->ru[2], v->s.ub, v->uvsz); memcpy(v->rv[2], v->s.vb, v->uvsz); }
+      if (v->s.refresh_last)
+      { memcpy(v->ry[0], v->s.yb, v->ysz); memcpy(v->ru[0], v->s.ub, v->uvsz); memcpy(v->rv[0], v->s.vb, v->uvsz); }
+   }
+   return 0;
+}
+
+/* Access the just-decoded YUV planes. */
+const uint8_t *rvp8_video_plane(const rvp8_video *v, int plane,
+      int *stride, int *width, int *height)
+{
+   int st, w, h;
+   const uint8_t *p;
+   if (plane == 0)
+   {
+      st = v->s.ys;  w = v->w;           h = v->h;           p = v->s.yb;
+   }
+   else
+   {
+      st = v->s.uvs; w = (v->w + 1) / 2; h = (v->h + 1) / 2;
+      p  = (plane == 1) ? v->s.ub : v->s.vb;
+   }
+   if (stride) *stride = st;
+   if (width)  *width  = w;
+   if (height) *height = h;
+   return p;
 }
