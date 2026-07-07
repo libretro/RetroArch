@@ -1354,7 +1354,6 @@ static rarch_setting_t setting_action_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.parent_group              = parent_group;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -1414,7 +1413,9 @@ static rarch_setting_t setting_group_setting(
 
    result.name                      = name;
    result.short_description         = name;
-   result.parent_group              = parent_group;
+   if (     type == ST_GROUP
+         && string_is_equal(parent_group, MENU_ENUM_LABEL_MAIN_MENU_STR))
+      result.free_flags |= SD_FREE_FLAG_MAIN_MENU_GROUP;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -1481,7 +1482,6 @@ static rarch_setting_t setting_float_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.parent_group              = parent_group;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -1553,7 +1553,6 @@ static rarch_setting_t setting_uint_setting(const char* name,
 
    result.name                      = dont_use_enum_idx ? strdup(name) : name;
    result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
-   result.parent_group              = parent_group;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -1627,7 +1626,6 @@ static rarch_setting_t setting_size_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.parent_group              = parent_group;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -1700,7 +1698,6 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.parent_group              = parent_group;
    result.values                    = NULL;
 
    result.index                     = idx;
@@ -1819,7 +1816,6 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 
    result.name                      = dont_use_enum_idx ? strdup(name) : name;
    result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
-   result.parent_group              = parent_group;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -1911,7 +1907,6 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
 
   result.action_start    = setting_generic_action_start_default;
 
-  result.parent_group    = parent_group;
   result.values          = values;
   return result;
 }
@@ -1939,7 +1934,6 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
 
    result.name                      = name;
    result.short_description         = name;
-   result.parent_group              = parent_group;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -2010,7 +2004,6 @@ static rarch_setting_t setting_bool_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.parent_group              = parent_group;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -2082,7 +2075,6 @@ static rarch_setting_t setting_int_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.parent_group              = parent_group;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -18765,7 +18757,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].rounding_fraction                = NULL; \
    (*&list)[pos].name                             = NULL; \
    (*&list)[pos].short_description                = NULL; \
-   (*&list)[pos].parent_group                     = NULL; \
    (*&list)[pos].values                           = NULL; \
    (*&list)[pos].change_handler                   = NULL; \
    (*&list)[pos].read_handler                     = NULL; \

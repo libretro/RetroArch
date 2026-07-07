@@ -92,7 +92,13 @@ enum settings_free_flags
 {
    SD_FREE_FLAG_VALUES    = (1 << 0),
    SD_FREE_FLAG_NAME      = (1 << 1),
-   SD_FREE_FLAG_SHORT     = (1 << 2)
+   SD_FREE_FLAG_SHORT     = (1 << 2),
+   /* Not an ownership bit: set at build time on ST_GROUP entries
+    * whose parent is the main menu, replacing the parent_group
+    * string the callbacks compared against - equality with the main
+    * menu label was the only thing that string was ever read for.
+    * Lives here because the byte has spare bits. */
+   SD_FREE_FLAG_MAIN_MENU_GROUP = (1 << 3)
 };
 
 typedef struct rarch_setting rarch_setting_t;
@@ -126,7 +132,6 @@ struct rarch_setting
    const char           *rounding_fraction;
    const char           *name;
    const char           *short_description;
-   const char           *parent_group;
    const char           *values;
 
    change_handler_t              change_handler;
