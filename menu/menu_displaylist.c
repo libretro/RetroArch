@@ -7143,6 +7143,72 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 }
 #endif
 
+/* Validation dump for the displaylist build path.
+ *
+ * When the RETROARCH_DISPLAYLIST_DUMP environment variable names a
+ * file, every displaylist type is built once through
+ * menu_displaylist_build_list into a scratch list and each entry's
+ * path, label, type and index are written out. The output is a
+ * byte-comparable fingerprint of the build_list switch, the gate for
+ * converting its cases to data - the same discipline the settings
+ * dump provides for setting_append_list. Types the function does not
+ * handle fall through its default and print an empty section, which
+ * keeps the fingerprint aligned across refactors. */
+void menu_displaylist_validation_dump(void)
+{
+   const char *path     = getenv("RETROARCH_DISPLAYLIST_DUMP");
+   settings_t *settings = config_get_ptr();
+   RFILE *f;
+   unsigned t;
+   if (!path)
+      return;
+   f = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!f)
+      return;
+   filestream_printf(f, "# CORE_CONTENT=%u SYSTEM_FILES=%u NETPLAY=%u URL=%u PENDING=%u\n",
+         (unsigned)DISPLAYLIST_CORE_CONTENT,
+         (unsigned)DISPLAYLIST_CORE_SYSTEM_FILES,
+         (unsigned)DISPLAYLIST_NETPLAY_ROOM_LIST,
+         (unsigned)DISPLAYLIST_CORES_UPDATER,
+         (unsigned)DISPLAYLIST_PENDING_CLEAR);
+   for (t = 0; t <= (unsigned)DISPLAYLIST_PENDING_CLEAR; t++)
+   {
+      file_list_t list;
+      unsigned count;
+      size_t i;
+      /* Live values would make the fingerprint flap: the information
+       * list samples current memory use. Skipped, not built. */
+      if (t == (unsigned)DISPLAYLIST_INFORMATION_LIST
+            || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
+            || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
+            /* The core-content family reaches for the network and
+             * blocks headless; nothing deterministic lives there. */
+            || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
+                  && t <= (unsigned)DISPLAYLIST_CORE_SYSTEM_FILES))
+      {
+         filestream_printf(f, "== %u skipped\n", t);
+         filestream_flush(f);
+         continue;
+      }
+      memset(&list, 0, sizeof(list));
+      filestream_printf(f, "== %u ", t);
+      filestream_flush(f);
+      count = menu_displaylist_build_list(&list, settings,
+            (enum menu_displaylist_ctl_state)t, false);
+      filestream_printf(f, "count=%u size=%u\n", count, (unsigned)list.size);
+      filestream_flush(f);
+      for (i = 0; i < list.size; i++)
+         filestream_printf(f, "%u|%s|%s|%u|%u\n", (unsigned)i,
+               list.list[i].path  ? list.list[i].path  : "",
+               list.list[i].label ? list.list[i].label : "",
+               list.list[i].type, (unsigned)list.list[i].entry_idx);
+      file_list_deinitialize(&list);
+   }
+   filestream_close(f);
+}
+
 unsigned menu_displaylist_build_list(
       file_list_t *list,
       settings_t *settings,

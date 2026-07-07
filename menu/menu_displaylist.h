@@ -367,6 +367,8 @@ bool menu_displaylist_process(menu_displaylist_info_t *info);
 
 void menu_displaylist_info_free(menu_displaylist_info_t *info);
 
+void menu_displaylist_validation_dump(void);
+
 unsigned menu_displaylist_build_list(
       file_list_t *list,
       settings_t *settings,

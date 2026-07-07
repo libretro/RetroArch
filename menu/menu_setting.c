@@ -39,6 +39,7 @@
 #endif
 
 #include "menu_setting.h"
+#include "menu_displaylist.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
 #include "menu_input.h"
@@ -19124,6 +19125,8 @@ rarch_setting_t *menu_setting_new(void)
    menu_setting_index_build(list);
 
    menu_setting_validation_dump(list);
+
+   menu_displaylist_validation_dump();
 
    if (list_info)
       free(list_info);
