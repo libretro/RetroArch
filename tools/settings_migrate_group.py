@@ -546,9 +546,7 @@ MENU_EMIT = {'S_BOOL_EX':'SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel
              'S_UINT_AT_EX':'SDESC_UINT_ROW_AT_EX(offs, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),'}
 mk_menu = lambda b, _s: ' \\\n                  ' + MENU_EMIT[b]
 new_body = ('/* GENERATED: rows come from %s in order. */\n' % DEF
-            + '#include "../settings/settings_def_menu_rows_begin.h"'
-            + '\n#include "../settings/%s"\n' % DEF
-            + '#include "../settings/settings_def_rows_end.h"')
+            + '\n#include "../settings/%s"' % DEF)
 
 ms = ms[:tm.start(1)] + new_body + ms[tm.end(1):]
 open('menu/menu_setting.c','w').write(ms)
