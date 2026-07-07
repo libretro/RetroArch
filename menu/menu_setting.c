@@ -18812,6 +18812,525 @@ static rarch_setting_t *settings_lazy_get(unsigned k)
 }
 
 
+/* --- Stage A of the layout consolidation -------------------------
+ * Every descriptor table, registered once with the guards of its
+ * add_desc call site, so a setting is constructible by enum without
+ * knowing which build function owns it.  The referee below proves,
+ * entry by entry against the hand-sequenced build, that
+ * index-driven construction reproduces the same setting - the same
+ * interned action tuple pointer, so every callback identical - and
+ * counts what the descriptor files do not yet cover. */
+typedef struct settings_desc_table
+{
+   const setting_desc_t *rows;
+   uint16_t              count;
+} settings_desc_table_t;
+
+static const settings_desc_table_t settings_desc_registry[] = {
+   { mm_desc_0, (uint16_t)ARRAY_SIZE(mm_desc_0) },
+   { mm_desc_1, (uint16_t)ARRAY_SIZE(mm_desc_1) },
+   { mm_desc_2, (uint16_t)ARRAY_SIZE(mm_desc_2) },
+   { mm_desc_3, (uint16_t)ARRAY_SIZE(mm_desc_3) },
+#ifdef HAVE_CDROM
+   { mm_desc_4, (uint16_t)ARRAY_SIZE(mm_desc_4) },
+#endif
+   { mm_desc_5, (uint16_t)ARRAY_SIZE(mm_desc_5) },
+   { mm_desc_6, (uint16_t)ARRAY_SIZE(mm_desc_6) },
+#if !defined(IOS) && !defined(HAVE_LAKKA)
+   { mm_desc_7, (uint16_t)ARRAY_SIZE(mm_desc_7) },
+#endif
+   { mm_desc_8, (uint16_t)ARRAY_SIZE(mm_desc_8) },
+#if !defined(IOS)
+#ifdef HAVE_LAKKA
+   { quit_lakka_desc, (uint16_t)ARRAY_SIZE(quit_lakka_desc) },
+#endif
+#endif
+#if !defined(IOS)
+#ifndef HAVE_LAKKA
+   { mm_desc_9, (uint16_t)ARRAY_SIZE(mm_desc_9) },
+#endif
+#endif
+   { mm_desc_10, (uint16_t)ARRAY_SIZE(mm_desc_10) },
+   { mm_desc_11, (uint16_t)ARRAY_SIZE(mm_desc_11) },
+   { mm_desc_12, (uint16_t)ARRAY_SIZE(mm_desc_12) },
+#ifdef HAVE_BLUETOOTH
+   { mm_desc_13, (uint16_t)ARRAY_SIZE(mm_desc_13) },
+#endif
+#if defined(HAVE_LAKKA) || defined(HAVE_WIFI)
+   { mm_desc_14, (uint16_t)ARRAY_SIZE(mm_desc_14) },
+#endif
+   { mm_desc_15, (uint16_t)ARRAY_SIZE(mm_desc_15) },
+   { mm_desc_16, (uint16_t)ARRAY_SIZE(mm_desc_16) },
+   { configuration_desc_0, (uint16_t)ARRAY_SIZE(configuration_desc_0) },
+   { logging_desc_0, (uint16_t)ARRAY_SIZE(logging_desc_0) },
+   { sav_desc_0, (uint16_t)ARRAY_SIZE(sav_desc_0) },
+   { saving2_desc_0, (uint16_t)ARRAY_SIZE(saving2_desc_0) },
+#ifdef HAVE_CLOUDSYNC
+   { cs_desc_0, (uint16_t)ARRAY_SIZE(cs_desc_0) },
+#endif
+#ifdef HAVE_CLOUDSYNC
+   { cs_desc_1, (uint16_t)ARRAY_SIZE(cs_desc_1) },
+#endif
+#ifdef HAVE_CLOUDSYNC
+#ifdef HAVE_S3
+   { cs_desc_2, (uint16_t)ARRAY_SIZE(cs_desc_2) },
+#endif
+#endif
+   { frame_time_cou_desc_0, (uint16_t)ARRAY_SIZE(frame_time_cou_desc_0) },
+   { frame_time_cou_desc_1, (uint16_t)ARRAY_SIZE(frame_time_cou_desc_1) },
+   { rewind_desc_0, (uint16_t)ARRAY_SIZE(rewind_desc_0) },
+   { rewind_desc_1, (uint16_t)ARRAY_SIZE(rewind_desc_1) },
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+   { vid_desc_0, (uint16_t)ARRAY_SIZE(vid_desc_0) },
+#endif
+   { vid_desc_1, (uint16_t)ARRAY_SIZE(vid_desc_1) },
+#if defined(ANDROID) || TARGET_OS_IOS
+   { vid_desc_2, (uint16_t)ARRAY_SIZE(vid_desc_2) },
+#endif
+#ifdef HAVE_VULKAN
+   { vid_desc_3, (uint16_t)ARRAY_SIZE(vid_desc_3) },
+#endif
+#ifdef HAVE_D3D10
+   { vid_desc_4, (uint16_t)ARRAY_SIZE(vid_desc_4) },
+#endif
+#ifdef HAVE_D3D11
+   { vid_desc_5, (uint16_t)ARRAY_SIZE(vid_desc_5) },
+#endif
+#ifdef HAVE_D3D12
+   { vid_desc_6, (uint16_t)ARRAY_SIZE(vid_desc_6) },
+#endif
+#ifdef HAVE_METAL
+   { vid_desc_7, (uint16_t)ARRAY_SIZE(vid_desc_7) },
+#endif
+#ifdef WIIU
+   { vid_desc_8, (uint16_t)ARRAY_SIZE(vid_desc_8) },
+#endif
+   { vid_desc_9, (uint16_t)ARRAY_SIZE(vid_desc_9) },
+   { fs_desc, (uint16_t)ARRAY_SIZE(fs_desc) },
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   { dingux_rr_desc, (uint16_t)ARRAY_SIZE(dingux_rr_desc) },
+#endif
+   { refresh_desc, (uint16_t)ARRAY_SIZE(refresh_desc) },
+   { autoswitch_desc, (uint16_t)ARRAY_SIZE(autoswitch_desc) },
+   { vid_desc_10, (uint16_t)ARRAY_SIZE(vid_desc_10) },
+   { bias_desc, (uint16_t)ARRAY_SIZE(bias_desc) },
+   { aspect_desc, (uint16_t)ARRAY_SIZE(aspect_desc) },
+   { vid_desc_11, (uint16_t)ARRAY_SIZE(vid_desc_11) },
+#if defined(HAVE_WINDOW_OFFSET)
+   { vid_desc_12, (uint16_t)ARRAY_SIZE(vid_desc_12) },
+#endif
+   { vp_size_desc, (uint16_t)ARRAY_SIZE(vp_size_desc) },
+#if defined(DINGUX)
+   { dingux_ka_desc, (uint16_t)ARRAY_SIZE(dingux_ka_desc) },
+#endif
+   { vid_desc_13, (uint16_t)ARRAY_SIZE(vid_desc_13) },
+   { winscale_desc, (uint16_t)ARRAY_SIZE(winscale_desc) },
+   { vid_desc_14, (uint16_t)ARRAY_SIZE(vid_desc_14) },
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   { vid_desc_15, (uint16_t)ARRAY_SIZE(vid_desc_15) },
+#endif
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+   { vid_desc_16, (uint16_t)ARRAY_SIZE(vid_desc_16) },
+#endif
+#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)))
+   { vid_desc_17, (uint16_t)ARRAY_SIZE(vid_desc_17) },
+#endif
+   { video2_desc_0, (uint16_t)ARRAY_SIZE(video2_desc_0) },
+#ifdef GEKKO
+   { gx_desc, (uint16_t)ARRAY_SIZE(gx_desc) },
+#endif
+#if defined(DINGUX)
+   { dingux_ipu_desc, (uint16_t)ARRAY_SIZE(dingux_ipu_desc) },
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   { dingux_rs90_desc, (uint16_t)ARRAY_SIZE(dingux_rs90_desc) },
+#endif
+#endif
+   { smooth_desc, (uint16_t)ARRAY_SIZE(smooth_desc) },
+#ifdef HAVE_ODROIDGO2
+   { vid_ctx_desc, (uint16_t)ARRAY_SIZE(vid_ctx_desc) },
+#endif
+   { rot_desc, (uint16_t)ARRAY_SIZE(rot_desc) },
+   { vid_desc_18, (uint16_t)ARRAY_SIZE(vid_desc_18) },
+   { hdr_desc, (uint16_t)ARRAY_SIZE(hdr_desc) },
+   { vid_desc_19, (uint16_t)ARRAY_SIZE(vid_desc_19) },
+   { hdr_desc2, (uint16_t)ARRAY_SIZE(hdr_desc2) },
+   { vid_desc_20, (uint16_t)ARRAY_SIZE(vid_desc_20) },
+   { sync_desc, (uint16_t)ARRAY_SIZE(sync_desc) },
+   { avsync_desc, (uint16_t)ARRAY_SIZE(avsync_desc) },
+   { fdelay_desc, (uint16_t)ARRAY_SIZE(fdelay_desc) },
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   { sdelay_desc, (uint16_t)ARRAY_SIZE(sdelay_desc) },
+#endif
+   { shader_desc, (uint16_t)ARRAY_SIZE(shader_desc) },
+   { vid_desc_21, (uint16_t)ARRAY_SIZE(vid_desc_21) },
+   { misc_desc, (uint16_t)ARRAY_SIZE(misc_desc) },
+   { video_filter_desc, (uint16_t)ARRAY_SIZE(video_filter_desc) },
+   { audio_en_desc, (uint16_t)ARRAY_SIZE(audio_en_desc) },
+   { audio_state_desc, (uint16_t)ARRAY_SIZE(audio_state_desc) },
+   { audio_sync_desc, (uint16_t)ARRAY_SIZE(audio_sync_desc) },
+   { audio_rq_desc, (uint16_t)ARRAY_SIZE(audio_rq_desc) },
+   { audio_fmt_desc, (uint16_t)ARRAY_SIZE(audio_fmt_desc) },
+   { audio_skew_desc, (uint16_t)ARRAY_SIZE(audio_skew_desc) },
+   { audio_dev_desc, (uint16_t)ARRAY_SIZE(audio_dev_desc) },
+   { audio_dsp_desc, (uint16_t)ARRAY_SIZE(audio_dsp_desc) },
+#ifdef HAVE_WASAPI
+   { audio_wasapi_desc, (uint16_t)ARRAY_SIZE(audio_wasapi_desc) },
+#endif
+#ifdef HAVE_ASIO
+   { audio_asio_desc, (uint16_t)ARRAY_SIZE(audio_asio_desc) },
+#endif
+#ifdef HAVE_MICROPHONE
+   { mic_enable_desc, (uint16_t)ARRAY_SIZE(mic_enable_desc) },
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
+   { mic_block_desc, (uint16_t)ARRAY_SIZE(mic_block_desc) },
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   { mic_misc_desc, (uint16_t)ARRAY_SIZE(mic_misc_desc) },
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   { mic_wasapi_desc, (uint16_t)ARRAY_SIZE(mic_wasapi_desc) },
+#endif
+#endif
+   { inp_desc_0, (uint16_t)ARRAY_SIZE(inp_desc_0) },
+#ifdef GEKKO
+   { inp_desc_1, (uint16_t)ARRAY_SIZE(inp_desc_1) },
+#endif
+   { inp_desc_2, (uint16_t)ARRAY_SIZE(inp_desc_2) },
+#ifdef UDEV_TOUCH_SUPPORT
+   { inp_desc_3, (uint16_t)ARRAY_SIZE(inp_desc_3) },
+#endif
+#ifdef VITA
+   { inp_desc_4, (uint16_t)ARRAY_SIZE(inp_desc_4) },
+#endif
+#if TARGET_OS_IPHONE
+   { inp_desc_5, (uint16_t)ARRAY_SIZE(inp_desc_5) },
+#endif
+   { inp_desc_6, (uint16_t)ARRAY_SIZE(inp_desc_6) },
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   { inp_desc_7, (uint16_t)ARRAY_SIZE(inp_desc_7) },
+#endif
+   { inp_desc_8, (uint16_t)ARRAY_SIZE(inp_desc_8) },
+#ifdef ANDROID
+   { inp_desc_9, (uint16_t)ARRAY_SIZE(inp_desc_9) },
+#endif
+   { inp_desc_10, (uint16_t)ARRAY_SIZE(inp_desc_10) },
+   { inp_desc_11, (uint16_t)ARRAY_SIZE(inp_desc_11) },
+   { inp_desc_12, (uint16_t)ARRAY_SIZE(inp_desc_12) },
+   { inp_desc_13, (uint16_t)ARRAY_SIZE(inp_desc_13) },
+   { recording_desc_0, (uint16_t)ARRAY_SIZE(recording_desc_0) },
+   { recording2_desc_0, (uint16_t)ARRAY_SIZE(recording2_desc_0) },
+   { recording_desc_1, (uint16_t)ARRAY_SIZE(recording_desc_1) },
+   { recording2_desc_1, (uint16_t)ARRAY_SIZE(recording2_desc_1) },
+   { recording_desc_2, (uint16_t)ARRAY_SIZE(recording_desc_2) },
+   { recording_desc_3, (uint16_t)ARRAY_SIZE(recording_desc_3) },
+   { frame_throttli_desc_0, (uint16_t)ARRAY_SIZE(frame_throttli_desc_0) },
+   { menu_thr_desc, (uint16_t)ARRAY_SIZE(menu_thr_desc) },
+   { frame_throttli_desc_1, (uint16_t)ARRAY_SIZE(frame_throttli_desc_1) },
+#ifdef HAVE_RUNAHEAD
+   { frame_throttli_desc_2, (uint16_t)ARRAY_SIZE(frame_throttli_desc_2) },
+#endif
+#ifdef ANDROID
+   { frame_throttli_desc_3, (uint16_t)ARRAY_SIZE(frame_throttli_desc_3) },
+#endif
+#ifdef HAVE_GFX_WIDGETS
+   { osn_desc_0, (uint16_t)ARRAY_SIZE(osn_desc_0) },
+#endif
+#ifdef HAVE_GFX_WIDGETS
+#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+   { osn_desc_1, (uint16_t)ARRAY_SIZE(osn_desc_1) },
+#endif
+#endif
+#ifdef HAVE_GFX_WIDGETS
+#if !((defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)))
+   { widget_fs_desc, (uint16_t)ARRAY_SIZE(widget_fs_desc) },
+#endif
+#endif
+#ifdef HAVE_GFX_WIDGETS
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+   { osn_desc_2, (uint16_t)ARRAY_SIZE(osn_desc_2) },
+#endif
+#endif
+   { osn_desc_3, (uint16_t)ARRAY_SIZE(osn_desc_3) },
+   { onscreen_not2_desc_0, (uint16_t)ARRAY_SIZE(onscreen_not2_desc_0) },
+   { osn_desc_4, (uint16_t)ARRAY_SIZE(osn_desc_4) },
+   { osn_desc_5, (uint16_t)ARRAY_SIZE(osn_desc_5) },
+#ifdef HAVE_OVERLAY
+   { ovl_desc_0, (uint16_t)ARRAY_SIZE(ovl_desc_0) },
+#endif
+#ifdef HAVE_OVERLAY
+   { ovl_desc_1, (uint16_t)ARRAY_SIZE(ovl_desc_1) },
+#endif
+#ifdef HAVE_OVERLAY
+   { overlay2_desc_0, (uint16_t)ARRAY_SIZE(overlay2_desc_0) },
+#endif
+#ifdef HAVE_OVERLAY
+   { ovl_desc_2, (uint16_t)ARRAY_SIZE(ovl_desc_2) },
+#endif
+#ifdef HAVE_OVERLAY
+   { ovl_desc_3, (uint16_t)ARRAY_SIZE(ovl_desc_3) },
+#endif
+   { menu2_desc_0, (uint16_t)ARRAY_SIZE(menu2_desc_0) },
+   { menu_desc_0, (uint16_t)ARRAY_SIZE(menu_desc_0) },
+   { menu_desc_1, (uint16_t)ARRAY_SIZE(menu_desc_1) },
+   { menu_desc_2, (uint16_t)ARRAY_SIZE(menu_desc_2) },
+   { menu_desc_3, (uint16_t)ARRAY_SIZE(menu_desc_3) },
+#if (defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)) && !defined(_3DS)
+   { menu_desc_4, (uint16_t)ARRAY_SIZE(menu_desc_4) },
+#endif
+   { menu_desc_5, (uint16_t)ARRAY_SIZE(menu_desc_5) },
+   { menu_desc_6, (uint16_t)ARRAY_SIZE(menu_desc_6) },
+   { menu_desc_7, (uint16_t)ARRAY_SIZE(menu_desc_7) },
+#if !defined(DINGUX)
+   { menu_desc_8, (uint16_t)ARRAY_SIZE(menu_desc_8) },
+#endif
+   { menu_desc_9, (uint16_t)ARRAY_SIZE(menu_desc_9) },
+   { menu2_desc_1, (uint16_t)ARRAY_SIZE(menu2_desc_1) },
+   { menu_desc_10, (uint16_t)ARRAY_SIZE(menu_desc_10) },
+   { menu_desc_11, (uint16_t)ARRAY_SIZE(menu_desc_11) },
+#if defined(HAVE_XMB) || defined (HAVE_OZONE)
+   { menu_desc_12, (uint16_t)ARRAY_SIZE(menu_desc_12) },
+#endif
+#if defined(HAVE_XMB) || defined (HAVE_OZONE)
+   { menu_desc_13, (uint16_t)ARRAY_SIZE(menu_desc_13) },
+#endif
+   { menu_desc_14, (uint16_t)ARRAY_SIZE(menu_desc_14) },
+   { menu_desc_15, (uint16_t)ARRAY_SIZE(menu_desc_15) },
+   { menu_desc_16, (uint16_t)ARRAY_SIZE(menu_desc_16) },
+   { menu2_desc_2, (uint16_t)ARRAY_SIZE(menu2_desc_2) },
+#ifdef HAVE_THREADS
+   { menu_desc_17, (uint16_t)ARRAY_SIZE(menu_desc_17) },
+#endif
+   { menu_desc_18, (uint16_t)ARRAY_SIZE(menu_desc_18) },
+#ifdef HAVE_XMB
+   { menu_desc_19, (uint16_t)ARRAY_SIZE(menu_desc_19) },
+#endif
+#ifdef HAVE_XMB
+   { menu2_desc_3, (uint16_t)ARRAY_SIZE(menu2_desc_3) },
+#endif
+#ifdef HAVE_XMB
+   { menu_desc_20, (uint16_t)ARRAY_SIZE(menu_desc_20) },
+#endif
+#ifdef HAVE_XMB
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#ifdef HAVE_SHADERPIPELINE
+   { menu_desc_21, (uint16_t)ARRAY_SIZE(menu_desc_21) },
+#endif
+#endif
+#endif
+#ifdef HAVE_XMB
+   { menu_desc_22, (uint16_t)ARRAY_SIZE(menu_desc_22) },
+#endif
+   { menu_desc_23, (uint16_t)ARRAY_SIZE(menu_desc_23) },
+   { menu_desc_24, (uint16_t)ARRAY_SIZE(menu_desc_24) },
+#ifdef HAVE_LAKKA
+   { menu_quit_lakka_desc, (uint16_t)ARRAY_SIZE(menu_quit_lakka_desc) },
+#endif
+#if !defined(HAVE_LAKKA) && !defined(IOS)
+   { menu_desc_25, (uint16_t)ARRAY_SIZE(menu_desc_25) },
+#endif
+#if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
+   { menu_desc_26, (uint16_t)ARRAY_SIZE(menu_desc_26) },
+#endif
+#if !(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2))
+#if !defined(IOS)
+   { menu_desc_27, (uint16_t)ARRAY_SIZE(menu_desc_27) },
+#endif
+#endif
+   { menu_desc_28, (uint16_t)ARRAY_SIZE(menu_desc_28) },
+   { menu2_desc_4, (uint16_t)ARRAY_SIZE(menu2_desc_4) },
+   { menu_desc_29, (uint16_t)ARRAY_SIZE(menu_desc_29) },
+#ifdef HAVE_MATERIALUI
+   { menu_desc_30, (uint16_t)ARRAY_SIZE(menu_desc_30) },
+#endif
+#ifdef HAVE_OZONE
+   { menu_desc_31, (uint16_t)ARRAY_SIZE(menu_desc_31) },
+#endif
+#ifdef HAVE_OZONE
+   { menu2_desc_5, (uint16_t)ARRAY_SIZE(menu2_desc_5) },
+#endif
+#ifdef HAVE_OZONE
+   { menu_desc_32, (uint16_t)ARRAY_SIZE(menu_desc_32) },
+#endif
+   { menu_desc_33, (uint16_t)ARRAY_SIZE(menu_desc_33) },
+   { menu_desc_34, (uint16_t)ARRAY_SIZE(menu_desc_34) },
+   { menu_desc_35, (uint16_t)ARRAY_SIZE(menu_desc_35) },
+   { menu_desc_36, (uint16_t)ARRAY_SIZE(menu_desc_36) },
+   { menu_desc_37, (uint16_t)ARRAY_SIZE(menu_desc_37) },
+   { menu_desc_38, (uint16_t)ARRAY_SIZE(menu_desc_38) },
+   { menu_desc_39, (uint16_t)ARRAY_SIZE(menu_desc_39) },
+#ifdef ANDROID
+   { power_manageme_desc_0_s0, (uint16_t)ARRAY_SIZE(power_manageme_desc_0_s0) },
+#endif
+#ifdef HAVE_LAKKA
+   { power_manageme_desc_0_s1, (uint16_t)ARRAY_SIZE(power_manageme_desc_0_s1) },
+#endif
+#ifndef HAVE_LAKKA
+   { power_manageme_desc_1, (uint16_t)ARRAY_SIZE(power_manageme_desc_1) },
+#endif
+#ifdef HAVE_TRANSLATE
+   { ai_service_desc_0, (uint16_t)ARRAY_SIZE(ai_service_desc_0) },
+#endif
+#ifdef HAVE_TRANSLATE
+   { ai_service_desc_1, (uint16_t)ARRAY_SIZE(ai_service_desc_1) },
+#endif
+   { ui_desc_0, (uint16_t)ARRAY_SIZE(ui_desc_0) },
+   /* ui_desc_1 (3DS display mode) is deliberately absent: its range
+    * is computed from the console model at runtime, so the table is
+    * function-local and cannot be registered. It stays a documented
+    * runtime-descriptor exception until the row grammar can express
+    * computed ranges. */
+#ifdef _3DS
+   { ui_desc_2, (uint16_t)ARRAY_SIZE(ui_desc_2) },
+#endif
+#ifdef _3DS
+   { ui_desc_3, (uint16_t)ARRAY_SIZE(ui_desc_3) },
+#endif
+#ifdef HAVE_NETWORKING
+   { ui_desc_4, (uint16_t)ARRAY_SIZE(ui_desc_4) },
+#endif
+#ifdef HAVE_NETWORKING
+#if !defined(HAVE_LAKKA)
+   { ui_desc_5, (uint16_t)ARRAY_SIZE(ui_desc_5) },
+#endif
+#endif
+#ifdef HAVE_MIST
+   { ui_desc_6, (uint16_t)ARRAY_SIZE(ui_desc_6) },
+#endif
+   { ui_desc_7, (uint16_t)ARRAY_SIZE(ui_desc_7) },
+#ifdef HAVE_MIST
+   { ui_desc_8, (uint16_t)ARRAY_SIZE(ui_desc_8) },
+#endif
+#ifdef HAVE_SMBCLIENT
+   { ui_desc_9, (uint16_t)ARRAY_SIZE(ui_desc_9) },
+#endif
+   { ui_desc_10, (uint16_t)ARRAY_SIZE(ui_desc_10) },
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   { ui_desc_11, (uint16_t)ARRAY_SIZE(ui_desc_11) },
+#endif
+   { ui_desc_12, (uint16_t)ARRAY_SIZE(ui_desc_12) },
+   { ui_desc_13, (uint16_t)ARRAY_SIZE(ui_desc_13) },
+   { pl_desc_0, (uint16_t)ARRAY_SIZE(pl_desc_0) },
+   { pl_desc_1, (uint16_t)ARRAY_SIZE(pl_desc_1) },
+   { pl_desc_2, (uint16_t)ARRAY_SIZE(pl_desc_2) },
+   { pl_desc_3, (uint16_t)ARRAY_SIZE(pl_desc_3) },
+#if defined(HAVE_OZONE) || defined(HAVE_XMB)
+   { pl_desc_4, (uint16_t)ARRAY_SIZE(pl_desc_4) },
+#endif
+#ifdef HAVE_CHEEVOS
+   { cheevos_desc_0, (uint16_t)ARRAY_SIZE(cheevos_desc_0) },
+#endif
+#ifdef HAVE_CHEEVOS
+   { chv_desc_0, (uint16_t)ARRAY_SIZE(chv_desc_0) },
+#endif
+#ifdef HAVE_CHEEVOS
+   { chv_desc_1, (uint16_t)ARRAY_SIZE(chv_desc_1) },
+#endif
+#ifdef HAVE_NETWORKING
+   { core_updater_desc_0, (uint16_t)ARRAY_SIZE(core_updater_desc_0) },
+#endif
+#ifdef HAVE_NETWORKING
+#ifdef HAVE_UPDATE_CORES
+   { core_updater_desc_1, (uint16_t)ARRAY_SIZE(core_updater_desc_1) },
+#endif
+#endif
+#ifdef HAVE_NETWORKING
+#ifdef HAVE_UPDATE_CORES
+   { core_updater_desc_2, (uint16_t)ARRAY_SIZE(core_updater_desc_2) },
+#endif
+#endif
+#ifdef HAVE_SMBCLIENT
+   { np_desc_0, (uint16_t)ARRAY_SIZE(np_desc_0) },
+#endif
+#if defined(HAVE_NETWORKING)
+   { np_desc_1, (uint16_t)ARRAY_SIZE(np_desc_1) },
+#endif
+#if defined(HAVE_NETWORKING)
+   { netplay2_desc_0, (uint16_t)ARRAY_SIZE(netplay2_desc_0) },
+#endif
+#if defined(HAVE_NETWORKING)
+   { np_desc_2, (uint16_t)ARRAY_SIZE(np_desc_2) },
+#endif
+#if defined(HAVE_NETWORKING)
+   { netplay2_desc_1, (uint16_t)ARRAY_SIZE(netplay2_desc_1) },
+#endif
+#if defined(HAVE_NETWORKING)
+   { np_desc_3, (uint16_t)ARRAY_SIZE(np_desc_3) },
+#endif
+#if defined(HAVE_NETWORKING)
+   { np_desc_4, (uint16_t)ARRAY_SIZE(np_desc_4) },
+#endif
+#if defined(HAVE_NETWORKING)
+#if defined(HAVE_NETWORK_CMD)
+   { np_desc_5, (uint16_t)ARRAY_SIZE(np_desc_5) },
+#endif
+#endif
+#if defined(HAVE_NETWORKING)
+#if defined(HAVE_NETWORK_CMD)
+   { np_desc_6, (uint16_t)ARRAY_SIZE(np_desc_6) },
+#endif
+#endif
+#if defined(HAVE_NETWORKING)
+#if defined(HAVE_NETWORK_CMD)
+   { np_desc_7, (uint16_t)ARRAY_SIZE(np_desc_7) },
+#endif
+#endif
+#if defined(HAVE_NETWORKING)
+   { np_desc_8, (uint16_t)ARRAY_SIZE(np_desc_8) },
+#endif
+   { user_desc_0, (uint16_t)ARRAY_SIZE(user_desc_0) },
+   { user2_desc_0, (uint16_t)ARRAY_SIZE(user2_desc_0) },
+#ifdef HAVE_GAME_AI
+   { user_desc_1, (uint16_t)ARRAY_SIZE(user_desc_1) },
+#endif
+#ifdef HAVE_CHEEVOS
+   { user_accounts_desc_0_s0, (uint16_t)ARRAY_SIZE(user_accounts_desc_0_s0) },
+#endif
+#ifdef HAVE_NETWORKING
+#if !IOS
+   { user_accounts_desc_0_s1, (uint16_t)ARRAY_SIZE(user_accounts_desc_0_s1) },
+#endif
+#endif
+   { dir_desc_0, (uint16_t)ARRAY_SIZE(dir_desc_0) },
+   { dir_desc_1, (uint16_t)ARRAY_SIZE(dir_desc_1) },
+   { dir_desc_2, (uint16_t)ARRAY_SIZE(dir_desc_2) },
+   { privacy_desc_0, (uint16_t)ARRAY_SIZE(privacy_desc_0) },
+#ifdef HAVE_DISCORD
+   { privacy_desc_1, (uint16_t)ARRAY_SIZE(privacy_desc_1) },
+#endif
+   { privacy_desc_2, (uint16_t)ARRAY_SIZE(privacy_desc_2) },
+#if !defined(RARCH_CONSOLE)
+   { midi_desc_0, (uint16_t)ARRAY_SIZE(midi_desc_0) },
+#endif
+#ifdef HAVE_MIST
+   { steam_desc_0, (uint16_t)ARRAY_SIZE(steam_desc_0) },
+#endif
+#ifdef HAVE_SMBCLIENT
+   { smbclient_desc_0, (uint16_t)ARRAY_SIZE(smbclient_desc_0) },
+#endif
+#ifdef HAVE_SMBCLIENT
+   { smbclient_desc_1, (uint16_t)ARRAY_SIZE(smbclient_desc_1) },
+#endif
+};
+
+static const setting_desc_t *settings_master_find(enum msg_hash_enums e)
+{
+   unsigned t, r;
+   for (t = 0; t < ARRAY_SIZE(settings_desc_registry); t++)
+   {
+      const settings_desc_table_t *tab = &settings_desc_registry[t];
+      for (r = 0; r < tab->count; r++)
+         if (tab->rows[r].name_enum == e)
+            return &tab->rows[r];
+   }
+   return NULL;
+}
+
 static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_info)
 {
    unsigned i;
@@ -19075,6 +19594,116 @@ rarch_setting_t *menu_setting_new(void)
    settings_lazy_learn(list);
 
 #if defined(RETROARCH_VALIDATION_DUMPS)
+   /* Descriptor-index referee: for every enum-bearing entry the
+    * hand-sequenced build produced, construct the same setting from
+    * the master index alone and compare. Pointer equality on the
+    * interned actions tuple covers all eight callbacks at once. */
+   if (getenv("RETROARCH_DESC_REFEREE"))
+   {
+      settings_t *settings = config_get_ptr();
+      unsigned i2, n_checked = 0, n_nodesc = 0, n_ident = 0;
+      unsigned n_nodesc_nonbind = 0;
+      unsigned mm_act = 0, mm_name = 0, mm_tgt = 0, mm_def = 0;
+      unsigned mm_rng = 0, mm_flag = 0, mm_other = 0;
+      for (i2 = 0; list[i2].type != ST_NONE; i2++)
+      {
+         rarch_setting_t *e = &list[i2];
+         const setting_desc_t *d;
+         rarch_setting_t *sc = NULL;
+         rarch_setting_info_t li;
+         rarch_setting_group_info_t gi, sgi;
+         rarch_setting_t *one;
+         bool diff = false;
+         if (e->type > ST_GROUP || e->type == ST_GROUP)
+            continue;
+         if (e->enum_idx == MSG_UNKNOWN)
+            continue;
+         n_checked++;
+         if (!(d = settings_master_find(e->enum_idx)))
+         {
+            n_nodesc++;
+            if (e->type != ST_BIND && n_nodesc_nonbind++ < 200)
+               fprintf(stderr, "REFEREE nodesc(%u): %s\n",
+                     (unsigned)e->type, e->name);
+            continue;
+         }
+         li.index = 0;
+         li.size  = 8;
+         if (!(sc = (rarch_setting_t*)calloc(li.size, sizeof(*sc))))
+            continue;
+         {
+            unsigned j2;
+            for (j2 = 0; j2 < 8; j2++)
+            {
+               MENU_SETTING_INITIALIZE((&sc)[0], j2);
+            }
+         }
+         gi.name  = "Referee";
+         sgi.name = "Referee";
+         settings_list_add_desc(&sc, &li, settings, d, 1,
+               &gi, &sgi, MENU_ENUM_LABEL_MAIN_MENU_STR);
+         if (li.index < 1)
+         {
+            free(sc);
+            n_nodesc++;
+            continue;
+         }
+         one = &sc[0];
+         if (one->actions != e->actions)
+         {
+            mm_act++; diff = true;
+            if (mm_act <= 20)
+               fprintf(stderr, "REFEREE actions: %s\n", e->name);
+         }
+         if (!string_is_equal(one->name, e->name))
+         {  mm_name++; diff = true; }
+         if (one->value.target.string != e->value.target.string)
+         {
+            mm_tgt++; diff = true;
+            if (mm_tgt <= 3)
+               fprintf(stderr, "REFEREE target: %s\n", e->name);
+         }
+         if (memcmp(&one->default_value, &e->default_value,
+               sizeof(one->default_value)))
+         {
+            mm_def++; diff = true;
+            if (mm_def <= 3)
+               fprintf(stderr, "REFEREE default: %s\n", e->name);
+         }
+         if (one->min != e->min || one->max != e->max
+               || one->step != e->step)
+         {
+            mm_rng++; diff = true;
+            if (mm_rng <= 20)
+               fprintf(stderr, "REFEREE range: %s\n", e->name);
+         }
+         if ((one->flags | SD_FLAG_ADVANCED)
+               != (e->flags | SD_FLAG_ADVANCED))
+         {
+            mm_flag++; diff = true;
+            if (mm_flag <= 20)
+               fprintf(stderr, "REFEREE flags %08x vs %08x: %s\n",
+                     one->flags, e->flags, e->name);
+         }
+         if (one->cmd_trigger_idx != e->cmd_trigger_idx
+               || one->browser_selection_type != e->browser_selection_type
+               || one->type != e->type)
+         {
+            mm_other++; diff = true;
+            if (mm_other <= 20)
+               fprintf(stderr, "REFEREE other: %s\n", e->name);
+         }
+         if (!diff)
+            n_ident++;
+         menu_setting_free(sc);
+         free(sc);
+      }
+      fprintf(stderr,
+            "DESC_REFEREE checked=%u identical=%u no-desc=%u nonbind-nodesc=%u "
+            "act=%u name=%u tgt=%u def=%u rng=%u flag=%u other=%u\n",
+            n_checked, n_ident, n_nodesc, n_nodesc_nonbind,
+            mm_act, mm_name, mm_tgt, mm_def, mm_rng, mm_flag, mm_other);
+   }
    menu_setting_validation_dump(list);
    menu_displaylist_validation_dump(list);
 #endif
