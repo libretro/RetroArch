@@ -347,7 +347,7 @@ if ref_tokens:
     _tail = [r for r in rows if r[2] in ref_tokens]
     _ref_literals = {}
     for _k3, _f3, _t3, _a3 in _tail:
-        _head3 = (r'\s*%s,\s*%s,' % (_f3, _t3)) if _f3 else (r'\s*%s,' % _t3)
+        _head3 = (r'\s*%s,\s*%s,' % (_f3, _t3)) if _f3 else (r'\s*%s\s*(?=[,)])' % _t3)
         _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX|_LV|_AT|_AT_EX)?\(%s(?:[^()]|\((?:[^()]|\([^()]*\))*\))*\),?' % _head3, body)
         assert _rm3, _t3
         _rl3 = _rm3.group(0).strip()
