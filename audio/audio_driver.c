@@ -1796,7 +1796,7 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    if (string_is_equal_noncase("ogg", ext))
       return true;
 #endif
-#ifdef HAVE_IBXM
+#ifdef HAVE_RMODTRACKER
    if (string_is_equal_noncase("mod", ext))
       return true;
    if (string_is_equal_noncase("s3m", ext))

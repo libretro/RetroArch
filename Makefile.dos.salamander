@@ -65,7 +65,7 @@ HAVE_CMD                 := 1
 HAVE_CHEEVOS = 0
 HAVE_CHD = 1
 HAVE_RVORBIS = 1
-HAVE_IBXM = 1
+HAVE_RMODTRACKER = 1
 HAVE_CORE_INFO_CACHE = 1
 HAVE_XDELTA = 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
 

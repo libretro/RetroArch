@@ -2920,7 +2920,7 @@ enum rarch_content_type path_is_media_type(const char *path)
 #if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RWAV)
       case FILE_TYPE_WAV:
 #endif
-#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_IBXM)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RMODTRACKER)
       case FILE_TYPE_MOD:
       case FILE_TYPE_S3M:
       case FILE_TYPE_XM:

@@ -644,7 +644,7 @@ enum msg_file_type msg_hash_to_file_type(const char *value)
 #if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RWAV)
       { "wav",       FILE_TYPE_WAV },
 #endif
-#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_IBXM)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RMODTRACKER)
       { "mod",       FILE_TYPE_MOD },
       { "s3m",       FILE_TYPE_S3M },
       { "xm",        FILE_TYPE_XM },

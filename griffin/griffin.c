@@ -33,7 +33,7 @@
 
 #define CINTERFACE
 
-#define HAVE_IBXM 1
+#define HAVE_RMODTRACKER 1
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
 #define HAVE_COMPRESSION 1
@@ -591,7 +591,7 @@ VIDEO DRIVER
 #endif
 #endif
 
-#include "../deps/ibxm/ibxm.c"
+#include "../libretro-common/formats/mod/rmodtracker.c"
 
 /*============================================================
 FONTS

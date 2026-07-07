@@ -384,7 +384,7 @@ static int general_push(menu_displaylist_info_t *info,
             if (valid_extensions && *valid_extensions)
             {
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), valid_extensions);
-#ifdef HAVE_IBXM
+#ifdef HAVE_RMODTRACKER
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "s3m|mod|xm");
 #endif
             }
@@ -422,7 +422,7 @@ static int general_push(menu_displaylist_info_t *info,
 #if defined(HAVE_RWAV)
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "wav");
 #endif
-#ifdef HAVE_IBXM
+#ifdef HAVE_RMODTRACKER
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "s3m|mod|xm");
 #endif
             }

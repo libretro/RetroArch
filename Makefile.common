@@ -2062,9 +2062,16 @@ ifeq ($(HAVE_ZSTD),1)
            $(ZSOBJ)
 endif
 
-ifeq ($(HAVE_IBXM), 1)
-   DEFINES += -DHAVE_IBXM
-   OBJ += $(DEPS_DIR)/ibxm/ibxm.o
+ifeq ($(HAVE_RMODTRACKER), 1)
+   DEFINES += -DHAVE_RMODTRACKER
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/mod/rmodtracker.o
+ifneq ($(HAVE_BUILTINFLAC),1)
+ifneq ($(HAVE_RVORBIS),1)
+ifneq ($(HAVE_RMP3),1)
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
+endif
+endif
 endif
 
 ifeq ($(HAVE_BUILTINFLAC),1)
