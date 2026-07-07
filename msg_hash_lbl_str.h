@@ -718,8 +718,6 @@
 #define MENU_ENUM_LABEL_VIDEO_SOFT_FILTER_STR "soft_filter"
 #define MENU_ENUM_LABEL_VIDEO_TAB_STR "video_tab"
 #define MENU_ENUM_LABEL_VIDEO_THREADED_STR "video_threaded"
-#define MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT_STR "video_viewport_custom_height"
-#define MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH_STR "video_viewport_custom_width"
 #define MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X_STR "video_viewport_custom_x"
 #define MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y_STR "video_viewport_custom_y"
 #define MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION_STR "video_force_resolution"
