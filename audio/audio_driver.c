@@ -2913,12 +2913,57 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
    /* Do NOT free the microphone handle itself! It's allocated statically! */
 }
 
+/* The staging buffers the mic read pipeline flushes through. Only
+ * allocated once a core actually opens a microphone: with mic
+ * support enabled by default, allocating them at driver init cost
+ * every session over 800KB that all but a handful ever used.
+ * Freed and nulled by deinit, so a later open reallocates. */
+static bool mic_driver_allocate_frames(microphone_driver_state_t *mic_st)
+{
+   size_t max_frames = AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO;
+
+   if (mic_st->input_frames)
+      return true;
+
+   mic_st->input_frames_length = max_frames * sizeof(float);
+   mic_st->input_frames = (float*)memalign_alloc(64, mic_st->input_frames_length);
+   if (!mic_st->input_frames)
+      return false;
+
+   mic_st->converted_input_frames_length = max_frames * sizeof(float);
+   mic_st->converted_input_frames = (float*)memalign_alloc(64, mic_st->converted_input_frames_length);
+   if (!mic_st->converted_input_frames)
+      return false;
+
+   /* Need room for dual-mono frames */
+   mic_st->dual_mono_frames_length = max_frames * sizeof(float) * 2;
+   mic_st->dual_mono_frames = (float*)memalign_alloc(64, mic_st->dual_mono_frames_length);
+   if (!mic_st->dual_mono_frames)
+      return false;
+
+   mic_st->resampled_frames_length = max_frames * sizeof(float) * 2;
+   mic_st->resampled_frames = (float*) memalign_alloc(64, mic_st->resampled_frames_length);
+   if (!mic_st->resampled_frames)
+      return false;
+
+   mic_st->resampled_mono_frames_length = max_frames * sizeof(float);
+   mic_st->resampled_mono_frames = (float*) memalign_alloc(64, mic_st->resampled_mono_frames_length);
+   if (!mic_st->resampled_mono_frames)
+      return false;
+
+   mic_st->final_frames_length = max_frames * sizeof(int16_t);
+   mic_st->final_frames = (int16_t*) memalign_alloc(64, mic_st->final_frames_length);
+   if (!mic_st->final_frames)
+      return false;
+
+   return true;
+}
+
 bool microphone_driver_init_internal(void *settings_data)
 {
    settings_t *settings   = (settings_t*)settings_data;
    microphone_driver_state_t *mic_st = &mic_driver_st;
    bool verbosity_enabled = verbosity_is_enabled();
-   size_t max_frames   = AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO;
 
    /* If the user has mic support turned off... */
    if (!settings->bools.microphone_enable)
@@ -2940,37 +2985,6 @@ bool microphone_driver_init_internal(void *settings_data)
       RARCH_ERR("[Microphone] Failed to initialize microphone driver. Will continue without mic input.\n");
       goto error;
    }
-
-   mic_st->input_frames_length = max_frames * sizeof(float);
-   mic_st->input_frames = (float*)memalign_alloc(64, mic_st->input_frames_length);
-   if (!mic_st->input_frames)
-      goto error;
-
-   mic_st->converted_input_frames_length = max_frames * sizeof(float);
-   mic_st->converted_input_frames = (float*)memalign_alloc(64, mic_st->converted_input_frames_length);
-   if (!mic_st->converted_input_frames)
-      goto error;
-
-   /* Need room for dual-mono frames */
-   mic_st->dual_mono_frames_length = max_frames * sizeof(float) * 2;
-   mic_st->dual_mono_frames = (float*)memalign_alloc(64, mic_st->dual_mono_frames_length);
-   if (!mic_st->dual_mono_frames)
-      goto error;
-
-   mic_st->resampled_frames_length = max_frames * sizeof(float) * 2;
-   mic_st->resampled_frames = (float*) memalign_alloc(64, mic_st->resampled_frames_length);
-   if (!mic_st->resampled_frames)
-      goto error;
-
-   mic_st->resampled_mono_frames_length = max_frames * sizeof(float);
-   mic_st->resampled_mono_frames = (float*) memalign_alloc(64, mic_st->resampled_mono_frames_length);
-   if (!mic_st->resampled_mono_frames)
-      goto error;
-
-   mic_st->final_frames_length = max_frames * sizeof(int16_t);
-   mic_st->final_frames = (int16_t*) memalign_alloc(64, mic_st->final_frames_length);
-   if (!mic_st->final_frames)
-      goto error;
 
    if (!mic_st->driver || !mic_st->driver->init)
       goto error;
@@ -3020,6 +3034,9 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
 
    if (!microphone || !mic_driver || !(mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE))
       return false;
+
+   if (!mic_driver_allocate_frames(mic_st))
+      goto error;
 
    microphone->outgoing_samples = fifo_new(max_samples * sizeof(int16_t));
    if (!microphone->outgoing_samples)
