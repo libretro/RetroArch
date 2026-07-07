@@ -112,15 +112,20 @@ typedef int  (*action_start_handler_t         )(rarch_setting_t *setting);
 typedef int  (*action_ok_handler_t            )(rarch_setting_t *setting, size_t idx, bool wraparound);
 typedef int  (*action_select_handler_t        )(rarch_setting_t *setting, size_t idx, bool wraparound);
 
+
+typedef size_t (*get_string_representation_t    )(rarch_setting_t *setting, char *s, size_t len);
+
 struct setting_actions
 {
-   action_ok_handler_t     ok;
-   action_start_handler_t  start;
-   action_select_handler_t select;
-   action_left_handler_t   left;
-   action_right_handler_t  right;
+   action_ok_handler_t         ok;
+   action_start_handler_t      start;
+   action_select_handler_t     select;
+   action_left_handler_t       left;
+   action_right_handler_t      right;
+   change_handler_t            change;
+   change_handler_t            read;
+   get_string_representation_t repr;
 };
-typedef size_t (*get_string_representation_t    )(rarch_setting_t *setting, char *s, size_t len);
 
 struct rarch_setting_group_info
 {
@@ -143,13 +148,11 @@ struct rarch_setting
    const char           *short_description;
    const char           *values;
 
-   change_handler_t              change_handler;
-   change_handler_t              read_handler;
-   /* The five navigation handlers live in shared interned tuples:
-    * 1,904 entries carry only 61 distinct combinations, so each
-    * entry stores one pointer instead of five. Never NULL. */
+   /* Every per-entry handler lives in shared interned tuples: the
+    * full eight-handler combination counts 150 distinct blocks
+    * across 1,904 entries, so each entry stores one pointer instead
+    * of eight handlers. Never NULL. */
    const setting_actions_t      *actions;
-   get_string_representation_t   get_string_representation;
 
    struct
    {

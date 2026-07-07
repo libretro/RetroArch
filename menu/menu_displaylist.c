@@ -16246,7 +16246,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               unsigned i                = 0;
                               bool checked_found        = false;
                               unsigned checked          = 0;
-                              int has_repr              = (setting->get_string_representation != NULL);
+                              int has_repr              = (setting->actions->repr != NULL);
 
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
@@ -16273,7 +16273,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                     else
                                        strlcpy(setting->value.target.string, p, setting->size);
 
-                                    setting->get_string_representation(setting,
+                                    setting->actions->repr(setting,
                                           val_s, sizeof(val_s));
 
                                     if (menu_entries_append(info->list,
@@ -16349,14 +16349,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              if (setting->get_string_representation)
+                              if (setting->actions->repr)
                               {
                                  for (i = min; i <= max; i += step)
                                  {
                                     char val_s[NAME_MAX_LENGTH];
                                     int val = (int)i;
                                     *setting->value.target.integer = val;
-                                    setting->get_string_representation(setting,
+                                    setting->actions->repr(setting,
                                           val_s, sizeof(val_s));
                                     if (menu_entries_append(info->list,
                                              val_s,
@@ -16426,13 +16426,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              if (setting->get_string_representation)
+                              if (setting->actions->repr)
                               {
                                  for (i = min; i <= max + half_step; i += step)
                                  {
                                     char val_s[NAME_MAX_LENGTH];
                                     *setting->value.target.fraction = i;
-                                    setting->get_string_representation(setting,
+                                    setting->actions->repr(setting,
                                           val_s, sizeof(val_s));
                                     if (menu_entries_append(info->list,
                                              val_s,
@@ -16500,14 +16500,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              if (setting->get_string_representation)
+                              if (setting->actions->repr)
                               {
                                  for (i = min; i <= max; i += step)
                                  {
                                     char val_s[NAME_MAX_LENGTH];
                                     int val = (int)i;
                                     *setting->value.target.unsigned_integer = val;
-                                    setting->get_string_representation(setting,
+                                    setting->actions->repr(setting,
                                           val_s, sizeof(val_s));
                                     if (menu_entries_append(info->list,
                                              val_s,
@@ -16692,14 +16692,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                           if (setting->get_string_representation)
+                           if (setting->actions->repr)
                            {
                               for (i = min; i <= max; i += step)
                               {
                                  char val_s[NAME_MAX_LENGTH];
                                  int val = (int)i;
                                  *setting->value.target.integer = val;
-                                 setting->get_string_representation(setting,
+                                 setting->actions->repr(setting,
                                        val_s, sizeof(val_s));
                                  if (menu_entries_append(info->list,
                                           val_s,
@@ -16768,13 +16768,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                           if (setting->get_string_representation)
+                           if (setting->actions->repr)
                            {
                               for (i = min; i <= max; i += step)
                               {
                                  char val_s[NAME_MAX_LENGTH];
                                  *setting->value.target.fraction = i;
-                                 setting->get_string_representation(setting,
+                                 setting->actions->repr(setting,
                                        val_s, sizeof(val_s));
                                  if (menu_entries_append(info->list,
                                           val_s,
@@ -16841,14 +16841,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                           if (setting->get_string_representation)
+                           if (setting->actions->repr)
                            {
                               for (i = min; i <= max; i += step)
                               {
                                  char val_s[NAME_MAX_LENGTH];
                                  int val = (int)i;
                                  *setting->value.target.unsigned_integer = val;
-                                 setting->get_string_representation(setting,
+                                 setting->actions->repr(setting,
                                        val_s, sizeof(val_s));
                                  if (menu_entries_append(info->list,
                                           val_s,

@@ -2193,8 +2193,8 @@ static int set_path_generic(const char *label, const char *action_path)
    {
       if (setting->value.target.string)
          strlcpy(setting->value.target.string, action_path, setting->size);
-      if (setting->change_handler)
-         setting->change_handler(setting);
+      if (setting->actions->change)
+         setting->actions->change(setting);
       return menu_setting_generic(setting, 0, false);
    }
 
@@ -2636,8 +2636,8 @@ static int action_ok_set_path_overlay_carchive(const char *path,
       if (setting->value.target.string)
          strlcpy(setting->value.target.string,
                action_path, setting->size);
-      if (setting->change_handler)
-         setting->change_handler(setting);
+      if (setting->actions->change)
+         setting->actions->change(setting);
    }
 
    menu_entries_flush_stack(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST_STR, 0);
@@ -3508,8 +3508,8 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
       {
          if (setting->value.target.string)
             strlcpy(setting->value.target.string, str, setting->size);
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         if (setting->actions->change)
+            setting->actions->change(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
@@ -3781,8 +3781,8 @@ static void menu_input_st_string_cb_cheat_file_save_as(
       {
          if (setting->value.target.string)
             strlcpy(setting->value.target.string, str, setting->size);
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         if (setting->actions->change)
+            setting->actions->change(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
@@ -3988,8 +3988,8 @@ static void menu_input_st_string_cb_remap_file_save_as(
       {
          if (setting->value.target.string)
             strlcpy(setting->value.target.string, str, setting->size);
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         if (setting->actions->change)
+            setting->actions->change(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
@@ -4126,8 +4126,8 @@ static void menu_input_st_string_cb_config_file_save_as(
       {
          if (setting->value.target.string)
             strlcpy(setting->value.target.string, str, setting->size);
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         if (setting->actions->change)
+            setting->actions->change(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
@@ -4161,8 +4161,8 @@ static void menu_input_st_string_cb_override_file_save_as(
       {
          if (setting->value.target.string)
             strlcpy(setting->value.target.string, str, setting->size);
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         if (setting->actions->change)
+            setting->actions->change(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
@@ -7309,8 +7309,8 @@ static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
 
    *setting->value.target.unsigned_integer = value;
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
+   if (setting->actions->change)
+      setting->actions->change(setting);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -7342,7 +7342,7 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
          }
          break;
       case ST_STRING_OPTIONS:
-         if (setting->get_string_representation)
+         if (setting->actions->repr)
          {
             const char *tok       = setting->values;
             unsigned tok_idx      = 0;
@@ -7376,8 +7376,8 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
          break;
    }
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
+   if (setting->actions->change)
+      setting->actions->change(setting);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
