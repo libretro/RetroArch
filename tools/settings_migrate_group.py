@@ -198,7 +198,7 @@ for k, f, T, a in rows:
         usval[T] = re.sub(r'\s*\n\s*', ' ', _tvm.group(2)) if _tvm else '""'
         m2 = re.search(r'MSG_HASH\(\s*\n?\s*MENU_ENUM_SUBLABEL_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
         if m2:
-            ussub[T] = re.sub(r'\s*\n\s*', ' ', m2.group(1)); usspan.append((m2.start(), m2.end()))
+            ussub[T] = re.sub(r'\s*\n\s*', ' ', m2.group(1)); usspan.append((m2.start(), m2.end(), T))
         continue
     m = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
     if not m:
@@ -207,34 +207,28 @@ for k, f, T, a in rows:
             ref_tokens.add(T)
             continue
     assert m, ('VALUE', T)
-    usval[T] = re.sub(r'\s*\n\s*', ' ', m.group(2)); usspan.append((m.start(), m.end()))
+    usval[T] = re.sub(r'\s*\n\s*', ' ', m.group(2)); usspan.append((m.start(), m.end(), T))
     if m.group(1):
         uscmt[T] = m.group(1)
     m = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_SUBLABEL_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
     if m:
-        ussub[T] = re.sub(r'\s*\n\s*', ' ', m.group(2)); usspan.append((m.start(), m.end()))
+        ussub[T] = re.sub(r'\s*\n\s*', ' ', m.group(2)); usspan.append((m.start(), m.end(), T))
         if m.group(1):
             uscmt[T] = (uscmt.get(T, '') + ' ' + m.group(1)).strip()
-if ref_tokens:
-    _tail = [r for r in rows if r[2] in ref_tokens]
-    _ref_literals = {}
-    for _k3, _f3, _t3, _a3 in _tail:
-        _head3 = (r'\s*%s,\s*%s,' % (_f3, _t3)) if _f3 else (r'\s*%s,' % _t3)
-        _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX|_LV)?\(%s(?:[^()]|\((?:[^()]|\([^()]*\))*\))*\),?' % _head3, body)
-        assert _rm3, _t3
-        _rl3 = _rm3.group(0).strip()
-        for _g3 in reversed(guards.get(_f3 or _t3, ())):
-            _rl3 = _g3 + '\n                  ' + _rl3 + '\n#endif'
-        _ref_literals[_t3] = _rl3
-    print('  note: %d reference row(s) carried literal inside the def' % len(_ref_literals))
-else:
-    _ref_literals = {}
+
 lblstr = open('msg_hash_lbl_str.h').read()
 names, lblstr_span = {}, []
 for k, f, T, a in rows:
     if T in ref_tokens:
         continue
     m = re.search(r'#define MENU_ENUM_LABEL_%s_STR (%s)\n' % (T, CSTR), lblstr)
+    if not m and run("grep -lE 'S_\\w*\\((\\w+, *)?%s,' settings/*.h" % T).stdout.strip():
+        # the label already lives in a migrated def (a level-variant twin
+        # took it); this row becomes a reference
+        ref_tokens.add(T)
+        usval.pop(T, None); ussub.pop(T, None)
+        usspan = [sp for sp in usspan if sp[2] != T]
+        continue
     assert m, T
     names[T] = m.group(1); lblstr_span.append((m.start(), m.end()))
     ext = run('grep -rl "MENU_ENUM_LABEL_%s_STR\\b" --include=*.h --include=*.c . | grep -v msg_hash_lbl' % T).stdout.strip()
@@ -343,6 +337,21 @@ out = ['''/* Single-source definitions: %s.
 _mh_text = open('msg_hash.h').read()
 _h_used = set()
 enum_rows = []
+if ref_tokens:
+    _tail = [r for r in rows if r[2] in ref_tokens]
+    _ref_literals = {}
+    for _k3, _f3, _t3, _a3 in _tail:
+        _head3 = (r'\s*%s,\s*%s,' % (_f3, _t3)) if _f3 else (r'\s*%s,' % _t3)
+        _rm3 = re.search(r'[ \t]*SDESC_\w+_ROW(?:_P|_DS|_EX|_LV)?\(%s(?:[^()]|\((?:[^()]|\([^()]*\))*\))*\),?' % _head3, body)
+        assert _rm3, _t3
+        _rl3 = _rm3.group(0).strip()
+        for _g3 in reversed(guards.get(_f3 or _t3, ())):
+            _rl3 = _g3 + '\n                  ' + _rl3 + '\n#endif'
+        _ref_literals[_t3] = _rl3
+    print('  note: %d reference row(s) carried literal inside the def' % len(_ref_literals))
+else:
+    _ref_literals = {}
+
 for k, f, T, a in rows:
     if T in ref_tokens:
         out.append('/* Row referencing %s; strings owned by another def file. */\n'
@@ -456,8 +465,8 @@ if _h_used:
 open(os.path.join('settings', DEF), 'w').write('\n'.join(out) + '\n')
 
 if usspan:
-    first = min(s for s, e in usspan)
-    for s, e in sorted(usspan, reverse=True): us = us[:s] + us[e:]
+    first = min(s for s, e, _sT in usspan)
+    for s, e, _sT in sorted(usspan, reverse=True): us = us[:s] + us[e:]
 else:
     # nothing consumed from the base language (a pure-reference
     # level-variant row without a sublabel): anchor the region at the
