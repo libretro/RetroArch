@@ -13728,10 +13728,13 @@ static void settings_build_cheat_details(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_generic_action_start_default)
 
+         /* The editor scratch is heap-allocated on demand; the rows
+          * below bind its address, so it must exist before they build. */
+         cheat_manager_working_code_ensure();
          CONFIG_STRING(
                list, list_info,
                cheat_manager_state.working_code,
-               sizeof(cheat_manager_state.working_code),
+               CHEAT_CODE_SCRATCH_SIZE,
                MENU_ENUM_LABEL_CHEAT_CODE,
                MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
                "",
@@ -13753,7 +13756,7 @@ static void settings_build_cheat_details(
          CONFIG_STRING(
                list, list_info,
                cheat_manager_state.working_code,
-               sizeof(cheat_manager_state.working_code),
+               CHEAT_CODE_SCRATCH_SIZE,
                MENU_ENUM_LABEL_CHEAT_CODE,
                MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
                "",
