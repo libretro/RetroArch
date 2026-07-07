@@ -29,7 +29,7 @@ def parse_def_rows(text, messages):
     # verbatim between their first and last quote like parse_message.
     i = 0
     while True:
-        m = re.search(r'\bS_(BOOL|UINT|INT|FLOAT|STRING_P|STRING|DIR|PATH_DS|PATH|ACTION)(_EX)?(_NS)?(_H)?\s*\(', text[i:])
+        m = re.search(r'\bS_(BOOL|UINT|INT|FLOAT|STRING_P|STRING|DIR|PATH_DS|PATH|ACTION)(_EX|_LV)?(_NS)?(_H)?\s*\(', text[i:])
         if not m:
             return
         j = i + m.end()
@@ -57,7 +57,11 @@ def parse_def_rows(text, messages):
                 args[-1] += ch
             j += 1
         token = (args[0] if m.group(1) == 'ACTION' else args[1]).strip()
-        if m.group(3):  # _NS row: last argument is the VALUE string
+        if m.group(2) == '_LV':
+            # level-variant row: the value string belongs to the value
+            # token's own def; only the sublabel is sourced here
+            pairs = () if m.group(3) else (('MENU_ENUM_SUBLABEL_', args[-1]),)
+        elif m.group(3):  # _NS row: last argument is the VALUE string
             pairs = (('MENU_ENUM_LABEL_VALUE_', args[-1]),)
         else:
             pairs = (('MENU_ENUM_LABEL_VALUE_', args[-2]),
