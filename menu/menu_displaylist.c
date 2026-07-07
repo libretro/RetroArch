@@ -11918,6 +11918,9 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_CORE_SETTINGS_LIST:
          {
             static const menu_displaylist_build_info_t build_list[] = {
+#ifdef HAVE_ONLINE_UPDATER
+               {MENU_ENUM_LABEL_UPDATER_SETTINGS,                  PARSE_ACTION},
+#endif
                {MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,            PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE, PARSE_ONLY_BOOL},
@@ -11938,14 +11941,9 @@ unsigned menu_displaylist_build_list(
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
 
-#ifdef HAVE_ONLINE_UPDATER
-            if (menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS),
-                     MENU_ENUM_LABEL_UPDATER_SETTINGS,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-#endif
+            /* core_manager_list has no backing setting, so it cannot
+             * be a PARSE_ACTION array entry; the raw append above is
+             * the only mechanism for settingless action rows today. */
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -12107,27 +12105,36 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_FRAME_TIME_COUNTER_SETTINGS_LIST:
          {
             static menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO, PARSE_ONLY_FLOAT, true},
-               {MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED, PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,       PARSE_ONLY_FLOAT, true},
+               {MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED, PARSE_ONLY_BOOL,  true},
+               /* Auto-reset toggle is redundant when gated sampling
+                * is active (no contamination enters the buffer to
+                * begin with), so it is hidden in that case to keep
+                * the menu focused. */
+               {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_AUTO_RESET, PARSE_ONLY_BOOL,  true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_AUTO_RESET:
+                     build_list[i].checked =
+                           !settings->bools.video_frame_time_sample_gated;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
-                  count++;
-            }
-
-            /* Auto-reset toggle is redundant when gated sampling
-             * is active (no contamination enters the buffer to
-             * begin with), so hide it in that case to keep the
-             * menu focused. */
-            if (!settings->bools.video_frame_time_sample_gated)
-            {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_FRAME_TIME_COUNTER_AUTO_RESET,
-                        PARSE_ONLY_BOOL, false) == 0)
                   count++;
             }
          }
