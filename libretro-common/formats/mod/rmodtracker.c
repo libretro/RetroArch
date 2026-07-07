@@ -1934,23 +1934,6 @@ static int replay_calculate_duration( struct replay *replay ) {
 	return duration;
 }
 
-/* Seek to approximately the specified sample position.
-   The actual sample position reached is returned. */
-static int replay_seek( struct replay *replay, int sample_pos ) {
-	int idx, tick_len, current_pos = 0;
-	replay_set_sequence_pos( replay, 0 );
-	tick_len = calculate_tick_len( replay->tempo, replay->sample_rate );
-	while( ( sample_pos - current_pos ) >= tick_len ) {
-		for( idx = 0; idx < replay->module->num_channels; idx++ ) {
-			channel_update_sample_idx( &replay->channels[ idx ],
-				tick_len * 2, replay->sample_rate * 2 );
-		}
-		current_pos += tick_len;
-		replay_tick( replay );
-		tick_len = calculate_tick_len( replay->tempo, replay->sample_rate );
-	}
-	return current_pos;
-}
 
 static void replay_volume_ramp( struct replay *replay, int *mix_buf, int tick_len ) {
 	int idx, a1, a2, ramp_rate = 256 * 2048 / replay->sample_rate;
@@ -1995,15 +1978,7 @@ static int replay_get_audio( struct replay *replay, int *mix_buf, int mute ) {
 	return tick_len;
 }
 
-/* Returns the currently playing pattern in the sequence.*/
-static int replay_get_sequence_pos( struct replay *replay ) {
-	return replay->seq_pos;
-}
 
-/* Returns the currently playing row in the pattern. */
-static int replay_get_row( struct replay *replay ) {
-	return replay->row;
-}
 
 /* ---------------------------------------------------------------------
  * Float mixing pipeline.
@@ -2278,7 +2253,7 @@ size_t rmodtracker_get_samples_s16_interleaved( rmodtracker *rmt,
 		int carry_pos = rmt->carry_pos;
 		int carry_len = rmt->carry_len;
 		while( done < frames ) {
-			int avail, take, i;
+			int avail, take;
 			if( carry_pos >= carry_len ) {
 				int n = replay_get_audio( rmt->replay, mix, 0 );
 				if( n <= 0 ) {
