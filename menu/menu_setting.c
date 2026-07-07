@@ -1362,7 +1362,7 @@ static rarch_setting_t setting_action_setting(const char* name,
       const char *parent_group,
       bool dont_use_enum_idx)
 {
-   rarch_setting_t result;
+   rarch_setting_t result = {0};
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_ACTION;
@@ -1424,7 +1424,7 @@ static rarch_setting_t setting_group_setting(
       enum setting_type type, const char* name,
       const char *parent_group)
 {
-   rarch_setting_t result;
+   rarch_setting_t result = {0};
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = type;
@@ -1493,7 +1493,7 @@ static rarch_setting_t setting_float_setting(const char* name,
       change_handler_t change_handler, change_handler_t read_handler,
       bool dont_use_enum_idx)
 {
-   rarch_setting_t result;
+   rarch_setting_t result = {0};
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_FLOAT;
@@ -1567,7 +1567,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
       change_handler_t change_handler, change_handler_t read_handler,
       bool dont_use_enum_idx)
 {
-   rarch_setting_t result;
+   rarch_setting_t result = {0};
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_UINT;
@@ -1643,7 +1643,7 @@ static rarch_setting_t setting_size_setting(const char* name,
       change_handler_t change_handler, change_handler_t read_handler,
       bool dont_use_enum_idx, get_string_representation_t string_representation_handler)
 {
-   rarch_setting_t result;
+   rarch_setting_t result = {0};
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_SIZE;
@@ -1718,7 +1718,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
       const char *parent_group,
       bool dont_use_enum_idx)
 {
-   rarch_setting_t result;
+   rarch_setting_t result = {0};
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_BIND;
@@ -1839,7 +1839,7 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
       change_handler_t read_handler,
       bool dont_use_enum_idx)
 {
-   rarch_setting_t result;
+   rarch_setting_t result = {0};
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = type;
@@ -1961,7 +1961,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
       const char* name, const char *parent_name, const char *parent_group,
       bool dont_use_enum_idx)
 {
-   rarch_setting_t result;
+   rarch_setting_t result = {0};
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = type;
@@ -2034,7 +2034,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
       change_handler_t change_handler, change_handler_t read_handler,
       bool dont_use_enum_idx)
 {
-   rarch_setting_t result;
+   rarch_setting_t result = {0};
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_BOOL;
@@ -2108,7 +2108,7 @@ static rarch_setting_t setting_int_setting(const char* name,
       change_handler_t change_handler, change_handler_t read_handler,
       bool dont_use_enum_idx)
 {
-   rarch_setting_t result;
+   rarch_setting_t result = {0};
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_INT;
