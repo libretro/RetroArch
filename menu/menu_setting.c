@@ -683,7 +683,6 @@ static void setting_add_special_callbacks(
          case ST_UINT:
          case ST_INT:
          case ST_FLOAT:
-            (*list)[idx].action_cancel = NULL;
             break;
          default:
             break;
@@ -1371,9 +1370,6 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.action_start              = NULL;
    result.action_left               = NULL;
    result.action_right              = NULL;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
    result.action_ok                 = setting_action_action_ok;
    result.action_select             = setting_action_action_ok;
    result.get_string_representation = &setting_get_string_representation_default;
@@ -1433,9 +1429,6 @@ static rarch_setting_t setting_group_setting(
    result.action_start              = NULL;
    result.action_left               = NULL;
    result.action_right              = NULL;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
    result.action_ok                 = NULL;
    result.action_select             = NULL;
    result.get_string_representation = &setting_get_string_representation_default;
@@ -1499,9 +1492,6 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.action_start              = setting_generic_action_start_default;
    result.action_left               = setting_fraction_action_left_default;
    result.action_right              = setting_fraction_action_right_default;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
    result.action_ok                 = setting_generic_action_ok_default;
    result.action_select             = setting_generic_action_ok_default;
    result.get_string_representation = &setting_get_string_representation_st_float;
@@ -1570,9 +1560,6 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.action_start              = setting_generic_action_start_default;
    result.action_left               = setting_uint_action_left_default;
    result.action_right              = setting_uint_action_right_default;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
    result.action_ok                 = setting_generic_action_ok_default;
    result.action_select             = setting_generic_action_ok_default;
    result.get_string_representation = &setting_get_string_representation_uint;
@@ -1643,9 +1630,6 @@ static rarch_setting_t setting_size_setting(const char* name,
    result.action_start              = setting_generic_action_start_default;
    result.action_left               = setting_size_action_left_default;
    result.action_right              = setting_size_action_right_default;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
    result.action_ok                 = setting_generic_action_ok_default;
    result.action_select             = setting_generic_action_ok_default;
    result.get_string_representation = string_representation_handler;
@@ -1715,9 +1699,6 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.action_start              = setting_bind_action_start;
    result.action_left               = NULL;
    result.action_right              = NULL;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
    result.action_ok                 = setting_bind_action_ok;
    result.action_select             = setting_bind_action_ok;
    result.get_string_representation = &setting_get_string_representation_st_bind;
@@ -1833,9 +1814,6 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    result.action_start              = NULL;
    result.action_left               = NULL;
    result.action_right              = NULL;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
    result.action_ok                 = NULL;
    result.action_select             = NULL;
    result.get_string_representation = &setting_get_string_representation_st_string;
@@ -1951,9 +1929,6 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.action_start              = NULL;
    result.action_left               = NULL;
    result.action_right              = NULL;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
    result.action_ok                 = NULL;
    result.action_select             = NULL;
    result.get_string_representation = &setting_get_string_representation_default;
@@ -2021,9 +1996,6 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.action_start              = setting_generic_action_start_default;
    result.action_left               = setting_bool_action_ok_default;
    result.action_right              = setting_bool_action_ok_default;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
    result.action_ok                 = setting_bool_action_ok_default;
    result.action_select             = setting_generic_action_ok_default;
    result.get_string_representation = &setting_get_string_representation_st_bool;
@@ -2092,9 +2064,6 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.action_start              = setting_generic_action_start_default;
    result.action_left               = setting_int_action_left_default;
    result.action_right              = setting_int_action_right_default;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
    result.action_ok                 = setting_generic_action_ok_default;
    result.action_select             = setting_generic_action_ok_default;
    result.get_string_representation = &setting_get_string_representation_int;
@@ -7814,12 +7783,10 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             switch (action)
             {
                case MENU_ACTION_UP:
-                  if (setting->action_up)
-                     ret = setting->action_up(setting);
-                  break;
                case MENU_ACTION_DOWN:
-                  if (setting->action_down)
-                     ret = setting->action_down(setting);
+                  /* No setting has ever populated an up or down
+                   * handler; the fields are gone and the actions
+                   * fall through unhandled as they always did. */
                   break;
                case MENU_ACTION_LEFT:
                   if (setting->action_left)
@@ -7838,8 +7805,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
                      ret = setting->action_ok(setting, selection, false);
                   break;
                case MENU_ACTION_CANCEL:
-                  if (setting->action_cancel)
-                     ret = setting->action_cancel(setting);
+                  /* Never populated; falls through unhandled as it
+                   * always did. */
                   break;
                case MENU_ACTION_START:
                   if (setting->action_start)
@@ -10767,7 +10734,6 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_all;
-      (*list)[list_info->index - 1].action_cancel  = NULL;
 
       CONFIG_ACTION_ALT(
             list, list_info,
@@ -10779,7 +10745,6 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_defaults;
-      (*list)[list_info->index - 1].action_cancel  = NULL;
 
 #ifdef HAVE_CONFIGFILE
       CONFIG_ACTION_ALT(
@@ -10792,7 +10757,6 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_all_save_autoconfig;
-      (*list)[list_info->index - 1].action_cancel  = NULL;
 #endif
    }
 
@@ -18763,9 +18727,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].action_start                     = NULL; \
    (*&list)[pos].action_left                      = NULL; \
    (*&list)[pos].action_right                     = NULL; \
-   (*&list)[pos].action_up                        = NULL; \
-   (*&list)[pos].action_down                      = NULL; \
-   (*&list)[pos].action_cancel                    = NULL; \
    (*&list)[pos].action_ok                        = NULL; \
    (*&list)[pos].action_select                    = NULL; \
    (*&list)[pos].get_string_representation        = NULL; \
