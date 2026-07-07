@@ -70,7 +70,10 @@ typedef struct
    bool handled;
 } input_test_step_t;
 
-static input_test_step_t input_test_steps[MAX_TEST_STEPS];
+/* Allocated when the test driver or core actually starts; a static
+ * array here is load-resident forever on platforms without demand
+ * paging, for a feature almost no session activates. */
+static input_test_step_t *input_test_steps;
 
 static unsigned current_test_step     = 0;
 static unsigned last_test_step        = MAX_TEST_STEPS + 1;
@@ -356,12 +359,22 @@ static int16_t test_input_state(
 
 static void test_input_free_input(void *data)
 {
+   if (input_test_steps)
+      free(input_test_steps);
+   input_test_steps = NULL;
+
    test_keyboard_free();
 }
 
 static void* test_input_init(const char *joypad_driver)
 {
    settings_t *settings = config_get_ptr();
+
+   if (!input_test_steps)
+      input_test_steps = (input_test_step_t*)
+            calloc(MAX_TEST_STEPS, sizeof(*input_test_steps));
+   if (!input_test_steps)
+      return NULL;
 
    RARCH_DBG("[Test input] Start.\n");
 
