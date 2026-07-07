@@ -462,35 +462,6 @@ static int ropus_packet_parse(const uint8_t *data, int32_t len,
 }
 
 /* ==================================================================== */
-/* OpusHead (RFC 7845 s5.1).                                            */
-/* ==================================================================== */
-typedef struct
-{
-   int channels;
-   int preskip;
-   int gain_q8;             /* output gain, Q7.8 dB                     */
-   int mapping_family;
-} ropus_head;
-
-static int ropus_parse_head(const uint8_t *d, size_t n, ropus_head *h)
-{
-   if (n < 19 || memcmp(d, "OpusHead", 8))
-      return -1;
-   if (d[8] != 1)
-      return -1;                          /* version                   */
-   h->channels = d[9];
-   h->preskip = d[10] | (d[11] << 8);
-   /* d[12..15] input sample rate (informational) */
-   h->gain_q8 = (int16_t)(d[16] | (d[17] << 8));
-   h->mapping_family = d[18];
-   if (h->mapping_family != 0)
-      return -2;                          /* only mono/stereo RTP map  */
-   if (h->channels < 1 || h->channels > 2)
-      return -2;
-   return 0;
-}
-
-/* ==================================================================== */
 /* CELT constants and mode data for 48 kHz (mode48000_960_120).         */
 /* ==================================================================== */
 /* Tables extracted verbatim from libopus v1.4 (BSD).            */
@@ -2219,7 +2190,6 @@ static const int16_t ropus_mdct_twiddles_q[1800] = {
 -31679, -31887, -32074, -32239, -32381,
 -32501, -32600, -32675, -32729, -32759,
 };
-
 
 #define ROPUS_NBANDS      21
 #define ROPUS_OVERLAP     120
@@ -4578,9 +4548,9 @@ static void ropus_deemphasis(float *in[], float *pcm, int N, int C,
 static int ropus_celt_decode(ropus_celt *st, const uint8_t *data, int len,
       float *pcm, int frame_size, ropus_ec *dec)
 {
-   (void)data;
    int c, i, N, CC = st->channels, C = st->stream_channels;
    int start = st->start, end = st->end;
+
    ropus_celt_frame f;
    float *decode_mem[2];
    float *out_syn[2];
@@ -4591,6 +4561,7 @@ static int ropus_celt_decode(ropus_celt *st, const uint8_t *data, int len,
    float normbuf[2 * 960];
    float max_background_increase;
 
+   (void)data;
    memset(&f, 0, sizeof f);
    oldBandE = st->oldEBands;
    oldLogE = st->oldLogE;
@@ -6627,9 +6598,9 @@ static int ropus_celt_front_q(ropus_celt_q *st, ropus_ec *dec, int len,
 static int ropus_celt_decode_q(ropus_celt_q *st, const uint8_t *data,
       int len, int16_t *pcm, int frame_size, ropus_ec *dec, int accum)
 {
-   (void)data;
    int c, i, N, CC = st->channels, C = st->stream_channels;
    int start = st->start, end = st->end;
+
    ropus_celt_frame f;
    int16_t pf_gain = 0;
    ropus_sig *decode_mem[2];
@@ -6641,6 +6612,7 @@ static int ropus_celt_decode_q(ropus_celt_q *st, const uint8_t *data,
    ropus_norm normbuf[2 * 960];
    int16_t max_background_increase;
 
+   (void)data;
    memset(&f, 0, sizeof f);
    oldBandE = st->oldEBands;
    oldLogE = st->oldLogE;
@@ -7699,7 +7671,6 @@ static const int16_t ropus_NLSF_CB1_NB_MB_Wght_Q9[ 320 ] = {
      2793, 3160, 2726, 2553, 2846, 2513, 2181, 2394, 2221, 2181
 };
 
-
 #define ROPUS_SILK_MAX_LPC_ORDER   16
 #define ROPUS_SILK_MAX_NB_SUBFR    4
 #define ROPUS_SILK_MAX_FRAME_LEN   320   /* 20 ms at 16 kHz             */
@@ -8452,7 +8423,7 @@ static void rsilk_nlsf2a(int16_t *a_Q12, const int16_t *NLSF, int d)
       { 0, 9, 6, 3, 4, 5, 8, 1, 2, 7 };
    const uint8_t *ordering;
    int k, i, dd;
-   int32_t cos_LSF_QA[ROPUS_SILK_MAX_LPC_ORDER];
+   int32_t cos_LSF_QA[ROPUS_SILK_MAX_LPC_ORDER] = {0};
    int32_t P[ROPUS_SILK_MAX_LPC_ORDER / 2 + 1];
    int32_t Q[ROPUS_SILK_MAX_LPC_ORDER / 2 + 1];
    int32_t Ptmp, Qtmp, f_int, f_frac, cos_val, delta;
@@ -9090,17 +9061,8 @@ static int ropus_silk_resampler_run(ropus_silk_resampler *S, int16_t *out,
 }
 
 /* ==================================================================== */
-/* SILK frame + mono decode orchestration (decode_frame.c + dec_API.c,  */
-/* no-loss path).                                                       */
+/* SILK decoder setup (decoder_set_fs.c subset).                        */
 /* ==================================================================== */
-typedef struct
-{
-   ropus_silk_state ch;     /* mono channel state                       */
-   int32_t prev_gain_Q16;
-   ropus_silk_resampler resampler;
-   int16_t sMid[2];
-} ropus_silk;
-
 static void ropus_silk_set_fs(ropus_silk_state *st, int fs_kHz,
       int nb_subfr)
 {
@@ -9132,80 +9094,6 @@ static void ropus_silk_set_fs(ropus_silk_state *st, int fs_kHz,
          ? ropus_pitch_contour_10_ms_NB_iCDF
          : ropus_pitch_contour_10_ms_iCDF;
    st->psNLSF_CB = fs_kHz == 16 ? &ropus_nlsf_cb_wb : &ropus_nlsf_cb_nb_mb;
-}
-
-static void ropus_silk_init(ropus_silk *s)
-{
-   memset(s, 0, sizeof(*s));
-   s->ch.lagPrev = 100;
-   s->ch.LastGainIndex = 10;
-   s->ch.first_frame_after_reset = 1;
-   s->ch.prevSignalType = 0;
-   s->prev_gain_Q16 = 65536;
-}
-
-/* Decode one SILK frame into pOut (native rate PCM).                   */
-static void ropus_silk_decode_frame(ropus_silk *s, ropus_ec *dec,
-      int16_t *pOut, int condCoding)
-{
-   ropus_silk_state *st = &s->ch;
-   ropus_silk_ctrl ctrl;
-   int16_t pulses[ROPUS_SILK_MAX_FRAME_LEN + ROPUS_SILK_SHELL_LEN];
-   int mv_len;
-   memset(&ctrl, 0, sizeof ctrl);
-   ropus_silk_decode_indices(st, dec, st->nFramesDecoded, 0, condCoding);
-   ropus_silk_decode_pulses(dec, pulses, st->indices.signalType,
-      st->indices.quantOffsetType, st->frame_length);
-   rsilk_decode_parameters(st, &ctrl, condCoding);
-   rsilk_decode_core(st, &ctrl, pOut, pulses, &s->prev_gain_Q16);
-   st->prevSignalType = st->indices.signalType;
-   st->first_frame_after_reset = 0;
-   mv_len = st->ltp_mem_length - st->frame_length;
-   memmove(st->outBuf, &st->outBuf[st->frame_length],
-      mv_len * sizeof(int16_t));
-   memcpy(&st->outBuf[mv_len], pOut,
-      st->frame_length * sizeof(int16_t));
-   st->lagPrev = ctrl.pitchL[st->nb_subfr - 1];
-}
-
-/* Mono silk_Decode for one packet-frame; out48 receives
- * frame_length * 48 / fs_kHz samples at 48 kHz.  newPacket resets the
- * per-packet frame counter and reads the VAD/LBRR header.  Returns the
- * number of 48 kHz samples, or <0 on failure.                          */
-static int ropus_silk_decode_mono(ropus_silk *s, ropus_ec *dec,
-      int16_t *out48, int fs_kHz, int nb_subfr, int nFramesPerPacket,
-      int newPacket)
-{
-   ropus_silk_state *st = &s->ch;
-   int16_t frame_buf[2 + ROPUS_SILK_MAX_FRAME_LEN];
-   int i, condCoding, nOut;
-
-   if (newPacket)
-   {
-      st->nFramesDecoded = 0;
-      if (st->fs_kHz != fs_kHz || st->nb_subfr != nb_subfr)
-      {
-         ropus_silk_set_fs(st, fs_kHz, nb_subfr);
-         ropus_silk_resampler_init(&s->resampler, fs_kHz * 1000, 48000);
-      }
-      st->nFramesPerPacket = nFramesPerPacket;
-      for (i = 0; i < nFramesPerPacket; i++)
-         st->VAD_flags[i] = ropus_ec_dec_bit_logp(dec, 1);
-      st->LBRR_flag = ropus_ec_dec_bit_logp(dec, 1);
-      if (st->LBRR_flag)
-         return -1;                       /* LBRR: not yet handled     */
-   }
-   condCoding = st->nFramesDecoded > 0 ? 2 : 0;
-   ropus_silk_decode_frame(s, dec, &frame_buf[2], condCoding);
-   st->nFramesDecoded++;
-
-   memcpy(&frame_buf[0], s->sMid, 2 * sizeof(int16_t));
-   memcpy(s->sMid, &frame_buf[st->frame_length], 2 * sizeof(int16_t));
-
-   nOut = st->frame_length * 48 / st->fs_kHz;
-   ropus_silk_resampler_run(&s->resampler, out48, &frame_buf[1],
-      st->frame_length);
-   return nOut;
 }
 
 /* ==================================================================== */
