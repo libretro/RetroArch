@@ -18554,38 +18554,6 @@ typedef struct settings_build_entry
    enum msg_hash_enums parent_label;  /* parent group, 0 keeps   */
 } settings_build_entry_t;
 
-static void settings_build_user_accounts_cheevos(
-      settings_t *settings, global_t *global,
-      rarch_setting_t **list, rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
-   {
-      START_GROUP(list, list_info, &group_info,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS),
-            parent_group);
-
-      parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
-
-      START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-#ifdef HAVE_CHEEVOS
-      {
-         settings_list_add_desc(list, list_info, settings,
-               cheevos_acct_desc, ARRAY_SIZE(cheevos_acct_desc),
-               &group_info, &subgroup_info, parent_group);
-      }
-#endif
-
-      END_SUB_GROUP(list, list_info, parent_group);
-      END_GROUP(list, list_info, parent_group);
-   }
-}
-
 static void settings_build_desc_group(
       const settings_build_entry_t *e,
       settings_t *settings, global_t *global,
@@ -18604,8 +18572,9 @@ static void settings_build_desc_group(
    if (e->parent_label)
       parent_group = msg_hash_to_str(e->parent_label);
    START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-   settings_list_add_desc(list, list_info, settings,
-         e->rows, e->count, &group_info, &subgroup_info, parent_group);
+   if (e->rows)
+      settings_list_add_desc(list, list_info, settings,
+            e->rows, e->count, &group_info, &subgroup_info, parent_group);
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
 }
@@ -18708,7 +18677,17 @@ static const settings_build_entry_t settings_build_registry[] = {
    { SETTINGS_LIST_USER_ACCOUNTS_TWITCH, settings_build_user_accounts_twitch, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_USER_ACCOUNTS_FACEBOOK, settings_build_user_accounts_facebook, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_USER_ACCOUNTS_KICK, settings_build_user_accounts_kick, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
-   { SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS, settings_build_user_accounts_cheevos, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+   { SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS, NULL,
+#ifdef HAVE_CHEEVOS
+     cheevos_acct_desc, (unsigned)ARRAY_SIZE(cheevos_acct_desc),
+#else
+     /* group markers still emit without the feature, matching the
+      * old function whose rows alone were guarded */
+     NULL, 0,
+#endif
+     MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
+     MSG_UNKNOWN,
+     MENU_ENUM_LABEL_SETTINGS },
    { SETTINGS_LIST_DIRECTORY, settings_build_directory, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_PRIVACY, settings_build_privacy, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
    { SETTINGS_LIST_MIDI, settings_build_midi, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
