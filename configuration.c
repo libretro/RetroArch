@@ -1934,6 +1934,9 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_GAME_AI
+#include "settings/settings_def_game_ai.h"
+#endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
 #include "settings/settings_def_gpu_index_vulkan.h"
@@ -2570,9 +2573,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("gcdwebserver_alert",            &settings->bools.gcdwebserver_alert, true, true, false);
 #endif
 
-#ifdef HAVE_GAME_AI
-   SETTING_BOOL("quick_menu_show_game_ai",  &settings->bools.quick_menu_show_game_ai, true, 1, false);
-#endif
 
    *size = count;
 
@@ -2641,6 +2641,9 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_GAME_AI
+#include "settings/settings_def_game_ai.h"
+#endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
 #include "settings/settings_def_gpu_index_vulkan.h"
@@ -3303,6 +3306,9 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_GAME_AI
+#include "settings/settings_def_game_ai.h"
+#endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
 #include "settings/settings_def_gpu_index_vulkan.h"
@@ -4001,6 +4007,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_GAME_AI
+#include "settings/settings_def_game_ai.h"
+#endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
 #include "settings/settings_def_gpu_index_vulkan.h"
@@ -4587,6 +4596,9 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#ifdef HAVE_GAME_AI
+#include "settings/settings_def_game_ai.h"
+#endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
 #include "settings/settings_def_gpu_index_vulkan.h"
