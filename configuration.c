@@ -1880,7 +1880,6 @@ static struct config_bool_setting *populate_settings_bool(
 
 
    SETTING_BOOL("video_allow_rotate",            &settings->bools.video_allow_rotate, true, DEFAULT_ALLOW_ROTATE, false);
-   SETTING_BOOL("video_ctx_scaling",             &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
    SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, DEFAULT_VIDEO_THREADED, false);
    SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, DEFAULT_VIDEO_SHARED_CONTEXT, false);
@@ -1932,6 +1931,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
 #include "settings/settings_def_netplay_advanced.h"
@@ -2609,6 +2609,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
 #include "settings/settings_def_netplay_advanced.h"
@@ -3244,6 +3245,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
 #include "settings/settings_def_netplay_advanced.h"
@@ -3912,6 +3914,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
 #include "settings/settings_def_netplay_advanced.h"
@@ -4468,6 +4471,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
 #include "settings/settings_def_netplay_advanced.h"
