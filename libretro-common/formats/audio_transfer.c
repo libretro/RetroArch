@@ -79,17 +79,22 @@ struct audio_transfer_vorbis
    int         channels; /* cached from rvorbis_get_info at start           */
    /* Demuxed-input path (set_demuxed_ptr): the container's CodecPrivate
     * (the 3 xiph-laced Vorbis headers) and the concatenated audio packets.
-    * rvorbis only consumes Ogg-framed input, so start() repackages these
-    * into a synthetic Ogg stream (owned here) and opens that -- rvorbis
-    * itself is unchanged. NULL setup means the plain self-framed path. */
+    * NULL setup means the plain self-framed path. */
    const void *setup;
    size_t      setup_size;
    const void *packets;
    size_t      packets_size;
    const uint32_t *pkt_sizes;
    size_t      num_packets;
-   uint8_t    *ogg;      /* synthesized Ogg stream, freed in free()          */
-   size_t      ogg_size;
+   /* Backing buffer materialised by start() for the decoder to read from,
+    * kept alive for the decoder's lifetime and freed in free().  rvorbis
+    * decodes Ogg-framed input and reads lazily from the buffer it was
+    * opened over, so when fed a demuxed stream start() synthesises an Ogg
+    * stream here; a decoder that consumed raw packets directly would leave
+    * this NULL.  Format-neutral by intent -- it is decoder scratch, not
+    * part of the stream's identity. */
+   uint8_t    *synth;
+   size_t      synth_size;
 };
 #endif
 
@@ -350,7 +355,7 @@ static int audio_vorbis_split_setup(const uint8_t *priv, size_t size,
 }
 
 /* Build a synthetic Ogg stream from demuxed Vorbis setup + packets.
- * Stores the malloc'd buffer in v->ogg / v->ogg_size. Returns 1 on
+ * Stores the malloc'd buffer in v->synth / v->synth_size. Returns 1 on
  * success. */
 static int audio_vorbis_build_ogg(struct audio_transfer_vorbis *v)
 {
@@ -399,8 +404,8 @@ static int audio_vorbis_build_ogg(struct audio_transfer_vorbis *v)
       if (!at) { free(out); return 0; }
       off += len;
    }
-   v->ogg      = out;
-   v->ogg_size = at;
+   v->synth      = out;
+   v->synth_size = at;
    return 1;
 }
 #endif
@@ -463,8 +468,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
              * packets into a synthetic Ogg stream, then open that. */
             if (!audio_vorbis_build_ogg(v))
                return false;
-            buf = v->ogg;
-            len = (int)v->ogg_size;
+            buf = v->synth;
+            len = (int)v->synth_size;
          }
          else
          {
@@ -928,7 +933,7 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
          if (v->handle)
             rvorbis_close(v->handle);
-         free(v->ogg);
+         free(v->synth);
          break;
       }
 #endif
