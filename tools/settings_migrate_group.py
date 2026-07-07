@@ -183,6 +183,12 @@ cfg_absent = set()
 usval, ussub, usspan, uscmt = {}, {}, [], {}
 for k, f, T, a in rows:
     if k.endswith('_LV'):
+        _town = run("grep -lE 'S_\\w*\\((\\w+, *)?%s,' settings/*.h" % T).stdout.strip()
+        if _town:
+            # both tokens owned elsewhere: the level-variant descriptor
+            # row stays a menu-only literal reference
+            ref_tokens.add(T)
+            continue
         _tvm = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (lv_tv[T], CSTR), us)
         assert _tvm or run(
             r"grep -lE 'S_[A-Z_]+\(\s*(\w+,\s*)?%s,' settings/*.h" % lv_tv[T]).stdout.strip() or run(
