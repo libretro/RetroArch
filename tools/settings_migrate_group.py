@@ -695,7 +695,7 @@ if _enum_ok:
     _d = ['   /* GENERATED REGION: %s enum rows (see settings/%s). */' % (TITLE, DEF),
           '#define SETTINGS_DEF_ENUM_PASS',
           '#define SETTINGS_DEF_STRINGS_PASS']
-    for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS','S_STRING','S_STRING_NS','S_DIR','S_DIR_NS','S_STRING_P','S_STRING_P_NS','S_PATH','S_PATH_NS','S_PATH_DS','S_PATH_DS_NS','S_ACTION','S_ACTION_NS','S_BOOL_EX','S_BOOL_EX_NS','S_UINT_EX','S_UINT_EX_NS','S_INT_EX','S_INT_EX_NS','S_FLOAT_EX','S_FLOAT_EX_NS','S_ACTION_EX','S_ACTION_EX_NS'):
+    for _n in ('S_BOOL','S_BOOL_NS','S_UINT','S_UINT_NS','S_INT','S_INT_NS','S_FLOAT','S_FLOAT_NS','S_STRING','S_STRING_NS','S_DIR','S_DIR_NS','S_STRING_P','S_STRING_P_NS','S_PATH','S_PATH_NS','S_PATH_DS','S_PATH_DS_NS','S_ACTION','S_ACTION_NS','S_BOOL_EX','S_BOOL_EX_NS','S_UINT_EX','S_UINT_EX_NS','S_INT_EX','S_INT_EX_NS','S_FLOAT_EX','S_FLOAT_EX_NS','S_ACTION_EX','S_ACTION_EX_NS','S_BOOL_LV','S_BOOL_LV_NS','S_FLOAT_LV','S_FLOAT_LV_NS','S_STRING_LV','S_STRING_LV_NS','S_ACTION_LV','S_ACTION_LV_NS'):
         _d.append('#define %s(%s) MENU_LABEL(T),' % (_n, _ar[_n]))
     for _hn, _b in (('S_BOOL_H','S_BOOL'), ('S_UINT_H','S_UINT'), ('S_BOOL_NS_H','S_BOOL_NS'),
                     ('S_INT_H','S_INT'), ('S_FLOAT_H','S_FLOAT'),
