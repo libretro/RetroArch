@@ -184,7 +184,9 @@ usval, ussub, usspan, uscmt = {}, {}, [], {}
 for k, f, T, a in rows:
     if k.endswith('_LV'):
         _tvm = re.search(r'MSG_HASH\(\s*(/\*.*?\*/)?\s*\n?\s*MENU_ENUM_LABEL_VALUE_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (lv_tv[T], CSTR), us)
-        assert _tvm or run("grep -l 'MENU_ENUM_LABEL_VALUE_%s' settings/*.h" % lv_tv[T]).stdout.strip(), (
+        assert _tvm or run(
+            r"grep -lE 'S_[A-Z_]+\(\s*(\w+,\s*)?%s,' settings/*.h" % lv_tv[T]).stdout.strip() or run(
+            "grep -l 'MENU_ENUM_LABEL_VALUE_%s' settings/*.h" % lv_tv[T]).stdout.strip(), (
             'LV value token %s has no value string anywhere' % lv_tv[T])
         usval[T] = re.sub(r'\s*\n\s*', ' ', _tvm.group(2)) if _tvm else '""'
         m2 = re.search(r'MSG_HASH\(\s*\n?\s*MENU_ENUM_SUBLABEL_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), us)
