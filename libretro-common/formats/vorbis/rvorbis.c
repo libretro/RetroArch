@@ -369,6 +369,7 @@ struct rvorbis
    uint8_t page_flag;
    uint8_t bytes_in_seg;
    uint8_t first_decode;
+   uint8_t first_frame_pending;
    int next_seg;
    int last_seg;  /* flag that we're on the last segment */
    int last_seg_which; /* what was the segment number of the last seg? */
@@ -4231,6 +4232,16 @@ static void vorbis_pump_first_frame(rvorbis *f)
       vorbis_finish_frame(f, len, left, right);
 }
 
+/* Run the deferred open-time pump under the now-known output mode. */
+static void rvorbis_materialize_first_frame(rvorbis *f)
+{
+   if (f->first_frame_pending)
+   {
+      f->first_frame_pending = 0;
+      vorbis_pump_first_frame(f);
+   }
+}
+
 static int start_decoder(vorb *f)
 {
    uint8_t header[6], x,y;
@@ -5554,6 +5565,7 @@ static int rvorbis_seek_frame(rvorbis *f, unsigned int sample_number)
 
 int rvorbis_seek(rvorbis *f, unsigned int sample_number)
 {
+   rvorbis_materialize_first_frame(f);
    /* clamp to valid range using the known last-page granule */
    if (f->p_last.page_start == 0)
    {
@@ -5582,6 +5594,7 @@ int rvorbis_seek(rvorbis *f, unsigned int sample_number)
 
 void rvorbis_seek_start(rvorbis *f)
 {
+   f->first_frame_pending = 0;
    set_file_offset(f, f->first_audio_page_offset);
    f->previous_length = 0;
    f->first_decode    = 1;
@@ -5606,7 +5619,14 @@ rvorbis * rvorbis_open_memory(const unsigned char *data, int len, int *error, rv
       if (f)
       {
          *f = p;
-         vorbis_pump_first_frame(f);
+         /* Defer the first-frame pump until the caller has chosen an
+          * output mode (float or s16): pumping here would decode
+          * frame 0 through the float pipeline even for s16-only
+          * consumers, leaving float-provenance data in the overlap
+          * history.  Materialized lazily by the getters (after their
+          * mode select) and by seek (which needs the p_first capture
+          * the pump performs). */
+         f->first_frame_pending = 1;
          return f;
       }
    }
@@ -5624,6 +5644,7 @@ int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
    int z = f->channels;
 
    rvorbis_set_output_mode(f, 0);
+   rvorbis_materialize_first_frame(f);
    if (z > channels)
       z = channels;
    while (n < len)
@@ -5663,6 +5684,7 @@ int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
    int z = f->channels;
 
    rvorbis_set_output_mode(f, 1);
+   rvorbis_materialize_first_frame(f);
    if (z > channels)
       z = channels;
    while (n < len)
