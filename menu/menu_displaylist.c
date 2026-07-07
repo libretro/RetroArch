@@ -7237,6 +7237,34 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
          filestream_printf(f, "=c= %u skipped\n", t);
          continue;
       }
+      /* Cases whose contract requires a caller-supplied path or
+       * label - the dropdown family parses the owning setting out of
+       * info->path, the playlist and database screens treat it as a
+       * file path or query - are skipped by contract rather than
+       * left to crash on synthetic input, so any crash the dump does
+       * record is a real regression. */
+      if (     t == (unsigned)DISPLAYLIST_DROPDOWN_LIST
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_SPECIAL
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_MIDI_DEVICE
+#ifdef HAVE_MICROPHONE
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_MICROPHONE_DEVICE
+#endif
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PARAMETER
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PRESET_PARAMETER
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_INPUT_RETROPAD_BIND
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_INPUT_SELECT_RESERVED_DEVICE
+            || t == (unsigned)DISPLAYLIST_CDROM_DETAIL_INFO
+            || t == (unsigned)DISPLAYLIST_PLAYLIST
+            || t == (unsigned)DISPLAYLIST_PLAYLIST_COLLECTION
+            || t == (unsigned)DISPLAYLIST_DATABASES
+            || t == (unsigned)DISPLAYLIST_DATABASE_QUERY
+            || t == (unsigned)DISPLAYLIST_USER_BINDS_LIST)
+      {
+         filestream_printf(f, "=c= %u needs-input\n", t);
+         continue;
+      }
       filestream_printf(f, "=c= %u ", t);
       filestream_flush(f);
       if (pipe(pfd) != 0)
