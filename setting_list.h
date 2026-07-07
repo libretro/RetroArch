@@ -102,6 +102,7 @@ enum settings_free_flags
 };
 
 typedef struct rarch_setting rarch_setting_t;
+typedef struct setting_actions setting_actions_t;
 typedef struct rarch_setting_group_info rarch_setting_group_info_t;
 
 typedef void (*change_handler_t               )(rarch_setting_t *setting);
@@ -110,6 +111,15 @@ typedef int  (*action_right_handler_t         )(rarch_setting_t *setting, size_t
 typedef int  (*action_start_handler_t         )(rarch_setting_t *setting);
 typedef int  (*action_ok_handler_t            )(rarch_setting_t *setting, size_t idx, bool wraparound);
 typedef int  (*action_select_handler_t        )(rarch_setting_t *setting, size_t idx, bool wraparound);
+
+struct setting_actions
+{
+   action_ok_handler_t     ok;
+   action_start_handler_t  start;
+   action_select_handler_t select;
+   action_left_handler_t   left;
+   action_right_handler_t  right;
+};
 typedef size_t (*get_string_representation_t    )(rarch_setting_t *setting, char *s, size_t len);
 
 struct rarch_setting_group_info
@@ -135,11 +145,10 @@ struct rarch_setting
 
    change_handler_t              change_handler;
    change_handler_t              read_handler;
-   action_start_handler_t        action_start;
-   action_left_handler_t         action_left;
-   action_right_handler_t        action_right;
-   action_ok_handler_t           action_ok;
-   action_select_handler_t       action_select;
+   /* The five navigation handlers live in shared interned tuples:
+    * 1,904 entries carry only 61 distinct combinations, so each
+    * entry stores one pointer instead of five. Never NULL. */
+   const setting_actions_t      *actions;
    get_string_representation_t   get_string_representation;
 
    struct
