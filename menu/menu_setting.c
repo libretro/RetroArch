@@ -1354,8 +1354,6 @@ static rarch_setting_t setting_action_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.group                     = group;
-   result.subgroup                  = subgroup;
    result.parent_group              = parent_group;
    result.values                    = NULL;
 
@@ -1416,8 +1414,6 @@ static rarch_setting_t setting_group_setting(
 
    result.name                      = name;
    result.short_description         = name;
-   result.group                     = NULL;
-   result.subgroup                  = NULL;
    result.parent_group              = parent_group;
    result.values                    = NULL;
 
@@ -1485,8 +1481,6 @@ static rarch_setting_t setting_float_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.group                     = group;
-   result.subgroup                  = subgroup;
    result.parent_group              = parent_group;
    result.values                    = NULL;
 
@@ -1559,8 +1553,6 @@ static rarch_setting_t setting_uint_setting(const char* name,
 
    result.name                      = dont_use_enum_idx ? strdup(name) : name;
    result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
-   result.group                     = group;
-   result.subgroup                  = subgroup;
    result.parent_group              = parent_group;
    result.values                    = NULL;
 
@@ -1635,8 +1627,6 @@ static rarch_setting_t setting_size_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.group                     = group;
-   result.subgroup                  = subgroup;
    result.parent_group              = parent_group;
    result.values                    = NULL;
 
@@ -1710,8 +1700,6 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.group                     = group;
-   result.subgroup                  = subgroup;
    result.parent_group              = parent_group;
    result.values                    = NULL;
 
@@ -1831,8 +1819,6 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 
    result.name                      = dont_use_enum_idx ? strdup(name) : name;
    result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
-   result.group                     = group;
-   result.subgroup                  = subgroup;
    result.parent_group              = parent_group;
    result.values                    = NULL;
 
@@ -1953,10 +1939,8 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
 
    result.name                      = name;
    result.short_description         = name;
-   result.group                     = parent_name;
    result.parent_group              = parent_group;
    result.values                    = NULL;
-   result.subgroup                  = NULL;
 
    result.index                     = 0;
    result.index_offset              = 0;
@@ -2026,8 +2010,6 @@ static rarch_setting_t setting_bool_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.group                     = group;
-   result.subgroup                  = subgroup;
    result.parent_group              = parent_group;
    result.values                    = NULL;
 
@@ -2100,8 +2082,6 @@ static rarch_setting_t setting_int_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.group                     = group;
-   result.subgroup                  = subgroup;
    result.parent_group              = parent_group;
    result.values                    = NULL;
 
@@ -18785,8 +18765,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].rounding_fraction                = NULL; \
    (*&list)[pos].name                             = NULL; \
    (*&list)[pos].short_description                = NULL; \
-   (*&list)[pos].group                            = NULL; \
-   (*&list)[pos].subgroup                         = NULL; \
    (*&list)[pos].parent_group                     = NULL; \
    (*&list)[pos].values                           = NULL; \
    (*&list)[pos].change_handler                   = NULL; \
@@ -19079,7 +19057,7 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
       }
 
       filestream_printf(f,
-            "%u|%s|%d|%d|%d|%08x|%02x|%.6g|%.6g|%.6g|%d|%d|%d|%d|%u|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n",
+            "%u|%s|%d|%d|%d|%08x|%02x|%.6g|%.6g|%.6g|%d|%d|%d|%d|%u|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n",
             i,
             s->name ? s->name : "",
             (int)s->type,
@@ -19099,8 +19077,6 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
             s->rounding_fraction ? s->rounding_fraction : "",
             ok_tag, left_tag, rght_tag, strt_tag, sel_tag,
             s->short_description ? s->short_description : "",
-            s->group ? s->group : "",
-            s->subgroup ? s->subgroup : "",
             s->values ? s->values : "",
             repr);
    }
