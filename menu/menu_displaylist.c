@@ -7243,9 +7243,7 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
        * file path or query - are skipped by contract rather than
        * left to crash on synthetic input, so any crash the dump does
        * record is a real regression. */
-      if (     t == (unsigned)DISPLAYLIST_DROPDOWN_LIST
-            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_SPECIAL
-            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE
+      if (     t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE
             || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_MIDI_DEVICE
 #ifdef HAVE_MICROPHONE
             || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_MICROPHONE_DEVICE
@@ -7276,10 +7274,23 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
          FILE *w = fdopen(pfd[1], "w");
          size_t i2;
          bool ret;
+         char dd_path[16];
          close(pfd[0]);
          memset(&cl, 0, sizeof(cl));
          menu_displaylist_info_init(&info);
          info.list = &cl;
+         /* The generic dropdowns take the owning setting's enum id
+          * as their path; hand them a stable range setting so their
+          * machinery fingerprints instead of being skipped. The id
+          * is spelled by the compiler, so it tracks the guarded
+          * enum across configurations. */
+         if (     t == (unsigned)DISPLAYLIST_DROPDOWN_LIST
+               || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
+         {
+            snprintf(dd_path, sizeof(dd_path), "%d",
+                  (int)MENU_ENUM_LABEL_VIDEO_ROTATION);
+            info.path = strdup(dd_path);
+         }
          ret = menu_displaylist_ctl(
                (enum menu_displaylist_ctl_state)t, &info, settings);
          if (w)
