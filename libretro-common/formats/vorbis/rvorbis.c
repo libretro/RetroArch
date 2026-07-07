@@ -1691,6 +1691,90 @@ done:
 /* the following were split out into separate functions while optimizing;
  * they could be pushed back up but eh. __forceinline showed no change;
  * they're probably already being inlined. */
+/* -----------------------------------------------------------------------
+ * SIMD selection for the inverse MDCT
+ *
+ * Selected purely at compile time: on every configuration that defines
+ * these macros the compiler is already free to emit the same
+ * instructions in ordinary code, so no runtime dispatch is needed.
+ * ----------------------------------------------------------------------- */
+#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
+#include <immintrin.h>
+#define RVORBIS_HAVE_SSE 1
+#elif defined(__ARM_NEON) || defined(__aarch64__) || defined(__ARM_NEON__) || defined(_M_ARM64)
+#include <arm_neon.h>
+#define RVORBIS_HAVE_NEON 1
+#endif
+
+#if RVORBIS_HAVE_SSE
+/* One radix butterfly over two adjacent complex pairs (four floats,
+ * descending addresses: pair 0 at e[0]/e[-1], pair 1 at e[-2]/e[-3]).
+ *
+ *    k_re = e0[re] - e2[re]        e0[re] += e2[re]
+ *    k_im = e0[im] - e2[im]        e0[im] += e2[im]
+ *    e2[re] = k_re*A0 - k_im*A1
+ *    e2[im] = k_im*A0 + k_re*A1
+ *
+ * ca carries (A0, A0) per pair, cb carries (A1, -A1) per pair with the
+ * sign folded in, so the twiddle is a plain mul/mul/add with exactly
+ * the same per-element IEEE operations (and results) as the scalar
+ * code.  ds swaps re and im within each pair to line the products up.
+ */
+static INLINE void imdct_butterfly4_sse(float *e0, float *e2,
+      __m128 ca, __m128 cb)
+{
+   __m128 v0 = _mm_loadu_ps(e0 - 3);
+   __m128 v2 = _mm_loadu_ps(e2 - 3);
+   __m128 d  = _mm_sub_ps(v0, v2);
+   __m128 ds = _mm_shuffle_ps(d, d, _MM_SHUFFLE(2, 3, 0, 1));
+   _mm_storeu_ps(e0 - 3, _mm_add_ps(v0, v2));
+   _mm_storeu_ps(e2 - 3, _mm_add_ps(_mm_mul_ps(d, ca),
+         _mm_mul_ps(ds, cb)));
+}
+
+#endif
+
+#if RVORBIS_HAVE_NEON
+/* NEON twin of the butterfly above; lane 3 is the first pair's re
+ * slot, so the descending four floats at e - 3 map to lanes 0..3 in
+ * ascending address order.  vrev64q swaps re and im within each pair.
+ * The coefficient vectors carry the twiddle signs pre-folded (lanes 1
+ * and 3 negated via sign-bit xor, which is exact), keeping the
+ * per-element operations identical to the scalar code. */
+static INLINE uint32x4_t imdct_twiddle_signmask_neon(void)
+{
+   uint32x4_t m = vdupq_n_u32(0);
+   m = vsetq_lane_u32(0x80000000u, m, 1);
+   m = vsetq_lane_u32(0x80000000u, m, 3);
+   return m;
+}
+
+/* (mag0, mag0) in lanes 2..3 and (mag1, mag1) in lanes 0..1, with the
+ * odd lanes sign-flipped: { -mag1, mag1, -mag0, mag0 } by ascending
+ * lane.  Used for the A1-style coefficients of both pairs. */
+static INLINE float32x4_t imdct_coeff_pair_neon(float mag0, float mag1,
+      uint32x4_t signmask)
+{
+   float32x4_t c = vcombine_f32(vdup_n_f32(mag1), vdup_n_f32(mag0));
+   return vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(c),
+         signmask));
+}
+
+static INLINE void imdct_butterfly4_neon(float *e0, float *e2,
+      float32x4_t ca, float32x4_t cb)
+{
+   float32x4_t v0 = vld1q_f32(e0 - 3);
+   float32x4_t v2 = vld1q_f32(e2 - 3);
+   float32x4_t d  = vsubq_f32(v0, v2);
+   float32x4_t ds = vrev64q_f32(d);
+   vst1q_f32(e0 - 3, vaddq_f32(v0, v2));
+   vst1q_f32(e2 - 3, vaddq_f32(vmulq_f32(d, ca), vmulq_f32(ds, cb)));
+}
+#endif
+
 static void imdct_step3_iter0_loop(int n, float *e, int i_off, int k_off, float *A)
 {
    float *ee0 = e + i_off;
@@ -1700,37 +1784,56 @@ static void imdct_step3_iter0_loop(int n, float *e, int i_off, int k_off, float 
    assert((n & 3) == 0);
    for (i=(n>>2); i > 0; --i)
    {
+#if RVORBIS_HAVE_SSE
+      imdct_butterfly4_sse(ee0, ee2,
+            _mm_set_ps(A[0], A[0], A[8], A[8]),
+            _mm_set_ps(-A[1], A[1], -A[9], A[9]));
+      imdct_butterfly4_sse(ee0 - 4, ee2 - 4,
+            _mm_set_ps(A[16], A[16], A[24], A[24]),
+            _mm_set_ps(-A[17], A[17], -A[25], A[25]));
+      A += 32;
+#elif RVORBIS_HAVE_NEON
+      uint32x4_t sm = imdct_twiddle_signmask_neon();
+      imdct_butterfly4_neon(ee0, ee2,
+            vcombine_f32(vdup_n_f32(A[8]), vdup_n_f32(A[0])),
+            imdct_coeff_pair_neon(A[1], A[9], sm));
+      imdct_butterfly4_neon(ee0 - 4, ee2 - 4,
+            vcombine_f32(vdup_n_f32(A[24]), vdup_n_f32(A[16])),
+            imdct_coeff_pair_neon(A[17], A[25], sm));
+      A += 32;
+#else
       float k00_20  = ee0[ 0] - ee2[ 0];
       float k01_21  = ee0[-1] - ee2[-1];
-      ee0[ 0] += ee2[ 0];/*ee0[ 0] = ee0[ 0] + ee2[ 0]; */
-      ee0[-1] += ee2[-1];/*ee0[-1] = ee0[-1] + ee2[-1]; */
+      ee0[ 0] += ee2[ 0];
+      ee0[-1] += ee2[-1];
       ee2[ 0] = k00_20 * A[0] - k01_21 * A[1];
       ee2[-1] = k01_21 * A[0] + k00_20 * A[1];
       A += 8;
 
       k00_20  = ee0[-2] - ee2[-2];
       k01_21  = ee0[-3] - ee2[-3];
-      ee0[-2] += ee2[-2];/*ee0[-2] = ee0[-2] + ee2[-2]; */
-      ee0[-3] += ee2[-3];/*ee0[-3] = ee0[-3] + ee2[-3]; */
+      ee0[-2] += ee2[-2];
+      ee0[-3] += ee2[-3];
       ee2[-2] = k00_20 * A[0] - k01_21 * A[1];
       ee2[-3] = k01_21 * A[0] + k00_20 * A[1];
       A += 8;
 
       k00_20  = ee0[-4] - ee2[-4];
       k01_21  = ee0[-5] - ee2[-5];
-      ee0[-4] += ee2[-4];/*ee0[-4] = ee0[-4] + ee2[-4]; */
-      ee0[-5] += ee2[-5];/*ee0[-5] = ee0[-5] + ee2[-5]; */
+      ee0[-4] += ee2[-4];
+      ee0[-5] += ee2[-5];
       ee2[-4] = k00_20 * A[0] - k01_21 * A[1];
       ee2[-5] = k01_21 * A[0] + k00_20 * A[1];
       A += 8;
 
       k00_20  = ee0[-6] - ee2[-6];
       k01_21  = ee0[-7] - ee2[-7];
-      ee0[-6] += ee2[-6];/*ee0[-6] = ee0[-6] + ee2[-6]; */
-      ee0[-7] += ee2[-7];/*ee0[-7] = ee0[-7] + ee2[-7]; */
+      ee0[-6] += ee2[-6];
+      ee0[-7] += ee2[-7];
       ee2[-6] = k00_20 * A[0] - k01_21 * A[1];
       ee2[-7] = k01_21 * A[0] + k00_20 * A[1];
       A += 8;
+#endif
       ee0 -= 8;
       ee2 -= 8;
    }
@@ -1739,16 +1842,36 @@ static void imdct_step3_iter0_loop(int n, float *e, int i_off, int k_off, float 
 static void imdct_step3_inner_r_loop(int lim, float *e, int d0, int k_off, float *A, int k1)
 {
    int i;
+#if !RVORBIS_HAVE_SSE && !RVORBIS_HAVE_NEON
    float k00_20, k01_21;
+#endif
 
    float *e0 = e + d0;
    float *e2 = e0 + k_off;
 
    for (i=lim >> 2; i > 0; --i) {
+#if RVORBIS_HAVE_SSE
+      imdct_butterfly4_sse(e0, e2,
+            _mm_set_ps(A[0], A[0], A[k1], A[k1]),
+            _mm_set_ps(-A[1], A[1], -A[k1 + 1], A[k1 + 1]));
+      imdct_butterfly4_sse(e0 - 4, e2 - 4,
+            _mm_set_ps(A[2*k1], A[2*k1], A[3*k1], A[3*k1]),
+            _mm_set_ps(-A[2*k1 + 1], A[2*k1 + 1], -A[3*k1 + 1], A[3*k1 + 1]));
+      A += 4*k1;
+#elif RVORBIS_HAVE_NEON
+      uint32x4_t sm = imdct_twiddle_signmask_neon();
+      imdct_butterfly4_neon(e0, e2,
+            vcombine_f32(vdup_n_f32(A[k1]), vdup_n_f32(A[0])),
+            imdct_coeff_pair_neon(A[1], A[k1 + 1], sm));
+      imdct_butterfly4_neon(e0 - 4, e2 - 4,
+            vcombine_f32(vdup_n_f32(A[3*k1]), vdup_n_f32(A[2*k1])),
+            imdct_coeff_pair_neon(A[2*k1 + 1], A[3*k1 + 1], sm));
+      A += 4*k1;
+#else
       k00_20 = e0[-0] - e2[-0];
       k01_21 = e0[-1] - e2[-1];
-      e0[-0] += e2[-0];/*e0[-0] = e0[-0] + e2[-0]; */
-      e0[-1] += e2[-1];/*e0[-1] = e0[-1] + e2[-1]; */
+      e0[-0] += e2[-0];
+      e0[-1] += e2[-1];
       e2[-0] = (k00_20)*A[0] - (k01_21) * A[1];
       e2[-1] = (k01_21)*A[0] + (k00_20) * A[1];
 
@@ -1756,8 +1879,8 @@ static void imdct_step3_inner_r_loop(int lim, float *e, int d0, int k_off, float
 
       k00_20 = e0[-2] - e2[-2];
       k01_21 = e0[-3] - e2[-3];
-      e0[-2] += e2[-2];/*e0[-2] = e0[-2] + e2[-2]; */
-      e0[-3] += e2[-3];/*e0[-3] = e0[-3] + e2[-3]; */
+      e0[-2] += e2[-2];
+      e0[-3] += e2[-3];
       e2[-2] = (k00_20)*A[0] - (k01_21) * A[1];
       e2[-3] = (k01_21)*A[0] + (k00_20) * A[1];
 
@@ -1765,8 +1888,8 @@ static void imdct_step3_inner_r_loop(int lim, float *e, int d0, int k_off, float
 
       k00_20 = e0[-4] - e2[-4];
       k01_21 = e0[-5] - e2[-5];
-      e0[-4] += e2[-4];/*e0[-4] = e0[-4] + e2[-4]; */
-      e0[-5] += e2[-5];/*e0[-5] = e0[-5] + e2[-5]; */
+      e0[-4] += e2[-4];
+      e0[-5] += e2[-5];
       e2[-4] = (k00_20)*A[0] - (k01_21) * A[1];
       e2[-5] = (k01_21)*A[0] + (k00_20) * A[1];
 
@@ -1774,15 +1897,15 @@ static void imdct_step3_inner_r_loop(int lim, float *e, int d0, int k_off, float
 
       k00_20 = e0[-6] - e2[-6];
       k01_21 = e0[-7] - e2[-7];
-      e0[-6] += e2[-6];/*e0[-6] = e0[-6] + e2[-6]; */
-      e0[-7] += e2[-7];/*e0[-7] = e0[-7] + e2[-7]; */
+      e0[-6] += e2[-6];
+      e0[-7] += e2[-7];
       e2[-6] = (k00_20)*A[0] - (k01_21) * A[1];
       e2[-7] = (k01_21)*A[0] + (k00_20) * A[1];
 
+      A += k1;
+#endif
       e0 -= 8;
       e2 -= 8;
-
-      A += k1;
    }
 }
 
@@ -1798,12 +1921,34 @@ static void imdct_step3_inner_s_loop(int n, float *e, int i_off, int k_off, floa
    float A6 = A[0+a_off*3+0];
    float A7 = A[0+a_off*3+1];
 
+#if RVORBIS_HAVE_SSE
+   /* The twiddles are loop-invariant here, so the coefficient vectors
+    * are built once. */
+   __m128 ca01 = _mm_set_ps(A0, A0, A2, A2);
+   __m128 cb01 = _mm_set_ps(-A1, A1, -A3, A3);
+   __m128 ca23 = _mm_set_ps(A4, A4, A6, A6);
+   __m128 cb23 = _mm_set_ps(-A5, A5, -A7, A7);
+#elif RVORBIS_HAVE_NEON
+   uint32x4_t sm    = imdct_twiddle_signmask_neon();
+   float32x4_t ca01 = vcombine_f32(vdup_n_f32(A2), vdup_n_f32(A0));
+   float32x4_t cb01 = imdct_coeff_pair_neon(A1, A3, sm);
+   float32x4_t ca23 = vcombine_f32(vdup_n_f32(A6), vdup_n_f32(A4));
+   float32x4_t cb23 = imdct_coeff_pair_neon(A5, A7, sm);
+#else
    float k00,k11;
+#endif
 
    float *ee0 = e  +i_off;
    float *ee2 = ee0+k_off;
 
    for (i=n; i > 0; --i) {
+#if RVORBIS_HAVE_SSE
+      imdct_butterfly4_sse(ee0, ee2, ca01, cb01);
+      imdct_butterfly4_sse(ee0 - 4, ee2 - 4, ca23, cb23);
+#elif RVORBIS_HAVE_NEON
+      imdct_butterfly4_neon(ee0, ee2, ca01, cb01);
+      imdct_butterfly4_neon(ee0 - 4, ee2 - 4, ca23, cb23);
+#else
       k00     = ee0[ 0] - ee2[ 0];
       k11     = ee0[-1] - ee2[-1];
       ee0[ 0] =  ee0[ 0] + ee2[ 0];
@@ -1831,7 +1976,7 @@ static void imdct_step3_inner_s_loop(int n, float *e, int i_off, int k_off, floa
       ee0[-7] =  ee0[-7] + ee2[-7];
       ee2[-6] = (k00) * A6 - (k11) * A7;
       ee2[-7] = (k11) * A6 + (k00) * A7;
-
+#endif
       ee0 -= k0;
       ee2 -= k0;
    }
@@ -1950,6 +2095,66 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
       AA = A;
       e = &buffer[0];
       e_stop = &buffer[n2];
+#if RVORBIS_HAVE_SSE
+      /* Two output pairs per step.  e advances by 4 per pair, so the
+       * four needed samples (e[0], e[2], e[4], e[6]) are the even lanes
+       * of two loads; d walks down by 2 per pair, so the two output
+       * pairs land in one descending 4-float store at d - 2 holding
+       * { pair1.d0, pair1.d1, pair0.d0, pair0.d1 }.  Both loops in
+       * this block run n/8 scalar iterations, which is even for every
+       * valid Vorbis block size (64..8192), so fusing two iterations
+       * per pass never leaves a remainder. */
+      while (e != e_stop) {
+         __m128 lo  = _mm_loadu_ps(e);          /* e[0..3]  */
+         __m128 hi  = _mm_loadu_ps(e + 4);      /* e[4..7]  */
+         __m128 g   = _mm_shuffle_ps(hi, lo, _MM_SHUFFLE(2, 0, 2, 0));
+         /* g = { e[4], e[6], e[0], e[2] }; both lanes of an output pair
+          * use e[0] as one factor and e[2] as the other, so broadcast
+          * the even and odd gather lanes within each pair. */
+         __m128 ev  = _mm_shuffle_ps(g, g, _MM_SHUFFLE(2, 2, 0, 0));
+         /* ev  = { e[4], e[4], e[0], e[0] } */
+         __m128 evs = _mm_shuffle_ps(g, g, _MM_SHUFFLE(3, 3, 1, 1));
+         /* evs = { e[6], e[6], e[2], e[2] } */
+         __m128 ca  = _mm_set_ps(AA[0], AA[1], AA[2], AA[3]);
+         __m128 cb  = _mm_set_ps(-AA[1], AA[0], -AA[3], AA[2]);
+         /* lane3 = d[1]  = e[0]*AA[0] - e[2]*AA[1]
+          * lane2 = d[0]  = e[0]*AA[1] + e[2]*AA[0]
+          * lane1 = d[-1] = e[4]*AA[2] - e[6]*AA[3]
+          * lane0 = d[-2] = e[4]*AA[3] + e[6]*AA[2] */
+         _mm_storeu_ps(d - 2, _mm_add_ps(_mm_mul_ps(ev, ca),
+               _mm_mul_ps(evs, cb)));
+         d -= 4;
+         AA += 4;
+         e += 8;
+      }
+#elif RVORBIS_HAVE_NEON
+      /* vld2 deinterleaves, so the even-address samples e[0], e[2],
+       * e[4], e[6] arrive as one register.  Output lanes and operand
+       * order match the scalar code exactly (see the SSE variant for
+       * the layout notes; both loops run an even number of scalar
+       * iterations, so no remainder handling is needed). */
+      while (e != e_stop) {
+         float32x4x2_t de = vld2q_f32(e);       /* de.val[0] = { e[0], e[2], e[4], e[6] } */
+         float32x2_t glo  = vget_low_f32(de.val[0]);   /* { e[0], e[2] } */
+         float32x2_t ghi  = vget_high_f32(de.val[0]);  /* { e[4], e[6] } */
+         float32x4_t ev   = vcombine_f32(vdup_lane_f32(ghi, 0),
+               vdup_lane_f32(glo, 0));          /* { e[4], e[4], e[0], e[0] } */
+         float32x4_t evs  = vcombine_f32(vdup_lane_f32(ghi, 1),
+               vdup_lane_f32(glo, 1));          /* { e[6], e[6], e[2], e[2] } */
+         float32x4_t aa   = vld1q_f32(AA);      /* { AA[0..3] } */
+         float32x4_t ca   = vcombine_f32(
+               vrev64_f32(vget_high_f32(aa)),   /* { AA[3], AA[2] } */
+               vrev64_f32(vget_low_f32(aa)));   /* { AA[1], AA[0] } */
+         float32x4_t cb   = vreinterpretq_f32_u32(veorq_u32(
+               vreinterpretq_u32_f32(vextq_f32(aa, aa, 2)),
+               imdct_twiddle_signmask_neon()));
+         /* ca = { AA[3], AA[2], AA[1], AA[0] }, cb = { AA[2], -AA[3], AA[0], -AA[1] } */
+         vst1q_f32(d - 2, vaddq_f32(vmulq_f32(ev, ca), vmulq_f32(evs, cb)));
+         d -= 4;
+         AA += 4;
+         e += 8;
+      }
+#else
       while (e != e_stop) {
          d[1] = (e[0] * AA[0] - e[2]*AA[1]);
          d[0] = (e[0] * AA[1] + e[2]*AA[0]);
@@ -1957,8 +2162,55 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
          AA += 2;
          e += 4;
       }
+#endif
 
       e = &buffer[n2-3];
+#if RVORBIS_HAVE_SSE
+      while (d >= buf2) {
+         __m128 lo  = _mm_loadu_ps(e - 5);      /* e[-5..-2] */
+         __m128 hi  = _mm_loadu_ps(e - 1);      /* e[-1..2]  */
+         __m128 g   = _mm_shuffle_ps(lo, hi, _MM_SHUFFLE(3, 1, 3, 1));
+         /* g = { e[-4], e[-2], e[0], e[2] } */
+         __m128 ev  = _mm_shuffle_ps(g, g, _MM_SHUFFLE(3, 3, 1, 1));
+         /* ev  = { e[-2], e[-2], e[2], e[2] } */
+         __m128 evs = _mm_shuffle_ps(g, g, _MM_SHUFFLE(2, 2, 0, 0));
+         /* evs = { e[-4], e[-4], e[0], e[0] } */
+         __m128 ca  = _mm_set_ps(-AA[0], -AA[1], -AA[2], -AA[3]);
+         __m128 cb  = _mm_set_ps(AA[1], -AA[0], AA[3], -AA[2]);
+         /* lane3 = d[1]  = -e[2]*AA[0] + e[0]*AA[1]
+          * lane2 = d[0]  = -e[2]*AA[1] - e[0]*AA[0]
+          * lane1 = d[-1] = -e[-2]*AA[2] + e[-4]*AA[3]
+          * lane0 = d[-2] = -e[-2]*AA[3] - e[-4]*AA[2] */
+         _mm_storeu_ps(d - 2, _mm_add_ps(_mm_mul_ps(ev, ca),
+               _mm_mul_ps(evs, cb)));
+         d -= 4;
+         AA += 4;
+         e -= 8;
+      }
+#elif RVORBIS_HAVE_NEON
+      while (d >= buf2) {
+         float32x4x2_t de = vld2q_f32(e - 5);   /* de.val[1] = { e[-4], e[-2], e[0], e[2] } */
+         float32x2_t glo  = vget_low_f32(de.val[1]);   /* { e[-4], e[-2] } */
+         float32x2_t ghi  = vget_high_f32(de.val[1]);  /* { e[0], e[2] } */
+         float32x4_t ev   = vcombine_f32(vdup_lane_f32(glo, 1),
+               vdup_lane_f32(ghi, 1));          /* { e[-2], e[-2], e[2], e[2] } */
+         float32x4_t evs  = vcombine_f32(vdup_lane_f32(glo, 0),
+               vdup_lane_f32(ghi, 0));          /* { e[-4], e[-4], e[0], e[0] } */
+         float32x4_t aa   = vld1q_f32(AA);
+         float32x4_t ca   = vnegq_f32(vcombine_f32(
+               vrev64_f32(vget_high_f32(aa)),
+               vrev64_f32(vget_low_f32(aa)))); /* { -AA[3], -AA[2], -AA[1], -AA[0] } */
+         float32x4_t cb   = vreinterpretq_f32_u32(veorq_u32(
+               vreinterpretq_u32_f32(vextq_f32(aa, aa, 2)),
+               vsetq_lane_u32(0x80000000u,
+                     vsetq_lane_u32(0x80000000u, vdupq_n_u32(0), 0), 2)));
+         /* cb = { -AA[2], AA[3], -AA[0], AA[1] } */
+         vst1q_f32(d - 2, vaddq_f32(vmulq_f32(ev, ca), vmulq_f32(evs, cb)));
+         d -= 4;
+         AA += 4;
+         e -= 8;
+      }
+#else
       while (d >= buf2) {
          d[1] = (-e[2] * AA[0] - -e[0]*AA[1]);
          d[0] = (-e[2] * AA[1] + -e[0]*AA[0]);
@@ -1966,6 +2218,7 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
          AA += 2;
          e -= 4;
       }
+#endif
    }
 
    /* now we use symbolic names for these, so that we can
@@ -1989,6 +2242,21 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
       d1 = &u[0];
 
       while (AA >= A) {
+#if RVORBIS_HAVE_SSE
+         /* Two complex pairs per iteration, ascending and contiguous.
+          * Same mul/mul/add twiddle as the butterfly helpers: the odd
+          * (imaginary) lanes take the minus form, so the swapped-pair
+          * vector carries pre-negated coefficients in those lanes. */
+         __m128 v0 = _mm_loadu_ps(e0);
+         __m128 v1 = _mm_loadu_ps(e1);
+         __m128 d  = _mm_sub_ps(v0, v1);
+         __m128 ds = _mm_shuffle_ps(d, d, _MM_SHUFFLE(2, 3, 0, 1));
+         __m128 ca = _mm_set_ps(AA[0], AA[0], AA[4], AA[4]);
+         __m128 cb = _mm_set_ps(-AA[1], AA[1], -AA[5], AA[5]);
+         _mm_storeu_ps(d0, _mm_add_ps(v0, v1));
+         _mm_storeu_ps(d1, _mm_add_ps(_mm_mul_ps(d, ca),
+               _mm_mul_ps(ds, cb)));
+#else
          float v40_20, v41_21;
 
          v41_21 = e0[1] - e1[1];
@@ -2004,7 +2272,7 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
          d0[2]  = e0[2] + e1[2];
          d1[3]  = v41_21*AA[0] - v40_20*AA[1];
          d1[2]  = v40_20*AA[0] + v41_21*AA[1];
-
+#endif
          AA -= 8;
 
          d0 += 4;
@@ -2591,7 +2859,7 @@ static int vorbis_decode_packet(vorb *f, int *len, int *p_left, int *p_right)
 
 static int vorbis_finish_frame(rvorbis *f, int len, int left, int right)
 {
-   int prev,i,j;
+   int prev,i;
    /* we use right&left (the start of the right- and left-window sin()-regions)
     * to determine how much to return, rather than inferring from the rules
     * (same result, clearer code); 'left' indicates where our sin() window
@@ -2607,10 +2875,39 @@ static int vorbis_finish_frame(rvorbis *f, int len, int left, int right)
       float *w = get_window(f, n);
       for (i=0; i < f->channels; ++i)
       {
-         for (j=0; j < n; ++j)
-            f->channel_buffers[i][left+j] =
-               f->channel_buffers[i][left+j]*w[    j] +
-               f->previous_window[i][     j]*w[n-1-j];
+         float *buf  = f->channel_buffers[i] + left;
+         float *prev = f->previous_window[i];
+         j = 0;
+#if RVORBIS_HAVE_SSE
+         /* Overlap-add with the window applied forwards to this frame
+          * and backwards to the previous one; the reversed window taps
+          * are one lane-reversed load.  Same mul/mul/add per element
+          * as the scalar loop, so the results are identical. */
+         for (; j + 3 < n; j += 4)
+         {
+            __m128 vb = _mm_loadu_ps(buf + j);
+            __m128 vp = _mm_loadu_ps(prev + j);
+            __m128 wf = _mm_loadu_ps(w + j);
+            __m128 wr = _mm_loadu_ps(w + n - 4 - j);
+            wr = _mm_shuffle_ps(wr, wr, _MM_SHUFFLE(0, 1, 2, 3));
+            _mm_storeu_ps(buf + j, _mm_add_ps(_mm_mul_ps(vb, wf),
+                  _mm_mul_ps(vp, wr)));
+         }
+#elif RVORBIS_HAVE_NEON
+         for (; j + 3 < n; j += 4)
+         {
+            float32x4_t vb = vld1q_f32(buf + j);
+            float32x4_t vp = vld1q_f32(prev + j);
+            float32x4_t wf = vld1q_f32(w + j);
+            float32x4_t wr = vld1q_f32(w + n - 4 - j);
+            wr = vrev64q_f32(wr);
+            wr = vcombine_f32(vget_high_f32(wr), vget_low_f32(wr));
+            vst1q_f32(buf + j, vaddq_f32(vmulq_f32(vb, wf),
+                  vmulq_f32(vp, wr)));
+         }
+#endif
+         for (; j < n; ++j)
+            buf[j] = buf[j]*w[j] + prev[j]*w[n-1-j];
       }
    }
 
@@ -2625,9 +2922,16 @@ static int vorbis_finish_frame(rvorbis *f, int len, int left, int right)
     * channel_buffers couldn't be temp mem (although they're NOT
     * currently temp mem, they could be (unless we want to level
     * performance by spreading out the computation)) */
-   for (i=0; i < f->channels; ++i)
-      for (j=0; right+j < len; ++j)
-         f->previous_window[i][j] = f->channel_buffers[i][right+j];
+   /* channel_buffers and previous_window are distinct allocations, so
+    * the save is a straight copy.  A truncated short frame can have
+    * len < right (the scalar loop simply ran zero times); guard so the
+    * size below cannot go negative. */
+   if (len > right)
+   {
+      for (i=0; i < f->channels; ++i)
+         memcpy(f->previous_window[i], f->channel_buffers[i] + right,
+               (size_t)(len - right) * sizeof(float));
+   }
 
    /* There was no previous packet, so this data isn't valid...
     * this isn't entirely true, only the would-have-overlapped data
