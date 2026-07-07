@@ -13601,13 +13601,6 @@ static void settings_build_frame_time_counter(
                frame_time_cou_desc_0, ARRAY_SIZE(frame_time_cou_desc_0),
                &group_info, &subgroup_info, parent_group);
       }
-      /* Toggling this setting hides/shows
-       * 'frame_time_counter_auto_reset' below, so the menu
-       * needs a rebuild on change. */
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_bool_action_left_with_refresh)
-      SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_bool_action_left_with_refresh)
-      SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_bool_action_right_with_refresh)
-
       {
          settings_list_add_desc(list, list_info, settings,
                frame_time_cou_desc_1, ARRAY_SIZE(frame_time_cou_desc_1),
