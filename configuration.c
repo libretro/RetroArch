@@ -1934,6 +1934,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_gpu_index_vulkan.h"
 #include "settings/settings_def_gpu_index_gl.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
@@ -2638,6 +2639,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_gpu_index_vulkan.h"
 #include "settings/settings_def_gpu_index_gl.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
@@ -3297,6 +3299,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_gpu_index_vulkan.h"
 #include "settings/settings_def_gpu_index_gl.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
@@ -3992,6 +3995,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_gpu_index_vulkan.h"
 #include "settings/settings_def_gpu_index_gl.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
@@ -4575,6 +4579,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_sync.h"
+#include "settings/settings_def_gpu_index_vulkan.h"
 #include "settings/settings_def_gpu_index_gl.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
