@@ -156,6 +156,9 @@ typedef struct menu_file_list_cbs
          char *s2, size_t len2);
    menu_search_terms_t search;
    enum msg_hash_enums enum_idx;
+   /* When the generic sublabel handler is bound from the data map,
+    * this carries the description enum to look up. */
+   enum msg_hash_enums sublabel_enum;
    bool checked;
 } menu_file_list_cbs_t;
 
