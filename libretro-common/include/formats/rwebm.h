@@ -66,6 +66,10 @@ typedef struct
    int            track;     /* index into the track array (0-based)     */
    int64_t        timestamp; /* in nanoseconds (scaled by TimestampScale) */
    int            keyframe;
+   /* Matroska DiscardPadding in nanoseconds: when positive, this many
+    * nanoseconds of decoded output at the END of this block are not
+    * meant to be played (Opus end trimming).  0 when absent. */
+   int64_t        discard_padding;
 } rwebm_packet;
 
 typedef struct rwebm rwebm_t;

@@ -45,6 +45,7 @@
 #define ID_SIMPLEBLOCK     0xA3u
 #define ID_BLOCKGROUP      0xA0u
 #define ID_BLOCK           0xA1u
+#define ID_DISCARDPADDING  0x75A2u
 
 #define TRACKTYPE_VIDEO    1
 #define TRACKTYPE_AUDIO    2
@@ -119,6 +120,14 @@ static uint64_t be_uint(const uint8_t *p, size_t n)
    return v;
 }
 
+/* Signed big-endian integer element payload (sign-extended). */
+static int64_t ebml_sint(const uint8_t *p, size_t n)
+{
+   uint64_t v = be_uint(p, n);
+   int shift  = (int)(64 - 8 * n);
+   return ((int64_t)(v << shift)) >> shift;
+}
+
 /* Read a big-endian IEEE float/double (Matroska float element). */
 static double be_float(const uint8_t *p, size_t n)
 {
@@ -156,6 +165,8 @@ struct rwebm
    int64_t        cluster_ts;       /* current cluster timestamp (ticks)   */
    /* Lacing: a SimpleBlock may carry several frames; we emit them one at a
     * time, so remember where we are within a block. */
+   int64_t pending_discard;         /* DiscardPadding for the next Block   */
+   int64_t lace_discard;            /* padding owed by the laced block     */
    const uint8_t *lace_data;        /* payload after the block header      */
    const uint32_t *lace_sizes;      /* not used (see note); kept simple    */
    int            lace_count;
@@ -298,6 +309,31 @@ void rwebm_rewind(rwebm_t *webm)
    webm->lace_index = 0;
 }
 
+/* DiscardPadding for the Block just parsed: the element may sit before
+ * the Block (already captured in pending_discard) or after it within
+ * the same BlockGroup, so scan the remaining group siblings. */
+static int64_t webm_group_discard(rwebm_t *webm, const uint8_t *p,
+      const uint8_t *group_end)
+{
+   int64_t v = webm->pending_discard;
+   ebml_reader s;
+   webm->pending_discard = 0;
+   s.p   = p;
+   s.end = group_end;
+   while (s.p < s.end)
+   {
+      int ok;
+      uint32_t id = ebml_read_id(&s);
+      uint64_t sz = ebml_read_vint(&s, 1, &ok);
+      if (!id || !ok || s.p + sz > s.end)
+         break;
+      if (id == ID_DISCARDPADDING && sz >= 1 && sz <= 8)
+         v = ebml_sint(s.p, (size_t)sz);
+      s.p += sz;
+   }
+   return v;
+}
+
 int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
 {
    ebml_reader r;
@@ -313,6 +349,8 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
       pkt->track     = webm->lace_track;
       pkt->timestamp = webm->lace_ts;
       pkt->keyframe  = webm->lace_keyframe;
+      pkt->discard_padding = (webm->lace_index == webm->lace_count)
+         ? webm->lace_discard : 0;
       return 1;
    }
 
@@ -331,9 +369,21 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
       if (id == ID_CLUSTER || id == ID_BLOCKGROUP)
       {
          /* Descend: Cluster holds Timestamp + blocks; BlockGroup wraps a
-          * single Block (plus duration/refs we ignore). Scan children. */
+          * single Block (plus DiscardPadding/duration/refs). Scan
+          * children. */
+         if (id == ID_BLOCKGROUP)
+            webm->pending_discard = 0;
          r.p   = body;
          r.end = body + sz;
+         continue;
+      }
+      if (id == ID_DISCARDPADDING)
+      {
+         /* Signed big-endian integer, nanoseconds; may precede the
+          * Block within its BlockGroup. */
+         if (sz >= 1 && sz <= 8)
+            webm->pending_discard = ebml_sint(body, (size_t)sz);
+         r.p = body + sz;
          continue;
       }
       if (id == ID_TIMESTAMP)
@@ -379,6 +429,8 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
                               * webm->timestamp_scale;
                pkt->keyframe  = (id == ID_SIMPLEBLOCK)
                               ? ((flags & 0x80) != 0) : 1;
+               pkt->discard_padding = (id == ID_BLOCK)
+                  ? webm_group_discard(webm, body + sz, r.end) : 0;
                webm->cur      = body + sz;
                return 1;
             }
@@ -451,6 +503,8 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
                   webm->lace_track = tidx;
                   webm->lace_ts    = (webm->cluster_ts + rel_ts)
                                    * webm->timestamp_scale;
+               webm->lace_discard = (id == ID_BLOCK)
+                  ? webm_group_discard(webm, body + sz, r.end) : 0;
                   webm->lace_keyframe = (id == ID_SIMPLEBLOCK)
                                       ? ((flags & 0x80) != 0) : 1;
                   for (j = 0; j < nframes; j++)
@@ -468,6 +522,9 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
                      pkt->track     = webm->lace_track;
                      pkt->timestamp = webm->lace_ts;
                      pkt->keyframe  = webm->lace_keyframe;
+                     pkt->discard_padding =
+                        (webm->lace_index == webm->lace_count)
+                        ? webm->lace_discard : 0;
                      return 1;
                   }
                }
