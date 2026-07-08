@@ -11734,6 +11734,13 @@ static const setting_desc_t audio_asio_desc[] = {
 #endif
 
 #ifdef HAVE_MICROPHONE
+#ifdef HAVE_MICROPHONE
+static const setting_desc_t microphone_lat_desc[] = {
+/* GENERATED: rows come from settings/settings_def_microphone_latency.h in order. */
+#include "../settings/settings_def_microphone_latency.h"
+};
+#endif
+
 static const setting_desc_t mic_enable_desc[] = {
 /* GENERATED: rows come from settings_def_microphone.h in order. */
 #include "../settings/settings_def_microphone.h"
@@ -11977,6 +11984,13 @@ static const setting_desc_t ovl_desc_0[] = {
 /* GENERATED: rows come from settings_def_overlay_enable.h in order. */
 #include "../settings/settings_def_overlay_enable.h"
 };
+
+#ifdef HAVE_OVERLAY
+static const setting_desc_t ovl_autoload_desc[] = {
+/* GENERATED: rows come from settings/settings_def_overlay_autoload.h in order. */
+#include "../settings/settings_def_overlay_autoload.h"
+};
+#endif
 
 #ifdef HAVE_OVERLAY
 static const setting_desc_t ovl_display_desc_0[] = {
@@ -14652,21 +14666,7 @@ static void settings_build_microphone(
       parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
       /* Descriptor holdout: runtime default value. */
-      CONFIG_UINT(
-            list, list_info,
-            &settings->uints.microphone_latency,
-            MENU_ENUM_LABEL_MICROPHONE_LATENCY,
-            MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
-            g_defaults.settings_in_latency ?
-            g_defaults.settings_in_latency : DEFAULT_IN_LATENCY,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      menu_settings_list_current_add_range(list, list_info, 0, 512, 1.0, true, true);
-      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+      ADD_DESC(microphone_lat_desc);
 
 #ifdef RARCH_MOBILE
             ADD_DESC(mic_block_desc);
@@ -15146,22 +15146,7 @@ static void settings_build_overlay(
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_bool_action_right_with_refresh)
       SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], overlay_enable_toggle_change_handler)
 
-      CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.input_overlay_enable_autopreferred,
-            MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED,
-            MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
-            DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-            );
-      SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], overlay_enable_toggle_change_handler)
+      ADD_DESC(ovl_autoload_desc);
 
       if (video_driver_test_all_flags(GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED))
       {
@@ -17683,6 +17668,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
 #ifdef HAVE_MICROPHONE
    { mic_enable_desc, (uint16_t)ARRAY_SIZE(mic_enable_desc) },
+#ifdef HAVE_MICROPHONE
+   { microphone_lat_desc, (uint16_t)ARRAY_SIZE(microphone_lat_desc) },
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #ifdef RARCH_MOBILE
@@ -17768,6 +17756,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { osn_desc_5, (uint16_t)ARRAY_SIZE(osn_desc_5) },
 #ifdef HAVE_OVERLAY
    { ovl_desc_0, (uint16_t)ARRAY_SIZE(ovl_desc_0) },
+#ifdef HAVE_OVERLAY
+   { ovl_autoload_desc, (uint16_t)ARRAY_SIZE(ovl_autoload_desc) },
+#endif
 #ifdef HAVE_OVERLAY
    { ovl_display_desc_0, (uint16_t)ARRAY_SIZE(ovl_display_desc_0) },
 #endif
