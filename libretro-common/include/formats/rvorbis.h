@@ -71,6 +71,11 @@ extern void rvorbis_seek_start(rvorbis *f);
 
 extern int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels, float *buffer, int num_floats);
 
+extern int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels, int16_t *buffer, int num_shorts);
+/* gets num_shorts samples as native signed 16-bit, interleaved. Vorbis
+ * decodes in float; the quantisation to s16 (round half away from
+ * zero, clamped) happens once, during the interleave copy. */
+
 #ifdef __cplusplus
 }
 #endif

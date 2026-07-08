@@ -4246,3 +4246,48 @@ int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
    }
    return n;
 }
+
+/* Native signed 16-bit output: identical to the float read except that
+ * quantisation (round half away from zero, clamped) happens during the
+ * interleave copy, so the samples go from the per-channel decode
+ * buffers to the caller's buffer in a single pass with no intermediate
+ * float staging.  Vorbis is a float-internal codec, so one
+ * quantisation at the output boundary is the minimum possible. */
+int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
+      int16_t *buffer, int num_shorts)
+{
+   float **outputs;
+   int len = num_shorts / channels;
+   int n=0;
+   int z = f->channels;
+   if (z > channels)
+      z = channels;
+   while (n < len)
+   {
+      int i,j;
+      int k = f->channel_buffer_end - f->channel_buffer_start;
+      if (n+k >= len) k = len - n;
+      for (j=0; j < k; ++j)
+      {
+         for (i=0; i < z; ++i)
+         {
+            float s = f->channel_buffers[i][f->channel_buffer_start+j] * 32768.0f;
+            int   q = (int)(s + ((s >= 0.0f) ? 0.5f : -0.5f));
+            if (q >  32767)
+               q =  32767;
+            if (q < -32768)
+               q = -32768;
+            *buffer++ = (int16_t)q;
+         }
+         for (   ; i < channels; ++i)
+            *buffer++ = 0;
+      }
+      n += k;
+      f->channel_buffer_start += k;
+      if (n == len)
+         break;
+      if (!rvorbis_get_frame_float(f, NULL, &outputs))
+         break;
+   }
+   return n;
+}
