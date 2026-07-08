@@ -12560,6 +12560,13 @@ static const setting_desc_t privacy_desc_2[] = {
 };
 
 #if !defined(RARCH_CONSOLE)
+#ifdef HAVE_OVERLAY
+static const setting_desc_t osk_overlay_desc_0[] = {
+/* GENERATED: rows come from settings_def_osk_overlay.h in order. */
+#include "../settings/settings_def_osk_overlay.h"
+};
+#endif
+
 #if !defined(RARCH_CONSOLE)
 static const setting_desc_t midi_devices_desc_0[] = {
 /* GENERATED: rows come from settings_def_midi_devices.h in order. */
@@ -15296,13 +15303,6 @@ static void settings_build_overlay(
 #endif
    }
 }
-
-#ifdef HAVE_OVERLAY
-static const setting_desc_t osk_overlay_desc_0[] = {
-/* GENERATED: rows come from settings_def_osk_overlay.h in order. */
-#include "../settings/settings_def_osk_overlay.h"
-};
-#endif
 
 static void settings_build_osk_overlay(
       settings_t *settings, global_t *global,
