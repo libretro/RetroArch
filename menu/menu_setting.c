@@ -11894,6 +11894,13 @@ static const setting_desc_t ovl_display_desc_0[] = {
 #include "../settings/settings_def_overlay_display.h"
 };
 #endif
+
+#ifdef HAVE_OVERLAY
+static const setting_desc_t ovl_eightway_desc_0[] = {
+/* GENERATED: rows come from settings_def_overlay_eightway.h in order. */
+#include "../settings/settings_def_overlay_eightway.h"
+};
+#endif
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -15161,58 +15168,7 @@ static void settings_build_overlay(
 
             ADD_DESC(ovl_desc_2);
 
-      /* Descriptor holdout: poke tail outside the descriptor grammar. */
-      CONFIG_UINT(
-            list, list_info,
-            &settings->uints.input_overlay_dpad_diagonal_sensitivity,
-            MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
-            MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
-            DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler
-            );
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_percentage)
-      MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_EIGHTWAY_DIAGONAL_SENSITIVITY);
-      menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
-      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-
-      CONFIG_UINT(
-            list, list_info,
-            &settings->uints.input_overlay_abxy_diagonal_sensitivity,
-            MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
-            MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
-            DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler
-            );
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_percentage)
-      MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_EIGHTWAY_DIAGONAL_SENSITIVITY);
-      menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
-      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-
-      CONFIG_UINT(
-            list, list_info,
-            &settings->uints.input_overlay_analog_recenter_zone,
-            MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
-            MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
-            DEFAULT_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler
-            );
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_percentage)
-      menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
+      ADD_DESC(ovl_eightway_desc_0);
 
             ADD_DESC(ovl_desc_3);
 
@@ -17811,6 +17767,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { ovl_desc_0, (uint16_t)ARRAY_SIZE(ovl_desc_0) },
 #ifdef HAVE_OVERLAY
    { ovl_display_desc_0, (uint16_t)ARRAY_SIZE(ovl_display_desc_0) },
+#endif
+#ifdef HAVE_OVERLAY
+   { ovl_eightway_desc_0, (uint16_t)ARRAY_SIZE(ovl_eightway_desc_0) },
 #endif
 #endif
 #ifdef HAVE_OVERLAY
