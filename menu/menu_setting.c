@@ -15290,6 +15290,13 @@ static void settings_build_overlay(
    }
 }
 
+#ifdef HAVE_OVERLAY
+static const setting_desc_t osk_overlay_desc_0[] = {
+/* GENERATED: rows come from settings_def_osk_overlay.h in order. */
+#include "../settings/settings_def_osk_overlay.h"
+};
+#endif
+
 static void settings_build_osk_overlay(
       settings_t *settings, global_t *global,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
@@ -15310,60 +15317,7 @@ static void settings_build_osk_overlay(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      /* Descriptor holdout: runtime default value. */
-      CONFIG_PATH(
-            list, list_info,
-            settings->paths.path_osk_overlay,
-            sizeof(settings->paths.path_osk_overlay),
-            MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,
-            MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
-            settings->paths.directory_osk_overlay,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
-      MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_INIT);
-
-      /* Descriptor holdout: poke tail outside the descriptor grammar. */
-      CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.input_osk_overlay_auto_scale,
-            MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
-            MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
-            DEFAULT_INPUT_OVERLAY_AUTO_SCALE,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-            );
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_bool_action_left_with_refresh)
-      SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_bool_action_left_with_refresh)
-      SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_bool_action_right_with_refresh)
-      MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
-      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-
-      CONFIG_FLOAT(
-            list, list_info,
-            &settings->floats.input_osk_overlay_opacity,
-            MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY,
-            MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
-            DEFAULT_INPUT_OVERLAY_OPACITY,
-            "%.2f",
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_ALPHA_MOD);
-      menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
-      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            ADD_DESC(osk_overlay_desc_0);
 
       GROUP_END();
 #endif
@@ -17937,6 +17891,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { frame_throttli_desc_3, (uint16_t)ARRAY_SIZE(frame_throttli_desc_3) },
 #endif
 #ifdef HAVE_GFX_WIDGETS
+#ifdef HAVE_OVERLAY
+   { osk_overlay_desc_0, (uint16_t)ARRAY_SIZE(osk_overlay_desc_0) },
+#endif
    { osn_desc_0, (uint16_t)ARRAY_SIZE(osn_desc_0) },
 #endif
 #ifdef HAVE_GFX_WIDGETS
