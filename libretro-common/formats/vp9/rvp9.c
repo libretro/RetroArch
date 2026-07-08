@@ -1665,19 +1665,19 @@ static INLINE uint8_t rvp9_clip8(int v)
 /* cospi/sinpi constants (vpx_dsp/txfm_common.h) */
 #define c1_p64  16364
 #define RVP9_WRAP(x) (x)
-static const int16_t rvp9_cospi64[32] = {
+static const int64_t rvp9_cospi64[32] = {
    16384, 16364, 16305, 16207, 16069, 15893, 15679, 15426,
    15137, 14811, 14449, 14053, 13623, 13160, 12665, 12140,
    11585, 11003, 10394,  9760,  9102,  8423,  7723,  7005,
     6270,  5520,  4756,  3981,  3196,  2404,  1606,   804
 };
-static const int16_t rvp9_sinpi[5] = { 0, 5283, 9929, 13377, 15212 };
+static const int64_t rvp9_sinpi[5] = { 0, 5283, 9929, 13377, 15212 };
 
 
 static void rvp9_idct4(const rvp9_tran *input, rvp9_tran *output)
 {
    int16_t step[4];
-   int temp1, temp2;
+   int64_t temp1, temp2;
    temp1 = ((int)input[0] + input[2]) * rvp9_cospi64[16];
    temp2 = ((int)input[0] - input[2]) * rvp9_cospi64[16];
    step[0] = (int16_t)rvp9_round_shift(temp1);
@@ -1694,8 +1694,8 @@ static void rvp9_idct4(const rvp9_tran *input, rvp9_tran *output)
 
 static void rvp9_iadst4(const rvp9_tran *input, rvp9_tran *output)
 {
-   int s0, s1, s2, s3, s4, s5, s6, s7;
-   int x0 = input[0], x1 = input[1], x2 = input[2], x3 = input[3];
+   int64_t s0, s1, s2, s3, s4, s5, s6, s7;
+   int64_t x0 = input[0], x1 = input[1], x2 = input[2], x3 = input[3];
    if (!(x0 | x1 | x2 | x3))
    {
       output[0] = output[1] = output[2] = output[3] = 0;
@@ -1726,7 +1726,7 @@ static void rvp9_iadst4(const rvp9_tran *input, rvp9_tran *output)
 static void rvp9_idct8(const rvp9_tran *input, rvp9_tran *output)
 {
    int16_t step1[8], step2[8];
-   int temp1, temp2;
+   int64_t temp1, temp2;
    step1[0] = (int16_t)input[0];
    step1[2] = (int16_t)input[4];
    step1[1] = (int16_t)input[2];
@@ -1778,9 +1778,9 @@ static void rvp9_idct8(const rvp9_tran *input, rvp9_tran *output)
 
 static void rvp9_iadst8(const rvp9_tran *input, rvp9_tran *output)
 {
-   int s0,s1,s2,s3,s4,s5,s6,s7;
-   int x0 = input[7], x1 = input[0], x2 = input[5], x3 = input[2];
-   int x4 = input[3], x5 = input[4], x6 = input[1], x7 = input[6];
+   int64_t s0,s1,s2,s3,s4,s5,s6,s7;
+   int64_t x0 = input[7], x1 = input[0], x2 = input[5], x3 = input[2];
+   int64_t x4 = input[3], x5 = input[4], x6 = input[1], x7 = input[6];
    if (!(x0|x1|x2|x3|x4|x5|x6|x7))
    {
       memset(output, 0, 8 * sizeof(*output));
