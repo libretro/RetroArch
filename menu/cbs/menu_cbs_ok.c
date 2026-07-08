@@ -1663,7 +1663,7 @@ int generic_action_ok_displaylist_push(
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
@@ -2633,7 +2633,7 @@ static int generic_action_ok(const char *path,
          ret        = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_MANUAL_CONTENT_SCAN_DAT_FILE:
-         flush_char = MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST_STR;
+         flush_char = msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST);
          ret        = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH:
@@ -4418,7 +4418,7 @@ static int action_ok_path_manual_scan_directory(const char *path,
    manual_content_scan_set_menu_content_dir(content_dir);
 
    /* Return to 'manual content scan' menu */
-   menu_entries_flush_stack(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST_STR, flush_type);
+   menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST), flush_type);
 
    return 0;
 }
