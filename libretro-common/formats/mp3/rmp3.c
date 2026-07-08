@@ -1355,6 +1355,11 @@ static void rmp3d_DCT_II(float *grbuf, int n)
 #endif
 }
 
+/* Native float output: the synthesis produces samples in s16 scale
+ * (+-32768), so the float sample is a straight rescale into [-1, 1)
+ * with no quantisation.  rmp3d_scale_pcm below is the s16 twin. */
+#define RMP3D_F32_SCALE (1.0f / 32768.0f)
+
 static int16_t rmp3d_scale_pcm(float sample)
 {
    int s;
@@ -1371,7 +1376,7 @@ static int16_t rmp3d_scale_pcm(float sample)
    return (int16_t)s;
 }
 
-static void rmp3d_synth_pair(short *pcm, int nch, const float *z)
+static void rmp3d_synth_pair(void *pcm, int nch, const float *z, int f32)
 {
     float a  = (z[14*64] - z[    0]) * 29;
     a += (z[ 1*64] + z[13*64]) * 213;
@@ -1381,7 +1386,10 @@ static void rmp3d_synth_pair(short *pcm, int nch, const float *z)
     a += (z[ 5*64] + z[ 9*64]) * 6574;
     a += (z[ 8*64] - z[ 6*64]) * 37489;
     a +=  z[ 7*64]             * 75038;
-    pcm[0] = rmp3d_scale_pcm(a);
+    if (f32)
+       ((float *)pcm)[0] = a * RMP3D_F32_SCALE;
+    else
+       ((short *)pcm)[0] = rmp3d_scale_pcm(a);
 
     z += 2;
     a  = z[14*64] * 104;
@@ -1392,14 +1400,21 @@ static void rmp3d_synth_pair(short *pcm, int nch, const float *z)
     a += z[ 4*64] * -45;
     a += z[ 2*64] * 146;
     a += z[ 0*64] * -5;
-    pcm[16*nch] = rmp3d_scale_pcm(a);
+    if (f32)
+       ((float *)pcm)[16*nch] = a * RMP3D_F32_SCALE;
+    else
+       ((short *)pcm)[16*nch] = rmp3d_scale_pcm(a);
 }
 
-static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
+static void rmp3d_synth(float *xl, void *dstl, int nch, float *lins, int f32)
 {
     int i;
-    float *xr = xl + 576*(nch - 1);
-    short *dstr = dstl + (nch - 1);
+    float *xr   = xl + 576*(nch - 1);
+    short *dstl16 = (short *)dstl;
+    float *dstl32 = (float *)dstl;
+    short *dstr16 = dstl16 + (nch - 1);
+    float *dstr32 = dstl32 + (nch - 1);
+    void  *dstr   = f32 ? (void *)dstr32 : (void *)dstr16;
 
     static const float g_win[] = {
         -1,26,-31,208,218,401,-519,2063,2000,4788,-5517,7134,5959,35640,-39336,74992,
@@ -1431,10 +1446,19 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
     zlin[4*31 + 2] = xl[1];
     zlin[4*31 + 3] = xr[1];
 
-    rmp3d_synth_pair(dstr, nch, lins + 4*15 + 1);
-    rmp3d_synth_pair(dstr + 32*nch, nch, lins + 4*15 + 64 + 1);
-    rmp3d_synth_pair(dstl, nch, lins + 4*15);
-    rmp3d_synth_pair(dstl + 32*nch, nch, lins + 4*15 + 64);
+    rmp3d_synth_pair(dstr, nch, lins + 4*15 + 1, f32);
+    if (f32)
+    {
+        rmp3d_synth_pair((float *)dstr + 32*nch, nch, lins + 4*15 + 64 + 1, 1);
+        rmp3d_synth_pair(dstl32, nch, lins + 4*15, 1);
+        rmp3d_synth_pair(dstl32 + 32*nch, nch, lins + 4*15 + 64, 1);
+    }
+    else
+    {
+        rmp3d_synth_pair((short *)dstr + 32*nch, nch, lins + 4*15 + 64 + 1, 0);
+        rmp3d_synth_pair(dstl16, nch, lins + 4*15, 0);
+        rmp3d_synth_pair(dstl16 + 32*nch, nch, lins + 4*15 + 64, 0);
+    }
 
 #if RMP3_HAVE_SSE
     for (i = 14; i >= 0; i--)
@@ -1530,6 +1554,24 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
             a = _mm_add_ps(a, _mm_sub_ps(_mm_mul_ps(vy, w1), _mm_mul_ps(vz, w0)));
         }
 
+        if (f32)
+        {
+            /* Native float output: rescale to [-1, 1) and scatter the
+             * lanes; a holds (l,r) for rows 15-i and 47-i, b for rows
+             * 17+i and 49+i. */
+            float ta[4], tb[4];
+            _mm_storeu_ps(ta, _mm_mul_ps(a, _mm_set1_ps(RMP3D_F32_SCALE)));
+            _mm_storeu_ps(tb, _mm_mul_ps(b, _mm_set1_ps(RMP3D_F32_SCALE)));
+            dstr32[(15 - i)*nch] = ta[1];
+            dstr32[(17 + i)*nch] = tb[1];
+            dstl32[(15 - i)*nch] = ta[0];
+            dstl32[(17 + i)*nch] = tb[0];
+            dstr32[(47 - i)*nch] = ta[3];
+            dstr32[(49 + i)*nch] = tb[3];
+            dstl32[(47 - i)*nch] = ta[2];
+            dstl32[(49 + i)*nch] = tb[2];
+        }
+        else
         {
             /* Round, clamp to s16 and scatter the four lanes:
              * lanes of a hold (l,r) for output rows 15-i and 47-i,
@@ -1538,14 +1580,14 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
             static const __m128 g_min = { -32768.0f, -32768.0f, -32768.0f, -32768.0f };
             __m128i pcm8 = _mm_packs_epi32(_mm_cvtps_epi32(_mm_max_ps(_mm_min_ps(a, g_max), g_min)),
                                            _mm_cvtps_epi32(_mm_max_ps(_mm_min_ps(b, g_max), g_min)));
-            dstr[(15 - i)*nch] = (short)_mm_extract_epi16(pcm8, 1);
-            dstr[(17 + i)*nch] = (short)_mm_extract_epi16(pcm8, 5);
-            dstl[(15 - i)*nch] = (short)_mm_extract_epi16(pcm8, 0);
-            dstl[(17 + i)*nch] = (short)_mm_extract_epi16(pcm8, 4);
-            dstr[(47 - i)*nch] = (short)_mm_extract_epi16(pcm8, 3);
-            dstr[(49 + i)*nch] = (short)_mm_extract_epi16(pcm8, 7);
-            dstl[(47 - i)*nch] = (short)_mm_extract_epi16(pcm8, 2);
-            dstl[(49 + i)*nch] = (short)_mm_extract_epi16(pcm8, 6);
+            dstr16[(15 - i)*nch] = (short)_mm_extract_epi16(pcm8, 1);
+            dstr16[(17 + i)*nch] = (short)_mm_extract_epi16(pcm8, 5);
+            dstl16[(15 - i)*nch] = (short)_mm_extract_epi16(pcm8, 0);
+            dstl16[(17 + i)*nch] = (short)_mm_extract_epi16(pcm8, 4);
+            dstr16[(47 - i)*nch] = (short)_mm_extract_epi16(pcm8, 3);
+            dstr16[(49 + i)*nch] = (short)_mm_extract_epi16(pcm8, 7);
+            dstl16[(47 - i)*nch] = (short)_mm_extract_epi16(pcm8, 2);
+            dstl16[(49 + i)*nch] = (short)_mm_extract_epi16(pcm8, 6);
         }
     }
 #elif RMP3_HAVE_NEON
@@ -1642,6 +1684,21 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
             a = vaddq_f32(a, vsubq_f32(vmulq_f32(vy, w1), vmulq_f32(vz, w0)));
         }
 
+        if (f32)
+        {
+            /* Native float output: rescale to [-1, 1) and scatter. */
+            a = vmulq_f32(a, vmovq_n_f32(RMP3D_F32_SCALE));
+            b = vmulq_f32(b, vmovq_n_f32(RMP3D_F32_SCALE));
+            vst1q_lane_f32(dstr32 + (15 - i)*nch, a, 1);
+            vst1q_lane_f32(dstr32 + (17 + i)*nch, b, 1);
+            vst1q_lane_f32(dstl32 + (15 - i)*nch, a, 0);
+            vst1q_lane_f32(dstl32 + (17 + i)*nch, b, 0);
+            vst1q_lane_f32(dstr32 + (47 - i)*nch, a, 3);
+            vst1q_lane_f32(dstr32 + (49 + i)*nch, b, 3);
+            vst1q_lane_f32(dstl32 + (47 - i)*nch, a, 2);
+            vst1q_lane_f32(dstl32 + (49 + i)*nch, b, 2);
+        }
+        else
         {
             /* Round to nearest (add 0.5, subtract 1 for negatives via the
              * comparison mask), saturate to s16 and scatter the lanes. */
@@ -1650,14 +1707,14 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
             b = vaddq_f32(b, vmovq_n_f32(0.5f));
             pcma = vqmovn_s32(vqaddq_s32(vcvtq_s32_f32(a), vreinterpretq_s32_u32(vcltq_f32(a, vmovq_n_f32(0)))));
             pcmb = vqmovn_s32(vqaddq_s32(vcvtq_s32_f32(b), vreinterpretq_s32_u32(vcltq_f32(b, vmovq_n_f32(0)))));
-            vst1_lane_s16(dstr + (15 - i)*nch, pcma, 1);
-            vst1_lane_s16(dstr + (17 + i)*nch, pcmb, 1);
-            vst1_lane_s16(dstl + (15 - i)*nch, pcma, 0);
-            vst1_lane_s16(dstl + (17 + i)*nch, pcmb, 0);
-            vst1_lane_s16(dstr + (47 - i)*nch, pcma, 3);
-            vst1_lane_s16(dstr + (49 + i)*nch, pcmb, 3);
-            vst1_lane_s16(dstl + (47 - i)*nch, pcma, 2);
-            vst1_lane_s16(dstl + (49 + i)*nch, pcmb, 2);
+            vst1_lane_s16(dstr16 + (15 - i)*nch, pcma, 1);
+            vst1_lane_s16(dstr16 + (17 + i)*nch, pcmb, 1);
+            vst1_lane_s16(dstl16 + (15 - i)*nch, pcma, 0);
+            vst1_lane_s16(dstl16 + (17 + i)*nch, pcmb, 0);
+            vst1_lane_s16(dstr16 + (47 - i)*nch, pcma, 3);
+            vst1_lane_s16(dstr16 + (49 + i)*nch, pcmb, 3);
+            vst1_lane_s16(dstl16 + (47 - i)*nch, pcma, 2);
+            vst1_lane_s16(dstl16 + (49 + i)*nch, pcmb, 2);
         }
     }
 #else
@@ -1680,19 +1737,33 @@ static void rmp3d_synth(float *xl, short *dstl, int nch, float *lins)
 
         RMP3_S0(0) RMP3_S2(1) RMP3_S1(2) RMP3_S2(3) RMP3_S1(4) RMP3_S2(5) RMP3_S1(6) RMP3_S2(7)
 
-        dstr[(15 - i)*nch] = rmp3d_scale_pcm(a[1]);
-        dstr[(17 + i)*nch] = rmp3d_scale_pcm(b[1]);
-        dstl[(15 - i)*nch] = rmp3d_scale_pcm(a[0]);
-        dstl[(17 + i)*nch] = rmp3d_scale_pcm(b[0]);
-        dstr[(47 - i)*nch] = rmp3d_scale_pcm(a[3]);
-        dstr[(49 + i)*nch] = rmp3d_scale_pcm(b[3]);
-        dstl[(47 - i)*nch] = rmp3d_scale_pcm(a[2]);
-        dstl[(49 + i)*nch] = rmp3d_scale_pcm(b[2]);
+        if (f32)
+        {
+            dstr32[(15 - i)*nch] = a[1] * RMP3D_F32_SCALE;
+            dstr32[(17 + i)*nch] = b[1] * RMP3D_F32_SCALE;
+            dstl32[(15 - i)*nch] = a[0] * RMP3D_F32_SCALE;
+            dstl32[(17 + i)*nch] = b[0] * RMP3D_F32_SCALE;
+            dstr32[(47 - i)*nch] = a[3] * RMP3D_F32_SCALE;
+            dstr32[(49 + i)*nch] = b[3] * RMP3D_F32_SCALE;
+            dstl32[(47 - i)*nch] = a[2] * RMP3D_F32_SCALE;
+            dstl32[(49 + i)*nch] = b[2] * RMP3D_F32_SCALE;
+        }
+        else
+        {
+            dstr16[(15 - i)*nch] = rmp3d_scale_pcm(a[1]);
+            dstr16[(17 + i)*nch] = rmp3d_scale_pcm(b[1]);
+            dstl16[(15 - i)*nch] = rmp3d_scale_pcm(a[0]);
+            dstl16[(17 + i)*nch] = rmp3d_scale_pcm(b[0]);
+            dstr16[(47 - i)*nch] = rmp3d_scale_pcm(a[3]);
+            dstr16[(49 + i)*nch] = rmp3d_scale_pcm(b[3]);
+            dstl16[(47 - i)*nch] = rmp3d_scale_pcm(a[2]);
+            dstl16[(49 + i)*nch] = rmp3d_scale_pcm(b[2]);
+        }
     }
 #endif
 }
 
-static void rmp3d_synth_granule(float *qmf_state, float *grbuf, int nbands, int nch, short *pcm, float *lins)
+static void rmp3d_synth_granule(float *qmf_state, float *grbuf, int nbands, int nch, void *pcm, float *lins, int f32)
 {
     int i;
     for (i = 0; i < nch; i++)
@@ -1701,7 +1772,10 @@ static void rmp3d_synth_granule(float *qmf_state, float *grbuf, int nbands, int 
     memcpy(lins, qmf_state, sizeof(float)*15*64);
 
     for (i = 0; i < nbands; i += 2)
-        rmp3d_synth(grbuf + i, pcm + 32*nch*i, nch, lins + i*64);
+        rmp3d_synth(grbuf + i,
+              f32 ? (void *)((float *)pcm + 32*nch*i)
+                  : (void *)((short *)pcm + 32*nch*i),
+              nch, lins + i*64, f32);
 #ifndef RMP3_NONSTANDARD_BUT_LOGICAL
     if (nch == 1)
     {
@@ -1767,7 +1841,7 @@ static int rmp3d_find_frame(const uint8_t *mp3, int mp3_bytes, int *free_format_
     return i;
 }
 
-static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_bytes, short *pcm, rmp3dec_frame_info *info)
+static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_bytes, void *pcm, rmp3dec_frame_info *info, int f32)
 {
    int i = 0, igr, frame_size = 0, success = 1;
    const uint8_t *hdr;
@@ -1814,11 +1888,14 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
       success = rmp3_L3_restore_reservoir(dec, bs_frame, &scratch, main_data_begin);
       if (success)
       {
-         for (igr = 0; igr < (RMP3_HDR_TEST_MPEG1(hdr) ? 2 : 1); igr++, pcm += 576*info->channels)
+         size_t granule_bytes = (size_t)576*info->channels
+               * (f32 ? sizeof(float) : sizeof(short));
+         for (igr = 0; igr < (RMP3_HDR_TEST_MPEG1(hdr) ? 2 : 1);
+               igr++, pcm = (uint8_t *)pcm + granule_bytes)
          {
             memset(scratch.grbuf[0], 0, 576*2*sizeof(float));
             rmp3_L3_decode(dec, &scratch, scratch.gr_info + igr*info->channels, info->channels);
-            rmp3d_synth_granule(dec->qmf_state, scratch.grbuf[0], 18, info->channels, pcm, scratch.syn[0]);
+            rmp3d_synth_granule(dec->qmf_state, scratch.grbuf[0], 18, info->channels, pcm, scratch.syn[0], f32);
          }
       }
       rmp3_L3_save_reservoir(dec, &scratch);
@@ -1834,9 +1911,10 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
          {
             i = 0;
             rmp3_L12_apply_scf_384(sci, sci->scf + igr, scratch.grbuf[0]);
-            rmp3d_synth_granule(dec->qmf_state, scratch.grbuf[0], 12, info->channels, pcm, scratch.syn[0]);
+            rmp3d_synth_granule(dec->qmf_state, scratch.grbuf[0], 12, info->channels, pcm, scratch.syn[0], f32);
             memset(scratch.grbuf[0], 0, 576*2*sizeof(float));
-            pcm += 384*info->channels;
+            pcm = (uint8_t *)pcm + (size_t)384*info->channels
+                  * (f32 ? sizeof(float) : sizeof(short));
          }
          if (bs_frame->pos > bs_frame->limit)
          {
@@ -1876,7 +1954,9 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
 
       samples = rmp3dec_decode_frame(&pMP3->decoder,
             pMP3->pData + pMP3->readPos, (int)avail,
-            pMP3->frames, &info);
+            pMP3->f32_mode ? (void *)pMP3->frames.f32
+                           : (void *)pMP3->frames.s16,
+            &info, (int)pMP3->f32_mode);
 
       /* frame_bytes == 0 means the decoder found nothing decodable in
        * the remaining bytes: end of stream. */
@@ -1903,6 +1983,52 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
 
    pMP3->atEnd = 1;
    return 0;
+}
+
+/* Latch the output sample format.  The mixer picks one pipeline per
+ * voice, so in practice this runs once on the first read.  If a caller
+ * switches formats while a decoded frame is still buffered, that one
+ * frame is converted in place (the decoder state has already advanced
+ * past it, so re-decoding is not an option); every later frame is
+ * synthesised natively in the new format. */
+static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
+{
+   uint32_t total;
+   if (pMP3->f32_mode == f32)
+      return;
+   pMP3->f32_mode = f32;
+
+   total = (pMP3->framesConsumed + pMP3->framesRemaining)
+         * pMP3->frameChannels;
+   if (total == 0)
+      return;
+
+   if (f32)
+   {
+      /* Widening in place: f32[i] overlays s16[2i..2i+1], so walking
+       * backwards only clobbers s16 slots that are already consumed. */
+      uint32_t i = total;
+      while (i-- > 0)
+         pMP3->frames.f32[i] = pMP3->frames.s16[i] * (1.0f / 32768.0f);
+   }
+   else
+   {
+      /* Narrowing in place: s16[i] overlays half of f32[i/2], which is
+       * behind the read position when walking forwards. */
+      uint32_t i;
+      for (i = 0; i < total; i++)
+      {
+         float s = pMP3->frames.f32[i] * 32768.0f;
+         int   v;
+         if (s >  32767.0f) { pMP3->frames.s16[i] =  32767; continue; }
+         if (s < -32768.0f) { pMP3->frames.s16[i] = -32768; continue; }
+         v  = (int)(s + .5f);
+         v -= (v < 0); /* round half away from zero, as rmp3d_scale_pcm */
+         if (v >  32767) v =  32767;
+         if (v < -32768) v = -32768;
+         pMP3->frames.s16[i] = (int16_t)v;
+      }
+   }
 }
 
 uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize)
@@ -1940,33 +2066,87 @@ uint64_t rmp3_read_f32(rmp3* pMP3, uint64_t framesToRead, float* pBufferOut)
    if (!pMP3 || !pMP3->pData || pMP3->channels == 0)
       return 0;
 
+   rmp3_set_output_mode(pMP3, 1);
+
    while (framesToRead > 0)
    {
-      /* Drain the currently decoded frame. */
+      /* Drain the currently decoded frame (native float samples). */
       while (pMP3->framesRemaining > 0 && framesToRead > 0)
       {
          if (out)
          {
-            /* Convert s16 -> f32 at the stream's channel count.  If a
+            /* Native float copy at the stream's channel count.  If a
              * malformed stream changes channel count mid-way, adapt the
              * frame to the stream layout (duplicate mono / average
              * stereo) so the interleave stays consistent. */
-            const int16_t *src = pMP3->frames
+            const float *src = pMP3->frames.f32
                   + (size_t)pMP3->framesConsumed * pMP3->frameChannels;
             if (pMP3->frameChannels == pMP3->channels)
             {
                uint32_t c;
                for (c = 0; c < pMP3->channels; c++)
-                  out[c] = src[c] * (1.0f / 32768.0f);
+                  out[c] = src[c];
             }
             else if (pMP3->channels == 2)
             {
-               out[0] = out[1] = src[0] * (1.0f / 32768.0f);
+               out[0] = out[1] = src[0];
             }
             else
             {
-               out[0] = (src[0] * (1.0f / 32768.0f)
-                       + src[1] * (1.0f / 32768.0f)) * 0.5f;
+               out[0] = (src[0] + src[1]) * 0.5f;
+            }
+            out += pMP3->channels;
+         }
+
+         pMP3->framesConsumed  += 1;
+         pMP3->framesRemaining -= 1;
+         framesToRead          -= 1;
+         totalFramesRead       += 1;
+      }
+
+      if (framesToRead == 0)
+         break;
+
+      if (!rmp3_decode_next_frame(pMP3))
+         break;
+   }
+
+   return totalFramesRead;
+}
+
+/* Native int16 read: the synthesis filter's s16 output is copied
+ * straight through - no float detour in either direction. */
+uint64_t rmp3_read_s16(rmp3* pMP3, uint64_t framesToRead, int16_t* pBufferOut)
+{
+   uint64_t totalFramesRead = 0;
+   int16_t *out = pBufferOut;
+
+   if (!pMP3 || !pMP3->pData || pMP3->channels == 0)
+      return 0;
+
+   rmp3_set_output_mode(pMP3, 0);
+
+   while (framesToRead > 0)
+   {
+      while (pMP3->framesRemaining > 0 && framesToRead > 0)
+      {
+         if (out)
+         {
+            const int16_t *src = pMP3->frames.s16
+                  + (size_t)pMP3->framesConsumed * pMP3->frameChannels;
+            if (pMP3->frameChannels == pMP3->channels)
+            {
+               uint32_t c;
+               for (c = 0; c < pMP3->channels; c++)
+                  out[c] = src[c];
+            }
+            else if (pMP3->channels == 2)
+            {
+               out[0] = out[1] = src[0];
+            }
+            else
+            {
+               out[0] = (int16_t)(((int32_t)src[0] + (int32_t)src[1]) >> 1);
             }
             out += pMP3->channels;
          }

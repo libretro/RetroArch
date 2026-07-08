@@ -47,7 +47,12 @@ typedef struct
     uint32_t frameChannels;     /* Channels in the currently decoded frame. Internal. */
     uint32_t framesConsumed;    /* PCM frames of the current block already returned. Internal. */
     uint32_t framesRemaining;   /* PCM frames of the current block still to return. Internal. */
-    int16_t frames[RMP3_MAX_SAMPLES_PER_FRAME];
+    uint32_t f32_mode;          /* 0: synthesis outputs s16; 1: native float. Internal. */
+    union
+    {
+        int16_t s16[RMP3_MAX_SAMPLES_PER_FRAME];
+        float   f32[RMP3_MAX_SAMPLES_PER_FRAME];
+    } frames;                   /* Current decoded frame in the latched format. */
     const uint8_t* pData;       /* Caller's buffer (borrowed, never freed). */
     size_t dataSize;
     size_t readPos;             /* Read cursor into pData. */
@@ -72,6 +77,12 @@ void rmp3_uninit(rmp3* pMP3);
  * Note that framesToRead specifies the number of PCM frames to read, _not_ the number of MP3 frames.
  */
 uint64_t rmp3_read_f32(rmp3* pMP3, uint64_t framesToRead, float* pBufferOut);
+
+/* Reads PCM frames as native signed 16-bit; the decoder's synthesis
+ * quantises directly, with no float round-trip. A given decoder
+ * instance is normally used with one output format; switching formats
+ * re-decodes the currently buffered frame. */
+uint64_t rmp3_read_s16(rmp3* pMP3, uint64_t framesToRead, int16_t* pBufferOut);
 
 /* Seeks to a specific frame.
  *
