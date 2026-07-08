@@ -12560,6 +12560,13 @@ static const setting_desc_t privacy_desc_2[] = {
 };
 
 #if !defined(RARCH_CONSOLE)
+#if !defined(RARCH_CONSOLE)
+static const setting_desc_t midi_devices_desc_0[] = {
+/* GENERATED: rows come from settings_def_midi_devices.h in order. */
+#include "../settings/settings_def_midi_devices.h"
+};
+#endif
+
 static const setting_desc_t midi_desc_0[] = {
 /* GENERATED: rows come from settings_def_midi_volume.h in order. */
 #include "../settings/settings_def_midi_volume.h"
@@ -17026,40 +17033,7 @@ static void settings_build_midi(
             &group_info, &subgroup_info, parent_group);
 
 #if !defined(RARCH_CONSOLE)
-      /* Descriptor holdout: poke tail outside the descriptor grammar. */
-      CONFIG_STRING(
-            list, list_info,
-            settings->arrays.midi_input,
-            sizeof(settings->arrays.midi_input),
-            MENU_ENUM_LABEL_MIDI_INPUT,
-            MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-            DEFAULT_MIDI_INPUT,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_string_action_start_midi_device)
-      SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], setting_string_action_left_midi_input)
-      SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], setting_string_action_right_midi_input)
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], setting_string_action_ok_midi_device)
-
-      CONFIG_STRING(
-            list, list_info,
-            settings->arrays.midi_output,
-            sizeof(settings->arrays.midi_output),
-            MENU_ENUM_LABEL_MIDI_OUTPUT,
-            MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-            DEFAULT_MIDI_OUTPUT,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_string_action_start_midi_device)
-      SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], setting_string_action_left_midi_output)
-      SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], setting_string_action_right_midi_output)
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], setting_string_action_ok_midi_device)
+            ADD_DESC(midi_devices_desc_0);
 
             ADD_DESC(midi_desc_0);
 #endif
@@ -18160,6 +18134,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
    { privacy_desc_2, (uint16_t)ARRAY_SIZE(privacy_desc_2) },
 #if !defined(RARCH_CONSOLE)
+#if !defined(RARCH_CONSOLE)
+   { midi_devices_desc_0, (uint16_t)ARRAY_SIZE(midi_devices_desc_0) },
+#endif
    { midi_desc_0, (uint16_t)ARRAY_SIZE(midi_desc_0) },
 #endif
 #ifdef HAVE_MIST
