@@ -159,6 +159,10 @@ typedef struct menu_file_list_cbs
    /* When the generic sublabel handler is bound from the data map,
     * this carries the description enum to look up. */
    enum msg_hash_enums sublabel_enum;
+   /* When the generic title handler is bound from the data map,
+    * these carry the title enum and formatting variant. */
+   enum msg_hash_enums title_enum;
+   uint8_t title_variant;
    bool checked;
 } menu_file_list_cbs_t;
 
