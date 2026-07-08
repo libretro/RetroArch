@@ -10255,6 +10255,9 @@ typedef struct setting_desc
    uint32_t                    def_offset;     /* with SDESC_FLG_DEF_SETTINGS:
                                                   offsetof of the settings_t
                                                   field holding the default */
+   change_handler_t            action_change;  /* NULL = none; a change
+                                                  handler poked into the
+                                                  actions tuple after build */
 } setting_desc_t;
 
 /* Row builders.  Field order must match setting_desc_t. */
@@ -10269,6 +10272,16 @@ typedef struct setting_desc
      0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
      (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), (uint8_t)(_uitype), 0 }
+
+/* _CH variant: like _EX but supplies the trailing change-handler
+ * slot, for toggles that repaint or reinit on change. */
+#define SDESC_BOOL_ROW_CH(field, label, def, sd_flags, dflags, cmd, ok, _repr, _start, _select, _left, _right, _uitype, chg) \
+   { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
+     (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
+     (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), (uint8_t)(_uitype), 0, \
+     NULL, 0, (chg) }
 
 /* _LV variants take the label and value enums as separate tokens for
  * the few registrations whose pair is mismatched. */
@@ -10581,6 +10594,8 @@ static void settings_list_add_desc(
          SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], d->action_left)
       if (d->action_right)
          SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], d->action_right)
+      if (d->action_change)
+         SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], d->action_change)
       if (d->repr)
          SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], d->repr)
       if (d->offset_by != 0 && d->type != SDESC_DIR)
@@ -11872,6 +11887,13 @@ static const setting_desc_t ovl_desc_0[] = {
 /* GENERATED: rows come from settings_def_overlay_enable.h in order. */
 #include "../settings/settings_def_overlay_enable.h"
 };
+
+#ifdef HAVE_OVERLAY
+static const setting_desc_t ovl_display_desc_0[] = {
+/* GENERATED: rows come from settings_def_overlay_display.h in order. */
+#include "../settings/settings_def_overlay_display.h"
+};
+#endif
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -15131,110 +15153,7 @@ static void settings_build_overlay(
       {
             ADD_DESC(ovl_desc_0);
       }
-      CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.input_overlay_hide_in_menu,
-            MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-            MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-            DEFAULT_OVERLAY_HIDE_IN_MENU,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-            );
-      SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], overlay_enable_toggle_change_handler)
-
-      CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.input_overlay_hide_when_gamepad_connected,
-            MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-            MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-            DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-            );
-      SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], overlay_enable_toggle_change_handler)
-
-      /* Descriptor holdout: poke tail outside the descriptor grammar. */
-      CONFIG_UINT(
-            list, list_info,
-            &settings->uints.input_overlay_show_inputs,
-            MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS,
-            MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
-            DEFAULT_OVERLAY_SHOW_INPUTS,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler
-            );
-      (*list)[list_info->index - 1].ui_type                   = ST_UI_TYPE_UINT_COMBOBOX;
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_uint_action_left_with_refresh)
-      SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_uint_action_right_with_refresh)
-      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_input_overlay_show_inputs)
-      menu_settings_list_current_add_range(list, list_info, 0, OVERLAY_SHOW_INPUT_LAST-1, 1, true, true);
-
-      /* Descriptor holdout: change_handler poke; descriptor slot deferred to the single-source phase. */
-      CONFIG_UINT(
-            list, list_info,
-            &settings->uints.input_overlay_show_inputs_port,
-            MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-            MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-            DEFAULT_OVERLAY_SHOW_INPUTS_PORT,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler
-            );
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_input_overlay_show_inputs_port)
-      menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1, true, true);
-
-      CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.input_overlay_show_mouse_cursor,
-            MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-            MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-            DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-            );
-      SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], overlay_show_mouse_cursor_change_handler)
-
-      CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.input_overlay_auto_rotate,
-            MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,
-            MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
-            DEFAULT_OVERLAY_AUTO_ROTATE,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE
-            );
-      SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], overlay_enable_toggle_change_handler)
+      ADD_DESC(ovl_display_desc_0);
 
             ADD_DESC(ovl_desc_1);
 
@@ -17890,6 +17809,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { osn_desc_5, (uint16_t)ARRAY_SIZE(osn_desc_5) },
 #ifdef HAVE_OVERLAY
    { ovl_desc_0, (uint16_t)ARRAY_SIZE(ovl_desc_0) },
+#ifdef HAVE_OVERLAY
+   { ovl_display_desc_0, (uint16_t)ARRAY_SIZE(ovl_display_desc_0) },
+#endif
 #endif
 #ifdef HAVE_OVERLAY
    { ovl_desc_1, (uint16_t)ARRAY_SIZE(ovl_desc_1) },

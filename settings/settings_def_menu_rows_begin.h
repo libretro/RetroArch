@@ -16,6 +16,8 @@
                   SDESC_ACTION_ROW(T),
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
                   SDESC_BOOL_ROW(f, T, d, sd, df, c),
+#define S_BOOL_CH(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, chg, us, sub) \
+                  SDESC_BOOL_ROW_CH(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, chg),
 #define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
                   SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),
 #define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
