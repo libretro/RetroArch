@@ -10481,7 +10481,7 @@ static int32_t settings_def_microphone_latency(void)
 }
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(HAVE_VULKAN)
 static int32_t settings_def_metal_arg_buffers(void)
 {
    return config_metal_arg_buffers_default() ? 1 : 0;
@@ -11365,7 +11365,7 @@ static const setting_desc_t cheats_desc_0[] = {
 #include "../settings/settings_def_cheats_apply.h"
 };
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(HAVE_VULKAN)
 static const setting_desc_t metal_argbuf_desc[] = {
 /* GENERATED: rows come from settings_def_metal_arg_buffers.h in order. */
 #include "../settings/settings_def_metal_arg_buffers.h"
@@ -14205,7 +14205,7 @@ static void settings_build_video(
 #ifdef HAVE_VULKAN
          if (string_is_equal(video_driver_get_ident(), "vulkan"))
          {
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(HAVE_VULKAN)
             /* Descriptor holdout: runtime default value. */
                   ADD_DESC(metal_argbuf_desc);
 #endif
@@ -17560,7 +17560,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { frame_time_cou_desc_0, (uint16_t)ARRAY_SIZE(frame_time_cou_desc_0) },
    { rewind_desc_0, (uint16_t)ARRAY_SIZE(rewind_desc_0) },
    { rewind_desc_1, (uint16_t)ARRAY_SIZE(rewind_desc_1) },
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(HAVE_VULKAN)
    { metal_argbuf_desc, (uint16_t)ARRAY_SIZE(metal_argbuf_desc) },
 #endif
 #if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
