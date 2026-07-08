@@ -12559,7 +12559,6 @@ static const setting_desc_t privacy_desc_2[] = {
 #include "../settings/settings_def_privacy_location.h"
 };
 
-#if !defined(RARCH_CONSOLE)
 #ifdef HAVE_OVERLAY
 static const setting_desc_t osk_overlay_desc_0[] = {
 /* GENERATED: rows come from settings_def_osk_overlay.h in order. */
@@ -12572,7 +12571,6 @@ static const setting_desc_t midi_devices_desc_0[] = {
 /* GENERATED: rows come from settings_def_midi_devices.h in order. */
 #include "../settings/settings_def_midi_devices.h"
 };
-#endif
 
 static const setting_desc_t midi_desc_0[] = {
 /* GENERATED: rows come from settings_def_midi_volume.h in order. */
@@ -17865,10 +17863,10 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #ifdef ANDROID
    { frame_throttli_desc_3, (uint16_t)ARRAY_SIZE(frame_throttli_desc_3) },
 #endif
-#ifdef HAVE_GFX_WIDGETS
 #ifdef HAVE_OVERLAY
    { osk_overlay_desc_0, (uint16_t)ARRAY_SIZE(osk_overlay_desc_0) },
 #endif
+#ifdef HAVE_GFX_WIDGETS
    { osn_desc_0, (uint16_t)ARRAY_SIZE(osn_desc_0) },
 #endif
 #ifdef HAVE_GFX_WIDGETS
@@ -18135,9 +18133,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
    { privacy_desc_2, (uint16_t)ARRAY_SIZE(privacy_desc_2) },
 #if !defined(RARCH_CONSOLE)
-#if !defined(RARCH_CONSOLE)
    { midi_devices_desc_0, (uint16_t)ARRAY_SIZE(midi_devices_desc_0) },
-#endif
    { midi_desc_0, (uint16_t)ARRAY_SIZE(midi_desc_0) },
 #endif
 #ifdef HAVE_MIST
