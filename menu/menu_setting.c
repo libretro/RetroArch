@@ -14342,9 +14342,9 @@ static void settings_build_video(
          }
 
          if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-                  ADD_DESC(avsync_desc);
+            ADD_DESC(avsync_desc);
 
-                  ADD_DESC(fdelay_desc);
+         ADD_DESC(fdelay_desc);
 
          /* Unlike all other shader-related menu entries
           * (which appear in the shaders quick menu, and
@@ -17639,6 +17639,7 @@ static rarch_setting_t *settings_lazy_get(unsigned k)
 }
 
 
+#if defined(RETROARCH_VALIDATION_DUMPS)
 /* --- Stage A of the layout consolidation -------------------------
  * Every descriptor table, registered once with the guards of its
  * add_desc call site, so a setting is constructible by enum without
@@ -18162,6 +18163,7 @@ static const setting_desc_t *settings_master_find(enum msg_hash_enums e)
    }
    return NULL;
 }
+#endif /* RETROARCH_VALIDATION_DUMPS */
 
 static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_info)
 {
