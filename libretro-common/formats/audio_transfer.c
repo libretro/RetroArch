@@ -70,88 +70,9 @@ struct audio_transfer_mp3
 };
 #endif
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RMP3)
-/* Vorbis and MP3 are float-internal codecs with no integer decode API, so the
- * s16 read decodes float and quantises at the boundary (round-half-away from
- * zero, clamped). This is a single quantisation, not an int16<->float
- * round-trip. */
-static void audio_transfer_f32_to_s16(int16_t *out, const float *in, size_t samples)
-{
-   size_t i;
-   for (i = 0; i < samples; i++)
-   {
-      float s = in[i] * 32768.0f;
-      int   q = (int)(s + ((s >= 0.0f) ? 0.5f : -0.5f));
-      if (q >  32767)
-         q =  32767;
-      if (q < -32768)
-         q = -32768;
-      out[i] = (int16_t)q;
-   }
-}
-#endif
-
-#ifdef HAVE_RVORBIS
-static size_t audio_transfer_vorbis_read_s16(struct audio_transfer_vorbis *v,
-      int16_t *out, size_t frames)
-{
-   float    chunk[512];
-   size_t   done       = 0;
-   int      ch         = v->channels;
-   int      cap_frames = (ch > 0) ? (int)((sizeof(chunk) / sizeof(chunk[0])) / ch) : 0;
-
-   if (cap_frames <= 0)
-      return 0;
-
-   while (done < frames)
-   {
-      int want = (int)(frames - done);
-      int req  = (want < cap_frames) ? want : cap_frames;
-      int got  = rvorbis_get_samples_float_interleaved(v->handle, ch, chunk, req * ch);
-
-      if (got <= 0)
-         break;
-
-      audio_transfer_f32_to_s16(out + (done * (size_t)ch), chunk,
-            (size_t)got * (size_t)ch);
-      done += (size_t)got;
-      if (got < req)
-         break;
-   }
-   return done;
-}
-#endif
-
-#ifdef HAVE_RMP3
-static size_t audio_transfer_mp3_read_s16(struct audio_transfer_mp3 *m,
-      int16_t *out, size_t frames)
-{
-   float    chunk[512];
-   size_t   done       = 0;
-   int      ch         = (int)m->handle.channels;
-   int      cap_frames = (ch > 0) ? (int)((sizeof(chunk) / sizeof(chunk[0])) / ch) : 0;
-
-   if (cap_frames <= 0)
-      return 0;
-
-   while (done < frames)
-   {
-      size_t want = frames - done;
-      size_t req  = (want < (size_t)cap_frames) ? want : (size_t)cap_frames;
-      size_t got  = (size_t)rmp3_read_f32(&m->handle, (uint64_t)req, chunk);
-
-      if (got == 0)
-         break;
-
-      audio_transfer_f32_to_s16(out + (done * (size_t)ch), chunk,
-            got * (size_t)ch);
-      done += got;
-      if (got < req)
-         break;
-   }
-   return done;
-}
-#endif
+/* Vorbis and MP3 expose native s16 reads (rvorbis quantises once during
+ * its interleave copy; rmp3's synthesis filter emits s16 directly), so
+ * the s16 pipeline below never touches float. */
 
 enum audio_type_enum audio_decode_get_type(const char *path)
 {
@@ -404,7 +325,8 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
          if (!v || !v->handle)
             return AUDIO_PROCESS_ERROR;
-         produced = audio_transfer_vorbis_read_s16(v, out, frames);
+         produced = (size_t)rvorbis_get_samples_s16_interleaved(
+               v->handle, v->channels, out, (int)frames * v->channels);
          break;
       }
 #endif
@@ -414,7 +336,7 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
          if (!m || !m->inited)
             return AUDIO_PROCESS_ERROR;
-         produced = audio_transfer_mp3_read_s16(m, out, frames);
+         produced = (size_t)rmp3_read_s16(&m->handle, (uint64_t)frames, out);
          break;
       }
 #endif
