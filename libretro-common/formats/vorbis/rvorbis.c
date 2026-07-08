@@ -150,6 +150,12 @@ enum RVorbisError
 
 #include <retro_inline.h>
 
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 5)
+#define RVQ_WRAPS __attribute__((no_sanitize("signed-integer-overflow")))
+#else
+#define RVQ_WRAPS
+#endif
+
 #define MAX_BLOCKSIZE_LOG  13   /* from specification */
 
 #ifdef RVORBIS_CODEBOOK_FLOATS
@@ -479,7 +485,7 @@ static void crc32_init(void)
    uint32_t s;
    for(i=0; i < 256; i++)
    {
-      for (s=i<<24, j=0; j < 8; ++j)
+      for (s=(uint32_t)i<<24, j=0; j < 8; ++j)
          s = (s << 1) ^ (s >= (1U<<31) ? CRC32_POLY : 0);
       rvorbis_crc_table[i] = s;
    }
@@ -569,7 +575,7 @@ static void add_entry(Codebook *c, uint32_t huff_code, int symbol, int count, in
 static int compute_codewords(Codebook *c, uint8_t *len, int n, uint32_t *values)
 {
    int i,k,m=0;
-   uint32_t available[32];
+   uint32_t available[33];   /* indexed by codeword length 1..32       */
 
    memset(available, 0, sizeof(available));
    /* find the first entry */
@@ -583,7 +589,7 @@ static int compute_codewords(Codebook *c, uint8_t *len, int n, uint32_t *values)
    add_entry(c, 0, k, m++, len[k], values);
    /* add all available leaves */
    for (i=1; i <= len[k]; ++i)
-      available[i] = 1 << (32-i);
+      available[i] = 1U << (32-i);
    /* note that the above code treats the first case specially,
     * but it's really the same as the following code, so they
     * could probably be combined (except the initial code is 0,
@@ -601,15 +607,15 @@ static int compute_codewords(Codebook *c, uint8_t *len, int n, uint32_t *values)
        * trivial to prove, but it seems true and the assert never
        * fires, so! */
       while (z > 0 && !available[z]) --z;
-      if (z == 0) { assert(0); return 0; }
+      if (z == 0) return 0;   /* malformed codebook: no available leaf  */
       res = available[z];
       available[z] = 0;
       add_entry(c, bit_reverse(res), i, m++, len[i], values);
       /* propogate availability up the tree */
       if (z != len[i]) {
          for (y=len[i]; y > z; --y) {
-            assert(available[y] == 0);
-            available[y] = res + (1 << (32-y));
+            if (available[y] != 0) return 0;   /* corrupt: reject      */
+            available[y] = res + (1U << (32-y));
          }
       }
    }
@@ -873,9 +879,9 @@ static uint8_t get8(vorb *z)
 static uint32_t get32(vorb *f)
 {
    uint32_t x = get8(f);
-   x += get8(f) << 8;
-   x += get8(f) << 16;
-   x += get8(f) << 24;
+   x += (uint32_t)get8(f) << 8;
+   x += (uint32_t)get8(f) << 16;
+   x += (uint32_t)get8(f) << 24;
    return x;
 }
 
@@ -1114,7 +1120,7 @@ static uint32_t get_bits(vorb *f, int n)
             f->valid_bits = INVALID_BITS;
             return 0;
          }
-         f->acc += z << f->valid_bits;
+         f->acc += (uint32_t)z << f->valid_bits;
          f->valid_bits += 8;
       }
    }
@@ -1145,7 +1151,7 @@ static INLINE void prep_huffman(vorb *f)
          z = get8_packet_raw(f);
          if (z == EOP)
             return;
-         f->acc += z << f->valid_bits;
+         f->acc += (uint32_t)z << f->valid_bits;
          f->valid_bits += 8;
       } while (f->valid_bits <= 24);
    }
@@ -2227,7 +2233,7 @@ static INLINE int32_t rvq_float_to_q(float x)
  * to Q28 samples and Q27 twiddles.  Each product is one 32x32->64
  * multiply and a round-to-nearest shift.
  * ----------------------------------------------------------------------- */
-static INLINE void iter_54_q(int32_t *z)
+RVQ_WRAPS static INLINE void iter_54_q(int32_t *z)
 {
    int32_t k00,k11,k22,k33;
    int32_t y0,y1,y2,y3;
@@ -2240,14 +2246,10 @@ static INLINE void iter_54_q(int32_t *z)
    z[-0] = y0 + y2;      /* z0 + z4 + z2 + z6 */
    z[-2] = y0 - y2;      /* z0 + z4 - z2 - z6 */
 
-   /* done with y0,y2 */
-
    k33  = z[-3] - z[-7];
 
    z[-4] = k00 + k33;    /* z0 - z4 + z3 - z7 */
    z[-6] = k00 - k33;    /* z0 - z4 - z3 + z7 */
-
-   /* done with k33 */
 
    k11  = z[-1] - z[-5];
    y1   = z[-1] + z[-5];
@@ -2296,7 +2298,7 @@ static INLINE void rvq_neon_pair2(int32_t *e0, int32_t *e2,
 #define RVQ_HAVE_NEON_MDCT 0
 #endif
 
-static void imdct_step3_iter0_loop_q(int n, int32_t *e, int i_off, int k_off, int32_t *A)
+RVQ_WRAPS static void imdct_step3_iter0_loop_q(int n, int32_t *e, int i_off, int k_off, int32_t *A)
 {
 #if RVQ_HAVE_NEON_MDCT
    {
@@ -2359,7 +2361,7 @@ static void imdct_step3_iter0_loop_q(int n, int32_t *e, int i_off, int k_off, in
    }
 }
 
-static void imdct_step3_inner_r_loop_q(int lim, int32_t *e, int d0, int k_off, int32_t *A, int k1)
+RVQ_WRAPS static void imdct_step3_inner_r_loop_q(int lim, int32_t *e, int d0, int k_off, int32_t *A, int k1)
 {
 #if RVQ_HAVE_NEON_MDCT
    {
@@ -2425,7 +2427,7 @@ static void imdct_step3_inner_r_loop_q(int lim, int32_t *e, int d0, int k_off, i
    }
 }
 
-static void imdct_step3_inner_s_loop_q(int n, int32_t *e, int i_off, int k_off, int32_t *A, int a_off, int k0)
+RVQ_WRAPS static void imdct_step3_inner_s_loop_q(int n, int32_t *e, int i_off, int k_off, int32_t *A, int a_off, int k0)
 {
    int i;
    int32_t A0 = A[0];
@@ -2475,7 +2477,7 @@ static void imdct_step3_inner_s_loop_q(int n, int32_t *e, int i_off, int k_off, 
    }
 }
 
-static void imdct_step3_inner_s_loop_ld654_q(int n, int32_t *e, int i_off, int32_t *A, int base_n)
+RVQ_WRAPS static void imdct_step3_inner_s_loop_ld654_q(int n, int32_t *e, int i_off, int32_t *A, int base_n)
 {
    int a_off = base_n >> 3;
    int32_t A2 = A[0+a_off];
@@ -2519,7 +2521,7 @@ static void imdct_step3_inner_s_loop_ld654_q(int n, int32_t *e, int i_off, int32
    }
 }
 
-static void inverse_mdct_q(int32_t *buffer, int n, vorb *f, int blocktype)
+RVQ_WRAPS static void inverse_mdct_q(int32_t *buffer, int n, vorb *f, int blocktype)
 {
    int n2 = n >> 1, n4 = n >> 2, n8 = n >> 3, l;
    int ld;
@@ -4381,6 +4383,8 @@ static int start_decoder(vorb *f)
             int n = get_bits(f, ilog(limit));
             if (current_entry + n > (int) c->entries)
                return error(f, RVORBIS_invalid_setup);
+            if (current_length > 32)
+               return error(f, RVORBIS_invalid_setup);
             memset(lengths + current_entry, current_length, n);
             current_entry += n;
             ++current_length;
@@ -4457,7 +4461,13 @@ static int start_decoder(vorb *f)
       if (!compute_codewords(c, lengths, c->entries, values))
       {
          if (c->sparse)
+         {
             setup_temp_free(f, values, 0);
+            setup_temp_free(f, c->codewords,
+               sizeof(*c->codewords) * c->sorted_entries);
+            setup_temp_free(f, lengths, c->entries);
+            c->codewords = NULL;
+         }
          return error(f, RVORBIS_invalid_setup);
       }
 
@@ -4495,6 +4505,8 @@ static int start_decoder(vorb *f)
             c->lookup_values = lookup1_values(c->entries, c->dimensions);
          else
             c->lookup_values = c->entries * c->dimensions;
+         if (c->lookup_values == 0)   /* corrupt: guards div/mod below   */
+            return error(f, RVORBIS_invalid_setup);
          mults = (uint16_t *) setup_temp_malloc(f, sizeof(mults[0]) * c->lookup_values);
          if (!mults)
             return error(f, RVORBIS_outofmem);
@@ -4525,7 +4537,14 @@ static int start_decoder(vorb *f)
             for (j=0; j < len; ++j) {
                int z = sparse ? c->sorted_values[j] : j, div=1;
                for (k=0; k < c->dimensions; ++k) {
-                  int off = (z / div) % c->lookup_values;
+                  int off;
+                  if (div == 0)   /* overflowed on corrupt dims/values  */
+                  {
+                     setup_temp_free(f, mults,
+                        sizeof(mults[0]) * c->lookup_values);
+                     return error(f, RVORBIS_invalid_setup);
+                  }
+                  off = (z / div) % c->lookup_values;
                   c->multiplicands[j*c->dimensions + k] =
 #ifndef RVORBIS_CODEBOOK_FLOATS
                      mults[off];
@@ -4732,6 +4751,8 @@ skip:;
          max_submaps = m->submaps;
       if (get_bits(f,1)) {
          m->coupling_steps = get_bits(f,8)+1;
+         if (m->coupling_steps > f->channels)
+            return error(f, RVORBIS_invalid_setup);
          for (k=0; k < m->coupling_steps; ++k) {
             m->chan[k].magnitude = get_bits(f, ilog(f->channels-1));
             m->chan[k].angle = get_bits(f, ilog(f->channels-1));
@@ -4844,6 +4865,7 @@ static void vorbis_deinit(rvorbis *p)
          Codebook *c = p->codebooks + i;
          setup_free(p, c->codeword_lengths);
          setup_free(p, c->multiplicands);
+         setup_free(p, c->multiplicands_q);
          setup_free(p, c->codewords);
          setup_free(p, c->sorted_codewords);
          /* c->sorted_values[-1] is the first entry in the array */
@@ -4856,10 +4878,15 @@ static void vorbis_deinit(rvorbis *p)
    for (i=0; i < p->mapping_count; ++i)
       setup_free(p, p->mapping[i].chan);
    setup_free(p, p->mapping);
-   for (i=0; i < p->channels; ++i) {
-      setup_free(p, p->channel_buffers[i]);
-      setup_free(p, p->previous_window[i]);
-      setup_free(p, p->finalY[i]);
+   {
+      int nch = p->channels;
+      if (nch > RVORBIS_MAX_CHANNELS)
+         nch = RVORBIS_MAX_CHANNELS;   /* channels may exceed the array */
+      for (i=0; i < nch; ++i) {         /* bound on a rejected header    */
+         setup_free(p, p->channel_buffers[i]);
+         setup_free(p, p->previous_window[i]);
+         setup_free(p, p->finalY[i]);
+      }
    }
    for (i=0; i < 2; ++i) {
       setup_free(p, p->A[i]);
@@ -5095,8 +5122,9 @@ static int get_seek_page_info(rvorbis *f, ProbedPage *z)
 
    z->page_end = z->page_start + 27 + header[26] + len;
 
-   z->last_decoded_sample = header[6] + (header[7] << 8)
-                          + (header[8] << 16) + (header[9] << 24);
+   z->last_decoded_sample = header[6] + ((uint32_t)header[7] << 8)
+                          + ((uint32_t)header[8] << 16)
+                          + ((uint32_t)header[9] << 24);
 
    set_file_offset(f, z->page_start);
    return 1;
