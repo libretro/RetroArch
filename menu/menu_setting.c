@@ -10381,6 +10381,15 @@ typedef struct setting_desc
      (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), (uint8_t)(_uitype), 0 }
 
+/* _CH variant: UINT with a change handler in the trailing slot. */
+#define SDESC_UINT_ROW_CH(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _uitype, chg) \
+   { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, \
+     (dflags), (uint8_t)(_uitype), 0, \
+     NULL, 0, (chg) }
+
 /* _DF variant: default is resolved by a function at build time
  * (SDESC_FLG_DEF_FUNC), for the settings whose default depends on
  * frontend-provided values. */
@@ -11291,6 +11300,11 @@ static const setting_desc_t configuration_desc_0[] = {
 #include "../settings/settings_def_shader_preset.h"
 };
 
+static const setting_desc_t frontend_log_desc[] = {
+/* GENERATED: rows come from settings/settings_def_frontend_log_level.h in order. */
+#include "../settings/settings_def_frontend_log_level.h"
+};
+
 static const setting_desc_t logging_desc_0[] = {
 /* GENERATED: rows come from settings_def_logging.h in order. */
 #include "../settings/settings_def_logging.h"
@@ -11648,6 +11662,11 @@ static const setting_desc_t menu_sounds_desc_0[] = {
 #include "../settings/settings_def_menu_sounds.h"
 };
 
+static const setting_desc_t audio_ratectl_desc[] = {
+/* GENERATED: rows come from settings/settings_def_audio_rate_control.h in order. */
+#include "../settings/settings_def_audio_rate_control.h"
+};
+
 static const setting_desc_t audio_en_desc[] = {
 /* GENERATED: rows come from settings_def_audio_enable.h in order. */
 #include "../settings/settings_def_audio_enable.h"
@@ -11862,6 +11881,13 @@ static const setting_desc_t recording_desc_3[] = {
 /* GENERATED: rows come from settings_def_recording_video.h in order. */
 #include "../settings/settings_def_recording_video.h"
 };
+
+#ifdef HAVE_RUNAHEAD
+static const setting_desc_t runahead_frames_desc[] = {
+/* GENERATED: rows come from settings/settings_def_run_ahead_frames.h in order. */
+#include "../settings/settings_def_run_ahead_frames.h"
+};
+#endif
 
 static const setting_desc_t frame_throttli_desc_0[] = {
 /* GENERATED: rows come from settings_def_frame_throttle_general.h in order. */
@@ -12340,6 +12366,11 @@ static const setting_desc_t ai_service_desc_1[] = {
 #include "../settings/settings_def_ai_service_options.h"
 };
 #endif
+
+static const setting_desc_t menu_scroll_fast_desc[] = {
+/* GENERATED: rows come from settings/settings_def_menu_scroll_fast.h in order. */
+#include "../settings/settings_def_menu_scroll_fast.h"
+};
 
 static const setting_desc_t ui_desc_0[] = {
 /* GENERATED: rows come from settings_def_ui_focus.h in order. */
@@ -13350,24 +13381,9 @@ static void settings_build_logging(
          SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_bool_action_right_with_refresh)
 
          /* Descriptor holdout: change_handler poke; descriptor slot deferred to the single-source phase. */
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.frontend_log_level,
-               MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL,
-               MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
-               DEFAULT_FRONTEND_LOG_LEVEL,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], frontend_log_level_change_handler)
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
-         SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-         menu_settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
-         SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_libretro_log_level)
+         ADD_DESC(frontend_log_desc);
 
-            ADD_DESC(logging_desc_0);
+ADD_DESC(logging_desc_0);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -14575,23 +14591,9 @@ static void settings_build_audio(
 
             ADD_DESC(audio_fmt_desc);
 
-      CONFIG_FLOAT(
-            list, list_info,
-            &settings->floats.audio_rate_control_delta,
-            MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
-            MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-            DEFAULT_RATE_CONTROL_DELTA,
-            "%.3f",
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      menu_settings_list_current_add_range(list, list_info, 0.0, 0.020, 0.001, true, true);
-      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+      ADD_DESC(audio_ratectl_desc);
 
-            ADD_DESC(audio_skew_desc);
+ADD_DESC(audio_skew_desc);
 
       END_SUB_GROUP(list, list_info, parent_group);
 
@@ -15017,25 +15019,11 @@ static void settings_build_frame_throttling(
       menu_settings_list_current_add_range(list, list_info,
             MENU_RUNAHEAD_MODE_OFF, MENU_RUNAHEAD_MODE_LAST - 1, 1, true, true);
 
-      /* Descriptor holdout: change_handler poke; descriptor slot deferred to the single-source phase. */
-      CONFIG_UINT(
-            list, list_info,
-            &settings->uints.run_ahead_frames,
-            MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,
-            MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
-            1,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      (*list)[list_info->index - 1].offset_by = 1;
-      SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], runahead_change_handler)
-      menu_settings_list_current_add_range(list, list_info, 1, MAX_RUNAHEAD_FRAMES, 1, true, true);
+#ifdef HAVE_RUNAHEAD
+      ADD_DESC(runahead_frames_desc);
+#endif
 
-            ADD_DESC(frame_throttli_desc_2);
+ADD_DESC(frame_throttli_desc_2);
 
       CONFIG_UINT(
             list, list_info,
@@ -15790,22 +15778,9 @@ static void settings_build_user_interface(
 
                      ADD_DESC(ui_desc_12);
       /* Descriptor holdout: poke tail outside the descriptor grammar. */
-      CONFIG_BOOL(
-            list, list_info,
-            &settings->bools.menu_scroll_fast,
-            MENU_ENUM_LABEL_MENU_SCROLL_FAST,
-            MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-            DEFAULT_MENU_SCROLL_FAST,
-            MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
-            MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE);
+      ADD_DESC(menu_scroll_fast_desc);
 
-                     ADD_DESC(ui_desc_13);
+ADD_DESC(ui_desc_13);
       GROUP_END();
    }
 }
@@ -17582,6 +17557,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { mm_desc_15, (uint16_t)ARRAY_SIZE(mm_desc_15) },
    { mm_desc_16, (uint16_t)ARRAY_SIZE(mm_desc_16) },
    { configuration_desc_0, (uint16_t)ARRAY_SIZE(configuration_desc_0) },
+   { frontend_log_desc, (uint16_t)ARRAY_SIZE(frontend_log_desc) },
    { logging_desc_0, (uint16_t)ARRAY_SIZE(logging_desc_0) },
    { sav_desc_0, (uint16_t)ARRAY_SIZE(sav_desc_0) },
    { saving2_desc_0, (uint16_t)ARRAY_SIZE(saving2_desc_0) },
@@ -17689,6 +17665,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { vid_desc_21, (uint16_t)ARRAY_SIZE(vid_desc_21) },
    { misc_desc, (uint16_t)ARRAY_SIZE(misc_desc) },
    { video_filter_desc, (uint16_t)ARRAY_SIZE(video_filter_desc) },
+   { audio_ratectl_desc, (uint16_t)ARRAY_SIZE(audio_ratectl_desc) },
    { audio_en_desc, (uint16_t)ARRAY_SIZE(audio_en_desc) },
    { audio_state_desc, (uint16_t)ARRAY_SIZE(audio_state_desc) },
    { audio_sync_desc, (uint16_t)ARRAY_SIZE(audio_sync_desc) },
@@ -17752,6 +17729,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { recording2_desc_1, (uint16_t)ARRAY_SIZE(recording2_desc_1) },
    { recording_desc_2, (uint16_t)ARRAY_SIZE(recording_desc_2) },
    { recording_desc_3, (uint16_t)ARRAY_SIZE(recording_desc_3) },
+#ifdef HAVE_RUNAHEAD
+   { runahead_frames_desc, (uint16_t)ARRAY_SIZE(runahead_frames_desc) },
+#endif
    { frame_throttli_desc_0, (uint16_t)ARRAY_SIZE(frame_throttli_desc_0) },
    { menu_thr_desc, (uint16_t)ARRAY_SIZE(menu_thr_desc) },
    { frame_throttli_desc_1, (uint16_t)ARRAY_SIZE(frame_throttli_desc_1) },
@@ -17911,6 +17891,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #ifdef HAVE_TRANSLATE
    { ai_service_desc_1, (uint16_t)ARRAY_SIZE(ai_service_desc_1) },
 #endif
+   { menu_scroll_fast_desc, (uint16_t)ARRAY_SIZE(menu_scroll_fast_desc) },
    { ui_desc_0, (uint16_t)ARRAY_SIZE(ui_desc_0) },
    /* ui_desc_1 (3DS display mode) is deliberately absent: its range
     * is computed from the console model at runtime, so the table is

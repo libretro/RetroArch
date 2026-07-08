@@ -84,6 +84,8 @@
                   SDESC_UINT_ROW_AT_EX(offs, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
                   SDESC_UINT_ROW_AT_EX(offs, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),
+#define S_UINT_CH(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, ui, chg, us, sub) \
+                  SDESC_UINT_ROW_CH(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, ui, chg),
 #define S_UINT_DF(f, T, n, resolver, sd, df, c, mn, mx, st, ob, ok, rp, ui, us, sub) \
                   SDESC_UINT_ROW_DF(f, T, resolver, sd, df, c, mn, mx, st, ob, ok, rp, ui),
 #define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
