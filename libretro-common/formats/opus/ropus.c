@@ -5369,7 +5369,7 @@ static int16_t ropus_celt_rsqrt_norm_q(int32_t x)
       (int16_t)(-13490 + ROPUS_MULT16_16_Q15(n, 6713))));
    r2 = (int16_t)ROPUS_MULT16_16_Q15(r, r);
    y = (int16_t)((int16_t)((int16_t)(ROPUS_MULT16_16_Q15(r2, n) + r2)
-      - 16384) << 1);
+      - 16384) * 2);
    return (int16_t)(r + ROPUS_MULT16_16_Q15(r, ROPUS_MULT16_16_Q15(y,
       (int16_t)(ROPUS_MULT16_16_Q15(y, 12288) - 16384))));
 }
@@ -5444,7 +5444,7 @@ static INLINE int32_t ropus_celt_exp2_q(int16_t x)
       return 0x7f000000;
    else if (integer < -15)
       return 0;
-   frac = ropus_celt_exp2_frac_q((int16_t)(x - (integer << 10)));
+   frac = ropus_celt_exp2_frac_q((int16_t)(x - integer * 1024));
    return ropus_vshr32(frac, -integer - 2);
 }
 
@@ -5510,16 +5510,16 @@ static void ropus_unquant_coarse_energy_q(int start, int end,
             qi = -ropus_ec_dec_bit_logp(dec, 1);
          else
             qi = -1;
-         q = (int32_t)qi << ROPUS_DB_SHIFT;
+         q = (int32_t)qi * (1 << ROPUS_DB_SHIFT);
          oldEBands[i + c * ROPUS_NBANDS] = ropus_max16(
             (int16_t)-(9 << ROPUS_DB_SHIFT),
             oldEBands[i + c * ROPUS_NBANDS]);
          tmp = ropus_pshr32(
             ROPUS_MULT16_16(coef, oldEBands[i + c * ROPUS_NBANDS]), 8)
-            + prev[c] + (q << 7);
+            + prev[c] + q * 128;
          tmp = ropus_max32(-((int32_t)28 << (ROPUS_DB_SHIFT + 7)), tmp);
          oldEBands[i + c * ROPUS_NBANDS] = (int16_t)ropus_pshr32(tmp, 7);
-         prev[c] = prev[c] + (q << 7)
+         prev[c] = prev[c] + q * 128
             - ROPUS_MULT16_16(beta, ropus_pshr32(q, 8));
       } while (++c < C);
    }
@@ -8856,7 +8856,7 @@ static void ropus_silk_nlsf_decode(int16_t *pNLSF_Q15, const int8_t *NLSFIndices
       for (i = cb->order - 1; i >= 0; i--)
       {
          pred_Q10 = ROPUS_SILK_SMULBB(out_Q10, (int16_t)pred_Q8[i]) >> 8;
-         out_Q10 = (int)NLSFIndices[i + 1] << 10;
+         out_Q10 = (int)NLSFIndices[i + 1] * 1024;
          if (out_Q10 > 0)
             out_Q10 = (int16_t)(out_Q10 - 102);  /* 0.1 in Q10        */
          else if (out_Q10 < 0)
@@ -8870,7 +8870,7 @@ static void ropus_silk_nlsf_decode(int16_t *pNLSF_Q15, const int8_t *NLSFIndices
    pCB_Wght_Q9 = &cb->CB1_Wght_Q9[NLSFIndices[0] * cb->order];
    for (i = 0; i < cb->order; i++)
    {
-      NLSF_Q15_tmp = ((((int32_t)res_Q10[i] << 14) / pCB_Wght_Q9[i]))
+      NLSF_Q15_tmp = ((((int32_t)res_Q10[i] * 16384) / pCB_Wght_Q9[i]))
          + ((int32_t)(int16_t)pCB_element[i] << 7);
       pNLSF_Q15[i] = (int16_t)ROPUS_SILK_LIMIT(NLSF_Q15_tmp, 0, 32767);
    }
@@ -9178,7 +9178,7 @@ static void ropus_silk_decode_parameters(ropus_silk_state *st,
          Ix = st->indices.LTPIndex[k];
          for (i = 0; i < 5; i++)
             ctrl->LTPCoef_Q14[k * 5 + i] =
-               (int16_t)((int32_t)cbk_ptr_Q7[Ix * 5 + i] << 7);
+               (int16_t)((int32_t)cbk_ptr_Q7[Ix * 5 + i] * 128);
       }
       Ix = st->indices.LTP_scaleIndex;
       ctrl->LTP_scale_Q14 = ropus_LTPScales_table_Q14[Ix];
@@ -9769,7 +9769,7 @@ static void ropus_silk_ms_to_lr(ropus_silk_stereo *state, int16_t *x1,
       pred0_Q13 += delta0_Q13;
       pred1_Q13 += delta1_Q13;
       sum = (int32_t)((uint32_t)(x1[n] + (int32_t)x1[n + 2]
-         + ((int32_t)x1[n + 1] << 1)) << 9);
+         + ((int32_t)((uint32_t)x1[n + 1] << 1))) << 9);
       sum = ROPUS_SILK_SMLAWB((int32_t)((uint32_t)x2[n + 1] << 8),
          sum, pred0_Q13);
       sum = ROPUS_SILK_SMLAWB(sum,
@@ -9781,7 +9781,7 @@ static void ropus_silk_ms_to_lr(ropus_silk_stereo *state, int16_t *x1,
    for (n = 8 * fs_kHz; n < frame_length; n++)
    {
       sum = (int32_t)((uint32_t)(x1[n] + (int32_t)x1[n + 2]
-         + ((int32_t)x1[n + 1] << 1)) << 9);
+         + ((int32_t)((uint32_t)x1[n + 1] << 1))) << 9);
       sum = ROPUS_SILK_SMLAWB((int32_t)((uint32_t)x2[n + 1] << 8),
          sum, pred0_Q13);
       sum = ROPUS_SILK_SMLAWB(sum,
