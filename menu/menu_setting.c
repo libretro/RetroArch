@@ -11365,7 +11365,6 @@ static const setting_desc_t cheats_desc_0[] = {
 #include "../settings/settings_def_cheats_apply.h"
 };
 
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
 #ifdef __APPLE__
 static const setting_desc_t metal_argbuf_desc[] = {
 /* GENERATED: rows come from settings_def_metal_arg_buffers.h in order. */
@@ -11373,6 +11372,7 @@ static const setting_desc_t metal_argbuf_desc[] = {
 };
 #endif
 
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
 static const setting_desc_t vid_desc_0[] = {
 /* GENERATED: rows come from settings_def_video_suspend_screensaver.h in order. */
 #include "../settings/settings_def_video_suspend_screensaver.h"
@@ -17560,10 +17560,10 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { frame_time_cou_desc_0, (uint16_t)ARRAY_SIZE(frame_time_cou_desc_0) },
    { rewind_desc_0, (uint16_t)ARRAY_SIZE(rewind_desc_0) },
    { rewind_desc_1, (uint16_t)ARRAY_SIZE(rewind_desc_1) },
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
 #ifdef __APPLE__
    { metal_argbuf_desc, (uint16_t)ARRAY_SIZE(metal_argbuf_desc) },
 #endif
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
    { vid_desc_0, (uint16_t)ARRAY_SIZE(vid_desc_0) },
 #endif
    { vid_desc_1, (uint16_t)ARRAY_SIZE(vid_desc_1) },
