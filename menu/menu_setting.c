@@ -10220,6 +10220,9 @@ enum setting_desc_class
  * that the imperative blocks assign the *left* handler to action_ok
  * as well; that quirk is reproduced faithfully. */
 #define SDESC_FLG_REFRESH      (1 << 3)
+#define SDESC_FLG_DEF_FUNC     (1 << 5) /* default is the return of
+                                           def_resolver(), called at
+                                           list-build time */
 #define SDESC_FLG_DEF_SETTINGS (1 << 4) /* default string is a settings_t
                                            field at def_offset, resolved at
                                            list-build time */
@@ -10258,6 +10261,8 @@ typedef struct setting_desc
    change_handler_t            action_change;  /* NULL = none; a change
                                                   handler poked into the
                                                   actions tuple after build */
+   int32_t                   (*def_resolver)(void); /* SDESC_FLG_DEF_FUNC:
+                                                  build-time default value */
 } setting_desc_t;
 
 /* Row builders.  Field order must match setting_desc_t. */
@@ -10282,6 +10287,15 @@ typedef struct setting_desc
      (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
      (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), (uint8_t)(_uitype), 0, \
      NULL, 0, (chg) }
+
+/* _DF variant: bool default resolved by a function at build time. */
+#define SDESC_BOOL_ROW_DF(field, label, resolver, sd_flags, dflags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
+   { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
+     0, 0.0f, (_start), (_select), (_left), (_right), \
+     (uint16_t)(cmd), 0, SDESC_BOOL, ((dflags) | SDESC_FLG_DEF_FUNC), (uint8_t)(_uitype), 0, \
+     NULL, 0, NULL, (resolver) }
 
 /* _LV variants take the label and value enums as separate tokens for
  * the few registrations whose pair is mismatched. */
@@ -10367,6 +10381,17 @@ typedef struct setting_desc
      (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), (uint8_t)(_uitype), 0 }
 
+/* _DF variant: default is resolved by a function at build time
+ * (SDESC_FLG_DEF_FUNC), for the settings whose default depends on
+ * frontend-provided values. */
+#define SDESC_UINT_ROW_DF(field, label, resolver, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _uitype) \
+   { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
+     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
+     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     0, 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, \
+     ((dflags) | SDESC_FLG_DEF_FUNC), (uint8_t)(_uitype), 0, \
+     NULL, 0, NULL, (resolver) }
+
 #define SDESC_INT_ROW_AT(offs, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
    { (uint32_t)(offs), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
@@ -10430,6 +10455,30 @@ typedef struct setting_desc
    settings_list_add_desc(list, list_info, settings, \
          tbl, ARRAY_SIZE(tbl), &group_info, &subgroup_info, parent_group)
 
+/* Build-time default resolvers for the latency settings, whose
+ * default comes from a frontend-provided value with a compile-time
+ * fallback. These let the rows carry the default as data. */
+static int32_t settings_def_audio_latency(void)
+{
+   return g_defaults.settings_out_latency
+      ? g_defaults.settings_out_latency : DEFAULT_OUT_LATENCY;
+}
+
+#ifdef HAVE_MICROPHONE
+static int32_t settings_def_microphone_latency(void)
+{
+   return g_defaults.settings_in_latency
+      ? g_defaults.settings_in_latency : DEFAULT_IN_LATENCY;
+}
+#endif
+
+#ifdef __APPLE__
+static int32_t settings_def_metal_arg_buffers(void)
+{
+   return config_metal_arg_buffers_default() ? 1 : 0;
+}
+#endif
+
 static void settings_list_add_desc(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -10446,6 +10495,9 @@ static void settings_list_add_desc(
    {
       const setting_desc_t *d = &desc[i];
       void *target            = (void*)((uint8_t*)settings + d->value_offset);
+      int32_t eff_def_i       = (d->desc_flags & SDESC_FLG_DEF_FUNC)
+                                 && d->def_resolver
+                              ? d->def_resolver() : d->def_i;
 
       switch (d->type)
       {
@@ -10456,7 +10508,7 @@ static void settings_list_add_desc(
                   (bool*)target,
                   d->name_enum,
                   d->short_enum,
-                  (d->def_i != 0),
+                  (eff_def_i != 0),
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   group_info,
@@ -10493,7 +10545,7 @@ static void settings_list_add_desc(
                   (unsigned int*)target,
                   d->name_enum,
                   d->short_enum,
-                  (unsigned int)d->def_i,
+                  (unsigned int)eff_def_i,
                   group_info,
                   subgroup_info,
                   parent_group,
@@ -11300,6 +11352,13 @@ static const setting_desc_t cheats_desc_0[] = {
 };
 
 #if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#ifdef __APPLE__
+static const setting_desc_t metal_argbuf_desc[] = {
+/* GENERATED: rows come from settings_def_metal_arg_buffers.h in order. */
+#include "../settings/settings_def_metal_arg_buffers.h"
+};
+#endif
+
 static const setting_desc_t vid_desc_0[] = {
 /* GENERATED: rows come from settings_def_video_suspend_screensaver.h in order. */
 #include "../settings/settings_def_video_suspend_screensaver.h"
@@ -11602,6 +11661,11 @@ static const setting_desc_t audio_state_desc[] = {
 static const setting_desc_t audio_sync_desc[] = {
 /* GENERATED: rows come from settings_def_audio_sync.h in order. */
 #include "../settings/settings_def_audio_sync.h"
+};
+
+static const setting_desc_t audio_latency_desc[] = {
+/* GENERATED: rows come from settings_def_audio_latency.h in order. */
+#include "../settings/settings_def_audio_latency.h"
 };
 
 static const setting_desc_t audio_rq_desc[] = {
@@ -14113,20 +14177,7 @@ static void settings_build_video(
          {
 #ifdef __APPLE__
             /* Descriptor holdout: runtime default value. */
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_use_metal_arg_buffers,
-                  MENU_ENUM_LABEL_VIDEO_USE_METAL_ARG_BUFFERS,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
-                  config_metal_arg_buffers_default(),
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
+                  ADD_DESC(metal_argbuf_desc);
 #endif
 
             ADD_DESC(vid_desc_3);
@@ -14518,39 +14569,7 @@ static void settings_build_audio(
       /* The latency pair stays imperative: defaults come from
        * g_defaults at registration time. */
       /* Descriptor holdout: runtime default value. */
-      CONFIG_UINT(
-            list, list_info,
-            &settings->uints.audio_latency,
-            MENU_ENUM_LABEL_AUDIO_LATENCY,
-            MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-            g_defaults.settings_out_latency ?
-            g_defaults.settings_out_latency : DEFAULT_OUT_LATENCY,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      menu_settings_list_current_add_range(list, list_info, 0, 512, 1.0, true, true);
-      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-#ifdef HAVE_MICROPHONE
-      CONFIG_UINT(
-            list, list_info,
-            &settings->uints.microphone_latency,
-            MENU_ENUM_LABEL_MICROPHONE_LATENCY,
-            MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
-            g_defaults.settings_in_latency ?
-            g_defaults.settings_in_latency : DEFAULT_IN_LATENCY,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
-      menu_settings_list_current_add_range(list, list_info, 0, 512, 1.0, true, true);
-      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-#endif
+      ADD_DESC(audio_latency_desc);
 
             ADD_DESC(audio_rq_desc);
 
@@ -17581,6 +17600,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { rewind_desc_0, (uint16_t)ARRAY_SIZE(rewind_desc_0) },
    { rewind_desc_1, (uint16_t)ARRAY_SIZE(rewind_desc_1) },
 #if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#ifdef __APPLE__
+   { metal_argbuf_desc, (uint16_t)ARRAY_SIZE(metal_argbuf_desc) },
+#endif
    { vid_desc_0, (uint16_t)ARRAY_SIZE(vid_desc_0) },
 #endif
    { vid_desc_1, (uint16_t)ARRAY_SIZE(vid_desc_1) },
@@ -17670,6 +17692,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { audio_en_desc, (uint16_t)ARRAY_SIZE(audio_en_desc) },
    { audio_state_desc, (uint16_t)ARRAY_SIZE(audio_state_desc) },
    { audio_sync_desc, (uint16_t)ARRAY_SIZE(audio_sync_desc) },
+   { audio_latency_desc, (uint16_t)ARRAY_SIZE(audio_latency_desc) },
    { audio_rq_desc, (uint16_t)ARRAY_SIZE(audio_rq_desc) },
    { audio_fmt_desc, (uint16_t)ARRAY_SIZE(audio_fmt_desc) },
    { audio_skew_desc, (uint16_t)ARRAY_SIZE(audio_skew_desc) },
