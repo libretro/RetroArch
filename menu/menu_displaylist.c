@@ -10382,116 +10382,93 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
          {
+            size_t i;
             bool video_vsync          = settings->bools.video_vsync;
             bool video_hard_sync      = settings->bools.video_hard_sync;
             bool video_wait_swap      = settings->bools.video_waitable_swapchains;
             unsigned bfi              = settings->uints.video_black_frame_insertion;
             unsigned shader_subframes = settings->uints.video_shader_subframes;
+            bool sub_shaders          = video_driver_test_all_flags(GFX_CTX_FLAGS_SUBFRAME_SHADERS);
+            bool adaptive_vsync       = video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+            bool hard_sync            = video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC);
+            bool frame_latency        = video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY);
+            bool swapchain_images     = video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
 
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_VSYNC,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-
-            if (video_vsync)
-            {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-
-               if (video_driver_test_all_flags(GFX_CTX_FLAGS_SUBFRAME_SHADERS))
-               {
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES,
-                           PARSE_ONLY_UINT, false) == 0)
-                     count++;
-
-                  if (shader_subframes > 1)
-                  {
-                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                              MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES,
-                              PARSE_ONLY_BOOL, false) == 0)
-                        count++;
-                  }
-               }
-
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-
-               if (bfi > 0)
-               {
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES,
-                           PARSE_ONLY_UINT, false) == 0)
-                     count++;
-               }
-
-               if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-               {
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
-                           PARSE_ONLY_BOOL, false) == 0)
-                     count++;
-               }
-
-               if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
-               {
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
-                           PARSE_ONLY_BOOL, false) == 0)
-                     count++;
-                  if (video_hard_sync)
-                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                              MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-                              PARSE_ONLY_UINT, false) == 0)
-                        count++;
-               }
-
-               if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY))
-               {
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,
-                           PARSE_ONLY_BOOL, false) == 0)
-                     count++;
-                  if (video_wait_swap)
-                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                              MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
-                              PARSE_ONLY_INT, false) == 0)
-                        count++;
-               }
-            }
-
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
-            {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-            }
-
+            /* checked is the AND of every runtime condition that gated
+             * the entry in the previous inline form; order preserved. */
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_VIDEO_VSYNC,                PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,        PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES,     PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES,       PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES,      PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,       PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_HARD_SYNC,            PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,     PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,  PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,    PARSE_ONLY_INT,  false},
+               {MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES, PARSE_ONLY_UINT, false},
 #ifdef HAVE_D3DKMT
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
+               {MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC,        PARSE_ONLY_BOOL, true},
 #endif
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
+               {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,     PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,          PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,         PARSE_ONLY_BOOL, true},
+            };
 
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
+                  case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
+                     build_list[i].checked = video_vsync;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES:
+                     build_list[i].checked = video_vsync && sub_shaders;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES:
+                     build_list[i].checked = video_vsync && sub_shaders && (shader_subframes > 1);
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES:
+                     build_list[i].checked = video_vsync && (bfi > 0);
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC:
+                     build_list[i].checked = video_vsync && adaptive_vsync;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_HARD_SYNC:
+                     build_list[i].checked = video_vsync && hard_sync;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
+                     build_list[i].checked = video_vsync && hard_sync && video_hard_sync;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS:
+                     build_list[i].checked = video_vsync && frame_latency;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY:
+                     build_list[i].checked = video_vsync && frame_latency && video_wait_swap;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
+                     build_list[i].checked = swapchain_images;
+                     break;
+                  default:
+                     break;
+               }
+            }
 
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               /* These rows are hard-gated by live driver state exactly
+                * as the previous inline form was; include_everything
+                * does not relax them, preserving the fingerprint. */
+               if (!build_list[i].checked)
+                  continue;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx, build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
          }
          break;
       case DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST:
