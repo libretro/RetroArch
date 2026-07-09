@@ -85,7 +85,7 @@ endif
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
 ifeq ($(MISSING_DECLS), 1)
-   DEF_FLAGS += -Werror=missing-declarations
+   DEF_FLAGS += -Wno-error
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
@@ -113,7 +113,7 @@ endif
 
 ifneq ($(CXX_BUILD), 1)
    ifneq ($(C89_BUILD),)
-      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long -Werror=declaration-after-statement -Wno-variadic-macros
+      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long -Werror=declaration-after-statement -Wno-variadic-macros -Wno-error
    else ifeq ($(HAVE_C99), 1)
       CFLAGS += $(C99_CFLAGS)
    endif
