@@ -229,6 +229,17 @@ static int dir_list_read(const char *dir,
 
       fill_pathname_join_special(file_path, dir, name, sizeof(file_path));
 
+#if defined(WEBOS)
+      /* Skip virtual / dangerous FS nodes under jail root — readdir+stat
+       * on /proc or /sys can stall the main thread for a long time. */
+      if (   (string_is_equal(dir, "/") || string_is_equal(dir, "//"))
+          && (   string_is_equal(name, "proc")
+              || string_is_equal(name, "sys")
+              || string_is_equal(name, "dev")
+              || string_is_equal(name, "run")))
+         continue;
+#endif
+
       if (retro_dirent_is_dir(entry, NULL))
       {
          /* Exclude this frequent hidden dir on platforms which can not handle hidden attribute */
