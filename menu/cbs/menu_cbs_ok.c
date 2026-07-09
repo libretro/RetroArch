@@ -2041,8 +2041,15 @@ static int action_ok_dl_from_map(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t i;
+   /* The ok callback signature carries no enum_idx; the previous
+    * lookup keyed on 'type', but for these entries 'type' is the
+    * menu_settings_type (MENU_SETTING_ACTION), never the label enum,
+    * so every row missed and fell through to the archive/file browser.
+    * Key on the entry's canonical label instead, which is what the
+    * bind path matched on. */
    for (i = 0; i < ARRAY_SIZE(ok_dl_map); i++)
-      if (ok_dl_map[i].enum_idx == (uint32_t)type)
+      if (string_is_equal(label,
+            msg_hash_to_str((enum msg_hash_enums)ok_dl_map[i].enum_idx)))
          return generic_action_ok_displaylist_push(path, NULL,
                label, type, idx, entry_idx,
                (unsigned)ok_dl_map[i].dl_id);
