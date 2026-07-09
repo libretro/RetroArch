@@ -1990,6 +1990,15 @@
 
 #define DEFAULT_FILTER_BY_CURRENT_CORE false
 
+/* Filter file browser to core-supported extensions only.
+ * On webOS TVs this often hides content when no core is loaded or the
+ * wrong core is selected — default off so Load Content lists files. */
+#if defined(WEBOS)
+#define DEFAULT_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE false
+#else
+#define DEFAULT_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE true
+#endif
+
 #endif
 
 #ifdef HAVE_SMBCLIENT

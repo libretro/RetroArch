@@ -1939,6 +1939,31 @@ static void frontend_unix_get_env(int *argc,
    getcwd(base_path, sizeof(base_path));
 #elif defined(DINGUX)
    dingux_get_base_path(base_path, sizeof(base_path));
+#elif defined(WEBOS)
+   /* Jailer: HOME/XDG often do not point at the package. Prefer
+    * <app>/.config/retroarch so cores, system, and content defaults match
+    * where the app actually stores data. */
+   {
+      char app_dir[PATH_MAX_LENGTH];
+
+      app_dir[0] = '\0';
+      fill_pathname_application_dir(app_dir, sizeof(app_dir));
+      if (!string_is_empty(app_dir))
+         fill_pathname_join(base_path, app_dir, ".config/retroarch",
+               sizeof(base_path));
+      else
+         strlcpy(base_path, "/media/developer/temp", sizeof(base_path));
+
+      /* Start file browser on shared storage when available (user content). */
+      if (path_is_directory("/media/internal"))
+         strlcpy(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT],
+               "/media/internal",
+               sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]));
+      else
+         strlcpy(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT],
+               base_path,
+               sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]));
+   }
 #else
    const char *xdg          = getenv("XDG_CONFIG_HOME");
    const char *home         = getenv("HOME");

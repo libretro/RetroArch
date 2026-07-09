@@ -6,7 +6,7 @@
 
 S_BOOL(menu_navigation_browser_filter_supported_extensions_enable, NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
       "menu_navigation_browser_filter_supported_extensions_enable",
-      true, SD_FLAG_NONE, 0, 0,
+      DEFAULT_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE, SD_FLAG_NONE, 0, 0,
       "Filter Unknown Extensions",
       "Filter files being shown in File Browser by supported extensions.")
 /* config key "filter_by_current_core" differs from the label string; the
