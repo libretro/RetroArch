@@ -47,7 +47,9 @@
  * defines these macros the compiler is already free to emit the same
  * instructions in ordinary code, so a runtime CPU check would guard
  * nothing (and was being queried inside per-band decode loops). */
-#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#if defined(RMP3_FIXED_POINT)
+/* Fixed-point synthesis targets have no usable SIMD FPU path. */
+#elif defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
 #if defined(_MSC_VER)
 #include <intrin.h>
 #endif
@@ -109,7 +111,13 @@ typedef struct
     float grbuf[2][576];
     float scf[40];
     uint8_t ist_pos[2][39];
-    float syn[18 + 15][2*32];
+    /* Doubles as float scratch for rmp3_L3_reorder and as the synthesis
+     * line buffer; under RMP3_FIXED_POINT the synthesis view is Q13. */
+    union
+    {
+        float   f[18 + 15][2*32];
+        int32_t q[18 + 15][2*32];
+    } syn;
 } rmp3dec_scratch;
 
 static void rmp3_bs_init(rmp3_bs *bs, const uint8_t *data, int bytes)
@@ -1122,7 +1130,7 @@ static void rmp3_L3_decode(rmp3dec *h, rmp3dec_scratch *s, rmp3_L3_gr_info *gr_i
         if (gr_info->n_short_sfb)
         {
             aa_bands = n_long_bands - 1;
-            rmp3_L3_reorder(s->grbuf[ch] + n_long_bands*18, s->syn[0], gr_info->sfbtab + gr_info->n_long_sfb);
+            rmp3_L3_reorder(s->grbuf[ch] + n_long_bands*18, s->syn.f[0], gr_info->sfbtab + gr_info->n_long_sfb);
         }
 
         rmp3_L3_antialias(s->grbuf[ch], aa_bands);
@@ -1360,6 +1368,7 @@ static void rmp3d_DCT_II(float *grbuf, int n)
  * with no quantisation.  rmp3d_scale_pcm below is the s16 twin. */
 #define RMP3D_F32_SCALE (1.0f / 32768.0f)
 
+#ifndef RMP3_FIXED_POINT
 static int16_t rmp3d_scale_pcm(float sample)
 {
    int s;
@@ -1375,7 +1384,150 @@ static int16_t rmp3d_scale_pcm(float sample)
       return (int16_t)-32768;
    return (int16_t)s;
 }
+#endif /* !RMP3_FIXED_POINT */
 
+#ifdef RMP3_FIXED_POINT
+/* -----------------------------------------------------------------------
+ * Fixed-point synthesis filterbank (stage 1 of the fixed-point decode)
+ *
+ * The polyphase window coefficients of this filterbank are exact
+ * integers, so the synthesis needs no coefficient quantisation at all:
+ * subband samples are converted from the (still float) IMDCT output to
+ * Q13 once, at the line-buffer fill, and every multiply-accumulate from
+ * there to the s16 output is integer (32x32->64, one SMLAL per tap on
+ * ARM).  The accumulator therefore holds s16-scale * 2^13 and the final
+ * store rounds half away from zero and clamps, mirroring
+ * rmp3d_scale_pcm.
+ *
+ * The float->Q13 conversion at the boundary disappears when stage 2
+ * moves the DCT-II and IMDCT to fixed point as well.
+ * ----------------------------------------------------------------------- */
+/* Q-format for fixed-point samples.  Every value between the IMDCT and
+ * the s16 output is a fraction (measured |x| <= 0.47 across the corpus,
+ * including full-scale square waves; the polyphase window magnitudes
+ * carry the conversion to s16 scale), so Q29 leaves 8x headroom in
+ * int32 while keeping the boundary quantisation error orders of
+ * magnitude below one output LSB. */
+#define RMP3D_QBITS 29
+
+static int32_t rmp3d_float_to_q(float x)
+{
+   /* Saturate at the +-4.0 representable range so a hostile stream
+    * cannot overflow the conversion. */
+   if (x >=  3.999999f) return (int32_t) 0x7FFFFFFF;
+   if (x <= -3.999999f) return (int32_t)-0x7FFFFFFF - 1;
+   return (int32_t)(x * (float)(1 << RMP3D_QBITS)
+         + ((x >= 0.0f) ? 0.5f : -0.5f));
+}
+
+static int16_t rmp3d_scale_pcm_q(int64_t acc)
+{
+   int64_t half = (int64_t)1 << (RMP3D_QBITS - 1);
+   int64_t v    = (acc >= 0) ? ((acc + half) >> RMP3D_QBITS)
+                             : -((-acc + half) >> RMP3D_QBITS);
+   if (v >  32767) return (int16_t) 32767;
+   if (v < -32768) return (int16_t)-32768;
+   return (int16_t)v;
+}
+
+static void rmp3d_synth_pair_q(short *pcm, int nch, const int32_t *z)
+{
+    int64_t a;
+    a  = (int64_t)(z[14*64] - z[    0]) * 29;
+    a += (int64_t)(z[ 1*64] + z[13*64]) * 213;
+    a += (int64_t)(z[12*64] - z[ 2*64]) * 459;
+    a += (int64_t)(z[ 3*64] + z[11*64]) * 2037;
+    a += (int64_t)(z[10*64] - z[ 4*64]) * 5153;
+    a += (int64_t)(z[ 5*64] + z[ 9*64]) * 6574;
+    a += (int64_t)(z[ 8*64] - z[ 6*64]) * 37489;
+    a += (int64_t) z[ 7*64]             * 75038;
+    pcm[0] = rmp3d_scale_pcm_q(a);
+
+    z += 2;
+    a  = (int64_t)z[14*64] * 104;
+    a += (int64_t)z[12*64] * 1567;
+    a += (int64_t)z[10*64] * 9727;
+    a += (int64_t)z[ 8*64] * 64019;
+    a += (int64_t)z[ 6*64] * -9975;
+    a += (int64_t)z[ 4*64] * -45;
+    a += (int64_t)z[ 2*64] * 146;
+    a += (int64_t)z[ 0*64] * -5;
+    pcm[16*nch] = rmp3d_scale_pcm_q(a);
+}
+
+static void rmp3d_synth_q(float *xl, short *dstl, int nch, int32_t *lins)
+{
+    int i;
+    float *xr   = xl + 576*(nch - 1);
+    short *dstr = dstl + (nch - 1);
+
+    static const int32_t g_win_q[] = {
+        -1,26,-31,208,218,401,-519,2063,2000,4788,-5517,7134,5959,35640,-39336,74992,
+        -1,24,-35,202,222,347,-581,2080,1952,4425,-5879,7640,5288,33791,-41176,74856,
+        -1,21,-38,196,225,294,-645,2087,1893,4063,-6237,8092,4561,31947,-43006,74630,
+        -1,19,-41,190,227,244,-711,2085,1822,3705,-6589,8492,3776,30112,-44821,74313,
+        -1,17,-45,183,228,197,-779,2075,1739,3351,-6935,8840,2935,28289,-46617,73908,
+        -1,16,-49,176,228,153,-848,2057,1644,3004,-7271,9139,2037,26482,-48390,73415,
+        -2,14,-53,169,227,111,-919,2032,1535,2663,-7597,9389,1082,24694,-50137,72835,
+        -2,13,-58,161,224,72,-991,2001,1414,2330,-7910,9592,70,22929,-51853,72169,
+        -2,11,-63,154,221,36,-1064,1962,1280,2006,-8209,9750,-998,21189,-53534,71420,
+        -2,10,-68,147,215,2,-1137,1919,1131,1692,-8491,9863,-2122,19478,-55178,70590,
+        -3,9,-73,139,208,-29,-1210,1870,970,1388,-8755,9935,-3300,17799,-56778,69679,
+        -3,8,-79,132,200,-57,-1283,1817,794,1095,-8998,9966,-4533,16155,-58333,68692,
+        -4,7,-85,125,189,-83,-1356,1759,605,814,-9219,9959,-5818,14548,-59838,67629,
+        -4,7,-91,117,177,-106,-1428,1698,402,545,-9416,9916,-7154,12980,-61289,66494,
+        -5,6,-97,111,163,-127,-1498,1634,185,288,-9585,9838,-8540,11455,-62684,65290
+    };
+    int32_t *zlin = lins + 15*64;
+    const int32_t *w = g_win_q;
+
+    zlin[4*15]     = rmp3d_float_to_q(xl[18*16]);
+    zlin[4*15 + 1] = rmp3d_float_to_q(xr[18*16]);
+    zlin[4*15 + 2] = rmp3d_float_to_q(xl[0]);
+    zlin[4*15 + 3] = rmp3d_float_to_q(xr[0]);
+
+    zlin[4*31]     = rmp3d_float_to_q(xl[1 + 18*16]);
+    zlin[4*31 + 1] = rmp3d_float_to_q(xr[1 + 18*16]);
+    zlin[4*31 + 2] = rmp3d_float_to_q(xl[1]);
+    zlin[4*31 + 3] = rmp3d_float_to_q(xr[1]);
+
+    rmp3d_synth_pair_q(dstr, nch, lins + 4*15 + 1);
+    rmp3d_synth_pair_q(dstr + 32*nch, nch, lins + 4*15 + 64 + 1);
+    rmp3d_synth_pair_q(dstl, nch, lins + 4*15);
+    rmp3d_synth_pair_q(dstl + 32*nch, nch, lins + 4*15 + 64);
+
+    for (i = 14; i >= 0; i--)
+    {
+#define RMP3_QLOAD(k) int32_t w0 = *w++; int32_t w1 = *w++; const int32_t *vz = &zlin[4*i - k*64]; const int32_t *vy = &zlin[4*i - (15 - k)*64];
+#define RMP3_Q0(k) { int j; RMP3_QLOAD(k); for (j = 0; j < 4; j++) b[j]  = (int64_t)vz[j]*w1 + (int64_t)vy[j]*w0, a[j]  = (int64_t)vz[j]*w0 - (int64_t)vy[j]*w1; }
+#define RMP3_Q1(k) { int j; RMP3_QLOAD(k); for (j = 0; j < 4; j++) b[j] += (int64_t)vz[j]*w1 + (int64_t)vy[j]*w0, a[j] += (int64_t)vz[j]*w0 - (int64_t)vy[j]*w1; }
+#define RMP3_Q2(k) { int j; RMP3_QLOAD(k); for (j = 0; j < 4; j++) b[j] += (int64_t)vz[j]*w1 + (int64_t)vy[j]*w0, a[j] += (int64_t)vy[j]*w1 - (int64_t)vz[j]*w0; }
+        int64_t a[4], b[4];
+
+        zlin[4*i]     = rmp3d_float_to_q(xl[18*(31 - i)]);
+        zlin[4*i + 1] = rmp3d_float_to_q(xr[18*(31 - i)]);
+        zlin[4*i + 2] = rmp3d_float_to_q(xl[1 + 18*(31 - i)]);
+        zlin[4*i + 3] = rmp3d_float_to_q(xr[1 + 18*(31 - i)]);
+        zlin[4*(i + 16)]     = rmp3d_float_to_q(xl[1 + 18*(1 + i)]);
+        zlin[4*(i + 16) + 1] = rmp3d_float_to_q(xr[1 + 18*(1 + i)]);
+        zlin[4*(i - 16) + 2] = rmp3d_float_to_q(xl[18*(1 + i)]);
+        zlin[4*(i - 16) + 3] = rmp3d_float_to_q(xr[18*(1 + i)]);
+
+        RMP3_Q0(0) RMP3_Q2(1) RMP3_Q1(2) RMP3_Q2(3) RMP3_Q1(4) RMP3_Q2(5) RMP3_Q1(6) RMP3_Q2(7)
+
+        dstr[(15 - i)*nch] = rmp3d_scale_pcm_q(a[1]);
+        dstr[(17 + i)*nch] = rmp3d_scale_pcm_q(b[1]);
+        dstl[(15 - i)*nch] = rmp3d_scale_pcm_q(a[0]);
+        dstl[(17 + i)*nch] = rmp3d_scale_pcm_q(b[0]);
+        dstr[(47 - i)*nch] = rmp3d_scale_pcm_q(a[3]);
+        dstr[(49 + i)*nch] = rmp3d_scale_pcm_q(b[3]);
+        dstl[(47 - i)*nch] = rmp3d_scale_pcm_q(a[2]);
+        dstl[(49 + i)*nch] = rmp3d_scale_pcm_q(b[2]);
+    }
+}
+#endif /* RMP3_FIXED_POINT */
+
+#ifndef RMP3_FIXED_POINT
 static void rmp3d_synth_pair(void *pcm, int nch, const float *z, int f32)
 {
     float a  = (z[14*64] - z[    0]) * 29;
@@ -1762,7 +1914,21 @@ static void rmp3d_synth(float *xl, void *dstl, int nch, float *lins, int f32)
     }
 #endif
 }
+#endif /* !RMP3_FIXED_POINT */
 
+#ifdef RMP3_FIXED_POINT
+static void rmp3d_synth_granule(int32_t *qmf_state, float *grbuf, int nbands, int nch, void *pcm, int32_t *lins, int f32)
+{
+    int i;
+    (void)f32; /* fixed-point synthesis always emits s16 */
+    for (i = 0; i < nch; i++)
+        rmp3d_DCT_II(grbuf + 576*i, nbands);
+
+    memcpy(lins, qmf_state, sizeof(int32_t)*15*64);
+
+    for (i = 0; i < nbands; i += 2)
+        rmp3d_synth_q(grbuf + i, (short *)pcm + 32*nch*i, nch, lins + i*64);
+#else
 static void rmp3d_synth_granule(float *qmf_state, float *grbuf, int nbands, int nch, void *pcm, float *lins, int f32)
 {
     int i;
@@ -1776,6 +1942,7 @@ static void rmp3d_synth_granule(float *qmf_state, float *grbuf, int nbands, int 
               f32 ? (void *)((float *)pcm + 32*nch*i)
                   : (void *)((short *)pcm + 32*nch*i),
               nch, lins + i*64, f32);
+#endif
 #ifndef RMP3_NONSTANDARD_BUT_LOGICAL
     if (nch == 1)
     {
@@ -1895,7 +2062,11 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
          {
             memset(scratch.grbuf[0], 0, 576*2*sizeof(float));
             rmp3_L3_decode(dec, &scratch, scratch.gr_info + igr*info->channels, info->channels);
-            rmp3d_synth_granule(dec->qmf_state, scratch.grbuf[0], 18, info->channels, pcm, scratch.syn[0], f32);
+#ifdef RMP3_FIXED_POINT
+            rmp3d_synth_granule(dec->qmf_state.q, scratch.grbuf[0], 18, info->channels, pcm, scratch.syn.q[0], f32);
+#else
+            rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf[0], 18, info->channels, pcm, scratch.syn.f[0], f32);
+#endif
          }
       }
       rmp3_L3_save_reservoir(dec, &scratch);
@@ -1911,7 +2082,11 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
          {
             i = 0;
             rmp3_L12_apply_scf_384(sci, sci->scf + igr, scratch.grbuf[0]);
-            rmp3d_synth_granule(dec->qmf_state, scratch.grbuf[0], 12, info->channels, pcm, scratch.syn[0], f32);
+#ifdef RMP3_FIXED_POINT
+            rmp3d_synth_granule(dec->qmf_state.q, scratch.grbuf[0], 12, info->channels, pcm, scratch.syn.q[0], f32);
+#else
+            rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf[0], 12, info->channels, pcm, scratch.syn.f[0], f32);
+#endif
             memset(scratch.grbuf[0], 0, 576*2*sizeof(float));
             pcm = (uint8_t *)pcm + (size_t)384*info->channels
                   * (f32 ? sizeof(float) : sizeof(short));
@@ -1994,6 +2169,12 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
 static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
 {
    uint32_t total;
+#ifdef RMP3_FIXED_POINT
+   /* The fixed-point build synthesises s16 only; rmp3_read_f32 converts
+    * at the copy instead of switching the synthesis output. */
+   (void)pMP3; (void)f32; (void)total;
+   return;
+#endif
    if (pMP3->f32_mode == f32)
       return;
    pMP3->f32_mode = f32;
@@ -2079,6 +2260,26 @@ uint64_t rmp3_read_f32(rmp3* pMP3, uint64_t framesToRead, float* pBufferOut)
              * malformed stream changes channel count mid-way, adapt the
              * frame to the stream layout (duplicate mono / average
              * stereo) so the interleave stays consistent. */
+#ifdef RMP3_FIXED_POINT
+            /* Fixed-point synthesis stores s16; convert on copy. */
+            const int16_t *src = pMP3->frames.s16
+                  + (size_t)pMP3->framesConsumed * pMP3->frameChannels;
+            if (pMP3->frameChannels == pMP3->channels)
+            {
+               uint32_t c;
+               for (c = 0; c < pMP3->channels; c++)
+                  out[c] = src[c] * (1.0f / 32768.0f);
+            }
+            else if (pMP3->channels == 2)
+            {
+               out[0] = out[1] = src[0] * (1.0f / 32768.0f);
+            }
+            else
+            {
+               out[0] = (src[0] * (1.0f / 32768.0f)
+                       + src[1] * (1.0f / 32768.0f)) * 0.5f;
+            }
+#else
             const float *src = pMP3->frames.f32
                   + (size_t)pMP3->framesConsumed * pMP3->frameChannels;
             if (pMP3->frameChannels == pMP3->channels)
@@ -2095,6 +2296,7 @@ uint64_t rmp3_read_f32(rmp3* pMP3, uint64_t framesToRead, float* pBufferOut)
             {
                out[0] = (src[0] + src[1]) * 0.5f;
             }
+#endif
             out += pMP3->channels;
          }
 

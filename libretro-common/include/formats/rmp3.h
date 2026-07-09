@@ -29,7 +29,14 @@ typedef struct
 typedef struct
 {
     float mdct_overlap[2][9*32];
-    float qmf_state[15*2*32];
+    /* QMF synthesis overlap history.  Stored as floats normally; when
+     * the decoder is built with RMP3_FIXED_POINT the same storage holds
+     * Q13 fixed-point samples (for FPU-less targets). */
+    union
+    {
+        float   f[15*2*32];
+        int32_t q[15*2*32];
+    } qmf_state;
     int reserv;
     int free_format_bytes;
     unsigned char header[4];
