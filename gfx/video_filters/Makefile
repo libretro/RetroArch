@@ -123,6 +123,7 @@ objects += blargg_ntsc_snes.$(DYLIB) \
 			  scanline2x.$(DYLIB) \
 			  grid2x.$(DYLIB) \
 			  grid3x.$(DYLIB) \
+			  grid4x.$(DYLIB) \
 			  gameboy3x.$(DYLIB) \
 			  gameboy4x.$(DYLIB) \
 			  dot_matrix_3x.$(DYLIB) \
