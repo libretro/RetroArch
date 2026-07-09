@@ -1451,8 +1451,10 @@ static rarch_setting_t setting_group_setting(
    result.max                       = 0.0;
 
    result.flags                     = 0;
-   result.free_flags                = 0;
-
+   /* Note: free_flags is already zero-initialised by 'result = {0}'
+    * above; do not reset it here, or the SD_FREE_FLAG_MAIN_MENU_GROUP
+    * bit set for top-level groups gets clobbered (breaks the main-menu
+    * / tab titles, left/right handlers). */
 
    result.bind_type                 = 0;
    result.browser_selection_type    = ST_NONE;
