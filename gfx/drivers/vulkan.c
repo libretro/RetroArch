@@ -7670,6 +7670,14 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
       *texture = vulkan_create_texture(vk, NULL,
             image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
             image->pixels, NULL, VULKAN_TEXTURE_STATIC);
+      /* vulkan_create_texture always builds the full mip chain for
+       * static textures and returns VK_TEX_FLAG_MIPMAP set; sampler
+       * selection is expected to gate its use.  Mask the inherited
+       * sampler flags off first so the requested filter_type is
+       * actually honored -- otherwise TEXTURE_FILTER_LINEAR still
+       * samples through the mipmap sampler. */
+      texture->flags &= ~(VK_TEX_FLAG_DEFAULT_SMOOTH
+                        | VK_TEX_FLAG_MIPMAP);
       if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type ==
             TEXTURE_FILTER_LINEAR)
          texture->flags |= VK_TEX_FLAG_DEFAULT_SMOOTH;
