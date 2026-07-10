@@ -285,6 +285,14 @@ bool gfx_display_reset_textures_list(
       unsigned *width,
       unsigned *height);
 
+/* Returns the texture filter type used when uploading menu/UI
+ * images (icons, thumbnails, wallpapers).  Mip-mapped filtering
+ * keeps images smooth when drawn below their native size at the
+ * cost of extra video memory; plain linear filtering is cheaper
+ * but aliases under heavy minification.  Controlled by the
+ * 'menu_texture_mipmapping' setting. */
+enum texture_filter_type gfx_display_texture_filter(void);
+
 bool gfx_display_reset_icon_texture(
       const char *texture_path,
       uintptr_t *item, enum texture_filter_type filter_type,

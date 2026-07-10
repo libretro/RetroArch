@@ -420,6 +420,10 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
          img.pixels = swap_scratch;
       }
 
+      /* Animated thumbnails re-upload every frame; always use
+       * plain linear filtering here to avoid per-frame mip-map
+       * generation regardless of the menu_texture_mipmapping
+       * setting. */
       if (video_driver_texture_load(&img,
             TEXTURE_FILTER_LINEAR, &new_texture) && new_texture)
       {
@@ -498,7 +502,7 @@ static void gfx_thumbnail_handle_upload(
 
    /* Upload texture to GPU */
    if (!video_driver_texture_load(
-            img, TEXTURE_FILTER_LINEAR,
+            img, gfx_display_texture_filter(),
             &thumbnail_tag->thumbnail->texture))
       goto end;
 

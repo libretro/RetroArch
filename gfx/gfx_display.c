@@ -1199,6 +1199,14 @@ bool gfx_display_reset_icon_texture(
 #define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
 #endif
 
+enum texture_filter_type gfx_display_texture_filter(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (settings && settings->bools.menu_texture_mipmapping)
+      return TEXTURE_FILTER_MIPMAP_LINEAR;
+   return TEXTURE_FILTER_LINEAR;
+}
+
 bool gfx_display_load_icon(
       const char *fullpath,
       bool supports_rgba,
@@ -1216,7 +1224,7 @@ bool gfx_display_load_icon(
    (void)generation_ptr;
    return gfx_display_reset_icon_texture(
          fullpath, target_texture,
-         TEXTURE_FILTER_LINEAR, NULL, NULL);
+         gfx_display_texture_filter(), NULL, NULL);
 #else
    return task_push_icon_load(
          fullpath, supports_rgba,

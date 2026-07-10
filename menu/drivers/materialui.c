@@ -2601,7 +2601,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
             mui->icons_path, materialui_texture_path(i),
             sizeof(texpath));
       gfx_display_reset_icon_texture(texpath,
-         &mui->textures.list[i], TEXTURE_FILTER_LINEAR,
+         &mui->textures.list[i], gfx_display_texture_filter(),
          NULL, NULL);
    }
 }
@@ -9690,7 +9690,7 @@ static bool materialui_load_image(void *userdata,
    {
       materialui_context_bg_destroy(mui);
       video_driver_texture_load(data,
-            TEXTURE_FILTER_LINEAR, &mui->textures.bg);
+            gfx_display_texture_filter(), &mui->textures.bg);
       gfx_display_deinit_white_texture();
       gfx_display_init_white_texture();
    }

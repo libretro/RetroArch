@@ -859,6 +859,7 @@ typedef struct settings
       bool menu_navigation_browser_filter_supported_extensions_enable;
       bool menu_show_advanced_settings;
       bool menu_linear_filter;
+      bool menu_texture_mipmapping;
       bool menu_horizontal_animation;
       bool menu_scroll_fast;
       bool menu_show_online_updater;

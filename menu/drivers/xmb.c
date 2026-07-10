@@ -1567,7 +1567,7 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
             xmb_context_bg_destroy(xmb);
 
             if (!gfx_display_reset_icon_texture(path,
-                  &xmb->textures.bg, TEXTURE_FILTER_LINEAR,
+                  &xmb->textures.bg, gfx_display_texture_filter(),
                   NULL, NULL))
                task_push_image_load(path,
                      (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
@@ -7211,7 +7211,7 @@ static void xmb_context_reset_textures(
       fill_pathname_join_special(texpath,
             iconpath, texture_path, sizeof(texpath));
       gfx_display_reset_icon_texture(texpath,
-         &xmb->textures.list[i], TEXTURE_FILTER_LINEAR,
+         &xmb->textures.list[i], gfx_display_texture_filter(),
          NULL, NULL);
    }
 
@@ -10076,7 +10076,7 @@ static bool xmb_load_image(void *userdata, void *data,
       case MENU_IMAGE_WALLPAPER:
          xmb_context_bg_destroy(xmb);
          video_driver_texture_load(data,
-               TEXTURE_FILTER_LINEAR,
+               gfx_display_texture_filter(),
                &xmb->textures.bg);
          gfx_display_init_white_texture();
          break;

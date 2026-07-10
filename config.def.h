@@ -1621,6 +1621,11 @@
 #else
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f
 #endif
+/* Specifies whether menu images (icons, thumbnails,
+ * wallpapers) are uploaded with mip-mapped filtering.
+ * Keeps images smooth when drawn below their native size,
+ * at the cost of slightly higher video memory usage. */
+#define DEFAULT_MENU_TEXTURE_MIPMAPPING true
 /* Specifies whether display widgets should be scaled
  * automatically using the default menu scale factor */
 #define DEFAULT_MENU_WIDGET_SCALE_AUTO true

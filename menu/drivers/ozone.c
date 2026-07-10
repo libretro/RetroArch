@@ -2988,7 +2988,7 @@ static void ozone_reset_theme_textures(ozone_handle_t *ozone)
                theme_path, OZONE_THEME_TEXTURES_FILES[i],
                sizeof(texpath));
          gfx_display_reset_icon_texture(texpath,
-            &theme->textures[i], TEXTURE_FILTER_LINEAR,
+            &theme->textures[i], gfx_display_texture_filter(),
             NULL, NULL);
       }
    }
@@ -5227,7 +5227,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* Load sidebar playlist icons at once */
          gfx_display_reset_icon_texture(
                texturepath, &node->icon,
-               TEXTURE_FILTER_LINEAR, NULL, NULL);
+               gfx_display_texture_filter(), NULL, NULL);
 
          strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          fill_pathname_join_special(
@@ -10144,7 +10144,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
                ozone->png_path, OZONE_TEXTURES_FILES[i],
                sizeof(texpath));
          gfx_display_reset_icon_texture(texpath,
-               &ozone->textures[i], TEXTURE_FILTER_LINEAR,
+               &ozone->textures[i], gfx_display_texture_filter(),
                NULL, NULL);
       }
 
@@ -10168,7 +10168,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
                break;
          }
          gfx_display_reset_icon_texture(texpath,
-               &ozone->tab_textures[i], TEXTURE_FILTER_LINEAR,
+               &ozone->tab_textures[i], gfx_display_texture_filter(),
                NULL, NULL);
       }
 
@@ -10183,7 +10183,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
                ozone->icons_path, ozone_entries_icon_texture_path(i),
                sizeof(texpath));
          gfx_display_reset_icon_texture(texpath,
-               &ozone->icons_textures[i], TEXTURE_FILTER_LINEAR,
+               &ozone->icons_textures[i], gfx_display_texture_filter(),
                NULL, NULL);
       }
 

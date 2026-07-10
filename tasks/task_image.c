@@ -29,6 +29,7 @@
 
 #include "../configuration.h"
 #include "../gfx/video_driver.h"
+#include "../gfx/gfx_display.h"
 
 enum image_status_enum
 {
@@ -592,7 +593,7 @@ static void cb_task_icon_load(retro_task_t *task,
    if (!img || img->width < 1 || img->height < 1 || !img->pixels)
       goto end;
 
-   video_driver_texture_load(img, TEXTURE_FILTER_LINEAR,
+   video_driver_texture_load(img, gfx_display_texture_filter(),
          tag->target);
 
 end:
