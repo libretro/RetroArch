@@ -4,11 +4,6 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
-S_BOOL(menu_texture_mipmapping, MENU_TEXTURE_MIPMAPPING,
-      "menu_texture_mipmapping",
-      DEFAULT_MENU_TEXTURE_MIPMAPPING, SD_FLAG_CMD_APPLY_AUTO, 0, CMD_EVENT_REINIT,
-      "Mip-Mapping",
-      "Generate mip-maps for menu images. Keeps icons, thumbnails and wallpapers smooth when drawn below their native size, at the cost of slightly higher video memory usage.")
 S_BOOL(menu_linear_filter, MENU_LINEAR_FILTER,
       "menu_linear_filter",
       true, SD_FLAG_NONE, 0, 0,

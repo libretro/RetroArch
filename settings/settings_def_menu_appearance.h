@@ -7,6 +7,15 @@
 /* The configuration row lives under defined(HAVE_MENU); other passes are
  * unaffected. */
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
+S_BOOL(menu_texture_mipmapping, MENU_TEXTURE_MIPMAPPING,
+      "menu_texture_mipmapping",
+      DEFAULT_MENU_TEXTURE_MIPMAPPING, SD_FLAG_CMD_APPLY_AUTO, 0, CMD_EVENT_REINIT,
+      "Mip-Mapping",
+      "Generate mip-maps for menu images. Keeps icons, thumbnails and wallpapers smooth when drawn below their native size, at the cost of slightly higher video memory usage.")
+#endif
+/* The configuration row lives under defined(HAVE_MENU); other passes are
+ * unaffected. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
 S_BOOL(menu_pause_libretro, PAUSE_LIBRETRO,
       "menu_pause_libretro",
       true, SD_FLAG_CMD_APPLY_AUTO, 0, CMD_EVENT_MENU_PAUSE_LIBRETRO,
