@@ -65,8 +65,8 @@ jobs:
           # fix in gfx/common/vulkan_common.c::vulkan_create_swapchain.
           # Pre-fix the two vkGetSwapchainImagesKHR calls (count
           # query + image fill) had no clamp between them, so a driver
-          # returning more than VULKAN_MAX_SWAPCHAIN_IMAGES (8) images
-          # on the second call wrote past context.swapchain_images[8]
+          # returning more than VULKAN_MAX_SWAPCHAIN_IMAGES (16) images
+          # on the second call wrote past context.swapchain_images[16]
           # and every loop bounded by num_swapchain_images walked past
           # its compile-time-sized companion array (~12 such loops
           # across init/deinit/textures/buffers/descriptor pools/
