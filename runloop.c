@@ -6544,16 +6544,22 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_DYNAMIC
          if (a && *a)
          {
-            content_ctx_info_t content_info = {0};
-            if (task_push_load_new_core(a,
-                        NULL,
-                        &content_info,
-                        CORE_TYPE_PLAIN,
-                        NULL, NULL))
-            {
-               menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                               |  MENU_ST_FLAG_PREVENT_POPULATE;
-            }
+            /* Reload the core library only. The active session at
+             * this point is the dummy core, so the current core
+             * type must remain CORE_TYPE_DUMMY. Loading through
+             * task_push_load_new_core() latched CORE_TYPE_PLAIN
+             * (and RUNLOOP_FLAG_HAS_SET_CORE) here, which made the
+             * frontend believe real content was running: after
+             * 'Close Content' on a contentless (SUPPORT_NO_GAME)
+             * core the menu could be toggled out into the dummy
+             * session, CORE_RUNNING became set, and the Main Menu
+             * then offered only the Quick Menu entry while
+             * Load/Start/Unload Core became unreachable until a
+             * new game was loaded or RetroArch was restarted. */
+            path_set(RARCH_PATH_CORE, a);
+            command_event(CMD_EVENT_LOAD_CORE, NULL);
+            menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                            |  MENU_ST_FLAG_PREVENT_POPULATE;
          }
 #endif
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
