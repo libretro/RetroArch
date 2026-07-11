@@ -47,9 +47,7 @@
  * defines these macros the compiler is already free to emit the same
  * instructions in ordinary code, so a runtime CPU check would guard
  * nothing (and was being queried inside per-band decode loops). */
-#if defined(RMP3_FIXED_POINT)
-/* Fixed-point synthesis targets have no usable SIMD FPU path. */
-#elif defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
 #if defined(_MSC_VER)
 #include <intrin.h>
 #endif
@@ -59,6 +57,22 @@
 #include <arm_neon.h>
 #define RMP3_HAVE_NEON 1
 #endif
+
+#ifndef RMP3_HAVE_SSE
+#define RMP3_HAVE_SSE 0
+#endif
+#ifndef RMP3_HAVE_NEON
+#define RMP3_HAVE_NEON 0
+#endif
+/* The s16 pipeline's internals are chosen per target: where a vector
+ * FPU exists (SSE2/NEON), s16 decodes through the SIMD float
+ * transforms with the direct s16 pack in the synthesis store - one
+ * quantisation, no staging; on scalar and FPU-less targets it runs
+ * the Q28 integer transforms instead, which avoid the ruinous
+ * soft-float cost.  Both routes are the same pipeline to the caller:
+ * native s16 out of rmp3_read_s16, and float never re-enters the
+ * path after the store. */
+#define RMP3D_S16_VIA_INT (!(RMP3_HAVE_SSE || RMP3_HAVE_NEON))
 
 typedef struct
 {
@@ -109,9 +123,9 @@ typedef struct
     uint8_t maindata[RMP3_MAX_BITRESERVOIR_BYTES + RMP3_MAX_L3_FRAME_PAYLOAD_BYTES];
     rmp3_L3_gr_info gr_info[4];
     /* Subband samples.  Float through dequant/stereo/antialias; the
-     * RMP3_FIXED_POINT build converts them to Q28 in place after the
-     * antialias stage and runs the IMDCT, DCT-II and synthesis on the
-     * integer view. */
+     * s16 pipeline converts them to Q28 in place after the antialias
+     * stage and runs the IMDCT, DCT-II and synthesis on the integer
+     * view. */
     union
     {
         float   f[2][576];
@@ -120,7 +134,7 @@ typedef struct
     float scf[40];
     uint8_t ist_pos[2][39];
     /* Doubles as float scratch for rmp3_L3_reorder and as the synthesis
-     * line buffer; under RMP3_FIXED_POINT the synthesis view is Q13. */
+     * line buffer; the s16 pipeline uses the Q28 view as its synthesis line buffer. */
     union
     {
         float   f[18 + 15][2*32];
@@ -909,7 +923,6 @@ static void rmp3_L3_antialias(float *grbuf, int nbands)
     }
 }
 
-#ifndef RMP3_FIXED_POINT
 static void rmp3_L3_dct3_9(float *y)
 {
     float s0, s1, s2, s3, s4, s5, s6, s7, s8, t0, t2, t4;
@@ -1072,9 +1085,7 @@ static void rmp3_L3_change_sign(float *grbuf)
         for (i = 1; i < 18; i += 2)
             grbuf[i] = -grbuf[i];
 }
-#endif /* !RMP3_FIXED_POINT */
 
-#ifdef RMP3_FIXED_POINT
 /* -----------------------------------------------------------------------
  * Fixed-point IMDCT and DCT-II (stage 2 of the fixed-point decode)
  *
@@ -1107,6 +1118,51 @@ static int32_t rmp3d_float_to_q(float x)
    if (x <= -7.999999f) return (int32_t)-0x7FFFFFFF - 1;
    return (int32_t)(x * (float)(1 << RMP3D_QBITS)
          + ((x >= 0.0f) ? 0.5f : -0.5f));
+}
+
+/* Convert a run of samples to Q28.  The SIMD forms are branchless:
+ * scale, clamp to the representable range and convert with the
+ * vector rounding conversion.  cvtps2dq/vcvtnq round half to even
+ * where the scalar helper rounds half away from zero; the affected
+ * values differ by one Q28 ULP, orders of magnitude below an output
+ * LSB (the s16 pipeline's accuracy oracle is unaffected). */
+static void rmp3d_float_to_q_n(int32_t *dst, const float *src, int n)
+{
+   int i = 0;
+#if RMP3_HAVE_SSE
+   {
+      __m128 vscale = _mm_set1_ps((float)(1 << RMP3D_QBITS));
+      __m128 vmax   = _mm_set1_ps( 7.999999f);
+      __m128 vmin   = _mm_set1_ps(-7.999999f);
+      for (; i + 4 <= n; i += 4)
+      {
+         __m128 v = _mm_loadu_ps(src + i);
+         v = _mm_min_ps(_mm_max_ps(v, vmin), vmax);
+         _mm_storeu_si128((__m128i *)(dst + i),
+               _mm_cvtps_epi32(_mm_mul_ps(v, vscale)));
+      }
+   }
+#elif RMP3_HAVE_NEON
+   {
+      float32x4_t vscale = vmovq_n_f32((float)(1 << RMP3D_QBITS));
+      float32x4_t vmax   = vmovq_n_f32( 7.999999f);
+      float32x4_t vmin   = vmovq_n_f32(-7.999999f);
+      for (; i + 4 <= n; i += 4)
+      {
+         float32x4_t v = vld1q_f32(src + i);
+         float32x4_t s;
+         v = vminq_f32(vmaxq_f32(v, vmin), vmax);
+         s = vmulq_f32(v, vscale);
+         /* round to nearest: add +-0.5 by sign, then truncate */
+         s = vaddq_f32(s, vreinterpretq_f32_u32(vorrq_u32(
+               vandq_u32(vreinterpretq_u32_f32(s), vmovq_n_u32(0x80000000u)),
+               vreinterpretq_u32_f32(vmovq_n_f32(0.5f)))));
+         vst1q_s32(dst + i, vcvtq_s32_f32(s));
+      }
+   }
+#endif
+   for (; i < n; i++)
+      dst[i] = rmp3d_float_to_q(src[i]);
 }
 
 static int16_t rmp3d_scale_pcm_q(int64_t acc)
@@ -1279,9 +1335,7 @@ static void rmp3_L3_imdct_gr_q(int32_t *grbuf, int32_t *overlap, unsigned block_
     else
         rmp3_L3_imdct36_q(grbuf, overlap, g_mdct_window_q[block_type == RMP3_STOP_BLOCK_TYPE], 32 - n_long_bands);
 }
-#endif /* RMP3_FIXED_POINT */
 
-#ifndef RMP3_FIXED_POINT
 static void rmp3_L3_imdct_gr(float *grbuf, float *overlap, unsigned block_type, unsigned n_long_bands)
 {
     static const float g_mdct_window[2][18] = {
@@ -1299,7 +1353,6 @@ static void rmp3_L3_imdct_gr(float *grbuf, float *overlap, unsigned block_type, 
     else
         rmp3_L3_imdct36(grbuf, overlap, g_mdct_window[block_type == RMP3_STOP_BLOCK_TYPE], 32 - n_long_bands);
 }
-#endif /* !RMP3_FIXED_POINT */
 
 static void rmp3_L3_save_reservoir(rmp3dec *h, rmp3dec_scratch *s)
 {
@@ -1325,7 +1378,7 @@ static int rmp3_L3_restore_reservoir(rmp3dec *h, rmp3_bs *bs, rmp3dec_scratch *s
     return h->reserv >= main_data_begin;
 }
 
-static void rmp3_L3_decode(rmp3dec *h, rmp3dec_scratch *s, rmp3_L3_gr_info *gr_info, int nch)
+static void rmp3_L3_decode(rmp3dec *h, rmp3dec_scratch *s, rmp3_L3_gr_info *gr_info, int nch, int f32)
 {
     int ch;
 
@@ -1353,24 +1406,23 @@ static void rmp3_L3_decode(rmp3dec *h, rmp3dec_scratch *s, rmp3_L3_gr_info *gr_i
         }
 
         rmp3_L3_antialias(s->grbuf.f[ch], aa_bands);
-#ifdef RMP3_FIXED_POINT
-        /* Convert the granule to Q28 in place; everything downstream
-         * (IMDCT, DCT-II, synthesis) is integer. */
+        if (RMP3D_S16_VIA_INT && !f32)
         {
-            int n;
-            for (n = 0; n < 576; n++)
-                s->grbuf.q[ch][n] = rmp3d_float_to_q(s->grbuf.f[ch][n]);
+            /* s16 pipeline: convert the granule to Q28 in place;
+             * everything downstream (IMDCT, DCT-II, synthesis) is
+             * integer. */
+            rmp3d_float_to_q_n(s->grbuf.q[ch], s->grbuf.f[ch], 576);
+            rmp3_L3_imdct_gr_q(s->grbuf.q[ch], h->mdct_overlap.q[ch], gr_info->block_type, n_long_bands);
+            rmp3_L3_change_sign_q(s->grbuf.q[ch]);
         }
-        rmp3_L3_imdct_gr_q(s->grbuf.q[ch], h->mdct_overlap.q[ch], gr_info->block_type, n_long_bands);
-        rmp3_L3_change_sign_q(s->grbuf.q[ch]);
-#else
-        rmp3_L3_imdct_gr(s->grbuf.f[ch], h->mdct_overlap.f[ch], gr_info->block_type, n_long_bands);
-        rmp3_L3_change_sign(s->grbuf.f[ch]);
-#endif
+        else
+        {
+            rmp3_L3_imdct_gr(s->grbuf.f[ch], h->mdct_overlap.f[ch], gr_info->block_type, n_long_bands);
+            rmp3_L3_change_sign(s->grbuf.f[ch]);
+        }
     }
 }
 
-#ifdef RMP3_FIXED_POINT
 static void rmp3d_DCT_II_q(int32_t *grbuf, int n)
 {
     static const int32_t g_sec_q[24] = {
@@ -1438,9 +1490,7 @@ static void rmp3d_DCT_II_q(int32_t *grbuf, int n)
         y[3*18] = t[3][7];
     }
 }
-#endif /* RMP3_FIXED_POINT */
 
-#ifndef RMP3_FIXED_POINT
 static void rmp3d_DCT_II(float *grbuf, int n)
 {
     static const float g_sec[24] = {
@@ -1664,14 +1714,12 @@ static void rmp3d_DCT_II(float *grbuf, int n)
     }
 #endif
 }
-#endif /* !RMP3_FIXED_POINT */
 
 /* Native float output: the synthesis produces samples in s16 scale
  * (+-32768), so the float sample is a straight rescale into [-1, 1)
  * with no quantisation.  rmp3d_scale_pcm below is the s16 twin. */
 #define RMP3D_F32_SCALE (1.0f / 32768.0f)
 
-#ifndef RMP3_FIXED_POINT
 static int16_t rmp3d_scale_pcm(float sample)
 {
    int s;
@@ -1687,9 +1735,7 @@ static int16_t rmp3d_scale_pcm(float sample)
       return (int16_t)-32768;
    return (int16_t)s;
 }
-#endif /* !RMP3_FIXED_POINT */
 
-#ifdef RMP3_FIXED_POINT
 /* -----------------------------------------------------------------------
  * Fixed-point synthesis filterbank (stage 1 of the fixed-point decode)
  *
@@ -1801,9 +1847,7 @@ static void rmp3d_synth_q(const int32_t *xl, short *dstl, int nch, int32_t *lins
         dstl[(49 + i)*nch] = rmp3d_scale_pcm_q(b[2]);
     }
 }
-#endif /* RMP3_FIXED_POINT */
 
-#ifndef RMP3_FIXED_POINT
 static void rmp3d_synth_pair(void *pcm, int nch, const float *z, int f32)
 {
     float a  = (z[14*64] - z[    0]) * 29;
@@ -2190,21 +2234,30 @@ static void rmp3d_synth(float *xl, void *dstl, int nch, float *lins, int f32)
     }
 #endif
 }
-#endif /* !RMP3_FIXED_POINT */
 
-#ifdef RMP3_FIXED_POINT
-static void rmp3d_synth_granule(int32_t *qmf_state, int32_t *grbuf, int nbands, int nch, void *pcm, int32_t *lins, int f32)
+static void rmp3d_synth_granule_q(int32_t *qmf_state, int32_t *grbuf, int nbands, int nch, short *pcm, int32_t *lins)
 {
     int i;
-    (void)f32; /* fixed-point synthesis always emits s16 */
     for (i = 0; i < nch; i++)
         rmp3d_DCT_II_q(grbuf + 576*i, nbands);
 
     memcpy(lins, qmf_state, sizeof(int32_t)*15*64);
 
     for (i = 0; i < nbands; i += 2)
-        rmp3d_synth_q(grbuf + i, (short *)pcm + 32*nch*i, nch, lins + i*64);
-#else
+        rmp3d_synth_q(grbuf + i, pcm + 32*nch*i, nch, lins + i*64);
+#ifndef RMP3_NONSTANDARD_BUT_LOGICAL
+    if (nch == 1)
+    {
+        for (i = 0; i < 15*64; i += 2)
+            qmf_state[i] = lins[nbands*64 + i];
+    }
+    else
+#endif
+    {
+        memcpy(qmf_state, lins + nbands*64, sizeof(int32_t)*15*64);
+    }
+}
+
 static void rmp3d_synth_granule(float *qmf_state, float *grbuf, int nbands, int nch, void *pcm, float *lins, int f32)
 {
     int i;
@@ -2218,7 +2271,6 @@ static void rmp3d_synth_granule(float *qmf_state, float *grbuf, int nbands, int 
               f32 ? (void *)((float *)pcm + 32*nch*i)
                   : (void *)((short *)pcm + 32*nch*i),
               nch, lins + i*64, f32);
-#endif
 #ifndef RMP3_NONSTANDARD_BUT_LOGICAL
     if (nch == 1)
     {
@@ -2337,12 +2389,11 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
                igr++, pcm = (uint8_t *)pcm + granule_bytes)
          {
             memset(scratch.grbuf.f[0], 0, 576*2*sizeof(float));
-            rmp3_L3_decode(dec, &scratch, scratch.gr_info + igr*info->channels, info->channels);
-#ifdef RMP3_FIXED_POINT
-            rmp3d_synth_granule(dec->qmf_state.q, scratch.grbuf.q[0], 18, info->channels, pcm, scratch.syn.q[0], f32);
-#else
-            rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 18, info->channels, pcm, scratch.syn.f[0], f32);
-#endif
+            rmp3_L3_decode(dec, &scratch, scratch.gr_info + igr*info->channels, info->channels, f32);
+            if (f32 || !RMP3D_S16_VIA_INT)
+               rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 18, info->channels, pcm, scratch.syn.f[0], f32);
+            else
+               rmp3d_synth_granule_q(dec->qmf_state.q, scratch.grbuf.q[0], 18, info->channels, (short *)pcm, scratch.syn.q[0]);
          }
       }
       rmp3_L3_save_reservoir(dec, &scratch);
@@ -2358,11 +2409,16 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
          {
             i = 0;
             rmp3_L12_apply_scf_384(sci, sci->scf + igr, scratch.grbuf.f[0]);
-#ifdef RMP3_FIXED_POINT
-            rmp3d_synth_granule(dec->qmf_state.q, scratch.grbuf.q[0], 12, info->channels, pcm, scratch.syn.q[0], f32);
-#else
-            rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 12, info->channels, pcm, scratch.syn.f[0], f32);
-#endif
+            if (f32 || !RMP3D_S16_VIA_INT)
+               rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 12, info->channels, pcm, scratch.syn.f[0], f32);
+            else
+            {
+               /* Layer I/II scalefactor application is float; convert
+                * the granule at the same boundary as Layer III. */
+               rmp3d_float_to_q_n(&scratch.grbuf.q[0][0],
+                     &scratch.grbuf.f[0][0], 576*2);
+               rmp3d_synth_granule_q(dec->qmf_state.q, scratch.grbuf.q[0], 12, info->channels, (short *)pcm, scratch.syn.q[0]);
+            }
             memset(scratch.grbuf.f[0], 0, 576*2*sizeof(float));
             pcm = (uint8_t *)pcm + (size_t)384*info->channels
                   * (f32 ? sizeof(float) : sizeof(short));
@@ -2445,15 +2501,38 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
 static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
 {
    uint32_t total;
-#ifdef RMP3_FIXED_POINT
-   /* The fixed-point build synthesises s16 only; rmp3_read_f32 converts
-    * at the copy instead of switching the synthesis output. */
-   (void)pMP3; (void)f32; (void)total;
-   return;
-#endif
+   int i;
    if (pMP3->f32_mode == f32)
       return;
    pMP3->f32_mode = f32;
+
+   /* The two pipelines keep their persistent decoder state in
+    * different formats: float for the float pipeline, Q28 fixed point
+    * for the s16 pipeline (the storage is shared through unions).
+    * Convert the QMF and IMDCT overlap histories so decoding continues
+    * seamlessly in the new format.  On SIMD targets both routes keep
+    * float state and nothing needs converting. */
+   if (RMP3D_S16_VIA_INT)
+   {
+      float   *of = &pMP3->decoder.mdct_overlap.f[0][0];
+      int32_t *oq = &pMP3->decoder.mdct_overlap.q[0][0];
+      if (f32)
+      {
+         for (i = 0; i < 15*2*32; i++)
+            pMP3->decoder.qmf_state.f[i] =
+                  pMP3->decoder.qmf_state.q[i] * (1.0f / (float)(1 << RMP3D_QBITS));
+         for (i = 0; i < 2*9*32; i++)
+            of[i] = oq[i] * (1.0f / (float)(1 << RMP3D_QBITS));
+      }
+      else
+      {
+         for (i = 0; i < 15*2*32; i++)
+            pMP3->decoder.qmf_state.q[i] =
+                  rmp3d_float_to_q(pMP3->decoder.qmf_state.f[i]);
+         for (i = 0; i < 2*9*32; i++)
+            oq[i] = rmp3d_float_to_q(of[i]);
+      }
+   }
 
    total = (pMP3->framesConsumed + pMP3->framesRemaining)
          * pMP3->frameChannels;
@@ -2536,26 +2615,6 @@ uint64_t rmp3_read_f32(rmp3* pMP3, uint64_t framesToRead, float* pBufferOut)
              * malformed stream changes channel count mid-way, adapt the
              * frame to the stream layout (duplicate mono / average
              * stereo) so the interleave stays consistent. */
-#ifdef RMP3_FIXED_POINT
-            /* Fixed-point synthesis stores s16; convert on copy. */
-            const int16_t *src = pMP3->frames.s16
-                  + (size_t)pMP3->framesConsumed * pMP3->frameChannels;
-            if (pMP3->frameChannels == pMP3->channels)
-            {
-               uint32_t c;
-               for (c = 0; c < pMP3->channels; c++)
-                  out[c] = src[c] * (1.0f / 32768.0f);
-            }
-            else if (pMP3->channels == 2)
-            {
-               out[0] = out[1] = src[0] * (1.0f / 32768.0f);
-            }
-            else
-            {
-               out[0] = (src[0] * (1.0f / 32768.0f)
-                       + src[1] * (1.0f / 32768.0f)) * 0.5f;
-            }
-#else
             const float *src = pMP3->frames.f32
                   + (size_t)pMP3->framesConsumed * pMP3->frameChannels;
             if (pMP3->frameChannels == pMP3->channels)
@@ -2572,7 +2631,6 @@ uint64_t rmp3_read_f32(rmp3* pMP3, uint64_t framesToRead, float* pBufferOut)
             {
                out[0] = (src[0] + src[1]) * 0.5f;
             }
-#endif
             out += pMP3->channels;
          }
 

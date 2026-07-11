@@ -28,16 +28,15 @@ typedef struct
 
 typedef struct
 {
-    /* IMDCT overlap history; the RMP3_FIXED_POINT build stores Q28
-     * fixed-point samples in the same storage. */
+    /* IMDCT overlap history; same dual-format convention as qmf_state. */
     union
     {
         float   f[2][9*32];
         int32_t q[2][9*32];
     } mdct_overlap;
-    /* QMF synthesis overlap history.  Stored as floats normally; when
-     * the decoder is built with RMP3_FIXED_POINT the same storage holds
-     * Q13 fixed-point samples (for FPU-less targets). */
+    /* QMF synthesis overlap history: float while the float pipeline is
+     * active, Q28 fixed point while the s16 pipeline is active (the
+     * active format follows the latched output mode). */
     union
     {
         float   f[15*2*32];
