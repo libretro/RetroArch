@@ -498,7 +498,7 @@ class Framebuffer
       Framebuffer(Framebuffer&&) = delete;
       void operator=(Framebuffer&&) = delete;
 
-      void set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format = VK_FORMAT_UNDEFINED);
+      bool set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format = VK_FORMAT_UNDEFINED);
 
       const Size2D &get_size() const { return size; }
       VkFormat get_format() const { return format; }
@@ -506,6 +506,15 @@ class Framebuffer
       VkImageView get_view() const { return view; }
       VkFramebuffer get_framebuffer() const { return framebuffer; }
       VkRenderPass get_render_pass() const { return render_pass; }
+      bool is_valid() const
+      {
+         return image != VK_NULL_HANDLE
+             && view != VK_NULL_HANDLE
+             && fb_view != VK_NULL_HANDLE
+             && framebuffer != VK_NULL_HANDLE
+             && render_pass != VK_NULL_HANDLE
+             && memory.memory != VK_NULL_HANDLE;
+      }
 
       unsigned get_levels() const { return levels; }
 
@@ -530,7 +539,7 @@ class Framebuffer
          VkDeviceMemory memory  = VK_NULL_HANDLE;
       } memory;
 
-      void init(DeferredDisposer *disposer);
+      bool init();
 };
 
 struct CommonResources
@@ -1456,20 +1465,29 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
 
    /* Advance ring index backwards: the oldest slot becomes the newest.
     * This replaces the O(N) move_backward with O(1) index arithmetic. */
-   history_ring_index = (history_ring_index == 0)
+   unsigned next_history_ring_index = (history_ring_index == 0)
       ? hist_size - 1
       : history_ring_index - 1;
 
-   auto &target = original_history[history_ring_index];
+   auto &target = original_history[next_history_ring_index];
+
+   bool copy_history = true;
 
    if   (    input_texture.width  != target->get_size().width
          ||  input_texture.height != target->get_size().height
          || (input_texture.format != VK_FORMAT_UNDEFINED
          &&  input_texture.format != target->get_format()))
-      target->set_size(disposer, { input_texture.width, input_texture.height }, input_texture.format);
+      copy_history = target->set_size(disposer,
+            { input_texture.width, input_texture.height }, input_texture.format);
 
-   vulkan_framebuffer_copy(target->get_image(), target->get_size(),
-         cmd, input_texture.image, src_layout);
+   if (copy_history)
+   {
+      history_ring_index = next_history_ring_index;
+      vulkan_framebuffer_copy(target->get_image(), target->get_size(),
+            cmd, input_texture.image, src_layout);
+   }
+   else
+      RARCH_ERR("[Vulkan] Failed to resize shader history framebuffer.\n");
 
    /* Transition input texture back. */
    if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
@@ -1575,8 +1593,13 @@ bool vulkan_filter_chain::init_history()
    common.original_history.resize(required_images);
 
    for (i = 0; i < required_images; i++)
-      original_history.emplace_back(new Framebuffer(device, memory_properties,
-               max_input_size, original_format, 1));
+   {
+      std::unique_ptr<Framebuffer> framebuffer(new Framebuffer(
+               device, memory_properties, max_input_size, original_format, 1));
+      if (!framebuffer->is_valid())
+         return false;
+      original_history.emplace_back(std::move(framebuffer));
+   }
 
 #ifdef VULKAN_DEBUG
    RARCH_LOG("[Vulkan] Using history of %u frames.\n", unsigned(required_images));
@@ -2930,7 +2953,7 @@ bool Pass::init_feedback()
          new Framebuffer(device, memory_properties,
             current_framebuffer_size,
             pass_info.rt_format, pass_info.max_levels));
-   return true;
+   return fb_feedback->is_valid();
 }
 
 bool Pass::build()
@@ -2943,10 +2966,14 @@ bool Pass::build()
    fb_feedback.reset();
 
    if (!final_pass)
+   {
       framebuffer = std::unique_ptr<Framebuffer>(
             new Framebuffer(device, memory_properties,
                current_framebuffer_size,
                pass_info.rt_format, pass_info.max_levels));
+      if (!framebuffer->is_valid())
+         return false;
+   }
 
    for (i = 0; i < parameters.size(); i++)
    {
@@ -3326,7 +3353,13 @@ void Pass::build_commands(
    if (framebuffer &&
          (size.width  != framebuffer->get_size().width ||
           size.height != framebuffer->get_size().height))
-      framebuffer->set_size(disposer, size);
+   {
+      if (!framebuffer->set_size(disposer, size))
+      {
+         RARCH_ERR("[Vulkan] Failed to resize shader framebuffer.\n");
+         return;
+      }
+   }
 
    current_framebuffer_size = size;
 
@@ -3525,19 +3558,30 @@ Framebuffer::Framebuffer(
    RARCH_LOG("[Vulkan] Creating framebuffer %ux%u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);
    if (vulkan_initialize_render_pass(device, format, &render_pass))
-      init(nullptr);
+   {
+      if (!init())
+         RARCH_ERR("[Vulkan] Failed to create framebuffer %ux%u.\n",
+               max_size.width, max_size.height);
+   }
    else
       RARCH_ERR("[Vulkan] Failed to create render pass for "
             "framebuffer %ux%u.\n", max_size.width, max_size.height);
 }
 
-void Framebuffer::init(DeferredDisposer *disposer)
+bool Framebuffer::init()
 {
    VkFramebufferCreateInfo fb_info;
    VkMemoryRequirements mem_reqs;
    VkImageCreateInfo info;
    VkMemoryAllocateInfo alloc;
    VkImageViewCreateInfo view_info;
+   VkImage new_image             = VK_NULL_HANDLE;
+   VkImageView new_view          = VK_NULL_HANDLE;
+   VkImageView new_fb_view       = VK_NULL_HANDLE;
+   VkFramebuffer new_framebuffer = VK_NULL_HANDLE;
+   VkDeviceMemory new_memory     = VK_NULL_HANDLE;
+   uint32_t new_memory_type;
+   unsigned new_levels;
    size_t _y                = glslang_num_miplevels(size.width, size.height);
 
    info.sType               = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -3560,49 +3604,45 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.queueFamilyIndexCount = 0;
    info.pQueueFamilyIndices = NULL;
    info.initialLayout       = VK_IMAGE_LAYOUT_UNDEFINED;
-   levels                   = info.mipLevels;
+   new_levels               = info.mipLevels;
 
-   if (vkCreateImage(device, &info, nullptr, &image) != VK_SUCCESS)
-      return;
-   vulkan_debug_mark_image(device, image);
+   if (!info.extent.width || !info.extent.height || !new_levels
+         || format == VK_FORMAT_UNDEFINED)
+   {
+      RARCH_ERR("[Vulkan] Refusing invalid framebuffer image "
+            "(%ux%u, format %u, levels %u).\n",
+            info.extent.width, info.extent.height,
+            (unsigned)format, new_levels);
+      return false;
+   }
 
-   vkGetImageMemoryRequirements(device, image, &mem_reqs);
+   if (vkCreateImage(device, &info, nullptr, &new_image) != VK_SUCCESS)
+      goto error;
+   vulkan_debug_mark_image(device, new_image);
+
+   vkGetImageMemoryRequirements(device, new_image, &mem_reqs);
 
    alloc.sType            = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
    alloc.pNext            = NULL;
    alloc.allocationSize   = mem_reqs.size;
-   alloc.memoryTypeIndex  = find_memory_type_fallback(
+   new_memory_type       = find_memory_type_fallback(
          memory_properties, mem_reqs.memoryTypeBits,
          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+   alloc.memoryTypeIndex  = new_memory_type;
 
-   /* Can reuse already allocated memory. */
-   if (memory.size < mem_reqs.size || memory.type != alloc.memoryTypeIndex)
-   {
-      /* Memory might still be in use since we don't want
-       * to totally stall
-       * the world for framebuffer recreation. */
-      if (memory.memory != VK_NULL_HANDLE && disposer)
-      {
-         VkDevice       d = device;
-         VkDeviceMemory m = memory.memory;
-         disposer->defer([=] { vkFreeMemory(d, m, nullptr); });
-      }
+   /* The old image can still be in flight. Reusing its allocation here
+    * aliases two live optimal-tiled images, which is invalid on Mali. */
+   if (vkAllocateMemory(device, &alloc, nullptr, &new_memory) != VK_SUCCESS)
+      goto error;
+   vulkan_debug_mark_memory(device, new_memory);
 
-      memory.type = alloc.memoryTypeIndex;
-      memory.size = mem_reqs.size;
-
-      vkAllocateMemory(device, &alloc, nullptr, &memory.memory);
-      if (memory.memory == VK_NULL_HANDLE)
-         return;
-      vulkan_debug_mark_memory(device, memory.memory);
-   }
-
-   vkBindImageMemory(device, image, memory.memory, 0);
+   if (vkBindImageMemory(device, new_image, new_memory, 0) != VK_SUCCESS)
+      goto error;
 
    view_info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
    view_info.pNext                           = NULL;
    view_info.flags                           = 0;
-   view_info.image                           = image;
+   view_info.image                           = new_image;
    view_info.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
    view_info.format                          = format;
    view_info.components.r                    = VK_COMPONENT_SWIZZLE_R;
@@ -3611,15 +3651,15 @@ void Framebuffer::init(DeferredDisposer *disposer)
    view_info.components.a                    = VK_COMPONENT_SWIZZLE_A;
    view_info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    view_info.subresourceRange.baseMipLevel   = 0;
-   view_info.subresourceRange.levelCount     = levels;
+   view_info.subresourceRange.levelCount     = new_levels;
    view_info.subresourceRange.baseArrayLayer = 0;
    view_info.subresourceRange.layerCount     = 1;
 
-   if (vkCreateImageView(device, &view_info, nullptr, &view) != VK_SUCCESS)
-      return;
+   if (vkCreateImageView(device, &view_info, nullptr, &new_view) != VK_SUCCESS)
+      goto error;
    view_info.subresourceRange.levelCount     = 1;
-   if (vkCreateImageView(device, &view_info, nullptr, &fb_view) != VK_SUCCESS)
-      return;
+   if (vkCreateImageView(device, &view_info, nullptr, &new_fb_view) != VK_SUCCESS)
+      goto error;
 
    /* Initialize framebuffer */
    fb_info.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -3627,67 +3667,101 @@ void Framebuffer::init(DeferredDisposer *disposer)
    fb_info.flags           = 0;
    fb_info.renderPass      = render_pass;
    fb_info.attachmentCount = 1;
-   fb_info.pAttachments    = &fb_view;
+   fb_info.pAttachments    = &new_fb_view;
    fb_info.width           = size.width;
    fb_info.height          = size.height;
    fb_info.layers          = 1;
 
    if (vkCreateFramebuffer(device, &fb_info, nullptr,
-            &framebuffer) != VK_SUCCESS)
-      framebuffer = VK_NULL_HANDLE;
+            &new_framebuffer) != VK_SUCCESS)
+      goto error;
+
+   image         = new_image;
+   view          = new_view;
+   fb_view       = new_fb_view;
+   framebuffer   = new_framebuffer;
+   levels        = new_levels;
+   memory.type   = new_memory_type;
+   memory.size   = mem_reqs.size;
+   memory.memory = new_memory;
+   return true;
+
+error:
+   if (new_framebuffer != VK_NULL_HANDLE)
+      vkDestroyFramebuffer(device, new_framebuffer, nullptr);
+   if (new_view != VK_NULL_HANDLE)
+      vkDestroyImageView(device, new_view, nullptr);
+   if (new_fb_view != VK_NULL_HANDLE)
+      vkDestroyImageView(device, new_fb_view, nullptr);
+   if (new_image != VK_NULL_HANDLE)
+      vkDestroyImage(device, new_image, nullptr);
+   if (new_memory != VK_NULL_HANDLE)
+      vkFreeMemory(device, new_memory, nullptr);
+   return false;
 }
 
-void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format)
+bool Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format)
 {
-   this->size = size;
-   if (format != VK_FORMAT_UNDEFINED)
-	  this->format = format;
+   Size2D old_size               = this->size;
+   VkFormat old_format           = this->format;
+   VkRenderPass old_render_pass  = render_pass;
+   VkImage old_image             = image;
+   VkImageView old_view          = view;
+   VkImageView old_fb_view       = fb_view;
+   VkFramebuffer old_framebuffer = framebuffer;
+   VkDeviceMemory old_memory     = memory.memory;
+   VkFormat new_format           = format == VK_FORMAT_UNDEFINED ? old_format : format;
+   bool format_changed           = new_format != old_format;
+
+   this->size                    = size;
+   this->format                  = new_format;
 
    RARCH_LOG("[Vulkan] Updating framebuffer size %ux%u (format: %u).\n",
          size.width, size.height, (unsigned)this->format);
 
-   /* If the format changed we must recreate the render pass so that
-    * the attachment description matches the new image format.  The
-    * old render pass is deferred for destruction alongside the old
-    * framebuffer resources. */
-   if (format != VK_FORMAT_UNDEFINED && format != this->format)
+   if (format_changed)
    {
-      VkDevice     d  = device;
-      VkRenderPass rp = render_pass;
-      disposer.defer([=] {
-         if (rp != VK_NULL_HANDLE)
-            vkDestroyRenderPass(d, rp, nullptr);
-      });
-      vulkan_initialize_render_pass(device, this->format, &render_pass);
+      if (!vulkan_initialize_render_pass(device, this->format, &render_pass))
+      {
+         this->size  = old_size;
+         this->format = old_format;
+         render_pass  = old_render_pass;
+         return false;
+      }
    }
 
+   if (!init())
    {
-      /* The current framebuffers, etc, might still be in use
-       * so defer deletion.
-       * We'll most likely be able to reuse the memory,
-       * so don't free it here.
-       *
-       * Fake lambda init captures for C++11.
-       */
-      VkDevice d       = device;
-      VkImage i        = image;
-      VkImageView v    = view;
-      VkImageView fbv  = fb_view;
-      VkFramebuffer fb = framebuffer;
+      if (format_changed)
+         vkDestroyRenderPass(device, render_pass, nullptr);
+      this->size  = old_size;
+      this->format = old_format;
+      render_pass  = old_render_pass;
+      return false;
+   }
+
+   /* The replaced resources can still be referenced by an in-flight
+    * command buffer. Defer their destruction together, including memory. */
+   {
+      VkDevice d = device;
       disposer.defer([=]
       {
-         if (fb != VK_NULL_HANDLE)
-            vkDestroyFramebuffer(d, fb, nullptr);
-         if (v != VK_NULL_HANDLE)
-            vkDestroyImageView(d, v, nullptr);
-         if (fbv != VK_NULL_HANDLE)
-            vkDestroyImageView(d, fbv, nullptr);
-         if (i != VK_NULL_HANDLE)
-            vkDestroyImage(d, i, nullptr);
+         if (old_framebuffer != VK_NULL_HANDLE)
+            vkDestroyFramebuffer(d, old_framebuffer, nullptr);
+         if (old_view != VK_NULL_HANDLE)
+            vkDestroyImageView(d, old_view, nullptr);
+         if (old_fb_view != VK_NULL_HANDLE)
+            vkDestroyImageView(d, old_fb_view, nullptr);
+         if (old_image != VK_NULL_HANDLE)
+            vkDestroyImage(d, old_image, nullptr);
+         if (old_memory != VK_NULL_HANDLE)
+            vkFreeMemory(d, old_memory, nullptr);
+         if (format_changed && old_render_pass != VK_NULL_HANDLE)
+            vkDestroyRenderPass(d, old_render_pass, nullptr);
       });
    }
 
-   init(&disposer);
+   return true;
 }
 
 Framebuffer::~Framebuffer()
