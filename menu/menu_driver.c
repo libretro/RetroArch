@@ -2775,7 +2775,8 @@ void menu_driver_get_last_shader_pass_path(
          directory, file_name);
 }
 
-int menu_shader_manager_clear_num_passes(struct video_shader *shader)
+static int menu_shader_manager_clear_num_passes_internal(
+      struct video_shader *shader, bool apply_changes)
 {
    if (shader)
    {
@@ -2784,10 +2785,16 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
       menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
       video_shader_resolve_parameters(shader);
       shader->flags              |= SHDR_FLAG_MODIFIED;
-      command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+      if (apply_changes)
+         command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
    }
 
    return 0;
+}
+
+int menu_shader_manager_clear_num_passes(struct video_shader *shader)
+{
+   return menu_shader_manager_clear_num_passes_internal(shader, true);
 }
 
 int menu_shader_manager_clear_parameter(struct video_shader *shader,
@@ -7043,7 +7050,7 @@ clear:
     *   entries in the shader options menu which can in
     *   turn lead to the menu selection pointer going out
     *   of bounds. This causes undefined behaviour/segfaults */
-   menu_shader_manager_clear_num_passes(menu_shader);
+   menu_shader_manager_clear_num_passes_internal(menu_shader, false);
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
@@ -7088,7 +7095,7 @@ clear:
     *   entries in the shader options menu which can in
     *   turn lead to the menu selection pointer going out
     *   of bounds. This causes undefined behaviour/segfaults */
-   menu_shader_manager_clear_num_passes(shader);
+   menu_shader_manager_clear_num_passes_internal(shader, false);
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
