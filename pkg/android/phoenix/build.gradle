@@ -5,7 +5,7 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:4.2.0'
+    classpath 'com.android.tools.build:gradle:8.6.0'
   }
 }
 
@@ -25,14 +25,21 @@ allprojects {
 apply plugin: 'com.android.application'
 
 android {
+  namespace "com.retroarch"
+
   compileSdkVersion 31
   buildToolsVersion "30.0.3"
-  ndkVersion "22.0.7026061"
+
+  buildFeatures {
+    buildConfig true
+  }
+
+  ndkVersion "27.3.13750724"
 
   flavorDimensions "variant"
 
   defaultConfig {
-    minSdkVersion 16
+    minSdkVersion 21
     externalNativeBuild {
       ndkBuild {
         arguments "-j${Runtime.runtime.availableProcessors()}"
@@ -71,7 +78,7 @@ android {
       }
     }
     playStoreNormal {
-      minSdkVersion 21
+      minSdkVersion 34
       targetSdkVersion 35
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
@@ -82,7 +89,7 @@ android {
       dimension "variant"
     }
     playStorePlus {
-      minSdkVersion 26
+      minSdkVersion 34
       targetSdkVersion 35
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
