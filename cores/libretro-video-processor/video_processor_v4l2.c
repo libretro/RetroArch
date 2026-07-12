@@ -380,13 +380,85 @@ static size_t add_resolution(struct v4l2_resolution *out, size_t count,
    return count;
 }
 
-/* Probe a single V4L2 device for the capture resolutions it actually
- * supports and merge them (deduplicated) into out[]. Returns the updated
- * entry count. Drivers report framesizes either as a discrete list or as a
- * stepwise/continuous range; for ranges, offer the entries of the built-in
- * table that fall inside the range. */
+/* Append fps to rates[] unless an equal rate (within rounding noise) is
+ * already present. Returns the updated entry count. */
+static size_t add_rate(double *rates, size_t count, size_t max, double fps)
+{
+   size_t i;
+   for (i = 0; i < count; i++)
+      if (fabs(rates[i] - fps) < 0.005)
+         return count;
+   if (count < max && fps > 0.0)
+   {
+      rates[count] = fps;
+      count++;
+   }
+   return count;
+}
+
+/* Rates offered when a driver reports a continuous frame-interval range,
+ * or none at all (no device to probe). */
+static const double v4l2_standard_rates[] =
+      { 60, 59.94, 50, 30, 29.97, 25, 24, 20, 15, 10 };
+
+/* Collect the frame rates a device supports for one pixel format and frame
+ * size (VIDIOC_ENUM_FRAMEINTERVALS) into rates[]. Returns the updated entry
+ * count. */
+static size_t probe_rates(int fd, uint32_t pixel_format,
+      uint32_t width, uint32_t height, double *rates, size_t count, size_t max)
+{
+   uint32_t index;
+
+   for (index = 0; ; index++)
+   {
+      struct v4l2_frmivalenum ival;
+
+      memset(&ival, 0, sizeof(ival));
+      ival.index        = index;
+      ival.pixel_format = pixel_format;
+      ival.width        = width;
+      ival.height       = height;
+      if (v4l2_ioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &ival) != 0)
+         break;
+
+      if (ival.type == V4L2_FRMIVAL_TYPE_DISCRETE)
+      {
+         if (ival.discrete.numerator != 0)
+            count = add_rate(rates, count, max,
+                  (double)ival.discrete.denominator
+                  / (double)ival.discrete.numerator);
+      }
+      else
+      {
+         /* Stepwise/continuous: index 0 describes the whole interval range
+          * (min = shortest interval = fastest rate); offer the standard
+          * rates that fall inside it. */
+         size_t i;
+         double fast = (ival.stepwise.min.numerator != 0)
+               ? (double)ival.stepwise.min.denominator
+                 / (double)ival.stepwise.min.numerator : 0.0;
+         double slow = (ival.stepwise.max.numerator != 0)
+               ? (double)ival.stepwise.max.denominator
+                 / (double)ival.stepwise.max.numerator : 0.0;
+         for (i = 0; i < ARRAY_SIZE(v4l2_standard_rates); i++)
+            if (   v4l2_standard_rates[i] >= slow - 0.005
+                && v4l2_standard_rates[i] <= fast + 0.005)
+               count = add_rate(rates, count, max, v4l2_standard_rates[i]);
+         break;
+      }
+   }
+   return count;
+}
+
+/* Probe a single V4L2 device for the capture resolutions and frame rates it
+ * actually supports and merge them (deduplicated) into out[]/rates[].
+ * Returns the updated resolution count and updates *nrates. Drivers report
+ * framesizes either as a discrete list or as a stepwise/continuous range;
+ * for ranges, offer the entries of the built-in table that fall inside the
+ * range. */
 static size_t probe_resolutions(const char *device,
-      struct v4l2_resolution *out, size_t count, size_t max)
+      struct v4l2_resolution *out, size_t count, size_t max,
+      double *rates, size_t *nrates, size_t rates_max)
 {
    int fd;
    uint32_t fmt_index;
@@ -417,8 +489,13 @@ static size_t probe_resolutions(const char *device,
             break;
 
          if (frmsize.type == V4L2_FRMSIZE_TYPE_DISCRETE)
-            count = add_resolution(out, count, max,
+         {
+            count   = add_resolution(out, count, max,
                   (int)frmsize.discrete.width, (int)frmsize.discrete.height);
+            *nrates = probe_rates(fd, fmtdesc.pixelformat,
+                  frmsize.discrete.width, frmsize.discrete.height,
+                  rates, *nrates, rates_max);
+         }
          else
          {
             /* Stepwise/continuous: index 0 describes the whole range. */
@@ -432,6 +509,9 @@ static size_t probe_resolutions(const char *device,
                   count = add_resolution(out, count, max,
                         v4l2_resolutions[i].width, v4l2_resolutions[i].height);
             }
+            *nrates = probe_rates(fd, fmtdesc.pixelformat,
+                  frmsize.stepwise.max_width, frmsize.stepwise.max_height,
+                  rates, *nrates, rates_max);
             break;
          }
       }
@@ -452,18 +532,48 @@ static int resolution_cmp(const void *a, const void *b)
    return ra->height - rb->height;
 }
 
-/* Build the capture-resolution option list by probing capture device(s) for
- * the sizes they really report. video_devices is either a single device path
- * ("/dev/videoN") or the option string built by enumerate_video_devices
- * ("Video capture device; /dev/videoN|..."). Falls back to the built-in
- * v4l2_resolutions[] table when nothing could be probed (no device
+/* Order descending so the fastest supported rate leads the list ("auto"
+ * still precedes it as the default). */
+static int rate_cmp(const void *a, const void *b)
+{
+   double ra = *(const double *)a;
+   double rb = *(const double *)b;
+   if (ra < rb)
+      return 1;
+   if (ra > rb)
+      return -1;
+   return 0;
+}
+
+/* Format a probed rate the way users know it (the NTSC fractional rates by
+ * their conventional names). Must round-trip through rate_to_timeperframe. */
+static void rate_to_string(double fps, char *out, size_t len)
+{
+   if (fabs(fps - 60000.0 / 1001.0) < 0.01)
+      strlcpy(out, "59.94", len);
+   else if (fabs(fps - 30000.0 / 1001.0) < 0.01)
+      strlcpy(out, "29.97", len);
+   else if (fabs(fps - 24000.0 / 1001.0) < 0.01)
+      strlcpy(out, "23.976", len);
+   else
+      snprintf(out, len, "%g", fps);
+}
+
+/* Build the capture-resolution and capture-rate option lists by probing
+ * capture device(s) for the sizes and frame intervals they really report.
+ * video_devices is either a single device path ("/dev/videoN") or the option
+ * string built by enumerate_video_devices ("Video capture device;
+ * /dev/videoN|..."). Falls back to the built-in v4l2_resolutions[] /
+ * v4l2_standard_rates[] tables when nothing could be probed (no device
  * present). */
-static void list_resolutions(char *capture_resolutions, size_t len,
-      const char *video_devices)
+static void list_capture_options(char *capture_resolutions, size_t res_len,
+      char *capture_rates, size_t rates_len, const char *video_devices)
 {
    struct v4l2_resolution probed[128];
+   double rates[32];
    const struct v4l2_resolution *res;
-   size_t count = 0;
+   size_t count  = 0;
+   size_t nrates = 0;
    size_t i, n, written;
    char devices[ENVVAR_BUFLEN];
    char *token;
@@ -481,7 +591,8 @@ static void list_resolutions(char *capture_resolutions, size_t len,
          token++;
       if (!string_starts_with(token, "/dev/video"))
          continue;
-      count = probe_resolutions(token, probed, count, ARRAY_SIZE(probed));
+      count = probe_resolutions(token, probed, count, ARRAY_SIZE(probed),
+            rates, &nrates, ARRAY_SIZE(rates));
    }
 
    if (count > 0)
@@ -491,7 +602,7 @@ static void list_resolutions(char *capture_resolutions, size_t len,
    res = (count > 0) ? probed : v4l2_resolutions;
    n   = (count > 0) ? count  : ARRAY_SIZE(v4l2_resolutions);
 
-   written = snprintf(capture_resolutions, len, "Capture resolution; ");
+   written = snprintf(capture_resolutions, res_len, "Capture resolution; ");
    for (i = 0; i < n; i++)
    {
       char entry[32];
@@ -499,9 +610,31 @@ static void list_resolutions(char *capture_resolutions, size_t len,
             i > 0 ? "|" : "", res[i].width, res[i].height);
       /* Stop before truncating an entry mid-token; the caller still
        * appends "|auto" and it must always fit. */
-      if (written + elen + STRLEN_CONST("|auto") + 1 > len)
+      if (written + elen + STRLEN_CONST("|auto") + 1 > res_len)
          break;
-      strlcpy(capture_resolutions + written, entry, len - written);
+      strlcpy(capture_resolutions + written, entry, res_len - written);
+      written += elen;
+   }
+
+   /* Rate list: "auto" (keep the device's current rate) is always first and
+    * stays the default. */
+   if (nrates == 0)
+      for (i = 0; i < ARRAY_SIZE(v4l2_standard_rates); i++)
+         nrates = add_rate(rates, nrates, ARRAY_SIZE(rates),
+               v4l2_standard_rates[i]);
+   qsort(rates, nrates, sizeof(rates[0]), rate_cmp);
+
+   written = snprintf(capture_rates, rates_len, "Capture frame rate; auto");
+   for (i = 0; i < nrates; i++)
+   {
+      char entry[32];
+      char rstr[16];
+      size_t elen;
+      rate_to_string(rates[i], rstr, sizeof(rstr));
+      elen = (size_t)snprintf(entry, sizeof(entry), "|%s", rstr);
+      if (written + elen + 1 > rates_len)
+         break;
+      strlcpy(capture_rates + written, entry, rates_len - written);
       written += elen;
    }
 }
@@ -511,9 +644,10 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    char video_devices[ENVVAR_BUFLEN];
    char audio_devices[ENVVAR_BUFLEN];
    static char capture_resolutions[ENVVAR_BUFLEN];
-   /* Device selection the resolution list was probed from; statics survive
-    * core restarts when the core is statically linked into the frontend, so
-    * an empty-buffer check alone would never refresh the list. */
+   static char capture_rates[ENVVAR_BUFLEN];
+   /* Device selection the resolution/rate lists were probed from; statics
+    * survive core restarts when the core is statically linked into the
+    * frontend, so an empty-buffer check alone would never refresh them. */
    static char probed_for[ENVVAR_BUFLEN];
    struct retro_variable videodev = { "videoproc_videodev", NULL };
    struct retro_variable envvars[] = {
@@ -521,7 +655,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
       { "videoproc_audiodev", NULL },
       { "videoproc_capture_mode", "Capture mode; alternate|deinterlaced|interlaced|top|bottom|alternate_hack" },
       { "videoproc_capture_resolution", NULL },
-      { "videoproc_capture_rate", "Capture frame rate; auto|60|59.94|50|30|29.97|25|24|20|15|10" },
+      { "videoproc_capture_rate", NULL },
       { "videoproc_output_mode","Output mode; progressive|deinterlaced|interlaced" },
       { "videoproc_frame_times","Print frame times to terminal (v4l2 only); Off|On" },
       { NULL, NULL }
@@ -545,36 +679,41 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    envvars[1].value = audio_devices;
    envvars[3].key   = "videoproc_capture_resolution";
    envvars[3].value = capture_resolutions;
+   envvars[4].key   = "videoproc_capture_rate";
+   envvars[4].value = capture_rates;
 
-   /* Register the options once before the probed resolution list is known:
-    * this seeds the frontend with the saved values, and a variable can only
-    * be resolved after it has been registered with its value list — so the
-    * saved device selection only becomes queryable now. Values must not be
-    * NULL (only the {NULL, NULL} entry terminates the array), so seed the
-    * resolution list with the built-in table; it is rebuilt from the actual
-    * device below. */
+   /* Register the options once before the probed resolution/rate lists are
+    * known: this seeds the frontend with the saved values, and a variable
+    * can only be resolved after it has been registered with its value list
+    * — so the saved device selection only becomes queryable now. Values
+    * must not be NULL (only the {NULL, NULL} entry terminates the array),
+    * so seed the lists with the built-in tables; they are rebuilt from the
+    * actual device below. */
    if (capture_resolutions[0] == '\0')
    {
-      list_resolutions(capture_resolutions, sizeof(capture_resolutions), "");
+      list_capture_options(capture_resolutions, sizeof(capture_resolutions),
+            capture_rates, sizeof(capture_rates), "");
       appendstr(capture_resolutions, "|auto", ENVVAR_BUFLEN);
    }
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
 
-   /* Probe the capture device for its real, supported resolutions rather
-    * than offering a fixed table the hardware may not honour. Probe only the
-    * selected device when it is known, so the option list reflects what that
-    * device actually supports; on a fresh configuration (no device selected
-    * yet) probe every enumerated device. Probing opens the device(s), so
-    * cache the list and rebuild it only when the probed selection changes
-    * (i.e. on the first core start after switching devices). */
+   /* Probe the capture device for its real, supported resolutions and frame
+    * rates rather than offering fixed tables the hardware may not honour.
+    * Probe only the selected device when it is known, so the option lists
+    * reflect what that device actually supports; on a fresh configuration
+    * (no device selected yet) probe every enumerated device. Probing opens
+    * the device(s), so cache the lists and rebuild them only when the probed
+    * selection changes (i.e. on the first core start after switching
+    * devices). */
    {
       const char *probe_target =
             (videodev.value && string_starts_with(videodev.value, "/dev/video"))
             ? videodev.value : video_devices;
       if (strcmp(probed_for, probe_target) != 0)
       {
-         list_resolutions(capture_resolutions, sizeof(capture_resolutions), probe_target);
+         list_capture_options(capture_resolutions, sizeof(capture_resolutions),
+               capture_rates, sizeof(capture_rates), probe_target);
          appendstr(capture_resolutions, "|auto", ENVVAR_BUFLEN);
          strlcpy(probed_for, probe_target, sizeof(probed_for));
       }
@@ -942,12 +1081,15 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_info)(struct retro_system_
 }
 
 /* Convert a "Capture frame rate" option value to a V4L2 timeperframe
- * (seconds per frame = num/den). Handles the NTSC fractional rates and plain
- * integer rates. Returns false for "auto"/unrecognised values, meaning "let
- * the device keep its current rate". */
+ * (seconds per frame = num/den). The NTSC fractional rates map to their
+ * exact 1001-based intervals; any other value (integer or decimal, e.g. a
+ * probed "7.5") is parsed generically. Returns false for
+ * "auto"/unrecognised values, meaning "let the device keep its current
+ * rate". */
 static bool rate_to_timeperframe(const char *s, uint32_t *num, uint32_t *den)
 {
-   int r;
+   double fps;
+   char *end;
    if (!s || strcmp(s, "auto") == 0)
       return false;
    if (strcmp(s, "59.94") == 0)
@@ -962,11 +1104,17 @@ static bool rate_to_timeperframe(const char *s, uint32_t *num, uint32_t *den)
       *den = 30000;
       return true;
    }
-   r = atoi(s);
-   if (r <= 0)
+   if (strcmp(s, "23.976") == 0)
+   {
+      *num = 1001;
+      *den = 24000;
+      return true;
+   }
+   fps = strtod(s, &end);
+   if (end == s || fps <= 0.0)
       return false;
-   *num = 1;
-   *den = (uint32_t)r;
+   *num = 1000;
+   *den = (uint32_t)(fps * 1000.0 + 0.5);
    return true;
 }
 
@@ -1892,6 +2040,26 @@ static bool load_game_internal(bool allow_fallback)
             else
                video_cap_height = fmt.fmt.pix.height / 2;
             break;
+      }
+
+      /* Prefer a constant frame rate over auto-exposure: cameras (webcams)
+       * with "exposure auto priority" enabled (exposure_dynamic_framerate in
+       * v4l2-ctl; browsers/meeting software often switch it on and it sticks
+       * until the camera is replugged) may extend the exposure time beyond
+       * the frame interval in dim light. The camera then silently delivers
+       * only ~10-15 fps while G_PARM still reports the nominal rate, and the
+       * whole frontend paces on the slow delivery — everything (menu,
+       * shaders) is slow/laggy/choppy except the capture picture itself.
+       * Disabling the priority makes the camera clamp exposure to the frame
+       * interval instead. HDMI/SDI grabbers have no exposure and don't
+       * implement the control; the failed ioctl is simply ignored. */
+      {
+         struct v4l2_control ctrl;
+         memset(&ctrl, 0, sizeof(ctrl));
+         ctrl.id    = V4L2_CID_EXPOSURE_AUTO_PRIORITY;
+         ctrl.value = 0;
+         if (v4l2_ioctl(video_device_fd, VIDIOC_S_CTRL, &ctrl) == 0)
+            printf("Disabled exposure auto priority (constant frame rate)\n");
       }
 
       /* Frame rate is controlled/reported via VIDIOC_G/S_PARM (timeperframe),
