@@ -3950,10 +3950,30 @@ DEFAULT_ACTION_DIALOG_START(action_ok_disable_kiosk_mode,
    msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD),
    (unsigned)entry_idx,
    menu_input_st_string_cb_disable_kiosk_mode)
-DEFAULT_ACTION_DIALOG_START(action_ok_rename_entry,
-   msg_hash_to_str(MSG_INPUT_RENAME_ENTRY),
-   (unsigned)entry_idx,
-   menu_input_st_string_cb_rename_entry)
+static int action_ok_rename_entry(const char *path,
+      const char *label_setting, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+   playlist_t *playlist;
+   const struct playlist_entry *entry = NULL;
+
+   line.label                         = msg_hash_to_str(MSG_INPUT_RENAME_ENTRY);
+   line.label_setting                 = label_setting;
+   line.type                          = type;
+   line.idx                           = (unsigned)entry_idx;
+   line.cb                            = menu_input_st_string_cb_rename_entry;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+
+   if ((playlist = playlist_get_cached()))
+      playlist_get_index(playlist, entry_idx, &entry);
+   if (entry && entry->label && *entry->label)
+      input_keyboard_line_append(&input_state_get_ptr()->keyboard_line,
+            entry->label, strlen(entry->label));
+
+   return 0;
+}
 
 
 static int generic_action_ok_remap_file_operation(const char *path,
