@@ -638,17 +638,24 @@ static void list_capture_options(char *capture_resolutions, size_t res_len,
       written += elen;
    }
 }
-RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
+/* Probed capture option value lists and the device selection they were
+ * probed from. File-scope statics: they survive core restarts when the core
+ * is statically linked into the frontend (an empty-buffer check alone would
+ * never refresh them), and the runtime device-switch path re-registers
+ * through them. */
+static char capture_resolutions[ENVVAR_BUFLEN];
+static char capture_rates[ENVVAR_BUFLEN];
+static char probed_for[ENVVAR_BUFLEN];
+
+/* Enumerate the capture devices, resolve the selected one and register the
+ * complete option set with resolution/rate lists probed from that device.
+ * Called from retro_set_environment and again from the reconfigure path in
+ * retro_run when the user switches capture devices, so the lists always
+ * describe the selected device without requiring a core restart. */
+static void register_options(void)
 {
-   bool no_content = true;
    char video_devices[ENVVAR_BUFLEN];
    char audio_devices[ENVVAR_BUFLEN];
-   static char capture_resolutions[ENVVAR_BUFLEN];
-   static char capture_rates[ENVVAR_BUFLEN];
-   /* Device selection the resolution/rate lists were probed from; statics
-    * survive core restarts when the core is statically linked into the
-    * frontend, so an empty-buffer check alone would never refresh them. */
-   static char probed_for[ENVVAR_BUFLEN];
    struct retro_variable videodev = { "videoproc_videodev", NULL };
    struct retro_variable envvars[] = {
       { "videoproc_videodev", NULL },
@@ -660,10 +667,6 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
       { "videoproc_frame_times","Print frame times to terminal (v4l2 only); Off|On" },
       { NULL, NULL }
    };
-
-   VIDEOPROC_CORE_PREFIX(environment_cb) = cb;
-
-   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
 
    /* Enumerate all real devices */
    enumerate_video_devices(video_devices, sizeof(video_devices));
@@ -720,6 +723,17 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    }
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
+}
+
+RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
+{
+   bool no_content = true;
+
+   VIDEOPROC_CORE_PREFIX(environment_cb) = cb;
+
+   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
+
+   register_options();
 }
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
@@ -1653,7 +1667,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
 
    if (VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
    {
-      bool video_changed, audio_changed;
+      bool video_changed, audio_changed, device_changed;
 
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
@@ -1665,7 +1679,8 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
       /* Video or Audio device(s) has(ve) been changed
        * TODO We may get away without resetting devices when changing output mode...
        */
-      video_changed = (videodev.value    && (strcmp(video_device, videodev.value) != 0)) ||
+      device_changed = videodev.value && (strcmp(video_device, videodev.value) != 0);
+      video_changed = device_changed ||
           (capturemode.value && (strcmp(video_capture_mode, capturemode.value) != 0)) ||
           (captureresolution.value && (strcmp(video_capture_resolution, captureresolution.value) != 0)) ||
           (capturerate.value && (strcmp(video_capture_rate, capturerate.value) != 0)) ||
@@ -1702,6 +1717,13 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
             struct retro_system_av_info av_info;
             struct retro_system_av_info prev_av_info = video_last_av_info;
             unload_game_internal(keep_audio);
+            /* A different capture device supports different resolutions and
+             * frame rates: re-probe and re-register the options so the menu
+             * lists describe the newly selected device — before the load
+             * reads the values back, so a stale selection the new device's
+             * list doesn't contain resets to that list's default first. */
+            if (device_changed)
+               register_options();
             if (!load_game_internal(false))
             {
                /* Reload failed: the buffers we just freed are gone. Output a
