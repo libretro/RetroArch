@@ -7236,21 +7236,37 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_entry_t entry;
+   char current_value[PATH_MAX_LENGTH];
 #if IOS
    char tmp[PATH_MAX_LENGTH];
 #endif
-   char current_value[PATH_MAX_LENGTH];
-   struct menu_state *menu_st = menu_state_get_ptr();
-   menu_handle_t *menu        = menu_st->driver_data;
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   menu_handle_t *menu           = menu_st->driver_data;
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *selection_buf    = menu_list
+      ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   menu_file_list_cbs_t *cbs     = (selection_buf
+         && (menu_st->selection_ptr < selection_buf->size))
+      ? (menu_file_list_cbs_t*)selection_buf->list[
+            menu_st->selection_ptr].actiondata
+      : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
 
    if (!menu)
       return -1;
 
    /* Start browsing from current directory */
-   MENU_ENTRY_INITIALIZE(entry);
-   entry.flags    |= MENU_ENTRY_FLAG_VALUE_ENABLED;
-   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-   strlcpy(current_value, entry.value, sizeof(current_value));
+   current_value[0] = '\0';
+   if (setting && setting->value.target.string)
+      strlcpy(current_value, setting->value.target.string,
+            sizeof(current_value));
+   else
+   {
+      MENU_ENTRY_INITIALIZE(entry);
+      entry.flags    |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+      menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+      strlcpy(current_value, entry.value, sizeof(current_value));
+   }
 #if IOS
    fill_pathname_expand_special(tmp, current_value, sizeof(tmp));
    if (!path_is_directory(tmp))
