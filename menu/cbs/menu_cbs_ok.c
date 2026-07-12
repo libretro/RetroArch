@@ -7240,17 +7240,9 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
 #if IOS
    char tmp[PATH_MAX_LENGTH];
 #endif
-   struct menu_state *menu_st    = menu_state_get_ptr();
-   menu_handle_t *menu           = menu_st->driver_data;
-   menu_list_t *menu_list        = menu_st->entries.list;
-   file_list_t *selection_buf    = menu_list
-      ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
-   menu_file_list_cbs_t *cbs     = (selection_buf
-         && (menu_st->selection_ptr < selection_buf->size))
-      ? (menu_file_list_cbs_t*)selection_buf->list[
-            menu_st->selection_ptr].actiondata
-      : NULL;
-   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_handle_t *menu        = menu_st->driver_data;
+   rarch_setting_t *setting   = menu_setting_find(label);
 
    if (!menu)
       return -1;
@@ -7258,8 +7250,7 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
    /* Start browsing from current directory */
    current_value[0] = '\0';
    if (setting && setting->value.target.string)
-      strlcpy(current_value, setting->value.target.string,
-            sizeof(current_value));
+      strlcpy(current_value, setting->value.target.string, sizeof(current_value));
    else
    {
       MENU_ENTRY_INITIALIZE(entry);
