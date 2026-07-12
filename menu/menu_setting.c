@@ -4294,6 +4294,11 @@ static size_t setting_get_string_representation_uint_rgui_aspect_ratio(
                   msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO),
                   len);
+         case RGUI_ASPECT_RATIO_1_1:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_1_1),
+                  len);
       }
    }
    return 0;

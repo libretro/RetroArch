@@ -6476,6 +6476,10 @@ static bool rgui_set_aspect_ratio(
 #endif
          }
          break;
+      case RGUI_ASPECT_RATIO_1_1:
+         rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(rgui->frame_buf.height);
+         base_term_width       = rgui->frame_buf.width;
+         break;
       default:
          /* 4:3 */
          if (rgui->frame_buf.height == 240)
@@ -6578,6 +6582,10 @@ static bool rgui_set_aspect_ratio(
                   RGUI_MIN_FB_WIDTH : base_term_width;
             break;
 
+         case RGUI_ASPECT_RATIO_1_1:
+            rgui->frame_buf.height = rgui->frame_buf.width;
+            base_term_width        = rgui->frame_buf.width;
+            break;
          default:
             /* 4:3 */
             rgui->frame_buf.height = (unsigned)(
@@ -8078,6 +8086,9 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          case RGUI_ASPECT_RATIO_5_3:
          case RGUI_ASPECT_RATIO_5_3_CENTRE:
             default_fb_width = 400;
+            break;
+         case RGUI_ASPECT_RATIO_1_1:
+            default_fb_width = 240;
             break;
          default:
             /* 4:3 */
