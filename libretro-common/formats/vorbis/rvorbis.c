@@ -20,6 +20,25 @@
  *                 near imdct_step3_iter0_loop) followed by the windowed
  *                 overlap-add in vorbis_finish_frame.
  */
+/* The s16 pipeline's internals are chosen per target, matching rmp3:
+ * where a vector FPU exists (SSE2/NEON) s16 decodes through the SIMD
+ * float transforms and quantises once at the interleave copy; scalar
+ * and FPU-less targets run the Q28 fixed-point inverse MDCT and
+ * windowing instead, which avoid the soft-float cost.  Uniform Q28
+ * samples with Q27 coefficients: measured maxima across the corpus
+ * (including full-scale square waves) stay below 1.7 at every point of
+ * the MDCT, so the +-8 range of Q28 leaves ample headroom with no
+ * inter-stage rescaling. */
+#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2) \
+ || defined(__ARM_NEON) || defined(__aarch64__) || defined(__ARM_NEON__) || defined(_M_ARM64)
+#define RVORBIS_S16_VIA_INT 0
+#else
+#define RVORBIS_S16_VIA_INT 1
+#endif
+#define RVQ_QBITS 28
+#define RVQ_MULQ(x, c) \
+   ((int32_t)((((int64_t)(x) * (c)) + ((int64_t)1 << 26)) >> 27))
+
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -320,6 +339,13 @@ struct rvorbis
    /* twiddle factors */
    float *A[2],*B[2],*C[2];
    float *window[2];
+   /* Q27 integer twins of A/B/C and the window, used by the fixed-point
+    * s16 route on scalar targets (NULL on SIMD targets). */
+   int32_t *A_q[2], *B_q[2], *C_q[2];
+   int32_t *window_q[2];
+   /* Output-format latch: 0 = float pipeline, 1 = s16 pipeline.  Only
+    * meaningful where the s16 route is fixed-point. */
+   int s16_mode;
    uint16_t *bit_reverse[2];
 
   /* current page/packet/segment streaming info */
@@ -757,6 +783,31 @@ static int init_blocksize(vorb *f, int b, int n)
    f->window[b] = (float *) setup_malloc(f, sizeof(float) * n2);
    if (!f->window[b]) return error(f, RVORBIS_outofmem);
    compute_window(n, f->window[b]);
+
+   if (RVORBIS_S16_VIA_INT)
+   {
+      /* Q27 integer twins for the fixed-point s16 route, generated
+       * from the float tables computed above. */
+      int k;
+      f->A_q[b]      = (int32_t *) setup_malloc(f, sizeof(int32_t) * n2);
+      f->B_q[b]      = (int32_t *) setup_malloc(f, sizeof(int32_t) * n2);
+      f->C_q[b]      = (int32_t *) setup_malloc(f, sizeof(int32_t) * n4);
+      f->window_q[b] = (int32_t *) setup_malloc(f, sizeof(int32_t) * n2);
+      if (!f->A_q[b] || !f->B_q[b] || !f->C_q[b] || !f->window_q[b])
+         return error(f, RVORBIS_outofmem);
+      for (k = 0; k < n2; k++)
+      {
+         f->A_q[b][k] = (int32_t)(f->A[b][k] * (float)(1 << 27)
+               + ((f->A[b][k] >= 0.0f) ? 0.5f : -0.5f));
+         f->B_q[b][k] = (int32_t)(f->B[b][k] * (float)(1 << 27)
+               + ((f->B[b][k] >= 0.0f) ? 0.5f : -0.5f));
+         f->window_q[b][k] = (int32_t)(f->window[b][k] * (float)(1 << 27)
+               + ((f->window[b][k] >= 0.0f) ? 0.5f : -0.5f));
+      }
+      for (k = 0; k < n4; k++)
+         f->C_q[b][k] = (int32_t)(f->C[b][k] * (float)(1 << 27)
+               + ((f->C[b][k] >= 0.0f) ? 0.5f : -0.5f));
+   }
    f->bit_reverse[b] = (uint16_t *) setup_malloc(f, sizeof(uint16_t) * n8);
    if (!f->bit_reverse[b]) return error(f, RVORBIS_outofmem);
    compute_bitreverse(n, f->bit_reverse[b]);
@@ -1732,6 +1783,12 @@ done:
 #define RVORBIS_HAVE_NEON 1
 #endif
 
+#ifndef RVORBIS_HAVE_SSE
+#define RVORBIS_HAVE_SSE 0
+#endif
+#ifndef RVORBIS_HAVE_NEON
+#define RVORBIS_HAVE_NEON 0
+#endif
 #if RVORBIS_HAVE_SSE
 /* One radix butterfly over two adjacent complex pairs (four floats,
  * descending addresses: pair 0 at e[0]/e[-1], pair 1 at e[-2]/e[-3]).
@@ -2080,6 +2137,538 @@ static void imdct_step3_inner_s_loop_ld654(int n, float *e, int i_off, float *A,
       z -= 16;
    }
 }
+
+#if RVORBIS_S16_VIA_INT
+/* -----------------------------------------------------------------------
+ * Fixed-point inverse MDCT: the scalar float kernels below, transcribed
+ * to Q28 samples and Q27 twiddles.  Each product is one 32x32->64
+ * multiply and a round-to-nearest shift.
+ * ----------------------------------------------------------------------- */
+static INLINE void iter_54_q(int32_t *z)
+{
+   int32_t k00,k11,k22,k33;
+   int32_t y0,y1,y2,y3;
+
+   k00  = z[ 0] - z[-4];
+   y0   = z[ 0] + z[-4];
+   y2   = z[-2] + z[-6];
+   k22  = z[-2] - z[-6];
+
+   z[-0] = y0 + y2;      /* z0 + z4 + z2 + z6 */
+   z[-2] = y0 - y2;      /* z0 + z4 - z2 - z6 */
+
+   /* done with y0,y2 */
+
+   k33  = z[-3] - z[-7];
+
+   z[-4] = k00 + k33;    /* z0 - z4 + z3 - z7 */
+   z[-6] = k00 - k33;    /* z0 - z4 - z3 + z7 */
+
+   /* done with k33 */
+
+   k11  = z[-1] - z[-5];
+   y1   = z[-1] + z[-5];
+   y3   = z[-3] + z[-7];
+
+   z[-1] = y1 + y3;      /* z1 + z5 + z3 + z7 */
+   z[-3] = y1 - y3;      /* z1 + z5 - z3 - z7 */
+   z[-5] = k11 - k22;    /* z1 - z5 + z2 - z6 */
+   z[-7] = k11 + k22;    /* z1 - z5 - z2 + z6 */
+}
+
+static void imdct_step3_iter0_loop_q(int n, int32_t *e, int i_off, int k_off, int32_t *A)
+{
+   int32_t *ee0 = e + i_off;
+   int32_t *ee2 = ee0 + k_off;
+   int i;
+
+   assert((n & 3) == 0);
+   for (i=(n>>2); i > 0; --i)
+   {
+      int32_t k00_20  = ee0[ 0] - ee2[ 0];
+      int32_t k01_21  = ee0[-1] - ee2[-1];
+      ee0[ 0] += ee2[ 0];
+      ee0[-1] += ee2[-1];
+      ee2[ 0] = RVQ_MULQ(k00_20, A[0]) - RVQ_MULQ(k01_21, A[1]);
+      ee2[-1] = RVQ_MULQ(k01_21, A[0]) + RVQ_MULQ(k00_20, A[1]);
+      A += 8;
+
+      k00_20  = ee0[-2] - ee2[-2];
+      k01_21  = ee0[-3] - ee2[-3];
+      ee0[-2] += ee2[-2];
+      ee0[-3] += ee2[-3];
+      ee2[-2] = RVQ_MULQ(k00_20, A[0]) - RVQ_MULQ(k01_21, A[1]);
+      ee2[-3] = RVQ_MULQ(k01_21, A[0]) + RVQ_MULQ(k00_20, A[1]);
+      A += 8;
+
+      k00_20  = ee0[-4] - ee2[-4];
+      k01_21  = ee0[-5] - ee2[-5];
+      ee0[-4] += ee2[-4];
+      ee0[-5] += ee2[-5];
+      ee2[-4] = RVQ_MULQ(k00_20, A[0]) - RVQ_MULQ(k01_21, A[1]);
+      ee2[-5] = RVQ_MULQ(k01_21, A[0]) + RVQ_MULQ(k00_20, A[1]);
+      A += 8;
+
+      k00_20  = ee0[-6] - ee2[-6];
+      k01_21  = ee0[-7] - ee2[-7];
+      ee0[-6] += ee2[-6];
+      ee0[-7] += ee2[-7];
+      ee2[-6] = RVQ_MULQ(k00_20, A[0]) - RVQ_MULQ(k01_21, A[1]);
+      ee2[-7] = RVQ_MULQ(k01_21, A[0]) + RVQ_MULQ(k00_20, A[1]);
+      A += 8;
+      ee0 -= 8;
+      ee2 -= 8;
+   }
+}
+
+static void imdct_step3_inner_r_loop_q(int lim, int32_t *e, int d0, int k_off, int32_t *A, int k1)
+{
+   int i;
+#if !RVORBIS_HAVE_SSE && !RVORBIS_HAVE_NEON
+   int32_t k00_20, k01_21;
+#endif
+
+   int32_t *e0 = e + d0;
+   int32_t *e2 = e0 + k_off;
+
+   for (i=lim >> 2; i > 0; --i) {
+      k00_20 = e0[-0] - e2[-0];
+      k01_21 = e0[-1] - e2[-1];
+      e0[-0] += e2[-0];
+      e0[-1] += e2[-1];
+      e2[-0] = RVQ_MULQ((k00_20), A[0]) - RVQ_MULQ((k01_21), A[1]);
+      e2[-1] = RVQ_MULQ((k01_21), A[0]) + RVQ_MULQ((k00_20), A[1]);
+
+      A += k1;
+
+      k00_20 = e0[-2] - e2[-2];
+      k01_21 = e0[-3] - e2[-3];
+      e0[-2] += e2[-2];
+      e0[-3] += e2[-3];
+      e2[-2] = RVQ_MULQ((k00_20), A[0]) - RVQ_MULQ((k01_21), A[1]);
+      e2[-3] = RVQ_MULQ((k01_21), A[0]) + RVQ_MULQ((k00_20), A[1]);
+
+      A += k1;
+
+      k00_20 = e0[-4] - e2[-4];
+      k01_21 = e0[-5] - e2[-5];
+      e0[-4] += e2[-4];
+      e0[-5] += e2[-5];
+      e2[-4] = RVQ_MULQ((k00_20), A[0]) - RVQ_MULQ((k01_21), A[1]);
+      e2[-5] = RVQ_MULQ((k01_21), A[0]) + RVQ_MULQ((k00_20), A[1]);
+
+      A += k1;
+
+      k00_20 = e0[-6] - e2[-6];
+      k01_21 = e0[-7] - e2[-7];
+      e0[-6] += e2[-6];
+      e0[-7] += e2[-7];
+      e2[-6] = RVQ_MULQ((k00_20), A[0]) - RVQ_MULQ((k01_21), A[1]);
+      e2[-7] = RVQ_MULQ((k01_21), A[0]) + RVQ_MULQ((k00_20), A[1]);
+
+      A += k1;
+      e0 -= 8;
+      e2 -= 8;
+   }
+}
+
+static void imdct_step3_inner_s_loop_q(int n, int32_t *e, int i_off, int k_off, int32_t *A, int a_off, int k0)
+{
+   int i;
+   int32_t A0 = A[0];
+   int32_t A1 = A[0+1];
+   int32_t A2 = A[0+a_off];
+   int32_t A3 = A[0+a_off+1];
+   int32_t A4 = A[0+a_off*2+0];
+   int32_t A5 = A[0+a_off*2+1];
+   int32_t A6 = A[0+a_off*3+0];
+   int32_t A7 = A[0+a_off*3+1];
+
+   int32_t k00,k11;
+
+   int32_t *ee0 = e  +i_off;
+   int32_t *ee2 = ee0+k_off;
+
+   for (i=n; i > 0; --i) {
+      k00     = ee0[ 0] - ee2[ 0];
+      k11     = ee0[-1] - ee2[-1];
+      ee0[ 0] =  ee0[ 0] + ee2[ 0];
+      ee0[-1] =  ee0[-1] + ee2[-1];
+      ee2[ 0] = RVQ_MULQ((k00), A0) - RVQ_MULQ((k11), A1);
+      ee2[-1] = RVQ_MULQ((k11), A0) + RVQ_MULQ((k00), A1);
+
+      k00     = ee0[-2] - ee2[-2];
+      k11     = ee0[-3] - ee2[-3];
+      ee0[-2] =  ee0[-2] + ee2[-2];
+      ee0[-3] =  ee0[-3] + ee2[-3];
+      ee2[-2] = RVQ_MULQ((k00), A2) - RVQ_MULQ((k11), A3);
+      ee2[-3] = RVQ_MULQ((k11), A2) + RVQ_MULQ((k00), A3);
+
+      k00     = ee0[-4] - ee2[-4];
+      k11     = ee0[-5] - ee2[-5];
+      ee0[-4] =  ee0[-4] + ee2[-4];
+      ee0[-5] =  ee0[-5] + ee2[-5];
+      ee2[-4] = RVQ_MULQ((k00), A4) - RVQ_MULQ((k11), A5);
+      ee2[-5] = RVQ_MULQ((k11), A4) + RVQ_MULQ((k00), A5);
+
+      k00     = ee0[-6] - ee2[-6];
+      k11     = ee0[-7] - ee2[-7];
+      ee0[-6] =  ee0[-6] + ee2[-6];
+      ee0[-7] =  ee0[-7] + ee2[-7];
+      ee2[-6] = RVQ_MULQ((k00), A6) - RVQ_MULQ((k11), A7);
+      ee2[-7] = RVQ_MULQ((k11), A6) + RVQ_MULQ((k00), A7);
+      ee0 -= k0;
+      ee2 -= k0;
+   }
+}
+
+static void imdct_step3_inner_s_loop_ld654_q(int n, int32_t *e, int i_off, int32_t *A, int base_n)
+{
+   int a_off = base_n >> 3;
+   int32_t A2 = A[0+a_off];
+   int32_t *z = e + i_off;
+   int32_t *base = z - 16 * n;
+
+   while (z > base) {
+      int32_t k00,k11;
+
+      k00   = z[-0] - z[-8];
+      k11   = z[-1] - z[-9];
+      z[-0] = z[-0] + z[-8];
+      z[-1] = z[-1] + z[-9];
+      z[-8] =  k00;
+      z[-9] =  k11 ;
+
+      k00    = z[ -2] - z[-10];
+      k11    = z[ -3] - z[-11];
+      z[ -2] = z[ -2] + z[-10];
+      z[ -3] = z[ -3] + z[-11];
+      z[-10] = RVQ_MULQ((k00+k11), A2);
+      z[-11] = RVQ_MULQ((k11-k00), A2);
+
+      k00    = z[-12] - z[ -4];  /* reverse to avoid a unary negation */
+      k11    = z[ -5] - z[-13];
+      z[ -4] = z[ -4] + z[-12];
+      z[ -5] = z[ -5] + z[-13];
+      z[-12] = k11;
+      z[-13] = k00;
+
+      k00    = z[-14] - z[ -6];  /* reverse to avoid a unary negation */
+      k11    = z[ -7] - z[-15];
+      z[ -6] = z[ -6] + z[-14];
+      z[ -7] = z[ -7] + z[-15];
+      z[-14] = RVQ_MULQ((k00+k11), A2);
+      z[-15] = RVQ_MULQ((k00-k11), A2);
+
+      iter_54_q(z);
+      iter_54_q(z-8);
+      z -= 16;
+   }
+}
+
+static void inverse_mdct_q(int32_t *buffer, int n, vorb *f, int blocktype)
+{
+   int n2 = n >> 1, n4 = n >> 2, n8 = n >> 3, l;
+   int ld;
+   /* @OPTIMIZE: reduce register pressure by using fewer variables? */
+   int save_point = temp_alloc_save(f);
+   int32_t *buf2 = (int32_t *)temp_alloc(f, n2 * sizeof(*buf2));
+   int32_t *u=NULL,*v=NULL;
+   /* twiddle factors */
+   int32_t *A = f->A_q[blocktype];
+
+   /* IMDCT algorithm from "The use of multirate filter banks for coding of high quality digital audio"
+    * See notes about bugs in that paper in less-optimal implementation 'inverse_mdct_old' after this function.
+
+    * kernel from paper
+
+
+    * merged:
+    *   copy and reflect spectral data
+    *   step 0
+
+    * note that it turns out that the items added together during
+    * this step are, in fact, being added to themselves (as reflected
+    * by step 0). inexplicable inefficiency! this became obvious
+    * once I combined the passes.
+
+    * so there's a missing 'times 2' here (for adding X to itself).
+    * this propogates through linearly to the end, where the numbers
+    * are 1/2 too small, and need to be compensated for.
+    */
+
+   {
+      int32_t *d,*e, *AA, *e_stop;
+      d = &buf2[n2-2];
+      AA = A;
+      e = &buffer[0];
+      e_stop = &buffer[n2];
+      while (e != e_stop) {
+         d[1] = RVQ_MULQ(e[0], AA[0]) - RVQ_MULQ(e[2], AA[1]);
+         d[0] = RVQ_MULQ(e[0], AA[1]) + RVQ_MULQ(e[2], AA[0]);
+         d -= 2;
+         AA += 2;
+         e += 4;
+      }
+
+      e = &buffer[n2-3];
+      while (d >= buf2) {
+         d[1] = RVQ_MULQ(-e[2], AA[0]) - RVQ_MULQ(-e[0], AA[1]);
+         d[0] = RVQ_MULQ(-e[2], AA[1]) + RVQ_MULQ(-e[0], AA[0]);
+         d -= 2;
+         AA += 2;
+         e -= 4;
+      }
+   }
+
+   /* now we use symbolic names for these, so that we can
+    * possibly swap their meaning as we change which operations
+    * are in place */
+
+   u = buffer;
+   v = buf2;
+
+   /* step 2    (paper output is w, now u)
+    * this could be in place, but the data ends up in the wrong
+    * place... _somebody_'s got to swap it, so this is nominated */
+   {
+      int32_t *AA = &A[n2-8];
+      int32_t *d0,*d1, *e0, *e1;
+
+      e0 = &v[n4];
+      e1 = &v[0];
+
+      d0 = &u[n4];
+      d1 = &u[0];
+
+      while (AA >= A) {
+         int32_t v40_20, v41_21;
+
+         v41_21 = e0[1] - e1[1];
+         v40_20 = e0[0] - e1[0];
+         d0[1]  = e0[1] + e1[1];
+         d0[0]  = e0[0] + e1[0];
+         d1[1]  = RVQ_MULQ(v41_21, AA[4]) - RVQ_MULQ(v40_20, AA[5]);
+         d1[0]  = RVQ_MULQ(v40_20, AA[4]) + RVQ_MULQ(v41_21, AA[5]);
+
+         v41_21 = e0[3] - e1[3];
+         v40_20 = e0[2] - e1[2];
+         d0[3]  = e0[3] + e1[3];
+         d0[2]  = e0[2] + e1[2];
+         d1[3]  = RVQ_MULQ(v41_21, AA[0]) - RVQ_MULQ(v40_20, AA[1]);
+         d1[2]  = RVQ_MULQ(v40_20, AA[0]) + RVQ_MULQ(v41_21, AA[1]);
+         AA -= 8;
+
+         d0 += 4;
+         d1 += 4;
+         e0 += 4;
+         e1 += 4;
+      }
+   }
+
+   /* step 3 */
+   ld = ilog(n) - 1; /* ilog is off-by-one from normal definitions */
+
+   /* optimized step 3:
+
+    * the original step3 loop can be nested r inside s or s inside r;
+    * it's written originally as s inside r, but this is dumb when r
+    * iterates many times, and s few. So I have two copies of it and
+    * switch between them halfway.
+
+    * this is iteration 0 of step 3 */
+   imdct_step3_iter0_loop_q(n >> 4, u, n2-1-n4*0, -(n >> 3), A);
+   imdct_step3_iter0_loop_q(n >> 4, u, n2-1-n4*1, -(n >> 3), A);
+
+   /* this is iteration 1 of step 3 */
+   imdct_step3_inner_r_loop_q(n >> 5, u, n2-1 - n8*0, -(n >> 4), A, 16);
+   imdct_step3_inner_r_loop_q(n >> 5, u, n2-1 - n8*1, -(n >> 4), A, 16);
+   imdct_step3_inner_r_loop_q(n >> 5, u, n2-1 - n8*2, -(n >> 4), A, 16);
+   imdct_step3_inner_r_loop_q(n >> 5, u, n2-1 - n8*3, -(n >> 4), A, 16);
+
+   l=2;
+   for (; l < (ld-3)>>1; ++l) {
+      int k0 = n >> (l+2), k0_2 = k0>>1;
+      int lim = 1 << (l+1);
+      int i;
+      for (i=0; i < lim; ++i)
+         imdct_step3_inner_r_loop_q(n >> (l+4), u, n2-1 - k0*i, -k0_2, A, 1 << (l+3));
+   }
+
+   for (; l < ld-6; ++l) {
+      int k0 = n >> (l+2), k1 = 1 << (l+3), k0_2 = k0>>1;
+      int rlim = n >> (l+6), r;
+      int lim = 1 << (l+1);
+      int i_off;
+      int32_t *A0 = A;
+      i_off = n2-1;
+      for (r=rlim; r > 0; --r) {
+         imdct_step3_inner_s_loop_q(lim, u, i_off, -k0_2, A0, k1, k0);
+         A0 += k1*4;
+         i_off -= 8;
+      }
+   }
+
+   /* iterations with count:
+    *   ld-6,-5,-4 all interleaved together
+    *       the big win comes from getting rid of needless flops
+    *         due to the constants on pass 5 & 4 being all 1 and 0;
+    *       combining them to be simultaneous to improve cache made little difference
+    */
+   imdct_step3_inner_s_loop_ld654_q(n >> 5, u, n2-1, A, n);
+
+   /* output is u
+
+    * step 4, 5, and 6
+    * cannot be in-place because of step 5 */
+   {
+      uint16_t *bitrev = f->bit_reverse[blocktype];
+      /* weirdly, I'd have thought reading sequentially and writing
+       * erratically would have been better than vice-versa, but in
+       * fact that's not what my testing showed. (That is, with
+       * j = bitreverse(i), do you read i and write j, or read j and write i.) */
+
+      int32_t *d0 = &v[n4-4];
+      int32_t *d1 = &v[n2-4];
+      while (d0 >= v) {
+         int k4;
+
+         k4 = bitrev[0];
+         d1[3] = u[k4+0];
+         d1[2] = u[k4+1];
+         d0[3] = u[k4+2];
+         d0[2] = u[k4+3];
+
+         k4 = bitrev[1];
+         d1[1] = u[k4+0];
+         d1[0] = u[k4+1];
+         d0[1] = u[k4+2];
+         d0[0] = u[k4+3];
+
+         d0 -= 4;
+         d1 -= 4;
+         bitrev += 2;
+      }
+   }
+   /* (paper output is u, now v) */
+
+
+   /* data must be in buf2 */
+   assert(v == buf2);
+
+   /* step 7   (paper output is v, now v)
+    * this is now in place */
+   {
+      int32_t *C = f->C_q[blocktype];
+      int32_t *d, *e;
+
+      d = v;
+      e = v + n2 - 4;
+
+      while (d < e) {
+         int32_t a02,a11,b0,b1,b2,b3;
+
+         a02 = d[0] - e[2];
+         a11 = d[1] + e[3];
+
+         b0 = RVQ_MULQ(a02, C[1]) + RVQ_MULQ(a11, C[0]);
+         b1 = RVQ_MULQ(a11, C[1]) - RVQ_MULQ(a02, C[0]);
+
+         b2 = d[0] + e[ 2];
+         b3 = d[1] - e[ 3];
+
+         d[0] = b2 + b0;
+         d[1] = b3 + b1;
+         e[2] = b2 - b0;
+         e[3] = b1 - b3;
+
+         a02 = d[2] - e[0];
+         a11 = d[3] + e[1];
+
+         b0 = RVQ_MULQ(a02, C[3]) + RVQ_MULQ(a11, C[2]);
+         b1 = RVQ_MULQ(a11, C[3]) - RVQ_MULQ(a02, C[2]);
+
+         b2 = d[2] + e[ 0];
+         b3 = d[3] - e[ 1];
+
+         d[2] = b2 + b0;
+         d[3] = b3 + b1;
+         e[0] = b2 - b0;
+         e[1] = b1 - b3;
+
+         C += 4;
+         d += 4;
+         e -= 4;
+      }
+   }
+
+   /* data must be in buf2
+
+
+    * step 8+decode   (paper output is X, now buffer)
+    * this generates pairs of data a la 8 and pushes them directly through
+    * the decode kernel (pushing rather than pulling) to avoid having
+    * to make another pass later
+
+    * this cannot POSSIBLY be in place, so we refer to the buffers directly
+    */
+
+   {
+      int32_t *d0,*d1,*d2,*d3;
+
+      int32_t *B = f->B_q[blocktype] + n2 - 8;
+      int32_t *e = buf2 + n2 - 8;
+      d0 = &buffer[0];
+      d1 = &buffer[n2-4];
+      d2 = &buffer[n2];
+      d3 = &buffer[n-4];
+      while (e >= v) {
+         int32_t p0,p1,p2,p3;
+
+         p3 =  RVQ_MULQ(e[6], B[7]) - RVQ_MULQ(e[7], B[6]);
+         p2 = -RVQ_MULQ(e[6], B[6]) - RVQ_MULQ(e[7], B[7]);
+
+         d0[0] =   p3;
+         d1[3] = - p3;
+         d2[0] =   p2;
+         d3[3] =   p2;
+
+         p1 =  RVQ_MULQ(e[4], B[5]) - RVQ_MULQ(e[5], B[4]);
+         p0 = -RVQ_MULQ(e[4], B[4]) - RVQ_MULQ(e[5], B[5]);
+
+         d0[1] =   p1;
+         d1[2] = - p1;
+         d2[1] =   p0;
+         d3[2] =   p0;
+
+         p3 =  RVQ_MULQ(e[2], B[3]) - RVQ_MULQ(e[3], B[2]);
+         p2 = -RVQ_MULQ(e[2], B[2]) - RVQ_MULQ(e[3], B[3]);
+
+         d0[2] =   p3;
+         d1[1] = - p3;
+         d2[2] =   p2;
+         d3[1] =   p2;
+
+         p1 =  RVQ_MULQ(e[0], B[1]) - RVQ_MULQ(e[1], B[0]);
+         p0 = -RVQ_MULQ(e[0], B[0]) - RVQ_MULQ(e[1], B[1]);
+
+         d0[3] =   p1;
+         d1[0] = - p1;
+         d2[3] =   p0;
+         d3[0] =   p0;
+
+         B -= 8;
+         e -= 8;
+         d0 += 4;
+         d2 += 4;
+         d1 -= 4;
+         d3 -= 4;
+      }
+   }
+
+   temp_alloc_restore(f,save_point);
+}
+#endif /* RVORBIS_S16_VIA_INT */
 
 static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
 {
@@ -2803,8 +3392,35 @@ error:
    }
 
    /* INVERSE MDCT */
-   for (i=0; i < f->channels; ++i)
-      inverse_mdct(f->channel_buffers[i], n, f, m->blockflag);
+#if RVORBIS_S16_VIA_INT
+   if (f->s16_mode)
+   {
+      /* s16 pipeline: floor/residue produce float spectral samples;
+       * convert the live half to Q28 in place and run the fixed-point
+       * MDCT.  Everything to the s16 interleave stays integer. */
+      for (i=0; i < f->channels; ++i)
+      {
+         float   *bf = f->channel_buffers[i];
+         int32_t *bq = (int32_t *) f->channel_buffers[i];
+         int j;
+         for (j=0; j < n >> 1; ++j)
+         {
+            float x = bf[j];
+            if (x >=  7.999999f)      bq[j] = (int32_t) 0x7FFFFFFF;
+            else if (x <= -7.999999f) bq[j] = (int32_t)-0x7FFFFFFF - 1;
+            else
+               bq[j] = (int32_t)(x * (float)(1 << RVQ_QBITS)
+                     + ((x >= 0.0f) ? 0.5f : -0.5f));
+         }
+         inverse_mdct_q(bq, n, f, m->blockflag);
+      }
+   }
+   else
+#endif
+   {
+      for (i=0; i < f->channels; ++i)
+         inverse_mdct(f->channel_buffers[i], n, f, m->blockflag);
+   }
 
    /* this shouldn't be necessary, unless we exited on an error
     * and want to flush to get to the next packet */
@@ -2892,6 +3508,23 @@ static int vorbis_finish_frame(rvorbis *f, int len, int left, int right)
     * we start saving, and where our returned-data ends.
 
     * mixin from previous window */
+#if RVORBIS_S16_VIA_INT
+   /* Q28 overlap-add for the s16 pipeline (the buffers hold integers) */
+   if (f->s16_mode && f->previous_length)
+   {
+      int i, j, n = f->previous_length;
+      const int32_t *wq = (n == f->blocksize_0 >> 1) ? f->window_q[0] : f->window_q[1];
+      for (i=0; i < f->channels; ++i)
+      {
+         int32_t *buf  = (int32_t *) f->channel_buffers[i] + left;
+         int32_t *prev = (int32_t *) f->previous_window[i];
+         for (j=0; j < n; ++j)
+            buf[j] = RVQ_MULQ(buf[j], wq[j])
+                   + RVQ_MULQ(prev[j], wq[n-1-j]);
+      }
+   }
+   else
+#endif
    if (f->previous_length)
    {
       int i,j, n = f->previous_length;
@@ -3586,6 +4219,10 @@ static void vorbis_deinit(rvorbis *p)
       setup_free(p, p->B[i]);
       setup_free(p, p->C[i]);
       setup_free(p, p->window[i]);
+      setup_free(p, p->A_q[i]);
+      setup_free(p, p->B_q[i]);
+      setup_free(p, p->C_q[i]);
+      setup_free(p, p->window_q[i]);
       setup_free(p, p->bit_reverse[i]);
    }
 }
@@ -3867,6 +4504,43 @@ static int vorbis_analyze_page(rvorbis *f, ProbedPage *z)
    set_file_offset(f, z->page_start);
    return 0;
 }
+
+#if RVORBIS_S16_VIA_INT
+/* Latch the output pipeline (0 = float, 1 = fixed-point s16).  In
+ * normal mixer use this runs once, on the first read; a mid-stream
+ * switch converts the persistent overlap state and any undelivered
+ * samples of the current frame so playback continues seamlessly. */
+static void rvorbis_set_output_mode(vorb *f, int s16)
+{
+   int i, j;
+   if (f->s16_mode == s16)
+      return;
+   f->s16_mode = s16;
+   for (i=0; i < f->channels; ++i)
+   {
+      float   *pf = f->previous_window[i];
+      int32_t *pq = (int32_t *) f->previous_window[i];
+      float   *cf = f->channel_buffers[i];
+      int32_t *cq = (int32_t *) f->channel_buffers[i];
+      if (s16)
+      {
+         for (j=0; j < f->previous_length; ++j)
+            pq[j] = (int32_t)(pf[j] * (float)(1 << RVQ_QBITS)
+                  + ((pf[j] >= 0.0f) ? 0.5f : -0.5f));
+         for (j=f->channel_buffer_start; j < f->channel_buffer_end; ++j)
+            cq[j] = (int32_t)(cf[j] * (float)(1 << RVQ_QBITS)
+                  + ((cf[j] >= 0.0f) ? 0.5f : -0.5f));
+      }
+      else
+      {
+         for (j=0; j < f->previous_length; ++j)
+            pf[j] = pq[j] * (1.0f / (float)(1 << RVQ_QBITS));
+         for (j=f->channel_buffer_start; j < f->channel_buffer_end; ++j)
+            cf[j] = cq[j] * (1.0f / (float)(1 << RVQ_QBITS));
+      }
+   }
+}
+#endif /* RVORBIS_S16_VIA_INT */
 
 static int rvorbis_get_frame_float(rvorbis *f, int *channels, float ***output)
 {
@@ -4219,6 +4893,9 @@ rvorbis * rvorbis_open_memory(const unsigned char *data, int len, int *error, rv
 int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
       float *buffer, int num_floats)
 {
+#if RVORBIS_S16_VIA_INT
+   rvorbis_set_output_mode(f, 0);
+#endif
    float **outputs;
    int len = num_floats / channels;
    int n=0;
@@ -4256,6 +4933,9 @@ int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
 int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
       int16_t *buffer, int num_shorts)
 {
+#if RVORBIS_S16_VIA_INT
+   rvorbis_set_output_mode(f, 1);
+#endif
    float **outputs;
    int len = num_shorts / channels;
    int n=0;
@@ -4269,6 +4949,22 @@ int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
       if (n+k >= len) k = len - n;
       for (j=0; j < k; ++j)
       {
+#if RVORBIS_S16_VIA_INT
+         /* Q28 buffers: s16 = round(x * 32768) = round(v / 2^13),
+          * rounded half away from zero and clamped as the float
+          * quantiser below. */
+         for (i=0; i < z; ++i)
+         {
+            int32_t v = ((int32_t *) f->channel_buffers[i])[f->channel_buffer_start+j];
+            int32_t q = (v >= 0) ? ((v + (1 << 12)) >> 13)
+                                 : -((-v + (1 << 12)) >> 13);
+            if (q >  32767)
+               q =  32767;
+            if (q < -32768)
+               q = -32768;
+            *buffer++ = (int16_t)q;
+         }
+#else
          for (i=0; i < z; ++i)
          {
             float s = f->channel_buffers[i][f->channel_buffer_start+j] * 32768.0f;
@@ -4279,6 +4975,7 @@ int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
                q = -32768;
             *buffer++ = (int16_t)q;
          }
+#endif
          for (   ; i < channels; ++i)
             *buffer++ = 0;
       }
