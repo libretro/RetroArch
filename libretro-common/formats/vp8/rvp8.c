@@ -3194,6 +3194,11 @@ uint32_t *rvp8_decode(const uint8_t *data, size_t len,
 {
    rvp8_dec s;
    uint32_t *pix;
+   /* rvp8_begin frees the per-frame scratch pointers of a previous decode
+    * on this state (the persistent decoder reuses one rvp8_dec across
+    * frames); a fresh stack instance must be zeroed or those frees hit
+    * uninitialized garbage. */
+   memset(&s, 0, sizeof(s));
    if (rvp8_begin(data, len, &s) != 0)
       return NULL;
    while (rvp8_rows(&s, s.mbh) > 0)
