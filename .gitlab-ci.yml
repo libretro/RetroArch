@@ -621,8 +621,6 @@ build-retroarch-android-normal:
   script:
     - |
       set -e
-      export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-      export PATH="$JAVA_HOME/bin:$PATH"
       cd pkg/android/phoenix
       ./gradlew assembleNormalRelease
       cd -
@@ -640,8 +638,6 @@ build-retroarch-android-aarch64:
   script:
     - |
       set -e
-      export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-      export PATH="$JAVA_HOME/bin:$PATH"
       cd pkg/android/phoenix
       ./gradlew assembleAarch64Release
       cd -
@@ -659,8 +655,6 @@ build-retroarch-android-ra32:
   script:
     - |
       set -e
-      export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-      export PATH="$JAVA_HOME/bin:$PATH"
       cd pkg/android/phoenix
       ./gradlew assembleRa32Release
       cd -
@@ -678,8 +672,6 @@ build-retroarch-android-playstore-normal:
   script:
     - |
       set -e
-      export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-      export PATH="$JAVA_HOME/bin:$PATH"
       cd pkg/android/phoenix
       ./gradlew bundlePlayStoreNormalRelease
       cd -
@@ -697,8 +689,6 @@ build-retroarch-android-playstore-plus:
   script:
     - |
       set -e
-      export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-      export PATH="$JAVA_HOME/bin:$PATH"
       cd pkg/android/phoenix
       ./gradlew bundlePlayStorePlusRelease
       cd -

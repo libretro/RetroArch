@@ -1907,7 +1907,7 @@ static void android_input_poll(void *data)
    settings_t            *settings = config_get_ptr();
 
    while ((ident =
-            ALooper_pollAll(settings->uints.input_block_timeout,
+            ALooper_pollOnce(settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
       switch (ident)
