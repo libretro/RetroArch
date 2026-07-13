@@ -1649,24 +1649,13 @@ bool video_driver_is_threaded(void)
 bool *video_driver_get_threaded(void)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
-#if defined(__MACH__) && defined(__APPLE__)
-   /* TODO/FIXME - force threaded video to disabled on Apple for now
-    * until NSWindow/UIWindow concurrency issues are taken care of */
-   video_st->threaded = false;
-#endif
    return &video_st->threaded;
 }
 
 void video_driver_set_threaded(bool val)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
-#if defined(__MACH__) && defined(__APPLE__)
-   /* TODO/FIXME - force threaded video to disabled on Apple for now
-    * until NSWindow/UIWindow concurrency issues are taken care of */
-   video_st->threaded = false;
-#else
    video_st->threaded = val;
-#endif
 }
 
 const char *video_driver_get_ident(void)
