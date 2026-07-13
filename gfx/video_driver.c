@@ -3443,6 +3443,30 @@ void video_driver_cached_frame_invalidate(void)
    cached_frame_lock_release();
 }
 
+bool video_driver_cached_frame_invalidate_if(
+      void *userdata,
+      bool (*predicate)(void *userdata, const void *data))
+{
+   bool invalidated = false;
+
+   if (!predicate)
+      return false;
+
+   cached_frame_lock_acquire();
+   if (     frame_cache_data
+         && predicate(userdata, frame_cache_data))
+   {
+      frame_cache_data   = NULL;
+      frame_cache_width  = 0;
+      frame_cache_height = 0;
+      frame_cache_pitch  = 0;
+      invalidated        = true;
+   }
+   cached_frame_lock_release();
+
+   return invalidated;
+}
+
 bool video_driver_has_focus(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
