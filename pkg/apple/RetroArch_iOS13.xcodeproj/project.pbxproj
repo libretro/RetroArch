@@ -399,7 +399,6 @@
 		92B9ECBF24E054B500E6CFB2 /* core_backup.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core_backup.h; path = ../../core_backup.h; sourceTree = "<group>"; };
 		92B9ECC024E054B500E6CFB2 /* disk_control_interface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = disk_control_interface.h; path = ../../disk_control_interface.h; sourceTree = "<group>"; };
 		92B9ECC124E054B600E6CFB2 /* msg_hash.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = msg_hash.c; path = ../../msg_hash.c; sourceTree = "<group>"; };
-		92B9ECC224E054B600E6CFB2 /* nvda_controller.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = nvda_controller.h; path = ../../nvda_controller.h; sourceTree = "<group>"; };
 		92B9ECC324E054B600E6CFB2 /* defaults.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = defaults.h; path = ../../defaults.h; sourceTree = "<group>"; };
 		92B9ECC424E054B600E6CFB2 /* database_info.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = database_info.c; path = ../../database_info.c; sourceTree = "<group>"; };
 		92B9ECC524E054B600E6CFB2 /* runtime_file.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = runtime_file.c; path = ../../runtime_file.c; sourceTree = "<group>"; };
@@ -1042,7 +1041,6 @@
 				92B9ECBE24E054B500E6CFB2 /* manual_content_scan.h */,
 				92B9ECC124E054B600E6CFB2 /* msg_hash.c */,
 				92B9ECAE24E054B400E6CFB2 /* msg_hash.h */,
-				92B9ECC224E054B600E6CFB2 /* nvda_controller.h */,
 				92B9ECAA24E054B400E6CFB2 /* paths.h */,
 				92B9ECA524E054B300E6CFB2 /* performance_counters.h */,
 				92B9EC9F24E053BD00E6CFB2 /* playlist.c */,
