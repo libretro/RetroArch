@@ -2810,6 +2810,7 @@ static void materialui_render_messagebox(
       unsigned video_height,
       int y_centre,
       const char *msg,
+      bool draw_caret,
       math_matrix_4x4 *mymat)
 {
    int i;
@@ -2822,6 +2823,8 @@ static void materialui_render_messagebox(
    int slice_y                = 0;
    int slice_w                = 0;
    int slice_h                = 0;
+   unsigned cursor_line       = 0;
+   int cursor_x               = 0;
    size_t wrapped_len         = 0;
    char wrapped_msg[MENU_LABEL_MAX_LENGTH];
    const char *lines[64];
@@ -2895,6 +2898,55 @@ static void materialui_render_messagebox(
    if (confirm_dialog && longest_width < (int)video_width / 4)
       longest_width = video_width / 4;
 
+   if (draw_caret)
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      input_keyboard_line_t *line    = &input_st->keyboard_line;
+      const char *input              = strchr(msg, '\n');
+
+      draw_caret = false;
+
+      if (input && line->buffer
+            && ((menu_driver_get_current_time() / 500000) & 1))
+      {
+         char cursor_msg[MENU_LABEL_MAX_LENGTH];
+         size_t len = (size_t)(input - msg + 1);
+         size_t ptr = line->ptr;
+
+         if (ptr > line->size)
+            ptr = line->size;
+         if (len < sizeof(cursor_msg))
+         {
+            if (ptr >= sizeof(cursor_msg) - len)
+               ptr = sizeof(cursor_msg) - len - 1;
+
+            memcpy(cursor_msg, msg, len);
+            memcpy(cursor_msg + len, line->buffer, ptr);
+            cursor_msg[len + ptr] = '\0';
+
+            (mui->word_wrap)(
+                  cursor_msg, sizeof(cursor_msg),
+                  cursor_msg, strlen(cursor_msg),
+                  usable_width / (int)mui->font_data.list.glyph_width,
+                  mui->font_data.list.wideglyph_width, 0);
+
+            input = cursor_msg;
+            while ((input = strchr(input, '\n')))
+            {
+               cursor_line++;
+               input++;
+            }
+            input    = strrchr(cursor_msg, '\n');
+            input    = input ? input + 1 : cursor_msg;
+            cursor_x = font_driver_get_message_width(
+                  mui->font_data.list.font,
+                  input, strlen(input), 1.0f);
+
+            draw_caret = true;
+         }
+      }
+   }
+
    slice_x                 = x - longest_width / 2.0 - mui->margin * 2.0;
    slice_y                 = y - mui->margin * 2.0;
    slice_w                 = longest_width + mui->margin * 4.0;
@@ -2932,6 +2984,21 @@ static void materialui_render_messagebox(
                video_width, video_height, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
    }
+
+   if (draw_caret && (cursor_line < (unsigned)line_count))
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            x - longest_width / 2.0f + cursor_x,
+            y + (cursor_line * mui->font_data.list.line_height),
+            2,
+            mui->font_data.list.line_ascender,
+            video_width,
+            video_height,
+            mui->colors.list_icon,
+            NULL);
 
    if (confirm_dialog)
    {
@@ -8410,8 +8477,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    {
       size_t _len;
       char msg[NAME_MAX_LENGTH];
-      const char *str             = menu_input_dialog_get_buffer();
-      const char *label           = menu_st->input_dialog_kb_label;
+      input_driver_state_t *input_st = input_state_get_ptr();
+      const char *str                = menu_input_dialog_get_buffer();
+      const char *label              = menu_st->input_dialog_kb_label;
 
       /* Darken screen */
       gfx_display_set_alpha(
@@ -8431,16 +8499,15 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       _len = 0;
       strlcpy_append(msg, sizeof(msg), &_len, label);
       strlcpy_append(msg, sizeof(msg), &_len, "\n");
-      strlcpy_append(msg, sizeof(msg), &_len, str);
+      strlcpy_append(msg, sizeof(msg), &_len, (str && *str) ? str : " ");
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
-            video_height / 4, msg,
+            video_height / 4, msg, true,
             &mymat);
 
       /* Draw onscreen keyboard */
       {
-         input_driver_state_t *input_st = input_state_get_ptr();
          gfx_display_draw_keyboard(
                p_disp,
                userdata,
@@ -8479,7 +8546,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
-            video_height / 2, mui->msgbox,
+            video_height / 2, mui->msgbox, false,
             &mymat);
       mui->msgbox[0] = '\0';
 
