@@ -64,15 +64,11 @@
 #ifndef RMP3_HAVE_NEON
 #define RMP3_HAVE_NEON 0
 #endif
-/* The s16 pipeline's internals are chosen per target: where a vector
- * FPU exists (SSE2/NEON), s16 decodes through the SIMD float
- * transforms with the direct s16 pack in the synthesis store - one
- * quantisation, no staging; on scalar and FPU-less targets it runs
- * the Q28 integer transforms instead, which avoid the ruinous
- * soft-float cost.  Both routes are the same pipeline to the caller:
- * native s16 out of rmp3_read_s16, and float never re-enters the
- * path after the store. */
-#define RMP3D_S16_VIA_INT (!(RMP3_HAVE_SSE || RMP3_HAVE_NEON))
+/* Two complete pipelines, selected at runtime by which read the mixer
+ * calls: rmp3_read_f32 drives the float pipeline (float IMDCT, DCT-II
+ * and synthesis, SIMD where available, native float out) and
+ * rmp3_read_s16 drives the s16 pipeline (Q28 fixed-point IMDCT, DCT-II
+ * and synthesis straight to s16). */
 
 typedef struct
 {
@@ -1406,7 +1402,7 @@ static void rmp3_L3_decode(rmp3dec *h, rmp3dec_scratch *s, rmp3_L3_gr_info *gr_i
         }
 
         rmp3_L3_antialias(s->grbuf.f[ch], aa_bands);
-        if (RMP3D_S16_VIA_INT && !f32)
+        if (!f32)
         {
             /* s16 pipeline: convert the granule to Q28 in place;
              * everything downstream (IMDCT, DCT-II, synthesis) is
@@ -1835,7 +1831,44 @@ static void rmp3d_synth_q(const int32_t *xl, short *dstl, int nch, int32_t *lins
         zlin[4*(i - 16) + 2] = xl[18*(1 + i)];
         zlin[4*(i - 16) + 3] = xr[18*(1 + i)];
 
+#if RMP3_HAVE_NEON && !defined(RMP3_TEST_SCALAR_QSYNTH)
+        /* Integer synthesis MACs: vmlal_s32 gives two exact 32x32->64
+         * multiply-accumulates per instruction.  The accumulators and
+         * the final rounding are identical to the scalar path, so the
+         * output is bit-exact across ISAs. */
+        {
+            int64x2_t a01, a23, b01, b23;
+            int e;
+#define RMP3_QN_LOAD(k) \
+            int32x2_t w0 = vdup_n_s32(w[0]); \
+            int32x2_t w1 = vdup_n_s32(w[1]); \
+            int32x4_t vz = vld1q_s32(&zlin[4*i - (k)*64]); \
+            int32x4_t vy = vld1q_s32(&zlin[4*i - (15 - (k))*64]); w += 2;
+#define RMP3_QN0(k) { RMP3_QN_LOAD(k) \
+            b01 = vaddq_s64(vmull_s32(vget_low_s32(vz), w1),  vmull_s32(vget_low_s32(vy), w0)); \
+            b23 = vaddq_s64(vmull_s32(vget_high_s32(vz), w1), vmull_s32(vget_high_s32(vy), w0)); \
+            a01 = vsubq_s64(vmull_s32(vget_low_s32(vz), w0),  vmull_s32(vget_low_s32(vy), w1)); \
+            a23 = vsubq_s64(vmull_s32(vget_high_s32(vz), w0), vmull_s32(vget_high_s32(vy), w1)); }
+#define RMP3_QN1(k) { RMP3_QN_LOAD(k) \
+            b01 = vmlal_s32(vmlal_s32(b01, vget_low_s32(vz), w1),  vget_low_s32(vy), w0); \
+            b23 = vmlal_s32(vmlal_s32(b23, vget_high_s32(vz), w1), vget_high_s32(vy), w0); \
+            a01 = vmlsl_s32(vmlal_s32(a01, vget_low_s32(vz), w0),  vget_low_s32(vy), w1); \
+            a23 = vmlsl_s32(vmlal_s32(a23, vget_high_s32(vz), w0), vget_high_s32(vy), w1); }
+#define RMP3_QN2(k) { RMP3_QN_LOAD(k) \
+            b01 = vmlal_s32(vmlal_s32(b01, vget_low_s32(vz), w1),  vget_low_s32(vy), w0); \
+            b23 = vmlal_s32(vmlal_s32(b23, vget_high_s32(vz), w1), vget_high_s32(vy), w0); \
+            a01 = vmlal_s32(vmlsl_s32(a01, vget_low_s32(vz), w0),  vget_low_s32(vy), w1); \
+            a23 = vmlal_s32(vmlsl_s32(a23, vget_high_s32(vz), w0), vget_high_s32(vy), w1); }
+            RMP3_QN0(0) RMP3_QN2(1) RMP3_QN1(2) RMP3_QN2(3) RMP3_QN1(4) RMP3_QN2(5) RMP3_QN1(6) RMP3_QN2(7)
+            a[0] = vgetq_lane_s64(a01, 0); a[1] = vgetq_lane_s64(a01, 1);
+            a[2] = vgetq_lane_s64(a23, 0); a[3] = vgetq_lane_s64(a23, 1);
+            b[0] = vgetq_lane_s64(b01, 0); b[1] = vgetq_lane_s64(b01, 1);
+            b[2] = vgetq_lane_s64(b23, 0); b[3] = vgetq_lane_s64(b23, 1);
+            (void)e;
+        }
+#else
         RMP3_Q0(0) RMP3_Q2(1) RMP3_Q1(2) RMP3_Q2(3) RMP3_Q1(4) RMP3_Q2(5) RMP3_Q1(6) RMP3_Q2(7)
+#endif
 
         dstr[(15 - i)*nch] = rmp3d_scale_pcm_q(a[1]);
         dstr[(17 + i)*nch] = rmp3d_scale_pcm_q(b[1]);
@@ -2390,8 +2423,8 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
          {
             memset(scratch.grbuf.f[0], 0, 576*2*sizeof(float));
             rmp3_L3_decode(dec, &scratch, scratch.gr_info + igr*info->channels, info->channels, f32);
-            if (f32 || !RMP3D_S16_VIA_INT)
-               rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 18, info->channels, pcm, scratch.syn.f[0], f32);
+            if (f32)
+               rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 18, info->channels, pcm, scratch.syn.f[0], 1);
             else
                rmp3d_synth_granule_q(dec->qmf_state.q, scratch.grbuf.q[0], 18, info->channels, (short *)pcm, scratch.syn.q[0]);
          }
@@ -2409,8 +2442,8 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
          {
             i = 0;
             rmp3_L12_apply_scf_384(sci, sci->scf + igr, scratch.grbuf.f[0]);
-            if (f32 || !RMP3D_S16_VIA_INT)
-               rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 12, info->channels, pcm, scratch.syn.f[0], f32);
+            if (f32)
+               rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 12, info->channels, pcm, scratch.syn.f[0], 1);
             else
             {
                /* Layer I/II scalefactor application is float; convert
@@ -2510,9 +2543,7 @@ static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
     * different formats: float for the float pipeline, Q28 fixed point
     * for the s16 pipeline (the storage is shared through unions).
     * Convert the QMF and IMDCT overlap histories so decoding continues
-    * seamlessly in the new format.  On SIMD targets both routes keep
-    * float state and nothing needs converting. */
-   if (RMP3D_S16_VIA_INT)
+    * seamlessly in the new format. */
    {
       float   *of = &pMP3->decoder.mdct_overlap.f[0][0];
       int32_t *oq = &pMP3->decoder.mdct_overlap.q[0][0];
