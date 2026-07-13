@@ -5630,23 +5630,65 @@ static void metal_ctx_swap_buffers(void *data)
 static bool metal_set_shader(void *data,
       enum rarch_shader_type type, const char *path);
 
+typedef struct
+{
+   const video_info_t *video;
+   input_driver_t **input;
+   void **input_data;
+   void *result;
+} metal_init_args_t;
+
+/* Defined in ui/drivers/cocoa/cocoa_common.m.  Declared locally (same
+ * pattern as the cocoa ctx drivers) to avoid touching the
+ * CRLF-formatted cocoa_common.h. */
+void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata);
+
+/* The whole init is main-thread work: setViewType replaces the
+ * window's contentView (with threaded video, calling it from the
+ * worker raises NSInternalInconsistencyException inside
+ * -[NSWindow setContentView:] and aborts), and MetalDriver's
+ * -initWithVideo: attaches to the render view (view.device /
+ * view.delegate / view.frame) and drives [apple_platform
+ * setVideoMode:].  metal_frame needs no such treatment: it presents
+ * via CAMetalLayer.nextDrawable, which is the sanctioned off-main
+ * path. */
+static void metal_init_mainthread(void *userdata)
+{
+   metal_init_args_t *args = (metal_init_args_t*)userdata;
+   MetalDriver *md         = nil;
+
+   [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
+
+   md = [[MetalDriver alloc] initWithVideo:args->video
+                                     input:args->input
+                                 inputData:args->input_data];
+   if (md == nil)
+   {
+      args->result = NULL;
+      return;
+   }
+
+   /* Store reference for context swap_buffers calls */
+   metal_ctx_data = (__bridge void *)md;
+
+   args->result   = (__bridge_retained void *)md;
+}
+
 static void *metal_init(
       const video_info_t *video,
       input_driver_t **input,
       void **input_data)
 {
-   MetalDriver *md = nil;
+   metal_init_args_t args;
 
-   [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
+   args.video      = video;
+   args.input      = input;
+   args.input_data = input_data;
+   args.result     = NULL;
 
-   md = [[MetalDriver alloc] initWithVideo:video input:input inputData:input_data];
-   if (md == nil)
-      return NULL;
+   cocoa_main_thread_sync(metal_init_mainthread, &args);
 
-   /* Store reference for context swap_buffers calls */
-   metal_ctx_data = (__bridge void *)md;
-
-   return (__bridge_retained void *)md;
+   return args.result;
 }
 
 /* Flag to prevent recursive shader_subframes calls */
@@ -5741,7 +5783,11 @@ static void metal_set_nonblock_state(void *data, bool non_block,
 
 static bool metal_alive(void *data) { return true; }
 static bool metal_has_windowed(void *data) { return true; }
-static bool metal_focus(void *data) { return apple_platform.hasFocus; }
+/* apple_platform.hasFocus is [NSApp isActive] (AppKit, main-thread-
+ * only); with threaded video this is queried from the worker every
+ * frame.  cocoa_has_focus() reads the value the main thread last
+ * published, lock-free. */
+static bool metal_focus(void *data) { return cocoa_has_focus(NULL); }
 
 static bool metal_suppress_screensaver(void *data, bool disable)
 {
@@ -5969,9 +6015,17 @@ static void metal_set_texture_enable(void *data, bool state, bool full_screen)
 #endif
 }
 
+static void metal_show_mouse_mainthread(void *userdata)
+{
+   [apple_platform setCursorVisible:(userdata != NULL)];
+}
+
 static void metal_show_mouse(void *data, bool state)
 {
-   [apple_platform setCursorVisible:state];
+   /* setCursorVisible is NSCursor (AppKit); with threaded video this
+    * can be reached from the worker thread. */
+   cocoa_main_thread_sync(metal_show_mouse_mainthread,
+         state ? (void*)1 : NULL);
 }
 
 static struct video_shader *metal_get_current_shader(void *data)
