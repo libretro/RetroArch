@@ -35,6 +35,8 @@
 #endif
 
 #include <retro_timers.h>
+#include <retro_atomic.h>
+#include <pthread.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 
@@ -80,8 +82,20 @@ static unsigned g_gl_major          = 0;
 static GLKView *glk_view            = NULL;
 #endif
 
+/* Backing-size publication for threaded video.
+ * check_window / get_video_size run on the video worker thread when
+ * threaded video is active, but -[NSView frame]/-convertRectToBacking:
+ * and -[UIView bounds] are main-thread-only.  The main thread publishes
+ * the current backing size here (packed as (w << 16) | h) via
+ * cocoa_gl_gfx_ctx_publish_size(); the worker thread reads it lock-free.
+ * With non-threaded video the publisher and reader are the same (main)
+ * thread, so behaviour is unchanged.  16 bits per axis is sufficient for
+ * any backing dimension (<= 65535). */
+static retro_atomic_size_t cocoa_gl_backing_size;
+
 /* Forward declaration */
 CocoaView *cocoaview_get(void);
+void cocoa_gl_gfx_ctx_publish_size(void);
 
 static uint32_t cocoa_gl_gfx_ctx_get_flags(void *data)
 {
@@ -133,6 +147,9 @@ void cocoa_gl_gfx_ctx_update(void)
 {
    [g_ctx    update];
    [g_hw_ctx update];
+   /* Runs on the main thread (via -[CocoaView setFrame:]); refresh the
+    * published backing size so the worker thread observes the resize. */
+   cocoa_gl_gfx_ctx_publish_size();
 }
 #else
 #if defined(HAVE_COCOATOUCH)
@@ -267,6 +284,45 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 }
 #endif
 
+/* Live backing-size query.  Touches AppKit/UIKit and MUST run on the
+ * main thread.  Selects the same implementation the vtable previously
+ * exposed directly. */
+static void cocoa_gl_live_video_size(unsigned *width, unsigned *height)
+{
+#if MAC_OS_X_VERSION_10_7 && defined(OSX)
+   cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up(NULL, width, height);
+#else
+   cocoa_gl_gfx_ctx_get_video_size(NULL, width, height);
+#endif
+}
+
+/* Publish the current backing size for cross-thread readers.
+ * MUST be called on the main thread (resize/layout hooks, or the
+ * non-threaded caller path below). */
+void cocoa_gl_gfx_ctx_publish_size(void)
+{
+   unsigned w = 0;
+   unsigned h = 0;
+   cocoa_gl_live_video_size(&w, &h);
+   retro_atomic_store_release_size(&cocoa_gl_backing_size,
+         (size_t)(((size_t)(w & 0xFFFF) << 16) | (size_t)(h & 0xFFFF)));
+}
+
+/* Thread-safe backing-size getter used by the vtable and check_window.
+ * On the main thread it refreshes the published value from AppKit first
+ * (preserving exact non-threaded behaviour); on the worker thread it
+ * reads the last value published by the main thread, lock-free. */
+static void cocoa_gl_gfx_ctx_get_video_size_ts(void *data,
+      unsigned *width, unsigned *height)
+{
+   size_t packed;
+   if (pthread_main_np() != 0)
+      cocoa_gl_gfx_ctx_publish_size();
+   packed  = retro_atomic_load_acquire_size(&cocoa_gl_backing_size);
+   *width  = (unsigned)((packed >> 16) & 0xFFFF);
+   *height = (unsigned)(packed & 0xFFFF);
+}
+
 static float cocoa_gl_gfx_ctx_get_refresh_rate(void *data)
 {
    /* Body consolidated into cocoa_common.m.  Kept as a named
@@ -311,11 +367,7 @@ static void cocoa_gl_gfx_ctx_check_window(void *data, bool *quit,
 
    *quit                       = false;
 
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-   cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up(data, &new_width, &new_height);
-#else
-   cocoa_gl_gfx_ctx_get_video_size(data, &new_width, &new_height);
-#endif
+   cocoa_gl_gfx_ctx_get_video_size_ts(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
    {
@@ -730,11 +782,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_bind_api,
    cocoa_gl_gfx_ctx_swap_interval,
    cocoa_gl_gfx_ctx_set_video_mode,
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-   cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up,
-#else
-   cocoa_gl_gfx_ctx_get_video_size,
-#endif
+   cocoa_gl_gfx_ctx_get_video_size_ts,
    cocoa_gl_gfx_ctx_get_refresh_rate,
    cocoa_gl_gfx_ctx_get_video_output_size,
    NULL, /* get_video_output_prev */

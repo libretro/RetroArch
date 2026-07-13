@@ -30,6 +30,8 @@
 #endif
 
 #include <retro_timers.h>
+#include <retro_atomic.h>
+#include <pthread.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 
@@ -55,6 +57,14 @@ static unsigned g_vk_minor          = 0;
 static unsigned g_vk_major          = 0;
 /* Forward declaration */
 CocoaView *cocoaview_get(void);
+
+/* Backing-size publication for threaded video.  Same rationale as the
+ * GL context driver (see cocoa_gl_ctx.m): check_window / get_video_size
+ * run on the video worker thread, but the AppKit/UIKit geometry queries
+ * they perform are main-thread-only.  The main thread publishes the
+ * packed backing size ((w << 16) | h); the worker reads it lock-free. */
+static retro_atomic_size_t cocoa_vk_backing_size;
+void cocoa_vk_gfx_ctx_publish_size(void);
 
 static uint32_t cocoa_vk_gfx_ctx_get_flags(void *data)
 {
@@ -138,6 +148,44 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
 }
 #endif
 
+/* Live backing-size query.  Touches AppKit/UIKit and MUST run on the
+ * main thread.  Selects the same implementation the vtable previously
+ * exposed directly. */
+static void cocoa_vk_live_video_size(unsigned *width, unsigned *height)
+{
+#if MAC_OS_X_VERSION_10_7 && defined(OSX)
+   cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(NULL, width, height);
+#else
+   cocoa_vk_gfx_ctx_get_video_size(NULL, width, height);
+#endif
+}
+
+/* Publish the current backing size for cross-thread readers.
+ * MUST be called on the main thread. */
+void cocoa_vk_gfx_ctx_publish_size(void)
+{
+   unsigned w = 0;
+   unsigned h = 0;
+   cocoa_vk_live_video_size(&w, &h);
+   retro_atomic_store_release_size(&cocoa_vk_backing_size,
+         (size_t)(((size_t)(w & 0xFFFF) << 16) | (size_t)(h & 0xFFFF)));
+}
+
+/* Thread-safe backing-size getter used by the vtable and check_window.
+ * On the main thread it refreshes the published value from AppKit first
+ * (preserving exact non-threaded behaviour); on the worker thread it
+ * reads the last value published by the main thread, lock-free. */
+static void cocoa_vk_gfx_ctx_get_video_size_ts(void *data,
+      unsigned *width, unsigned *height)
+{
+   size_t packed;
+   if (pthread_main_np() != 0)
+      cocoa_vk_gfx_ctx_publish_size();
+   packed  = retro_atomic_load_acquire_size(&cocoa_vk_backing_size);
+   *width  = (unsigned)((packed >> 16) & 0xFFFF);
+   *height = (unsigned)(packed & 0xFFFF);
+}
+
 static float cocoa_vk_gfx_ctx_get_refresh_rate(void *data)
 {
    /* Body consolidated into cocoa_common.m.  Kept as a named
@@ -163,11 +211,7 @@ static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
    *resize                        = (cocoa_ctx->vk.flags &
          VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
 
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-   cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(data, &new_width, &new_height);
-#else
-   cocoa_vk_gfx_ctx_get_video_size(data, &new_width, &new_height);
-#endif
+   cocoa_vk_gfx_ctx_get_video_size_ts(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
    {
@@ -363,11 +407,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_bind_api,
    cocoa_vk_gfx_ctx_swap_interval,
    cocoa_vk_gfx_ctx_set_video_mode,
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-   cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up,
-#else
-   cocoa_vk_gfx_ctx_get_video_size,
-#endif
+   cocoa_vk_gfx_ctx_get_video_size_ts,
    cocoa_vk_gfx_ctx_get_refresh_rate,
    cocoa_vk_gfx_ctx_get_video_output_size,
    NULL, /* get_video_output_prev */

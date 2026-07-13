@@ -16,7 +16,9 @@
 
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
+#include <pthread.h>
 
+#include <retro_atomic.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 #include <defines/cocoa_defines.h>
@@ -547,6 +549,15 @@ void rarch_stop_draw_observer(void)
    void cocoa_gl_gfx_ctx_update(void);
    cocoa_gl_gfx_ctx_update();
 #endif
+#if defined(HAVE_VULKAN)
+   /* Main thread: refresh the Vulkan ctx published backing size so a
+    * threaded-video worker observes the resize. No-op when Vulkan is not
+    * the active driver (value goes unread). */
+   {
+      void cocoa_vk_gfx_ctx_publish_size(void);
+      cocoa_vk_gfx_ctx_publish_size();
+   }
+#endif
 }
 
 /* Stop the annoying sound when pressing a key. */
@@ -686,6 +697,21 @@ void rarch_stop_draw_observer(void)
 - (void)viewWillLayoutSubviews
 {
    [self adjustViewFrameForSafeArea];
+#if defined(HAVE_OPENGL)
+   /* Runs on the main thread; refresh the published backing size so a
+    * threaded-video worker observes orientation/safe-area changes. Safe
+    * to call when GL is not the active driver (value goes unread). */
+   {
+      void cocoa_gl_gfx_ctx_publish_size(void);
+      cocoa_gl_gfx_ctx_publish_size();
+   }
+#endif
+#if defined(HAVE_VULKAN)
+   {
+      void cocoa_vk_gfx_ctx_publish_size(void);
+      cocoa_vk_gfx_ctx_publish_size();
+   }
+#endif
 }
 
 /* NOTE: This version runs on iOS6+. */
@@ -880,7 +906,25 @@ bool cocoa_has_focus(void *data)
     /* if we are running, we are foregrounded */
     return true;
 #else
-    return [NSApp isActive];
+    /* -[NSApplication isActive] is AppKit and main-thread-only, but with
+     * threaded video this is queried from the video worker thread every
+     * frame.  Main thread: query live and publish; worker thread: read
+     * the last published value lock-free.  Encoding: 0 = never published
+     * (treated as focused, matching the safe iOS behaviour), 1 = not
+     * focused, 2 = focused.
+     * KNOWN LIMITATION (threaded video): if nothing on the main thread
+     * calls this, the cache stays at 0 and focus reads as always-true,
+     * i.e. pause-on-focus-loss may not trigger.  Proper fix is
+     * publishing from NSApplication did-become/resign-active
+     * notifications; kept out of this validation patch. */
+    static retro_atomic_size_t focus_state;
+    if (pthread_main_np() != 0)
+    {
+       size_t v = [NSApp isActive] ? 2 : 1;
+       retro_atomic_store_release_size(&focus_state, v);
+       return (v == 2);
+    }
+    return (retro_atomic_load_acquire_size(&focus_state) != 1);
 #endif
 }
 
