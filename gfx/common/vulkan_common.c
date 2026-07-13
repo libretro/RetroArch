@@ -1403,6 +1403,23 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
    vk->context.num_recycled_acquire_semaphores = 0;
 }
 
+bool vulkan_surface_destroy(gfx_ctx_vulkan_data_t *vk)
+{
+   if (!vk || !vk->context.instance)
+      return false;
+
+   vulkan_destroy_swapchain(vk);
+
+   if (vk->vk_surface != VK_NULL_HANDLE)
+   {
+      vkDestroySurfaceKHR(vk->context.instance,
+            vk->vk_surface, NULL);
+      vk->vk_surface = VK_NULL_HANDLE;
+   }
+
+   return true;
+}
+
 static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned i;
@@ -1696,16 +1713,48 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          return false;
    }
 
-   /* Must create device after surface since we need to be able to query queues to use for presentation. */
-   if (!vulkan_context_init_device(vk))
-      return false;
+   /* Must create device after surface since we need to be able to query queues
+    * to use for presentation. When replacing a lost surface, retain the
+    * existing device and verify that its queue can present to the new one. */
+   if (vk->context.device == VK_NULL_HANDLE)
+   {
+      if (!vulkan_context_init_device(vk))
+         goto error_surface;
+   }
+   else
+   {
+      VkResult res;
+      VkBool32 supported = VK_FALSE;
+
+      res = vkGetPhysicalDeviceSurfaceSupportKHR(
+            vk->context.gpu,
+            vk->context.graphics_queue_index,
+            vk->vk_surface, &supported);
+      if (res != VK_SUCCESS || !supported)
+      {
+         RARCH_ERR("[Vulkan] Existing queue cannot present to replacement surface (err = %d).\n",
+               (int)res);
+         goto error_surface;
+      }
+   }
 
    if (!vulkan_create_swapchain(
             vk, width, height, swap_interval))
-      return false;
+      goto error_swapchain;
 
    vulkan_acquire_next_image(vk);
    return true;
+
+error_swapchain:
+   vulkan_destroy_swapchain(vk);
+error_surface:
+   if (vk->vk_surface != VK_NULL_HANDLE)
+   {
+      vkDestroySurfaceKHR(vk->context.instance,
+            vk->vk_surface, NULL);
+      vk->vk_surface = VK_NULL_HANDLE;
+   }
+   return false;
 }
 
 uint32_t vulkan_find_memory_type(
