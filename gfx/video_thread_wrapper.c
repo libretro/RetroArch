@@ -698,10 +698,37 @@ static bool video_thread_frame(void *data, const void *frame_,
 #ifdef HAVE_MENU
       if (thr->texture.enable)
       {
-         do
+#ifdef __APPLE__
+         /* Same rationale as video_thread_wait_reply(): this wait is
+          * unbounded and runs on the main thread, and the worker may
+          * marshal main-thread-only work (e.g. Vulkan swapchain
+          * recreation on resize) via cocoa_main_thread_sync() before
+          * clearing frame.updated.  Pump the private trampoline mode
+          * so that work can drain.  The timed frame-pacing wait above
+          * needs no such treatment: it breaks after at most one frame
+          * period and the main runloop then drains common modes. */
+         if (pthread_main_np() != 0)
          {
-            scond_wait(thr->cond_cmd, thr->lock);
-         } while (thr->frame.updated);
+            do
+            {
+               if (!scond_wait_timeout(thr->cond_cmd, thr->lock, 1000))
+               {
+                  slock_unlock(thr->lock);
+                  CFRunLoopRunInMode(
+                        CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
+                        0.001, false);
+                  slock_lock(thr->lock);
+               }
+            } while (thr->frame.updated);
+         }
+         else
+#endif
+         {
+            do
+            {
+               scond_wait(thr->cond_cmd, thr->lock);
+            } while (thr->frame.updated);
+         }
       }
 #endif
       thr->hit_count++;

@@ -65,6 +65,10 @@ CocoaView *cocoaview_get(void);
  * packed backing size ((w << 16) | h); the worker reads it lock-free. */
 static retro_atomic_size_t cocoa_vk_backing_size;
 void cocoa_vk_gfx_ctx_publish_size(void);
+/* Defined in ui/drivers/cocoa/cocoa_common.m.  Declared locally (same
+ * pattern as in cocoa_gl_ctx.m) to avoid touching the CRLF-formatted
+ * cocoa_common.h. */
+void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata);
 
 static uint32_t cocoa_vk_gfx_ctx_get_flags(void *data)
 {
@@ -77,6 +81,25 @@ static uint32_t cocoa_vk_gfx_ctx_get_flags(void *data)
 
 static void cocoa_vk_gfx_ctx_set_flags(void *data, uint32_t flags) { }
 
+/* Runs the Vulkan context teardown on the main thread.  MoltenVK
+ * internally marshals some CAMetalLayer work to the GCD main queue via
+ * dispatch_sync when called off the main thread; with threaded video
+ * the worker calling into MoltenVK while the main thread is blocked in
+ * the thread wrapper's command wait would deadlock, because that wait
+ * only pumps the private trampoline runloop mode, which does NOT drain
+ * the GCD main queue.  Running on the main thread short-circuits
+ * MoltenVK's internal dispatch (it checks for the main thread and
+ * calls straight through). */
+static void cocoa_vk_gfx_ctx_destroy_mainthread(void *userdata)
+{
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)userdata;
+
+   vulkan_context_destroy(&cocoa_ctx->vk, cocoa_ctx->vk.vk_surface != VK_NULL_HANDLE);
+   if (cocoa_ctx->vk.context.queue_lock)
+      slock_free(cocoa_ctx->vk.context.queue_lock);
+   memset(&cocoa_ctx->vk, 0, sizeof(cocoa_ctx->vk));
+}
+
 static void cocoa_vk_gfx_ctx_destroy(void *data)
 {
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
@@ -84,10 +107,7 @@ static void cocoa_vk_gfx_ctx_destroy(void *data)
    if (!cocoa_ctx)
       return;
 
-   vulkan_context_destroy(&cocoa_ctx->vk, cocoa_ctx->vk.vk_surface != VK_NULL_HANDLE);
-   if (cocoa_ctx->vk.context.queue_lock)
-      slock_free(cocoa_ctx->vk.context.queue_lock);
-   memset(&cocoa_ctx->vk, 0, sizeof(cocoa_ctx->vk));
+   cocoa_main_thread_sync(cocoa_vk_gfx_ctx_destroy_mainthread, cocoa_ctx);
 
    free(cocoa_ctx);
 }
@@ -267,18 +287,32 @@ static void *cocoa_vk_gfx_ctx_get_context_data(void *data)
 }
 
 #ifdef OSX
-static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+typedef struct
 {
+   void    *data;
+   unsigned width;
+   unsigned height;
+   bool     fullscreen;
+   bool     ok;
+} cocoa_vk_set_video_mode_args_t;
+
+/* Whole body on the main thread: g_view.layer is AppKit,
+ * [apple_platform setVideoMode:] performs window surgery, and
+ * vulkan_surface_create reaches MoltenVK, whose internal
+ * dispatch_sync-to-main short-circuits only when already on the main
+ * thread (see cocoa_vk_gfx_ctx_destroy_mainthread above). */
+static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
+{
+   cocoa_vk_set_video_mode_args_t *args = (cocoa_vk_set_video_mode_args_t*)userdata;
    gfx_ctx_mode_t mode;
 #if defined(HAVE_COCOA_METAL)
    NSView *g_view                 = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
    CocoaView *g_view              = (CocoaView*)nsview_get_ptr();
 #endif
-   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
-   cocoa_ctx->width               = width;
-   cocoa_ctx->height              = height;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)args->data;
+   cocoa_ctx->width               = args->width;
+   cocoa_ctx->height              = args->height;
 
    RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
          cocoa_ctx->width, cocoa_ctx->height);
@@ -293,28 +327,70 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
             cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
-      return false;
+      args->ok                    = false;
+      return;
    }
 
-   mode.width                     = width;
-   mode.height                    = height;
-   mode.fullscreen                = fullscreen;
+   mode.width                     = args->width;
+   mode.height                    = args->height;
+   mode.fullscreen                = args->fullscreen;
    [apple_platform setVideoMode:mode];
-   cocoa_show_mouse(data, !fullscreen);
+   cocoa_show_mouse(args->data, !args->fullscreen);
 
-   return true;
+   /* Seed/refresh the published backing size while still on the main
+    * thread, so a threaded-video worker never observes the initial 0x0
+    * before the first resize/layout event fires. */
+   cocoa_vk_gfx_ctx_publish_size();
+
+   args->ok                       = true;
+}
+
+static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
+      unsigned width, unsigned height, bool fullscreen)
+{
+   cocoa_vk_set_video_mode_args_t args;
+
+   args.data       = data;
+   args.width      = width;
+   args.height     = height;
+   args.fullscreen = fullscreen;
+   args.ok         = false;
+
+   cocoa_main_thread_sync(cocoa_vk_gfx_ctx_set_video_mode_mainthread, &args);
+
+   return args.ok;
+}
+
+typedef struct
+{
+   cocoa_vk_ctx_data_t *ctx;
+   bool ok;
+} cocoa_vk_init_args_t;
+
+/* setViewType creates/attaches the render view (AppKit) and
+ * vulkan_context_init reaches MoltenVK; both belong on the main
+ * thread (see above). */
+static void cocoa_vk_gfx_ctx_init_mainthread(void *userdata)
+{
+   cocoa_vk_init_args_t *args = (cocoa_vk_init_args_t*)userdata;
+
+   [apple_platform setViewType:APPLE_VIEW_TYPE_VULKAN];
+   args->ok = vulkan_context_init(&args->ctx->vk, VULKAN_WSI_MVK_MACOS);
 }
 
 static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 {
+   cocoa_vk_init_args_t args;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)
    calloc(1, sizeof(cocoa_vk_ctx_data_t));
 
    if (!cocoa_ctx)
       return NULL;
 
-   [apple_platform setViewType:APPLE_VIEW_TYPE_VULKAN];
-   if (!vulkan_context_init(&cocoa_ctx->vk, VULKAN_WSI_MVK_MACOS))
+   args.ctx = cocoa_ctx;
+   args.ok  = false;
+   cocoa_main_thread_sync(cocoa_vk_gfx_ctx_init_mainthread, &args);
+   if (!args.ok)
    {
       free(cocoa_ctx);
       return NULL;
@@ -323,13 +399,24 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
    return cocoa_ctx;
 }
 #else
-static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+typedef struct
 {
+   void    *data;
+   unsigned width;
+   unsigned height;
+   bool     ok;
+} cocoa_vk_set_video_mode_args_t;
+
+/* Whole body on the main thread: the render view / metalLayer access
+ * is UIKit and vulkan_surface_create reaches MoltenVK (see the
+ * dispatch_sync rationale above the destroy helper). */
+static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
+{
+   cocoa_vk_set_video_mode_args_t *args = (cocoa_vk_set_video_mode_args_t*)userdata;
    id g_view                      = apple_platform.renderView;
-   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
-   cocoa_ctx->width               = width;
-   cocoa_ctx->height              = height;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)args->data;
+   cocoa_ctx->width               = args->width;
+   cocoa_ctx->height              = args->height;
 
    if (!vulkan_surface_create(&cocoa_ctx->vk,
                               VULKAN_WSI_MVK_IOS,
@@ -340,24 +427,62 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
                               cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
-      return false;
+      args->ok                    = false;
+      return;
    }
+
+   /* Seed/refresh the published backing size while still on the main
+    * thread, so a threaded-video worker never observes the initial 0x0
+    * before the first layout event fires. */
+   cocoa_vk_gfx_ctx_publish_size();
+
+   args->ok                       = true;
+}
+
+static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
+      unsigned width, unsigned height, bool fullscreen)
+{
+   cocoa_vk_set_video_mode_args_t args;
+
+   args.data   = data;
+   args.width  = width;
+   args.height = height;
+   args.ok     = false;
+
+   cocoa_main_thread_sync(cocoa_vk_gfx_ctx_set_video_mode_mainthread, &args);
 
    /* TODO: Maybe iOS users should be able to
     * show/hide the status bar here? */
-   return true;
+   return args.ok;
+}
+
+typedef struct
+{
+   cocoa_vk_ctx_data_t *ctx;
+   bool ok;
+} cocoa_vk_init_args_t;
+
+static void cocoa_vk_gfx_ctx_init_mainthread(void *userdata)
+{
+   cocoa_vk_init_args_t *args = (cocoa_vk_init_args_t*)userdata;
+
+   [apple_platform setViewType:APPLE_VIEW_TYPE_VULKAN];
+   args->ok = vulkan_context_init(&args->ctx->vk, VULKAN_WSI_MVK_IOS);
 }
 
 static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 {
+   cocoa_vk_init_args_t args;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)
    calloc(1, sizeof(cocoa_vk_ctx_data_t));
 
    if (!cocoa_ctx)
       return NULL;
 
-   [apple_platform setViewType:APPLE_VIEW_TYPE_VULKAN];
-   if (!vulkan_context_init(&cocoa_ctx->vk, VULKAN_WSI_MVK_IOS))
+   args.ctx = cocoa_ctx;
+   args.ok  = false;
+   cocoa_main_thread_sync(cocoa_vk_gfx_ctx_init_mainthread, &args);
+   if (!args.ok)
    {
       free(cocoa_ctx);
       return NULL;
@@ -368,25 +493,56 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 #endif
 
 #ifdef HAVE_COCOA_METAL
-static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+typedef struct
 {
-   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
+   cocoa_vk_ctx_data_t *ctx;
+   unsigned width;
+   unsigned height;
+   bool     ok;
+} cocoa_vk_set_resize_args_t;
 
-   cocoa_ctx->width               = width;
-   cocoa_ctx->height              = height;
+/* Swapchain recreation reaches MoltenVK (CAMetalLayer sizing); run it
+ * on the main thread for the same dispatch_sync reason as init /
+ * set_video_mode / destroy.  With threaded video this is reached from
+ * the worker's frame processing; the thread wrapper's main-thread
+ * waits pump the trampoline mode so this can drain even while the
+ * user side is blocked. */
+static void cocoa_vk_gfx_ctx_set_resize_mainthread(void *userdata)
+{
+   cocoa_vk_set_resize_args_t *args = (cocoa_vk_set_resize_args_t*)userdata;
+   cocoa_vk_ctx_data_t *cocoa_ctx   = args->ctx;
 
    if (!vulkan_create_swapchain(&cocoa_ctx->vk,
-            width, height, cocoa_ctx->swap_interval))
+            args->width, args->height, cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
-      return false;
+      args->ok                    = false;
+      return;
    }
 
    cocoa_ctx->vk.context.flags   |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
    if (cocoa_ctx->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       vulkan_acquire_next_image(&cocoa_ctx->vk);
    cocoa_ctx->vk.flags           &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
-   return true;
+   args->ok                       = true;
+}
+
+static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+{
+   cocoa_vk_set_resize_args_t args;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
+
+   cocoa_ctx->width               = width;
+   cocoa_ctx->height              = height;
+
+   args.ctx    = cocoa_ctx;
+   args.width  = width;
+   args.height = height;
+   args.ok     = false;
+
+   cocoa_main_thread_sync(cocoa_vk_gfx_ctx_set_resize_mainthread, &args);
+
+   return args.ok;
 }
 #endif
 
