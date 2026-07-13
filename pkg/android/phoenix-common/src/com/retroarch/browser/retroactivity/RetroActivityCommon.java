@@ -139,18 +139,7 @@ public class RetroActivityCommon extends NativeActivity
     cleanupSymlinks();
     updateSymlinks();
 
-    if (Build.VERSION.SDK_INT >= 33) {
-      registerReceiver(
-        mUsbPermissionReceiver,
-        new IntentFilter(ACTION_USB_PERMISSION),
-        4 /* Context.RECEIVER_NOT_EXPORTED */
-      );
-    } else {
-      registerReceiver(
-        mUsbPermissionReceiver,
-        new IntentFilter(ACTION_USB_PERMISSION)
-      );
-    }
+    registerReceiver(mUsbPermissionReceiver, new IntentFilter(ACTION_USB_PERMISSION));
     ((InputManager) getSystemService(Context.INPUT_SERVICE))
             .registerInputDeviceListener(this, null);
     PlayCoreManager.getInstance().onCreate(this);
@@ -905,16 +894,7 @@ public class RetroActivityCommon extends NativeActivity
    * @return the list of available cores
    */
   public String[] getAvailableCores() {
-    int id = getResources().getIdentifier(
-      "module_names_" + Build.CPU_ABI.replace('-', '_'),
-      "array",
-      getPackageName()
-    );
-
-    if (id == 0) {
-      Log.w("RetroActivity", "No dynamic feature core list found for ABI: " + Build.CPU_ABI);
-      return new String[0];
-    }
+    int id = getResources().getIdentifier("module_names_" + Build.CPU_ABI.replace('-', '_'), "array", getPackageName());
 
     String[] returnVal = getResources().getStringArray(id);
     Log.i("RetroActivity", "getAvailableCores: " + Arrays.toString(returnVal));
