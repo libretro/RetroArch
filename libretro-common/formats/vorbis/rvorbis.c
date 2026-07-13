@@ -20,21 +20,16 @@
  *                 near imdct_step3_iter0_loop) followed by the windowed
  *                 overlap-add in vorbis_finish_frame.
  */
-/* The s16 pipeline's internals are chosen per target, matching rmp3:
- * where a vector FPU exists (SSE2/NEON) s16 decodes through the SIMD
- * float transforms and quantises once at the interleave copy; scalar
- * and FPU-less targets run the Q28 fixed-point inverse MDCT and
- * windowing instead, which avoid the soft-float cost.  Uniform Q28
- * samples with Q27 coefficients: measured maxima across the corpus
- * (including full-scale square waves) stay below 1.7 at every point of
- * the MDCT, so the +-8 range of Q28 leaves ample headroom with no
- * inter-stage rescaling. */
-#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2) \
- || defined(__ARM_NEON) || defined(__aarch64__) || defined(__ARM_NEON__) || defined(_M_ARM64)
-#define RVORBIS_S16_VIA_INT 0
-#else
-#define RVORBIS_S16_VIA_INT 1
-#endif
+/* Two complete pipelines, selected at runtime by which read the mixer
+ * calls: rvorbis_get_samples_float_interleaved drives the float
+ * pipeline (float MDCT and windowing, SIMD where available, native
+ * float out), and rvorbis_get_samples_s16_interleaved drives the s16
+ * pipeline (Q28 fixed-point inverse MDCT and windowing straight to the
+ * s16 quantisation at the interleave copy).  Uniform Q28 samples with
+ * Q27 coefficients: measured maxima across the corpus (including
+ * full-scale square waves) stay below 1.7 at every point of the MDCT,
+ * so the +-8 range of Q28 leaves ample headroom with no inter-stage
+ * rescaling. */
 #define RVQ_QBITS 28
 #define RVQ_MULQ(x, c) \
    ((int32_t)((((int64_t)(x) * (c)) + ((int64_t)1 << 26)) >> 27))
@@ -784,9 +779,8 @@ static int init_blocksize(vorb *f, int b, int n)
    if (!f->window[b]) return error(f, RVORBIS_outofmem);
    compute_window(n, f->window[b]);
 
-   if (RVORBIS_S16_VIA_INT)
    {
-      /* Q27 integer twins for the fixed-point s16 route, generated
+      /* Q27 integer twins for the fixed-point s16 pipeline, generated
        * from the float tables computed above. */
       int k;
       f->A_q[b]      = (int32_t *) setup_malloc(f, sizeof(int32_t) * n2);
@@ -2138,7 +2132,6 @@ static void imdct_step3_inner_s_loop_ld654(int n, float *e, int i_off, float *A,
    }
 }
 
-#if RVORBIS_S16_VIA_INT
 /* -----------------------------------------------------------------------
  * Fixed-point inverse MDCT: the scalar float kernels below, transcribed
  * to Q28 samples and Q27 twiddles.  Each product is one 32x32->64
@@ -2224,9 +2217,7 @@ static void imdct_step3_iter0_loop_q(int n, int32_t *e, int i_off, int k_off, in
 static void imdct_step3_inner_r_loop_q(int lim, int32_t *e, int d0, int k_off, int32_t *A, int k1)
 {
    int i;
-#if !RVORBIS_HAVE_SSE && !RVORBIS_HAVE_NEON
    int32_t k00_20, k01_21;
-#endif
 
    int32_t *e0 = e + d0;
    int32_t *e2 = e0 + k_off;
@@ -2668,8 +2659,6 @@ static void inverse_mdct_q(int32_t *buffer, int n, vorb *f, int blocktype)
 
    temp_alloc_restore(f,save_point);
 }
-#endif /* RVORBIS_S16_VIA_INT */
-
 static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
 {
    int n2 = n >> 1, n4 = n >> 2, n8 = n >> 3, l;
@@ -3392,7 +3381,6 @@ error:
    }
 
    /* INVERSE MDCT */
-#if RVORBIS_S16_VIA_INT
    if (f->s16_mode)
    {
       /* s16 pipeline: floor/residue produce float spectral samples;
@@ -3416,7 +3404,6 @@ error:
       }
    }
    else
-#endif
    {
       for (i=0; i < f->channels; ++i)
          inverse_mdct(f->channel_buffers[i], n, f, m->blockflag);
@@ -3508,7 +3495,6 @@ static int vorbis_finish_frame(rvorbis *f, int len, int left, int right)
     * we start saving, and where our returned-data ends.
 
     * mixin from previous window */
-#if RVORBIS_S16_VIA_INT
    /* Q28 overlap-add for the s16 pipeline (the buffers hold integers) */
    if (f->s16_mode && f->previous_length)
    {
@@ -3523,9 +3509,7 @@ static int vorbis_finish_frame(rvorbis *f, int len, int left, int right)
                    + RVQ_MULQ(prev[j], wq[n-1-j]);
       }
    }
-   else
-#endif
-   if (f->previous_length)
+   else if (f->previous_length)
    {
       int i,j, n = f->previous_length;
       float *w = get_window(f, n);
@@ -4505,7 +4489,6 @@ static int vorbis_analyze_page(rvorbis *f, ProbedPage *z)
    return 0;
 }
 
-#if RVORBIS_S16_VIA_INT
 /* Latch the output pipeline (0 = float, 1 = fixed-point s16).  In
  * normal mixer use this runs once, on the first read; a mid-stream
  * switch converts the persistent overlap state and any undelivered
@@ -4540,7 +4523,6 @@ static void rvorbis_set_output_mode(vorb *f, int s16)
       }
    }
 }
-#endif /* RVORBIS_S16_VIA_INT */
 
 static int rvorbis_get_frame_float(rvorbis *f, int *channels, float ***output)
 {
@@ -4893,9 +4875,7 @@ rvorbis * rvorbis_open_memory(const unsigned char *data, int len, int *error, rv
 int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
       float *buffer, int num_floats)
 {
-#if RVORBIS_S16_VIA_INT
    rvorbis_set_output_mode(f, 0);
-#endif
    float **outputs;
    int len = num_floats / channels;
    int n=0;
@@ -4933,9 +4913,7 @@ int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
 int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
       int16_t *buffer, int num_shorts)
 {
-#if RVORBIS_S16_VIA_INT
    rvorbis_set_output_mode(f, 1);
-#endif
    float **outputs;
    int len = num_shorts / channels;
    int n=0;
@@ -4949,7 +4927,6 @@ int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
       if (n+k >= len) k = len - n;
       for (j=0; j < k; ++j)
       {
-#if RVORBIS_S16_VIA_INT
          /* Q28 buffers: s16 = round(x * 32768) = round(v / 2^13),
           * rounded half away from zero and clamped as the float
           * quantiser below. */
@@ -4964,18 +4941,7 @@ int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
                q = -32768;
             *buffer++ = (int16_t)q;
          }
-#else
-         for (i=0; i < z; ++i)
-         {
-            float s = f->channel_buffers[i][f->channel_buffer_start+j] * 32768.0f;
-            int   q = (int)(s + ((s >= 0.0f) ? 0.5f : -0.5f));
-            if (q >  32767)
-               q =  32767;
-            if (q < -32768)
-               q = -32768;
-            *buffer++ = (int16_t)q;
-         }
-#endif
+
          for (   ; i < channels; ++i)
             *buffer++ = 0;
       }
