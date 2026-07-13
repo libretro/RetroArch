@@ -19,6 +19,11 @@
 #include <limits.h>
 #include <math.h>
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#include <pthread.h>
+#endif
+
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 
@@ -81,8 +86,40 @@ static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
 {
    slock_lock(thr->lock);
 
-   while (pkt->type != thr->reply_cmd)
-      scond_wait(thr->cond_cmd, thr->lock);
+#ifdef __APPLE__
+   /* On Apple platforms the worker thread marshals main-thread-only
+    * AppKit/UIKit work (context/view attachment during CMD_INIT,
+    * window surgery during set-video-mode, ...) back to the main
+    * thread via cocoa_main_thread_sync() (ui/drivers/cocoa/
+    * cocoa_common.m).  A bare condvar wait here would deadlock that
+    * handshake: the worker blocks waiting for the main thread to run
+    * its block, while the main thread blocks here waiting for the
+    * worker's reply.  Instead, when waiting on the main thread, pump
+    * the private trampoline runloop mode between short condvar waits
+    * so those marshaled blocks can drain.  Pumping ONLY the private
+    * mode guarantees nothing else (draw observers, timers, input
+    * sources) runs reentrantly under this wait.  The mode string must
+    * stay in sync with cocoa_main_thread_sync(). */
+   if (pthread_main_np() != 0)
+   {
+      while (pkt->type != thr->reply_cmd)
+      {
+         if (!scond_wait_timeout(thr->cond_cmd, thr->lock, 1000))
+         {
+            slock_unlock(thr->lock);
+            CFRunLoopRunInMode(
+                  CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
+                  0.001, false);
+            slock_lock(thr->lock);
+         }
+      }
+   }
+   else
+#endif
+   {
+      while (pkt->type != thr->reply_cmd)
+         scond_wait(thr->cond_cmd, thr->lock);
+   }
 
    *pkt               = thr->cmd_data;
    thr->cmd_data.type = CMD_VIDEO_NONE;
