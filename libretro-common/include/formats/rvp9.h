@@ -8,9 +8,9 @@
  * Every path is verified byte-identical against libvpx.
  *
  * Deliberately unsupported (rvp9_decode_frame returns an error):
- * multiple tiles, segmentation, scaled (different-size) reference
- * frames, and profiles 1-3.  Streams produced by common encoders at
- * default settings (single tile, no segmentation) decode fully.
+ * segmentation, scaled (different-size) reference frames, and
+ * profiles 1-3.  Tiled streams (tile columns and tile rows) decode
+ * fully, so encoder defaults at any resolution are covered.
  *
  * Usage: zero-initialise an rvp9_dec (it is large; heap allocation is
  * recommended), feed each coded frame to rvp9_decode_frame(), display
@@ -218,6 +218,7 @@ typedef struct
    int      last_w, last_h, last_show, last_intra_only, last_key;
 
    int      mi_cols, mi_rows;
+   int      tile_col_start, tile_col_end;  /* current tile, mi units */
    rvp9_mi *mi;                      /* mi_rows * mi_cols           */
 
    /* partition context (per mi col / row-within-SB) */

@@ -8,7 +8,7 @@
  * management and the full loop filter), developed and verified
  * byte-identical against libvpx across intra and inter test corpora.
  *
- * Profile 0 (8-bit 4:2:0) single-tile streams without segmentation or
+ * Profile 0 (8-bit 4:2:0) streams (tiled or not) without segmentation or
  * reference scaling are supported; see <formats/rvp9.h> for the exact
  * limits and the public API.
  *
@@ -1040,6 +1040,15 @@ static int rvp9_rb_unsigned_max(rvp9_rb *rb, int max)
    int bits = 0;
    while ((1 << bits) - 1 < max) bits++;  /* get_unsigned_bits */
    return bits ? rvp9_rb_lit(rb, bits) : 0;
+}
+
+/* libvpx get_tile_offset(): tile edges are aligned to 64x64
+ * superblocks and clamped to the frame. */
+static int rvp9_tile_offset(int idx, int mis, int log2)
+{
+   int sbs = (mis + 7) >> 3;
+   int off = ((idx * sbs) >> log2) << 3;
+   return off < mis ? off : mis;
 }
 
 static void rvp9_get_tile_n_bits(int mi_cols, int *min_log2, int *max_log2)
@@ -3360,10 +3369,12 @@ static INLINE rvp9_mv rvp9_scale_mv_sb(const rvp9_mi *mi, int ref,
 static INLINE int rvp9_is_inside(const rvp9_dec *d, int mi_col, int mi_row,
       const int8_t *pos)
 {
+   /* libvpx is_inside(): rows are bounded by the frame, columns by the
+    * current tile (candidate scans never cross a vertical tile edge). */
    return !(mi_row + pos[0] < 0 ||
-            mi_col + pos[1] < 0 ||          /* single tile: start 0 */
+            mi_col + pos[1] < d->tile_col_start ||
             mi_row + pos[0] >= d->mi_rows ||
-            mi_col + pos[1] >= d->mi_cols);
+            mi_col + pos[1] >= d->tile_col_end);
 }
 
 /* Returns refmv_count; fills list[2]. mode/block semantics as libvpx
@@ -4323,9 +4334,10 @@ static void rvp9_decode_block(rvp9_dec *d, int mi_row, int mi_col,
 {
    rvp9_mi *mi = d->mi + mi_row * d->mi_cols + mi_col;
    const rvp9_mi *above = mi_row > 0 ? mi - d->mi_cols : NULL;
-   const rvp9_mi *left  = mi_col > 0 ? mi - 1 : NULL;
-   /* left neighbour only within the same tile row context; single tile
-    * for now, so the frame edge is the only boundary. */
+   /* The left neighbour never crosses a vertical tile edge (libvpx
+    * set_mi_row_col: left_mi is gated on tile->mi_col_start); the above
+    * neighbour is frame-based even with tile rows. */
+   const rvp9_mi *left  = mi_col > d->tile_col_start ? mi - 1 : NULL;
    int bw = 1 << rvp9_mi_w_l2[bsize];
    int bh = 1 << rvp9_mi_h_l2[bsize];
    int x_mis = bw < d->mi_cols - mi_col ? bw : d->mi_cols - mi_col;
@@ -4589,7 +4601,7 @@ modes_done:
                   mode = mi->bmodes[(row << 1) + col];
 
                have_top   = row || (mi_row > 0);
-               have_left  = col || (mi_col > 0);
+               have_left  = col || (mi_col > d->tile_col_start);
                have_right = (col + step) < num4w;
 
                rvp9_build_intra(d, dst, stride, dst, stride, mode, tx_size,
@@ -4957,7 +4969,6 @@ int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
       return 1;
    }
 
-   if (hd->log2_tile_cols || hd->log2_tile_rows) return -3;
    if (hd->seg_enabled) return -4;
 
    /* map named ref slots to fbs for inter frames */
@@ -4973,6 +4984,8 @@ int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
 
    d->mi_cols = hd->mi_cols;
    d->mi_rows = hd->mi_rows;
+   d->tile_col_start = 0;             /* set per tile before decoding  */
+   d->tile_col_end   = d->mi_cols;
 
    /* allocate on first frame (fixed dims thereafter) */
    if (!d->buf_y)
@@ -5094,22 +5107,66 @@ int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
    }
 
 
-   /* tile data */
+   /* tile data: tiles in raster order; every tile except the last is
+    * prefixed with its size as 32-bit big-endian (the last one runs to
+    * the end of the frame). Above contexts are cleared once per frame
+    * and span tile columns; left contexts are cleared at the start of
+    * every superblock row of every tile, which is what confines them
+    * to the tile. */
    tile_off = hd->uncomp_size + hd->first_partition_size;
    if (tile_off >= len) return -12;
-   if (rvp9_br_init(&d->r, data + tile_off, len - tile_off)) return -13;
 
    memset(d->above_seg, 0, d->mi_cols + 8);
    for (i = 0; i < 3; i++)
       memset(d->above_ctx[i], 0, d->mi_cols * 2 + 16);
    memset(d->mi, 0, (size_t)d->mi_cols * d->mi_rows * sizeof(rvp9_mi));
 
-   for (sb_row = 0; sb_row < d->mi_rows; sb_row += 8)
    {
-      memset(d->left_seg, 0, sizeof d->left_seg);
-      memset(d->left_ctx, 0, sizeof d->left_ctx);
-      for (sb_col = 0; sb_col < d->mi_cols; sb_col += 8)
-         rvp9_decode_partition(d, sb_row, sb_col, 12, 4);
+      const uint8_t *tp   = data + tile_off;
+      const uint8_t *tend = data + len;
+      int tile_cols       = 1 << hd->log2_tile_cols;
+      int tile_rows       = 1 << hd->log2_tile_rows;
+      int tr, tc;
+
+      for (tr = 0; tr < tile_rows; tr++)
+      {
+         int row_start = rvp9_tile_offset(tr,     d->mi_rows,
+               hd->log2_tile_rows);
+         int row_end   = rvp9_tile_offset(tr + 1, d->mi_rows,
+               hd->log2_tile_rows);
+         for (tc = 0; tc < tile_cols; tc++)
+         {
+            int last   = (tr == tile_rows - 1) && (tc == tile_cols - 1);
+            size_t tsz;
+            if (!last)
+            {
+               if (tend - tp < 4) return -12;
+               tsz = ((size_t)tp[0] << 24) | ((size_t)tp[1] << 16)
+                   | ((size_t)tp[2] << 8)  |  (size_t)tp[3];
+               tp += 4;
+               if (tsz > (size_t)(tend - tp)) return -12;
+            }
+            else
+               tsz = (size_t)(tend - tp);
+
+            d->tile_col_start = rvp9_tile_offset(tc,     d->mi_cols,
+                  hd->log2_tile_cols);
+            d->tile_col_end   = rvp9_tile_offset(tc + 1, d->mi_cols,
+                  hd->log2_tile_cols);
+
+            if (rvp9_br_init(&d->r, tp, tsz)) return -13;
+
+            for (sb_row = row_start; sb_row < row_end; sb_row += 8)
+            {
+               memset(d->left_seg, 0, sizeof d->left_seg);
+               memset(d->left_ctx, 0, sizeof d->left_ctx);
+               for (sb_col = d->tile_col_start; sb_col < d->tile_col_end;
+                     sb_col += 8)
+                  rvp9_decode_partition(d, sb_row, sb_col, 12, 4);
+            }
+            tp += tsz;
+         }
+      }
    }
    if (d->corrupted) return -14;
 
