@@ -1902,7 +1902,8 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
 
          if (     *entry.path
                && (node->fullpath && *node->fullpath)
-               && entry.type == FILE_TYPE_IMAGEVIEWER)
+               && (   (entry.type == FILE_TYPE_IMAGEVIEWER)
+                   || (image_texture_get_type(entry.path) == IMAGE_TYPE_WEBM)))
          {
             gfx_thumbnail_set_content_image(menu_st->thumbnail_path_data,
                   node->fullpath, entry.path);
@@ -2237,10 +2238,14 @@ static void xmb_selection_pointer_changed(
             {
                menu_entry_t entry;
                MENU_ENTRY_INITIALIZE(entry);
+               entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
                menu_entry_get(&entry, 0, selection, NULL, true);
 
                if (     (entry.type == FILE_TYPE_IMAGEVIEWER)
-                     || (entry.type == FILE_TYPE_IMAGE))
+                     || (entry.type == FILE_TYPE_IMAGE)
+                     /* WebM files preview like images: the thumbnail
+                      * pipeline decodes their video track */
+                     || (image_texture_get_type(entry.path) == IMAGE_TYPE_WEBM))
                {
                   xmb_set_thumbnail_content(xmb, "imageviewer");
                   update_thumbnails = true;

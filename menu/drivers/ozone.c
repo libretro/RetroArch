@@ -12073,10 +12073,14 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
          {
             menu_entry_t entry;
             MENU_ENTRY_INITIALIZE(entry);
+            entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
             menu_entry_get(&entry, 0, selection, NULL, true);
 
             if (   (entry.type == FILE_TYPE_IMAGEVIEWER)
-                || (entry.type == FILE_TYPE_IMAGE))
+                || (entry.type == FILE_TYPE_IMAGE)
+                /* WebM files preview like images: the thumbnail
+                 * pipeline decodes their video track */
+                || (image_texture_get_type(entry.path) == IMAGE_TYPE_WEBM))
             {
                ozone_set_thumbnail_content(ozone, "imageviewer");
                update_thumbnails = true;

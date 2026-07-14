@@ -1845,7 +1845,10 @@ bool gfx_thumbnail_set_content_image(
    if ((!img_dir || !*img_dir) || (!img_name || !*img_name))
       return false;
 
-   if (path_is_media_type(img_name) != RARCH_CONTENT_IMAGE)
+   /* Images, and WebM files (whose video track the thumbnail pipeline
+    * decodes like an animated WebP), can serve as their own thumbnail */
+   if (   (path_is_media_type(img_name) != RARCH_CONTENT_IMAGE)
+       && (image_texture_get_type(img_name) != IMAGE_TYPE_WEBM))
       return false;
 
    /* Cache content image name */
@@ -2132,6 +2135,15 @@ bool gfx_thumbnail_update_path(
    {
       /* imageviewer content is identical for left and right thumbnails */
       if (path_is_media_type(path_data->content_path) == RARCH_CONTENT_IMAGE)
+         strlcpy(thumbnail_path,
+               path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
+      /* A WebM file is likewise its own (animated) thumbnail, but unlike
+       * an image the entire file must be read to decode it, so refuse
+       * anything past the animation decoder's file-size cap */
+      else if (   (image_texture_get_type(path_data->content_path)
+                     == IMAGE_TYPE_WEBM)
+               && (path_get_size(path_data->content_path)
+                     <= GFX_THUMB_ANIM_MAX_FILE))
          strlcpy(thumbnail_path,
                path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
    }
