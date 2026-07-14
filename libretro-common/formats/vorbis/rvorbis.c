@@ -2132,6 +2132,23 @@ static void imdct_step3_inner_s_loop_ld654(int n, float *e, int i_off, float *A,
    }
 }
 
+/* float -> Q28, branchless on soft-float targets: sign and saturation
+ * come from the bit pattern, so the float work is one multiply, one
+ * add and the conversion.  Saturates at |x| >= 8.0 (measured decode
+ * maxima stay below 1.7). */
+static INLINE int32_t rvq_float_to_q(float x)
+{
+   union { float f; uint32_t u; } b, half;
+   float y;
+   b.f = x;
+   if ((b.u & 0x7F800000u) >= (130u << 23))
+      return (b.u >> 31) ? (int32_t)-0x7FFFFFFF - 1 : (int32_t)0x7FFFFFFF;
+   y      = x * (float)(1 << RVQ_QBITS);
+   half.f = y;
+   half.u = 0x3F000000u | (half.u & 0x80000000u);
+   return (int32_t)(y + half.f);
+}
+
 /* -----------------------------------------------------------------------
  * Fixed-point inverse MDCT: the scalar float kernels below, transcribed
  * to Q28 samples and Q27 twiddles.  Each product is one 32x32->64
@@ -3392,14 +3409,7 @@ error:
          int32_t *bq = (int32_t *) f->channel_buffers[i];
          int j;
          for (j=0; j < n >> 1; ++j)
-         {
-            float x = bf[j];
-            if (x >=  7.999999f)      bq[j] = (int32_t) 0x7FFFFFFF;
-            else if (x <= -7.999999f) bq[j] = (int32_t)-0x7FFFFFFF - 1;
-            else
-               bq[j] = (int32_t)(x * (float)(1 << RVQ_QBITS)
-                     + ((x >= 0.0f) ? 0.5f : -0.5f));
-         }
+            bq[j] = rvq_float_to_q(bf[j]);
          inverse_mdct_q(bq, n, f, m->blockflag);
       }
    }
@@ -4508,11 +4518,9 @@ static void rvorbis_set_output_mode(vorb *f, int s16)
       if (s16)
       {
          for (j=0; j < f->previous_length; ++j)
-            pq[j] = (int32_t)(pf[j] * (float)(1 << RVQ_QBITS)
-                  + ((pf[j] >= 0.0f) ? 0.5f : -0.5f));
+            pq[j] = rvq_float_to_q(pf[j]);
          for (j=f->channel_buffer_start; j < f->channel_buffer_end; ++j)
-            cq[j] = (int32_t)(cf[j] * (float)(1 << RVQ_QBITS)
-                  + ((cf[j] >= 0.0f) ? 0.5f : -0.5f));
+            cq[j] = rvq_float_to_q(cf[j]);
       }
       else
       {
