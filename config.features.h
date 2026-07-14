@@ -416,6 +416,18 @@
 #define SUPPORTS_RWEBP false
 #endif
 
+#ifdef HAVE_RWEBM
+#define SUPPORTS_RWEBM true
+#else
+#define SUPPORTS_RWEBM false
+#endif
+
+#ifdef HAVE_RVP9
+#define SUPPORTS_RVP9 true
+#else
+#define SUPPORTS_RVP9 false
+#endif
+
 #ifdef HAVE_RDDS
 #define SUPPORTS_RDDS true
 #else

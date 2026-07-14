@@ -273,7 +273,8 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
 
    /* Cheap gate: only container types with an animation decoder */
    type = image_texture_get_type(path);
-   if (type != IMAGE_TYPE_WEBP)
+   if (   (type != IMAGE_TYPE_WEBP)
+       && (type != IMAGE_TYPE_WEBM))
       return;
 
    if (!filestream_read_file(path, &buf, &len))
@@ -318,7 +319,8 @@ fail:
  * thumbnail (menu drivers do this from their main-thread iterate step).
  * For a still image the ANIM_ACTIVE flag is clear, so this returns
  * immediately after a single flag test - non-animated thumbnails, and
- * every non-WebP image type, pay nothing beyond that. */
+ * every image type without an animation decoder, pay nothing beyond
+ * that. */
 void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
 {
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
@@ -2048,8 +2050,21 @@ bool gfx_thumbnail_update_path(
    unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
    unsigned menu_icon_thumbnails = settings->uints.menu_icon_thumbnails;
    /* Thumbnail extension order. The default (i.e. png) is always the first. */
+#if defined(HAVE_RWEBP) && defined(HAVE_RWEBM)
+   #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 7
+#elif defined(HAVE_RWEBP) || defined(HAVE_RWEBM)
+   #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 6
+#else
    #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 5
-   const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga", 0 };
+#endif
+   const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga",
+#ifdef HAVE_RWEBP
+         ".webp",
+#endif
+#ifdef HAVE_RWEBM
+         ".webm",
+#endif
+         0 };
 
    if (!path_data)
       return false;

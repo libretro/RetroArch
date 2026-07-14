@@ -63,7 +63,8 @@ enum image_type_enum
    IMAGE_TYPE_BMP,
    IMAGE_TYPE_TGA,
    IMAGE_TYPE_WEBP,
-   IMAGE_TYPE_DDS
+   IMAGE_TYPE_DDS,
+   IMAGE_TYPE_WEBM
 };
 
 #define IMAGE_MAX_MIPS 16
@@ -176,7 +177,7 @@ bool image_transfer_iterate(void *data, enum image_type_enum type);
 
 bool image_transfer_is_valid(void *data, enum image_type_enum type);
 
-/* Animation (animated images, currently WEBP only).
+/* Animation (animated images: WEBP, and the video track of WEBM).
  *
  * image_transfer_anim_new returns an opaque animation handle, or NULL
  * for still images / unsupported types, so a caller can try it first and

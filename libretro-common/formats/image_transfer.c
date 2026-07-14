@@ -41,6 +41,10 @@
 #ifdef HAVE_RWEBP
 #include <formats/rwebp.h>
 #endif
+
+#ifdef HAVE_RWEBM
+#include <formats/rwebm_video.h>
+#endif
 #ifdef HAVE_RDDS
 #include <formats/rdds.h>
 #endif
@@ -78,6 +82,11 @@ void image_transfer_free(void *data, enum image_type_enum type)
       case IMAGE_TYPE_WEBP:
 #ifdef HAVE_RWEBP
          rwebp_free((rwebp_t*)data);
+#endif
+         break;
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_free((rwebm_video_t*)data);
 #endif
          break;
       case IMAGE_TYPE_DDS:
@@ -121,6 +130,12 @@ void *image_transfer_new(enum image_type_enum type)
       case IMAGE_TYPE_WEBP:
 #ifdef HAVE_RWEBP
          return rwebp_alloc();
+#else
+         break;
+#endif
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_alloc();
 #else
          break;
 #endif
@@ -168,6 +183,8 @@ bool image_transfer_start(void *data, enum image_type_enum type)
          return true;
       case IMAGE_TYPE_WEBP:
          return true;
+      case IMAGE_TYPE_WEBM:
+         return true;
       case IMAGE_TYPE_DDS:
 #ifdef HAVE_RDDS
          return true;
@@ -208,6 +225,8 @@ bool image_transfer_is_valid(
       case IMAGE_TYPE_BMP:
          return true;
       case IMAGE_TYPE_WEBP:
+         return true;
+      case IMAGE_TYPE_WEBM:
          return true;
       case IMAGE_TYPE_DDS:
 #ifdef HAVE_RDDS
@@ -253,6 +272,11 @@ void image_transfer_set_buffer_ptr(
       case IMAGE_TYPE_WEBP:
 #ifdef HAVE_RWEBP
          rwebp_set_buf_ptr((rwebp_t*)data, (uint8_t*)ptr, len);
+#endif
+         break;
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_set_buf_ptr((rwebm_video_t*)data, (uint8_t*)ptr, len);
 #endif
          break;
       case IMAGE_TYPE_DDS:
@@ -312,6 +336,14 @@ int image_transfer_process(
       case IMAGE_TYPE_WEBP:
 #ifdef HAVE_RWEBP
          ret = rwebp_process_image((rwebp_t*)data,
+               (void**)buf, len, width, height, supports_rgba);
+         break;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         ret = rwebm_video_process_image((rwebm_video_t*)data,
                (void**)buf, len, width, height, supports_rgba);
          break;
 #else
@@ -447,6 +479,8 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
          return false;
       case IMAGE_TYPE_WEBP:
          return false;
+      case IMAGE_TYPE_WEBM:
+         return false;
       case IMAGE_TYPE_DDS:
 #ifdef HAVE_RDDS
          return false;
@@ -461,9 +495,10 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
 }
 
 /* ===== Animation ===== *
- * Currently only WEBP supports animation. These helpers return NULL /
- * false for every other image type, so callers may attempt animation
- * unconditionally and fall back to the still-image path. */
+ * WEBP (animated) and WEBM (video track) support animation. These
+ * helpers return NULL / false for every other image type, so callers
+ * may attempt animation unconditionally and fall back to the
+ * still-image path. */
 
 void *image_transfer_anim_new(void *buf, size_t len,
       enum image_type_enum type)
@@ -559,6 +594,12 @@ void *image_transfer_anim_stream_new(void *buf, size_t len,
 #else
          break;
 #endif
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_open((const uint8_t*)buf, len);
+#else
+         break;
+#endif
       default:
          break;
    }
@@ -575,6 +616,11 @@ void image_transfer_anim_stream_free(void *stream,
          rwebp_anim_stream_close((rwebp_anim_stream_t*)stream);
 #endif
          break;
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_stream_close((rwebm_video_stream_t*)stream);
+#endif
+         break;
       default:
          break;
    }
@@ -589,6 +635,12 @@ void image_transfer_anim_stream_get_info(void *stream,
       case IMAGE_TYPE_WEBP:
 #ifdef HAVE_RWEBP
          rwebp_anim_stream_get_info((const rwebp_anim_stream_t*)stream,
+               width, height, num_frames, loop_count);
+#endif
+         break;
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_stream_get_info((const rwebm_video_stream_t*)stream,
                width, height, num_frames, loop_count);
 #endif
          break;
@@ -609,6 +661,13 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
 #else
          break;
 #endif
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_next((rwebm_video_stream_t*)stream,
+               duration_ms);
+#else
+         break;
+#endif
       default:
          break;
    }
@@ -623,6 +682,11 @@ void image_transfer_anim_stream_rewind(void *stream,
       case IMAGE_TYPE_WEBP:
 #ifdef HAVE_RWEBP
          rwebp_anim_stream_rewind((rwebp_anim_stream_t*)stream);
+#endif
+         break;
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_stream_rewind((rwebm_video_stream_t*)stream);
 #endif
          break;
       default:

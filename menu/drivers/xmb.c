@@ -2150,7 +2150,8 @@ static void xmb_selection_pointer_changed(
     * eagerly pre-resolve paths for all visible entries here — the
     * selection pointer can move many times per second during held-down
     * scrolling, and re-resolving up to ~20 paths per step (including
-    * path_is_valid syscalls, amplified ×5 by playlist_allow_non_png)
+    * path_is_valid syscalls, amplified up to ×7 by
+    * playlist_allow_non_png)
     * is enough to blow frame budgets. Lazy resolution in the
     * dispatcher gets the same visible result for a fraction of the
     * work. The is_playlist / title-name gates match the ones the old
@@ -3016,9 +3017,9 @@ static void xmb_populate_dynamic_icons(xmb_handle_t *xmb)
     * the render dispatcher will lazily re-resolve and re-load them for
     * currently-visible entries, under its per-frame cap. Doing the
     * path resolution upfront for every visible entry here would cost
-    * one path_is_valid syscall per entry (or five per entry with
+    * one path_is_valid syscall per entry (or up to seven per entry with
     * playlist_allow_non_png enabled, due to the .png/.jpg/.jpeg/.bmp/
-    * .tga fallback chain in gfx_thumbnail_update_path) — enough to
+    * .tga/.webp/.webm fallback chain in gfx_thumbnail_update_path) — enough to
     * blow a frame budget on the populate frame. */
    xmb_unload_icon_thumbnail_textures(xmb);
 
@@ -7816,7 +7817,7 @@ static void xmb_render(void *data,
           * xmb_populate_dynamic_icons and xmb_selection_pointer_changed
           * used to pay eagerly for every visible entry on every change,
           * including on each vertical scroll step — a stat-syscall
-          * storm multiplied ×5 by playlist_allow_non_png's extension
+          * storm multiplied up to ×7 by playlist_allow_non_png's extension
           * fallback chain. Doing it here, once per entry per list
           * population, eliminates the repeat cost on scroll. */
          if (!*thumbnail_icon->thumbnail_path_data.icon_path)

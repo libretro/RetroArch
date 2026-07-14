@@ -440,8 +440,14 @@ VIDEO IMAGE
 #include "../libretro-common/formats/bmp/rbmp.c"
 #endif
 #ifdef HAVE_RWEBP
-#include "../libretro-common/formats/vp8/rvp8.c"
 #include "../libretro-common/formats/webp/rwebp.c"
+#endif
+#if defined(HAVE_RWEBP) || defined(HAVE_RWEBM)
+#include "../libretro-common/formats/vp8/rvp8.c"
+#endif
+#ifdef HAVE_RWEBM
+#include "../libretro-common/formats/webm/rwebm.c"
+#include "../libretro-common/formats/webm/rwebm_video.c"
 #endif
 
 #ifdef HAVE_RVP9

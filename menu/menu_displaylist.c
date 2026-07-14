@@ -2404,6 +2404,12 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_RWEBP
          {SUPPORTS_RWEBP, "WebP (RWEBP)"},
 #endif
+#ifdef HAVE_RWEBM
+         {SUPPORTS_RWEBM, "WebM (RWEBM)"},
+#endif
+#ifdef HAVE_RVP9
+         {SUPPORTS_RVP9, "VP9 (RVP9)"},
+#endif
 #ifdef HAVE_RDDS
          {SUPPORTS_RDDS, "DDS (RDDS)"},
 #endif
