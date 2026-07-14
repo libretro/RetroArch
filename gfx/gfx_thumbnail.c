@@ -35,6 +35,10 @@
 #include "gfx_animation.h"
 #include "gfx_thumbnail.h"
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
 #include "../configuration.h"
 #include "../msg_hash.h"
 #include "../paths.h"
@@ -207,13 +211,26 @@ static void gfx_thumbnail_init_fade(
 /* Used to process thumbnail data following completion
  * of image load task */
 /* ---- Animated thumbnails ----
- * All functions below run on the main thread only: the animation is
- * opened from the (main-thread) upload callback, advanced from the
+ * Control flow runs on the main thread only: the animation is opened
+ * from the (main-thread) upload callback, advanced from the
  * (main-thread) stream request/process functions, and torn down from
  * gfx_thumbnail_reset. The video thread never touches these fields;
  * it only snapshots 'texture', which is replaced with the usual
  * load-new / unload-old sequence whose GPU side is serialised onto
- * the video thread by the texture command queue. */
+ * the video thread by the texture command queue.
+ *
+ * In HAVE_THREADS builds the DECODE itself happens on a shared worker
+ * thread (one per process, created lazily): each active animation owns
+ * a job; the worker pops jobs from a FIFO, decodes one displayed frame
+ * into the job's own upload-ready pixel buffer (including the ARGB
+ * swizzle when the video driver needs it), and marks the job READY.
+ * While a job is QUEUED or RUNNING, its stream belongs exclusively to
+ * the worker; the main thread only inspects job state under the lock,
+ * uploads READY frames, and re-enqueues. gfx_thumbnail_anim_close
+ * unlinks QUEUED jobs and waits out RUNNING ones, so teardown can
+ * never free a stream under the worker. Without HAVE_THREADS (or if
+ * worker creation fails) the original synchronous, budget-limited
+ * decode path is used instead. */
 
 /* Total decoded-animation frame budget per vsync, shared across all
  * animated thumbnails; keeps e.g. a grid of animations from stalling
@@ -244,8 +261,224 @@ static void gfx_thumbnail_init_fade(
 #define GFX_THUMB_ANIM_DUR_DEFAULT  100
 #define GFX_THUMB_ANIM_DUR_MIN      16
 
+#ifdef HAVE_THREADS
+/* ---- Animated-thumbnail decode worker ---- */
+
+enum gfx_thumb_anim_job_status
+{
+   GFX_THUMB_JOB_QUEUED = 0,   /* linked in the FIFO, not started      */
+   GFX_THUMB_JOB_RUNNING,      /* worker is decoding into job->frame   */
+   GFX_THUMB_JOB_READY,        /* frame decoded, awaiting upload       */
+   GFX_THUMB_JOB_FINISHED      /* loops exhausted or stream error      */
+};
+
+typedef struct gfx_thumb_anim_job
+{
+   struct gfx_thumb_anim_job *next;  /* FIFO link (owned by the queue) */
+   void     *stream;                 /* borrowed from the thumbnail    */
+   uint32_t *frame;                  /* job-owned upload-ready pixels  */
+   unsigned  width, height;
+   int       duration_ms;            /* of the READY frame             */
+   int32_t   loops_left;             /* worker-maintained, -1 infinite */
+   int       status;                 /* enum gfx_thumb_anim_job_status */
+   uint8_t   type;                   /* enum image_type_enum           */
+   bool      use_rgba;               /* output word format             */
+} gfx_thumb_anim_job_t;
+
+static slock_t               *gfx_thumb_worker_lock   = NULL;
+static scond_t               *gfx_thumb_worker_wake   = NULL; /* worker */
+static scond_t               *gfx_thumb_worker_done   = NULL; /* main   */
+static sthread_t             *gfx_thumb_worker_thread = NULL;
+static gfx_thumb_anim_job_t  *gfx_thumb_worker_head   = NULL;
+static gfx_thumb_anim_job_t  *gfx_thumb_worker_tail   = NULL;
+static bool                   gfx_thumb_worker_die    = false;
+
+/* Decode one displayed frame (handling end-of-pass loop/rewind) and
+ * convert it into job->frame in its final upload format. Returns false
+ * when the animation is over. Runs on the worker thread; the job is
+ * RUNNING, so it owns the stream exclusively. */
+static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
+{
+   const uint32_t *frame;
+   enum image_type_enum type = (enum image_type_enum)job->type;
+   int duration_ms           = 0;
+   size_t i, n;
+
+   if (!(frame = image_transfer_anim_stream_next(job->stream, type,
+         &duration_ms)))
+   {
+      /* End of one pass: honour the container loop count */
+      if (job->loops_left > 0)
+         job->loops_left--;
+      if (job->loops_left == 0)
+         return false;
+      image_transfer_anim_stream_rewind(job->stream, type);
+      if (!(frame = image_transfer_anim_stream_next(job->stream, type,
+            &duration_ms)))
+         return false;
+   }
+
+   n = (size_t)job->width * job->height;
+   if (job->use_rgba)
+      memcpy(job->frame, frame, n * sizeof(uint32_t));
+   else
+   {
+      /* The stream emits memory-order R,G,B,A; swizzle to ARGB words
+       * here so the main thread only has to upload. */
+      for (i = 0; i < n; i++)
+      {
+         uint32_t px   = frame[i];
+         job->frame[i] = (px & 0xFF00FF00u)
+               | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
+      }
+   }
+   job->duration_ms = duration_ms;
+   return true;
+}
+
+static void gfx_thumbnail_anim_worker(void *unused)
+{
+   (void)unused;
+   slock_lock(gfx_thumb_worker_lock);
+   for (;;)
+   {
+      gfx_thumb_anim_job_t *job;
+      bool alive;
+
+      while (!gfx_thumb_worker_die && !gfx_thumb_worker_head)
+         scond_wait(gfx_thumb_worker_wake, gfx_thumb_worker_lock);
+      if (gfx_thumb_worker_die)
+         break;
+
+      job                   = gfx_thumb_worker_head;
+      gfx_thumb_worker_head = job->next;
+      if (!gfx_thumb_worker_head)
+         gfx_thumb_worker_tail = NULL;
+      job->next             = NULL;
+      job->status           = GFX_THUMB_JOB_RUNNING;
+
+      slock_unlock(gfx_thumb_worker_lock);
+      alive = gfx_thumbnail_anim_job_step(job);
+      slock_lock(gfx_thumb_worker_lock);
+
+      job->status = alive ? GFX_THUMB_JOB_READY : GFX_THUMB_JOB_FINISHED;
+      scond_broadcast(gfx_thumb_worker_done);
+   }
+   slock_unlock(gfx_thumb_worker_lock);
+}
+
+/* Lazily creates the worker. Returns false if thread primitives could
+ * not be allocated; callers then use the synchronous path. */
+static bool gfx_thumbnail_anim_worker_init(void)
+{
+   if (gfx_thumb_worker_thread)
+      return true;
+   if (!gfx_thumb_worker_lock && !(gfx_thumb_worker_lock = slock_new()))
+      goto fail;
+   if (!gfx_thumb_worker_wake && !(gfx_thumb_worker_wake = scond_new()))
+      goto fail;
+   if (!gfx_thumb_worker_done && !(gfx_thumb_worker_done = scond_new()))
+      goto fail;
+   gfx_thumb_worker_die = false;
+   if (!(gfx_thumb_worker_thread = sthread_create(
+         gfx_thumbnail_anim_worker, NULL)))
+      goto fail;
+   return true;
+fail:
+   if (gfx_thumb_worker_done)
+      scond_free(gfx_thumb_worker_done);
+   if (gfx_thumb_worker_wake)
+      scond_free(gfx_thumb_worker_wake);
+   if (gfx_thumb_worker_lock)
+      slock_free(gfx_thumb_worker_lock);
+   gfx_thumb_worker_done = NULL;
+   gfx_thumb_worker_wake = NULL;
+   gfx_thumb_worker_lock = NULL;
+   return false;
+}
+
+static void gfx_thumbnail_anim_job_enqueue(gfx_thumb_anim_job_t *job)
+{
+   slock_lock(gfx_thumb_worker_lock);
+   job->status = GFX_THUMB_JOB_QUEUED;
+   job->next   = NULL;
+   if (gfx_thumb_worker_tail)
+      gfx_thumb_worker_tail->next = job;
+   else
+      gfx_thumb_worker_head       = job;
+   gfx_thumb_worker_tail          = job;
+   scond_signal(gfx_thumb_worker_wake);
+   slock_unlock(gfx_thumb_worker_lock);
+}
+
+/* Detach a job from the worker: unlink it if still queued, wait out the
+ * decode if running. On return the worker holds no reference to it. */
+static void gfx_thumbnail_anim_job_release(gfx_thumb_anim_job_t *job)
+{
+   if (!gfx_thumb_worker_lock)
+      return;
+   slock_lock(gfx_thumb_worker_lock);
+   if (job->status == GFX_THUMB_JOB_QUEUED)
+   {
+      gfx_thumb_anim_job_t **pp = &gfx_thumb_worker_head;
+      while (*pp && *pp != job)
+         pp = &(*pp)->next;
+      if (*pp)
+      {
+         *pp = job->next;
+         if (gfx_thumb_worker_tail == job)
+         {
+            gfx_thumb_anim_job_t *t = gfx_thumb_worker_head;
+            while (t && t->next)
+               t = t->next;
+            gfx_thumb_worker_tail = t;
+         }
+      }
+   }
+   while (job->status == GFX_THUMB_JOB_RUNNING)
+      scond_wait(gfx_thumb_worker_done, gfx_thumb_worker_lock);
+   slock_unlock(gfx_thumb_worker_lock);
+}
+
+void gfx_thumbnail_anim_worker_deinit(void)
+{
+   if (!gfx_thumb_worker_thread)
+      return;
+   slock_lock(gfx_thumb_worker_lock);
+   gfx_thumb_worker_die  = true;
+   /* Orphan anything still queued: the jobs stay owned by their
+    * thumbnails (freed by gfx_thumbnail_reset); they simply never
+    * advance. Normal shutdown order resets thumbnails first, so the
+    * queue is expected to be empty here. */
+   gfx_thumb_worker_head = NULL;
+   gfx_thumb_worker_tail = NULL;
+   scond_signal(gfx_thumb_worker_wake);
+   slock_unlock(gfx_thumb_worker_lock);
+   sthread_join(gfx_thumb_worker_thread);
+   gfx_thumb_worker_thread = NULL;
+   scond_free(gfx_thumb_worker_done);
+   scond_free(gfx_thumb_worker_wake);
+   slock_free(gfx_thumb_worker_lock);
+   gfx_thumb_worker_done = NULL;
+   gfx_thumb_worker_wake = NULL;
+   gfx_thumb_worker_lock = NULL;
+}
+#else
+void gfx_thumbnail_anim_worker_deinit(void) { }
+#endif
+
 static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
 {
+#ifdef HAVE_THREADS
+   if (thumbnail->anim_job)
+   {
+      gfx_thumb_anim_job_t *job = (gfx_thumb_anim_job_t*)thumbnail->anim_job;
+      gfx_thumbnail_anim_job_release(job);
+      free(job->frame);
+      free(job);
+      thumbnail->anim_job = NULL;
+   }
+#endif
    if (thumbnail->anim)
       image_transfer_anim_stream_free(thumbnail->anim,
             (enum image_type_enum)thumbnail->anim_type);
@@ -316,8 +549,63 @@ fail:
    free(buf);
 }
 
-/* Advances an animated thumbnail by (at most) one frame if its
- * duration has elapsed and the per-vsync decode budget allows.
+/* Uploads one final-format animation frame as the thumbnail's texture.
+ * 'pixels' must already be in the format the video driver expects
+ * ('use_rgba' describes it). Runs on the main thread. */
+static void gfx_thumbnail_anim_upload(gfx_thumbnail_t *thumbnail,
+      const uint32_t *pixels, unsigned width, unsigned height,
+      bool use_rgba)
+{
+   struct texture_image img;
+   uintptr_t new_texture = 0;
+
+   img.width         = width;
+   img.height        = height;
+   img.supports_rgba = use_rgba;
+   img.pixels        = (uint32_t*)pixels;
+   img.compressed    = NULL; /* raw frame, not a loaded compressed texture */
+
+   /* Animated thumbnails re-upload every frame; always use
+    * plain linear filtering here to avoid per-frame mip-map
+    * generation regardless of the menu_texture_mipmapping
+    * setting. */
+   if (video_driver_texture_load(&img,
+         TEXTURE_FILTER_LINEAR, &new_texture) && new_texture)
+   {
+      if (thumbnail->texture)
+         video_driver_texture_unload(&thumbnail->texture);
+      thumbnail->texture = new_texture;
+      thumbnail->width   = width;
+      thumbnail->height  = height;
+   }
+}
+
+/* Schedules the next animation frame. Accumulates from the previous
+ * due time to keep long-term pacing, but never falls so far behind
+ * that frames are decoded continuously to catch up. */
+static void gfx_thumbnail_anim_schedule(gfx_thumbnail_t *thumbnail,
+      int duration_ms, int64_t now)
+{
+   if (duration_ms <= 0)
+      duration_ms = GFX_THUMB_ANIM_DUR_DEFAULT;
+   else if (duration_ms < GFX_THUMB_ANIM_DUR_MIN)
+      duration_ms = GFX_THUMB_ANIM_DUR_MIN;
+
+   if (thumbnail->anim_next_us == 0)
+      thumbnail->anim_next_us = now + (int64_t)duration_ms * 1000;
+   else
+   {
+      thumbnail->anim_next_us += (int64_t)duration_ms * 1000;
+      if (thumbnail->anim_next_us < now)
+         thumbnail->anim_next_us = now + (int64_t)duration_ms * 1000;
+   }
+}
+
+/* Advances an animated thumbnail by (at most) one frame once its
+ * display duration has elapsed. With HAVE_THREADS the decode runs on
+ * the shared worker and this function only uploads finished frames
+ * (late frames simply appear a vsync or two later); without it the
+ * frame is decoded inline under the shared per-vsync budget.
  * Runs on the main thread; called from the per-frame stream
  * request/process functions for on-screen entries. */
 /* Advances an animated thumbnail by at most one frame if its display
@@ -350,6 +638,74 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
 
    if ((thumbnail->anim_next_us != 0) && (now < thumbnail->anim_next_us))
       return;
+
+#ifdef HAVE_THREADS
+   /* Threaded path: decode happens on the shared worker; this thread
+    * only inspects job state, uploads READY frames, and re-enqueues.
+    * A frame that is not ready when due is simply uploaded on a later
+    * vsync - the menu never blocks on the decoder. */
+   if (gfx_thumbnail_anim_worker_init())
+   {
+      gfx_thumb_anim_job_t *job = (gfx_thumb_anim_job_t*)thumbnail->anim_job;
+      int status;
+
+      if (!job)
+      {
+         unsigned anim_w = 0, anim_h = 0;
+         int num_frames = 0, loop_count = 0;
+
+         image_transfer_anim_stream_get_info(thumbnail->anim, type,
+               &anim_w, &anim_h, &num_frames, &loop_count);
+         if (!(job = (gfx_thumb_anim_job_t*)calloc(1, sizeof(*job))))
+            return;
+         if (!(job->frame = (uint32_t*)malloc(
+               (size_t)anim_w * anim_h * sizeof(uint32_t))))
+         {
+            free(job);
+            return;
+         }
+         job->stream     = thumbnail->anim;
+         job->type       = thumbnail->anim_type;
+         job->width      = anim_w;
+         job->height     = anim_h;
+         job->loops_left = thumbnail->anim_loops_left;
+         job->use_rgba   =
+               (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
+                     ? true : false;
+         thumbnail->anim_job = job;
+         gfx_thumbnail_anim_job_enqueue(job);
+         return;
+      }
+
+      slock_lock(gfx_thumb_worker_lock);
+      status = job->status;
+      slock_unlock(gfx_thumb_worker_lock);
+
+      if (status == GFX_THUMB_JOB_FINISHED)
+      {
+         /* Finished: keep the last frame's texture, release the
+          * decoder and file buffer */
+         gfx_thumbnail_anim_close(thumbnail);
+         return;
+      }
+      if (status != GFX_THUMB_JOB_READY)
+         return;   /* still decoding; try again next vsync */
+
+      /* READY and not queued: the worker holds no reference, so the
+       * frame buffer can be read without the lock. */
+      gfx_thumbnail_anim_upload(thumbnail, job->frame,
+            job->width, job->height, job->use_rgba);
+      gfx_thumbnail_anim_schedule(thumbnail, job->duration_ms, now);
+
+      /* Pipeline the next frame right away (the format snapshot is
+       * refreshed in case the video driver changed underneath us). */
+      job->use_rgba =
+            (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
+                  ? true : false;
+      gfx_thumbnail_anim_job_enqueue(job);
+      return;
+   }
+#endif
 
    /* Per-vsync decode budget (window resets after ~one 60 Hz frame) */
    if (now - p_gfx_thumb->anim_budget_start_us > 15000)
@@ -391,23 +747,16 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
    {
       static uint32_t *swap_scratch = NULL;
       static size_t swap_scratch_px = 0;
-      struct texture_image img;
-      uintptr_t new_texture         = 0;
       unsigned anim_w               = 0;
       unsigned anim_h               = 0;
       int num_frames                = 0;
       int loop_count                = 0;
+      const uint32_t *pixels        = frame;
       bool use_rgba                 =
             (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) ? true : false;
 
       image_transfer_anim_stream_get_info(thumbnail->anim, type,
             &anim_w, &anim_h, &num_frames, &loop_count);
-
-      img.width         = anim_w;
-      img.height        = anim_h;
-      img.supports_rgba = use_rgba;
-      img.pixels        = (uint32_t*)frame;
-      img.compressed    = NULL; /* raw frame, not a loaded compressed texture */
 
       if (!use_rgba)
       {
@@ -427,40 +776,14 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
             swap_scratch[i]  = (px & 0xFF00FF00u)
                   | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
          }
-         img.pixels = swap_scratch;
+         pixels = swap_scratch;
       }
 
-      /* Animated thumbnails re-upload every frame; always use
-       * plain linear filtering here to avoid per-frame mip-map
-       * generation regardless of the menu_texture_mipmapping
-       * setting. */
-      if (video_driver_texture_load(&img,
-            TEXTURE_FILTER_LINEAR, &new_texture) && new_texture)
-      {
-         if (thumbnail->texture)
-            video_driver_texture_unload(&thumbnail->texture);
-         thumbnail->texture = new_texture;
-         thumbnail->width   = anim_w;
-         thumbnail->height  = anim_h;
-      }
+      gfx_thumbnail_anim_upload(thumbnail, pixels, anim_w, anim_h,
+            use_rgba);
    }
 
-   /* Schedule the next frame. Accumulate from the previous due time
-    * to keep long-term pacing, but never fall so far behind that we
-    * decode continuously to catch up. */
-   if (duration_ms <= 0)
-      duration_ms = GFX_THUMB_ANIM_DUR_DEFAULT;
-   else if (duration_ms < GFX_THUMB_ANIM_DUR_MIN)
-      duration_ms = GFX_THUMB_ANIM_DUR_MIN;
-
-   if (thumbnail->anim_next_us == 0)
-      thumbnail->anim_next_us = now + (int64_t)duration_ms * 1000;
-   else
-   {
-      thumbnail->anim_next_us += (int64_t)duration_ms * 1000;
-      if (thumbnail->anim_next_us < now)
-         thumbnail->anim_next_us = now + (int64_t)duration_ms * 1000;
-   }
+   gfx_thumbnail_anim_schedule(thumbnail, duration_ms, now);
 
    p_gfx_thumb->anim_budget_used_us +=
          cpu_features_get_time_usec() - decode_start;

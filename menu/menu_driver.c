@@ -6803,6 +6803,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                free(menu_st->thumbnail_path_data);
             menu_st->thumbnail_path_data    = NULL;
 
+            /* The menu driver's free() above has reset every
+             * gfx_thumbnail_t, so the animated-thumbnail decode
+             * worker is idle and can be torn down (it is recreated
+             * lazily if the menu comes back). */
+            gfx_thumbnail_anim_worker_deinit();
+
             if (menu_st->driver_data->core_buf)
                free(menu_st->driver_data->core_buf);
             menu_st->driver_data->core_buf  = NULL;

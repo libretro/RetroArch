@@ -221,6 +221,7 @@ typedef struct
     * (or when the animation finishes its final loop). */
    void *anim;
    void *anim_buf;
+   void *anim_job;         /* decode-worker job (HAVE_THREADS builds)  */
    int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
    int32_t anim_loops_left; /* remaining loops, -1 = infinite */
    unsigned width;
@@ -253,6 +254,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->texture         = 0;
    t->anim            = NULL;
    t->anim_buf        = NULL;
+   t->anim_job        = NULL;
    t->anim_next_us    = 0;
    t->anim_loops_left = 0;
    t->width           = 0;
@@ -341,6 +343,12 @@ void gfx_thumbnail_set_fade_missing(bool fade_missing);
 
 /* Core interface */
 
+/* Tears down the shared animated-thumbnail decode worker (a no-op in
+ * builds without HAVE_THREADS, and when the worker was never started).
+ * Must be called after every gfx_thumbnail_t has been reset. The worker
+ * is recreated lazily by the next animated thumbnail. */
+void gfx_thumbnail_anim_worker_deinit(void);
+
 /* When called, prevents the handling of any pending
  * thumbnail load requests
  * >> **MUST** be called before deleting any gfx_thumbnail_t
@@ -383,7 +391,7 @@ void gfx_thumbnail_request_file(
  * specified thumbnail */
 void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail);
 
-/* Advances an animated thumbnail (animated WebP) by at most one frame,
+/* Advances an animated thumbnail (animated WebP / WebM) by at most one frame,
  * if its frame duration has elapsed. Call once per frame, on the main
  * thread, for every on-screen thumbnail. Non-animated thumbnails and
  * non-WebP image types return immediately (single flag test), so this
