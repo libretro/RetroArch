@@ -1,7 +1,7 @@
 apply plugin: 'com.android.dynamic-feature'
 
 android {
-  namespace "com.retroarch.%CORE_NAME%"
+  namespace "com.retroarch.modules.%CORE_NAME%"
 
   compileSdkVersion 36
   buildToolsVersion "36.0.0"
