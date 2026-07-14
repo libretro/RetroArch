@@ -36,9 +36,63 @@ static INLINE int rvp8_abs(int x) { return x < 0 ? -x : x; }
 /* ===== VP8 Lossy — full decode with coefficients ===== */
 
 
+/* vp8b_norm[r] = number of doublings that bring r into [128, 255];
+ * exactly what the former while (range < 128) loop computed. Index 0
+ * is unused (range never reaches 0: split >= 1 and range - split >= 1
+ * whenever the corresponding branch is taken). */
+static const uint8_t vp8b_norm[256] = {
+   0, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
 static void vp8b_fill(rvp8_bool *b)
 {
    int shift = 48 - b->count;
+   if (shift >= 0 && b->end - b->buf >= 8)
+   {
+      /* Bulk path: one big-endian load of the exact bytes the loop
+       * below would consume. Byte k of the load sits at bit 56 - 8k;
+       * after >> (count + 8) it lands at 48 - count - 8k, the loop's
+       * shift for byte k. Masking to nbytes drops the tail bytes the
+       * loop would not have loaded (an unmasked shift would leak
+       * their high bits into the low bits of the value register). */
+      int nbytes = shift / 8 + 1;
+      uint64_t big;
+      memcpy(&big, b->buf, 8);
+#if defined(MSB_FIRST)
+      /* already big-endian in memory */
+#elif defined(__GNUC__)
+      big = __builtin_bswap64(big);
+#else
+      big = ((big & 0x00000000000000FFull) << 56)
+          | ((big & 0x000000000000FF00ull) << 40)
+          | ((big & 0x0000000000FF0000ull) << 24)
+          | ((big & 0x00000000FF000000ull) <<  8)
+          | ((big & 0x000000FF00000000ull) >>  8)
+          | ((big & 0x0000FF0000000000ull) >> 24)
+          | ((big & 0x00FF000000000000ull) >> 40)
+          | ((big & 0xFF00000000000000ull) >> 56);
+#endif
+      big      &= ~0ull << (64 - 8 * nbytes);
+      b->value |= big >> (b->count + 8);
+      b->buf   += nbytes;
+      b->count += nbytes * 8;
+      return;
+   }
    while (shift >= 0 && b->buf < b->end)
    {
       b->count += 8;
@@ -67,8 +121,8 @@ static INLINE int vp8b_get(rvp8_bool *b, int prob)
    {
       bit = 0; b->range = split;
    }
-   shift = 0;
-   while (b->range < 128) { b->range <<= 1; shift++; }
+   shift = vp8b_norm[b->range];
+   b->range <<= shift;
    b->value <<= shift;
    b->count -= shift;
    if (b->count < 0) vp8b_fill(b);

@@ -1323,13 +1323,43 @@ static const uint8_t rvp9_norm[256] = {
 
 static void rvp9_br_fill(rvp9_br *b)
 {
-   /* Byte-at-a-time equivalent of libvpx vpx_reader_fill: top up the
-    * 64-bit value register; once the buffer is exhausted, inflate count
-    * so subsequent reads consume the implicit trailing zeros. */
+   /* libvpx vpx_reader_fill: top up the 64-bit value register; once
+    * the buffer is exhausted, inflate count so subsequent reads
+    * consume the implicit trailing zeros. When at least 8 bytes
+    * remain, take the bulk path: one big-endian load of exactly the
+    * bytes the loop would consume (byte k of the load sits at bit
+    * 56 - 8k, and >> (count + 8) lands it at 48 - count - 8k, the
+    * loop's shift for byte k; masking to nbytes drops the tail bytes
+    * the loop would not have loaded). */
    int shift = 64 - 8 - (b->count + 8);
    int bits_left = (int)(b->end - b->buf) * 8;
    int bits_over = shift + 8 - bits_left;
    int loop_end  = 0;
+   if (bits_over < 0 && shift >= 0 && b->end - b->buf >= 8)
+   {
+      int nbytes = shift / 8 + 1;
+      uint64_t big;
+      memcpy(&big, b->buf, 8);
+#if defined(MSB_FIRST)
+      /* already big-endian in memory */
+#elif defined(__GNUC__)
+      big = __builtin_bswap64(big);
+#else
+      big = ((big & 0x00000000000000FFull) << 56)
+          | ((big & 0x000000000000FF00ull) << 40)
+          | ((big & 0x0000000000FF0000ull) << 24)
+          | ((big & 0x00000000FF000000ull) <<  8)
+          | ((big & 0x000000FF00000000ull) >>  8)
+          | ((big & 0x0000FF0000000000ull) >> 24)
+          | ((big & 0x00FF000000000000ull) >> 40)
+          | ((big & 0xFF00000000000000ull) >> 56);
+#endif
+      big      &= ~0ull << (64 - 8 * nbytes);
+      b->value |= big >> (b->count + 8);
+      b->buf   += nbytes;
+      b->count += nbytes * 8;
+      return;
+   }
    if (bits_over >= 0)
    {
       b->count += RVP9_LOTS_OF_BITS;
