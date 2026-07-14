@@ -35,6 +35,7 @@
 #include <file/file_path.h>
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 #include <retro_dirent.h>
 
 #include <retro_miscellaneous.h>
