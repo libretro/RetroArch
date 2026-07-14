@@ -22,6 +22,15 @@
 #include <retro_inline.h>
 #include <formats/rvp9.h>
 
+#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#define RVP9_SSE2 1
+#include <emmintrin.h>
+#endif
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#define RVP9_NEON 1
+#include <arm_neon.h>
+#endif
+
 /* ==================================================================== */
 /* Probability / scan / kernel tables, generated from libvpx.           */
 /* ==================================================================== */
@@ -5524,12 +5533,487 @@ static void rvp9_lpf_vertical_16(uint8_t *s, int pitch, const uint8_t *blimit,
 #define RVP9_FILTER_BITS  7
 #define RVP9_INTERP_EXTEND 4
 
+/* ---- SSE2 / NEON 8-tap convolve (unscaled path, step_q4 == 16) ----
+ * With a 16/16th step the subpel phase is constant across the block, so
+ * each call is a fixed 8-tap FIR. The SIMD paths compute the identical
+ * integer expressions as the scalar loops: pmaddwd on (sample, sample)
+ * x (tap, tap) pairs accumulating in int32, +64, arithmetic >>7, then
+ * saturating packs for the clip; the averaging variant's
+ * ROUND_POWER_OF_TWO(dst + res, 1) is exactly pavgb/vrhadd. Taps and
+ * products fit int16 lanes (|tap| <= 128, samples <= 255). */
+#if defined(RVP9_SSE2)
+static void rvp9_convolve_horiz_sse2(const uint8_t *src, int src_stride,
+      uint8_t *dst, int dst_stride, const int16_t *f, int w, int h, int avg)
+{
+   const __m128i zero = _mm_setzero_si128();
+   const __m128i rnd  = _mm_set1_epi32(64);
+   const __m128i f01  = _mm_set1_epi32(((uint32_t)(uint16_t)f[1] << 16) | (uint16_t)f[0]);
+   const __m128i f23  = _mm_set1_epi32(((uint32_t)(uint16_t)f[3] << 16) | (uint16_t)f[2]);
+   const __m128i f45  = _mm_set1_epi32(((uint32_t)(uint16_t)f[5] << 16) | (uint16_t)f[4]);
+   const __m128i f67  = _mm_set1_epi32(((uint32_t)(uint16_t)f[7] << 16) | (uint16_t)f[6]);
+   int x, y;
+
+   for (y = 0; y < h; y++)
+   {
+      for (x = 0; x + 8 <= w; x += 8)
+      {
+         /* 8 outputs need samples s[x .. x+14] exactly; compose from
+          * two 8-byte loads so not a single byte outside the scalar
+          * footprint is touched (the source can be an exact-bounds
+          * border temp). */
+         __m128i lo = _mm_loadl_epi64((const __m128i*)(src + x));     /* s0..s7  */
+         __m128i hi = _mm_loadl_epi64((const __m128i*)(src + x + 7)); /* s7..s14 */
+         __m128i s0 = _mm_unpacklo_epi8(lo, zero);              /* s0..s7  */
+         __m128i s8 = _mm_srli_si128(
+               _mm_unpacklo_epi8(hi, zero), 2);                 /* s8..s14,0 */
+         __m128i s1 = _mm_or_si128(_mm_srli_si128(s0, 2),
+                                   _mm_slli_si128(s8, 14));     /* s1..s8  */
+         __m128i s2 = _mm_or_si128(_mm_srli_si128(s0, 4),
+                                   _mm_slli_si128(s8, 12));
+         __m128i s3 = _mm_or_si128(_mm_srli_si128(s0, 6),
+                                   _mm_slli_si128(s8, 10));
+         __m128i s4 = _mm_or_si128(_mm_srli_si128(s0, 8),
+                                   _mm_slli_si128(s8, 8));
+         __m128i s5 = _mm_or_si128(_mm_srli_si128(s0, 10),
+                                   _mm_slli_si128(s8, 6));
+         __m128i s6 = _mm_or_si128(_mm_srli_si128(s0, 12),
+                                   _mm_slli_si128(s8, 4));
+         __m128i s7 = _mm_or_si128(_mm_srli_si128(s0, 14),
+                                   _mm_slli_si128(s8, 2));
+         __m128i a_lo, a_hi, r16, r8;
+         a_lo = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(s0, s1), f01),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(s2, s3), f23)),
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(s4, s5), f45),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(s6, s7), f67)));
+         a_hi = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpackhi_epi16(s0, s1), f01),
+                             _mm_madd_epi16(_mm_unpackhi_epi16(s2, s3), f23)),
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpackhi_epi16(s4, s5), f45),
+                             _mm_madd_epi16(_mm_unpackhi_epi16(s6, s7), f67)));
+         a_lo = _mm_srai_epi32(_mm_add_epi32(a_lo, rnd), 7);
+         a_hi = _mm_srai_epi32(_mm_add_epi32(a_hi, rnd), 7);
+         r16  = _mm_packs_epi32(a_lo, a_hi);
+         r8   = _mm_packus_epi16(r16, r16);
+         if (avg)
+            r8 = _mm_avg_epu8(r8,
+                  _mm_loadl_epi64((const __m128i*)(dst + x)));
+         _mm_storel_epi64((__m128i*)(dst + x), r8);
+      }
+      if (x + 4 <= w)
+      {
+         /* 4 outputs need s[x .. x+10] exactly: two 8-byte loads at
+          * x and x+3. Only the low four lanes of each shifted vector
+          * are consumed. */
+         __m128i v0 = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(src + x)), zero);     /* s0..s7  */
+         __m128i v3 = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(src + x + 3)), zero); /* s3..s10 */
+         __m128i s1 = _mm_srli_si128(v0, 2);
+         __m128i s2 = _mm_srli_si128(v0, 4);
+         __m128i s3 = _mm_srli_si128(v0, 6);
+         __m128i s4 = _mm_srli_si128(v0, 8);
+         __m128i s5 = _mm_srli_si128(v3, 4);
+         __m128i s6 = _mm_srli_si128(v3, 6);
+         __m128i s7 = _mm_srli_si128(v3, 8);
+         __m128i a_lo, r16, r8;
+         a_lo = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(v0, s1), f01),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(s2, s3), f23)),
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(s4, s5), f45),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(s6, s7), f67)));
+         a_lo = _mm_srai_epi32(_mm_add_epi32(a_lo, rnd), 7);
+         r16  = _mm_packs_epi32(a_lo, a_lo);
+         r8   = _mm_packus_epi16(r16, r16);
+         if (avg)
+         {
+            int32_t dv;
+            memcpy(&dv, dst + x, 4);
+            r8 = _mm_avg_epu8(r8, _mm_cvtsi32_si128(dv));
+         }
+         {
+            int32_t ov = _mm_cvtsi128_si32(r8);
+            memcpy(dst + x, &ov, 4);
+         }
+         x += 4;
+      }
+      for (; x < w; x++)
+      {
+         int k, sum = 0;
+         for (k = 0; k < 8; k++)
+            sum += src[x + k] * f[k];
+         if (avg)
+            dst[x] = (uint8_t)ROUND_POWER_OF_TWO(dst[x] +
+                  rvp9_clip8(ROUND_POWER_OF_TWO(sum, 7)), 1);
+         else
+            dst[x] = rvp9_clip8(ROUND_POWER_OF_TWO(sum, 7));
+      }
+      src += src_stride;
+      dst += dst_stride;
+   }
+}
+
+static void rvp9_convolve_vert_sse2(const uint8_t *src, int src_stride,
+      uint8_t *dst, int dst_stride, const int16_t *f, int w, int h, int avg)
+{
+   const __m128i zero = _mm_setzero_si128();
+   const __m128i rnd  = _mm_set1_epi32(64);
+   const __m128i f01  = _mm_set1_epi32(((uint32_t)(uint16_t)f[1] << 16) | (uint16_t)f[0]);
+   const __m128i f23  = _mm_set1_epi32(((uint32_t)(uint16_t)f[3] << 16) | (uint16_t)f[2]);
+   const __m128i f45  = _mm_set1_epi32(((uint32_t)(uint16_t)f[5] << 16) | (uint16_t)f[4]);
+   const __m128i f67  = _mm_set1_epi32(((uint32_t)(uint16_t)f[7] << 16) | (uint16_t)f[6]);
+   int x, y;
+
+   for (x = 0; x + 8 <= w; x += 8)
+   {
+      const uint8_t *s = src + x;
+      uint8_t *dp      = dst + x;
+      for (y = 0; y < h; y++)
+      {
+         __m128i r0 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + 0*src_stride)), zero);
+         __m128i r1 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + 1*src_stride)), zero);
+         __m128i r2 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + 2*src_stride)), zero);
+         __m128i r3 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + 3*src_stride)), zero);
+         __m128i r4 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + 4*src_stride)), zero);
+         __m128i r5 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + 5*src_stride)), zero);
+         __m128i r6 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + 6*src_stride)), zero);
+         __m128i r7 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + 7*src_stride)), zero);
+         __m128i a_lo, a_hi, r16, r8;
+         a_lo = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(r0, r1), f01),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(r2, r3), f23)),
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(r4, r5), f45),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(r6, r7), f67)));
+         a_hi = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpackhi_epi16(r0, r1), f01),
+                             _mm_madd_epi16(_mm_unpackhi_epi16(r2, r3), f23)),
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpackhi_epi16(r4, r5), f45),
+                             _mm_madd_epi16(_mm_unpackhi_epi16(r6, r7), f67)));
+         a_lo = _mm_srai_epi32(_mm_add_epi32(a_lo, rnd), 7);
+         a_hi = _mm_srai_epi32(_mm_add_epi32(a_hi, rnd), 7);
+         r16  = _mm_packs_epi32(a_lo, a_hi);
+         r8   = _mm_packus_epi16(r16, r16);
+         if (avg)
+            r8 = _mm_avg_epu8(r8, _mm_loadl_epi64((const __m128i*)dp));
+         _mm_storel_epi64((__m128i*)dp, r8);
+         s  += src_stride;
+         dp += dst_stride;
+      }
+   }
+   if (x + 4 <= w)
+   {
+      const uint8_t *s = src + x;
+      uint8_t *dp      = dst + x;
+      for (y = 0; y < h; y++)
+      {
+         __m128i r0, r1, r2, r3, r4, r5, r6, r7, a_lo, r16, r8;
+         int32_t t;
+#define RVP9_LD4(P) \
+         (memcpy(&t, (P), 4), _mm_unpacklo_epi8(_mm_cvtsi32_si128(t), zero))
+         r0 = RVP9_LD4(s + 0*src_stride);
+         r1 = RVP9_LD4(s + 1*src_stride);
+         r2 = RVP9_LD4(s + 2*src_stride);
+         r3 = RVP9_LD4(s + 3*src_stride);
+         r4 = RVP9_LD4(s + 4*src_stride);
+         r5 = RVP9_LD4(s + 5*src_stride);
+         r6 = RVP9_LD4(s + 6*src_stride);
+         r7 = RVP9_LD4(s + 7*src_stride);
+#undef RVP9_LD4
+         a_lo = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(r0, r1), f01),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(r2, r3), f23)),
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(r4, r5), f45),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(r6, r7), f67)));
+         a_lo = _mm_srai_epi32(_mm_add_epi32(a_lo, rnd), 7);
+         r16  = _mm_packs_epi32(a_lo, a_lo);
+         r8   = _mm_packus_epi16(r16, r16);
+         if (avg)
+         {
+            memcpy(&t, dp, 4);
+            r8 = _mm_avg_epu8(r8, _mm_cvtsi32_si128(t));
+         }
+         t = _mm_cvtsi128_si32(r8);
+         memcpy(dp, &t, 4);
+         s  += src_stride;
+         dp += dst_stride;
+      }
+      x += 4;
+   }
+   for (; x < w; x++)
+   {
+      const uint8_t *s = src + x;
+      uint8_t *dp      = dst + x;
+      for (y = 0; y < h; y++)
+      {
+         int k, sum = 0;
+         for (k = 0; k < 8; k++)
+            sum += s[k * src_stride] * f[k];
+         if (avg)
+            *dp = (uint8_t)ROUND_POWER_OF_TWO(*dp +
+                  rvp9_clip8(ROUND_POWER_OF_TWO(sum, 7)), 1);
+         else
+            *dp = rvp9_clip8(ROUND_POWER_OF_TWO(sum, 7));
+         s  += src_stride;
+         dp += dst_stride;
+      }
+   }
+}
+#endif
+
+#if defined(RVP9_NEON)
+/* NEON translation of the SSE2 kernels: vmlal_lane tap chains
+ * accumulating in int32; vqrshrn_n_s32(sum, 7) is exactly
+ * (sum + 64) >> 7 with int16 saturation, vqmovun the 0..255 clip,
+ * and vrhadd_u8 exactly ROUND_POWER_OF_TWO(a + b, 1). */
+static void rvp9_convolve_horiz_neon(const uint8_t *src, int src_stride,
+      uint8_t *dst, int dst_stride, const int16_t *f, int w, int h, int avg)
+{
+   const int16x4_t flo = vld1_s16(f);
+   const int16x4_t fhi = vld1_s16(f + 4);
+   int x, y;
+
+   for (y = 0; y < h; y++)
+   {
+      for (x = 0; x + 8 <= w; x += 8)
+      {
+         /* Exact scalar footprint (s[x .. x+14]) via two 8-byte
+          * loads; v7 holds s7..s14, t8 rotates it to s8..s14 in lanes
+          * 0..6 (lane 7 is never consumed: vext(v0, t8, k) with k <= 7
+          * reads t8 lanes 0..k-1 <= 6). */
+         int16x8_t v0 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(src + x)));
+         int16x8_t v7 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(src + x + 7)));
+         int16x8_t t8 = vextq_s16(v7, v7, 1);
+         int16x8_t s1, s2, s3, s4, s5, s6, s7;
+         int32x4_t a_lo, a_hi;
+         uint8x8_t r8;
+         s1 = vextq_s16(v0, t8, 1);
+         s2 = vextq_s16(v0, t8, 2);
+         s3 = vextq_s16(v0, t8, 3);
+         s4 = vextq_s16(v0, t8, 4);
+         s5 = vextq_s16(v0, t8, 5);
+         s6 = vextq_s16(v0, t8, 6);
+         s7 = vextq_s16(v0, t8, 7);
+
+         a_lo = vmull_lane_s16(vget_low_s16(v0), flo, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s1), flo, 1);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s2), flo, 2);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s3), flo, 3);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s4), fhi, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s5), fhi, 1);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s6), fhi, 2);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s7), fhi, 3);
+         a_hi = vmull_lane_s16(vget_high_s16(v0), flo, 0);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s1), flo, 1);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s2), flo, 2);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s3), flo, 3);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s4), fhi, 0);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s5), fhi, 1);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s6), fhi, 2);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s7), fhi, 3);
+
+         r8 = vqmovun_s16(vcombine_s16(vqrshrn_n_s32(a_lo, 7),
+                                       vqrshrn_n_s32(a_hi, 7)));
+         if (avg)
+            r8 = vrhadd_u8(r8, vld1_u8(dst + x));
+         vst1_u8(dst + x, r8);
+      }
+      if (x + 4 <= w)
+      {
+         /* 4 outputs need s[x .. x+10] exactly */
+         uint8_t tmp[16];
+         int16x8_t v0, v3, s1, s2, s3, s4, s5, s6, s7;
+         int32x4_t a_lo;
+         uint8x8_t r8;
+         memcpy(tmp,     src + x,     8);
+         memcpy(tmp + 8, src + x + 3, 8);
+         v0 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(tmp)));
+         v3 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(tmp + 8)));
+         s1 = vextq_s16(v0, v0, 1);
+         s2 = vextq_s16(v0, v0, 2);
+         s3 = vextq_s16(v0, v0, 3);
+         s4 = vextq_s16(v0, v0, 4);
+         s5 = vextq_s16(v3, v3, 2);
+         s6 = vextq_s16(v3, v3, 3);
+         s7 = vextq_s16(v3, v3, 4);
+         a_lo = vmull_lane_s16(vget_low_s16(v0), flo, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s1), flo, 1);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s2), flo, 2);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s3), flo, 3);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s4), fhi, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s5), fhi, 1);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s6), fhi, 2);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s7), fhi, 3);
+         {
+            int16x4_t n16 = vqrshrn_n_s32(a_lo, 7);
+            r8 = vqmovun_s16(vcombine_s16(n16, n16));
+         }
+         if (avg)
+         {
+            uint8_t dv[8];
+            memcpy(dv, dst + x, 4);
+            memset(dv + 4, 0, 4);
+            r8 = vrhadd_u8(r8, vld1_u8(dv));
+         }
+         {
+            uint8_t ov[8];
+            vst1_u8(ov, r8);
+            memcpy(dst + x, ov, 4);
+         }
+         x += 4;
+      }
+      for (; x < w; x++)
+      {
+         int k, sum = 0;
+         for (k = 0; k < 8; k++)
+            sum += src[x + k] * f[k];
+         if (avg)
+            dst[x] = (uint8_t)ROUND_POWER_OF_TWO(dst[x] +
+                  rvp9_clip8(ROUND_POWER_OF_TWO(sum, 7)), 1);
+         else
+            dst[x] = rvp9_clip8(ROUND_POWER_OF_TWO(sum, 7));
+      }
+      src += src_stride;
+      dst += dst_stride;
+   }
+}
+
+static void rvp9_convolve_vert_neon(const uint8_t *src, int src_stride,
+      uint8_t *dst, int dst_stride, const int16_t *f, int w, int h, int avg)
+{
+   const int16x4_t flo = vld1_s16(f);
+   const int16x4_t fhi = vld1_s16(f + 4);
+   int x, y;
+
+   for (x = 0; x + 8 <= w; x += 8)
+   {
+      const uint8_t *s = src + x;
+      uint8_t *dp      = dst + x;
+      for (y = 0; y < h; y++)
+      {
+         int16x8_t r0 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + 0*src_stride)));
+         int16x8_t r1 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + 1*src_stride)));
+         int16x8_t r2 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + 2*src_stride)));
+         int16x8_t r3 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + 3*src_stride)));
+         int16x8_t r4 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + 4*src_stride)));
+         int16x8_t r5 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + 5*src_stride)));
+         int16x8_t r6 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + 6*src_stride)));
+         int16x8_t r7 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + 7*src_stride)));
+         int32x4_t a_lo, a_hi;
+         uint8x8_t r8;
+
+         a_lo = vmull_lane_s16(vget_low_s16(r0), flo, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r1), flo, 1);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r2), flo, 2);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r3), flo, 3);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r4), fhi, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r5), fhi, 1);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r6), fhi, 2);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r7), fhi, 3);
+         a_hi = vmull_lane_s16(vget_high_s16(r0), flo, 0);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r1), flo, 1);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r2), flo, 2);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r3), flo, 3);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r4), fhi, 0);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r5), fhi, 1);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r6), fhi, 2);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r7), fhi, 3);
+
+         r8 = vqmovun_s16(vcombine_s16(vqrshrn_n_s32(a_lo, 7),
+                                       vqrshrn_n_s32(a_hi, 7)));
+         if (avg)
+            r8 = vrhadd_u8(r8, vld1_u8(dp));
+         vst1_u8(dp, r8);
+         s  += src_stride;
+         dp += dst_stride;
+      }
+   }
+   if (x + 4 <= w)
+   {
+      const uint8_t *s = src + x;
+      uint8_t *dp      = dst + x;
+      for (y = 0; y < h; y++)
+      {
+         uint8_t tmp[8];
+         int16x8_t r0, r1, r2, r3, r4, r5, r6, r7;
+         int32x4_t a_lo;
+         uint8x8_t r8;
+#define RVP9_NLD4(K) \
+         (memcpy(tmp, s + (K)*src_stride, 4), memset(tmp + 4, 0, 4), \
+          vreinterpretq_s16_u16(vmovl_u8(vld1_u8(tmp))))
+         r0 = RVP9_NLD4(0); r1 = RVP9_NLD4(1);
+         r2 = RVP9_NLD4(2); r3 = RVP9_NLD4(3);
+         r4 = RVP9_NLD4(4); r5 = RVP9_NLD4(5);
+         r6 = RVP9_NLD4(6); r7 = RVP9_NLD4(7);
+#undef RVP9_NLD4
+         a_lo = vmull_lane_s16(vget_low_s16(r0), flo, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r1), flo, 1);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r2), flo, 2);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r3), flo, 3);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r4), fhi, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r5), fhi, 1);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r6), fhi, 2);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r7), fhi, 3);
+         {
+            int16x4_t n16 = vqrshrn_n_s32(a_lo, 7);
+            r8 = vqmovun_s16(vcombine_s16(n16, n16));
+         }
+         if (avg)
+         {
+            memcpy(tmp, dp, 4);
+            memset(tmp + 4, 0, 4);
+            r8 = vrhadd_u8(r8, vld1_u8(tmp));
+         }
+         vst1_u8(tmp, r8);
+         memcpy(dp, tmp, 4);
+         s  += src_stride;
+         dp += dst_stride;
+      }
+      x += 4;
+   }
+   for (; x < w; x++)
+   {
+      const uint8_t *s = src + x;
+      uint8_t *dp      = dst + x;
+      for (y = 0; y < h; y++)
+      {
+         int k, sum = 0;
+         for (k = 0; k < 8; k++)
+            sum += s[k * src_stride] * f[k];
+         if (avg)
+            *dp = (uint8_t)ROUND_POWER_OF_TWO(*dp +
+                  rvp9_clip8(ROUND_POWER_OF_TWO(sum, 7)), 1);
+         else
+            *dp = rvp9_clip8(ROUND_POWER_OF_TWO(sum, 7));
+         s  += src_stride;
+         dp += dst_stride;
+      }
+   }
+}
+#endif
+
 static void rvp9_convolve_horiz(const uint8_t *src, int src_stride,
       uint8_t *dst, int dst_stride, const int16_t (*xf)[8],
       int x0_q4, int x_step_q4, int w, int h, int avg)
 {
    int x, y;
    src -= RVP9_SUBPEL_TAPS / 2 - 1;
+#if defined(RVP9_SSE2)
+   if (x_step_q4 == 16)
+   {
+      rvp9_convolve_horiz_sse2(src + (x0_q4 >> RVP9_SUBPEL_BITS),
+            src_stride, dst, dst_stride,
+            xf[x0_q4 & RVP9_SUBPEL_MASK], w, h, avg);
+      return;
+   }
+#elif defined(RVP9_NEON)
+   if (x_step_q4 == 16)
+   {
+      rvp9_convolve_horiz_neon(src + (x0_q4 >> RVP9_SUBPEL_BITS),
+            src_stride, dst, dst_stride,
+            xf[x0_q4 & RVP9_SUBPEL_MASK], w, h, avg);
+      return;
+   }
+#endif
    for (y = 0; y < h; y++)
    {
       int x_q4 = x0_q4;
@@ -5557,6 +6041,25 @@ static void rvp9_convolve_vert(const uint8_t *src, int src_stride,
 {
    int x, y;
    src -= src_stride * (RVP9_SUBPEL_TAPS / 2 - 1);
+#if defined(RVP9_SSE2)
+   if (y_step_q4 == 16)
+   {
+      rvp9_convolve_vert_sse2(src +
+            (y0_q4 >> RVP9_SUBPEL_BITS) * src_stride,
+            src_stride, dst, dst_stride,
+            yf[y0_q4 & RVP9_SUBPEL_MASK], w, h, avg);
+      return;
+   }
+#elif defined(RVP9_NEON)
+   if (y_step_q4 == 16)
+   {
+      rvp9_convolve_vert_neon(src +
+            (y0_q4 >> RVP9_SUBPEL_BITS) * src_stride,
+            src_stride, dst, dst_stride,
+            yf[y0_q4 & RVP9_SUBPEL_MASK], w, h, avg);
+      return;
+   }
+#endif
    for (x = 0; x < w; x++)
    {
       int y_q4 = y0_q4;
