@@ -229,7 +229,15 @@ static void gfx_thumbnail_init_fade(
  * portrait sources like 1920x2880 - and leave everything beyond that
  * as a static image. */
 #define GFX_THUMB_ANIM_MAX_PIXELS   (3840 * 2160)
-#define GFX_THUMB_ANIM_MAX_FILE     (64 * 1024 * 1024)
+/* The file cap was originally sized for animated WebP, where 64 MiB is
+ * already enormous; WebM videos (which also gate the file-browser
+ * preview path through this constant) routinely exceed that, so admit
+ * up to 256 MiB. The cost is transient: the buffer is only held while
+ * the entry's animation is actually on screen, and only for files the
+ * user deliberately highlighted. Anything larger is left with no
+ * preview rather than risking an allocation spike on a multi-GiB
+ * movie. */
+#define GFX_THUMB_ANIM_MAX_FILE     (256 * 1024 * 1024)
 /* Frame-duration handling: <= 0 is undefined by the container spec
  * (browsers substitute 100 ms); very small durations are floored so
  * a hostile file cannot request thousands of decodes per second. */
