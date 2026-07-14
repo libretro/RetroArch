@@ -19,6 +19,7 @@ import android.content.pm.PackageManager;
 import android.Manifest;
 import android.content.DialogInterface;
 import android.app.AlertDialog;
+import android.net.Uri;
 import android.util.Log;
 
 /**
@@ -57,7 +58,38 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	public void checkRuntimePermissions()
 	{
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+		{
+			if (!Environment.isExternalStorageManager())
+			{
+				checkPermissions = true;
+				showMessageOKCancel("RetroArch requires All Files Access permission to scan and load game ROMs from your storage.",
+					new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							if (which == AlertDialog.BUTTON_POSITIVE)
+							{
+								try
+								{
+									Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+									intent.addCategory("android.intent.category.DEFAULT");
+									intent.setData(Uri.parse(String.format("package:%s", getPackageName())));
+									startActivityForResult(intent, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+								}
+								catch (Exception e)
+								{
+									Intent intent = new Intent();
+									intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+									startActivityForResult(intent, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+								}
+							}
+						}
+					});
+			}
+		}
+		else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
 		{
 			// Android 6.0+ needs runtime permission checks
 			List<String> permissionsNeeded = new ArrayList<String>();
@@ -114,6 +146,22 @@ public final class MainMenuActivity extends PreferenceActivity
 		}
 	}
 
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
+
+		// If the user just came back from settings and granted the permission, boot immediately
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+		{
+			if (Environment.isExternalStorageManager() && checkPermissions)
+			{
+				checkPermissions = false;
+				finalStartup();
+			}
+		}
+	}
+
 	public void finalStartup()
 	{
 		Intent retro = new Intent(this, RetroActivityFuture.class);
@@ -141,7 +189,7 @@ public final class MainMenuActivity extends PreferenceActivity
 	}
 
 
-	@Override
+@Override
 	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
 	{
 		switch (requestCode)
@@ -163,6 +211,24 @@ public final class MainMenuActivity extends PreferenceActivity
 			default:
 				super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 				break;
+		}
+
+		if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R)
+		{
+			boolean allGranted = true;
+			for (int result : grantResults)
+			{
+				if (result != PackageManager.PERMISSION_GRANTED)
+				{
+					allGranted = false;
+					break;
+				}
+			}
+			if (!allGranted)
+			{
+				checkRuntimePermissions();
+				return;
+			}
 		}
 
 		finalStartup();

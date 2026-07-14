@@ -6,8 +6,8 @@ import com.google.android.play.core.splitinstall.SplitInstallRequest;
 import com.google.android.play.core.splitinstall.SplitInstallSessionState;
 import com.google.android.play.core.splitinstall.SplitInstallStateUpdatedListener;
 import com.google.android.play.core.splitinstall.model.SplitInstallSessionStatus;
-import com.google.android.play.core.tasks.OnFailureListener;
-import com.google.android.play.core.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.retroarch.browser.retroactivity.RetroActivityCommon;
 
 import java.util.Collections;

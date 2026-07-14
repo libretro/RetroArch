@@ -1,18 +1,18 @@
 buildscript {
   repositories {
     google()
-    jcenter()
+    mavenCentral()
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:8.6.0'
+    classpath 'com.android.tools.build:gradle:9.1.0'
   }
 }
 
 allprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 
     Properties props = new Properties()
@@ -27,8 +27,8 @@ apply plugin: 'com.android.application'
 android {
   namespace "com.retroarch"
 
-  compileSdkVersion 31
-  buildToolsVersion "30.0.3"
+  compileSdkVersion 36
+  buildToolsVersion "36.0.0"
 
   buildFeatures {
     buildConfig true
@@ -40,13 +40,13 @@ android {
 
   defaultConfig {
     minSdkVersion 21
+    targetSdkVersion 36
     externalNativeBuild {
       ndkBuild {
         arguments "-j${Runtime.runtime.availableProcessors()}"
       }
     }
-    targetSdkVersion 28
-    versionCode System.currentTimeSeconds().toInteger()
+    versionCode = (System.currentTimeMillis() / 1000).toInteger()
     versionName "${getManifestAttribute("versionName")}_GIT"
   }
 
@@ -78,19 +78,19 @@ android {
       }
     }
     playStoreNormal {
-      minSdkVersion 34
-      targetSdkVersion 35
+      minSdkVersion 21
+      targetSdkVersion 36
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
-
+  
       resValue "string", "app_name", "RetroArch"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
       dimension "variant"
     }
     playStorePlus {
-      minSdkVersion 34
-      targetSdkVersion 35
+      minSdkVersion 21
+      targetSdkVersion 36
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
@@ -160,11 +160,14 @@ android {
   }
 }
 
-def playCore = 'com.google.android.play:core:1.10.3'
+def playFeatureDelivery = 'com.google.android.play:feature-delivery:2.1.0'
+def playAssetDelivery = 'com.google.android.play:asset-delivery:2.2.2'
 
 dependencies {
-  playStoreNormalImplementation playCore
-  playStorePlusImplementation playCore
+  playStoreNormalImplementation playFeatureDelivery
+  playStoreNormalImplementation playAssetDelivery
+  playStorePlusImplementation playFeatureDelivery
+  playStorePlusImplementation playAssetDelivery
 }
 
 def dynamicFeatures = file("dynamic_features.gradle")
@@ -176,21 +179,21 @@ int getPlayStoreVersionCode() {
   def baseVersion = getManifestAttribute("versionCode").toInteger()
   def baseTime = 1609632000
   def halfWeek = 302400
-  def increment = (System.currentTimeSeconds() - baseTime) / halfWeek
+  def increment = ((System.currentTimeMillis() / 1000).toInteger() - baseTime) / halfWeek
 
   return baseVersion + increment
 }
 
 String getPlayStoreVersionName() {
   def versionName = getManifestAttribute("versionName")
-  return "$versionName (${new Date().format("yyyy-MM-dd")})"
+  return "$versionName (${new java.text.SimpleDateFormat("yyyy-MM-dd").format(new Date())})"
 }
 
 String getManifestAttribute(String attribute) {
-  def manifest = new XmlParser().parse("${project.projectDir}/AndroidManifest.xml")
-  return manifest.attributes().find {
-    ((String) it.key).contains(attribute)
-  }.value
+  def manifestFile = file("${project.projectDir}/AndroidManifest.xml")
+  def text = manifestFile.text
+  def matcher = text =~ /android:${attribute}="([^"]+)"/
+  return matcher.find() ? matcher.group(1) : "1"
 }
 
 tasks.register("outputVersionCode") {
