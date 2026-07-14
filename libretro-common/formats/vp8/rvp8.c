@@ -2988,35 +2988,121 @@ static void rvp8_inter_predict_split(rvp8_dec *s, int r, int mx, int my,
    int cw = s->mbw * 8,  ch = s->mbh * 8;
    int i, j, bx, by;
    if (!ry) return;
-   /* Luma: 16 4x4 sub-blocks, each with its own MV. */
-   for (by = 0; by < 4; by++)
-      for (bx = 0; bx < 4; bx++)
-      {
-         const rvp8_mv *m = &bmv[by*4 + bx];
-         rvp8_mc_block(ry, rys, ydst + by*4*ys + bx*4, ys,
-               mx*16 + bx*4, my*16 + by*4, m->x, m->y, 4, 4,
-               yw, yh, s->use_bilinear);
-      }
+   /* Luma: 16 4x4 sub-blocks. Neighbouring sub-blocks very often share
+    * a motion vector (SPLITMV's 2/4/8-partition patterns express 16x8,
+    * 8x16 and 8x8 regions through per-4x4 syntax), so merge equal-MV
+    * sub-blocks into maximal rectangles greedily and compensate each
+    * rectangle with one call. This is bit-exact: every output pixel of
+    * a motion-compensated block depends only on its own source window
+    * and the (shared) motion vector, never on the block extents - and
+    * merging vertically also removes real work, because the six-tap
+    * first pass overlaps by five rows at every seam between vertically
+    * adjacent blocks. */
+   {
+      unsigned done = 0;
+      for (by = 0; by < 4; by++)
+         for (bx = 0; bx < 4; bx++)
+         {
+            const rvp8_mv *m;
+            int w, h, xx, yy;
+            if (done & (1u << (by*4 + bx)))
+               continue;
+            m = &bmv[by*4 + bx];
+            w = 1;
+            while (bx + w < 4 && !(done & (1u << (by*4 + bx + w)))
+                  && bmv[by*4 + bx + w].x == m->x
+                  && bmv[by*4 + bx + w].y == m->y)
+               w++;
+            h = 1;
+            for (yy = by + 1; yy < 4; yy++)
+            {
+               int ok = 1;
+               for (xx = 0; xx < w; xx++)
+                  if (   (done & (1u << (yy*4 + bx + xx)))
+                      || bmv[yy*4 + bx + xx].x != m->x
+                      || bmv[yy*4 + bx + xx].y != m->y)
+                  {
+                     ok = 0;
+                     break;
+                  }
+               if (!ok)
+                  break;
+               h++;
+            }
+            for (yy = 0; yy < h; yy++)
+               for (xx = 0; xx < w; xx++)
+                  done |= 1u << ((by + yy)*4 + bx + xx);
+            rvp8_mc_block(ry, rys, ydst + by*4*ys + bx*4, ys,
+                  mx*16 + bx*4, my*16 + by*4, m->x, m->y, 4*w, 4*h,
+                  yw, yh, s->use_bilinear);
+         }
+   }
    /* Chroma: 2x2 blocks of 4x4 px, each MV = average of the 4 luma
-    * sub-block MVs, rounded (+4 sign-adjusted) then /8. */
-   for (i = 0; i < 2; i++)
-      for (j = 0; j < 2; j++)
-      {
-         int yo = i*8 + j*2;
-         int tr = bmv[yo+0].y + bmv[yo+1].y + bmv[yo+4].y + bmv[yo+5].y;
-         int tc = bmv[yo+0].x + bmv[yo+1].x + bmv[yo+4].x + bmv[yo+5].x;
-         int cmvy, cmvx;
-         tr += 4 + ((tr >> (int)(sizeof(int)*8 - 1)) * 8);
-         tc += 4 + ((tc >> (int)(sizeof(int)*8 - 1)) * 8);
-         cmvy = tr / 8; cmvx = tc / 8;
-         if (s->full_pixel) { cmvx &= ~7; cmvy &= ~7; }
-         rvp8_mc_block(ru, ruvs, udst + i*4*uvs + j*4, uvs,
-               mx*8 + j*4, my*8 + i*4, cmvx, cmvy, 4, 4,
-               cw, ch, s->use_bilinear);
-         rvp8_mc_block(rv, ruvs, vdst + i*4*uvs + j*4, uvs,
-               mx*8 + j*4, my*8 + i*4, cmvx, cmvy, 4, 4,
-               cw, ch, s->use_bilinear);
-      }
+    * sub-block MVs, rounded (+4 sign-adjusted) then /8. Merge the tiny
+    * 2x2 grid the same way. */
+   {
+      rvp8_mv cmv[4];
+      unsigned done = 0;
+      for (i = 0; i < 2; i++)
+         for (j = 0; j < 2; j++)
+         {
+            int yo = i*8 + j*2;
+            int tr = bmv[yo+0].y + bmv[yo+1].y + bmv[yo+4].y + bmv[yo+5].y;
+            int tc = bmv[yo+0].x + bmv[yo+1].x + bmv[yo+4].x + bmv[yo+5].x;
+            tr += 4 + ((tr >> (int)(sizeof(int)*8 - 1)) * 8);
+            tc += 4 + ((tc >> (int)(sizeof(int)*8 - 1)) * 8);
+            cmv[i*2 + j].y = (int16_t)(tr / 8);
+            cmv[i*2 + j].x = (int16_t)(tc / 8);
+            if (s->full_pixel)
+            {
+               cmv[i*2 + j].x &= ~7;
+               cmv[i*2 + j].y &= ~7;
+            }
+         }
+      for (i = 0; i < 2; i++)
+         for (j = 0; j < 2; j++)
+         {
+            const rvp8_mv *m;
+            int w, h;
+            if (done & (1u << (i*2 + j)))
+               continue;
+            m = &cmv[i*2 + j];
+            /* Extension probes must skip already-covered cells, or a
+             * later anchor can re-cover a cell an earlier rectangle
+             * claimed (e.g. [A,B,B,B]: (0,1) merges down over (1,1),
+             * then (1,0) must not merge right over it). */
+            w = (j == 0 && !(done & (1u << (i*2 + 1)))
+                        && cmv[i*2 + 1].x == m->x
+                        && cmv[i*2 + 1].y == m->y) ? 2 : 1;
+            h = 1;
+            if (i == 0)
+            {
+               int ok = 1, xx;
+               for (xx = 0; xx < w; xx++)
+                  if (   (done & (1u << (2 + j + xx)))
+                      || cmv[2 + j + xx].x != m->x
+                      || cmv[2 + j + xx].y != m->y)
+                  {
+                     ok = 0;
+                     break;
+                  }
+               if (ok)
+                  h = 2;
+            }
+            {
+               int yy, xx;
+               for (yy = 0; yy < h; yy++)
+                  for (xx = 0; xx < w; xx++)
+                     done |= 1u << ((i + yy)*2 + j + xx);
+            }
+            rvp8_mc_block(ru, ruvs, udst + i*4*uvs + j*4, uvs,
+                  mx*8 + j*4, my*8 + i*4, m->x, m->y, 4*w, 4*h,
+                  cw, ch, s->use_bilinear);
+            rvp8_mc_block(rv, ruvs, vdst + i*4*uvs + j*4, uvs,
+                  mx*8 + j*4, my*8 + i*4, m->x, m->y, 4*w, 4*h,
+                  cw, ch, s->use_bilinear);
+         }
+   }
 }
 
 int rvp8_rows(rvp8_dec *s, int nrows)
