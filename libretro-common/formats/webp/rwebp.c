@@ -1190,14 +1190,23 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
       }
    }
    if (!pix) return NULL;
-   /* Convert to R,B-swapped (memory R,G,B,A) to match the anim canvas. */
+   /* Convert to R,B-swapped (memory R,G,B,A) to match the anim canvas.
+    * While every pixel is being touched anyway, accumulate an AND-mask
+    * of the alpha bytes: encoders routinely emit an ALPH chunk (or a
+    * VP8L alpha channel) whose bytes are all 0xFF, and detecting that
+    * here lets the compositor use a plain row copy instead of running
+    * per-pixel blending over the whole frame. */
    {
       unsigned i, n = w * h;
+      uint32_t acc = 0xFF000000u;
       for (i = 0; i < n; i++)
       {
          uint32_t px = pix[i];
+         acc   &= px;
          pix[i] = (px & 0xFF00FF00u) | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
       }
+      if (out_opaque && (acc >> 24) == 0xFF)
+         *out_opaque = 1;
    }
    *ow = w; *oh = h;
    return pix;
@@ -1311,7 +1320,13 @@ struct rwebp_anim_stream
    int       canvas_w, canvas_h;
    int       loop_count;
    uint32_t *canvas;
-   uint32_t *disposed;
+   /* Disposal is applied lazily: the returned canvas must stay intact
+    * until the next call, and the post-disposal state differs from it
+    * only inside the previous frame's rectangle, so instead of keeping
+    * a second full canvas ('disposed') and copying the whole canvas
+    * back and forth around every frame, remember the rectangle and
+    * clear just that region when the next frame is prepared. */
+   int       prev_fx, prev_fy, prev_fw, prev_fh;
    int       prev_disp_bg, prev_full, prev_key;
 };
 
@@ -1320,7 +1335,6 @@ void rwebp_anim_stream_close(rwebp_anim_stream_t *s)
    if (!s) return;
    free(s->anmf);
    free(s->canvas);
-   free(s->disposed);
    free(s);
 }
 
@@ -1373,8 +1387,7 @@ rwebp_anim_stream_t *rwebp_anim_stream_open(const uint8_t *buf, size_t len)
 
    s->canvas_w = cw; s->canvas_h = ch; s->loop_count = loop;
    s->canvas   = (uint32_t*)calloc((size_t)cw * ch, sizeof(uint32_t));
-   s->disposed = (uint32_t*)calloc((size_t)cw * ch, sizeof(uint32_t));
-   if (!s->canvas || !s->disposed) goto ofail;
+   if (!s->canvas) goto ofail;
    return s;
 
 ofail:
@@ -1448,9 +1461,22 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
          is_key = s->prev_disp_bg && (s->prev_full || s->prev_key);
 
       if (is_key)
-         memset(s->canvas, 0, (size_t)cw * ch * sizeof(uint32_t));
-      else
-         memcpy(s->canvas, s->disposed, (size_t)cw * ch * sizeof(uint32_t));
+      {
+         /* When a full-canvas opaque copy follows, the memset would be
+          * overwritten entirely - skip it. */
+         if (!(   (no_blend || sub_opaque)
+               && rwebp_full_frame(fw, fh, cw, ch)))
+            memset(s->canvas, 0, (size_t)cw * ch * sizeof(uint32_t));
+      }
+      else if (s->prev_disp_bg)
+      {
+         /* Lazily apply the previous frame's dispose-to-background:
+          * clear its rectangle (the only region where the disposal
+          * state differs from the displayed canvas). */
+         for (y = 0; y < s->prev_fh; y++)
+            memset(s->canvas + (size_t)(s->prev_fy + y) * cw + s->prev_fx,
+                  0, (size_t)s->prev_fw * sizeof(uint32_t));
+      }
 
       for (y = 0; y < fh; y++)
       {
@@ -1467,13 +1493,10 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
       }
       free(sub);
 
-      memcpy(s->disposed, s->canvas, (size_t)cw * ch * sizeof(uint32_t));
-      if (disp_bg)
-      {
-         for (y = 0; y < fh; y++)
-            memset(s->disposed + (size_t)(fy + y) * cw + fx, 0,
-                  (size_t)fw * sizeof(uint32_t));
-      }
+      s->prev_fx      = fx;
+      s->prev_fy      = fy;
+      s->prev_fw      = fw;
+      s->prev_fh      = fh;
       s->prev_disp_bg = disp_bg;
       s->prev_full    = rwebp_full_frame(fw, fh, cw, ch);
       s->prev_key     = is_key;
