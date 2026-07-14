@@ -27,6 +27,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__SSE2__)
+#include <emmintrin.h>
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#endif
+
 #include <retro_inline.h>
 
 #include <formats/image.h>
@@ -100,6 +106,163 @@ static INLINE uint32_t rwebm_video_yuv_px(int y, int u, int v)
         |  (uint32_t)r;
 }
 
+#if defined(__SSE2__)
+/* 8 pixels per iteration with pmaddwd pairs. Bit-exact with the scalar
+ * path: pmaddwd/paddd/psrad reproduce the integer arithmetic (psrad is
+ * an arithmetic shift, as the scalar's >> is on int), and the
+ * packs/packus saturation chain is exactly the scalar's clamp - the
+ * pre-clamp channel range (about -223..481 for 8-bit input) fits int16
+ * without distortion. */
+static void rwebm_video_yuv_row_sse2(uint32_t *dr,
+      const uint8_t *yr, const uint8_t *ur, const uint8_t *vr, unsigned w)
+{
+   const __m128i k16   = _mm_set1_epi16(16);
+   const __m128i k128  = _mm_set1_epi16(128);
+   const __m128i zero  = _mm_setzero_si128();
+   const __m128i ones  = _mm_set1_epi16(1);
+   const __m128i a255  = _mm_set1_epi8((char)0xFF);
+   /* Packs two int16 coefficients into the int32 lane pmaddwd expects,
+    * without shifting a negative value (all arithmetic unsigned). */
+#define RWEBM_PAIR16(hi, lo) \
+   ((int32_t)(((uint32_t)(uint16_t)(int16_t)(hi) << 16) \
+            |  (uint32_t)(uint16_t)(int16_t)(lo)))
+   const __m128i c_r   = _mm_set1_epi32(RWEBM_PAIR16( 409, 298));
+   const __m128i c_g1  = _mm_set1_epi32(RWEBM_PAIR16(-100, 298));
+   const __m128i c_g2  = _mm_set1_epi32(RWEBM_PAIR16( 128, -208));
+   const __m128i c_b   = _mm_set1_epi32(RWEBM_PAIR16( 516, 298));
+#undef RWEBM_PAIR16
+   const __m128i rnd   = _mm_set1_epi32(128);
+   unsigned i;
+
+   for (i = 0; i + 8 <= w; i += 8)
+   {
+      int32_t utmp, vtmp;
+      __m128i y8, ysub, u4, v4, d, e;
+      __m128i ye_lo, ye_hi, yd_lo, yd_hi, e1_lo, e1_hi;
+      __m128i r_lo, r_hi, g_lo, g_hi, b_lo, b_hi;
+      __m128i r16, g16, b16, r8, g8, b8, rg, ba;
+
+      /* ysub: 8 x i16 = y - 16 */
+      y8   = _mm_loadl_epi64((const __m128i*)(yr + i));
+      ysub = _mm_sub_epi16(_mm_unpacklo_epi8(y8, zero), k16);
+      /* d/e: 4 chroma samples each duplicated to 8 x i16, minus 128
+       * (memcpy avoids an unaligned int load) */
+      memcpy(&utmp, ur + (i >> 1), sizeof(utmp));
+      memcpy(&vtmp, vr + (i >> 1), sizeof(vtmp));
+      u4 = _mm_cvtsi32_si128(utmp);
+      v4 = _mm_cvtsi32_si128(vtmp);
+      d  = _mm_sub_epi16(
+            _mm_unpacklo_epi8(_mm_unpacklo_epi8(u4, u4), zero), k128);
+      e  = _mm_sub_epi16(
+            _mm_unpacklo_epi8(_mm_unpacklo_epi8(v4, v4), zero), k128);
+
+      ye_lo = _mm_unpacklo_epi16(ysub, e);
+      ye_hi = _mm_unpackhi_epi16(ysub, e);
+      yd_lo = _mm_unpacklo_epi16(ysub, d);
+      yd_hi = _mm_unpackhi_epi16(ysub, d);
+      e1_lo = _mm_unpacklo_epi16(e, ones);
+      e1_hi = _mm_unpackhi_epi16(e, ones);
+
+      /* r = (298*ysub + 409*e + 128) >> 8 */
+      r_lo = _mm_srai_epi32(_mm_add_epi32(
+            _mm_madd_epi16(ye_lo, c_r), rnd), 8);
+      r_hi = _mm_srai_epi32(_mm_add_epi32(
+            _mm_madd_epi16(ye_hi, c_r), rnd), 8);
+      /* g = (298*ysub - 100*d - 208*e + 128) >> 8
+       *   = (madd(ysub,d; 298,-100) + madd(e,1; -208,128)) >> 8 */
+      g_lo = _mm_srai_epi32(_mm_add_epi32(
+            _mm_madd_epi16(yd_lo, c_g1), _mm_madd_epi16(e1_lo, c_g2)), 8);
+      g_hi = _mm_srai_epi32(_mm_add_epi32(
+            _mm_madd_epi16(yd_hi, c_g1), _mm_madd_epi16(e1_hi, c_g2)), 8);
+      /* b = (298*ysub + 516*d + 128) >> 8 */
+      b_lo = _mm_srai_epi32(_mm_add_epi32(
+            _mm_madd_epi16(yd_lo, c_b), rnd), 8);
+      b_hi = _mm_srai_epi32(_mm_add_epi32(
+            _mm_madd_epi16(yd_hi, c_b), rnd), 8);
+
+      /* Saturating packs implement the 0..255 clamp */
+      r16 = _mm_packs_epi32(r_lo, r_hi);
+      g16 = _mm_packs_epi32(g_lo, g_hi);
+      b16 = _mm_packs_epi32(b_lo, b_hi);
+      r8  = _mm_packus_epi16(r16, r16);
+      g8  = _mm_packus_epi16(g16, g16);
+      b8  = _mm_packus_epi16(b16, b16);
+
+      /* Interleave to memory order R,G,B,A (ABGR words) */
+      rg  = _mm_unpacklo_epi8(r8, g8);
+      ba  = _mm_unpacklo_epi8(b8, a255);
+      _mm_storeu_si128((__m128i*)(dr + i),
+            _mm_unpacklo_epi16(rg, ba));
+      _mm_storeu_si128((__m128i*)(dr + i + 4),
+            _mm_unpackhi_epi16(rg, ba));
+   }
+   for (; i < w; i++)
+      dr[i] = rwebm_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1]);
+}
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+/* NEON translation of the SSE2 kernel above: identical integer
+ * arithmetic (widening multiply-accumulate into i32, arithmetic shift,
+ * saturating narrows for the clamp), so results are byte-identical to
+ * the scalar path. */
+static void rwebm_video_yuv_row_neon(uint32_t *dr,
+      const uint8_t *yr, const uint8_t *ur, const uint8_t *vr, unsigned w)
+{
+   const int16x8_t k16  = vdupq_n_s16(16);
+   const int16x8_t k128 = vdupq_n_s16(128);
+   const int32x4_t rnd  = vdupq_n_s32(128);
+   unsigned i;
+
+   for (i = 0; i + 8 <= w; i += 8)
+   {
+      uint8x8_t y8, u8, v8;
+      int16x8_t ysub, d, e;
+      int32x4_t c_lo, c_hi, r_lo, r_hi, g_lo, g_hi, b_lo, b_hi;
+      int16x8_t r16, g16, b16;
+      uint8x8x4_t out;
+      uint8_t utmp[8], vtmp[8];
+      unsigned k;
+
+      y8   = vld1_u8(yr + i);
+      ysub = vsubq_s16(vreinterpretq_s16_u16(vmovl_u8(y8)), k16);
+      for (k = 0; k < 4; k++)
+      {
+         utmp[2*k] = utmp[2*k+1] = ur[(i >> 1) + k];
+         vtmp[2*k] = vtmp[2*k+1] = vr[(i >> 1) + k];
+      }
+      u8 = vld1_u8(utmp);
+      v8 = vld1_u8(vtmp);
+      d  = vsubq_s16(vreinterpretq_s16_u16(vmovl_u8(u8)), k128);
+      e  = vsubq_s16(vreinterpretq_s16_u16(vmovl_u8(v8)), k128);
+
+      /* c = 298*ysub + 128 (rounding folded in) */
+      c_lo = vmlal_n_s16(rnd, vget_low_s16(ysub),  298);
+      c_hi = vmlal_n_s16(rnd, vget_high_s16(ysub), 298);
+
+      r_lo = vshrq_n_s32(vmlal_n_s16(c_lo, vget_low_s16(e),   409), 8);
+      r_hi = vshrq_n_s32(vmlal_n_s16(c_hi, vget_high_s16(e),  409), 8);
+      g_lo = vshrq_n_s32(vmlsl_n_s16(vmlsl_n_s16(c_lo,
+               vget_low_s16(d),  100), vget_low_s16(e),  208), 8);
+      g_hi = vshrq_n_s32(vmlsl_n_s16(vmlsl_n_s16(c_hi,
+               vget_high_s16(d), 100), vget_high_s16(e), 208), 8);
+      b_lo = vshrq_n_s32(vmlal_n_s16(c_lo, vget_low_s16(d),   516), 8);
+      b_hi = vshrq_n_s32(vmlal_n_s16(c_hi, vget_high_s16(d),  516), 8);
+
+      /* Saturating narrows implement the 0..255 clamp */
+      r16 = vcombine_s16(vqmovn_s32(r_lo), vqmovn_s32(r_hi));
+      g16 = vcombine_s16(vqmovn_s32(g_lo), vqmovn_s32(g_hi));
+      b16 = vcombine_s16(vqmovn_s32(b_lo), vqmovn_s32(b_hi));
+
+      out.val[0] = vqmovun_s16(r16);
+      out.val[1] = vqmovun_s16(g16);
+      out.val[2] = vqmovun_s16(b16);
+      out.val[3] = vdup_n_u8(0xFF);
+      vst4_u8((uint8_t*)(dr + i), out);
+   }
+   for (; i < w; i++)
+      dr[i] = rwebm_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1]);
+}
+#endif
+
 static void rwebm_video_blit_i420(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h,
       const uint8_t *y, int ys,
@@ -112,9 +275,17 @@ static void rwebm_video_blit_i420(uint32_t *dst, unsigned dst_stride,
       const uint8_t *ur = u + (size_t)(j >> 1) * uvs;
       const uint8_t *vr = v + (size_t)(j >> 1) * uvs;
       uint32_t      *dr = dst + (size_t)j * dst_stride;
-      unsigned i;
-      for (i = 0; i < w; i++)
-         dr[i] = rwebm_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1]);
+#if defined(__SSE2__)
+      rwebm_video_yuv_row_sse2(dr, yr, ur, vr, w);
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+      rwebm_video_yuv_row_neon(dr, yr, ur, vr, w);
+#else
+      {
+         unsigned i;
+         for (i = 0; i < w; i++)
+            dr[i] = rwebm_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1]);
+      }
+#endif
    }
 }
 
