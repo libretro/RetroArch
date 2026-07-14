@@ -224,64 +224,101 @@ static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
  * the expensive conversion run 8 pixels at a time while staying bit-exact
  * with the original fused loop. tu/tv select which diagonal pair each
  * half of the interpolation uses for this row (top vs bottom of the pair). */
+/* One channel of one interpolated chroma output row. Row A is the row
+ * co-sited with the luma row being converted (weighted 3x / 9x in the
+ * scheme), row B the other row of the pair: the 'top' output row of a
+ * pair is fancy_uv_channel(top, cur, ...) and the 'bottom' row is
+ * fancy_uv_channel(cur, top, ...) - the 9-3-3-1 scheme is symmetric
+ * under swapping the rows, diagonals included (d12 and d03 exchange
+ * roles), and the edge samples follow the same swap.
+ *
+ * The SIMD paths compute the identical 16-bit integer expressions as
+ * the scalar loop (no averaging-instruction shortcuts), so they are
+ * bit-exact by construction: all intermediates fit u16
+ * (avg <= 1028, avg + 2*(x+y) <= 2048, diagonals <= 256,
+ * diag + sample <= 511). */
+static void vp8_fancy_uv_channel(const uint8_t *A, const uint8_t *B,
+      uint8_t *d, int len)
+{
+   int x = 1, last_pair = (len - 1) >> 1;
+
+   d[0] = (uint8_t)((3*A[0] + B[0] + 2) >> 2);
+
+#if defined(RWEBP_YUV_SSE2)
+   {
+      const __m128i zero = _mm_setzero_si128();
+      const __m128i k8   = _mm_set1_epi16(8);
+      for (; x + 7 <= last_pair; x += 8)
+      {
+         __m128i a0 = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(A + x - 1)), zero);
+         __m128i a1 = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(A + x)), zero);
+         __m128i b0 = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(B + x - 1)), zero);
+         __m128i b1 = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(B + x)), zero);
+         __m128i avg = _mm_add_epi16(_mm_add_epi16(a0, a1),
+               _mm_add_epi16(_mm_add_epi16(b0, b1), k8));
+         __m128i d12 = _mm_srli_epi16(_mm_add_epi16(avg,
+               _mm_slli_epi16(_mm_add_epi16(a1, b0), 1)), 3);
+         __m128i d03 = _mm_srli_epi16(_mm_add_epi16(avg,
+               _mm_slli_epi16(_mm_add_epi16(a0, b1), 1)), 3);
+         __m128i odd  = _mm_srli_epi16(_mm_add_epi16(d12, a0), 1);
+         __m128i even = _mm_srli_epi16(_mm_add_epi16(d03, a1), 1);
+         _mm_storeu_si128((__m128i*)(d + 2*x - 1),
+               _mm_unpacklo_epi8(_mm_packus_epi16(odd, odd),
+                                 _mm_packus_epi16(even, even)));
+      }
+   }
+#elif defined(RWEBP_YUV_NEON)
+   for (; x + 7 <= last_pair; x += 8)
+   {
+      uint16x8_t a0 = vmovl_u8(vld1_u8(A + x - 1));
+      uint16x8_t a1 = vmovl_u8(vld1_u8(A + x));
+      uint16x8_t b0 = vmovl_u8(vld1_u8(B + x - 1));
+      uint16x8_t b1 = vmovl_u8(vld1_u8(B + x));
+      uint16x8_t avg = vaddq_u16(vaddq_u16(a0, a1),
+            vaddq_u16(vaddq_u16(b0, b1), vdupq_n_u16(8)));
+      uint16x8_t d12 = vshrq_n_u16(vaddq_u16(avg,
+            vshlq_n_u16(vaddq_u16(a1, b0), 1)), 3);
+      uint16x8_t d03 = vshrq_n_u16(vaddq_u16(avg,
+            vshlq_n_u16(vaddq_u16(a0, b1), 1)), 3);
+      uint8x8x2_t oe;
+      oe.val[0] = vmovn_u16(vshrq_n_u16(vaddq_u16(d12, a0), 1));
+      oe.val[1] = vmovn_u16(vshrq_n_u16(vaddq_u16(d03, a1), 1));
+      vst2_u8(d + 2*x - 1, oe);
+   }
+#endif
+
+   for (; x <= last_pair; x++)
+   {
+      int tl = A[x-1], t = A[x];
+      int l  = B[x-1], c = B[x];
+      int avg = tl + t + l + c + 8;
+      int d12 = (avg + 2*(t + l))  >> 3;
+      int d03 = (avg + 2*(tl + c)) >> 3;
+      d[2*x-1] = (uint8_t)((d12 + tl) >> 1);
+      d[2*x]   = (uint8_t)((d03 + t)  >> 1);
+   }
+   if (!(len & 1))
+      d[len-1] = (uint8_t)((3*A[last_pair] + B[last_pair] + 2) >> 2);
+}
+
 static void vp8_fancy_uv_top(const uint8_t *top_u, const uint8_t *top_v,
       const uint8_t *cur_u, const uint8_t *cur_v,
       uint8_t *du, uint8_t *dv, int len)
 {
-   int x, last_pair = (len - 1) >> 1;
-   int tl_u = top_u[0], tl_v = top_v[0];
-   int l_u = cur_u[0], l_v = cur_v[0];
-   du[0] = (uint8_t)((3*tl_u + l_u + 2) >> 2);
-   dv[0] = (uint8_t)((3*tl_v + l_v + 2) >> 2);
-   for (x = 1; x <= last_pair; x++)
-   {
-      int t_u = top_u[x], t_v = top_v[x];
-      int c_u = cur_u[x], c_v = cur_v[x];
-      int avg_u = tl_u + t_u + l_u + c_u + 8;
-      int avg_v = tl_v + t_v + l_v + c_v + 8;
-      int d12_u = (avg_u + 2*(t_u + l_u)) >> 3, d12_v = (avg_v + 2*(t_v + l_v)) >> 3;
-      int d03_u = (avg_u + 2*(tl_u + c_u)) >> 3, d03_v = (avg_v + 2*(tl_v + c_v)) >> 3;
-      du[2*x-1] = (uint8_t)((d12_u + tl_u) >> 1);
-      dv[2*x-1] = (uint8_t)((d12_v + tl_v) >> 1);
-      du[2*x]   = (uint8_t)((d03_u + t_u) >> 1);
-      dv[2*x]   = (uint8_t)((d03_v + t_v) >> 1);
-      tl_u = t_u; tl_v = t_v; l_u = c_u; l_v = c_v;
-   }
-   if (!(len & 1))
-   {
-      du[len-1] = (uint8_t)((3*tl_u + l_u + 2) >> 2);
-      dv[len-1] = (uint8_t)((3*tl_v + l_v + 2) >> 2);
-   }
+   vp8_fancy_uv_channel(top_u, cur_u, du, len);
+   vp8_fancy_uv_channel(top_v, cur_v, dv, len);
 }
 
 static void vp8_fancy_uv_bot(const uint8_t *top_u, const uint8_t *top_v,
       const uint8_t *cur_u, const uint8_t *cur_v,
       uint8_t *du, uint8_t *dv, int len)
 {
-   int x, last_pair = (len - 1) >> 1;
-   int tl_u = top_u[0], tl_v = top_v[0];
-   int l_u = cur_u[0], l_v = cur_v[0];
-   du[0] = (uint8_t)((3*l_u + tl_u + 2) >> 2);
-   dv[0] = (uint8_t)((3*l_v + tl_v + 2) >> 2);
-   for (x = 1; x <= last_pair; x++)
-   {
-      int t_u = top_u[x], t_v = top_v[x];
-      int c_u = cur_u[x], c_v = cur_v[x];
-      int avg_u = tl_u + t_u + l_u + c_u + 8;
-      int avg_v = tl_v + t_v + l_v + c_v + 8;
-      int d12_u = (avg_u + 2*(t_u + l_u)) >> 3, d12_v = (avg_v + 2*(t_v + l_v)) >> 3;
-      int d03_u = (avg_u + 2*(tl_u + c_u)) >> 3, d03_v = (avg_v + 2*(tl_v + c_v)) >> 3;
-      du[2*x-1] = (uint8_t)((d03_u + l_u) >> 1);
-      dv[2*x-1] = (uint8_t)((d03_v + l_v) >> 1);
-      du[2*x]   = (uint8_t)((d12_u + c_u) >> 1);
-      dv[2*x]   = (uint8_t)((d12_v + c_v) >> 1);
-      tl_u = t_u; tl_v = t_v; l_u = c_u; l_v = c_v;
-   }
-   if (!(len & 1))
-   {
-      du[len-1] = (uint8_t)((3*l_u + tl_u + 2) >> 2);
-      dv[len-1] = (uint8_t)((3*l_v + tl_v + 2) >> 2);
-   }
+   vp8_fancy_uv_channel(cur_u, top_u, du, len);
+   vp8_fancy_uv_channel(cur_v, top_v, dv, len);
 }
 
 /* scratch: caller-provided buffer of 2*len bytes for the interpolated
