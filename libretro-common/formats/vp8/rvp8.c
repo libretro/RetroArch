@@ -2548,6 +2548,265 @@ static INLINE int rvp8_clampc(int v, int lo, int hi)
  * eighth-pel for luma; chroma uses the same MV but the plane is half-res so
  * the effective fractional precision differs (handled by the caller passing
  * the right subsample shift). For ZEROMV (frac==0) this is a plain copy. */
+/* ---- Interior (clamp-free) six-tap motion compensation ----
+ * When a block's whole source footprint lies inside the reference
+ * frame - the overwhelmingly common case - the per-pixel edge clamps
+ * are pure overhead and block vectorization. The kernels below
+ * evaluate exactly the scalar expressions: the horizontal pass is
+ * pmaddwd/vmlal tap pairs with (acc + 64) >> 7 and a 0..255 clamp
+ * into a u8 intermediate (the scalar stores the same clamped values
+ * in its int temp), the vertical pass the same from the u8 rows.
+ * Sample loads are composed so nothing outside the scalar footprint
+ * (columns sx-2 .. sx+bw+2) is touched. */
+
+#if defined(RWEBP_YUV_SSE2)
+static void rvp8_mc_h6_sse2(const uint8_t *srcp, int rstride,
+      uint8_t *tmp, int bw, int th, const int16_t *hf)
+{
+   const __m128i zero = _mm_setzero_si128();
+   const __m128i rnd  = _mm_set1_epi32(64);
+   const __m128i f01  = _mm_set1_epi32(((uint32_t)(uint16_t)hf[1] << 16) | (uint16_t)hf[0]);
+   const __m128i f23  = _mm_set1_epi32(((uint32_t)(uint16_t)hf[3] << 16) | (uint16_t)hf[2]);
+   const __m128i f45  = _mm_set1_epi32(((uint32_t)(uint16_t)hf[5] << 16) | (uint16_t)hf[4]);
+   int i, j;
+   for (j = 0; j < th; j++)
+   {
+      const uint8_t *s = srcp + (size_t)j * rstride;
+      uint8_t *d       = tmp + (size_t)j * bw;
+      for (i = 0; i + 8 <= bw; i += 8)
+      {
+         /* 8 outputs need s[i .. i+12] exactly */
+         __m128i v0 = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(s + i)), zero);     /* 0..7  */
+         __m128i v5 = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(s + i + 5)), zero); /* 5..12 */
+         __m128i s1 = _mm_or_si128(_mm_srli_si128(v0, 2),
+                                   _mm_slli_si128(v5, 8));
+         __m128i s2 = _mm_or_si128(_mm_srli_si128(v0, 4),
+                                   _mm_slli_si128(v5, 6));
+         __m128i s3 = _mm_or_si128(_mm_srli_si128(v0, 6),
+                                   _mm_slli_si128(v5, 4));
+         __m128i s4 = _mm_or_si128(_mm_srli_si128(v0, 8),
+                                   _mm_slli_si128(v5, 2));
+         __m128i a_lo, a_hi, r16;
+         a_lo = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(v0, s1), f01),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(s2, s3), f23)),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(s4, v5), f45));
+         a_hi = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpackhi_epi16(v0, s1), f01),
+                             _mm_madd_epi16(_mm_unpackhi_epi16(s2, s3), f23)),
+                             _mm_madd_epi16(_mm_unpackhi_epi16(s4, v5), f45));
+         a_lo = _mm_srai_epi32(_mm_add_epi32(a_lo, rnd), 7);
+         a_hi = _mm_srai_epi32(_mm_add_epi32(a_hi, rnd), 7);
+         r16  = _mm_packs_epi32(a_lo, a_hi);
+         _mm_storel_epi64((__m128i*)(d + i),
+               _mm_packus_epi16(r16, r16));
+      }
+      if (i + 4 <= bw)
+      {
+         /* 4 outputs need s[i .. i+8] exactly */
+         __m128i v0 = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(s + i)), zero);     /* 0..7 */
+         __m128i v1 = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(s + i + 1)), zero); /* 1..8 */
+         __m128i s2 = _mm_srli_si128(v0, 4);
+         __m128i s3 = _mm_srli_si128(v0, 6);
+         __m128i s4 = _mm_srli_si128(v0, 8);
+         __m128i s5 = _mm_srli_si128(v1, 8);
+         __m128i a_lo, r16;
+         int32_t ov;
+         a_lo = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(v0, v1), f01),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(s2, s3), f23)),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(s4, s5), f45));
+         a_lo = _mm_srai_epi32(_mm_add_epi32(a_lo, rnd), 7);
+         r16  = _mm_packs_epi32(a_lo, a_lo);
+         ov   = _mm_cvtsi128_si32(_mm_packus_epi16(r16, r16));
+         memcpy(d + i, &ov, 4);
+         i += 4;
+      }
+      for (; i < bw; i++)
+      {
+         int acc = 0, t;
+         for (t = 0; t < 6; t++)
+            acc += hf[t] * s[i + t];
+         acc = (acc + 64) >> 7;
+         d[i] = (uint8_t)(acc < 0 ? 0 : acc > 255 ? 255 : acc);
+      }
+   }
+}
+
+static void rvp8_mc_v6_sse2(const uint8_t *tmp, uint8_t *dst, int dstride,
+      int bw, int bh, const int16_t *vf)
+{
+   const __m128i zero = _mm_setzero_si128();
+   const __m128i rnd  = _mm_set1_epi32(64);
+   const __m128i f01  = _mm_set1_epi32(((uint32_t)(uint16_t)vf[1] << 16) | (uint16_t)vf[0]);
+   const __m128i f23  = _mm_set1_epi32(((uint32_t)(uint16_t)vf[3] << 16) | (uint16_t)vf[2]);
+   const __m128i f45  = _mm_set1_epi32(((uint32_t)(uint16_t)vf[5] << 16) | (uint16_t)vf[4]);
+   int i, j;
+   for (j = 0; j < bh; j++)
+   {
+      const uint8_t *s = tmp + (size_t)j * bw;
+      uint8_t *d       = dst + (size_t)j * dstride;
+      for (i = 0; i + 8 <= bw; i += 8)
+      {
+         __m128i r0 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + i + 0*bw)), zero);
+         __m128i r1 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + i + 1*bw)), zero);
+         __m128i r2 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + i + 2*bw)), zero);
+         __m128i r3 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + i + 3*bw)), zero);
+         __m128i r4 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + i + 4*bw)), zero);
+         __m128i r5 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s + i + 5*bw)), zero);
+         __m128i a_lo, a_hi, r16;
+         a_lo = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(r0, r1), f01),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(r2, r3), f23)),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(r4, r5), f45));
+         a_hi = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpackhi_epi16(r0, r1), f01),
+                             _mm_madd_epi16(_mm_unpackhi_epi16(r2, r3), f23)),
+                             _mm_madd_epi16(_mm_unpackhi_epi16(r4, r5), f45));
+         a_lo = _mm_srai_epi32(_mm_add_epi32(a_lo, rnd), 7);
+         a_hi = _mm_srai_epi32(_mm_add_epi32(a_hi, rnd), 7);
+         r16  = _mm_packs_epi32(a_lo, a_hi);
+         _mm_storel_epi64((__m128i*)(d + i), _mm_packus_epi16(r16, r16));
+      }
+      if (i + 4 <= bw)
+      {
+         __m128i r0, r1, r2, r3, r4, r5, a_lo, r16;
+         int32_t t;
+#define RVP8_LD4(K) \
+         (memcpy(&t, s + i + (K)*bw, 4), \
+          _mm_unpacklo_epi8(_mm_cvtsi32_si128(t), zero))
+         r0 = RVP8_LD4(0); r1 = RVP8_LD4(1); r2 = RVP8_LD4(2);
+         r3 = RVP8_LD4(3); r4 = RVP8_LD4(4); r5 = RVP8_LD4(5);
+#undef RVP8_LD4
+         a_lo = _mm_add_epi32(
+               _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(r0, r1), f01),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(r2, r3), f23)),
+                             _mm_madd_epi16(_mm_unpacklo_epi16(r4, r5), f45));
+         a_lo = _mm_srai_epi32(_mm_add_epi32(a_lo, rnd), 7);
+         r16  = _mm_packs_epi32(a_lo, a_lo);
+         t    = _mm_cvtsi128_si32(_mm_packus_epi16(r16, r16));
+         memcpy(d + i, &t, 4);
+         i += 4;
+      }
+      for (; i < bw; i++)
+      {
+         int acc = 0, t;
+         for (t = 0; t < 6; t++)
+            acc += vf[t] * s[i + t*bw];
+         acc = (acc + 64) >> 7;
+         d[i] = (uint8_t)(acc < 0 ? 0 : acc > 255 ? 255 : acc);
+      }
+   }
+}
+#endif
+
+#if defined(RWEBP_YUV_NEON)
+static void rvp8_mc_h6_neon(const uint8_t *srcp, int rstride,
+      uint8_t *tmp, int bw, int th, const int16_t *hf)
+{
+   int16_t ftail[4];
+   int16x4_t flo, fhi;
+   int i, j;
+   memcpy(ftail, hf + 4, 2 * sizeof(int16_t));
+   ftail[2] = ftail[3] = 0;
+   flo = vld1_s16(hf);
+   fhi = vld1_s16(ftail);
+   for (j = 0; j < th; j++)
+   {
+      const uint8_t *s = srcp + (size_t)j * rstride;
+      uint8_t *d       = tmp + (size_t)j * bw;
+      for (i = 0; i + 8 <= bw; i += 8)
+      {
+         /* 8 outputs need s[i .. i+12] exactly */
+         int16x8_t v0 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + i)));
+         int16x8_t v5 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + i + 5)));
+         int16x8_t s1 = vextq_s16(v0, v5, 1);
+         int16x8_t s2 = vextq_s16(v0, v5, 2);
+         int16x8_t s3 = vextq_s16(v0, v5, 3);
+         int16x8_t s4 = vextq_s16(v0, v5, 4);
+         int32x4_t a_lo, a_hi;
+         int16x8_t r16;
+         a_lo = vmull_lane_s16(vget_low_s16(v0), flo, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s1), flo, 1);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s2), flo, 2);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s3), flo, 3);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(s4), fhi, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(v5), fhi, 1);
+         a_hi = vmull_lane_s16(vget_high_s16(v0), flo, 0);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s1), flo, 1);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s2), flo, 2);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s3), flo, 3);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(s4), fhi, 0);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(v5), fhi, 1);
+         r16 = vcombine_s16(vqrshrn_n_s32(a_lo, 7), vqrshrn_n_s32(a_hi, 7));
+         vst1_u8(d + i, vqmovun_s16(r16));
+      }
+      for (; i < bw; i++)
+      {
+         int acc = 0, t;
+         for (t = 0; t < 6; t++)
+            acc += hf[t] * s[i + t];
+         acc = (acc + 64) >> 7;
+         d[i] = (uint8_t)(acc < 0 ? 0 : acc > 255 ? 255 : acc);
+      }
+   }
+}
+
+static void rvp8_mc_v6_neon(const uint8_t *tmp, uint8_t *dst, int dstride,
+      int bw, int bh, const int16_t *vf)
+{
+   int16_t ftail[4];
+   int16x4_t flo, fhi;
+   int i, j;
+   memcpy(ftail, vf + 4, 2 * sizeof(int16_t));
+   ftail[2] = ftail[3] = 0;
+   flo = vld1_s16(vf);
+   fhi = vld1_s16(ftail);
+   for (j = 0; j < bh; j++)
+   {
+      const uint8_t *s = tmp + (size_t)j * bw;
+      uint8_t *d       = dst + (size_t)j * dstride;
+      for (i = 0; i + 8 <= bw; i += 8)
+      {
+         int16x8_t r0 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + i + 0*bw)));
+         int16x8_t r1 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + i + 1*bw)));
+         int16x8_t r2 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + i + 2*bw)));
+         int16x8_t r3 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + i + 3*bw)));
+         int16x8_t r4 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + i + 4*bw)));
+         int16x8_t r5 = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s + i + 5*bw)));
+         int32x4_t a_lo, a_hi;
+         int16x8_t r16;
+         a_lo = vmull_lane_s16(vget_low_s16(r0), flo, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r1), flo, 1);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r2), flo, 2);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r3), flo, 3);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r4), fhi, 0);
+         a_lo = vmlal_lane_s16(a_lo, vget_low_s16(r5), fhi, 1);
+         a_hi = vmull_lane_s16(vget_high_s16(r0), flo, 0);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r1), flo, 1);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r2), flo, 2);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r3), flo, 3);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r4), fhi, 0);
+         a_hi = vmlal_lane_s16(a_hi, vget_high_s16(r5), fhi, 1);
+         r16 = vcombine_s16(vqrshrn_n_s32(a_lo, 7), vqrshrn_n_s32(a_hi, 7));
+         vst1_u8(d + i, vqmovun_s16(r16));
+      }
+      for (; i < bw; i++)
+      {
+         int acc = 0, t;
+         for (t = 0; t < 6; t++)
+            acc += vf[t] * s[i + t*bw];
+         acc = (acc + 64) >> 7;
+         d[i] = (uint8_t)(acc < 0 ? 0 : acc > 255 ? 255 : acc);
+      }
+   }
+}
+#endif
+
 static void rvp8_mc_block(const uint8_t *ref, int rstride,
       uint8_t *dst, int dstride,
       int x, int y, int mvx, int mvy, int bw, int bh,
@@ -2559,6 +2818,14 @@ static void rvp8_mc_block(const uint8_t *ref, int rstride,
    int i, j;
    if (fx == 0 && fy == 0)
    {
+      /* Interior fast path: whole footprint in-bounds */
+      if (sx >= 0 && sy >= 0 && sx + bw <= refw && sy + bh <= refh)
+      {
+         const uint8_t *s = ref + (size_t)sy * rstride + sx;
+         for (j = 0; j < bh; j++)
+            memcpy(dst + (size_t)j * dstride, s + (size_t)j * rstride, bw);
+         return;
+      }
       for (j = 0; j < bh; j++)
       {
          int cy = rvp8_clampc(sy + j, 0, refh - 1);
@@ -2601,6 +2868,51 @@ static void rvp8_mc_block(const uint8_t *ref, int rstride,
       return;
    }
    /* Sub-pixel: separable 6-tap. Horizontal then vertical. */
+   /* Interior fast path: the scalar footprint is columns
+    * sx-2 .. sx+bw+2 and rows sy-2 .. sy+bh+2; when it lies fully
+    * inside the reference frame no clamping is needed and the
+    * vectorized clamp-free kernels apply. Border blocks (motion
+    * vectors reaching off-frame) take the clamped path below. */
+   if (   sx - 2 >= 0 && sy - 2 >= 0
+       && sx + bw + 3 <= refw && sy + bh + 3 <= refh)
+   {
+      const int16_t *hf = vp8_sixtap_filters[fx];
+      const int16_t *vf = vp8_sixtap_filters[fy];
+      const uint8_t *srcp = ref + (size_t)(sy - 2) * rstride + (sx - 2);
+      uint8_t tmpb[21*16]; /* (bh+5) rows x bw cols, bw<=16, bh<=16 */
+      int th = bh + 5;
+#if defined(RWEBP_YUV_SSE2)
+      rvp8_mc_h6_sse2(srcp, rstride, tmpb, bw, th, hf);
+      rvp8_mc_v6_sse2(tmpb, dst, dstride, bw, bh, vf);
+#elif defined(RWEBP_YUV_NEON)
+      rvp8_mc_h6_neon(srcp, rstride, tmpb, bw, th, hf);
+      rvp8_mc_v6_neon(tmpb, dst, dstride, bw, bh, vf);
+#else
+      for (j = 0; j < th; j++)
+      {
+         const uint8_t *s = srcp + (size_t)j * rstride;
+         for (i = 0; i < bw; i++)
+         {
+            int acc = 0, t;
+            for (t = 0; t < 6; t++)
+               acc += hf[t] * s[i + t];
+            acc = (acc + 64) >> 7;
+            tmpb[j*bw + i] = (uint8_t)(acc < 0 ? 0 : acc > 255 ? 255 : acc);
+         }
+      }
+      for (j = 0; j < bh; j++)
+         for (i = 0; i < bw; i++)
+         {
+            int acc = 0, t;
+            for (t = 0; t < 6; t++)
+               acc += vf[t] * tmpb[(j + t)*bw + i];
+            acc = (acc + 64) >> 7;
+            dst[j*dstride + i] =
+                  (uint8_t)(acc < 0 ? 0 : acc > 255 ? 255 : acc);
+         }
+#endif
+      return;
+   }
    {
       const int16_t *hf = vp8_sixtap_filters[fx];
       const int16_t *vf = vp8_sixtap_filters[fy];
