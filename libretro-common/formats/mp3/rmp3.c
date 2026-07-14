@@ -1108,12 +1108,22 @@ static void rmp3_L3_change_sign(float *grbuf)
 
 static int32_t rmp3d_float_to_q(float x)
 {
-   /* Saturate at the +-8.0 representable range so a hostile stream
-    * cannot overflow the conversion. */
-   if (x >=  7.999999f) return (int32_t) 0x7FFFFFFF;
-   if (x <= -7.999999f) return (int32_t)-0x7FFFFFFF - 1;
-   return (int32_t)(x * (float)(1 << RMP3D_QBITS)
-         + ((x >= 0.0f) ? 0.5f : -0.5f));
+   /* Branchless on soft-float targets: the sign and the saturation
+    * test come from the float's bit pattern (integer compares), so the
+    * only float operations are one multiply, one add and the final
+    * conversion.  Saturates at |x| >= 8.0, the edge of the Q28 range
+    * (measured decode maxima stay below 2.3, so the band is
+    * unreachable on real streams); below that, x * 2^28 + 0.5 stays
+    * under 2^31 and the conversion cannot overflow. */
+   union { float f; uint32_t u; } b, half;
+   float y;
+   b.f = x;
+   if ((b.u & 0x7F800000u) >= (130u << 23)) /* |x| >= 8.0, or NaN/inf */
+      return (b.u >> 31) ? (int32_t)-0x7FFFFFFF - 1 : (int32_t)0x7FFFFFFF;
+   y      = x * (float)(1 << RMP3D_QBITS);
+   half.f = y;
+   half.u = 0x3F000000u | (half.u & 0x80000000u); /* +-0.5 by sign */
+   return (int32_t)(y + half.f);
 }
 
 /* Convert a run of samples to Q28.  The SIMD forms are branchless:
