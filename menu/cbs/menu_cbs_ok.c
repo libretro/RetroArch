@@ -8206,13 +8206,12 @@ static int action_ok_state_slot_run(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
-   int slot                   = idx - 1;
    size_t new_selection_ptr   = 0;
 
    menu_entries_pop_stack(&new_selection_ptr, 0, 0);
    menu_st->selection_ptr     = 0;
 
-   menu_st->driver_data->state_slot_run = slot;
+   menu_st->driver_data->state_slot_run = idx - 1;
 
    menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;

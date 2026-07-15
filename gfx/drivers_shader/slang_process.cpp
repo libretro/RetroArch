@@ -347,7 +347,6 @@ static bool slang_process_reflection(
             static const char* names[] = {
                "Original", "Source", "OriginalHistory", "PassOutput", "PassFeedback",
             };
-            int size;
             texture_sem_t texture;
             slang_texture_semantic
                _semantic              = (slang_texture_semantic)semantic;

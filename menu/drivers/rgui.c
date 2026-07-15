@@ -4729,8 +4729,8 @@ static void rgui_render_messagebox(
       {
          const char *str_back                   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK);
          const char *str_ok                     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK);
-         unsigned str_back_width                = strlen(str_back) * rgui->font_width_stride;
-         unsigned str_ok_width                  = strlen(str_ok) * rgui->font_width_stride;
+         size_t str_back_width                  = strlen(str_back) * rgui->font_width_stride;
+         size_t str_ok_width                    = strlen(str_ok) * rgui->font_width_stride;
          float icon_size                        = rgui->font_width_stride;
          float icon_padding                     = icon_size / 2;
          float icon_x                           = x + (icon_size * 3) + (icon_padding * 2);
