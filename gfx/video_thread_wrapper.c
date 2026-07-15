@@ -22,6 +22,23 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <pthread.h>
+#include <TargetConditionals.h>
+#include <AvailabilityMacros.h> /* MAC_OS_X_VERSION_MIN_REQUIRED (since 10.2) */
+/* The pthread QoS override API (pthread_override_qos_class_start_np) exists
+ * only on macOS 10.10+ / iOS 8.0+. RetroArch still ships deployment targets
+ * below that (OS X 10.5, iOS 6), where the symbol is absent both in the SDK
+ * and at runtime, so gate on the deployment-target version rather than on
+ * __APPLE__ alone. TARGET_OS_* keeps the macOS check from firing on iOS, and
+ * the comparisons use numeric literals because the MAC_OS_X_VERSION_10_10 /
+ * __IPHONE_8_0 constants are undefined on old SDKs (and would expand to 0). */
+#if TARGET_OS_OSX && defined(MAC_OS_X_VERSION_MIN_REQUIRED) && MAC_OS_X_VERSION_MIN_REQUIRED >= 101000
+#define RARCH_HAVE_PTHREAD_QOS_OVERRIDE 1
+#elif TARGET_OS_IPHONE && defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 80000
+#define RARCH_HAVE_PTHREAD_QOS_OVERRIDE 1
+#endif
+#ifdef RARCH_HAVE_PTHREAD_QOS_OVERRIDE
+#include <pthread/qos.h>
+#endif
 #endif
 
 #include <compat/strl.h>
@@ -383,8 +400,29 @@ static bool video_thread_handle_packet(
 
       case CMD_CUSTOM_COMMAND:
          if (pkt.data.custom_command.method)
+         {
+#ifdef RARCH_HAVE_PTHREAD_QOS_OVERRIDE
+            /* The user thread is blocked in video_thread_wait_reply for the
+             * whole of this call. That waiter is normally the main/UI thread
+             * at user-interactive QoS, while this video thread runs at the
+             * default class, so the wait is a priority inversion (Thread
+             * Performance Checker flags it as a hang risk -- the custom
+             * command path carries the heavy GPU uploads, e.g. texture load
+             * -> glGenerateMipmap). scond/slock don't propagate QoS the way
+             * dispatch_sync / os_unfair_lock do, so lift this thread to the
+             * waiter's class for the synchronous work only. The pthread_self()
+             * override is a scoped push/pop: it restores the prior QoS on
+             * _end and needs no cross-thread handle. */
+            pthread_override_t qos_ov = pthread_override_qos_class_start_np(
+                  pthread_self(), QOS_CLASS_USER_INTERACTIVE, 0);
+#endif
             pkt.data.custom_command.return_value =
                pkt.data.custom_command.method(pkt.data.custom_command.data);
+#ifdef RARCH_HAVE_PTHREAD_QOS_OVERRIDE
+            if (qos_ov)
+               pthread_override_qos_class_end_np(qos_ov);
+#endif
+         }
          video_thread_reply(thr, &pkt);
          break;
 
