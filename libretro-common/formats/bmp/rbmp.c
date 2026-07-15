@@ -259,6 +259,26 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
             switch (compress)
             {
                case 0:
+                  /* BI_RGB: no masks in the file - use the standard layout
+                   * (stbi__bmp_set_mask_defaults). 32bpp BI_RGB is BGRx;
+                   * treat the 4th byte as alpha, with the all-zero-alpha
+                   * fixup below handling files that leave it 0. Was an
+                   * unconditional "Bad BMP" return that rejected every
+                   * plain 16/32bpp BMP. */
+                  if (bpp == 32)
+                  {
+                     mr = 0xffu << 16;
+                     mg = 0xffu << 8;
+                     mb = 0xffu;
+                     ma = 0xffu << 24;
+                  }
+                  else
+                  {
+                     /* BI_RGB 16bpp defaults to X1R5G5B5 */
+                     mr = 31u << 10;
+                     mg = 31u << 5;
+                     mb = 31u;
+                  }
                   break;
                case 3:
                   mr = (uint32_t)RBMP_GET32LE(s);
@@ -271,11 +291,9 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
                      return 0;
                   break;
                default:
-                  break;
+                  /* Bad BMP? */
+                  return 0;
             }
-
-            /* Bad BMP? */
-            return 0;
          }
       }
       else
@@ -413,6 +431,11 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
       int bcount = 0;
       int acount = 0;
       int easy   = 0;
+      /* OR of every alpha value read; BI_RGB 32bpp files routinely leave
+       * the 4th byte 0, which would decode fully transparent - if the
+       * whole image had alpha 0, force it opaque afterwards (mirrors
+       * stb_image's all_a fixup). */
+      unsigned char all_a = 0;
 
       rbmp_skip(s, offset - 14 - hsz);
 
@@ -475,6 +498,8 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
                   {
                      memcpy(dst, s->img_buffer, bytes_needed);
                      s->img_buffer += bytes_needed;
+                     for (i = 0; i < (int)s->img_x; ++i)
+                        all_a |= (unsigned char)(dst[i] >> 24);
                   }
                }
                else
@@ -486,6 +511,7 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
                      unsigned char g = rbmp_get8(s);
                      unsigned char r = rbmp_get8(s);
                      unsigned char a = rbmp_get8(s);
+                     all_a |= a;
                      dst[i] = ((uint32_t)a << 24) | ((uint32_t)b << 16)
                             | ((uint32_t)g << 8)  | (uint32_t)r;
                   }
@@ -533,6 +559,7 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
                g = RBMP_BYTECAST(rbmp_shiftsigned(v & mg, gshift, gcount));
                b = RBMP_BYTECAST(rbmp_shiftsigned(v & mb, bshift, bcount));
                a = ma ? RBMP_BYTECAST(rbmp_shiftsigned(v & ma, ashift, acount)) : 255;
+               all_a |= a;
 
                if (supports_rgba)
                   dst[i] = ((uint32_t)a << 24) | ((uint32_t)b << 16)
@@ -543,6 +570,14 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
             }
          }
          rbmp_skip(s, pad);
+      }
+
+      /* Whole image decoded with alpha 0 (typical BI_RGB 32bpp with a
+       * zeroed pad byte): force opaque, like stb_image. */
+      if ((easy == 2 || (bpp == 32 && ma == 0xffu << 24)) && all_a == 0)
+      {
+         for (j = 0; j < (int)(s->img_x * s->img_y); ++j)
+            output[j] |= 0xFF000000u;
       }
    }
 
