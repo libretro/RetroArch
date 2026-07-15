@@ -487,12 +487,108 @@ class StaticTexture
       Texture texture;
 };
 
+/* Recycle pool for framebuffer device-memory allocations.
+ *
+ * A resize must allocate a fresh backing allocation: reusing one that is
+ * still bound to an in-flight image aliases two live optimal-tiled images,
+ * which is invalid on some drivers (e.g. Mali).  To avoid a
+ * vkAllocateMemory/vkFreeMemory pair on every resize, freed blocks are
+ * parked here and handed back out later.
+ *
+ * A block only enters the pool from a deferred disposer callback, i.e.
+ * after the image that aliased it has been destroyed and the referencing
+ * GPU work has retired, so a recycled block never aliases a live image.
+ *
+ * Owned by CommonResources; its address is therefore stable and it is
+ * alive at every deferred_calls drain point (including the destructor-body
+ * flush()), which is why a deferred callback may capture a pointer to it
+ * even though it must never capture the Framebuffer itself. */
+struct FramebufferMemoryPool
+{
+   struct Block
+   {
+      VkDeviceMemory memory;
+      size_t         size;
+      uint32_t       type;
+   };
+
+   /* Keep only a handful of blocks; oscillating between two sizes (the
+    * common "toggle integer scale" case) needs at most two. */
+   static const size_t max_blocks = 4;
+   std::vector<Block> blocks;
+
+   /* Best-fit: smallest block that satisfies type+size, or a null block on
+    * miss.  The returned block is removed from the pool and owned by the
+    * caller. */
+   Block acquire(size_t size, uint32_t type)
+   {
+      size_t i;
+      size_t best = (size_t)-1;
+      Block  result;
+      result.memory = VK_NULL_HANDLE;
+      result.size   = 0;
+      result.type   = type;
+      for (i = 0; i < blocks.size(); i++)
+      {
+         if (     blocks[i].type == type
+               && blocks[i].size >= size
+               && (best == (size_t)-1 || blocks[i].size < blocks[best].size))
+            best = i;
+      }
+      if (best == (size_t)-1)
+         return result;
+      result = blocks[best];
+      blocks[best] = blocks.back();
+      blocks.pop_back();
+      return result;
+   }
+
+   void release(VkDevice device, VkDeviceMemory memory,
+         size_t size, uint32_t type)
+   {
+      Block b;
+      if (memory == VK_NULL_HANDLE)
+         return;
+      if (blocks.size() >= max_blocks)
+      {
+         /* Pool full: evict the smallest block so the larger, more reusable
+          * allocations survive.  If the incoming block is itself the
+          * smallest, just free it. */
+         size_t i, smallest = 0;
+         for (i = 1; i < blocks.size(); i++)
+            if (blocks[i].size < blocks[smallest].size)
+               smallest = i;
+         if (blocks[smallest].size >= size)
+         {
+            vkFreeMemory(device, memory, nullptr);
+            return;
+         }
+         vkFreeMemory(device, blocks[smallest].memory, nullptr);
+         blocks[smallest] = blocks.back();
+         blocks.pop_back();
+      }
+      b.memory = memory;
+      b.size   = size;
+      b.type   = type;
+      blocks.push_back(b);
+   }
+
+   void drain(VkDevice device)
+   {
+      size_t i;
+      for (i = 0; i < blocks.size(); i++)
+         vkFreeMemory(device, blocks[i].memory, nullptr);
+      blocks.clear();
+   }
+};
+
 class Framebuffer
 {
    public:
       Framebuffer(VkDevice device,
             const VkPhysicalDeviceMemoryProperties &mem_props,
-            const Size2D &max_size, VkFormat format, unsigned max_levels);
+            const Size2D &max_size, VkFormat format, unsigned max_levels,
+            FramebufferMemoryPool *mem_pool = nullptr);
 
       ~Framebuffer();
       Framebuffer(Framebuffer&&) = delete;
@@ -539,6 +635,10 @@ class Framebuffer
          VkDeviceMemory memory  = VK_NULL_HANDLE;
       } memory;
 
+      /* Chain-scoped, may be null. Never captured into a deferred callback
+       * as a member; copy to a local first (see set_size). */
+      FramebufferMemoryPool *mem_pool = nullptr;
+
       bool init();
 };
 
@@ -567,6 +667,10 @@ struct CommonResources
    std::unique_ptr<video_shader> shader_preset;
 
    VkDevice device;
+
+   /* Recycled framebuffer memory blocks, shared across all framebuffers of
+    * this chain. Drained in the destructor. */
+   FramebufferMemoryPool framebuffer_pool;
 
    /* Shared per-frame state: written once per frame by the filter chain,
     * read by every pass in build_semantics().  Eliminates N per-pass
@@ -1595,7 +1699,8 @@ bool vulkan_filter_chain::init_history()
    for (i = 0; i < required_images; i++)
    {
       std::unique_ptr<Framebuffer> framebuffer(new Framebuffer(
-               device, memory_properties, max_input_size, original_format, 1));
+               device, memory_properties, max_input_size, original_format, 1,
+               &common.framebuffer_pool));
       if (!framebuffer->is_valid())
          return false;
       original_history.emplace_back(std::move(framebuffer));
@@ -2922,6 +3027,7 @@ CommonResources::~CommonResources()
          for (auto &k : j)
             if (k != VK_NULL_HANDLE)
                vkDestroySampler(device, k, nullptr);
+   framebuffer_pool.drain(device);
 }
 
 void Pass::allocate_buffers()
@@ -2952,7 +3058,8 @@ bool Pass::init_feedback()
    fb_feedback = std::unique_ptr<Framebuffer>(
          new Framebuffer(device, memory_properties,
             current_framebuffer_size,
-            pass_info.rt_format, pass_info.max_levels));
+            pass_info.rt_format, pass_info.max_levels,
+            common ? &common->framebuffer_pool : nullptr));
    return fb_feedback->is_valid();
 }
 
@@ -2970,7 +3077,8 @@ bool Pass::build()
       framebuffer = std::unique_ptr<Framebuffer>(
             new Framebuffer(device, memory_properties,
                current_framebuffer_size,
-               pass_info.rt_format, pass_info.max_levels));
+               pass_info.rt_format, pass_info.max_levels,
+               common ? &common->framebuffer_pool : nullptr));
       if (!framebuffer->is_valid())
          return false;
    }
@@ -3548,12 +3656,14 @@ Framebuffer::Framebuffer(
       VkDevice device,
       const VkPhysicalDeviceMemoryProperties &mem_props,
       const Size2D &max_size, VkFormat format,
-      unsigned max_levels) :
+      unsigned max_levels,
+      FramebufferMemoryPool *mem_pool) :
    size(max_size),
    format(format),
    max_levels(MAX(max_levels, 1u)),
    memory_properties(mem_props),
-   device(device)
+   device(device),
+   mem_pool(mem_pool)
 {
    RARCH_LOG("[Vulkan] Creating framebuffer %ux%u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);
@@ -3581,6 +3691,7 @@ bool Framebuffer::init()
    VkFramebuffer new_framebuffer = VK_NULL_HANDLE;
    VkDeviceMemory new_memory     = VK_NULL_HANDLE;
    uint32_t new_memory_type;
+   size_t new_memory_size        = 0;
    unsigned new_levels;
    size_t _y                = glslang_num_miplevels(size.width, size.height);
 
@@ -3630,11 +3741,29 @@ bool Framebuffer::init()
          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
    alloc.memoryTypeIndex  = new_memory_type;
 
-   /* The old image can still be in flight. Reusing its allocation here
-    * aliases two live optimal-tiled images, which is invalid on Mali. */
-   if (vkAllocateMemory(device, &alloc, nullptr, &new_memory) != VK_SUCCESS)
-      goto error;
-   vulkan_debug_mark_memory(device, new_memory);
+   /* The old image can still be in flight, so we can never reuse this
+    * framebuffer's own live allocation here (that aliases two live
+    * optimal-tiled images, which is invalid on Mali). We can, however,
+    * reuse a block that was already retired to the chain-scoped pool: by
+    * construction its previous image has been destroyed and drained. */
+   if (mem_pool)
+   {
+      FramebufferMemoryPool::Block blk =
+         mem_pool->acquire(mem_reqs.size, new_memory_type);
+      if (blk.memory != VK_NULL_HANDLE)
+      {
+         new_memory      = blk.memory;
+         new_memory_size = blk.size;
+      }
+   }
+
+   if (new_memory == VK_NULL_HANDLE)
+   {
+      if (vkAllocateMemory(device, &alloc, nullptr, &new_memory) != VK_SUCCESS)
+         goto error;
+      new_memory_size = mem_reqs.size;
+      vulkan_debug_mark_memory(device, new_memory);
+   }
 
    if (vkBindImageMemory(device, new_image, new_memory, 0) != VK_SUCCESS)
       goto error;
@@ -3682,7 +3811,7 @@ bool Framebuffer::init()
    framebuffer   = new_framebuffer;
    levels        = new_levels;
    memory.type   = new_memory_type;
-   memory.size   = mem_reqs.size;
+   memory.size   = new_memory_size;
    memory.memory = new_memory;
    return true;
 
@@ -3710,6 +3839,8 @@ bool Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
    VkImageView old_fb_view       = fb_view;
    VkFramebuffer old_framebuffer = framebuffer;
    VkDeviceMemory old_memory     = memory.memory;
+   size_t old_memory_size        = memory.size;
+   uint32_t old_memory_type      = memory.type;
    VkFormat new_format           = format == VK_FORMAT_UNDEFINED ? old_format : format;
    bool format_changed           = new_format != old_format;
 
@@ -3743,7 +3874,11 @@ bool Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
    /* The replaced resources can still be referenced by an in-flight
     * command buffer. Defer their destruction together, including memory. */
    {
-      VkDevice d = device;
+      /* Copy the pool pointer to a local: the callback must not capture
+       * 'this', since the Framebuffer may be destroyed before it runs. The
+       * pool is chain-scoped and outlives every drain point. */
+      VkDevice d                   = device;
+      FramebufferMemoryPool *pool  = mem_pool;
       disposer.defer([=]
       {
          if (old_framebuffer != VK_NULL_HANDLE)
@@ -3752,10 +3887,17 @@ bool Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
             vkDestroyImageView(d, old_view, nullptr);
          if (old_fb_view != VK_NULL_HANDLE)
             vkDestroyImageView(d, old_fb_view, nullptr);
+         /* The image must be destroyed before its memory becomes reusable;
+          * the pool only ever hands out blocks whose image is already gone. */
          if (old_image != VK_NULL_HANDLE)
             vkDestroyImage(d, old_image, nullptr);
          if (old_memory != VK_NULL_HANDLE)
-            vkFreeMemory(d, old_memory, nullptr);
+         {
+            if (pool)
+               pool->release(d, old_memory, old_memory_size, old_memory_type);
+            else
+               vkFreeMemory(d, old_memory, nullptr);
+         }
          if (format_changed && old_render_pass != VK_NULL_HANDLE)
             vkDestroyRenderPass(d, old_render_pass, nullptr);
       });
