@@ -132,13 +132,20 @@ static void ui_window_cocoa_set_title(void *data, char *buf)
    /* AppKit is main-thread-only. Under threaded video this is reached from the
     * video thread (gl3_frame -> video_driver_update_title), so marshal the
     * -setTitle: onto the main queue there. dispatch_async (not sync) avoids
-    * deadlocking against the video thread lock. */
+    * deadlocking against the video thread lock. GCD is 10.6+, matching the
+    * MAC_OS_X_VERSION_10_6 gate this file already keys off; pre-10.6 SDKs fall
+    * back to a direct call (the legacy behaviour, and no Main Thread Checker
+    * exists on those releases to care). */
+#if defined(MAC_OS_X_VERSION_10_6)
    if ([NSThread isMainThread])
       [[cocoa_view window] setTitle:title];
    else
       dispatch_async(dispatch_get_main_queue(), ^{
          [[cocoa_view window] setTitle:title];
       });
+#else
+   [[cocoa_view window] setTitle:title];
+#endif
 }
 
 static void ui_window_cocoa_set_droppable(void *data, bool droppable)
