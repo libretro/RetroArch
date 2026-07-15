@@ -2446,6 +2446,14 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
    info->layer = 4 - RMP3_HDR_GET_LAYER(hdr);
    info->bitrate_kbps = rmp3_hdr_bitrate_kbps(hdr);
 
+   if (!pcm)
+   {
+      /* Info-only probe: the header fields above are filled and no
+       * decoder state has been touched, so a caller can inspect the
+       * stream without committing either output pipeline. */
+      return rmp3_hdr_frame_samples(hdr);
+   }
+
    rmp3_bs_init(bs_frame, hdr + RMP3_HDR_SIZE, frame_size - RMP3_HDR_SIZE);
    if (RMP3_HDR_IS_CRC(hdr))
       rmp3_bs_get_bits(bs_frame, 16);
@@ -2656,10 +2664,24 @@ uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize)
     pMP3->pData    = (const uint8_t*)pData;
     pMP3->dataSize = dataSize;
 
-    /* Decode the first frame to validate the stream and discover its
-     * channel count and sample rate. */
-    if (!rmp3_decode_next_frame(pMP3))
-        return 0;
+    /* Parse the first frame header to validate the stream and discover
+     * its channel count and sample rate, without decoding it: the
+     * first read then decodes it in whichever output format the caller
+     * selects, so neither pipeline starts from state converted out of
+     * the other.  The read cursor stays at the stream start. */
+    {
+        rmp3dec_frame_info info;
+        size_t avail = pMP3->dataSize;
+        if (avail > (size_t)INT_MAX)
+            avail = (size_t)INT_MAX;
+        if (!rmp3dec_decode_frame(&pMP3->decoder, pMP3->pData, (int)avail,
+                NULL, &info, 0))
+            return 0;
+        if (info.frame_bytes <= 0 || info.hz == 0)
+            return 0;
+        pMP3->channels   = (uint32_t)info.channels;
+        pMP3->sampleRate = (uint32_t)info.hz;
+    }
 
     return 1;
 }
